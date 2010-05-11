@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing Pyresample &mdash; pyresample v0.5.3 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.5.3',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pyresample v0.5.3 documentation" href="index.html" />
+    <link rel="next" title="Area definitions" href="area_def.html" />
+    <link rel="prev" title="Pyresample" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="area_def.html" title="Area definitions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Pyresample"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installing-pyresample">
+<h1>Installing Pyresample<a class="headerlink" href="#installing-pyresample" title="Permalink to this headline">¶</a></h1>
+<p>Pyresample depends on pyproj, numpy(&gt;= 1.3), scipy(&gt;= 0.7), multiprocessing
+(builtin package for Python &gt; 2.5) and configobj.</p>
+<p>The packages pyproj, numpy and scipy do not easy_install well so they will not be installed automatically
+when installing this package with easy_install.</p>
+<p>Install pyproj and the correct versions of numpy and scipy on your system
+(refer to numpy and scipy installation instructions).</p>
+<div class="section" id="package-test">
+<h2>Package test<a class="headerlink" href="#package-test" title="Permalink to this headline">¶</a></h2>
+<p>Test the package (requires nose):</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>tar -zxvf pyresample-&lt;version&gt;.tar.gz
+<span class="nv">$ </span><span class="nb">cd </span>pyresample-&lt;version&gt;
+<span class="nv">$ </span>nosetests
+</pre></div>
+</div>
+<p>If all the tests passes the functionality of all pyresample functions on the system has been verified.</p>
+</div>
+<div class="section" id="package-installation">
+<h2>Package installation<a class="headerlink" href="#package-installation" title="Permalink to this headline">¶</a></h2>
+<p>A sandbox environment can be created for pyresample using <a class="reference external" href="http://pypi.python.org/pypi/virtualenv">Virtualenv</a></p>
+<p>Install Pyresample using setuptools:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>easy_install pyresample-&lt;version&gt;.tar.gz
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Installing Pyresample</a><ul>
+<li><a class="reference external" href="#package-test">Package test</a></li>
+<li><a class="reference external" href="#package-installation">Package installation</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Pyresample</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="area_def.html"
+                                  title="next chapter">Area definitions</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/installation.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="area_def.html" title="Area definitions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Pyresample"
+             >previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>
