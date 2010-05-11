@@ -37,3 +37,23 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
         self.assertRaises(utils.AreaNotFound, utils.parse_area_file, 
                           os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 
                           'no_area')
+        
+    def test_area_dict_to_area_def(self):
+        area_dict = {'NAME':  'Antarctic EASE grid',
+                     'PCS_ID': 'ease_sh',
+                     'PCS_DEF': {'proj': 'laea', 'lat_0': '-90', 'lon_0': '0', 
+                                 'a': '6371228.0', 'units': 'm'},
+                     'XSIZE': 425,
+                     'YSIZE': 425,
+                     'AREA_EXTENT': (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+                     }
+        area_def = utils.area_dict_to_area_def(area_dict)
+        is_correct_area = (area_def.__str__() =="""Area ID: ease_sh
+Name: Antarctic EASE grid
+Projection ID: ease_sh
+Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
+        
+        self.assertTrue(is_correct_area, msg='Failed to create AreaDefinition from area_dict')

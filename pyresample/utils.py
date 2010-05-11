@@ -1,3 +1,20 @@
+#pyresample, Resampling of remote sensing image data in python
+# 
+#Copyright (C) 2010  Esben S. Nielsen
+#
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """Utility functions for pyresample"""
 
 import numpy as np
@@ -67,6 +84,27 @@ def parse_area_file(area_file_name, *regions):
                 raise AreaNotFound('Area "%s" not found in file "%s"'%
                                    (area_list[i], area_file_name))    
     return area_defs
+
+def area_dict_to_area_def(area_dict):
+    """Construct AreaDefinition object from dictionary
+    
+    :Parameters:
+    area_dict : dict
+        Dict containing areadefinition parameters. Dict keys are the ones
+        used in area definition files
+    
+    :Returns: 
+    area_def : object
+        AreaDefinition object
+    """
+    
+    return geometry.AreaDefinition(area_dict['PCS_ID'],
+                                   area_dict['NAME'],
+                                   area_dict['PCS_ID'],
+                                   area_dict['PCS_DEF'],
+                                   area_dict['XSIZE'],
+                                   area_dict['YSIZE'],
+                                   area_dict['AREA_EXTENT'])
 
 def _create_area(area_id, area_content):
     """Parse area configuration"""

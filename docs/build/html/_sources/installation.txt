@@ -3,7 +3,7 @@ Installing Pyresample
 Pyresample depends on pyproj, numpy(>= 1.3), scipy(>= 0.7), multiprocessing 
 (builtin package for Python > 2.5) and configobj.
 
-The packages pyproj, numpy and scipy do not easy_install well so they will not be installed automatically 
+The packages pyproj, numpy and scipy do not easy_install well so they will not be installed autmatically 
 when installing this package with easy_install.
 
 Install pyproj and the correct versions of numpy and scipy on your system 
@@ -25,7 +25,7 @@ Package installation
 ********************
 A sandbox environment can be created for pyresample using `Virtualenv <http://pypi.python.org/pypi/virtualenv>`_
  
-Install Pyresample using setuptools:
+Install Pyresample:
 
 .. code-block:: bash
 

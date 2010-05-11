@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using multiple processor cores &mdash; pyresample v0.5.2 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.5.2',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pyresample v0.5.2 documentation" href="index.html" />
+    <link rel="next" title="Preprocessing of grids" href="preproc.html" />
+    <link rel="prev" title="Resampling of swath data" href="swath.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="preproc.html" title="Preprocessing of grids"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="swath.html" title="Resampling of swath data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-multiple-processor-cores">
+<h1>Using multiple processor cores<a class="headerlink" href="#using-multiple-processor-cores" title="Permalink to this headline">¶</a></h1>
+<p>Bottlenecks of pyresample can be executed in parallel. Parallel computing can be executed if the
+pyresample function has the <strong>nprocs</strong> keyword argument. <strong>nprocs</strong> specifies the number of processes
+to be used for calculation.</p>
+<p>Example of resampling in parallel using 4 processes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;8.00&#39;</span><span class="p">,</span> <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;stere&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">1370912.72</span><span class="p">,</span> <span class="o">-</span><span class="mf">909968.64</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">lats</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note: Do not use more processes than available processor cores. As there is a process creation overhead
+there might be neglible performance improvement using say 8 compared to 4 processor cores.
+Test on the actual system to determine the most sensible number of processes to use.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="swath.html"
+                                  title="previous chapter">Resampling of swath data</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="preproc.html"
+                                  title="next chapter">Preprocessing of grids</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/multi.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="preproc.html" title="Preprocessing of grids"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="swath.html" title="Resampling of swath data"
+             >previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>

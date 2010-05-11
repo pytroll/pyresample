@@ -5,7 +5,7 @@
 
 Pyresample
 ======================================
-Pyresample is a Python package for resampling (reprojection) of earth observing satellite data.
+Pyresample is a Python package for reprojection (resampling) of earth observing satellite data.
 Pyresample handles both resampling of gridded data (e.g. geostationary satellites) and swath data (polar orbiting satellites). 
 Pyresample can use multiple processor cores for resampling. Pyresample supports masked arrays.
 

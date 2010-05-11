@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Resampling of swath data &mdash; pyresample v0.5.2 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.5.2',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pyresample v0.5.2 documentation" href="index.html" />
+    <link rel="next" title="Using multiple processor cores" href="multi.html" />
+    <link rel="prev" title="Resampling of gridded data" href="grid.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="multi.html" title="Using multiple processor cores"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Resampling of gridded data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="resampling-of-swath-data">
+<h1>Resampling of swath data<a class="headerlink" href="#resampling-of-swath-data" title="Permalink to this headline">¶</a></h1>
+<p>Pyresample can be used to resample a swath dataset to a grid. Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function or bucket resampling.</p>
+<div class="section" id="pyresample-swath">
+<h2>pyresample.swath<a class="headerlink" href="#pyresample-swath" title="Permalink to this headline">¶</a></h2>
+<p>This module contains several functions for resampling swath data.</p>
+<p>Note distance calculation is approximated with cartesian distance.</p>
+<p>Masked arrays can be used as data input. In order to have undefined pixels masked out instead of
+assigned a fill value set <strong>fill_value=None</strong> when calling the <strong>resample_*</strong> function.</p>
+<div class="section" id="resample-nearest">
+<h3>resample_nearest<a class="headerlink" href="#resample-nearest" title="Permalink to this headline">¶</a></h3>
+<p>Function for resampling using nearest neighbour method.</p>
+<p>Example showing how to resample a generated swath dataset to a grid using nearest neighbour method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;8.00&#39;</span><span class="p">,</span> <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;stere&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">1370912.72</span><span class="p">,</span> <span class="o">-</span><span class="mf">909968.64</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">lats</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Lons, lats and data arguments are numpy arrays. Lons and lats are 1D arrays and data is either a 1D array or an array of shape (swath_size, channels).</p>
+<p>Note the keyword arguments:</p>
+<ul class="simple">
+<li><strong>radius_of_influence</strong>: The radius around each grid pixel in meters to search for neighbours in the swath.</li>
+<li><strong>epsilon</strong>: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.</li>
+</ul>
+<p>If <strong>data</strong> if a masked array the mask will follow the neighbour pixel assignment.</p>
+</div>
+<div class="section" id="resample-gauss">
+<h3>resample_gauss<a class="headerlink" href="#resample-gauss" title="Permalink to this headline">¶</a></h3>
+<p>Function for resampling using nearest Gussian weighting. The Gauss weigh function is defined as exp(-dist^2/sigma^2).</p>
+<p>Example showing how to resample a generated swath dataset to a grid using Gaussian weighting:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;8.00&#39;</span><span class="p">,</span> <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;stere&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">1370912.72</span><span class="p">,</span> <span class="o">-</span><span class="mf">909968.64</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">resample_gauss</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">lats</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">sigmas</span><span class="o">=</span><span class="mi">25000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If more channels are present in <strong>data</strong> the keyword argument <strong>sigmas</strong> must be a list containing a sigma for each channel.</p>
+<p>If <strong>data</strong> if a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
+</div>
+<div class="section" id="resample-custom">
+<h3>resample_custom<a class="headerlink" href="#resample-custom" title="Permalink to this headline">¶</a></h3>
+<p>Function for resampling using arbitrary radial weight functions.</p>
+<p>Example showing how to resample a generated swath dataset to a grid using an arbitrary radial weight function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;8.00&#39;</span><span class="p">,</span> <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;stere&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">1370912.72</span><span class="p">,</span> <span class="o">-</span><span class="mf">909968.64</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="o">/</span><span class="mf">100000.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span>  <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">resample_custom</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">lats</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span> <span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">weight_funcs</span><span class="o">=</span><span class="n">wf</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If more channels are present in <strong>data</strong> the keyword argument <strong>weight_funcs</strong> must be a list containing a radial function for each channel.</p>
+<p>If <strong>data</strong> if a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
+</div>
+<div class="section" id="resampling-from-neighbour-info">
+<h3>Resampling from neighbour info<a class="headerlink" href="#resampling-from-neighbour-info" title="Permalink to this headline">¶</a></h3>
+<p>The resampling can be split in two steps:</p>
+<p>First get arrays containing information about the nearest neighbours to each grid point.
+Then use these arrays to retrive the resampling result.</p>
+<p>This approch can be useful if several datasets based on the same swath are to be resampled. The computational
+heavy task of calculating the neighbour information can be done once and the result can be used to
+retrieve the resampled data from each of the datasets fast.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;8.00&#39;</span><span class="p">,</span> <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;stere&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">1370912.72</span><span class="p">,</span> <span class="o">-</span><span class="mf">909968.64</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">valid_index</span><span class="p">,</span> <span class="n">index_array</span><span class="p">,</span> <span class="n">distance_array</span> <span class="o">=</span> \
+<span class="gp">... </span>                       <span class="n">swath</span><span class="o">.</span><span class="n">get_neighbour_info</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">lats</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span>                                                <span class="n">area_def</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span>
+<span class="gp">... </span>                                                <span class="n">neighbours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">get_sample_from_neighbour_info</span><span class="p">(</span><span class="s">&#39;nn&#39;</span><span class="p">,</span> <span class="n">area_def</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">... </span>                                           <span class="n">valid_index</span><span class="p">,</span> <span class="n">index_array</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note the keyword argument <strong>neighbours=1</strong>. This specifies only to consider one neighbour for each
+grid point (the nearest neighbour). Also note <strong>distance_array</strong> is not a required argument for
+<strong>get_sample_from_neighbour_info</strong> when using nearest neighbour resampling</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Resampling of swath data</a><ul>
+<li><a class="reference external" href="#pyresample-swath">pyresample.swath</a><ul>
+<li><a class="reference external" href="#resample-nearest">resample_nearest</a></li>
+<li><a class="reference external" href="#resample-gauss">resample_gauss</a></li>
+<li><a class="reference external" href="#resample-custom">resample_custom</a></li>
+<li><a class="reference external" href="#resampling-from-neighbour-info">Resampling from neighbour info</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="grid.html"
+                                  title="previous chapter">Resampling of gridded data</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="multi.html"
+                                  title="next chapter">Using multiple processor cores</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/swath.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="multi.html" title="Using multiple processor cores"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Resampling of gridded data"
+             >previous</a> |</li>
+        <li><a href="index.html">pyresample v0.5.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>
