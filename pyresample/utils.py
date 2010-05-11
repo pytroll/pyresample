@@ -85,27 +85,6 @@ def parse_area_file(area_file_name, *regions):
                                    (area_list[i], area_file_name))    
     return area_defs
 
-def area_dict_to_area_def(area_dict):
-    """Construct AreaDefinition object from dictionary
-    
-    :Parameters:
-    area_dict : dict
-        Dict containing areadefinition parameters. Dict keys are the ones
-        used in area definition files
-    
-    :Returns: 
-    area_def : object
-        AreaDefinition object
-    """
-    
-    return geometry.AreaDefinition(area_dict['PCS_ID'],
-                                   area_dict['NAME'],
-                                   area_dict['PCS_ID'],
-                                   area_dict['PCS_DEF'],
-                                   area_dict['XSIZE'],
-                                   area_dict['YSIZE'],
-                                   area_dict['AREA_EXTENT'])
-
 def _create_area(area_id, area_content):
     """Parse area configuration"""
     
