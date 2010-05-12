@@ -15,9 +15,10 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '0.5.3'
-
 import grid
 import image
 import swath
 import utils
+import version
+
+__version__ = version.__version__

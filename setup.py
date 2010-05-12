@@ -16,9 +16,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from setuptools import setup, Extension
+import sys
+import os
+
+sys.path.append(os.path.abspath('pyresample'))
+import version
 
 setup(name='pyresample',
-      version='0.5.3',
+      version=version.__version__,
       description='Resampling of remote sensing data in Python',
       author='Esben S. Nielsen',
       author_email='esn@dmi.dk',
