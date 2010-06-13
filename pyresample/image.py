@@ -118,7 +118,8 @@ class ImageContainerQuick(ImageContainer):
         """
         
         if not isinstance(target_area_def, geometry.AreaDefinition):
-            raise TypeError, 'area_def must be dict.'        
+            raise TypeError('target_area_def must be of type '
+                            'geometry.AreaDefinition')        
         
         resampled_image = grid.get_resampled_image(target_area_def,
                                                    self.area_def,
@@ -175,7 +176,7 @@ class ImageContainerNearest(ImageContainer):
             ImageContainer object of resampled area   
         """
         
-        lons, lats = self.area_def.get_lonlats(nprocs)
+        #lons, lats = self.area_def.get_lonlats(nprocs)
         if self.image_data.ndim > 2:
             image_data = self.image_data.reshape(self.image_data.shape[0] * 
                                                  self.image_data.shape[1], 
@@ -183,7 +184,7 @@ class ImageContainerNearest(ImageContainer):
         else:
             image_data = self.image_data.ravel()
                    
-        resampled_image = swath.resample_nearest(lons.ravel(), lats.ravel(), 
+        resampled_image = swath.resample_nearest(self.area_def, 
                                                  image_data, 
                                                  target_area_def,
                                                  self.radius_of_influence, 

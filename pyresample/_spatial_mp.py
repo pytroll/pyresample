@@ -147,7 +147,7 @@ class Proj_MP(pyproj.Proj):
 
 class Cartesian(object):
     
-    def transform_latlons(self, lons, lats):
+    def transform_lonlats(self, lons, lats):
     
         coords = numpy.zeros((lons.size, 3))
         coords[:, 0] = R*numpy.cos(numpy.radians(lats))*numpy.cos(numpy.radians(lons))
@@ -164,7 +164,7 @@ class Cartesian_MP(object):
         self._chunk = chunk
         self._schedule = schedule
     
-    def transform_latlons(self, lons, lats):
+    def transform_lonlats(self, lons, lats):
         n = lons.size
         
         #Create shared memory

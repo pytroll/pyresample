@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
                                     5568742.4000000004]
                                     )
 
-    def test_image(self):        
+    def test_image(self):
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         msg_con = image.ImageContainerQuick(data, self.msg_area)
         area_con = msg_con.resample(self.area_def)
@@ -89,7 +89,8 @@ class Test(unittest.TestCase):
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected), msg='Failed to resample masked array')
         
-    def test_nearest_neighbour(self):
+    @tmp
+    def test_nearest_neighbour(self):        
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
         area_con = msg_con.resample(self.area_def)
@@ -99,7 +100,7 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(cross_sum, expected, 
                                    msg='ImageContainer resampling nearest neighbour failed')
         
-    def test_nearest_neighbour_multi(self):
+    def test_nearest_neighbour_multi(self):        
         data1 = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         data2 = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712)) * 2
         data = numpy.dstack((data1, data2))

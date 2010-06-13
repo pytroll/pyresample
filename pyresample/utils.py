@@ -142,32 +142,32 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     return geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size,
                                y_size, area_extent)
   
-def generate_cartesian_grid(area_def, nprocs=1):
-    """Generate the cartesian coordinates grid of the area
-    
-    :Parameters:
-    area_def : object
-        Area definition as AreaDefinition object
-    nprocs : int, optional 
-        Number of processor cores to be used
-    
-    :Returns: 
-    grid : numpy array
-        Cartesian grid
-    """
-    
-    if nprocs > 1:
-        cartesian = _spatial_mp.Cartesian_MP(nprocs)
-    else:
-        cartesian = _spatial_mp.Cartesian()
-     
-    grid_lons, grid_lats = area_def.get_lonlats(nprocs)
-    
-    shape = list(grid_lons.shape)
-    shape.append(3)
-    cart_coords = cartesian.transform_latlons(grid_lons.ravel(),
-                                              grid_lats.ravel())
-    return cart_coords.reshape(shape)
+#def generate_cartesian_grid(area_def, nprocs=1):
+#    """Generate the cartesian coordinates grid of the area
+#    
+#    :Parameters:
+#    area_def : object
+#        Area definition as AreaDefinition object
+#    nprocs : int, optional 
+#        Number of processor cores to be used
+#    
+#    :Returns: 
+#    grid : numpy array
+#        Cartesian grid
+#    """
+#    
+#    if nprocs > 1:
+#        cartesian = _spatial_mp.Cartesian_MP(nprocs)
+#    else:
+#        cartesian = _spatial_mp.Cartesian()
+#     
+#    grid_lons, grid_lats = area_def.get_lonlats(nprocs)
+#    
+#    shape = list(grid_lons.shape)
+#    shape.append(3)
+#    cart_coords = cartesian.transform_latlons(grid_lons.ravel(),
+#                                              grid_lats.ravel())
+#    return cart_coords.reshape(shape)
     
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
@@ -227,11 +227,10 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     (row_indices, col_indices) : list of numpy arrays
     """
     
-    lons, lats = source_area_def.get_lonlats(nprocs)
+    #lons, lats = source_area_def.get_lonlats(nprocs)
     
-    valid_index, index_array, distance_array = \
-                                swath.get_neighbour_info(lons.ravel(), 
-                                                         lats.ravel(), 
+    valid_input_index, valid_output_index, index_array, distance_array = \
+                                swath.get_neighbour_info(source_area_def, 
                                                          target_area_def, 
                                                          radius_of_influence, 
                                                          neighbours=1,
@@ -243,11 +242,11 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
                            dtype=np.int).ravel()
     
     #Reduce to match resampling data set
-    rows_valid = rows[valid_index]
-    cols_valid = cols[valid_index]
+    rows_valid = rows[valid_input_index]
+    cols_valid = cols[valid_input_index]
     
     #Get result using array indexing
-    number_of_valid_points = valid_index.sum()
+    number_of_valid_points = valid_input_index.sum()
     index_mask = (index_array == number_of_valid_points)
     index_array[index_mask] = 0
     row_sample = rows_valid[index_array]

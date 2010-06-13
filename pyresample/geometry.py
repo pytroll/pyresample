@@ -15,14 +15,97 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Classes for goemetry operations"""
+"""Classes for geometry operations"""
 
 import numpy as np
 
 import _spatial_mp
 
 
-class AreaDefinition(object):    
+class BaseDefinition(object):
+    
+    def __init__(self, lons=None, lats=None, 
+                 cartesian_coords=None, nprocs=1):
+        self.nprocs = nprocs
+        self._lons = lons
+        self._lats = lats
+        self._cartesian_coords = cartesian_coords
+    
+    def get_lonlats(self, *args, **kwargs):
+        if self._lons is None or self._lats is None:
+            raise ValueError('lon/lat values are not defined')
+        return self._lons, self._lats   
+#    def get_lonlats(self, *args, **kwargs):
+#        raise NotImplementedError('Method "get_lonlats" not implemented ' 
+#                                  'in base class')
+    
+    def get_cartesian_coords(self, nprocs=None):
+        if self._cartesian_coords is None:
+            if nprocs is None:
+                nprocs = self.nprocs
+                
+            if nprocs > 1:
+                cartesian = _spatial_mp.Cartesian_MP(nprocs)
+            else:
+                cartesian = _spatial_mp.Cartesian()
+            
+            lons, lats = self.get_lonlats(nprocs)
+            cartesian_coords = cartesian.transform_lonlats(lons.ravel(), 
+                                                           lats.ravel())
+            if lons.ndim > 1:
+                cartesian_coords = cartesian_coords.reshape(lons.shape[0], 
+                                                            lons.shape[1], 3)
+                
+        else:
+            cartesian_coords = self._cartesian_coords
+            
+        return cartesian_coords
+    
+    @property
+    def lons(self):
+        if self._lons is None:
+            self._lons, self._lats = self.get_lonlats()
+        return self._lons
+    
+    @property
+    def lats(self):
+        if self._lats is None:
+            self._lons, self._lats = self.get_lonlats()
+        return self._lats
+    
+    @property
+    def cartesian_coords(self):
+        if self._cartesian_coords is None:
+            self._cartesian_coords = self.get_cartesian_coords()
+        return self._cartesian_coords
+ 
+ 
+class CoordinateDefinition(BaseDefinition):
+ 
+    def __init__(self, lons=None, lats=None, cartesian_coords=None, 
+                 nprocs=1):
+        if (lons is not None or lats is not None):
+            self.shape = lons.shape
+            self.size = lons.size
+        elif cartesian_coords is not None:
+            self.shape = cartesian_coords.shape[:-1]
+            self.size = cartesian_coords.size // 3
+        else:
+            raise ValueError(('%s must be created with either '
+                             'lon/lats or cartesian coordinates') % 
+                             self.__class__.__name__)
+        super(CoordinateDefinition, self).__init__(lons, lats, 
+                                                   cartesian_coords, nprocs)
+
+
+class GridDefinition(CoordinateDefinition):
+ 
+    def __init__(self, lons=None, lats=None, cartesian_coords=None, nprocs=1):
+        super(GridDefinition, self).__init__(lons, lats, 
+                                             cartesian_coords, nprocs)
+
+
+class AreaDefinition(BaseDefinition):    
     """Holds definition of an area.
 
     :Parameters:
@@ -63,21 +146,24 @@ class AreaDefinition(object):
     pixel_upper_left : list 
         Coordinates (x, y) of center of upper left pixel in projection units
     pixel_offset_x : float 
-        x offset between projection center and upper left corner of upper left pixel 
-        in units of pixels.
+        x offset between projection center and upper left corner of upper 
+        left pixel in units of pixels.
     pixel_offset_y : float 
-        y offset between projection center and upper left corner of upper left pixel 
-        in units of pixels..
+        y offset between projection center and upper left corner of upper 
+        left pixel in units of pixels..
     proj4_string : str
         Projection defined as Proj.4 string
     """
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent):
+                 area_extent, nprocs=1, lons=None, lats=None, 
+                 cartesian_coords=None):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
 
+        super(AreaDefinition, self).__init__(lons, lats, cartesian_coords,
+                                             nprocs)
         self.area_id = area_id
         self.name = name
         self.proj_id = proj_id
@@ -89,7 +175,7 @@ class AreaDefinition(object):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
         self.proj_dict = proj_dict
         self.area_extent = tuple(area_extent)
-        
+                
         #Calculate projection coordinates of center of upper left pixel
         self.pixel_upper_left = \
                               (float(area_extent[0]) + 
@@ -122,19 +208,24 @@ class AreaDefinition(object):
         (lon, lat) : list of floats
         """
         
-        #Negative indices wrap-around
-        if row < 0:
-            row = self.x_size + row
-        if col < 0:
-            col = self.y_size + col
-        
-        #Get projection coordinates of point
-        x_coord = self.pixel_upper_left[0] + col * self.pixel_size_x
-        y_coord = self.pixel_upper_left[1] - row * self.pixel_size_y
-        
-        #Reproject
-        proj = _spatial_mp.Proj(**self.proj_dict)
-        lon, lat = proj(x_coord, y_coord, inverse=True)
+        if self._lons is None or self._lats is None:
+            #Negative indices wrap-around
+            if row < 0:
+                row = self.x_size + row
+            if col < 0:
+                col = self.y_size + col
+            
+            #Get projection coordinates of point
+            x_coord = self.pixel_upper_left[0] + col * self.pixel_size_x
+            y_coord = self.pixel_upper_left[1] - row * self.pixel_size_y
+            
+            #Reproject
+            proj = _spatial_mp.Proj(**self.proj_dict)
+            lon, lat = proj(x_coord, y_coord, inverse=True)
+        else:
+            lon = self._lons[row, col]
+            lat = self._lats[row, col]
+            
         return lon, lat
     
     def get_proj_coords(self):
@@ -158,7 +249,7 @@ class AreaDefinition(object):
                                     self.x_size))
         return target_x, target_y
     
-    def get_lonlats(self, nprocs=1):
+    def get_lonlats(self, nprocs=None):
         """Returns lon and lat arrays of area.
     
         :Parameters:        
@@ -169,24 +260,31 @@ class AreaDefinition(object):
         (lons, lats) : list of numpy arrays
             Grids of area lons and and lats
         """        
-    
-        #Proj.4 definition of target area projection
-        if nprocs > 1:
-            target_proj = _spatial_mp.Proj_MP(**self.proj_dict)
+        
+        if self._lons is None or self._lats is None:
+            if nprocs is None:
+                nprocs = self.nprocs
+                
+            #Proj.4 definition of target area projection
+            if nprocs > 1:
+                target_proj = _spatial_mp.Proj_MP(**self.proj_dict)
+            else:
+                target_proj = _spatial_mp.Proj(**self.proj_dict)
+        
+            #Get coordinates of local area as ndarrays
+            target_x, target_y = self.get_proj_coords()
+            
+            #Get corresponding longitude and latitude values
+            lons, lats = target_proj(target_x, target_y, inverse=True,
+                                     nprocs=nprocs)        
+            
+            #Free memory
+            del(target_x)
+            del(target_y)
         else:
-            target_proj = _spatial_mp.Proj(**self.proj_dict)
-    
-        #Get coordinates of local area as ndarrays
-        target_x, target_y = self.get_proj_coords()
-        
-        #Get corresponding longitude and latitude values
-        lons, lats = target_proj(target_x, target_y, inverse=True,
-                                 nprocs=nprocs)        
-        
-        #Free memory
-        del(target_x)
-        del(target_y)
-    
+            lons = self._lons
+            lats = self._lats
+            
         return lons, lats
 
     @property
@@ -195,3 +293,12 @@ class AreaDefinition(object):
         
         items = self.proj_dict.items()
         return '+' + ' +'.join([ t[0] + '=' + t[1] for t in items])         
+
+    
+class SwathDefinition(CoordinateDefinition):
+ 
+    def __init__(self, lons, lats, cartesian_coords=None, nprocs=1):
+        super(SwathDefinition, self).__init__(lons, lats, cartesian_coords, 
+                                              nprocs)
+        
+    
