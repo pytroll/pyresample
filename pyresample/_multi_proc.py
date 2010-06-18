@@ -18,7 +18,7 @@
 import ctypes
 
 import multiprocessing as mp
-import numpy
+import numpy as np
 
 class Scheduler(object):
     
@@ -75,18 +75,18 @@ class Scheduler(object):
 
 def shmem_as_ndarray(raw_array):
     _ctypes_to_numpy = {
-                        ctypes.c_char : numpy.int8,
-                        ctypes.c_wchar : numpy.int16,
-                        ctypes.c_byte : numpy.int8,
-                        ctypes.c_ubyte : numpy.uint8,
-                        ctypes.c_short : numpy.int16,
-                        ctypes.c_ushort : numpy.uint16,
-                        ctypes.c_int : numpy.int32,
-                        ctypes.c_uint : numpy.int32,
-                        ctypes.c_long : numpy.int32,
-                        ctypes.c_ulong : numpy.int32,
-                        ctypes.c_float : numpy.float32,
-                        ctypes.c_double : numpy.float64
+                        ctypes.c_char : np.int8,
+                        ctypes.c_wchar : np.int16,
+                        ctypes.c_byte : np.int8,
+                        ctypes.c_ubyte : np.uint8,
+                        ctypes.c_short : np.int16,
+                        ctypes.c_ushort : np.uint16,
+                        ctypes.c_int : np.int32,
+                        ctypes.c_uint : np.int32,
+                        ctypes.c_long : np.int32,
+                        ctypes.c_ulong : np.int32,
+                        ctypes.c_float : np.float32,
+                        ctypes.c_double : np.float64
                         }
     address = raw_array._wrapper.get_address()
     size = raw_array._wrapper.get_size()
@@ -95,10 +95,10 @@ def shmem_as_ndarray(raw_array):
     d = Dummy()
     d.__array_interface__ = {
                              'data' : (address, False),
-                             'typestr' : numpy.dtype(numpy.uint8).str,
-                             'descr' : numpy.dtype(numpy.uint8).descr,
+                             'typestr' : np.dtype(np.uint8).str,
+                             'descr' : np.dtype(np.uint8).descr,
                              'shape' : (size,),
                              'strides' : None,
                              'version' : 3
                              }                            
-    return numpy.asarray(d).view(dtype=dtype)
+    return np.asarray(d).view(dtype=dtype)

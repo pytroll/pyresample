@@ -25,6 +25,11 @@ import _spatial_mp
 class BaseDefinition(object):
     
     def __init__(self, lons=None, lats=None, nprocs=1):
+        if type(lons) != type(lats):
+            raise TypeError('lons and lats must be of same type')
+        elif lons is not None:
+            if lons.shape != lats.shape:
+                raise ValueError('lons and lats must have same shape')
         self.nprocs = nprocs
         self._lons = lons
         self._lats = lats
@@ -120,6 +125,8 @@ class AreaDefinition(BaseDefinition):
     :Parameters:
     area_id : str 
         ID of area
+    name : str
+        Name of area
     proj_id : str 
         ID of projection
     proj_dict : dict 
@@ -130,10 +137,18 @@ class AreaDefinition(BaseDefinition):
         y dimension in number of pixels    
     area_extent : list 
         Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+    nprocs : int, optional 
+        Number of processor cores to be used
+    lons : numpy array, optional
+        Grid lons
+    lats : numpy array, optional
+        Grid lats
     
     :Attributes:
     area_id : str         
         ID of area
+    name : str
+        Name of area
     proj_id : str         
         ID of projection
     proj_dict : dict        
@@ -160,8 +175,16 @@ class AreaDefinition(BaseDefinition):
     pixel_offset_y : float 
         y offset between projection center and upper left corner of upper 
         left pixel in units of pixels..
+    
+    Properties:
     proj4_string : str
         Projection defined as Proj.4 string
+    lons : numpy array
+        Grid lons
+    lats : numpy array
+        Grid lats
+    cartesian_coords : numpy array
+        Grid cartesian coordinates
     """
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
@@ -177,6 +200,10 @@ class AreaDefinition(BaseDefinition):
         self.x_size = x_size
         self.y_size = y_size
         self.shape = (y_size, x_size)
+        if lons is not None:
+            if lons.shape != self.shape:
+                raise ValueError('Shape of lon lat grid must match '
+                                 'area definition')
         self.size = y_size * x_size
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(x_size)

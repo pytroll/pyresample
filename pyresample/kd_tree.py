@@ -463,7 +463,6 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     
     valid_out = ((t_lons >= -180) * (t_lons <= 180) * 
                   (t_lats <= 90) * (t_lats >= -90))
-    print valid_out.size, valid_out.sum()
     
     #Find valid output points
     valid_output_index = (valid_output_index & valid_out)
