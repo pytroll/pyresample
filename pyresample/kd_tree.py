@@ -27,8 +27,6 @@ import data_reduce
 import _spatial_mp
 #import _resample_iter
 
-#Earth radius
-R = 6371000
 
 #class _AreaDefContainer:
 #    
@@ -343,10 +341,6 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                                     epsilon=epsilon, 
                                                     reduce_data=reduce_data, 
                                                     nprocs=nprocs)
-    import h5py
-    h5out = h5py.File('/home/esn/tmp/06.h5', 'w')
-    h5out['index_array'] = index_array
-    h5out.close()
     
     return get_sample_from_neighbour_info(resample_type, 
                                           target_geo_def.shape, 
@@ -408,8 +402,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     elif not isinstance(target_geo_def, geometry.BaseDefinition):
         raise typeError('target_geo_def must be of geometry type')
     
-    lons = source_geo_def.lons.ravel()
-    lats = source_geo_def.lats.ravel()
+    s_lons = source_geo_def.lons.ravel()
+    s_lats = source_geo_def.lats.ravel()
+    
+    t_lons = target_geo_def.lons.ravel()
+    t_lats = target_geo_def.lats.ravel()
     
     #Check validity of input
 #    if not (isinstance(lons, np.ndarray) and 
@@ -430,7 +427,8 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         raise TypeError('epsilon must be number')
     
     #Find invalid data points 
-    valid_data = (lons >= -180) * (lons <= 180) * (lats <= 90) * (lats >= -90)
+    valid_data = ((s_lons >= -180) * (s_lons <= 180) * 
+                  (s_lats <= 90) * (s_lats >= -90))
     valid_input_index = np.ones(source_geo_def.size).astype(np.bool)
     valid_output_index = np.ones(target_geo_def.size).astype(np.bool)
     
@@ -444,9 +442,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition))):
             valid_input_index = \
-                data_reduce.get_valid_index_from_cartesian_grid(
-                                            target_geo_def.cartesian_coords, 
-                                            lons, lats, radius_of_influence)
+                data_reduce.get_valid_index_from_lonlat_grid(
+                                            target_geo_def.lons,
+                                            target_geo_def.lats, 
+                                            s_lons, s_lats, 
+                                            radius_of_influence)
         elif isinstance(source_geo_def, (geometry.GridDefinition, 
                                          geometry.AreaDefinition)) and \
              isinstance(target_geo_def, geometry.CoordinateDefinition):
@@ -454,19 +454,26 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                 data_reduce.get_valid_index_from_lonlat_grid(
                                             source_geo_def.lons,
                                             source_geo_def.lats, 
-                                            target_geo_def.lons.ravel(), 
-                                            target_geo_def.lats.ravel(), 
+                                            t_lons, 
+                                            t_lats, 
                                             radius_of_influence)
             valid_output_index = valid_output_index.astype(np.bool)
         else:
             pass
     
+    valid_out = ((t_lons >= -180) * (t_lons <= 180) * 
+                  (t_lats <= 90) * (t_lats >= -90))
+    print valid_out.size, valid_out.sum()
+    
+    #Find valid output points
+    valid_output_index = (valid_output_index & valid_out)
+    
     #Find valid data points    
     valid_input_index = (valid_data & valid_input_index)
     if(isinstance(valid_input_index, np.ma.core.MaskedArray)):
         valid_input_index = valid_input_index.filled(False)
-    lons = lons[valid_input_index]
-    lats = lats[valid_input_index]
+    s_lons = s_lons[valid_input_index]
+    s_lats = s_lats[valid_input_index]
     
      
     if nprocs > 1:
@@ -476,11 +483,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     
     
     #Transform reduced swath dataset to cartesian
-    swath_size = lons.size
-    swath_coords = cartesian.transform_lonlats(lons, lats)
+    swath_size = s_lons.size
+    swath_coords = cartesian.transform_lonlats(s_lons, s_lats)
         
-    del(lons)
-    del(lats)
+    del(s_lons)
+    del(s_lats)
     
     #Build kd-tree on swath
     if nprocs > 1:        

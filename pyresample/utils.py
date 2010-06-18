@@ -20,7 +20,7 @@
 import numpy as np
 from configobj import ConfigObj
 
-import geometry, swath
+import geometry, grid, kd_tree
 import _spatial_mp
 
 class AreaNotFound(Exception):
@@ -184,28 +184,35 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     :Returns: 
     (row_indices, col_indices) : list of numpy arrays
     """
-        
+    if not (isinstance(source_area_def, geometry.AreaDefinition) and
+            isinstance(target_area_def, geometry.AreaDefinition)):
+        raise TypeError('source_area_def and target_area_def must be of type '
+                        'geometry.AreaDefinition')
+            
     lons, lats = target_area_def.get_lonlats(nprocs)
     
-    #Proj.4 definition of source area projection
-    if nprocs > 1:
-        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
-    else:
-        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
-
-    #Get cartesian projection values from longitude and latitude 
-    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
-
-    #Free memory
-    del(lons)
-    del(lats)
-    
-    #Find corresponding pixels (element by element conversion of ndarrays)
-    source_pixel_x = (source_x/source_area_def.pixel_size_x + \
-                      source_area_def.pixel_offset_x).astype('int')
-    
-    source_pixel_y = (source_area_def.pixel_offset_y - \
-                     source_y/source_area_def.pixel_size_y).astype('int')
+#    #Proj.4 definition of source area projection
+#    if nprocs > 1:
+#        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
+#    else:
+#        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
+#
+#    #Get cartesian projection values from longitude and latitude 
+#    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
+#
+#    #Free memory
+#    del(lons)
+#    del(lats)
+#    
+#    #Find corresponding pixels (element by element conversion of ndarrays)
+#    source_pixel_x = (source_x/source_area_def.pixel_size_x + \
+#                      source_area_def.pixel_offset_x).astype('int')
+#    
+#    source_pixel_y = (source_area_def.pixel_offset_y - \
+#                     source_y/source_area_def.pixel_size_y).astype('int')
+    source_pixel_y, source_pixel_x = grid.get_linesample(lons, lats, 
+                                                         source_area_def, 
+                                                         nprocs=nprocs)
                      
     return source_pixel_y, source_pixel_x
 
@@ -229,12 +236,17 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     
     #lons, lats = source_area_def.get_lonlats(nprocs)
     
+    if not (isinstance(source_area_def, geometry.AreaDefinition) and
+            isinstance(target_area_def, geometry.AreaDefinition)):
+        raise TypeError('source_area_def and target_area_def must be of type '
+                        'geometry.AreaDefinition')
+    
     valid_input_index, valid_output_index, index_array, distance_array = \
-                                swath.get_neighbour_info(source_area_def, 
-                                                         target_area_def, 
-                                                         radius_of_influence, 
-                                                         neighbours=1,
-                                                         nprocs=nprocs)
+                            kd_tree.get_neighbour_info(source_area_def, 
+                                                       target_area_def, 
+                                                       radius_of_influence, 
+                                                       neighbours=1,
+                                                       nprocs=nprocs)
     #Enumerate rows and cols
     rows = np.fromfunction(lambda i, j: i, source_area_def.shape, 
                            dtype=np.int).ravel()

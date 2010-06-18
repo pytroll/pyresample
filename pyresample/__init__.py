@@ -17,7 +17,7 @@
 
 import grid
 import image
-import swath
+import kd_tree
 import utils
 import version
 

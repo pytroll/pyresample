@@ -19,7 +19,7 @@
 
 import numpy as np
 
-import geometry, grid, swath 
+import geometry, grid, kd_tree
 
 
 class ImageContainer(object):
@@ -39,15 +39,31 @@ class ImageContainer(object):
         Area definition as AreaDefinition object    
     """
         
-    def __init__(self, image_data, area_def):
+    def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
         if not isinstance(image_data, (np.ndarray, np.ma.core.MaskedArray)):
             raise TypeError('image_data must be either an ndarray'
                             ' or a masked array')
-        if not isinstance(area_def, geometry.AreaDefinition):
-            raise TypeError('area_def must be of type AreaDefinition')
-
+        elif ((image_data.ndim > geo_def.ndim + 1) or 
+              (image_data.ndim < geo_def.ndim)):
+                raise ValueError(('Unexpected number of dimensions for '
+                                 'image_data: ') % image_data.ndim)
+        for i, size in enumerate(geo_def.shape):
+            if image_data.shape[i] != size:
+                raise ValueError(('Size mismatch for image_data. Expected '
+                                  'size %s for dimension %s and got %s') %
+                                  (size, i, image_data.shape[i])) 
+        
+        self.shape = geo_def.shape
+        self.size = geo_def.size
+        self.ndim = geo_def.ndim
         self.image_data = image_data
-        self.area_def = area_def        
+        if image_data.ndim > geo_def.ndim:
+            self.channels = image_data.shape[-1]
+        else:
+            self.channels = 1
+        self.geo_def = geo_def
+        self.fill_value = fill_value
+        self.nprocs = nprocs        
         
     def __str__(self):
         return 'Image:\n %s'%self.image_data.__str__()
@@ -55,12 +71,11 @@ class ImageContainer(object):
     def __repr__(self): 
         return self.image_data.__repr__()
         
-    def resample(self, *args, **kwargs):
+    def resample(self, target_geo_def):
         raise NotImplementedError('Method "resample" is not implemented ' 
                                   'in class %s' % self.__class__.__name__)
 
-    def get_array_from_linesample(self, row_indices, col_indices,
-                                  fill_value=0):
+    def get_array_from_linesample(self, row_indices, col_indices):
         """Samples from image based on index arrays.
 
         :Parameters:
@@ -78,7 +93,13 @@ class ImageContainer(object):
         """
         
         return grid.get_image_from_linesample(row_indices, col_indices,
-                                              self.image_data, fill_value)
+                                              self.image_data, 
+                                              self.fill_value)
+        
+    def get_array_from_neighbour_info(self, *args, **kwargs):
+        raise NotImplementedError('Method "get_array_from_neighbour_info" is '
+                                  'not implemented in class %s' % 
+                                  self.__class__.__name__)
 
 
 class ImageContainerQuick(ImageContainer):
@@ -98,7 +119,15 @@ class ImageContainerQuick(ImageContainer):
         Area definition as AreaDefinition object    
     """
 
-    def resample(self, target_area_def, fill_value=0, nprocs=1):
+    def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
+        if not isinstance(geo_def, geometry.AreaDefinition):
+            raise TypeError('area_def must be of type '
+                            'geometry.AreaDefinition')    
+        super(ImageContainerQuick, self).__init__(image_data, geo_def, 
+                                                  fill_value=fill_value, 
+                                                  nprocs=nprocs)
+
+    def resample(self, target_area_def):
         """Resamples image to area definition using nearest neighbour 
         approach in projection coordinates
         
@@ -115,17 +144,13 @@ class ImageContainerQuick(ImageContainer):
         :Returns: 
         image_container : object
             ImageContainer object of resampled area   
-        """
-        
-        if not isinstance(target_area_def, geometry.AreaDefinition):
-            raise TypeError('target_area_def must be of type '
-                            'geometry.AreaDefinition')        
+        """        
         
         resampled_image = grid.get_resampled_image(target_area_def,
-                                                   self.area_def,
+                                                   self.geo_def,
                                                    self.image_data,
-                                                   fill_value,
-                                                   nprocs)
+                                                   fill_value=self.fill_value,
+                                                   nprocs=self.nprocs)
 
         return ImageContainerQuick(resampled_image, target_area_def)
     
@@ -152,12 +177,16 @@ class ImageContainerNearest(ImageContainer):
         Area definition as AreaDefinition object    
     """
 
-    def __init__(self, image_data, area_def, radius_of_influence, epsilon=0):
-        super(ImageContainerNearest, self).__init__(image_data, area_def)
+    def __init__(self, image_data, geo_def, radius_of_influence, epsilon=0, 
+                 fill_value=0, reduce_data=True, nprocs=1):
+        super(ImageContainerNearest, self).__init__(image_data, geo_def, 
+                                                    fill_value=fill_value, 
+                                                    nprocs=nprocs)
         self.radius_of_influence = radius_of_influence
         self.epsilon = epsilon
+        self.reduce_data = reduce_data
         
-    def resample(self, target_area_def, fill_value=0, nprocs=1):
+    def resample(self, target_geo_def):
         """Resamples image to area definition using nearest neighbour 
         approach
         
@@ -177,19 +206,25 @@ class ImageContainerNearest(ImageContainer):
         """
         
         #lons, lats = self.area_def.get_lonlats(nprocs)
-        if self.image_data.ndim > 2:
+        if self.image_data.ndim > 2 and self.ndim > 1:
             image_data = self.image_data.reshape(self.image_data.shape[0] * 
                                                  self.image_data.shape[1], 
                                                  self.image_data.shape[2])
         else:
             image_data = self.image_data.ravel()
                    
-        resampled_image = swath.resample_nearest(self.area_def, 
-                                                 image_data, 
-                                                 target_area_def,
-                                                 self.radius_of_influence, 
-                                                 epsilon=self.epsilon,
-                                                 fill_value=fill_value, 
-                                                 nprocs=nprocs)
-        return ImageContainerNearest(resampled_image, target_area_def, 
-                                     self.radius_of_influence, self.epsilon)
+        resampled_image = \
+                kd_tree.resample_nearest(self.geo_def, 
+                                         image_data, 
+                                         target_geo_def,
+                                         self.radius_of_influence, 
+                                         epsilon=self.epsilon,
+                                         fill_value=self.fill_value, 
+                                         nprocs=self.nprocs,
+                                         reduce_data=self.reduce_data)
+        return ImageContainerNearest(resampled_image, target_geo_def, 
+                                     self.radius_of_influence, 
+                                     epsilon=self.epsilon,
+                                     fill_value=self.fill_value, 
+                                     reduce_data=self.reduce_data, 
+                                     nprocs=self.nprocs)

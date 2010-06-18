@@ -44,6 +44,21 @@ class Test(unittest.TestCase):
                                     5568742.4000000004,
                                     5568742.4000000004]
                                     )
+    
+    msg_area_resize = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees', 
+                                   'msg_full',
+                                   {'a': '6378169.0',
+                                    'b': '6356584.0',
+                                    'h': '35785831.0',
+                                    'lon_0': '0',
+                                    'proj': 'geos'},
+                                    928,
+                                    928,
+                                    [-5568742.4000000004,
+                                    -5568742.4000000004,
+                                    5568742.4000000004,
+                                    5568742.4000000004]
+                                    )
 
     def test_image(self):
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
@@ -81,15 +96,15 @@ class Test(unittest.TestCase):
         mask = numpy.zeros((3712, 3712))
         mask[:, 1865:] = 1
         data_masked = numpy.ma.array(data, mask=mask)
-        msg_con = image.ImageContainerQuick(data_masked, self.msg_area)
-        area_con = msg_con.resample(self.area_def, fill_value=None)
+        msg_con = image.ImageContainerQuick(data_masked, self.msg_area, 
+                                            fill_value=None)
+        area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
         expected = numpy.fromfile(os.path.join(os.path.dirname(__file__), 'test_files', 'mask_grid.dat'), 
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected), msg='Failed to resample masked array')
         
-    @tmp
     def test_nearest_neighbour(self):        
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
@@ -97,6 +112,16 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 399936.783062
+        self.failUnlessAlmostEqual(cross_sum, expected, 
+                                   msg='ImageContainer resampling nearest neighbour failed')
+    
+    def test_nearest_resize(self):        
+        data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
+        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
+        area_con = msg_con.resample(self.msg_area_resize)
+        res = area_con.image_data
+        cross_sum = res.sum()
+        expected = 2212023.0175830
         self.failUnlessAlmostEqual(cross_sum, expected, 
                                    msg='ImageContainer resampling nearest neighbour failed')
         
@@ -135,8 +160,33 @@ class Test(unittest.TestCase):
         expected2 = 399936.783062 * 2
         self.failUnlessAlmostEqual(cross_sum2, expected2, 
                                    msg='ImageContainer resampling nearest neighbour multi preproc failed')
-        
-        
-        
+            
+    def test_nearest_swath(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        swath_con = image.ImageContainerNearest(data, swath_def, 50000)
+        area_con = swath_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum = res.sum()        
+        expected = 15874591.0
+        self.failUnlessEqual(cross_sum, expected,\
+                             msg='ImageContainer swath resampling nearest failed')
+
+    @tmp
+    def test_nearest_swath(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))
+        data = numpy.dstack(3 * (data,))        
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        swath_con = image.ImageContainerNearest(data, swath_def, 50000)
+        area_con = swath_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum = res.sum()        
+        expected = 3 * 15874591.0
+        self.failUnlessEqual(cross_sum, expected,\
+                             msg='ImageContainer swath resampling nearest failed')
 
 

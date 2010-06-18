@@ -178,6 +178,20 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     #Coarse reduction of data based on extrema analysis of the boundary 
     #lon lat values of the target grid
     
+    illegal_lons = (((lons_side1 < -180) | (lons_side1 > 180)).any() or
+                    ((lons_side2 < -180) | (lons_side2 > 180)).any() or
+                    ((lons_side3 < -180) | (lons_side3 > 180)).any() or
+                    ((lons_side4 < -180) | (lons_side4 > 180)).any())
+    
+    illegal_lats = (((lats_side1 < -90) | (lats_side1 > 90)).any() or
+                    ((lats_side2 < -90) | (lats_side2 > 90)).any() or
+                    ((lats_side3 < -90) | (lats_side3 > 90)).any() or
+                    ((lats_side4 < -90) | (lats_side4 > 90)).any())
+    
+    if illegal_lons or illegal_lats:
+        #Grid boundaries are not safe to operate on
+        return np.ones(lons.size, dtype=np.bool)   
+    
     #Find sum angle sum of grid boundary
     angle_sum = 0
     for side in (lons_side1, lons_side2, lons_side3, lons_side4):
@@ -238,6 +252,6 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
         valid_index = valid_lats * valid_lons        
     else:
         #Covers both poles don't reduce
-        valid_index = np.ones(lons.size)
+        valid_index = np.ones(lons.size, dtype=np.bool)
 
     return valid_index

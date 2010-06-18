@@ -17,7 +17,7 @@
 
 import ctypes
 
-import numpy
+import numpy as np
 import pyproj
 import scipy.spatial as sp
 import multiprocessing as mp
@@ -60,7 +60,7 @@ class cKDTree_MP(object):
         self._chunk = chunk
         self._schedule = schedule        
         
-    def query(self, x, k=1, eps=0, p=2, distance_upper_bound=numpy.inf):
+    def query(self, x, k=1, eps=0, p=2, distance_upper_bound=np.inf):
         '''
         Same as cKDTree.query except parallelized with multiple
         processes and shared memory.        
@@ -149,10 +149,10 @@ class Cartesian(object):
     
     def transform_lonlats(self, lons, lats):
     
-        coords = numpy.zeros((lons.size, 3))
-        coords[:, 0] = R*numpy.cos(numpy.radians(lats))*numpy.cos(numpy.radians(lons))
-        coords[:, 1] = R*numpy.cos(numpy.radians(lats))*numpy.sin(numpy.radians(lons))
-        coords[:, 2] = R*numpy.sin(numpy.radians(lats))
+        coords = np.zeros((lons.size, 3))
+        coords[:, 0] = R*np.cos(np.radians(lats))*np.cos(np.radians(lons))
+        coords[:, 1] = R*np.cos(np.radians(lats))*np.sin(np.radians(lons))
+        coords[:, 2] = R*np.sin(np.radians(lats))
         
         return coords
     
@@ -282,9 +282,9 @@ def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
         
         #Transform to cartesian coordinates
         for s in scheduler:
-            _coords[s, 0] = R*numpy.cos(numpy.radians(_lats[s]))*numpy.cos(numpy.radians(_lons[s]))
-            _coords[s, 1] = R*numpy.cos(numpy.radians(_lats[s]))*numpy.sin(numpy.radians(_lons[s]))
-            _coords[s, 2] = R*numpy.sin(numpy.radians(_lats[s]))
+            _coords[s, 0] = R*np.cos(np.radians(_lats[s]))*np.cos(np.radians(_lons[s]))
+            _coords[s, 1] = R*np.cos(np.radians(_lats[s]))*np.sin(np.radians(_lons[s]))
+            _coords[s, 2] = R*np.sin(np.radians(_lats[s]))
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
     except Exception, e:

@@ -84,6 +84,25 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     
     return target_filled.astype(target_image.dtype)
     
+def get_linesample(lons, lats, source_area_def, nprocs=1):
+     #Proj.4 definition of source area projection
+    if nprocs > 1:
+        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
+    else:
+        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
+
+    #get cartesian projection values from longitude and latitude 
+    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
+
+    #Find corresponding pixels (element by element conversion of ndarrays)
+    source_pixel_x = (source_area_def.pixel_offset_x + \
+                      source_x / source_area_def.pixel_size_x).astype(np.int)
+    
+    source_pixel_y = (source_area_def.pixel_offset_y - \
+                      source_y / source_area_def.pixel_size_y).astype(np.int)
+                    
+    return source_pixel_y, source_pixel_x
+                          
 def get_image_from_lonlats(lons, lats, source_area_def, source_image_data, 
                            fill_value=0, nprocs=1):
     """Samples from image based on lon lat arrays 
@@ -110,25 +129,29 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
         Resampled image data
     """
     
-    #Proj.4 definition of source area projection
-    if nprocs > 1:
-        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
-    else:
-        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
+#    #Proj.4 definition of source area projection
+#    if nprocs > 1:
+#        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
+#    else:
+#        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
+#
+#    #get cartesian projection values from longitude and latitude 
+#    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
+#
+#    #free memory
+#    del(lons)
+#    del(lats)
+#    
+#    #Find corresponding pixels (element by element conversion of ndarrays)
+#    source_pixel_x = (source_area_def.pixel_offset_x + \
+#                      source_x/source_area_def.pixel_size_x).astype('int')
+#    
+#    source_pixel_y = (source_area_def.pixel_offset_y - \
+#                      source_y/source_area_def.pixel_size_y).astype('int')
 
-    #get cartesian projection values from longitude and latitude 
-    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
-
-    #free memory
-    del(lons)
-    del(lats)
-    
-    #Find corresponding pixels (element by element conversion of ndarrays)
-    source_pixel_x = (source_area_def.pixel_offset_x + \
-                      source_x/source_area_def.pixel_size_x).astype('int')
-    
-    source_pixel_y = (source_area_def.pixel_offset_y - \
-                      source_y/source_area_def.pixel_size_y).astype('int')
+    source_pixel_y, source_pixel_x = get_linesample(lons, lats, 
+                                                    source_area_def, 
+                                                    nprocs=nprocs)
 
     #Return target image
     return get_image_from_linesample(source_pixel_y, source_pixel_x,

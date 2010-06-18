@@ -24,12 +24,11 @@ import _spatial_mp
 
 class BaseDefinition(object):
     
-    def __init__(self, lons=None, lats=None, 
-                 cartesian_coords=None, nprocs=1):
+    def __init__(self, lons=None, lats=None, nprocs=1):
         self.nprocs = nprocs
         self._lons = lons
         self._lats = lats
-        self._cartesian_coords = cartesian_coords
+        self._cartesian_coords = None
     
     def get_lonlats(self, *args, **kwargs):
         if self._lons is None or self._lats is None:
@@ -82,27 +81,37 @@ class BaseDefinition(object):
  
 class CoordinateDefinition(BaseDefinition):
  
-    def __init__(self, lons=None, lats=None, cartesian_coords=None, 
-                 nprocs=1):
-        if (lons is not None or lats is not None):
+    def __init__(self, lons, lats, nprocs=1):
+        if lons.shape == lats.shape:
             self.shape = lons.shape
             self.size = lons.size
-        elif cartesian_coords is not None:
-            self.shape = cartesian_coords.shape[:-1]
-            self.size = cartesian_coords.size // 3
+            self.ndim = lons.ndim        
         else:
             raise ValueError(('%s must be created with either '
-                             'lon/lats or cartesian coordinates') % 
+                             'lon/lats of the same shape') % 
                              self.__class__.__name__)
-        super(CoordinateDefinition, self).__init__(lons, lats, 
-                                                   cartesian_coords, nprocs)
+        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
 
 
 class GridDefinition(CoordinateDefinition):
  
-    def __init__(self, lons=None, lats=None, cartesian_coords=None, nprocs=1):
-        super(GridDefinition, self).__init__(lons, lats, 
-                                             cartesian_coords, nprocs)
+    def __init__(self, lons, lats, nprocs=1):
+        if lons.shape != lats.shape:
+            raise ValueError('lon and lat grid must have same shape')
+        elif lons.ndim != 2:
+            raise ValueError('2 dimensional lon lat grid expected')
+        
+        super(GridDefinition, self).__init__(lons, lats, nprocs)
+
+
+class SwathDefinition(CoordinateDefinition):
+ 
+    def __init__(self, lons, lats, nprocs=1):
+        if lons.shape != lats.shape:
+            raise ValueError('lon and lat arrays must have same shape')
+        elif lons.ndim > 2:
+            raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+        super(SwathDefinition, self).__init__(lons, lats, nprocs)
 
 
 class AreaDefinition(BaseDefinition):    
@@ -156,14 +165,12 @@ class AreaDefinition(BaseDefinition):
     """
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent, nprocs=1, lons=None, lats=None, 
-                 cartesian_coords=None):
+                 area_extent, nprocs=1, lons=None, lats=None):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
 
-        super(AreaDefinition, self).__init__(lons, lats, cartesian_coords,
-                                             nprocs)
+        super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
         self.name = name
         self.proj_id = proj_id
@@ -171,6 +178,7 @@ class AreaDefinition(BaseDefinition):
         self.y_size = y_size
         self.shape = (y_size, x_size)
         self.size = y_size * x_size
+        self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(x_size)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
         self.proj_dict = proj_dict
@@ -294,11 +302,5 @@ class AreaDefinition(BaseDefinition):
         items = self.proj_dict.items()
         return '+' + ' +'.join([ t[0] + '=' + t[1] for t in items])         
 
-    
-class SwathDefinition(CoordinateDefinition):
- 
-    def __init__(self, lons, lats, cartesian_coords=None, nprocs=1):
-        super(SwathDefinition, self).__init__(lons, lats, cartesian_coords, 
-                                              nprocs)
         
     
