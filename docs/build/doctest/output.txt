@@ -1,0 +1,131 @@
+Results of doctest builder run on 2010-06-20 19:11:26
+=====================================================
+
+Document: data_reduce
+---------------------
+1 items passed all tests:
+  16 tests in default
+16 tests in 1 items.
+16 passed and 0 failed.
+Test passed.
+
+Document: geo_def
+-----------------
+1 items passed all tests:
+  29 tests in default
+29 tests in 1 items.
+29 passed and 0 failed.
+Test passed.
+
+Document: grid
+--------------
+1 items passed all tests:
+  26 tests in default
+26 tests in 1 items.
+26 passed and 0 failed.
+Test passed.
+
+Document: multi
+---------------
+1 items passed all tests:
+   8 tests in default
+8 tests in 1 items.
+8 passed and 0 failed.
+Test passed.
+
+Document: preproc
+-----------------
+1 items passed all tests:
+   8 tests in default
+8 tests in 1 items.
+8 passed and 0 failed.
+Test passed.
+
+Document: swath
+---------------
+**********************************************************************
+File "swath.rst", line 38, in default
+Failed example:
+    result = kd_tree.resample_nearest(swath_def, data.ravel(),
+    area_def, radius_of_influence=50000, epsilon=100)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[7]>", line 1, in <module>
+        result = kd_tree.resample_nearest(swath_def, data.ravel(),
+    NameError: name 'kd_tree' is not defined
+**********************************************************************
+File "swath.rst", line 71, in default
+Failed example:
+    result = kd_tree.resample_nearest(swath_def, data.ravel(),
+    area_def, radius_of_influence=50000, epsilon=100)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[10]>", line 1, in <module>
+        result = kd_tree.resample_nearest(swath_def, data.ravel(),
+    NameError: name 'kd_tree' is not defined
+**********************************************************************
+File "swath.rst", line 98, in default
+Failed example:
+    result = kd_tree.resample_gauss(swath_def, data.ravel(),
+    area_def, radius_of_influence=50000, sigmas=25000)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[7]>", line 1, in <module>
+        result = kd_tree.resample_gauss(swath_def, data.ravel(),
+    NameError: name 'kd_tree' is not defined
+**********************************************************************
+File "swath.rst", line 128, in default
+Failed example:
+    result  = kd_tree.resample_custom(swath_def, data.ravel(),
+     area_def, radius_of_influence=50000, weight_funcs=wf)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[8]>", line 1, in <module>
+        result  = kd_tree.resample_custom(swath_def, data.ravel(),
+    NameError: name 'kd_tree' is not defined
+**********************************************************************
+File "swath.rst", line 161, in default
+Failed example:
+    valid_input_index, valid_output_index, index_array, distance_array = \
+                           kd_tree.get_neighbour_info(swath_def,
+                                                          area_def, 50000,
+                                                      neighbours=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[7]>", line 2, in <module>
+        kd_tree.get_neighbour_info(swath_def,
+    NameError: name 'kd_tree' is not defined
+**********************************************************************
+File "swath.rst", line 165, in default
+Failed example:
+    res = swath.get_sample_from_neighbour_info('nn', area_def.shape, data.ravel(),
+                                               valid_index, index_array)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest default[8]>", line 2, in <module>
+        valid_index, index_array)
+    NameError: name 'valid_index' is not defined
+**********************************************************************
+1 items had failures:
+   6 of  45 in default
+45 tests in 1 items.
+39 passed and 6 failed.
+***Test Failed*** 6 failures.
+
+Doctest summary
+===============
+  132 tests
+    6 failures in tests
+    0 failures in setup code
