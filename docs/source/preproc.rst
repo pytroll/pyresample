@@ -44,33 +44,7 @@ again thus eliminating the need for calculating the reprojection.
 
 Numpy arrays can be saved and loaded using  **numpy.save** and **numpy.load**.
 
-Preprocessing for swath resampling
-----------------------------------
 
-Using the function **generate_cartesian_grid** from **pyresample.utils** an array 
-containing the target grid can be obtained.
-
-.. doctest::
-
- >>> import numpy
- >>> from pyresample import swath, utils, geometry
- >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
- ...                                {'a': '6378144.0', 'b': '6356759.0',
- ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
- ...                                800, 800,
- ...                                [-1370912.72, -909968.64,
- ...                                 1029087.28, 1490031.36])
- >>> cart_grid = utils.generate_cartesian_grid(area_def)
- >>> lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
- >>> lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> data = numpy.fromfunction(lambda y, x: y*x, (50, 10))
- >>> result = swath.resample_nearest(lons.ravel(), lats.ravel(), 
- ... data.ravel(), target_area_def=cart_grid, radius_of_influence=50000)
-
-The numpy array **cart_grid** can be saved and be used as **target_area_def** whenever a swath is to be 
-resampled to this grid. This will eliminate the need for calculation grid coordinates thus 
-decreasing execution time.
 
 
 

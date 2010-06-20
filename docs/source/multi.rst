@@ -3,7 +3,8 @@ Using multiple processor cores
 
 Bottlenecks of pyresample can be executed in parallel. Parallel computing can be executed if the 
 pyresample function has the **nprocs** keyword argument. **nprocs** specifies the number of processes 
-to be used for calculation.
+to be used for calculation. If a class takes the constructor argument **nprocs** this sets **nprocs** for
+all methods of this class
 
 Example of resampling in parallel using 4 processes:
 
@@ -21,7 +22,8 @@ Example of resampling in parallel using 4 processes:
  >>> data = numpy.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> result = swath.resample_nearest(lons.ravel(), lats.ravel(), data.ravel(),
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = swath.resample_nearest(swath_def, data.ravel(),
  ... area_def, radius_of_influence=50000, epsilon=100, nprocs=4)
 
 Note: Do not use more processes than available processor cores. As there is a process creation overhead 

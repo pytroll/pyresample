@@ -140,35 +140,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     
     proj_dict = _get_proj4_args(proj4_args)
     return geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size,
-                               y_size, area_extent)
-  
-#def generate_cartesian_grid(area_def, nprocs=1):
-#    """Generate the cartesian coordinates grid of the area
-#    
-#    :Parameters:
-#    area_def : object
-#        Area definition as AreaDefinition object
-#    nprocs : int, optional 
-#        Number of processor cores to be used
-#    
-#    :Returns: 
-#    grid : numpy array
-#        Cartesian grid
-#    """
-#    
-#    if nprocs > 1:
-#        cartesian = _spatial_mp.Cartesian_MP(nprocs)
-#    else:
-#        cartesian = _spatial_mp.Cartesian()
-#     
-#    grid_lons, grid_lats = area_def.get_lonlats(nprocs)
-#    
-#    shape = list(grid_lons.shape)
-#    shape.append(3)
-#    cart_coords = cartesian.transform_latlons(grid_lons.ravel(),
-#                                              grid_lats.ravel())
-#    return cart_coords.reshape(shape)
-    
+                                   y_size, area_extent)    
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
     """Generate linesample arrays for quick grid resampling
@@ -182,7 +154,7 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
         Number of processor cores to be used
 
     :Returns: 
-    (row_indices, col_indices) : list of numpy arrays
+    (row_indices, col_indices) : tuple of numpy arrays
     """
     if not (isinstance(source_area_def, geometry.AreaDefinition) and
             isinstance(target_area_def, geometry.AreaDefinition)):
@@ -191,25 +163,6 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
             
     lons, lats = target_area_def.get_lonlats(nprocs)
     
-#    #Proj.4 definition of source area projection
-#    if nprocs > 1:
-#        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
-#    else:
-#        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
-#
-#    #Get cartesian projection values from longitude and latitude 
-#    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
-#
-#    #Free memory
-#    del(lons)
-#    del(lats)
-#    
-#    #Find corresponding pixels (element by element conversion of ndarrays)
-#    source_pixel_x = (source_x/source_area_def.pixel_size_x + \
-#                      source_area_def.pixel_offset_x).astype('int')
-#    
-#    source_pixel_y = (source_area_def.pixel_offset_y - \
-#                     source_y/source_area_def.pixel_size_y).astype('int')
     source_pixel_y, source_pixel_x = grid.get_linesample(lons, lats, 
                                                          source_area_def, 
                                                          nprocs=nprocs)
@@ -231,10 +184,8 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
         Number of processor cores to be used
 
     :Returns: 
-    (row_indices, col_indices) : list of numpy arrays
+    (row_indices, col_indices) : tuple of numpy arrays
     """
-    
-    #lons, lats = source_area_def.get_lonlats(nprocs)
     
     if not (isinstance(source_area_def, geometry.AreaDefinition) and
             isinstance(target_area_def, geometry.AreaDefinition)):

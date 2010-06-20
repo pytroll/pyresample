@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Resampling of gridded data &mdash; pyresample v0.5.3 documentation</title>
+    <title>Resampling of gridded data &mdash; pyresample v0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.5.3',
+        VERSION:     '0.6.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,9 +19,9 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.5.3 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.6.0 documentation" href="index.html" />
     <link rel="next" title="Resampling of swath data" href="swath.html" />
-    <link rel="prev" title="Area definitions" href="area_def.html" /> 
+    <link rel="prev" title="Geometry definitions" href="geo_def.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,9 +37,9 @@
           <a href="swath.html" title="Resampling of swath data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="area_def.html" title="Area definitions"
+          <a href="geo_def.html" title="Geometry definitions"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -60,7 +60,7 @@ using the method <strong>get_array_from_linesample</strong></p>
 <p>An <strong>ImageContainerQuick</strong> object allows for the grid to be resampled to a new area defintion
 using an approximate (but fast) nearest neighbour method.
 Resampling an object of type <strong>ImageContainerQuick</strong> returns a new object of type <strong>ImageContainerQuick</strong>.</p>
-<p>An <strong>ImageContainerNearest</strong> object allows for the grid to be resampled to a new area defintion
+<p>An <strong>ImageContainerNearest</strong> object allows for the grid to be resampled to a new area defintion (or swath definition)
 using an accurate kd-tree method.
 Resampling an object of type <strong>ImageContainerNearest</strong> returns a new object of
 type <strong>ImageContainerNearest</strong>.</p>
@@ -97,6 +97,41 @@ assigned a fill value set <strong>fill_value=None</strong> when calling <strong>
 from source projection center increases.</p>
 <p>The constructor argument <strong>radius_of_influence</strong> to <strong>ImageContainerNearest</strong> specifices the maximum
 distance to search for a neighbour for each point in the target grid. The unit is meters.</p>
+<p>The constructor arguments of an ImageContainer object can be changed as attributes later</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">image</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="go"> &gt;&gt;&gt; msg_area = geometry.AreaDefinition(&#39;msg_full&#39;, &#39;Full globe MSG image 0 degrees&#39;,</span>
+<span class="gp">... </span>                               <span class="s">&#39;msg_full&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378169.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356584.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;h&#39;</span><span class="p">:</span> <span class="s">&#39;35785831.0&#39;</span><span class="p">,</span> <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;geos&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">5568742.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">5568742.4</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">5568742.4</span><span class="p">,</span> <span class="mf">5568742.4</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">msg_con_nn</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">ImageContainerNearest</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">msg_area</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">msg_con_nn</span><span class="o">.</span><span class="n">radius_of_influence</span> <span class="o">=</span> <span class="mi">45000</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">msg_con_nn</span><span class="o">.</span><span class="n">fill_value</span> <span class="o">=</span> <span class="o">-</span><span class="mi">99</span>
+</pre></div>
+</div>
+<p>If the dataset has several channels the last index of the data array specifies the channels</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">image</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="go"> &gt;&gt;&gt; msg_area = geometry.AreaDefinition(&#39;msg_full&#39;, &#39;Full globe MSG image 0 degrees&#39;,</span>
+<span class="gp">... </span>                               <span class="s">&#39;msg_full&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378169.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356584.0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;h&#39;</span><span class="p">:</span> <span class="s">&#39;35785831.0&#39;</span><span class="p">,</span> <span class="s">&#39;lon_0&#39;</span><span class="p">:</span> <span class="s">&#39;0&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="s">&#39;proj&#39;</span><span class="p">:</span> <span class="s">&#39;geos&#39;</span><span class="p">},</span>
+<span class="gp">... </span>                               <span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">,</span>
+<span class="gp">... </span>                               <span class="p">[</span><span class="o">-</span><span class="mf">5568742.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">5568742.4</span><span class="p">,</span>
+<span class="gp">... </span>                                <span class="mf">5568742.4</span><span class="p">,</span> <span class="mf">5568742.4</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">channel1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">channel2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">channel3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3712</span><span class="p">,</span> <span class="mi">3712</span><span class="p">))</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">((</span><span class="n">channel1</span><span class="p">,</span> <span class="n">channel2</span><span class="p">,</span> <span class="n">channel3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">msg_con_nn</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">ImageContainerNearest</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">msg_area</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -115,8 +150,8 @@ distance to search for a neighbour for each point in the target grid. The unit i
 </ul>
 
             <h4>Previous topic</h4>
-            <p class="topless"><a href="area_def.html"
-                                  title="previous chapter">Area definitions</a></p>
+            <p class="topless"><a href="geo_def.html"
+                                  title="previous chapter">Geometry definitions</a></p>
             <h4>Next topic</h4>
             <p class="topless"><a href="swath.html"
                                   title="next chapter">Resampling of swath data</a></p>
@@ -155,9 +190,9 @@ distance to search for a neighbour for each point in the target grid. The unit i
           <a href="swath.html" title="Resampling of swath data"
              >next</a> |</li>
         <li class="right" >
-          <a href="area_def.html" title="Area definitions"
+          <a href="geo_def.html" title="Geometry definitions"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

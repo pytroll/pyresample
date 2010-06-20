@@ -85,6 +85,23 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     return target_filled.astype(target_image.dtype)
     
 def get_linesample(lons, lats, source_area_def, nprocs=1):
+    """Returns index row and col arrays for resampling
+    
+    :Parameters:
+    lons : numpy array 
+        Lons. Dimensions must match lats
+    lats : numpy array   
+        Lats. Dimensions must match lons
+    source_area_def : object 
+        Source definition as AreaDefinition object
+    nprocs : int, optional 
+        Number of processor cores to be used
+    
+    :Returns:
+    (row_indices, col_indices) : tuple of numpy arrays
+        Arrays for resampling area by array indexing
+    """
+    
      #Proj.4 definition of source area projection
     if nprocs > 1:
         source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
@@ -128,26 +145,6 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
     image_data : numpy array 
         Resampled image data
     """
-    
-#    #Proj.4 definition of source area projection
-#    if nprocs > 1:
-#        source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
-#    else:
-#        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
-#
-#    #get cartesian projection values from longitude and latitude 
-#    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
-#
-#    #free memory
-#    del(lons)
-#    del(lats)
-#    
-#    #Find corresponding pixels (element by element conversion of ndarrays)
-#    source_pixel_x = (source_area_def.pixel_offset_x + \
-#                      source_x/source_area_def.pixel_size_x).astype('int')
-#    
-#    source_pixel_y = (source_area_def.pixel_offset_y - \
-#                      source_y/source_area_def.pixel_size_y).astype('int')
 
     source_pixel_y, source_pixel_x = get_linesample(lons, lats, 
                                                     source_area_def, 

@@ -15,7 +15,7 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Handles reprojection of satellite swath data. Several types of resampling are supported"""
+"""Handles reprojection of geolocated data. Several types of resampling are supported"""
 
 import types
 
@@ -25,132 +25,23 @@ import scipy.spatial as sp
 import geometry
 import data_reduce
 import _spatial_mp
-#import _resample_iter
-
-
-#class _AreaDefContainer:
-#    
-#    def __init__(self, target_area_def, nprocs=1):
-#        #Check if target_area_def is preprocessed grid coordinates
-#        if isinstance(target_area_def, geometry.AreaDefinition):
-#            self.is_cartesian_grid = False
-#            self.is_lonlat_grid = False
-#        elif isinstance(target_area_def, np.ndarray):
-#            if target_area_def.ndim == 3:
-#                if target_area_def.shape[2] == 2:
-#                    grid_lons = target_area_def[:, :, 0]
-#                    grid_lats = target_area_def[:, :, 1]
-#                    self.is_cartesian_grid = False                
-#                    self.is_lonlat_grid = True
-#                elif target_area_def.shape[2] == 3:
-#                    grid_coords = target_area_def
-#                    self.is_cartesian_grid = True
-#                    self.is_lonlat_grid = False
-#                else:
-#                    raise TypeError(('Third dimension of grid expected '
-#                                    'to be of length 2 or 3 not %s') % 
-#                                    target_area_def.shape[2])            
-#            else:
-#                raise TypeError('target_area_def as numpy array must be of 3 '
-#                                'dimensions')
-#        else:
-#            raise TypeError('target_area_def must be either AreaDefinition or '
-#                            'numpy array')
-#
-#        if nprocs > 1:
-#            cartesian = _spatial_mp.Cartesian_MP(nprocs)
-#        else:
-#            cartesian = _spatial_mp.Cartesian()
-#            
-#        
-#        if self.is_cartesian_grid:
-#            #Cartesian grid has been passed as target_area_def
-#            self.cartesian_grid = grid_coords
-#            self.grid_size = grid_coords[:, :, 0].size
-#            self.grid_shape = grid_coords[:, :, 0].shape
-#        
-#            #Make grid coords array. Copy needed to avoid silent failure of kd-tree query
-#            self.grid_coords = np.column_stack((grid_coords[:, :, 0].ravel(), 
-#                                                grid_coords[:, :, 1].ravel(), 
-#                                                grid_coords[:, :, 2].ravel())
-#                                                ).copy()
-#            
-#        else:
-#            if self.is_lonlat_grid:
-#                #Lons and lats has been passed as target_area_def
-#                self.grid_lons = grid_lons
-#                self.grid_lats = grid_lats
-#            else:
-#                #Get lons and lats from area_def dict
-#                self.grid_lons, self.grid_lats = \
-#                                    target_area_def.get_lonlats(nprocs)
-#                
-#            
-#            #Get grid size and shape
-#            self.grid_size = self.grid_lons.size
-#            self.grid_shape = self.grid_lons.shape
-#            
-#            #Transform grid to cartesian
-#            self.grid_coords = cartesian.transform_lonlats(self.grid_lons.ravel(),
-#                                                           self.grid_lats.ravel())
-#            
-#    def get_valid_index(self, lons, lats, radius_of_influence):
-#        """Returns array of relevant indices of lons and lats
-#        :Parameters:
-#        lons : numpy array
-#            1d array of swath lons
-#        lats : numpy array               
-#            1d array of swath lats
-#        radius_of_influence : float 
-#            Cut off distance in meters
-#            
-#        :Returns:
-#        valid_index : numpy array
-#            Boolean array of same size as lons and lats indicating relevant indices
-#        """
-#        
-#        if self.is_cartesian_grid:
-#            #Cartesian grid has been passed as target_area_def
-#            valid_index = data_reduce.get_valid_index_from_cartesian_grid(self.cartesian_grid, lons,
-#                                                                          lats, 
-#                                                                          radius_of_influence)
-#        else:
-#            #Grid is lon lat
-#            valid_index = data_reduce.get_valid_index_from_lonlat_grid(self.grid_lons, 
-#                                                                       self.grid_lats, 
-#                                                                       lons, lats,  
-#                                                                       radius_of_influence)
-#        return valid_index            
         
         
 def resample_nearest(source_geo_def, data, target_geo_def,
                      radius_of_influence, epsilon=0,
                      fill_value=0, reduce_data=True, nprocs=1):
-    """Resamples swath using kd-tree nearest neighbour approach
+    """Resamples data using kd-tree nearest neighbour approach
 
     :Parameters:
-    lons : numpy array
-        1d array of swath lons
-    lats : numpy array               
-        1d array of swath lats
+    source_geo_def : object
+        Geometry definition of source
     data : numpy array               
         1d array of single channel data points or
-        (swath_size, k) array of k channels of datapoints
-    target_area_def : AreaDefinition or numpy array
-        Target area definition as instance of AreaDefinition 
-        or array containing lons and lats of the target area 
-        according to:
-        target_area_def[:, :, 0] = lons and
-        target_area_def[:, :, 1] = lats
-        or array containing cartesian coordinates the target
-        area according to:
-        target_area_def[:, :, 0] = X and
-        target_area_def[:, :, 1] = Y and
-        target_area_def[:, :, 2] = Z
+        (source_size, k) array of k channels of datapoints
+    target_geo_def : object
+        Geometry definition of target
     radius_of_influence : float 
         Cut off distance in meters
-    neighbours : int, optional 
-        The number of neigbours to consider for each swath point
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
@@ -159,14 +50,14 @@ def resample_nearest(source_geo_def, data, target_geo_def,
             If fill_value is None a masked array is returned 
             with undetermined pixels masked    
     reduce_data : bool, optional
-        Perform initial coarse reduction of swath dataset in order
+        Perform initial coarse reduction of source dataset in order
         to reduce execution time
     nprocs : int, optional
         Number of processor cores to be used
                
     :Returns: 
     data : numpy array 
-        Swath data resampled to target grid
+        Source data resampled to target geometry
     """
     
     return _resample(source_geo_def, data, target_geo_def, 'nn',
@@ -177,27 +68,16 @@ def resample_nearest(source_geo_def, data, target_geo_def,
 def resample_gauss(source_geo_def, data, target_geo_def,
                    radius_of_influence, sigmas, neighbours=8, epsilon=0,
                    fill_value=0, reduce_data=True, nprocs=1):
-    """Resamples swath using kd-tree gaussian weighting neighbour approach
+    """Resamples data using kd-tree gaussian weighting neighbour approach
 
     :Parameters:
-    lons : numpy array
-        1d array of swath lons
-    lats : numpy array               
-        1d array of swath lats
+    source_geo_def : object
+        Geometry definition of source
     data : numpy array               
         1d array of single channel data points or
-        (swath_size, k) array of k channels of datapoints
-    target_area_def : AreaDefinition or numpy array
-        Target area definition as instance of AreaDefinition 
-        or array containing lons and lats of the target area 
-        according to:
-        target_area_def[:, :, 0] = lons and
-        target_area_def[:, :, 1] = lats
-        or array containing cartesian coordinates the target
-        area according to:
-        target_area_def[:, :, 0] = X and
-        target_area_def[:, :, 1] = Y and
-        target_area_def[:, :, 2] = Z
+        (source_size, k) array of k channels of datapoints
+    target_geo_def : object
+        Geometry definition of target
     radius_of_influence : float 
         Cut off distance in meters
     sigmas : list of floats or float            
@@ -214,14 +94,14 @@ def resample_gauss(source_geo_def, data, target_geo_def,
             If fill_value is None a masked array is returned 
             with undetermined pixels masked    
     reduce_data : bool, optional
-        Perform initial coarse reduction of swath dataset in order
+        Perform initial coarse reduction of source dataset in order
         to reduce execution time
     nprocs : int, optional
         Number of processor cores to be used
     
     :Returns: 
     data : numpy array 
-        Swath data resampled to target grid                  
+        Source data resampled to target geometry
     """
     
     def gauss(sigma):
@@ -253,30 +133,19 @@ def resample_gauss(source_geo_def, data, target_geo_def,
 def resample_custom(source_geo_def, data, target_geo_def,
                     radius_of_influence, weight_funcs, neighbours=8,
                     epsilon=0, fill_value=0, reduce_data=True, nprocs=1):
-    """Resamples swath using kd-tree custom radial weighting neighbour approach
+    """Resamples data using kd-tree custom radial weighting neighbour approach
 
     :Parameters:
-    lons : numpy array
-        1d array of swath lons
-    lats : numpy array               
-        1d array of swath lats
+    source_geo_def : object
+        Geometry definition of source
     data : numpy array               
         1d array of single channel data points or
-        (swath_size, k) array of k channels of datapoints
-    target_area_def : AreaDefinition or numpy array
-        Target area definition as instance of AreaDefinition 
-        or array containing lons and lats of the target area 
-        according to:
-        target_area_def[:, :, 0] = lons and
-        target_area_def[:, :, 1] = lats
-        or array containing cartesian coordinates the target
-        area according to:
-        target_area_def[:, :, 0] = X and
-        target_area_def[:, :, 1] = Y and
-        target_area_def[:, :, 2] = Z
+        (source_size, k) array of k channels of datapoints
+    target_geo_def : object
+        Geometry definition of target
     radius_of_influence : float 
         Cut off distance in meters
-    weight_funcs : list function objects or function object       
+    weight_funcs : list of function objects or function object       
         List of weight functions f(dist) to use for the weighting 
         of each channel 1 to k.
         If only one channel is resampled weight_funcs is
@@ -291,22 +160,21 @@ def resample_custom(source_geo_def, data, target_geo_def,
             If fill_value is None a masked array is returned 
             with undetermined pixels masked    
     reduce_data : bool, optional
-        Perform initial coarse reduction of swath dataset in order
+        Perform initial coarse reduction of source dataset in order
         to reduce execution time
     nprocs : int, optional
         Number of processor cores to be used
     
     :Returns: 
     data : numpy array 
-        Swath data resampled to target grid
+        Source data resampled to target geometry
     """
     
     if data.ndim > 1:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
                 raise TypeError('weight_func must be function object')
-    else:
-        if not isinstance(weight_funcs, types.FunctionType):
+    elif not isinstance(weight_funcs, types.FunctionType):
             raise TypeError('weight_func must be function object')
         
     return _resample(source_geo_def, data, target_geo_def, 'custom',
@@ -320,19 +188,6 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
              fill_value=0, reduce_data=True, nprocs=1):
     """Resamples swath using kd-tree approach"""
 
-    #Check validity of input
-#    if not (isinstance(lons, np.ndarray) and \
-#            isinstance(lats, np.ndarray) and \
-#            isinstance(data, np.ndarray)):
-#        raise TypeError('lons, lats and data must be numpy arrays')
-#    elif lons.ndim != 1 or lons.ndim != 1:
-#        raise TypeError('lons and lats must one dimensional arrays')
-#    elif lons.size != lats.size or lats.size != data.shape[0] or \
-#         data.shape[0] != lons.size:
-#        raise TypeError('Not the same number of datapoints in lons, lats and '
-#                        'data')
-        
-    #area_def_con = _AreaDefContainer(target_area_def, nprocs)
     valid_input_index, valid_output_index, index_array, distance_array = \
                                  get_neighbour_info(source_geo_def, 
                                                     target_geo_def, 
@@ -350,81 +205,56 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                           weight_funcs=weight_funcs, 
                                           fill_value=fill_value)
     
-#def get_neighbour_info(lons, lats, target_area_def, radius_of_influence, 
-#                       neighbours=8, epsilon=0, reduce_data=True, nprocs=1):
-#    """Returns information on nearest neighbours and relevant swath data points
-#    
-#    :Parameters:
-#    lons : numpy array
-#        1d array of swath lons
-#    lats : numpy array               
-#        1d array of swath lats
-#    target_area_def : AreaDefinition or numpy array
-#        Target area definition as instance of AreaDefinition 
-#        or array containing lons and lats of the target area 
-#        according to:
-#        target_area_def[:, :, 0] = lons and
-#        target_area_def[:, :, 1] = lats
-#        or array containing cartesian coordinates the target
-#        area according to:
-#        target_area_def[:, :, 0] = X and
-#        target_area_def[:, :, 1] = Y and
-#        target_area_def[:, :, 2] = Z
-#    radius_of_influence : float 
-#        Cut off distance in meters
-#    neighbours : int, optional 
-#        The number of neigbours to consider for each grid point
-#    epsilon : float, optional
-#        Allowed uncertainty in meters. Increasing uncertainty
-#        reduces execution time
-#    epsilon : float, optional
-#        Allowed uncertainty in meters. Increasing uncertainty
-#        reduces execution time
-#        
-#    :Returns: 
-#    (valid_index, index_array, distance_array) : tuple of numpy array 
-#        valid_index: boolean array of relevant swath indices
-#        index_array: array of neighbour indices in reduced swath array
-#        distance_array: array of distances to neighbours
-#    """
-#     
-#    area_def_con = _AreaDefContainer(target_area_def, nprocs)
-#    return _get_neighbour_info(lons, lats, area_def_con, radius_of_influence, 
-#                               neighbours=neighbours, epsilon=epsilon, 
-#                               reduce_data=reduce_data, nprocs=nprocs)
-    
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
                        neighbours=8, epsilon=0, reduce_data=True, nprocs=1):    
-    """Returns neighbour info"""
+    """Returns neighbour info
+    
+    :Parameters:
+    source_geo_def : object
+        Geometry definition of source
+    target_geo_def : object
+        Geometry definition of target
+    radius_of_influence : float 
+        Cut off distance in meters
+    neighbours : int, optional 
+        The number of neigbours to consider for each grid point
+    epsilon : float, optional
+        Allowed uncertainty in meters. Increasing uncertainty
+        reduces execution time
+    fill_value : {int, None}, optional 
+            Set undetermined pixels to this value.
+            If fill_value is None a masked array is returned 
+            with undetermined pixels masked    
+    reduce_data : bool, optional
+        Perform initial coarse reduction of source dataset in order
+        to reduce execution time
+    nprocs : int, optional
+        Number of processor cores to be used
+        
+    :Returns:
+    (valid_input_index, valid_output_index, 
+    index_array, distance_array) : tuple of numpy arrays
+        Neighbour resampling info
+    """
 
+    #Check validity of input
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise typeError('source_geo_def must be of geometry type')
     elif not isinstance(target_geo_def, geometry.BaseDefinition):
-        raise typeError('target_geo_def must be of geometry type')
+        raise typeError('target_geo_def must be of geometry type')    
+    elif not isinstance(radius_of_influence, (long, int, float)):
+        raise TypeError('radius_of_influence must be number')
+    elif not isinstance(neighbours, int):
+        raise TypeError('neighbours must be integer')
+    elif not isinstance(epsilon, (long, int, float)):
+        raise TypeError('epsilon must be number')
     
     s_lons = source_geo_def.lons.ravel()
     s_lats = source_geo_def.lats.ravel()
     
     t_lons = target_geo_def.lons.ravel()
     t_lats = target_geo_def.lats.ravel()
-    
-    #Check validity of input
-#    if not (isinstance(lons, np.ndarray) and 
-#            isinstance(lats, np.ndarray)):
-#        raise TypeError('lons and lats must be numpy arrays')
-#    elif lons.ndim != 1 or lons.ndim != 1:
-#        raise TypeError('lons and lats must one dimensional arrays')
-#    elif lons.size != lats.size:
-#        raise TypeError('Not the same number of datapoints in lons and lats')
-    
-    if not isinstance(radius_of_influence, (long, int, float)):
-        raise TypeError('radius_of_influence must be number')
-    
-    if not isinstance(neighbours, int):
-        raise TypeError('neighbours must be integer')
-    
-    if not isinstance(epsilon, (long, int, float)):
-        raise TypeError('epsilon must be number')
+
     
     #Find invalid data points 
     valid_data = ((s_lons >= -180) * (s_lons <= 180) * 
@@ -433,7 +263,6 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     valid_output_index = np.ones(target_geo_def.size).astype(np.bool)
     
     if reduce_data:
-        #valid_index = target_area_def.get_valid_index(lons, lats, radius_of_influence)
         if (isinstance(source_geo_def, geometry.CoordinateDefinition) and 
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                        geometry.AreaDefinition))) or \
@@ -441,6 +270,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                                         geometry.AreaDefinition)) and
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition))):
+            #Resampling from swath to grid or from grid to grid
             valid_input_index = \
                 data_reduce.get_valid_index_from_lonlat_grid(
                                             target_geo_def.lons,
@@ -450,6 +280,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         elif isinstance(source_geo_def, (geometry.GridDefinition, 
                                          geometry.AreaDefinition)) and \
              isinstance(target_geo_def, geometry.CoordinateDefinition):
+            #Resampling from grid to swath
             valid_output_index = \
                 data_reduce.get_valid_index_from_lonlat_grid(
                                             source_geo_def.lons,
@@ -459,6 +290,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                                             radius_of_influence)
             valid_output_index = valid_output_index.astype(np.bool)
         else:
+            #Resampling from swath to swath. Do nothing
             pass
     
     valid_out = ((t_lons >= -180) * (t_lons <= 180) * 
@@ -482,34 +314,34 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     
     
     #Transform reduced swath dataset to cartesian
-    swath_size = s_lons.size
-    swath_coords = cartesian.transform_lonlats(s_lons, s_lats)
+    input_size = s_lons.size
+    input_coords = cartesian.transform_lonlats(s_lons, s_lats)
         
     del(s_lons)
     del(s_lats)
     
-    #Build kd-tree on swath
+    #Build kd-tree on input
     if nprocs > 1:        
-        resample_kdtree = _spatial_mp.cKDTree_MP(swath_coords,
+        resample_kdtree = _spatial_mp.cKDTree_MP(input_coords,
                                                  nprocs=nprocs)
     else:
-        resample_kdtree = sp.cKDTree(swath_coords)
+        resample_kdtree = sp.cKDTree(input_coords)
         
-    del(swath_coords)
+    del(input_coords)
     
-    #Query kd-tree with target grid
+    #Query kd-tree with target coords
     #Find nearest neighbours
     target_shape = target_geo_def.shape
     if len(target_shape) > 1:
-        grid_coords = \
+        output_coords = \
             target_geo_def.cartesian_coords.reshape(target_shape[0] * 
-                                                     target_shape[1], 3)
+                                                    target_shape[1], 3)
     else:
-        grid_coords = target_geo_def.cartesian_coords
+        output_coords = target_geo_def.cartesian_coords
     
-    grid_coords = grid_coords[valid_output_index] 
+    output_coords = output_coords[valid_output_index] 
             
-    distance_array, index_array = resample_kdtree.query(grid_coords, 
+    distance_array, index_array = resample_kdtree.query(output_coords, 
                                                         k=neighbours,
                                                         eps=epsilon,
                                                         distance_upper_bound=
@@ -517,7 +349,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
        
     return valid_input_index, valid_output_index, index_array, distance_array   
 
-def get_sample_from_neighbour_info(resample_type, grid_shape, data, 
+def get_sample_from_neighbour_info(resample_type, output_shape, data, 
                                    valid_input_index, valid_output_index, 
                                    index_array, distance_array=None, 
                                    weight_funcs=None, fill_value=0):
@@ -527,20 +359,18 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
     resample_type : {'nn', 'custom'}
         'nn': Use nearest neighbour resampling
         'custom': Resample based on weight_funcs
-    grid_shape : (int, int)
-        Shape of target grid as (rows, cols)
-    lons : numpy array
-        1d array of swath lons
-    lats : numpy array               
-        1d array of swath lats
-    valid_index : numpy array
-        valid_index from get_neighbour_info
+    output_shape : (int, int)
+        Shape of output as (rows, cols)
+    valid_input_index : numpy array
+        valid_input_index from get_neighbour_info
+    valid_output_index : numpy array
+        valid_output_index from get_neighbour_info
     index_array : numpy array
         index_array from get_neighbour_info
     distance_array : numpy array, optional
         distance_array from get_neighbour_info
         Not needed for 'nn' resample type
-    weight_funcs : list function objects or function object, optional       
+    weight_funcs : list of function objects or function object, optional       
         List of weight functions f(dist) to use for the weighting 
         of each channel 1 to k.
         If only one channel is resampled weight_funcs is
@@ -553,15 +383,15 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
         
     :Returns: 
     data : numpy array 
-        Swath data resampled to target grid    
+        Source data resampled to target geometry
     """
     
-    #Get size of grid and reduced swath
-    swath_size = valid_input_index.sum()
-    if len(grid_shape) > 1:
-        grid_size = grid_shape[0] * grid_shape[1]
+    #Get size of output and reduced input
+    input_size = valid_input_index.sum()
+    if len(output_shape) > 1:
+        output_size = output_shape[0] * output_shape[1]
     else:
-        grid_size = grid_shape[0]
+        output_size = output_shape[0]
         
     #Check validity of input
     if not isinstance(data, np.ndarray):
@@ -625,7 +455,7 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
     #Resample based on kd-tree query result
     if resample_type == 'nn' or neighbours == 1:
         #Get nearest neighbour using array indexing
-        index_mask = (index_array == swath_size)
+        index_mask = (index_array == input_size)
         new_index_array = np.where(index_mask, 0, index_array)
         result = new_data[new_index_array]
         result[index_mask] = fill_value
@@ -637,7 +467,7 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
         index_mask_list = []
         for i in range(neighbours):
             index_ni = index_array[:, i].copy()
-            index_mask_ni = (index_ni == swath_size)
+            index_mask_ni = (index_ni == input_size)
             index_ni[index_mask_ni] = 0
             ch_ni = new_data[index_ni]
             ch_neighbour_list.append(ch_ni) 
@@ -655,7 +485,7 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
                 weights = []
                 for j in range(new_data.shape[1]):                    
                     calc_weight = weight_funcs[j](distance)
-                    expanded_calc_weight = np.ones(grid_size) * calc_weight
+                    expanded_calc_weight = np.ones(output_size) * calc_weight
                     weights.append(expanded_calc_weight)
                 weight_list.append(np.column_stack(weights))
             else:
@@ -684,16 +514,16 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
     
     #
     if new_data.ndim > 1:
-        full_result = np.ones((grid_size, new_data.shape[1])) * fill_value
+        full_result = np.ones((output_size, new_data.shape[1])) * fill_value
     else:
-        full_result = np.ones(grid_size) * fill_value
+        full_result = np.ones(output_size) * fill_value
     full_result[valid_output_index] = result 
     result = full_result
     
     #Reshape resampled data to correct shape    
     if new_data.ndim > 1:
         channels = new_data.shape[1]        
-        shape = list(grid_shape)
+        shape = list(output_shape)
         shape.append(channels)
         result = result.reshape(shape)
         
@@ -701,7 +531,7 @@ def get_sample_from_neighbour_info(resample_type, grid_shape, data,
         if is_masked_data:
             result = _remask_data(result)
     else:
-        result = result.reshape(grid_shape)
+        result = result.reshape(output_shape)
         
     #Create masking of fill values
     if use_masked_fill_value:

@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample v0.5.3 documentation</title>
+    <title>pyresample API &mdash; pyresample v0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.5.3',
+        VERSION:     '0.6.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.5.3 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.6.0 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -48,10 +48,10 @@
 <h1>pyresample API<a class="headerlink" href="#pyresample-api" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-geometry">
 <h2>pyresample.geometry<a class="headerlink" href="#module-geometry" title="Permalink to this headline">¶</a></h2>
-<p>Classes for goemetry operations</p>
+<p>Classes for geometry operations</p>
 <dl class="class">
 <dt id="geometry.AreaDefinition">
-<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">AreaDefinition</tt><big>(</big><em>area_id</em>, <em>name</em>, <em>proj_id</em>, <em>proj_dict</em>, <em>x_size</em>, <em>y_size</em>, <em>area_extent</em><big>)</big><a class="headerlink" href="#geometry.AreaDefinition" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">AreaDefinition</tt><big>(</big><em>area_id</em>, <em>name</em>, <em>proj_id</em>, <em>proj_dict</em>, <em>x_size</em>, <em>y_size</em>, <em>area_extent</em>, <em>nprocs=1</em>, <em>lons=None</em>, <em>lats=None</em><big>)</big><a class="headerlink" href="#geometry.AreaDefinition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Holds definition of an area.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -64,6 +64,8 @@
 <dl class="docutils">
 <dt>area_id <span class="classifier-delimiter">:</span> <span class="classifier">str </span></dt>
 <dd>ID of area</dd>
+<dt>name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Name of area</dd>
 <dt>proj_id <span class="classifier-delimiter">:</span> <span class="classifier">str </span></dt>
 <dd>ID of projection</dd>
 <dt>proj_dict <span class="classifier-delimiter">:</span> <span class="classifier">dict </span></dt>
@@ -74,6 +76,12 @@
 <dd>y dimension in number of pixels</dd>
 <dt>area_extent <span class="classifier-delimiter">:</span> <span class="classifier">list </span></dt>
 <dd>Area extent as a list (LL_x, LL_y, UR_x, UR_y)</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
+<dd>Number of processor cores to be used</dd>
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array, optional</span></dt>
+<dd>Grid lons</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array, optional</span></dt>
+<dd>Grid lats</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -86,6 +94,8 @@
 <dl class="docutils">
 <dt>area_id <span class="classifier-delimiter">:</span> <span class="classifier">str         </span></dt>
 <dd>ID of area</dd>
+<dt>name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Name of area</dd>
 <dt>proj_id <span class="classifier-delimiter">:</span> <span class="classifier">str         </span></dt>
 <dd>ID of projection</dd>
 <dt>proj_dict <span class="classifier-delimiter">:</span> <span class="classifier">dict        </span></dt>
@@ -107,13 +117,23 @@
 <dt>pixel_upper_left <span class="classifier-delimiter">:</span> <span class="classifier">list </span></dt>
 <dd>Coordinates (x, y) of center of upper left pixel in projection units</dd>
 <dt>pixel_offset_x <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
-<dd>x offset between projection center and upper left corner of upper left pixel 
-in units of pixels.</dd>
+<dd>x offset between projection center and upper left corner of upper 
+left pixel in units of pixels.</dd>
 <dt>pixel_offset_y <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
-<dd>y offset between projection center and upper left corner of upper left pixel 
-in units of pixels..</dd>
-<dt>proj4_string <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
-<dd>Projection defined as Proj.4 string</dd>
+<dd>y offset between projection center and upper left corner of upper 
+left pixel in units of pixels..</dd>
+</dl>
+<p>Properties:
+proj4_string : str</p>
+<blockquote>
+Projection defined as Proj.4 string</blockquote>
+<dl class="docutils">
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid lons</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid lats</dd>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid cartesian coordinates</dd>
 </dl>
 <dl class="method">
 <dt id="geometry.AreaDefinition.get_lonlat">
@@ -137,12 +157,12 @@ col : int</p>
 </tr>
 </tbody>
 </table>
-<p>(lon, lat) : list of floats</p>
+<p>(lon, lat) : tuple of floats</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="geometry.AreaDefinition.get_lonlats">
-<tt class="descname">get_lonlats</tt><big>(</big><em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.AreaDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_lonlats</tt><big>(</big><em>nprocs=None</em><big>)</big><a class="headerlink" href="#geometry.AreaDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns lon and lat arrays of area.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -154,7 +174,8 @@ col : int</p>
 </table>
 <dl class="docutils">
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
+<dd>Number of processor cores to be used.
+Defaults to the nprocs set when instantiating object</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -165,7 +186,7 @@ col : int</p>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>(lons, lats) <span class="classifier-delimiter">:</span> <span class="classifier">list of numpy arrays</span></dt>
+<dt>(lons, lats) <span class="classifier-delimiter">:</span> <span class="classifier">tuple of numpy arrays</span></dt>
 <dd>Grids of area lons and and lats</dd>
 </dl>
 </dd></dl>
@@ -195,14 +216,164 @@ col : int</p>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="geometry.BaseDefinition">
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">BaseDefinition</tt><big>(</big><em>lons=None</em>, <em>lats=None</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for geometry definitions</p>
+<dl class="attribute">
+<dt id="geometry.BaseDefinition.cartesian_coords">
+<tt class="descname">cartesian_coords</tt><a class="headerlink" href="#geometry.BaseDefinition.cartesian_coords" title="Permalink to this definition">¶</a></dt>
+<dd>Retrives and caches cartesian coordinates</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.get_cartesian_coords">
+<tt class="descname">get_cartesian_coords</tt><big>(</big><em>nprocs=None</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_cartesian_coords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve cartesian coordinates of geometry defintion</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of processor cores to be used.
+Defaults to the nprocs set when instantiating object</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.get_lonlats">
+<tt class="descname">get_lonlats</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
+<dd>Retrieve lons and lats of geometry definition</dd></dl>
+
+<dl class="attribute">
+<dt id="geometry.BaseDefinition.lats">
+<tt class="descname">lats</tt><a class="headerlink" href="#geometry.BaseDefinition.lats" title="Permalink to this definition">¶</a></dt>
+<dd>Retrives and caches lats</dd></dl>
+
+<dl class="attribute">
+<dt id="geometry.BaseDefinition.lons">
+<tt class="descname">lons</tt><a class="headerlink" href="#geometry.BaseDefinition.lons" title="Permalink to this definition">¶</a></dt>
+<dd>Retrives and caches lons</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="geometry.CoordinateDefinition">
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">CoordinateDefinition</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.CoordinateDefinition" title="Permalink to this definition">¶</a></dt>
+<dd>Base class for geometry definitions defined by lons and lats only</dd></dl>
+
+<dl class="class">
+<dt id="geometry.GridDefinition">
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">GridDefinition</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.GridDefinition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Grid defined by lons and lats</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>lons : numpy array
+lats : numpy array
+nprocs : int, optional</p>
+<blockquote>
+Number of processor cores to be used for calculations.</blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd>Grid shape as (rows, cols)</dd>
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of elements in grid</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Properties:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid lons</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid lats</dd>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Grid cartesian coordinates</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="geometry.SwathDefinition">
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">SwathDefinition</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.SwathDefinition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Swath defined by lons and lats</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>lons : numpy array
+lats : numpy array
+nprocs : int, optional</p>
+<blockquote>
+Number of processor cores to be used for calculations.</blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>shape <span class="classifier-delimiter">:</span> <span class="classifier">tuple</span></dt>
+<dd>Swath shape</dd>
+<dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of elements in swath</dd>
+<dt>ndims <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Swath dimensions</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Properties:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Swath lons</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Swath lats</dd>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>Swath cartesian coordinates</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-image">
 <h2>pyresample.image<a class="headerlink" href="#module-image" title="Permalink to this headline">¶</a></h2>
-<p>Handles gridded images</p>
+<p>Handles resampling of images with assigned geometry definitions</p>
 <dl class="class">
 <dt id="image.ImageContainer">
-<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainer</tt><big>(</big><em>image_data</em>, <em>area_def</em><big>)</big><a class="headerlink" href="#image.ImageContainer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Holds image with area definition. 
+<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainer</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds image with geometry definition. 
 Allows indexing with linesample arrays.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -215,8 +386,14 @@ Allows indexing with linesample arrays.</p>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
-<dd>Area definition as AreaDefinition object</dd>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Geometry definition</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
+<dd>Set undetermined pixels to this value.
+If fill_value is None a masked array is returned 
+with undetermined pixels masked</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -229,12 +406,16 @@ Allows indexing with linesample arrays.</p>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
-<dd>Area definition as AreaDefinition object</dd>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Geometry definition</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Resample result fill value</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainer.get_array_from_linesample">
-<tt class="descname">get_array_from_linesample</tt><big>(</big><em>row_indices</em>, <em>col_indices</em>, <em>fill_value=0</em><big>)</big><a class="headerlink" href="#image.ImageContainer.get_array_from_linesample" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_array_from_linesample</tt><big>(</big><em>row_indices</em>, <em>col_indices</em><big>)</big><a class="headerlink" href="#image.ImageContainer.get_array_from_linesample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples from image based on index arrays.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -249,9 +430,6 @@ Allows indexing with linesample arrays.</p>
 <dd>Row indices. Dimensions must match col_indices</dd>
 <dt>col_indices <span class="classifier-delimiter">:</span> <span class="classifier">numpy array of</span></dt>
 <dd>Col indices. Dimensions must match row_indices</dd>
-<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
-<dd>Set undetermined pixels to this value.
-If fill_value is None a masked array is returned</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -267,13 +445,23 @@ If fill_value is None a masked array is returned</dd>
 </dl>
 </dd></dl>
 
+<dl class="method">
+<dt id="image.ImageContainer.get_array_from_neighbour_info">
+<tt class="descname">get_array_from_neighbour_info</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#image.ImageContainer.get_array_from_neighbour_info" title="Permalink to this definition">¶</a></dt>
+<dd>Base method for resampling from preprocessed data.</dd></dl>
+
+<dl class="method">
+<dt id="image.ImageContainer.resample">
+<tt class="descname">resample</tt><big>(</big><em>target_geo_def</em><big>)</big><a class="headerlink" href="#image.ImageContainer.resample" title="Permalink to this definition">¶</a></dt>
+<dd>Base method for resampling</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="image.ImageContainerNearest">
-<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerNearest</tt><big>(</big><em>image_data</em>, <em>area_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Holds image with area definition. 
-Allows nearest neighbour resampling within area.</p>
+<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerNearest</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds image with geometry definition. 
+Allows nearest neighbour resampling to new geometry definition.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -285,13 +473,22 @@ Allows nearest neighbour resampling within area.</p>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
-<dd>Area definition as AreaDefinition object</dd>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Geometry definition</dd>
 <dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
 <dd>Cut off distance in meters</dd>
 <dt>epsilon <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
 <dd>Allowed uncertainty in meters. Increasing uncertainty
 reduces execution time</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
+<dd>Set undetermined pixels to this value.
+If fill_value is None a masked array is returned 
+with undetermined pixels masked</dd>
+<dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd>Perform coarse data reduction before resampling in order
+to reduce execution time</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -304,12 +501,22 @@ reduces execution time</dd>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
-<dd>Area definition as AreaDefinition object</dd>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Geometry definition</dd>
+<dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
+<dd>Cut off distance in meters</dd>
+<dt>epsilon <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>Allowed uncertainty in meters</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Resample result fill value</dd>
+<dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>Perform coarse data reduction before resampling</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainerNearest.resample">
-<tt class="descname">resample</tt><big>(</big><em>target_area_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest.resample" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">resample</tt><big>(</big><em>target_geo_def</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest.resample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples image to area definition using nearest neighbour 
 approach</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -321,14 +528,8 @@ approach</p>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
-<dd>Target area definition as AreaDefinition object</dd>
-<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
-<dd>Set undetermined pixels to this value.
-If fill_value is None a masked array is returned 
-with undetermined pixels masked</dd>
-<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
+<dt>target_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Target geometry definition</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -340,7 +541,7 @@ with undetermined pixels masked</dd>
 </table>
 <dl class="docutils">
 <dt>image_container <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
-<dd>ImageContainer object of resampled area</dd>
+<dd>ImageContainerNearest object of resampled geometry</dd>
 </dl>
 </dd></dl>
 
@@ -348,7 +549,7 @@ with undetermined pixels masked</dd>
 
 <dl class="class">
 <dt id="image.ImageContainerQuick">
-<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerQuick</tt><big>(</big><em>image_data</em>, <em>area_def</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerQuick</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick" title="Permalink to this definition">¶</a></dt>
 <dd><p>Holds image with area definition. &#8216;
 Allows quick resampling within area.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -362,8 +563,14 @@ Allows quick resampling within area.</p>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
 <dd>Area definition as AreaDefinition object</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
+<dd>Set undetermined pixels to this value.
+If fill_value is None a masked array is returned 
+with undetermined pixels masked</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -376,14 +583,18 @@ Allows quick resampling within area.</p>
 <dl class="docutils">
 <dt>image_data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Image data</dd>
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
 <dd>Area definition as AreaDefinition object</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Resample result fill value</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainerQuick.resample">
-<tt class="descname">resample</tt><big>(</big><em>target_area_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick.resample" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">resample</tt><big>(</big><em>target_area_def</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick.resample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples image to area definition using nearest neighbour 
-approach in projection coordinates</p>
+approach in projection coordinates.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -395,12 +606,6 @@ approach in projection coordinates</p>
 <dl class="docutils">
 <dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
 <dd>Target area definition as AreaDefinition object</dd>
-<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional </span></dt>
-<dd>Set undetermined pixels to this value.
-If fill_value is None a masked array is returned 
-with undetermined pixels masked</dd>
-<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -412,7 +617,7 @@ with undetermined pixels masked</dd>
 </table>
 <dl class="docutils">
 <dt>image_container <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
-<dd>ImageContainer object of resampled area</dd>
+<dd>ImageContainerQuick object of resampled area</dd>
 </dl>
 </dd></dl>
 
@@ -505,6 +710,42 @@ with undetermined pixels masked</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="grid.get_linesample">
+<tt class="descclassname">grid.</tt><tt class="descname">get_linesample</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>source_area_def</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#grid.get_linesample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns index row and col arrays for resampling</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
+<dd>Lons. Dimensions must match lats</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array   </span></dt>
+<dd>Lats. Dimensions must match lons</dd>
+<dt>source_area_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
+<dd>Source definition as AreaDefinition object</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
+<dd>Number of processor cores to be used</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>(row_indices, col_indices) <span class="classifier-delimiter">:</span> <span class="classifier">tuple of numpy arrays</span></dt>
+<dd>Arrays for resampling area by array indexing</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="grid.get_resampled_image">
 <tt class="descclassname">grid.</tt><tt class="descname">get_resampled_image</tt><big>(</big><em>target_area_def</em>, <em>source_area_def</em>, <em>source_image_data</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#grid.get_resampled_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples image using nearest neighbour method in cartesian 
@@ -546,13 +787,13 @@ with undetermined pixels masked</dd>
 </dd></dl>
 
 </div>
-<div class="section" id="module-swath">
-<h2>pyresample.swath<a class="headerlink" href="#module-swath" title="Permalink to this headline">¶</a></h2>
-<p>Handles reprojection of satellite swath data. Several types of resampling are supported</p>
+<div class="section" id="module-kd_tree">
+<h2>pyresample.kd_tree<a class="headerlink" href="#module-kd_tree" title="Permalink to this headline">¶</a></h2>
+<p>Handles reprojection of geolocated data. Several types of resampling are supported</p>
 <dl class="function">
-<dt id="swath.get_neighbour_info">
-<tt class="descclassname">swath.</tt><tt class="descname">get_neighbour_info</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>target_area_def</em>, <em>radius_of_influence</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#swath.get_neighbour_info" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns information on nearest neighbours and relevant swath data points</p>
+<dt id="kd_tree.get_neighbour_info">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">get_neighbour_info</tt><big>(</big><em>source_geo_def</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.get_neighbour_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns neighbour info</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -562,21 +803,10 @@ with undetermined pixels masked</dd>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>1d array of swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
-<dd>1d array of swath lats</dd>
-<dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">AreaDefinition or numpy array</span></dt>
-<dd>Target area definition as instance of AreaDefinition 
-or array containing lons and lats of the target area 
-according to:
-target_area_def[:, :, 0] = lons and
-target_area_def[:, :, 1] = lats
-or array containing cartesian coordinates the target
-area according to:
-target_area_def[:, :, 0] = X and
-target_area_def[:, :, 1] = Y and
-target_area_def[:, :, 2] = Z</dd>
+<dt>source_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of source</dd>
+<dt>target_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of target</dd>
 <dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
 <dd>Cut off distance in meters</dd>
 <dt>neighbours <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
@@ -584,9 +814,15 @@ target_area_def[:, :, 2] = Z</dd>
 <dt>epsilon <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
 <dd>Allowed uncertainty in meters. Increasing uncertainty
 reduces execution time</dd>
-<dt>epsilon <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
-<dd>Allowed uncertainty in meters. Increasing uncertainty
-reduces execution time</dd>
+<dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}, optional </span></dt>
+<dd>Set undetermined pixels to this value.
+If fill_value is None a masked array is returned 
+with undetermined pixels masked</dd>
+<dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd>Perform initial coarse reduction of source dataset in order
+to reduce execution time</dd>
+<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of processor cores to be used</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -596,17 +832,15 @@ reduces execution time</dd>
 </tr>
 </tbody>
 </table>
-<dl class="docutils">
-<dt>(valid_index, index_array, distance_array) <span class="classifier-delimiter">:</span> <span class="classifier">tuple of numpy array </span></dt>
-<dd>valid_index: boolean array of relevant swath indices
-index_array: array of neighbour indices in reduced swath array
-distance_array: array of distances to neighbours</dd>
-</dl>
+<p>(valid_input_index, valid_output_index, 
+index_array, distance_array) : tuple of numpy arrays</p>
+<blockquote>
+Neighbour resampling info</blockquote>
 </dd></dl>
 
 <dl class="function">
-<dt id="swath.get_sample_from_neighbour_info">
-<tt class="descclassname">swath.</tt><tt class="descname">get_sample_from_neighbour_info</tt><big>(</big><em>resample_type</em>, <em>grid_shape</em>, <em>data</em>, <em>valid_index</em>, <em>index_array</em>, <em>distance_array=None</em>, <em>weight_funcs=None</em>, <em>fill_value=0</em><big>)</big><a class="headerlink" href="#swath.get_sample_from_neighbour_info" title="Permalink to this definition">¶</a></dt>
+<dt id="kd_tree.get_sample_from_neighbour_info">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">get_sample_from_neighbour_info</tt><big>(</big><em>resample_type</em>, <em>output_shape</em>, <em>data</em>, <em>valid_input_index</em>, <em>valid_output_index</em>, <em>index_array</em>, <em>distance_array=None</em>, <em>weight_funcs=None</em>, <em>fill_value=0</em><big>)</big><a class="headerlink" href="#kd_tree.get_sample_from_neighbour_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples swath based on neighbour info</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -620,20 +854,18 @@ distance_array: array of distances to neighbours</dd>
 <dt>resample_type <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;nn&#8217;, &#8216;custom&#8217;}</span></dt>
 <dd>&#8216;nn&#8217;: Use nearest neighbour resampling
 &#8216;custom&#8217;: Resample based on weight_funcs</dd>
-<dt>grid_shape <span class="classifier-delimiter">:</span> <span class="classifier">(int, int)</span></dt>
-<dd>Shape of target grid as (rows, cols)</dd>
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>1d array of swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
-<dd>1d array of swath lats</dd>
-<dt>valid_index <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>valid_index from get_neighbour_info</dd>
+<dt>output_shape <span class="classifier-delimiter">:</span> <span class="classifier">(int, int)</span></dt>
+<dd>Shape of output as (rows, cols)</dd>
+<dt>valid_input_index <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>valid_input_index from get_neighbour_info</dd>
+<dt>valid_output_index <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dd>valid_output_index from get_neighbour_info</dd>
 <dt>index_array <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
 <dd>index_array from get_neighbour_info</dd>
 <dt>distance_array <span class="classifier-delimiter">:</span> <span class="classifier">numpy array, optional</span></dt>
 <dd>distance_array from get_neighbour_info
 Not needed for &#8216;nn&#8217; resample type</dd>
-<dt>weight_funcs <span class="classifier-delimiter">:</span> <span class="classifier">list function objects or function object, optional       </span></dt>
+<dt>weight_funcs <span class="classifier-delimiter">:</span> <span class="classifier">list of function objects or function object, optional       </span></dt>
 <dd>List of weight functions f(dist) to use for the weighting 
 of each channel 1 to k.
 If only one channel is resampled weight_funcs is
@@ -654,14 +886,14 @@ with undetermined pixels masked</dd>
 </table>
 <dl class="docutils">
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
-<dd>Swath data resampled to target grid</dd>
+<dd>Source data resampled to target geometry</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="swath.resample_custom">
-<tt class="descclassname">swath.</tt><tt class="descname">resample_custom</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>data</em>, <em>target_area_def</em>, <em>radius_of_influence</em>, <em>weight_funcs</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#swath.resample_custom" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resamples swath using kd-tree custom radial weighting neighbour approach</p>
+<dt id="kd_tree.resample_custom">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_custom</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>weight_funcs</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_custom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resamples data using kd-tree custom radial weighting neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -671,27 +903,16 @@ with undetermined pixels masked</dd>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>1d array of swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
-<dd>1d array of swath lats</dd>
+<dt>source_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of source</dd>
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
 <dd>1d array of single channel data points or
-(swath_size, k) array of k channels of datapoints</dd>
-<dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">AreaDefinition or numpy array</span></dt>
-<dd>Target area definition as instance of AreaDefinition 
-or array containing lons and lats of the target area 
-according to:
-target_area_def[:, :, 0] = lons and
-target_area_def[:, :, 1] = lats
-or array containing cartesian coordinates the target
-area according to:
-target_area_def[:, :, 0] = X and
-target_area_def[:, :, 1] = Y and
-target_area_def[:, :, 2] = Z</dd>
+(source_size, k) array of k channels of datapoints</dd>
+<dt>target_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of target</dd>
 <dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
 <dd>Cut off distance in meters</dd>
-<dt>weight_funcs <span class="classifier-delimiter">:</span> <span class="classifier">list function objects or function object       </span></dt>
+<dt>weight_funcs <span class="classifier-delimiter">:</span> <span class="classifier">list of function objects or function object       </span></dt>
 <dd>List of weight functions f(dist) to use for the weighting 
 of each channel 1 to k.
 If only one channel is resampled weight_funcs is
@@ -706,7 +927,7 @@ reduces execution time</dd>
 If fill_value is None a masked array is returned 
 with undetermined pixels masked</dd>
 <dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd>Perform initial coarse reduction of swath dataset in order
+<dd>Perform initial coarse reduction of source dataset in order
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
@@ -721,14 +942,14 @@ to reduce execution time</dd>
 </table>
 <dl class="docutils">
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
-<dd>Swath data resampled to target grid</dd>
+<dd>Source data resampled to target geometry</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="swath.resample_gauss">
-<tt class="descclassname">swath.</tt><tt class="descname">resample_gauss</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>data</em>, <em>target_area_def</em>, <em>radius_of_influence</em>, <em>sigmas</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#swath.resample_gauss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resamples swath using kd-tree gaussian weighting neighbour approach</p>
+<dt id="kd_tree.resample_gauss">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_gauss</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>sigmas</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_gauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resamples data using kd-tree gaussian weighting neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -738,24 +959,13 @@ to reduce execution time</dd>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>1d array of swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
-<dd>1d array of swath lats</dd>
+<dt>source_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of source</dd>
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
 <dd>1d array of single channel data points or
-(swath_size, k) array of k channels of datapoints</dd>
-<dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">AreaDefinition or numpy array</span></dt>
-<dd>Target area definition as instance of AreaDefinition 
-or array containing lons and lats of the target area 
-according to:
-target_area_def[:, :, 0] = lons and
-target_area_def[:, :, 1] = lats
-or array containing cartesian coordinates the target
-area according to:
-target_area_def[:, :, 0] = X and
-target_area_def[:, :, 1] = Y and
-target_area_def[:, :, 2] = Z</dd>
+(source_size, k) array of k channels of datapoints</dd>
+<dt>target_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of target</dd>
 <dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
 <dd>Cut off distance in meters</dd>
 <dt>sigmas <span class="classifier-delimiter">:</span> <span class="classifier">list of floats or float            </span></dt>
@@ -772,7 +982,7 @@ reduces execution time</dd>
 If fill_value is None a masked array is returned 
 with undetermined pixels masked</dd>
 <dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd>Perform initial coarse reduction of swath dataset in order
+<dd>Perform initial coarse reduction of source dataset in order
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
@@ -787,14 +997,14 @@ to reduce execution time</dd>
 </table>
 <dl class="docutils">
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
-<dd>Swath data resampled to target grid</dd>
+<dd>Source data resampled to target geometry</dd>
 </dl>
 </dd></dl>
 
 <dl class="function">
-<dt id="swath.resample_nearest">
-<tt class="descclassname">swath.</tt><tt class="descname">resample_nearest</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>data</em>, <em>target_area_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#swath.resample_nearest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resamples swath using kd-tree nearest neighbour approach</p>
+<dt id="kd_tree.resample_nearest">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_nearest</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_nearest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resamples data using kd-tree nearest neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -804,28 +1014,15 @@ to reduce execution time</dd>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>1d array of swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
-<dd>1d array of swath lats</dd>
+<dt>source_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of source</dd>
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array               </span></dt>
 <dd>1d array of single channel data points or
-(swath_size, k) array of k channels of datapoints</dd>
-<dt>target_area_def <span class="classifier-delimiter">:</span> <span class="classifier">AreaDefinition or numpy array</span></dt>
-<dd>Target area definition as instance of AreaDefinition 
-or array containing lons and lats of the target area 
-according to:
-target_area_def[:, :, 0] = lons and
-target_area_def[:, :, 1] = lats
-or array containing cartesian coordinates the target
-area according to:
-target_area_def[:, :, 0] = X and
-target_area_def[:, :, 1] = Y and
-target_area_def[:, :, 2] = Z</dd>
+(source_size, k) array of k channels of datapoints</dd>
+<dt>target_geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Geometry definition of target</dd>
 <dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
 <dd>Cut off distance in meters</dd>
-<dt>neighbours <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>The number of neigbours to consider for each swath point</dd>
 <dt>epsilon <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
 <dd>Allowed uncertainty in meters. Increasing uncertainty
 reduces execution time</dd>
@@ -834,7 +1031,7 @@ reduces execution time</dd>
 If fill_value is None a masked array is returned 
 with undetermined pixels masked</dd>
 <dt>reduce_data <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
-<dd>Perform initial coarse reduction of swath dataset in order
+<dd>Perform initial coarse reduction of source dataset in order
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
@@ -849,7 +1046,7 @@ to reduce execution time</dd>
 </table>
 <dl class="docutils">
 <dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
-<dd>Swath data resampled to target grid</dd>
+<dd>Source data resampled to target geometry</dd>
 </dl>
 </dd></dl>
 
@@ -861,38 +1058,6 @@ to reduce execution time</dd>
 <dt id="utils.AreaNotFound">
 <em class="property">exception </em><tt class="descclassname">utils.</tt><tt class="descname">AreaNotFound</tt><a class="headerlink" href="#utils.AreaNotFound" title="Permalink to this definition">¶</a></dt>
 <dd>Exception raised when specified are is no found in file</dd></dl>
-
-<dl class="function">
-<dt id="utils.generate_cartesian_grid">
-<tt class="descclassname">utils.</tt><tt class="descname">generate_cartesian_grid</tt><big>(</big><em>area_def</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#utils.generate_cartesian_grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate the cartesian coordinates grid of the area</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<dl class="docutils">
-<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
-<dd>Area definition as AreaDefinition object</dd>
-<dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
-</dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
-<dl class="docutils">
-<dt>grid <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>Cartesian grid</dd>
-</dl>
-</dd></dl>
 
 <dl class="function">
 <dt id="utils.generate_nearest_neighbour_linesample_arrays">
@@ -924,7 +1089,7 @@ to reduce execution time</dd>
 </tr>
 </tbody>
 </table>
-<p>(row_indices, col_indices) : list of numpy arrays</p>
+<p>(row_indices, col_indices) : tuple of numpy arrays</p>
 </dd></dl>
 
 <dl class="function">
@@ -955,7 +1120,7 @@ to reduce execution time</dd>
 </tr>
 </tbody>
 </table>
-<p>(row_indices, col_indices) : list of numpy arrays</p>
+<p>(row_indices, col_indices) : tuple of numpy arrays</p>
 </dd></dl>
 
 <dl class="function">
@@ -1222,7 +1387,7 @@ lon lat grid</p>
 <li><a class="reference external" href="#module-geometry">pyresample.geometry</a></li>
 <li><a class="reference external" href="#module-image">pyresample.image</a></li>
 <li><a class="reference external" href="#module-grid">pyresample.grid</a></li>
-<li><a class="reference external" href="#module-swath">pyresample.swath</a></li>
+<li><a class="reference external" href="#module-kd_tree">pyresample.kd_tree</a></li>
 <li><a class="reference external" href="#module-utils">pyresample.utils</a></li>
 <li><a class="reference external" href="#module-data_reduce">pyresample.data_reduce</a></li>
 </ul>
@@ -1266,7 +1431,7 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

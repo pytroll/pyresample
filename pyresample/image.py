@@ -15,7 +15,7 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Handles gridded images"""
+"""Handles resampling of images with assigned geometry definitions"""
 
 import numpy as np
 
@@ -23,20 +23,30 @@ import geometry, grid, kd_tree
 
 
 class ImageContainer(object):
-    """Holds image with area definition. 
+    """Holds image with geometry definition. 
     Allows indexing with linesample arrays.
     
     :Parameters:
     image_data : numpy array 
         Image data
-    area_def : object 
-        Area definition as AreaDefinition object
-    
+    geo_def : object 
+        Geometry definition
+    fill_value : {int, None} optional 
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned 
+        with undetermined pixels masked
+    nprocs : int, optional 
+        Number of processor cores to be used
+        
     :Attributes:
     image_data : numpy array 
         Image data
-    area_def : object 
-        Area definition as AreaDefinition object    
+    geo_def : object 
+        Geometry definition
+    fill_value : {int, None}
+        Resample result fill value
+    nprocs : int
+        Number of processor cores to be used
     """
         
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
@@ -72,6 +82,8 @@ class ImageContainer(object):
         return self.image_data.__repr__()
         
     def resample(self, target_geo_def):
+        """Base method for resampling"""
+        
         raise NotImplementedError('Method "resample" is not implemented ' 
                                   'in class %s' % self.__class__.__name__)
 
@@ -82,21 +94,23 @@ class ImageContainer(object):
         row_indices : numpy array
             Row indices. Dimensions must match col_indices
         col_indices : numpy array of
-            Col indices. Dimensions must match row_indices
-        fill_value : {int, None} optional 
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned         
+            Col indices. Dimensions must match row_indices 
         
         :Returns: 
         image_data : numpy_array
             Resampled image data
         """
+        if self.geo_def.ndim != 2:
+            raise TypeError('Resampling from linesamples only makes sense ' 
+                            'on 2D data')
         
         return grid.get_image_from_linesample(row_indices, col_indices,
                                               self.image_data, 
                                               self.fill_value)
         
     def get_array_from_neighbour_info(self, *args, **kwargs):
+        """Base method for resampling from preprocessed data."""
+        
         raise NotImplementedError('Method "get_array_from_neighbour_info" is '
                                   'not implemented in class %s' % 
                                   self.__class__.__name__)
@@ -109,14 +123,24 @@ class ImageContainerQuick(ImageContainer):
     :Parameters:
     image_data : numpy array 
         Image data
-    area_def : object 
+    geo_def : object 
         Area definition as AreaDefinition object
-    
+    fill_value : {int, None} optional 
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned 
+        with undetermined pixels masked
+    nprocs : int, optional 
+        Number of processor cores to be used
+        
     :Attributes:
     image_data : numpy array 
         Image data
-    area_def : object 
-        Area definition as AreaDefinition object    
+    geo_def : object 
+        Area definition as AreaDefinition object
+    fill_value : {int, None}
+        Resample result fill value
+    nprocs : int
+        Number of processor cores to be used    
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
@@ -129,21 +153,15 @@ class ImageContainerQuick(ImageContainer):
 
     def resample(self, target_area_def):
         """Resamples image to area definition using nearest neighbour 
-        approach in projection coordinates
+        approach in projection coordinates.
         
         :Parameters:
         target_area_def : object 
             Target area definition as AreaDefinition object
-        fill_value : {int, None} optional 
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked
-        nprocs : int, optional 
-            Number of processor cores to be used
         
         :Returns: 
         image_container : object
-            ImageContainer object of resampled area   
+            ImageContainerQuick object of resampled area   
         """        
         
         resampled_image = grid.get_resampled_image(target_area_def,
@@ -156,25 +174,44 @@ class ImageContainerQuick(ImageContainer):
     
 
 class ImageContainerNearest(ImageContainer):
-    """Holds image with area definition. 
-    Allows nearest neighbour resampling within area.
+    """Holds image with geometry definition. 
+    Allows nearest neighbour resampling to new geometry definition.
     
     :Parameters:
     image_data : numpy array 
         Image data
-    area_def : object 
-        Area definition as AreaDefinition object
+    geo_def : object 
+        Geometry definition
     radius_of_influence : float 
         Cut off distance in meters    
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
+    fill_value : {int, None} optional 
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned 
+        with undetermined pixels masked
+    reduce_data : bool, optional
+        Perform coarse data reduction before resampling in order
+        to reduce execution time
+    nprocs : int, optional 
+        Number of processor cores to be used
     
     :Attributes:
     image_data : numpy array 
         Image data
-    area_def : object 
-        Area definition as AreaDefinition object    
+    geo_def : object 
+        Geometry definition
+    radius_of_influence : float 
+        Cut off distance in meters    
+    epsilon : float
+        Allowed uncertainty in meters
+    fill_value : {int, None}
+        Resample result fill value
+    reduce_data : bool
+        Perform coarse data reduction before resampling
+    nprocs : int
+        Number of processor cores to be used    
     """
 
     def __init__(self, image_data, geo_def, radius_of_influence, epsilon=0, 
@@ -191,18 +228,12 @@ class ImageContainerNearest(ImageContainer):
         approach
         
         :Parameters:
-        target_area_def : object 
-            Target area definition as AreaDefinition object        
-        fill_value : {int, None} optional 
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked
-        nprocs : int, optional 
-            Number of processor cores to be used
-        
+        target_geo_def : object 
+            Target geometry definition         
+          
         :Returns: 
         image_container : object
-            ImageContainer object of resampled area   
+            ImageContainerNearest object of resampled geometry   
         """
         
         #lons, lats = self.area_def.get_lonlats(nprocs)

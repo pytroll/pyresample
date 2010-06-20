@@ -1,7 +1,8 @@
 Resampling of swath data
 ========================
 
-Pyresample can be used to resample a swath dataset to a grid. Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function or bucket resampling.
+Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath. 
+Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function or bucket resampling.
 
 pyresample.swath
 ----------------
@@ -34,10 +35,12 @@ Example showing how to resample a generated swath dataset to a grid using neares
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> result = swath.resample_nearest(lons.ravel(), lats.ravel(), data.ravel(),
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
  ... area_def, radius_of_influence=50000, epsilon=100)
 
-Lons, lats and data arguments are numpy arrays. Lons and lats are 1D arrays and data is either a 1D array or an array of shape (swath_size, channels).
+If the arguments **swath_def** and **area_def** where switched (and **data** matched the dimensions of **area_def**) the grid of **area_def**
+would be resampled to the swath defined by **swath_def**.  
 
 Note the keyword arguments:
 
@@ -45,6 +48,31 @@ Note the keyword arguments:
 * **epsilon**: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.
 
 If **data** if a masked array the mask will follow the neighbour pixel assignment.
+
+If there are multiple channels in the dataset the data argument should be of the shape (number_of_data_points, channels).
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import swath, geometry
+ >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+ ...                                {'a': '6378144.0', 'b': '6356759.0',
+ ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                800, 800,
+ ...                                [-1370912.72, -909968.64,
+ ...                                 1029087.28, 1490031.36])
+ >>> channel1 = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> channel2 = np.fromfunction(lambda y, x: y*x, (50, 10)) * 2
+ >>> channel3 = np.fromfunction(lambda y, x: y*x, (50, 10)) * 3
+ >>> data = np.column_stack((channel1.ravel(), channel2.ravel(), channel3.ravel()))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
+ ... area_def, radius_of_influence=50000, epsilon=100) 
+
+For nearest neighbour resampling the class **image.ImageContainerNearest** can be used as well as **kd_tree.resample_nearest**
 
 resample_gauss
 **************
@@ -67,7 +95,8 @@ Example showing how to resample a generated swath dataset to a grid using Gaussi
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> result = swath.resample_gauss(lons.ravel(), lats.ravel(), data.ravel(), 
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = kd_tree.resample_gauss(swath_def, data.ravel(), 
  ... area_def, radius_of_influence=50000, sigmas=25000)
 
 If more channels are present in **data** the keyword argument **sigmas** must be a list containing a sigma for each channel.
@@ -94,9 +123,10 @@ Example showing how to resample a generated swath dataset to a grid using an arb
  ...                                 1029087.28, 1490031.36])
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> wf = lambda r: 1 - r/100000.0
- >>> result  = swath.resample_custom(lons.ravel(), lats.ravel(), data.ravel(),
+ >>> result  = kd_tree.resample_custom(swath_def, data.ravel(),
  ...  area_def, radius_of_influence=50000, weight_funcs=wf)
 
 If more channels are present in **data** the keyword argument **weight_funcs** must be a list containing a radial function for each channel.
@@ -128,10 +158,11 @@ retrieve the resampled data from each of the datasets fast.
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> valid_index, index_array, distance_array = \
- ...                        swath.get_neighbour_info(lons.ravel(), lats.ravel(), 
- ...                                                 area_def, 50000,  
- ...                                                 neighbours=1)
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> valid_input_index, valid_output_index, index_array, distance_array = \
+ ...                        kd_tree.get_neighbour_info(swath_def, 
+ ...                               	                   area_def, 50000,  
+ ...                                                   neighbours=1)
  >>> res = swath.get_sample_from_neighbour_info('nn', area_def.shape, data.ravel(), 
  ...                                            valid_index, index_array)
  

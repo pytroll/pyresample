@@ -15,7 +15,7 @@ Documentation
    :maxdepth: 2
 
    installation
-   area_def
+   geo_def
    grid
    swath
    multi

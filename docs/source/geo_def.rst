@@ -1,7 +1,12 @@
-Area definitions
-================
+Geometry definitions
+====================
+The module **pyresample.geometry** contains classes for describing different kinds of types
+of remote sensing data geometries. The use of the different classes is described below.
 
-The cartegraphic definition of areas used by Pyresample is contained in a object of type AreaDefintion. 
+AreaDefinition
+--------------
+
+The cartographic definition of grid areas used by Pyresample is contained in an object of type AreaDefintion. 
 The following arguments are needed to initialize an area:
 
 * **area_id** ID of area  
@@ -34,7 +39,7 @@ Creating an area definition:
  >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0',
  ...              'proj': 'laea', 'lat_0': '-90'}
  >>> area_def = geometry.AreaDefinition(area_id, name, proj_id, proj_dict, x_size,
- ...                                y_size, area_extent)
+ ...                                    y_size, area_extent)
  >>> print area_def
  Area ID: ease_sh
  Name: Antarctic EASE grid
@@ -45,7 +50,7 @@ Creating an area definition:
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 pyresample.utils
-----------------
+****************
 The utils module of pyresample has convenience functions for constructing
 area defintions. The function **get_area_def** can construct an area definition
 based on a proj4-string or a list of proj4 arguments.
@@ -110,4 +115,29 @@ An area definition dict can be read using
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-Note: In the configuration file **REGION** maps to **area_id** and **PCS_ID** maps to **proj_id**. 
+Note: In the configuration file **REGION** maps to **area_id** and **PCS_ID** maps to **proj_id**.
+
+GridDefinition
+--------------
+If the lons and lats grid values are known the area definition information can be skipped for some types
+of resampling by using a GridDefinition object instead an AreaDefinition object.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import geometry
+ >>> lons = np.ones((100, 100))
+ >>> lats = np.ones((100, 100))
+ >>> grid_def = geometry.GridDefinition(lons=lons, lats=lats)
+ 
+SwathDefinition
+---------------
+A swath is defined by the lon and lat values of the data points
+
+.. doctest::
+ >>> import numpy as np
+ >>> from pyresample import geometry
+ >>> lons = np.ones((500, 20))
+ >>> lats = np.ones((500, 20))
+ >>> grid_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ 

@@ -23,6 +23,7 @@ import _spatial_mp
 
 
 class BaseDefinition(object):
+    """Base class for geometry definitions"""
     
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
@@ -36,6 +37,8 @@ class BaseDefinition(object):
         self._cartesian_coords = None
     
     def get_lonlats(self, *args, **kwargs):
+        """Retrieve lons and lats of geometry definition"""
+        
         if self._lons is None or self._lats is None:
             raise ValueError('lon/lat values are not defined')
         return self._lons, self._lats   
@@ -44,6 +47,14 @@ class BaseDefinition(object):
 #                                  'in base class')
     
     def get_cartesian_coords(self, nprocs=None):
+        """Retrieve cartesian coordinates of geometry defintion
+        
+        :Parameters:
+        nprocs : int, optional
+            Number of processor cores to be used.
+            Defaults to the nprocs set when instantiating object
+        """
+        
         if self._cartesian_coords is None:
             if nprocs is None:
                 nprocs = self.nprocs
@@ -67,25 +78,30 @@ class BaseDefinition(object):
     
     @property
     def lons(self):
+        """Retrives and caches lons"""
+        
         if self._lons is None:
             self._lons, self._lats = self.get_lonlats()
         return self._lons
     
     @property
     def lats(self):
+        """Retrives and caches lats"""
         if self._lats is None:
             self._lons, self._lats = self.get_lonlats()
         return self._lats
     
     @property
     def cartesian_coords(self):
+        """Retrives and caches cartesian coordinates"""
         if self._cartesian_coords is None:
             self._cartesian_coords = self.get_cartesian_coords()
         return self._cartesian_coords
  
  
 class CoordinateDefinition(BaseDefinition):
- 
+    """Base class for geometry definitions defined by lons and lats only"""
+     
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape == lats.shape:
             self.shape = lons.shape
@@ -99,7 +115,29 @@ class CoordinateDefinition(BaseDefinition):
 
 
 class GridDefinition(CoordinateDefinition):
- 
+    """Grid defined by lons and lats
+    
+    :Parameters:
+    lons : numpy array
+    lats : numpy array
+    nprocs : int, optional
+        Number of processor cores to be used for calculations.
+        
+    :Attributes:
+    shape : tuple
+        Grid shape as (rows, cols)
+    size : int
+        Number of elements in grid
+        
+    :Properties:
+    lons : numpy array
+        Grid lons
+    lats : numpy array
+        Grid lats
+    cartesian_coords : numpy array
+        Grid cartesian coordinates
+    """
+    
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
@@ -110,7 +148,31 @@ class GridDefinition(CoordinateDefinition):
 
 
 class SwathDefinition(CoordinateDefinition):
- 
+    """Swath defined by lons and lats
+    
+    :Parameters:
+    lons : numpy array
+    lats : numpy array
+    nprocs : int, optional
+        Number of processor cores to be used for calculations.
+        
+    :Attributes:
+    shape : tuple
+        Swath shape
+    size : int
+        Number of elements in swath
+    ndims : int
+        Swath dimensions
+        
+    :Properties:
+    lons : numpy array
+        Swath lons
+    lats : numpy array
+        Swath lats
+    cartesian_coords : numpy array
+        Swath cartesian coordinates
+    """
+    
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
@@ -240,7 +302,7 @@ class AreaDefinition(BaseDefinition):
         col : int
         
         :Returns:
-        (lon, lat) : list of floats
+        (lon, lat) : tuple of floats
         """
         
         if self._lons is None or self._lats is None:
@@ -289,10 +351,11 @@ class AreaDefinition(BaseDefinition):
     
         :Parameters:        
         nprocs : int, optional 
-            Number of processor cores to be used
+            Number of processor cores to be used.
+            Defaults to the nprocs set when instantiating object
         
         :Returns: 
-        (lons, lats) : list of numpy arrays
+        (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
         """        
         

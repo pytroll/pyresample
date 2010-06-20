@@ -16,7 +16,7 @@ An **ImageContainerQuick** object allows for the grid to be resampled to a new a
 using an approximate (but fast) nearest neighbour method. 
 Resampling an object of type **ImageContainerQuick** returns a new object of type **ImageContainerQuick**. 
 
-An **ImageContainerNearest** object allows for the grid to be resampled to a new area defintion
+An **ImageContainerNearest** object allows for the grid to be resampled to a new area defintion (or swath definition)
 using an accurate kd-tree method.
 Resampling an object of type **ImageContainerNearest** returns a new object of 
 type **ImageContainerNearest**. 
@@ -59,3 +59,41 @@ from source projection center increases.
 The constructor argument **radius_of_influence** to **ImageContainerNearest** specifices the maximum
 distance to search for a neighbour for each point in the target grid. The unit is meters.
 
+The constructor arguments of an ImageContainer object can be changed as attributes later
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import image, geometry
+ >>> msg_area = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees',
+ ...                                'msg_full',
+ ...                                {'a': '6378169.0', 'b': '6356584.0',
+ ...                                 'h': '35785831.0', 'lon_0': '0',
+ ...                                 'proj': 'geos'},
+ ...                                3712, 3712,
+ ...                                [-5568742.4, -5568742.4,
+ ...                                 5568742.4, 5568742.4])
+ >>> data = np.ones((3712, 3712))
+ >>> msg_con_nn = image.ImageContainerNearest(data, msg_area, radius_of_influence=50000)
+ >>> msg_con_nn.radius_of_influence = 45000
+ >>> msg_con_nn.fill_value = -99
+ 
+If the dataset has several channels the last index of the data array specifies the channels
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import image, geometry
+ >>> msg_area = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees',
+ ...                                'msg_full',
+ ...                                {'a': '6378169.0', 'b': '6356584.0',
+ ...                                 'h': '35785831.0', 'lon_0': '0',
+ ...                                 'proj': 'geos'},
+ ...                                3712, 3712,
+ ...                                [-5568742.4, -5568742.4,
+ ...                                 5568742.4, 5568742.4])
+ >>> channel1 = np.ones((3712, 3712))
+ >>> channel2 = np.ones((3712, 3712)) * 2
+ >>> channel3 = np.ones((3712, 3712)) * 3
+ >>> data = np.dstack((channel1, channel2, channel3))
+ >>> msg_con_nn = image.ImageContainerNearest(data, msg_area, radius_of_influence=50000)

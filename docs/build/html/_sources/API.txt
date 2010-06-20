@@ -16,9 +16,9 @@ pyresample.grid
 .. automodule:: grid
 	:members:
 
-pyresample.swath
+pyresample.kd_tree
 ---------------------------------
-.. automodule:: swath
+.. automodule:: kd_tree
 	:members:
 	
 pyresample.utils

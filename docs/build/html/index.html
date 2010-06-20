@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Pyresample &mdash; pyresample v0.5.3 documentation</title>
+    <title>Pyresample &mdash; pyresample v0.6.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.5.3',
+        VERSION:     '0.6.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.5.3 documentation" href="#" />
+    <link rel="top" title="pyresample v0.6.0 documentation" href="#" />
     <link rel="next" title="Installing Pyresample" href="installation.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              accesskey="N">next</a> |</li>
-        <li><a href="#">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="#">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -57,8 +57,10 @@ Pyresample can use multiple processor cores for resampling. Pyresample supports 
 <li class="toctree-l2"><a class="reference external" href="installation.html#package-installation">Package installation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference external" href="area_def.html">Area definitions</a><ul>
-<li class="toctree-l2"><a class="reference external" href="area_def.html#pyresample-utils">pyresample.utils</a></li>
+<li class="toctree-l1"><a class="reference external" href="geo_def.html">Geometry definitions</a><ul>
+<li class="toctree-l2"><a class="reference external" href="geo_def.html#areadefinition">AreaDefinition</a></li>
+<li class="toctree-l2"><a class="reference external" href="geo_def.html#griddefinition">GridDefinition</a></li>
+<li class="toctree-l2"><a class="reference external" href="geo_def.html#swathdefinition">SwathDefinition</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference external" href="grid.html">Resampling of gridded data</a><ul>
@@ -72,7 +74,6 @@ Pyresample can use multiple processor cores for resampling. Pyresample supports 
 <li class="toctree-l1"><a class="reference external" href="multi.html">Using multiple processor cores</a></li>
 <li class="toctree-l1"><a class="reference external" href="preproc.html">Preprocessing of grids</a><ul>
 <li class="toctree-l2"><a class="reference external" href="preproc.html#preprocessing-for-grid-resampling">Preprocessing for grid resampling</a></li>
-<li class="toctree-l2"><a class="reference external" href="preproc.html#preprocessing-for-swath-resampling">Preprocessing for swath resampling</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference external" href="data_reduce.html">Reduction of swath data</a></li>
@@ -80,7 +81,7 @@ Pyresample can use multiple processor cores for resampling. Pyresample supports 
 <li class="toctree-l2"><a class="reference external" href="API.html#module-geometry">pyresample.geometry</a></li>
 <li class="toctree-l2"><a class="reference external" href="API.html#module-image">pyresample.image</a></li>
 <li class="toctree-l2"><a class="reference external" href="API.html#module-grid">pyresample.grid</a></li>
-<li class="toctree-l2"><a class="reference external" href="API.html#module-swath">pyresample.swath</a></li>
+<li class="toctree-l2"><a class="reference external" href="API.html#module-kd_tree">pyresample.kd_tree</a></li>
 <li class="toctree-l2"><a class="reference external" href="API.html#module-utils">pyresample.utils</a></li>
 <li class="toctree-l2"><a class="reference external" href="API.html#module-data_reduce">pyresample.data_reduce</a></li>
 </ul>
@@ -142,7 +143,7 @@ Pyresample can use multiple processor cores for resampling. Pyresample supports 
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              >next</a> |</li>
-        <li><a href="#">pyresample v0.5.3 documentation</a> &raquo;</li> 
+        <li><a href="#">pyresample v0.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
