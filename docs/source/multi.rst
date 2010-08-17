@@ -11,7 +11,7 @@ Example of resampling in parallel using 4 processes:
 .. doctest::
 
  >>> import numpy
- >>> from pyresample import swath, geometry
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -23,7 +23,7 @@ Example of resampling in parallel using 4 processes:
  >>> lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = swath.resample_nearest(swath_def, data.ravel(),
+ >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
  ... area_def, radius_of_influence=50000, epsilon=100, nprocs=4)
 
 Note: Do not use more processes than available processor cores. As there is a process creation overhead 

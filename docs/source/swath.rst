@@ -24,7 +24,7 @@ Example showing how to resample a generated swath dataset to a grid using neares
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import swath, geometry
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -54,7 +54,7 @@ If there are multiple channels in the dataset the data argument should be of the
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import swath, geometry
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -69,7 +69,7 @@ If there are multiple channels in the dataset the data argument should be of the
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
+ >>> result = kd_tree.resample_nearest(swath_def, data,
  ... area_def, radius_of_influence=50000, epsilon=100) 
 
 For nearest neighbour resampling the class **image.ImageContainerNearest** can be used as well as **kd_tree.resample_nearest**
@@ -84,7 +84,7 @@ Example showing how to resample a generated swath dataset to a grid using Gaussi
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import swath, geometry
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -113,7 +113,7 @@ Example showing how to resample a generated swath dataset to a grid using an arb
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import swath, geometry 
+ >>> from pyresample import kd_tree, geometry 
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -147,7 +147,7 @@ retrieve the resampled data from each of the datasets fast.
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import swath, geometry
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -163,8 +163,9 @@ retrieve the resampled data from each of the datasets fast.
  ...                        kd_tree.get_neighbour_info(swath_def, 
  ...                               	                   area_def, 50000,  
  ...                                                   neighbours=1)
- >>> res = swath.get_sample_from_neighbour_info('nn', area_def.shape, data.ravel(), 
- ...                                            valid_index, index_array)
+ >>> res = kd_tree.get_sample_from_neighbour_info('nn', area_def.shape, data.ravel(), 
+ ...                                              valid_input_index, valid_output_index,
+ ...                                              index_array)
  
 Note the keyword argument **neighbours=1**. This specifies only to consider one neighbour for each 
 grid point (the nearest neighbour). Also note **distance_array** is not a required argument for
