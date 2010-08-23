@@ -53,7 +53,7 @@ pyresample.utils
 ****************
 The utils module of pyresample has convenience functions for constructing
 area defintions. The function **get_area_def** can construct an area definition
-based on a proj4-string or a list of proj4 arguments.
+based on area extent and a proj4-string or a list of proj4 arguments.
 
 .. doctest::
 	
@@ -135,9 +135,67 @@ SwathDefinition
 A swath is defined by the lon and lat values of the data points
 
 .. doctest::
+
  >>> import numpy as np
  >>> from pyresample import geometry
  >>> lons = np.ones((500, 20))
  >>> lats = np.ones((500, 20))
- >>> grid_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+
+Geographic coordinates and boundaries
+-------------------------------------
+A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
+
+All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**. 
+AreaDefinition exposes projection coordinates as **projection_x_coords** and **projection_y_coords**
+
+Get full coordinate set:
+
+.. doctest::
+	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> lons = area_def.lons[:]
+
+Get slice of coordinate set:
+
+.. doctest::
+	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> cart_subset = area_def.cartesian_coords[100:200, 350:]
  
+If only the coordinates along the boundaries are required they can be extracted using th **boundary** property of a geographic coordinate
+
+.. doctest::
+	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> proj_x_boundary = area_def.projection_x_coords.boundary
+ >>> proj_x_side1 = proj_x_boundary.side1
+ 
+The labelling of the boundary arrays is **side1**, **side2**, **side3** and **side4** starting with **side1** between upper left corner ((row, col) = (0, 0)) and upper right corner ((row, col) = (0, cols)). The labelling proceeds clockwise.  

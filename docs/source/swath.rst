@@ -2,7 +2,32 @@ Resampling of swath data
 ========================
 
 Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath. 
-Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function or bucket resampling.
+Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function.
+
+pyresample.image
+----------------
+The ImageContainerNearest class can be used for nearest neighbour resampling of swaths as well as grids.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import image, geometry
+ >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+ ...                                {'a': '6378144.0', 'b': '6356759.0',
+ ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                800, 800,
+ ...                                [-1370912.72, -909968.64,
+ ...                                 1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> swath_con = image.ImageContainerNearest(data, swath_def, radius_of_influence=5000)
+ >>> area_con = swath_con.resample(area_def)
+ >>> result = area_con.image_data
+
+For other resampling types or splitting the process in two steps use the functions in **pyresample.swath** described below. 
 
 pyresample.swath
 ----------------
@@ -170,5 +195,9 @@ retrieve the resampled data from each of the datasets fast.
 Note the keyword argument **neighbours=1**. This specifies only to consider one neighbour for each 
 grid point (the nearest neighbour). Also note **distance_array** is not a required argument for
 **get_sample_from_neighbour_info** when using nearest neighbour resampling
+
+Segmented resampling
+********************
+Whenever a resampling function takes the keyword argument **segments** the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of **segments** is left to default pyresample will estimate the number of segments to use. 
     
  

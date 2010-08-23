@@ -131,6 +131,40 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,\
     
     return lons, lats, data
 
+def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,\
+                           radius_of_influence):
+    """Makes coarse data reduction of swath data by comparison with 
+    lon lat boundary
+    
+    :Parameters:
+    boundary_lons : numpy array          
+        Grid of area lons
+    boundary_lats : numpy array           
+        Grid of area lats
+    lons : numpy array                
+        Swath lons
+    lats : numpy array                
+        Swath lats
+    data : numpy array                
+        Swath data
+    radius_of_influence : float 
+        Cut off distance in meters
+    
+    :Returns:
+    (lons, lats, data) : list of numpy arrays
+        Reduced swath data and coordinate set 
+    """
+    
+    valid_index = get_valid_index_from_lonlat_boundaries(boundary_lons, 
+                                                         boundary_lats, lons, lats, radius_of_influence)
+
+    lons = lons[valid_index]
+    lats = lats[valid_index]
+    data = data[valid_index]
+    
+    return lons, lats, data
+
+
 def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of_influence):
     """Calculates relevant data indices using coarse data reduction of swath 
     data by comparison with lon lat grid
@@ -162,13 +196,25 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
     lats_side2 = grid_lats[:, -1]
     lats_side3 = grid_lats[-1, :]
     lats_side4 = grid_lats[:, 0]
-
+    
     valid_index = _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                                    lats_side1, lats_side2, lats_side3, lats_side4,
                                    lons, lats, radius_of_influence)
     
     return valid_index
 
+def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, radius_of_influence):
+    """Find relevant indices from grid boundaries using the 
+    winding number theorem"""
+    
+    valid_index = _get_valid_index(boundary_lons.side1, boundary_lons.side2, 
+                                   boundary_lons.side3, boundary_lons.side4,
+                                   boundary_lats.side1, boundary_lats.side2, 
+                                   boundary_lats.side3, boundary_lats.side4,
+                                   lons, lats, radius_of_influence)
+    
+    return valid_index
+    
 def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                      lats_side1, lats_side2, lats_side3, lats_side4,
                      lons, lats, radius_of_influence):
@@ -177,7 +223,6 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     
     #Coarse reduction of data based on extrema analysis of the boundary 
     #lon lat values of the target grid
-    
     illegal_lons = (((lons_side1 < -180) | (lons_side1 > 180)).any() or
                     ((lons_side2 < -180) | (lons_side2 > 180)).any() or
                     ((lons_side3 < -180) | (lons_side3 > 180)).any() or
@@ -205,7 +250,7 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                 angle_sum += delta
                 side_sum += delta
             prev = lon
-
+    
     #Buffer min and max lon and lat of interest with radius of interest
     lat_min = min(lats_side1.min(), lats_side2.min(), lats_side3.min(),
                   lats_side4.min())
@@ -223,7 +268,7 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     lon_max_buffered = (lons_side2.max() + 
                        float(radius_of_influence) / 
                        (np.sin(np.radians(max_angle_s2)) * R))
-
+    
     #From the winding number theorem follows:
     #angle_sum possiblilities:
     #-360: area covers north pole

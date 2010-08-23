@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample v0.6.0 documentation</title>
+    <title>pyresample API &mdash; pyresample v0.7.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.6.0',
+        VERSION:     '0.7.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.6.0 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.0 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -128,12 +128,16 @@ proj4_string : str</p>
 <blockquote>
 Projection defined as Proj.4 string</blockquote>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid lats</dd>
-<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid cartesian coordinates</dd>
+<dt>projection_x_coords <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Grid projection x coordinate</dd>
+<dt>projection_y_coords <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Grid projection y coordinate</dd>
 </dl>
 <dl class="method">
 <dt id="geometry.AreaDefinition.get_lonlat">
@@ -220,15 +224,10 @@ Defaults to the nprocs set when instantiating object</dd>
 <dt id="geometry.BaseDefinition">
 <em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">BaseDefinition</tt><big>(</big><em>lons=None</em>, <em>lats=None</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for geometry definitions</p>
-<dl class="attribute">
-<dt id="geometry.BaseDefinition.cartesian_coords">
-<tt class="descname">cartesian_coords</tt><a class="headerlink" href="#geometry.BaseDefinition.cartesian_coords" title="Permalink to this definition">¶</a></dt>
-<dd>Retrives and caches cartesian coordinates</dd></dl>
-
 <dl class="method">
 <dt id="geometry.BaseDefinition.get_cartesian_coords">
 <tt class="descname">get_cartesian_coords</tt><big>(</big><em>nprocs=None</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_cartesian_coords" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve cartesian coordinates of geometry defintion</p>
+<dd><p>Retrieve cartesian coordinates of geometry definition</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -245,21 +244,42 @@ Defaults to the nprocs set when instantiating object</dd>
 </dd></dl>
 
 <dl class="method">
+<dt id="geometry.BaseDefinition.get_lonlat">
+<tt class="descname">get_lonlat</tt><big>(</big><em>row</em>, <em>col</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve lon and lat of single pixel</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>row : int
+col : int</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>(lon, lat) : tuple of floats</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="geometry.BaseDefinition.get_lonlats">
 <tt class="descname">get_lonlats</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
 <dd>Retrieve lons and lats of geometry definition</dd></dl>
 
-<dl class="attribute">
-<dt id="geometry.BaseDefinition.lats">
-<tt class="descname">lats</tt><a class="headerlink" href="#geometry.BaseDefinition.lats" title="Permalink to this definition">¶</a></dt>
-<dd>Retrives and caches lats</dd></dl>
-
-<dl class="attribute">
-<dt id="geometry.BaseDefinition.lons">
-<tt class="descname">lons</tt><a class="headerlink" href="#geometry.BaseDefinition.lons" title="Permalink to this definition">¶</a></dt>
-<dd>Retrives and caches lons</dd></dl>
-
 </dd></dl>
+
+<dl class="class">
+<dt id="geometry.Boundary">
+<em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">Boundary</tt><big>(</big><em>side1</em>, <em>side2</em>, <em>side3</em>, <em>side4</em><big>)</big><a class="headerlink" href="#geometry.Boundary" title="Permalink to this definition">¶</a></dt>
+<dd>Container for geometry boundary.
+Labelling starts in upper left corner and proceeds clockwise</dd></dl>
 
 <dl class="class">
 <dt id="geometry.CoordinateDefinition">
@@ -297,20 +317,14 @@ Number of processor cores to be used for calculations.</blockquote>
 <dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>Number of elements in grid</dd>
 </dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Properties:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
+<p>Properties:
+lons : object</p>
+<blockquote>
+Grid lons</blockquote>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>Grid lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid lats</dd>
-<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid cartesian coordinates</dd>
 </dl>
 </dd></dl>
@@ -348,20 +362,14 @@ Number of processor cores to be used for calculations.</blockquote>
 <dt>ndims <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>Swath dimensions</dd>
 </dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Properties:</th><td class="field-body"></td>
-</tr>
-</tbody>
-</table>
+<p>Properties:
+lons : object</p>
+<blockquote>
+Swath lons</blockquote>
 <dl class="docutils">
-<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
-<dd>Swath lons</dd>
-<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Swath lats</dd>
-<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
+<dt>cartesian_coords <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Swath cartesian coordinates</dd>
 </dl>
 </dd></dl>
@@ -411,7 +419,7 @@ with undetermined pixels masked</dd>
 <dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
 <dd>Resample result fill value</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
-<dd>Number of processor cores to be used</dd>
+<dd>Number of processor cores to be used for geometry operations</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainer.get_array_from_linesample">
@@ -459,7 +467,7 @@ with undetermined pixels masked</dd>
 
 <dl class="class">
 <dt id="image.ImageContainerNearest">
-<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerNearest</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerNearest</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#image.ImageContainerNearest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Holds image with geometry definition. 
 Allows nearest neighbour resampling to new geometry definition.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -488,7 +496,10 @@ with undetermined pixels masked</dd>
 <dd>Perform coarse data reduction before resampling in order
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
+<dd>Number of processor cores to be used for geometry operations</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -513,6 +524,8 @@ to reduce execution time</dd>
 <dd>Perform coarse data reduction before resampling</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainerNearest.resample">
@@ -549,7 +562,7 @@ approach</p>
 
 <dl class="class">
 <dt id="image.ImageContainerQuick">
-<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerQuick</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">image.</tt><tt class="descname">ImageContainerQuick</tt><big>(</big><em>image_data</em>, <em>geo_def</em>, <em>fill_value=0</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#image.ImageContainerQuick" title="Permalink to this definition">¶</a></dt>
 <dd><p>Holds image with area definition. &#8216;
 Allows quick resampling within area.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -570,7 +583,10 @@ Allows quick resampling within area.</p>
 If fill_value is None a masked array is returned 
 with undetermined pixels masked</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
-<dd>Number of processor cores to be used</dd>
+<dd>Number of processor cores to be used for geometry operations</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -586,9 +602,13 @@ with undetermined pixels masked</dd>
 <dt>geo_def <span class="classifier-delimiter">:</span> <span class="classifier">object </span></dt>
 <dd>Area definition as AreaDefinition object</dd>
 <dt>fill_value <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
-<dd>Resample result fill value</dd>
+<dd>Resample result fill value
+If fill_value is None a masked array is returned 
+with undetermined pixels masked</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling</dd>
 </dl>
 <dl class="method">
 <dt id="image.ImageContainerQuick.resample">
@@ -747,7 +767,7 @@ with undetermined pixels masked</dd>
 
 <dl class="function">
 <dt id="grid.get_resampled_image">
-<tt class="descclassname">grid.</tt><tt class="descname">get_resampled_image</tt><big>(</big><em>target_area_def</em>, <em>source_area_def</em>, <em>source_image_data</em>, <em>fill_value=0</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#grid.get_resampled_image" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">grid.</tt><tt class="descname">get_resampled_image</tt><big>(</big><em>target_area_def</em>, <em>source_area_def</em>, <em>source_image_data</em>, <em>fill_value=0</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#grid.get_resampled_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples image using nearest neighbour method in cartesian 
 projection coordinate systems.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -771,6 +791,9 @@ If fill_value is None a masked array is returned
 with undetermined pixels masked</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional </span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None} optional</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated.</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -792,7 +815,7 @@ with undetermined pixels masked</dd>
 <p>Handles reprojection of geolocated data. Several types of resampling are supported</p>
 <dl class="function">
 <dt id="kd_tree.get_neighbour_info">
-<tt class="descclassname">kd_tree.</tt><tt class="descname">get_neighbour_info</tt><big>(</big><em>source_geo_def</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.get_neighbour_info" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">kd_tree.</tt><tt class="descname">get_neighbour_info</tt><big>(</big><em>source_geo_def</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#kd_tree.get_neighbour_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns neighbour info</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -823,6 +846,9 @@ with undetermined pixels masked</dd>
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -892,7 +918,7 @@ with undetermined pixels masked</dd>
 
 <dl class="function">
 <dt id="kd_tree.resample_custom">
-<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_custom</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>weight_funcs</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_custom" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_custom</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>weight_funcs</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#kd_tree.resample_custom" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples data using kd-tree custom radial weighting neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -931,6 +957,9 @@ with undetermined pixels masked</dd>
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -948,7 +977,7 @@ to reduce execution time</dd>
 
 <dl class="function">
 <dt id="kd_tree.resample_gauss">
-<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_gauss</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>sigmas</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_gauss" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_gauss</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>sigmas</em>, <em>neighbours=8</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#kd_tree.resample_gauss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples data using kd-tree gaussian weighting neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -986,6 +1015,9 @@ with undetermined pixels masked</dd>
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1003,7 +1035,7 @@ to reduce execution time</dd>
 
 <dl class="function">
 <dt id="kd_tree.resample_nearest">
-<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_nearest</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#kd_tree.resample_nearest" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">kd_tree.</tt><tt class="descname">resample_nearest</tt><big>(</big><em>source_geo_def</em>, <em>data</em>, <em>target_geo_def</em>, <em>radius_of_influence</em>, <em>epsilon=0</em>, <em>fill_value=0</em>, <em>reduce_data=True</em>, <em>nprocs=1</em>, <em>segments=None</em><big>)</big><a class="headerlink" href="#kd_tree.resample_nearest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resamples data using kd-tree nearest neighbour approach</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1035,6 +1067,9 @@ with undetermined pixels masked</dd>
 to reduce execution time</dd>
 <dt>nprocs <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
 <dd>Number of processor cores to be used</dd>
+<dt>segments <span class="classifier-delimiter">:</span> <span class="classifier">{int, None}</span></dt>
+<dd>Number of segments to use when resampling.
+If set to None an estimate will be calculated</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1254,6 +1289,12 @@ data by comparison with cartesian grid</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="data_reduce.get_valid_index_from_lonlat_boundaries">
+<tt class="descclassname">data_reduce.</tt><tt class="descname">get_valid_index_from_lonlat_boundaries</tt><big>(</big><em>boundary_lons</em>, <em>boundary_lats</em>, <em>lons</em>, <em>lats</em>, <em>radius_of_influence</em><big>)</big><a class="headerlink" href="#data_reduce.get_valid_index_from_lonlat_boundaries" title="Permalink to this definition">¶</a></dt>
+<dd>Find relevant indices from grid boundaries using the 
+winding number theorem</dd></dl>
+
+<dl class="function">
 <dt id="data_reduce.get_valid_index_from_lonlat_grid">
 <tt class="descclassname">data_reduce.</tt><tt class="descname">get_valid_index_from_lonlat_grid</tt><big>(</big><em>grid_lons</em>, <em>grid_lats</em>, <em>lons</em>, <em>lats</em>, <em>radius_of_influence</em><big>)</big><a class="headerlink" href="#data_reduce.get_valid_index_from_lonlat_grid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculates relevant data indices using coarse data reduction of swath 
@@ -1308,6 +1349,47 @@ cartesian grid</p>
 <dl class="docutils">
 <dt>chart_grid <span class="classifier-delimiter">:</span> <span class="classifier">numpy array          </span></dt>
 <dd>Grid of area cartesian coordinates</dd>
+<dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array                </span></dt>
+<dd>Swath lons</dd>
+<dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array                </span></dt>
+<dd>Swath lats</dd>
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array                </span></dt>
+<dd>Swath data</dd>
+<dt>radius_of_influence <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
+<dd>Cut off distance in meters</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>(lons, lats, data) <span class="classifier-delimiter">:</span> <span class="classifier">list of numpy arrays</span></dt>
+<dd>Reduced swath data and coordinate set</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="data_reduce.swath_from_lonlat_boundaries">
+<tt class="descclassname">data_reduce.</tt><tt class="descname">swath_from_lonlat_boundaries</tt><big>(</big><em>boundary_lons</em>, <em>boundary_lats</em>, <em>lons</em>, <em>lats</em>, <em>data</em>, <em>radius_of_influence</em><big>)</big><a class="headerlink" href="#data_reduce.swath_from_lonlat_boundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes coarse data reduction of swath data by comparison with 
+lon lat boundary</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>boundary_lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array          </span></dt>
+<dd>Grid of area lons</dd>
+<dt>boundary_lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array           </span></dt>
+<dd>Grid of area lats</dd>
 <dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">numpy array                </span></dt>
 <dd>Swath lons</dd>
 <dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">numpy array                </span></dt>
@@ -1431,7 +1513,7 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

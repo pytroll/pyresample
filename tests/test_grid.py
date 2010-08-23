@@ -135,7 +135,7 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         target_def = self.area_def
         source_def = self.msg_area
-        res = grid.get_resampled_image(target_def, source_def, data)
+        res = grid.get_resampled_image(target_def, source_def, data, segments=1)
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Resampling of image failed')
@@ -154,7 +154,7 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         target_def = self.area_def
         source_def = self.msg_area
-        res = grid.get_resampled_image(target_def, source_def, data, nprocs=2)
+        res = grid.get_resampled_image(target_def, source_def, data, nprocs=2, segments=1)
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Resampling of image mp failed')

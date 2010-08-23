@@ -47,13 +47,13 @@ class Test(unittest.TestCase):
     def test_nearest_base(self):     
         res = kd_tree.resample_nearest(self.tswath,\
                                      self.tdata.ravel(), self.tgrid,\
-                                     100000, reduce_data=False)
+                                     100000, reduce_data=False, segments=1)
         self.failUnless(res[0] == 2, 'Failed to calculate nearest neighbour')
     
     def test_gauss_base(self):     
         res = kd_tree.resample_gauss(self.tswath, \
                                      self.tdata.ravel(), self.tgrid,\
-                                     50000, 25000, reduce_data=False)
+                                     50000, 25000, reduce_data=False, segments=1)
         self.failUnlessAlmostEqual(res[0], 2.2020729, 5, \
                                    'Failed to calculate gaussian weighting')
     
@@ -63,21 +63,35 @@ class Test(unittest.TestCase):
              
         res = kd_tree.resample_custom(self.tswath,\
                                      self.tdata.ravel(), self.tgrid,\
-                                     50000, wf, reduce_data=False)        
+                                     50000, wf, reduce_data=False, segments=1)        
         self.failUnlessAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
     
+    @tmp
     def test_nearest(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),\
-                                     self.area_def, 50000)        
+                                     self.area_def, 50000, segments=1)        
         cross_sum = res.sum()        
         expected = 15874591.0
         self.failUnlessEqual(cross_sum, expected,\
                              msg='Swath resampling nearest failed')
+    
+    @tmp
+    def test_nearest_segments(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data.ravel(),\
+                                     self.area_def, 50000, segments=2)        
+        cross_sum = res.sum()        
+        expected = 15874591.0
+        self.failUnlessEqual(cross_sum, expected,\
+                             msg='Swath resampling nearest segments failed')
     
     def test_nearest_remap(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
@@ -85,9 +99,9 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),\
-                                     self.area_def, 50000)
+                                     self.area_def, 50000, segments=1)
         remap = kd_tree.resample_nearest(self.area_def, res.ravel(),\
-                                       swath_def, 5000)        
+                                       swath_def, 5000, segments=1)        
         cross_sum = remap.sum()
         expected = 22275.0
         self.failUnlessEqual(cross_sum, expected,\
@@ -100,7 +114,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),\
-                                     self.area_def, 50000, nprocs=2)
+                                     self.area_def, 50000, nprocs=2, segments=1)
         cross_sum = res.sum()
         expected = 15874591.0
         self.failUnlessEqual(cross_sum, expected,\
@@ -114,7 +128,7 @@ class Test(unittest.TestCase):
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
         res = kd_tree.resample_nearest(swath_def, data_multi,\
-                                     self.area_def, 50000)        
+                                     self.area_def, 50000, segments=1)        
         cross_sum = res.sum()
         expected = 3 * 15874591.0
         self.failUnlessEqual(cross_sum, expected,\
@@ -126,7 +140,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_gauss(swath_def, data.ravel(),\
-                                     self.area_def, 50000, 25000, fill_value=-1)        
+                                     self.area_def, 50000, 25000, fill_value=-1, segments=1)        
         cross_sum = res.sum()        
         expected = 15387753.9852
         self.failUnlessAlmostEqual(cross_sum, expected, places=3,\
@@ -138,7 +152,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_gauss(swath_def, data.ravel(),\
-                                     self.area_def, 50000, 25000)        
+                                     self.area_def, 50000, 25000, segments=1)        
         cross_sum = res.sum()        
         expected = 4872.81050892
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -152,7 +166,7 @@ class Test(unittest.TestCase):
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
         res = kd_tree.resample_gauss(swath_def, data_multi,\
-                                     self.area_def, 50000, [25000, 15000, 10000])
+                                     self.area_def, 50000, [25000, 15000, 10000], segments=1)
         cross_sum = res.sum()        
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -167,12 +181,27 @@ class Test(unittest.TestCase):
                                          data.ravel()))
         res = kd_tree.resample_gauss(swath_def, data_multi,\
                                      self.area_def, 50000, [25000, 15000, 10000],\
-                                     nprocs=2)
+                                     nprocs=2, segments=1)
         cross_sum = res.sum()
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel resampling gauss failed') 
        
+    def test_gauss_multi_mp_segments(self):
+        data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        
+        lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
+        lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
+                                         data.ravel()))
+        res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                     self.area_def, 50000, [25000, 15000, 10000],\
+                                     nprocs=2, segments=1)
+        cross_sum = res.sum()
+        expected = 1461.84313918
+        self.failUnlessAlmostEqual(cross_sum, expected,\
+                                   msg='Swath multi channel segments resampling gauss failed') 
+    
     def test_custom(self):
         def wf(dist):
             return 1 - dist/100000.0
@@ -182,7 +211,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_custom(swath_def, data.ravel(),\
-                                     self.area_def, 50000, wf)
+                                     self.area_def, 50000, wf, segments=1)
         cross_sum = res.sum()
         expected = 4872.81050729
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -205,7 +234,7 @@ class Test(unittest.TestCase):
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
         res = kd_tree.resample_custom(swath_def, data_multi,\
-                                    self.area_def, 50000, [wf1, wf2, wf3])
+                                    self.area_def, 50000, [wf1, wf2, wf3], segments=1)
         cross_sum = res.sum()
         expected = 1461.84298477
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -222,13 +251,26 @@ class Test(unittest.TestCase):
         cross_sum = data.sum()
         expected = 20514375.0
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Reduce data failed')
+    
+    @tmp
+    def test_reduce_boundary(self):
+        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
+        lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
+        lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
+        lons, lats, data = data_reduce.swath_from_lonlat_boundaries(self.area_def.lons.boundary,
+                                                              self.area_def.lats.boundary, 
+                                                              lons, lats, data, 
+                                                              7000)
+        cross_sum = data.sum()
+        expected = 20514375.0
+        self.failUnlessAlmostEqual(cross_sum, expected, msg='Reduce data failed')
         
     def test_cartesian_reduce(self):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
         #grid = utils.generate_cartesian_grid(self.area_def)
-        grid = self.area_def.cartesian_coords       
+        grid = self.area_def.cartesian_coords[:]       
         lons, lats, data = data_reduce.swath_from_cartesian_grid(grid, lons, lats, data, 
                                                                  7000)
         cross_sum = data.sum()
@@ -259,7 +301,7 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
-        cart_grid = self.area_def.cartesian_coords
+        cart_grid = self.area_def.cartesian_coords[:]
         #cart_grid = utils.generate_cartesian_grid(self.area_def)       
 #        lons, lats, data = data_reduce.swath_from_cartesian_grid(grid, lons, lats, data, 
 #                                                                 7000)
@@ -297,7 +339,7 @@ class Test(unittest.TestCase):
         mask[:, :5] = 0
         masked_data = numpy.ma.array(data, mask=mask)
         res = kd_tree.resample_nearest(swath_def, masked_data.ravel(), 
-                                     self.area_def, 50000)
+                                     self.area_def, 50000, segments=1)
         expected_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                     'test_files', 
                                                     'mask_test_nearest_mask.dat'), 
@@ -321,7 +363,7 @@ class Test(unittest.TestCase):
         mask[:, :5] = 0
         masked_data = numpy.ma.array(data, mask=mask)
         res = kd_tree.resample_gauss(swath_def, masked_data.ravel(),\
-                                   self.area_def, 50000, 25000)
+                                   self.area_def, 50000, 25000, segments=1)
         expected_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                     'test_files', 
                                                     'mask_test_mask.dat'), 
@@ -345,7 +387,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(), 
-                                     self.area_def, 50000, fill_value=None)
+                                     self.area_def, 50000, fill_value=None, segments=1)
         expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                          'test_files', 
                                                          'mask_test_fill_value.dat'), 
@@ -360,7 +402,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(), 
-                                     self.area_def, 50000, fill_value=None)
+                                     self.area_def, 50000, fill_value=None, segments=1)
         expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                          'test_files', 
                                                          'mask_test_fill_value.dat'), 
@@ -380,7 +422,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, 
                                     masked_data.ravel(), self.area_def, 50000,
-                                    fill_value=None)
+                                    fill_value=None, segments=1)
         expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                          'test_files', 
                                                          'mask_test_full_fill.dat'), 
@@ -418,7 +460,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, 
                                     masked_data, self.area_def, 50000,
-                                    fill_value=None)
+                                    fill_value=None, segments=1)
         expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__), 
                                                          'test_files', 
                                                          'mask_test_full_fill_multi.dat'), 
@@ -439,7 +481,7 @@ class Test(unittest.TestCase):
         valid_input_index, valid_output_index, index_array, distance_array = \
                                     kd_tree.get_neighbour_info(swath_def, 
                                                              self.area_def, 
-                                                             50000, neighbours=1)
+                                                             50000, neighbours=1, segments=1)
         res = kd_tree.get_sample_from_neighbour_info('nn', (800, 800), data.ravel(), 
                                                    valid_input_index, valid_output_index, 
                                                    index_array)        
@@ -467,7 +509,7 @@ class Test(unittest.TestCase):
         valid_input_index, valid_output_index, index_array, distance_array = \
                                     kd_tree.get_neighbour_info(swath_def, 
                                                              self.area_def, 
-                                                             50000)
+                                                             50000, segments=1)
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800), 
                                                    data_multi, 
                                                    valid_input_index, valid_output_index, 
@@ -511,7 +553,7 @@ class Test(unittest.TestCase):
         valid_input_index, valid_output_index, index_array, distance_array = \
                                     kd_tree.get_neighbour_info(swath_def, 
                                                              self.area_def, 
-                                                             50000, neighbours=1)
+                                                             50000, neighbours=1, segments=1)
         res = kd_tree.get_sample_from_neighbour_info('nn', (800, 800), 
                                                    masked_data, 
                                                    valid_input_index, 

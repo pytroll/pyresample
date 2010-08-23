@@ -102,7 +102,7 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
         Arrays for resampling area by array indexing
     """
     
-     #Proj.4 definition of source area projection
+    #Proj.4 definition of source area projection
     if nprocs > 1:
         source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
     else:
@@ -155,7 +155,7 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
                                      source_image_data, fill_value)
 
 def get_resampled_image(target_area_def, source_area_def, source_image_data,
-                        fill_value=0, nprocs=1):
+                        fill_value=0, nprocs=1, segments=None):
     """Resamples image using nearest neighbour method in cartesian 
     projection coordinate systems.
 
@@ -167,12 +167,15 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
     source_image_data : numpy array 
         Source image data
     fill_value : {int, None} optional 
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned 
+        with undetermined pixels masked    
     nprocs : int, optional 
         Number of processor cores to be used
-    
+    segments : {int, None} optional
+        Number of segments to use when resampling.
+        If set to None an estimate will be calculated. 
+        
     :Returns:
     image_data : numpy array 
         Resampled image data    
@@ -187,12 +190,44 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
         raise TypeError('source_image must be of type ndarray'
                         ' or a masked array.')
 
-    #Get lon lat arrays of target area
-    lons, lats = target_area_def.get_lonlats(nprocs)
+    #Calculate number of segments if needed 
+    if segments is None:
+        rows = target_area_def.y_size
+        cut_off = 500
+        if rows > cut_off:
+            segments = int(rows / cut_off)
+        else:
+            segments = 1
     
-    #Get target image
-    return get_image_from_lonlats(lons, lats, source_area_def, 
-                                  source_image_data, fill_value, nprocs)
+    
+    if segments > 1:
+        #Iterate through segments        
+        for i, target_slice in enumerate(geometry._get_slice(segments,  
+                                                  target_area_def.shape)):
+            
+            #Select data from segment with slice
+            lons = target_area_def.lons[target_slice]
+            lats = target_area_def.lats[target_slice]
+            
+            #Calculate partial result
+            next_result = get_image_from_lonlats(lons, lats, source_area_def, 
+                                                 source_image_data, 
+                                                 fill_value, nprocs)
+                
+            #Build result iteratively 
+            if i == 0:
+                #First iteration
+                result = next_result
+            else:            
+                result = np.row_stack((result, next_result))
+        
+        return result
+    else:
+        #Get lon lat arrays of target area
+        lons, lats = target_area_def.get_lonlats(nprocs)
+        #Get target image
+        return get_image_from_lonlats(lons, lats, source_area_def, 
+                                      source_image_data, fill_value, nprocs)
 
 
 

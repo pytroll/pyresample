@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Using multiple processor cores &mdash; pyresample v0.6.0 documentation</title>
+    <title>Using multiple processor cores &mdash; pyresample v0.7.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.6.0',
+        VERSION:     '0.7.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.6.0 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.0 documentation" href="index.html" />
     <link rel="next" title="Preprocessing of grids" href="preproc.html" />
     <link rel="prev" title="Resampling of swath data" href="swath.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,7 +56,7 @@ to be used for calculation. If a class takes the constructor argument <strong>np
 all methods of this class</p>
 <p>Example of resampling in parallel using 4 processes:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">swath</span><span class="p">,</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">kd_tree</span><span class="p">,</span> <span class="n">geometry</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
 <span class="gp">... </span>                               <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="s">&#39;6378144.0&#39;</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="s">&#39;6356759.0&#39;</span><span class="p">,</span>
 <span class="gp">... </span>                                <span class="s">&#39;lat_0&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span> <span class="s">&#39;lat_ts&#39;</span><span class="p">:</span> <span class="s">&#39;50.00&#39;</span><span class="p">,</span>
@@ -68,7 +68,7 @@ all methods of this class</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">swath</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
 <span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -126,7 +126,7 @@ Test on the actual system to determine the most sensible number of processes to 
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

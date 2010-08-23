@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Geometry definitions &mdash; pyresample v0.6.0 documentation</title>
+    <title>Geometry definitions &mdash; pyresample v0.7.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.6.0',
+        VERSION:     '0.7.0',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.6.0 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.0 documentation" href="index.html" />
     <link rel="next" title="Resampling of gridded data" href="grid.html" />
     <link rel="prev" title="Installing Pyresample" href="installation.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -99,7 +99,7 @@ The following arguments are needed to initialize an area:</p>
 <h3>pyresample.utils<a class="headerlink" href="#pyresample-utils" title="Permalink to this headline">¶</a></h3>
 <p>The utils module of pyresample has convenience functions for constructing
 area defintions. The function <strong>get_area_def</strong> can construct an area definition
-based on a proj4-string or a list of proj4 arguments.</p>
+based on area extent and a proj4-string or a list of proj4 arguments.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_name</span> <span class="o">=</span> <span class="s">&#39;Antarctic EASE grid&#39;</span>
@@ -172,9 +172,63 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
 <div class="section" id="swathdefinition">
 <h2>SwathDefinition<a class="headerlink" href="#swathdefinition" title="Permalink to this headline">¶</a></h2>
 <p>A swath is defined by the lon and lat values of the data points</p>
-<div class="highlight-python"><div class="highlight"><pre>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="geographic-coordinates-and-boundaries">
+<h2>Geographic coordinates and boundaries<a class="headerlink" href="#geographic-coordinates-and-boundaries" title="Permalink to this headline">¶</a></h2>
+<p>A <strong>*definition</strong> object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).</p>
+<p>All <strong>*definition</strong> objects exposes the coordinates <strong>lons</strong>, <strong>lats</strong> and <strong>cartesian_coords</strong>.
+AreaDefinition exposes projection coordinates as <strong>projection_x_coords</strong> and <strong>projection_y_coords</strong></p>
+<p>Get full coordinate set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_name</span> <span class="o">=</span> <span class="s">&#39;Antarctic EASE grid&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj4_args</span> <span class="o">=</span> <span class="s">&#39;+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_extent</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_area_def</span><span class="p">(</span><span class="n">area_id</span><span class="p">,</span> <span class="n">area_name</span><span class="p">,</span> <span class="n">proj_id</span><span class="p">,</span> <span class="n">proj4_args</span><span class="p">,</span>
+<span class="gp">... </span>                                      <span class="n">x_size</span><span class="p">,</span> <span class="n">y_size</span><span class="p">,</span> <span class="n">area_extent</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">area_def</span><span class="o">.</span><span class="n">lons</span><span class="p">[:]</span>
+</pre></div>
+</div>
+<p>Get slice of coordinate set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_name</span> <span class="o">=</span> <span class="s">&#39;Antarctic EASE grid&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj4_args</span> <span class="o">=</span> <span class="s">&#39;+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_extent</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_area_def</span><span class="p">(</span><span class="n">area_id</span><span class="p">,</span> <span class="n">area_name</span><span class="p">,</span> <span class="n">proj_id</span><span class="p">,</span> <span class="n">proj4_args</span><span class="p">,</span>
+<span class="gp">... </span>                                      <span class="n">x_size</span><span class="p">,</span> <span class="n">y_size</span><span class="p">,</span> <span class="n">area_extent</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cart_subset</span> <span class="o">=</span> <span class="n">area_def</span><span class="o">.</span><span class="n">cartesian_coords</span><span class="p">[</span><span class="mi">100</span><span class="p">:</span><span class="mi">200</span><span class="p">,</span> <span class="mi">350</span><span class="p">:]</span>
+</pre></div>
+</div>
+<p>If only the coordinates along the boundaries are required they can be extracted using th <strong>boundary</strong> property of a geographic coordinate</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_name</span> <span class="o">=</span> <span class="s">&#39;Antarctic EASE grid&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj_id</span> <span class="o">=</span> <span class="s">&#39;ease_sh&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj4_args</span> <span class="o">=</span> <span class="s">&#39;+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_size</span> <span class="o">=</span> <span class="mi">425</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_extent</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="o">-</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">,</span><span class="mf">5326849.0625</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_area_def</span><span class="p">(</span><span class="n">area_id</span><span class="p">,</span> <span class="n">area_name</span><span class="p">,</span> <span class="n">proj_id</span><span class="p">,</span> <span class="n">proj4_args</span><span class="p">,</span>
+<span class="gp">... </span>                                      <span class="n">x_size</span><span class="p">,</span> <span class="n">y_size</span><span class="p">,</span> <span class="n">area_extent</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj_x_boundary</span> <span class="o">=</span> <span class="n">area_def</span><span class="o">.</span><span class="n">projection_x_coords</span><span class="o">.</span><span class="n">boundary</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">proj_x_side1</span> <span class="o">=</span> <span class="n">proj_x_boundary</span><span class="o">.</span><span class="n">side1</span>
+</pre></div>
+</div>
+<p>The labelling of the boundary arrays is <strong>side1</strong>, <strong>side2</strong>, <strong>side3</strong> and <strong>side4</strong> starting with <strong>side1</strong> between upper left corner ((row, col) = (0, 0)) and upper right corner ((row, col) = (0, cols)). The labelling proceeds clockwise.</p>
 </div>
 </div>
 
@@ -193,6 +247,7 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
 </li>
 <li><a class="reference external" href="#griddefinition">GridDefinition</a></li>
 <li><a class="reference external" href="#swathdefinition">SwathDefinition</a></li>
+<li><a class="reference external" href="#geographic-coordinates-and-boundaries">Geographic coordinates and boundaries</a></li>
 </ul>
 </li>
 </ul>
@@ -240,7 +295,7 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.6.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

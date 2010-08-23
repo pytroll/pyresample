@@ -1,3 +1,5 @@
+.. _preproc:
+
 Preprocessing of grids
 ======================
 

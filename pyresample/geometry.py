@@ -22,9 +22,129 @@ import numpy as np
 import _spatial_mp
 
 
+class Boundary(object):
+    """Container for geometry boundary.
+    Labelling starts in upper left corner and proceeds clockwise"""
+      
+    def __init__(self, side1, side2, side3, side4):
+        self.side1 = side1
+        self.side2 = side2
+        self.side3 = side3
+        self.side4 = side4
+        
+        
 class BaseDefinition(object):
     """Base class for geometry definitions"""
+        
+    class _GeoCoords(object):
+        """Container for geographic coordinates"""        
+        
+        def __init__(self, data=None):
+            self.data = data
+            
+        def __getitem__(self, key):
+            """Slicing and selecting"""
+            
+            if self.data is not None:
+                return self.data[key]
+            else:
+                return self._get_coords(key)
+        
+        def _get_coords(self, *args):
+            raise NotImplementedError('Slice calculation not implemented '
+                                      'in base class')
+            
+        @property
+        def boundary(self):
+            """Returns Boundary object"""
+            
+            side1 = self[0, :]
+            side2 = self[:, -1]
+            side3 = self[-1, :][::-1]
+            side4 = self[:, 0][::-1]
+            return Boundary(side1, side2, side3, side4)
     
+    
+    class _GeoCoordsCached(_GeoCoords):
+        """Container for geographic coordinates with caching"""
+        
+        def __init__(self, holder, index=None, data=None):
+            super(BaseDefinition._GeoCoordsCached, self).__init__(data)
+            self._holder = holder
+            self._index = index
+            
+        def _get_coords(self, key):
+            """Method for delegating caching"""
+            
+            if self._index is None:
+                value = self._holder._get_coords(key)
+            else:
+                value = self._holder._get_coords(key)[self._index]
+                
+            if key == slice(None):
+                self.data = value        
+            return value
+        
+    
+    class _Lons(_GeoCoordsCached):
+        """Container for lons"""
+        
+        def __init__(self, holder, data=None):
+            super(BaseDefinition._Lons, self).__init__(holder, 
+                                                       index=0, 
+                                                       data=data)
+            
+            
+    class _Lats(_GeoCoordsCached):
+        """Container for lats"""
+        
+        def __init__(self, holder, data=None):
+            super(BaseDefinition._Lats, self).__init__(holder, 
+                                                       index=1, 
+                                                       data=data)
+            
+    
+    class _CartesianCoords(_GeoCoordsCached):
+        """Container for cartesian coordinates"""
+        
+        def __init__(self, holder, data=None):
+            super(BaseDefinition._CartesianCoords, self).__init__(holder, 
+                                                                  index=None, 
+                                                                  data=data)
+        
+                
+    class _Holder(object):
+        """Caching manager"""
+        
+        def __init__(self, get_function):
+            self._get_function = get_function
+            self.last_slice = None
+            self.last_data = None
+        
+        def _get_coords(self, key):
+            """Retrieve coordinates with caching"""
+            
+            if self.last_slice == key:
+                data = self.last_data
+            else:
+                try:
+                    #Test if key is iterable
+                    key.__iter__
+                    data_slice = key                    
+                except AttributeError:
+                    #Try to create row select key
+                    if isinstance(key, slice):
+                        data_slice = (key, slice(None))                        
+                    else:
+                        raise ValueError('slice could not be interpreted')
+                data = self._get_function(data_slice=data_slice)
+                
+                self.last_slice = key
+                self.last_data = data
+                
+            return data
+                
+        
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
@@ -32,22 +152,44 @@ class BaseDefinition(object):
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
         self.nprocs = nprocs
-        self._lons = lons
-        self._lats = lats
-        self._cartesian_coords = None
+        lonlat_holder = BaseDefinition._Holder(self._get_lonlats)
+        self.lons = BaseDefinition._Lons(lonlat_holder, data=lons)
+        self.lats = BaseDefinition._Lats(lonlat_holder, data=lats)
+        
+        cartesian_holder = BaseDefinition._Holder(self._get_cartesian_coords)
+        self.cartesian_coords = BaseDefinition._CartesianCoords(cartesian_holder)
     
     def get_lonlats(self, *args, **kwargs):
         """Retrieve lons and lats of geometry definition"""
         
-        if self._lons is None or self._lats is None:
+        if self.lons.data is None or self.lats.data is None:
             raise ValueError('lon/lat values are not defined')
-        return self._lons, self._lats   
-#    def get_lonlats(self, *args, **kwargs):
-#        raise NotImplementedError('Method "get_lonlats" not implemented ' 
-#                                  'in base class')
+        return self.lons.data, self.lats.data
     
+    def get_lonlat(self, row, col):
+        """Retrieve lon and lat of single pixel
+        
+        :Parameters:
+        row : int
+        col : int
+        
+        :Returns:
+        (lon, lat) : tuple of floats
+        """
+        
+        if self.lons.data is None or self.lats.data is None:
+            raise ValueError('lon/lat values are not defined')
+        return self.lons.data[row, col], self.lats.data[row, col]
+    
+    def _get_lonlats(self, nprocs=None, data_slice=None):
+        """Base method for lon lat retrieval with slicing"""
+        
+        if self.lons.data is None or self.lats.data is None:
+            raise ValueError('lon/lat values are not defined')
+        return self.lons.data[data_slice], self.lats.data[data_slice]
+             
     def get_cartesian_coords(self, nprocs=None):
-        """Retrieve cartesian coordinates of geometry defintion
+        """Retrieve cartesian coordinates of geometry definition
         
         :Parameters:
         nprocs : int, optional
@@ -55,48 +197,43 @@ class BaseDefinition(object):
             Defaults to the nprocs set when instantiating object
         """
         
-        if self._cartesian_coords is None:
+        return self._get_cartesian_coords(nprocs=nprocs)
+    
+    def _get_cartesian_coords(self, nprocs=None, data_slice=None):
+        """Base method for cartesian coordinate retrieval with slicing"""
+        
+        if self.cartesian_coords.data is None:
+            #Coordinates are not cached
             if nprocs is None:
                 nprocs = self.nprocs
+            
+            if data_slice is None:
+                #Use full slice
+                data_slice = slice(None)
                 
+            lons, lats = self._get_lonlats(nprocs=nprocs, data_slice=data_slice)
+                    
             if nprocs > 1:
                 cartesian = _spatial_mp.Cartesian_MP(nprocs)
             else:
                 cartesian = _spatial_mp.Cartesian()
+                            
+            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons), 
+                                                           np.ravel(lats))
             
-            lons, lats = self.get_lonlats(nprocs)
-            cartesian_coords = cartesian.transform_lonlats(lons.ravel(), 
-                                                           lats.ravel())
-            if lons.ndim > 1:
+            if isinstance(lons, np.ndarray) and lons.ndim > 1:
+                #Reshape to correct shape
                 cartesian_coords = cartesian_coords.reshape(lons.shape[0], 
-                                                            lons.shape[1], 3)
+                                                            lons.shape[1], 3)                                     
                 
         else:
-            cartesian_coords = self._cartesian_coords
-            
-        return cartesian_coords
-    
-    @property
-    def lons(self):
-        """Retrives and caches lons"""
+            #Coordinates are cached
+            if data_slice is None:
+                cartesian_coords = self.cartesian_coords.data
+            else:
+                cartesian_coords = self.cartesian_coords.data[data_slice]                
         
-        if self._lons is None:
-            self._lons, self._lats = self.get_lonlats()
-        return self._lons
-    
-    @property
-    def lats(self):
-        """Retrives and caches lats"""
-        if self._lats is None:
-            self._lons, self._lats = self.get_lonlats()
-        return self._lats
-    
-    @property
-    def cartesian_coords(self):
-        """Retrives and caches cartesian coordinates"""
-        if self._cartesian_coords is None:
-            self._cartesian_coords = self.get_cartesian_coords()
-        return self._cartesian_coords
+        return cartesian_coords    
  
  
 class CoordinateDefinition(BaseDefinition):
@@ -129,12 +266,12 @@ class GridDefinition(CoordinateDefinition):
     size : int
         Number of elements in grid
         
-    :Properties:
-    lons : numpy array
+    Properties:
+    lons : object
         Grid lons
-    lats : numpy array
+    lats : object
         Grid lats
-    cartesian_coords : numpy array
+    cartesian_coords : object
         Grid cartesian coordinates
     """
     
@@ -164,12 +301,12 @@ class SwathDefinition(CoordinateDefinition):
     ndims : int
         Swath dimensions
         
-    :Properties:
-    lons : numpy array
+    Properties:
+    lons : object
         Swath lons
-    lats : numpy array
+    lats : object
         Swath lats
-    cartesian_coords : numpy array
+    cartesian_coords : object
         Swath cartesian coordinates
     """
     
@@ -241,14 +378,32 @@ class AreaDefinition(BaseDefinition):
     Properties:
     proj4_string : str
         Projection defined as Proj.4 string
-    lons : numpy array
+    lons : object
         Grid lons
-    lats : numpy array
+    lats : object
         Grid lats
-    cartesian_coords : numpy array
+    cartesian_coords : object
         Grid cartesian coordinates
+    projection_x_coords : object
+        Grid projection x coordinate
+    projection_y_coords : object
+        Grid projection y coordinate
     """
 
+    class _ProjectionXCoords(BaseDefinition._GeoCoordsCached):
+        """Container for projection x coordinates"""
+        
+        def __init__(self, holder):
+            super(AreaDefinition._ProjectionXCoords, self).__init__(holder, index=0)
+    
+    
+    class _ProjectionYCoords(BaseDefinition._GeoCoordsCached):
+        """Container for projection y coordinates"""
+        
+        def __init__(self, holder):
+            super(AreaDefinition._ProjectionYCoords, self).__init__(holder, index=1)
+                  
+            
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, nprocs=1, lons=None, lats=None):
         if not isinstance(proj_dict, dict):
@@ -285,6 +440,10 @@ class AreaDefinition(BaseDefinition):
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
         
+        proj_coords_holder = BaseDefinition._Holder(self._get_proj_coords)
+        self.projection_x_coords = AreaDefinition._ProjectionXCoords(proj_coords_holder)
+        self.projection_y_coords = AreaDefinition._ProjectionYCoords(proj_coords_holder)
+        
     def __str__(self):
         return ('Area ID: %s\nName: %s\nProjection ID: %s\n'
                'Projection: %s\nNumber of columns: %s\nNumber of rows: %s\n'
@@ -305,25 +464,7 @@ class AreaDefinition(BaseDefinition):
         (lon, lat) : tuple of floats
         """
         
-        if self._lons is None or self._lats is None:
-            #Negative indices wrap-around
-            if row < 0:
-                row = self.x_size + row
-            if col < 0:
-                col = self.y_size + col
-            
-            #Get projection coordinates of point
-            x_coord = self.pixel_upper_left[0] + col * self.pixel_size_x
-            y_coord = self.pixel_upper_left[1] - row * self.pixel_size_y
-            
-            #Reproject
-            proj = _spatial_mp.Proj(**self.proj_dict)
-            lon, lat = proj(x_coord, y_coord, inverse=True)
-        else:
-            lon = self._lons[row, col]
-            lat = self._lats[row, col]
-            
-        return lon, lat
+        return self._get_lonlats(nprocs=None, data_slice=(row, col))
     
     def get_proj_coords(self):
         """Get projection coordinates of grid        
@@ -332,18 +473,92 @@ class AreaDefinition(BaseDefinition):
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
         """        
+    
+        return self._get_proj_coords()
+    
+    def _get_proj_coords(self, data_slice=None):
+        """Method for projection coordinate retrieval with slicing"""
         
+        def get_val(val, sub_val, max):
+            #Get value with substitution and wrapping
+            if val is None:
+                return sub_val
+            else:
+                if val < 0:
+                    #Wrap index
+                    return max + val
+                else:
+                    return val
+        
+        is_single_value = False
+        is_1d_select = False    
+
         #create coordinates of local area as ndarrays
-        target_x = np.fromfunction(lambda i, j: j * self.pixel_size_x + 
+        if data_slice is None or data_slice == slice(None):
+            #Full slice
+            rows = self.y_size
+            cols = self.x_size
+            row_start = 0
+            col_start = 0
+        else:            
+            if isinstance(data_slice, slice):
+                #Row slice
+                row_start = get_val(data_slice.start, 0, self.y_size)
+                col_start = 0
+                rows = get_val(data_slice.stop, self.y_size, self.y_size) - row_start                                 
+                cols = self.x_size
+            elif isinstance(data_slice[0], slice) and isinstance(data_slice[1], slice):
+                #Block slice
+                row_start = get_val(data_slice[0].start, 0, self.y_size)
+                col_start = get_val(data_slice[1].start, 0, self.x_size)
+                rows = get_val(data_slice[0].stop, self.y_size, self.y_size) - row_start
+                cols = get_val(data_slice[1].stop, self.x_size, self.x_size) - col_start
+            elif isinstance(data_slice[0], slice):
+                #Select from col
+                is_1d_select = True
+                row_start = get_val(data_slice[0].start, 0, self.y_size)
+                col_start = get_val(data_slice[1], 0, self.x_size)
+                rows = get_val(data_slice[0].stop, self.y_size, self.y_size) - row_start
+                cols = 1
+            elif isinstance(data_slice[1], slice):
+                #Select from row
+                is_1d_select = True
+                row_start = get_val(data_slice[0], 0, self.y_size)
+                col_start = get_val(data_slice[1].start, 0, self.x_size)
+                rows = 1
+                cols = get_val(data_slice[1].stop, self.x_size, self.x_size) - col_start
+            else:
+                #Single element select
+                is_single_value = True
+                
+                row_start = get_val(data_slice[0], 0, self.y_size)                
+                col_start = get_val(data_slice[1], 0, self.x_size)
+                    
+                rows = 1
+                cols = 1    
+        
+        #Calculate coordinates
+        target_x = np.fromfunction(lambda i, j: (j + col_start) * 
+                                   self.pixel_size_x + 
                                    self.pixel_upper_left[0],
-                                   (self.y_size, 
-                                    self.x_size))
+                                   (rows, 
+                                    cols))
     
         target_y = np.fromfunction(lambda i, j: 
                                    self.pixel_upper_left[1] - 
-                                   i * self.pixel_size_y,
-                                   (self.y_size, 
-                                    self.x_size))
+                                   (i + row_start) * self.pixel_size_y,
+                                   (rows, 
+                                    cols))
+        
+        if is_single_value:
+            #Return single values
+            target_x = float(target_x)
+            target_y = float(target_y)
+        elif is_1d_select:
+            #Reshape to 1D array
+            target_x = target_x.reshape((target_x.size,))
+            target_y = target_y.reshape((target_y.size,))
+        
         return target_x, target_y
     
     def get_lonlats(self, nprocs=None):
@@ -358,8 +573,13 @@ class AreaDefinition(BaseDefinition):
         (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
         """        
-        
-        if self._lons is None or self._lats is None:
+        return self._get_lonlats(nprocs=nprocs)
+    
+    def _get_lonlats(self, nprocs=None, data_slice=None):
+        """Method for lon lat coordinate retrieval with slicing"""
+            
+        if self.lons.data is None or self.lats.data is None:
+            #Data is not cached
             if nprocs is None:
                 nprocs = self.nprocs
                 
@@ -370,18 +590,24 @@ class AreaDefinition(BaseDefinition):
                 target_proj = _spatial_mp.Proj(**self.proj_dict)
         
             #Get coordinates of local area as ndarrays
-            target_x, target_y = self.get_proj_coords()
+            target_x, target_y = self._get_proj_coords(data_slice=data_slice)
             
             #Get corresponding longitude and latitude values
             lons, lats = target_proj(target_x, target_y, inverse=True,
                                      nprocs=nprocs)        
-            
+                
             #Free memory
             del(target_x)
             del(target_y)
         else:
-            lons = self._lons
-            lats = self._lats
+            #Data is cached
+            if data_slice is None:
+                #Full slice
+                lons = self.lons.data
+                lats = self.lats.data
+            else:
+                lons = self.lons.data[data_slice]
+                lats = self.lats.data[data_slice]
             
         return lons, lats
 
@@ -391,6 +617,33 @@ class AreaDefinition(BaseDefinition):
         
         items = self.proj_dict.items()
         return '+' + ' +'.join([ t[0] + '=' + t[1] for t in items])         
-
-        
     
+
+def _get_slice(segments, shape):
+    """Generator for segmenting a 1D or 2D array"""
+    
+    if not (1 <= len(shape) <= 2):
+        raise ValueError('Cannot segment array of shape: %s' % str(shape))
+    else:
+        size = shape[0]
+        slice_length = np.ceil(float(size) / segments)
+        start_idx = 0
+        end_idx = slice_length
+        while start_idx < size:
+            if len(shape) == 1:
+                yield slice(start_idx, end_idx)
+            else:
+                yield (slice(start_idx, end_idx), slice(None))
+            start_idx = end_idx
+            end_idx = min(start_idx + slice_length, size)
+
+def _flatten_cartesian_coords(cartesian_coords):
+    """Flatten array to (n, 3) shape"""
+    
+    shape = cartesian_coords.shape 
+    if len(shape) > 2:
+        cartesian_coords = cartesian_coords.reshape(shape[0] * 
+                                                    shape[1], 3)
+    return cartesian_coords    
+           
+        

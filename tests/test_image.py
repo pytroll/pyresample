@@ -60,18 +60,29 @@ class Test(unittest.TestCase):
                                     5568742.4000000004]
                                     )
 
+    @tmp
     def test_image(self):
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
-        msg_con = image.ImageContainerQuick(data, self.msg_area)
+        msg_con = image.ImageContainerQuick(data, self.msg_area, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.failUnlessAlmostEqual(cross_sum, expected, msg='ImageContainer resampling quick failed')
+    
+    @tmp
+    def test_image_segments(self):
+        data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
+        msg_con = image.ImageContainerQuick(data, self.msg_area, segments=8)
+        area_con = msg_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum = res.sum()
+        expected = 399936.39392500359
+        self.failUnlessAlmostEqual(cross_sum, expected, msg='ImageContainer resampling quick segments failed')
         
     def test_return_type(self):
         data = numpy.ones((3712, 3712)).astype('int')
-        msg_con = image.ImageContainerQuick(data, self.msg_area)
+        msg_con = image.ImageContainerQuick(data, self.msg_area, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         self.assertTrue(data.dtype is res.dtype, msg='Failed to maintain input data type')
@@ -82,7 +93,7 @@ class Test(unittest.TestCase):
         mask = numpy.zeros((3712, 3712))
         mask[:, 1865:] = 1
         data_masked = numpy.ma.array(data, mask=mask)
-        msg_con = image.ImageContainerQuick(data_masked, self.msg_area)
+        msg_con = image.ImageContainerQuick(data_masked, self.msg_area, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
@@ -97,7 +108,7 @@ class Test(unittest.TestCase):
         mask[:, 1865:] = 1
         data_masked = numpy.ma.array(data, mask=mask)
         msg_con = image.ImageContainerQuick(data_masked, self.msg_area, 
-                                            fill_value=None)
+                                            fill_value=None, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
@@ -107,7 +118,7 @@ class Test(unittest.TestCase):
         
     def test_nearest_neighbour(self):        
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
-        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
+        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
@@ -117,7 +128,7 @@ class Test(unittest.TestCase):
     
     def test_nearest_resize(self):        
         data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
-        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
+        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000, segments=1)
         area_con = msg_con.resample(self.msg_area_resize)
         res = area_con.image_data
         cross_sum = res.sum()
@@ -129,7 +140,7 @@ class Test(unittest.TestCase):
         data1 = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         data2 = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712)) * 2
         data = numpy.dstack((data1, data2))
-        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000)
+        msg_con = image.ImageContainerNearest(data, self.msg_area, 50000, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum1 = res[:, :, 0].sum()
@@ -166,7 +177,7 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        swath_con = image.ImageContainerNearest(data, swath_def, 50000)
+        swath_con = image.ImageContainerNearest(data, swath_def, 50000, segments=1)
         area_con = swath_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()        
@@ -174,19 +185,18 @@ class Test(unittest.TestCase):
         self.failUnlessEqual(cross_sum, expected,\
                              msg='ImageContainer swath resampling nearest failed')
 
-    @tmp
-    def test_nearest_swath(self):
+    def test_nearest_swath_segments(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))
         data = numpy.dstack(3 * (data,))        
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        swath_con = image.ImageContainerNearest(data, swath_def, 50000)
+        swath_con = image.ImageContainerNearest(data, swath_def, 50000, segments=2)
         area_con = swath_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()        
         expected = 3 * 15874591.0
         self.failUnlessEqual(cross_sum, expected,\
-                             msg='ImageContainer swath resampling nearest failed')
+                             msg='ImageContainer swath segments resampling nearest failed')
 
 

@@ -150,9 +150,11 @@ class Cartesian(object):
     def transform_lonlats(self, lons, lats):
     
         coords = np.zeros((lons.size, 3))
-        coords[:, 0] = R*np.cos(np.radians(lats))*np.cos(np.radians(lons))
-        coords[:, 1] = R*np.cos(np.radians(lats))*np.sin(np.radians(lons))
-        coords[:, 2] = R*np.sin(np.radians(lats))
+        lons_rad = np.radians(lons)
+        lats_rad = np.radians(lats)
+        coords[:, 0] = R*np.cos(lats_rad)*np.cos(lons_rad)
+        coords[:, 1] = R*np.cos(lats_rad)*np.sin(lons_rad)
+        coords[:, 2] = R*np.sin(lats_rad)
         
         return coords
     
