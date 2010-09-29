@@ -81,6 +81,33 @@ class Test(unittest.TestCase):
                              msg='Swath resampling nearest failed')
     
     @tmp
+    def test_nearest_empty(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data.ravel(),\
+                                     self.area_def, 50000, segments=1)        
+        cross_sum = res.sum()        
+        expected = 0
+        self.failUnlessEqual(cross_sum, expected,\
+                             msg='Swath resampling nearest empty failed')
+        
+    @tmp
+    def test_nearest_empty_masked(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data.ravel(),\
+                                     self.area_def, 50000, segments=1, 
+                                     fill_value=None)        
+        cross_sum = res.mask.sum()        
+        expected = res.size
+        self.failUnless(cross_sum == expected,
+                        msg='Swath resampling nearest empty masked failed')
+    
+    @tmp
     def test_nearest_segments(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
@@ -200,7 +227,23 @@ class Test(unittest.TestCase):
         cross_sum = res.sum()
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
-                                   msg='Swath multi channel segments resampling gauss failed') 
+                                   msg='Swath multi channel segments resampling gauss failed')
+        
+    @tmp
+    def test_gauss_multi_mp_segments_empty(self):
+        data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        
+        lons = numpy.fromfunction(lambda y, x: 165 + (10.0/100)*x, (5000, 100))
+        lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
+                                         data.ravel()))
+        res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                     self.area_def, 50000, [25000, 15000, 10000],\
+                                     nprocs=2, segments=1)
+        cross_sum = res.sum()
+        self.failUnless(cross_sum == 0,
+                        msg=('Swath multi channel segments empty ' 
+                             'resampling gauss failed')) 
     
     def test_custom(self):
         def wf(dist):
@@ -282,14 +325,6 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
         grid_lons, grid_lats = self.area_def.get_lonlats()
-#        lons, lats, data = data_reduce.swath_from_lonlat_grid(grid_lons, grid_lats, 
-#                                                              lons, lats, data, 
-#                                                              7000)
-#        cart_grid = numpy.zeros((800, 800, 2))
-#        cart_grid[:, :, 0] = grid_lons
-#        cart_grid[:, :, 1] = grid_lats
-#        area_con = swath._AreaDefContainer(cart_grid)
-#        valid_index = area_con.get_valid_index(lons, lats, 7000)
         valid_index = data_reduce.get_valid_index_from_lonlat_grid(grid_lons, grid_lats, 
                                                                    lons, lats, 7000) 
         data = data[valid_index]
@@ -302,33 +337,13 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
         cart_grid = self.area_def.cartesian_coords[:]
-        #cart_grid = utils.generate_cartesian_grid(self.area_def)       
-#        lons, lats, data = data_reduce.swath_from_cartesian_grid(grid, lons, lats, data, 
-#                                                                 7000)
-        #area_con = swath._AreaDefContainer(cart_grid)
-        #valid_index = area_con.get_valid_index(lons, lats, 7000)
         valid_index = data_reduce.get_valid_index_from_cartesian_grid(cart_grid, 
                                                                       lons, lats, 7000)
         data = data[valid_index]
         cross_sum = data.sum()
         expected = 20514375.0
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Cartesian reduce data failed')
-       
-#    def test_nearest_cartesian(self):
-#        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
-#        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-#        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
-#        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-#        #cart_grid = utils.generate_cartesian_grid(self.area_def)
-#        cart_grid = self.area_def.cartesian_coords
-#        area_def = geometry.GridDefinition(cartesian_coords=cart_grid)
-#        res = swath.resample_nearest(swath_def, data.ravel(),
-#                                     area_def, 50000, reduce_data=False)
-#        cross_sum = res.sum()
-#        expected = 15874591.0
-#        self.failUnlessEqual(cross_sum, expected,\
-#                             msg='Swath resampling nearest from cartesian grid failed')
-        
+               
     def test_masked_nearest(self):
         data = numpy.ones((50, 10))
         data[:, 5:] = 2

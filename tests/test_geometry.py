@@ -70,6 +70,7 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(lat, 52.566998432390619, 
                                    msg='lat retrieval from precomputated grid failed')
         
+    @tmp
     def test_cartesian(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -84,8 +85,9 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        cart_coords = area_def.get_cartesian_coords()
+        cart_coords = area_def.get_cartesian_coords()        
         self.failUnlessAlmostEqual(cart_coords.sum(), 5872042754516.1591797,
+                                   places=1,
                                    msg='Calculation of cartesian coordinates failed')
         
     def test_cartesian_caching(self):
@@ -140,3 +142,78 @@ class Test(unittest.TestCase):
         
         self.failIf(id(cart_coords1) != id(cart_coords2), 
                     msg='Caching of sliced cartesian coordinates failed')
+        
+    def test_area_equal(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+        area_def2 = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+        self.failIf(area_def != area_def2, 'area_defs are not equal as expected')
+         
+    def test_not_area_equal(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+       
+        msg_area = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees', 
+                                   'msg_full',
+                                   {'a': '6378169.0',
+                                    'b': '6356584.0',
+                                    'h': '35785831.0',
+                                    'lon_0': '0',
+                                    'proj': 'geos'},
+                                    3712,
+                                    3712,
+                                    [-5568742.4000000004,
+                                    -5568742.4000000004,
+                                    5568742.4000000004,
+                                    5568742.4000000004]
+                                    )
+        self.failIf(area_def == msg_area, 'area_defs are not expected to be equal')
+       
+    def test_swath_equal(self):
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons, lats)
+        self.failIf(swath_def != swath_def2, 'swath_defs are not equal as expected')
+        
+    def test_swath_not_equal(self):
+        lats1 = np.array([65.9, 65.86, 65.82, 65.78])
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats2 = np.array([65.91, 65.85, 65.80, 65.75])
+        swath_def = geometry.SwathDefinition(lons, lats1)
+        swath_def2 = geometry.SwathDefinition(lons, lats2)
+        self.failIf(swath_def == swath_def2, 'swath_defs are not expected to be equal')

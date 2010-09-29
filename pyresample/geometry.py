@@ -31,12 +31,9 @@ class Boundary(object):
         self.side2 = side2
         self.side3 = side3
         self.side4 = side4
-        
-        
-class BaseDefinition(object):
-    """Base class for geometry definitions"""
-        
-    class _GeoCoords(object):
+
+
+class _GeoCoords(object):
         """Container for geographic coordinates"""        
         
         def __init__(self, data=None):
@@ -65,86 +62,83 @@ class BaseDefinition(object):
             return Boundary(side1, side2, side3, side4)
     
     
-    class _GeoCoordsCached(_GeoCoords):
-        """Container for geographic coordinates with caching"""
-        
-        def __init__(self, holder, index=None, data=None):
-            super(BaseDefinition._GeoCoordsCached, self).__init__(data)
-            self._holder = holder
-            self._index = index
-            
-        def _get_coords(self, key):
-            """Method for delegating caching"""
-            
-            if self._index is None:
-                value = self._holder._get_coords(key)
-            else:
-                value = self._holder._get_coords(key)[self._index]
-                
-            if key == slice(None):
-                self.data = value        
-            return value
-        
+class _GeoCoordsCached(_GeoCoords):
+    """Container for geographic coordinates with caching"""
     
-    class _Lons(_GeoCoordsCached):
-        """Container for lons"""
+    def __init__(self, holder, index=None, data=None):
+        super(_GeoCoordsCached, self).__init__(data)
+        self._holder = holder
+        self._index = index
         
-        def __init__(self, holder, data=None):
-            super(BaseDefinition._Lons, self).__init__(holder, 
-                                                       index=0, 
-                                                       data=data)
-            
-            
-    class _Lats(_GeoCoordsCached):
-        """Container for lats"""
+    def _get_coords(self, key):
+        """Method for delegating caching"""
         
-        def __init__(self, holder, data=None):
-            super(BaseDefinition._Lats, self).__init__(holder, 
-                                                       index=1, 
-                                                       data=data)
+        if self._index is None:
+            value = self._holder._get_coords(key)
+        else:
+            value = self._holder._get_coords(key)[self._index]
             
+        if key == slice(None):
+            self.data = value        
+        return value
     
-    class _CartesianCoords(_GeoCoordsCached):
-        """Container for cartesian coordinates"""
+
+class _Lons(_GeoCoordsCached):
+    """Container for lons"""
+    
+    def __init__(self, holder, data=None):
+        super(_Lons, self).__init__(holder, index=0, data=data)
         
-        def __init__(self, holder, data=None):
-            super(BaseDefinition._CartesianCoords, self).__init__(holder, 
-                                                                  index=None, 
-                                                                  data=data)
         
-                
-    class _Holder(object):
-        """Caching manager"""
+class _Lats(_GeoCoordsCached):
+    """Container for lats"""
+    
+    def __init__(self, holder, data=None):
+        super(_Lats, self).__init__(holder, index=1, data=data)
         
-        def __init__(self, get_function):
-            self._get_function = get_function
-            self.last_slice = None
-            self.last_data = None
-        
-        def _get_coords(self, key):
-            """Retrieve coordinates with caching"""
+
+class _CartesianCoords(_GeoCoordsCached):
+    """Container for cartesian coordinates"""
+    
+    def __init__(self, holder, data=None):
+        super(_CartesianCoords, self).__init__(holder, index=None, data=data)
+    
             
-            if self.last_slice == key:
-                data = self.last_data
-            else:
-                try:
-                    #Test if key is iterable
-                    key.__iter__
-                    data_slice = key                    
-                except AttributeError:
-                    #Try to create row select key
-                    if isinstance(key, slice):
-                        data_slice = (key, slice(None))                        
-                    else:
-                        raise ValueError('slice could not be interpreted')
-                data = self._get_function(data_slice=data_slice)
-                
-                self.last_slice = key
-                self.last_data = data
-                
-            return data
-                
+class _Holder(object):
+    """Caching manager"""
+    
+    def __init__(self, get_function):
+        self._get_function = get_function
+        self.last_slice = None
+        self.last_data = None
+    
+    def _get_coords(self, key):
+        """Retrieve coordinates with caching"""
         
+        if self.last_slice == key:
+            data = self.last_data
+        else:
+            try:
+                #Test if key is iterable
+                key.__iter__
+                data_slice = key                    
+            except AttributeError:
+                #Try to create row select key
+                if isinstance(key, slice):
+                    data_slice = (key, slice(None))                        
+                else:
+                    raise ValueError('slice could not be interpreted')
+            data = self._get_function(data_slice=data_slice)
+            
+            self.last_slice = key
+            self.last_data = data
+            
+        return data        
+   
+    
+class BaseDefinition(object):
+    """Base class for geometry definitions"""
+           
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
@@ -152,12 +146,28 @@ class BaseDefinition(object):
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
         self.nprocs = nprocs
-        lonlat_holder = BaseDefinition._Holder(self._get_lonlats)
-        self.lons = BaseDefinition._Lons(lonlat_holder, data=lons)
-        self.lats = BaseDefinition._Lats(lonlat_holder, data=lats)
+        lonlat_holder = _Holder(self._get_lonlats)
+        self.lons = _Lons(lonlat_holder, data=lons)
+        self.lats = _Lats(lonlat_holder, data=lats)
         
-        cartesian_holder = BaseDefinition._Holder(self._get_cartesian_coords)
-        self.cartesian_coords = BaseDefinition._CartesianCoords(cartesian_holder)
+        cartesian_holder = _Holder(self._get_cartesian_coords)
+        self.cartesian_coords = _CartesianCoords(cartesian_holder)
+    
+    def __eq__(self, other):
+        """Test for approximate equality"""
+        
+        try:
+            return (np.allclose(self.lons.data, other.lons.data, atol=1e-6, 
+                                rtol=5e-9) and
+                    np.allclose(self.lats.data, other.lats.data, atol=1e-6, 
+                                rtol=5e-9))
+        except AttributeError:
+            return False
+    
+    def __ne__(self, other):
+        """Test for approximate equality"""
+        
+        return not self.__eq__(other)
     
     def get_lonlats(self, *args, **kwargs):
         """Retrieve lons and lats of geometry definition"""
@@ -318,6 +328,20 @@ class SwathDefinition(CoordinateDefinition):
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
 
 
+class _ProjectionXCoords(_GeoCoordsCached):
+    """Container for projection x coordinates"""
+        
+    def __init__(self, holder):
+        super(_ProjectionXCoords, self).__init__(holder, index=0)
+
+
+class _ProjectionYCoords(_GeoCoordsCached):
+    """Container for projection y coordinates"""
+    
+    def __init__(self, holder):
+        super(_ProjectionYCoords, self).__init__(holder, index=1)
+
+
 class AreaDefinition(BaseDefinition):    
     """Holds definition of an area.
 
@@ -389,19 +413,6 @@ class AreaDefinition(BaseDefinition):
     projection_y_coords : object
         Grid projection y coordinate
     """
-
-    class _ProjectionXCoords(BaseDefinition._GeoCoordsCached):
-        """Container for projection x coordinates"""
-        
-        def __init__(self, holder):
-            super(AreaDefinition._ProjectionXCoords, self).__init__(holder, index=0)
-    
-    
-    class _ProjectionYCoords(BaseDefinition._GeoCoordsCached):
-        """Container for projection y coordinates"""
-        
-        def __init__(self, holder):
-            super(AreaDefinition._ProjectionYCoords, self).__init__(holder, index=1)
                   
             
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
@@ -440,9 +451,9 @@ class AreaDefinition(BaseDefinition):
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
         
-        proj_coords_holder = BaseDefinition._Holder(self._get_proj_coords)
-        self.projection_x_coords = AreaDefinition._ProjectionXCoords(proj_coords_holder)
-        self.projection_y_coords = AreaDefinition._ProjectionYCoords(proj_coords_holder)
+        proj_coords_holder = _Holder(self._get_proj_coords)
+        self.projection_x_coords = _ProjectionXCoords(proj_coords_holder)
+        self.projection_y_coords = _ProjectionYCoords(proj_coords_holder)
         
     def __str__(self):
         return ('Area ID: %s\nName: %s\nProjection ID: %s\n'
@@ -452,6 +463,21 @@ class AreaDefinition(BaseDefinition):
                                    self.area_extent)
                
     __repr__ = __str__
+    
+    def __eq__(self, other):
+        """Test for equality"""
+        
+        try:
+            return ((self.proj_dict == other.proj_dict) and
+                    (self.shape == other.shape) and
+                    (self.area_extent == other.area_extent))
+        except AttributeError:
+            return False
+        
+    def __ne__(self, other):
+        """Test for equality"""
+        
+        return not self.__eq__(other)
                
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid

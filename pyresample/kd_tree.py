@@ -26,6 +26,9 @@ import geometry
 import data_reduce
 import _spatial_mp
         
+
+class EmptyResult(Exception):
+    pass
         
 def resample_nearest(source_geo_def, data, target_geo_def,
                      radius_of_influence, epsilon=0,
@@ -263,11 +266,22 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     
     #Find reduced input coordinate set
     valid_input_index = _get_valid_input_index(source_geo_def, target_geo_def, 
-                                                   reduce_data, radius_of_influence, nprocs=nprocs)    
+                                               reduce_data, 
+                                               radius_of_influence, 
+                                               nprocs=nprocs)    
     
     #Create kd-tree
-    resample_kdtree = _create_resample_kdtree(source_geo_def, valid_input_index, nprocs=nprocs)
-        
+    try:
+        resample_kdtree = _create_resample_kdtree(source_geo_def, 
+                                                  valid_input_index, 
+                                                  nprocs=nprocs)
+    except EmptyResult:
+        #Handle if all input data is reduced away
+         valid_output_index, index_array, distance_array = \
+             _create_empty_info(source_geo_def, target_geo_def, neighbours)
+         return (valid_input_index, valid_output_index, index_array, 
+                 distance_array)
+     
     if segments > 1:
         #Iterate through segments     
         for i, target_slice in enumerate(geometry._get_slice(segments, 
@@ -275,10 +289,13 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
 
             #Query on slice of target coordinates
             next_voi, next_ia, next_da = \
-                    _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def, 
-                                        radius_of_influence, target_slice,
-                                        neighbours=neighbours, epsilon=epsilon, 
-                                        reduce_data=reduce_data, nprocs=nprocs)
+                    _query_resample_kdtree(resample_kdtree, source_geo_def, 
+                                           target_geo_def, 
+                                           radius_of_influence, target_slice,
+                                           neighbours=neighbours, 
+                                           epsilon=epsilon, 
+                                           reduce_data=reduce_data, 
+                                           nprocs=nprocs)
 
             #Build result iteratively
             if i == 0:
@@ -298,14 +315,18 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         #Query kd-tree with full target coordinate set        
         full_slice = slice(None)
         valid_output_index, index_array, distance_array = \
-                    _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def, 
-                                        radius_of_influence, full_slice,
-                                        neighbours=neighbours, epsilon=epsilon, 
-                                        reduce_data=reduce_data, nprocs=nprocs)
+                    _query_resample_kdtree(resample_kdtree, source_geo_def, 
+                                           target_geo_def, 
+                                           radius_of_influence, full_slice,
+                                           neighbours=neighbours, 
+                                           epsilon=epsilon, 
+                                           reduce_data=reduce_data, 
+                                           nprocs=nprocs)
          
     return valid_input_index, valid_output_index, index_array, distance_array           
 
-def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data, radius_of_influence, nprocs=1):
+def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data, 
+                           radius_of_influence, nprocs=1):
     """Find indices of reduced inputput data"""
     
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
@@ -344,8 +365,8 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data, radius_o
     
     return valid_input_index
 
-def _get_valid_output_index(source_geo_def, target_geo_def, target_lons, target_lats, 
-                            reduce_data, radius_of_influence):
+def _get_valid_output_index(source_geo_def, target_geo_def, target_lons, 
+                            target_lats, reduce_data, radius_of_influence):
     """Find indices of reduced output data"""
     
     valid_output_index = np.ones(target_lons.size, dtype=np.bool)
@@ -384,6 +405,9 @@ def _create_resample_kdtree(source_geo_def, valid_input_index, nprocs=1):
     input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
     input_coords = input_coords[valid_input_index]
 
+    if input_coords.size == 0:
+        raise EmptyResult('No valid data points in input data')
+
     #Build kd-tree on input
     if nprocs > 1:        
         resample_kdtree = _spatial_mp.cKDTree_MP(input_coords,
@@ -409,11 +433,14 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
         raise TypeError('epsilon must be number')
     
     #Get sliced target coordinates
-    target_lons, target_lats = target_geo_def._get_lonlats(nprocs=nprocs, data_slice=data_slice)
+    target_lons, target_lats = target_geo_def._get_lonlats(nprocs=nprocs, 
+                                                           data_slice=data_slice)
     
     #Find indiced of reduced target coordinates
-    valid_output_index = _get_valid_output_index(source_geo_def, target_geo_def, 
-                                                 target_lons.ravel(), target_lats.ravel(), 
+    valid_output_index = _get_valid_output_index(source_geo_def, 
+                                                 target_geo_def, 
+                                                 target_lons.ravel(), 
+                                                 target_lats.ravel(), 
                                                  reduce_data, 
                                                  radius_of_influence)
 
@@ -432,6 +459,22 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
                                                         radius_of_influence)
        
     return valid_output_index, index_array, distance_array
+
+def _create_empty_info(source_geo_def, target_geo_def, neighbours):
+    """Creates dummy info for empty result set"""
+    
+    valid_output_index = np.ones(target_geo_def.size, dtype=np.int)
+    if neighbours > 1:
+        index_array = (np.ones((target_geo_def.size, neighbours), 
+                               dtype=np.int) * source_geo_def.size)
+        distance_array = np.ones((target_geo_def.size, neighbours))
+    else:
+        index_array = (np.ones(target_geo_def.size, dtype=np.int) * 
+                       source_geo_def.size)
+        distance_array = np.ones(target_geo_def.size)
+        
+    return valid_output_index, index_array, distance_array 
+    
 
 def get_sample_from_neighbour_info(resample_type, output_shape, data, 
                                    valid_input_index, valid_output_index, 
@@ -470,8 +513,21 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         Source data resampled to target geometry
     """
     
+    valid_input_size = valid_input_index.sum()
+    valid_output_size = valid_output_index.sum()
+    
+    if valid_input_size == 0 or valid_output_size == 0:
+        #Handle empty result set
+        if fill_value is None:
+            #Use masked array for fill values
+            return np.ma.array(np.zeros(output_shape), 
+                               mask=np.ones(output_shape))
+        else:
+            #Return fill vaues for all pixels
+            return np.ones(output_shape, dtype=data.dtype) * fill_value  
+    
     #Get size of output and reduced input
-    input_size = valid_input_index.sum()
+    input_size = valid_input_size
     if len(output_shape) > 1:
         output_size = output_shape[0] * output_shape[1]
     else:
