@@ -217,3 +217,77 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons, lats1)
         swath_def2 = geometry.SwathDefinition(lons, lats2)
         self.failIf(swath_def == swath_def2, 'swath_defs are not expected to be equal')
+
+    def test_swath_equal_area(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+        
+        swath_def = geometry.SwathDefinition(*area_def.get_lonlats())
+
+        self.failIf(swath_def != area_def, "swath_def and area_def should be equal")
+
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+
+        self.failIf(area_def != swath_def, "swath_def and area_def should be equal")
+
+    def test_swath_not_equal_area(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+        
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+
+        self.failIf(swath_def == area_def, "swath_def and area_def should be different")
+
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    800,
+                                    800,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+
+        self.failIf(area_def == swath_def, "swath_def and area_def should be different")
+
+        

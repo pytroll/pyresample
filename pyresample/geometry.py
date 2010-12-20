@@ -155,7 +155,11 @@ class BaseDefinition(object):
     
     def __eq__(self, other):
         """Test for approximate equality"""
-        
+
+        if other.lons.data is None or other.lats.data is None:
+            other.lons.data, other.lats.data = other.get_lonlats()
+        if self.lons.data is None or self.lats.data is None:
+            self.lons.data, self.lats.data = self.get_lonlats()
         try:
             return (np.allclose(self.lons.data, other.lons.data, atol=1e-6, 
                                 rtol=5e-9) and
@@ -205,6 +209,9 @@ class BaseDefinition(object):
         nprocs : int, optional
             Number of processor cores to be used.
             Defaults to the nprocs set when instantiating object
+            
+        :Returns:
+        cartesian_coords : numpy array
         """
         
         return self._get_cartesian_coords(nprocs=nprocs)
@@ -234,17 +241,120 @@ class BaseDefinition(object):
             if isinstance(lons, np.ndarray) and lons.ndim > 1:
                 #Reshape to correct shape
                 cartesian_coords = cartesian_coords.reshape(lons.shape[0], 
-                                                            lons.shape[1], 3)                                     
+                                                            lons.shape[1], 3)
                 
         else:
             #Coordinates are cached
             if data_slice is None:
                 cartesian_coords = self.cartesian_coords.data
             else:
-                cartesian_coords = self.cartesian_coords.data[data_slice]                
-        
+                cartesian_coords = self.cartesian_coords.data[data_slice]
+                
         return cartesian_coords    
- 
+
+    @property
+    def corners(self):
+        """Returns the corners of the current area.
+        """
+        from pyresample.spherical_geometry import Coordinate
+        return [Coordinate(*self.get_lonlat(0, 0)),
+                Coordinate(*self.get_lonlat(0, -1)),
+                Coordinate(*self.get_lonlat(-1, -1)),
+                Coordinate(*self.get_lonlat(-1, 0))]
+        
+    def __contains__(self, point):
+        """Is a point inside the 4 corners of the current area? This uses
+        great circle arcs as area boundaries.
+        """
+        from pyresample.spherical_geometry import point_inside, Coordinate
+        corners = self.corners
+
+        if isinstance(point, tuple):
+            return point_inside(Coordinate(*point), corners)
+        else:
+            return point_inside(point, corners)
+
+    def overlaps(self, other):
+        """Tests if the current area overlaps the *other* area. This is based
+        solely on the corners of areas, assuming the boundaries to be great
+        circles.
+        
+        :Parameters:
+        other : object
+            Instance of subclass of BaseDefinition
+            
+        :Returns:
+        overlaps : bool
+        """
+
+        from pyresample.spherical_geometry import Arc
+        
+        self_corners = self.corners
+
+        other_corners = other.corners
+        
+        for i in self_corners:
+            if i in other:
+                return True
+        for i in other_corners:
+            if i in self:
+                return True
+    
+        self_arc1 = Arc(self_corners[0], self_corners[1])
+        self_arc2 = Arc(self_corners[1], self_corners[2])
+        self_arc3 = Arc(self_corners[2], self_corners[3])
+        self_arc4 = Arc(self_corners[3], self_corners[0])
+
+        other_arc1 = Arc(other_corners[0], other_corners[1])
+        other_arc2 = Arc(other_corners[1], other_corners[2])
+        other_arc3 = Arc(other_corners[2], other_corners[3])
+        other_arc4 = Arc(other_corners[3], other_corners[0])
+
+        for i in (self_arc1, self_arc2, self_arc3, self_arc4):
+            for j in (other_arc1, other_arc2, other_arc3, other_arc4):
+                if i.intersects(j):
+                    return True
+        return False
+
+    def get_area(self):
+        """Get the area of the convex area defined by the corners of the current
+        area.
+        """
+        from pyresample.spherical_geometry import get_polygon_area
+
+        return get_polygon_area(self.corners)
+
+    def intersection(self, other):
+        """Returns the corners of the intersection polygon of the current area
+        with *other*.
+        
+        :Parameters:
+        other : object
+            Instance of subclass of BaseDefinition
+            
+        :Returns:
+        (corner1, corner2, corner3, corner4) : tuple of points
+        """
+        from pyresample.spherical_geometry import intersection_polygon
+        return intersection_polygon(self.corners, other.corners)
+
+    def overlap_rate(self, other):
+        """Get how much the current area overlaps an *other* area.
+        
+        :Parameters:
+        other : object
+            Instance of subclass of BaseDefinition
+            
+        :Returns:
+        overlap_rate : float
+        """
+        
+        from pyresample.spherical_geometry import get_polygon_area
+        other_area = other.get_area()
+        inter_area = get_polygon_area(self.intersection(other))
+        return inter_area / other_area
+
+
  
 class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
@@ -472,7 +582,7 @@ class AreaDefinition(BaseDefinition):
                     (self.shape == other.shape) and
                     (self.area_extent == other.area_extent))
         except AttributeError:
-            return False
+            return super(AreaDefinition, self).__eq__(other)
         
     def __ne__(self, other):
         """Test for equality"""

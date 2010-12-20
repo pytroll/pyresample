@@ -198,4 +198,89 @@ If only the coordinates along the boundaries are required they can be extracted 
  >>> proj_x_boundary = area_def.projection_x_coords.boundary
  >>> proj_x_side1 = proj_x_boundary.side1
  
-The labelling of the boundary arrays is **side1**, **side2**, **side3** and **side4** starting with **side1** between upper left corner ((row, col) = (0, 0)) and upper right corner ((row, col) = (0, cols)). The labelling proceeds clockwise.  
+The labelling of the boundary arrays is **side1**, **side2**, **side3** and **side4** starting with **side1** between upper left corner ((row, col) = (0, 0)) and upper right corner ((row, col) = (0, cols)). The labelling proceeds clockwise.
+
+Spherical geometry operations
+-----------------------------
+Some basic spherical operations are available for ***definition** objects. The spherical geometry operations
+are calculated based on the corners of a GeometryDefinition (2D SwathDefinition or Grid/AreaDefinition) and assuming the edges are great circle arcs.
+
+It can be tested if geometries overlaps
+
+.. doctest::
+
+ >>> import numpy as np	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
+ >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
+ >>> swath_def = geometry.SwathDefinition(lons, lats)
+ >>> print swath_def.overlaps(area_def)
+ True
+ 
+The fraction of overlap can be calculated
+
+.. doctest::
+
+ >>> import numpy as np	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
+ >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
+ >>> swath_def = geometry.SwathDefinition(lons, lats)
+ >>> overlap_fraction = swath_def.overlap_rate(area_def)
+ 
+And the polygon defining the (great circle) boundaries over the overlapping area can be calculated
+
+.. doctest::
+
+ >>> import numpy as np	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
+ >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
+ >>> swath_def = geometry.SwathDefinition(lons, lats)
+ >>> overlap_polygon = swath_def.intersection(area_def)
+ 
+It can be tested if a (lon, lat) point is inside a GeometryDefinition
+
+.. doctest::
+
+ >>> import numpy as np	
+ >>> from pyresample import utils
+ >>> area_id = 'ease_sh'
+ >>> area_name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> proj4_args = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> x_size = 425
+ >>> y_size = 425
+ >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ ...                  			   x_size, y_size, area_extent)
+ >>> print (0, -90) in area_def
+ True
+     

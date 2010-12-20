@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample v0.7.1 documentation</title>
+    <title>pyresample API &mdash; pyresample v0.7.2 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.1',
+        VERSION:     '0.7.2',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.1 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.2 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.2 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -224,6 +224,17 @@ Defaults to the nprocs set when instantiating object</dd>
 <dt id="geometry.BaseDefinition">
 <em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">BaseDefinition</tt><big>(</big><em>lons=None</em>, <em>lats=None</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for geometry definitions</p>
+<dl class="attribute">
+<dt id="geometry.BaseDefinition.corners">
+<tt class="descname">corners</tt><a class="headerlink" href="#geometry.BaseDefinition.corners" title="Permalink to this definition">¶</a></dt>
+<dd>Returns the corners of the current area.</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.get_area">
+<tt class="descname">get_area</tt><big>(</big><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_area" title="Permalink to this definition">¶</a></dt>
+<dd>Get the area of the convex area defined by the corners of the current
+area.</dd></dl>
+
 <dl class="method">
 <dt id="geometry.BaseDefinition.get_cartesian_coords">
 <tt class="descname">get_cartesian_coords</tt><big>(</big><em>nprocs=None</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_cartesian_coords" title="Permalink to this definition">¶</a></dt>
@@ -241,6 +252,15 @@ Defaults to the nprocs set when instantiating object</dd>
 <dd>Number of processor cores to be used.
 Defaults to the nprocs set when instantiating object</dd>
 </dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>cartesian_coords : numpy array</p>
 </dd></dl>
 
 <dl class="method">
@@ -272,6 +292,90 @@ col : int</p>
 <dt id="geometry.BaseDefinition.get_lonlats">
 <tt class="descname">get_lonlats</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
 <dd>Retrieve lons and lats of geometry definition</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.intersection">
+<tt class="descname">intersection</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.intersection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the corners of the intersection polygon of the current area
+with <em>other</em>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>other <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Instance of subclass of BaseDefinition</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>(corner1, corner2, corner3, corner4) : tuple of points</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.overlap_rate">
+<tt class="descname">overlap_rate</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.overlap_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get how much the current area overlaps an <em>other</em> area.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>other <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Instance of subclass of BaseDefinition</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>overlap_rate : float</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="geometry.BaseDefinition.overlaps">
+<tt class="descname">overlaps</tt><big>(</big><em>other</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.overlaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tests if the current area overlaps the <em>other</em> area. This is based
+solely on the corners of areas, assuming the boundaries to be great
+circles.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>other <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>Instance of subclass of BaseDefinition</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>overlaps : bool</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1513,7 +1617,7 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
