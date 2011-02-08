@@ -66,7 +66,6 @@ class Test(unittest.TestCase):
                                      50000, wf, reduce_data=False, segments=1)        
         self.failUnlessAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
-    
     @tmp
     def test_nearest(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
@@ -80,7 +79,21 @@ class Test(unittest.TestCase):
         self.failUnlessEqual(cross_sum, expected,\
                              msg='Swath resampling nearest failed')
     
-    @tmp
+    @tmp    
+    def test_nearest_1d(self):
+        data = numpy.fromfunction(lambda x, y: x * y, (800, 800))        
+        lons = numpy.fromfunction(lambda x: 3 + x / 100. , (500,))
+        lats = numpy.fromfunction(lambda x: 75 - x / 10., (500,))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(self.area_def, data.ravel(),
+                                       swath_def, 50000, segments=1)
+        cross_sum = res.sum()        
+        expected = 35821299.0
+        self.failUnlessEqual(res.shape, (500,),
+                             msg='Swath resampling nearest 1d failed')
+        self.failUnlessEqual(cross_sum, expected,
+                             msg='Swath resampling nearest 1d failed')
+    
     def test_nearest_empty(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
@@ -92,8 +105,32 @@ class Test(unittest.TestCase):
         expected = 0
         self.failUnlessEqual(cross_sum, expected,\
                              msg='Swath resampling nearest empty failed')
-        
-    @tmp
+    
+    def test_nearest_empty_multi(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
+                                         data.ravel()))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data_multi,\
+                                     self.area_def, 50000, segments=1)                
+        self.failUnlessEqual(res.shape, (800, 800, 3),\
+                             msg='Swath resampling nearest empty multi failed')
+    
+    def test_nearest_empty_multi_masked(self):
+        data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
+        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
+                                         data.ravel()))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data_multi,\
+                                     self.area_def, 50000, segments=1,
+                                     fill_value=None)                
+        self.failUnlessEqual(res.shape, (800, 800, 3),
+                             msg='Swath resampling nearest empty multi masked failed')
+            
     def test_nearest_empty_masked(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
@@ -107,7 +144,6 @@ class Test(unittest.TestCase):
         self.failUnless(cross_sum == expected,
                         msg='Swath resampling nearest empty masked failed')
     
-    @tmp
     def test_nearest_segments(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
@@ -229,7 +265,6 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel segments resampling gauss failed')
         
-    @tmp
     def test_gauss_multi_mp_segments_empty(self):
         data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        
         lons = numpy.fromfunction(lambda y, x: 165 + (10.0/100)*x, (5000, 100))
@@ -295,7 +330,6 @@ class Test(unittest.TestCase):
         expected = 20514375.0
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Reduce data failed')
     
-    @tmp
     def test_reduce_boundary(self):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
@@ -367,7 +401,23 @@ class Test(unittest.TestCase):
                         msg='Resampling of swath mask failed')
         self.assertTrue(numpy.array_equal(expected_data, res.data), 
                         msg='Resampling of swath masked data failed')
-            
+    
+    @tmp        
+    def test_masked_nearest_1d(self):
+        data = numpy.ones((800, 800))
+        data[:400, :] = 2
+        lons = numpy.fromfunction(lambda x: 3 + x / 100. , (500,))
+        lats = numpy.fromfunction(lambda x: 75 - x / 10., (500,))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        mask = numpy.ones((800, 800))
+        mask[400:, :] = 0
+        masked_data = numpy.ma.array(data, mask=mask)
+        res = kd_tree.resample_nearest(self.area_def, masked_data.ravel(),
+                                       swath_def, 50000, segments=1)
+        self.failUnlessEqual(res.mask.sum(), 108,
+                             msg='Swath resampling masked nearest 1d failed')
+        
+    
     def test_masked_gauss(self):
         data = numpy.ones((50, 10))
         data[:, 5:] = 2
@@ -443,17 +493,6 @@ class Test(unittest.TestCase):
                                                          'mask_test_full_fill.dat'), 
                                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
-#        mask = res.mask.astype('float64')
-#        mask.tofile('/home/esn/dvl/test/pyresample_masked/mask_test_full_fill.dat', sep=' ')
-#        import h5py  
-#        h5out = h5py.File('/home/esn/data/avhrr_test/test_mf.h5', 'w')
-#        h5out.create_dataset('data', data=res.data.copy(), compression=1)
-#        h5out.create_dataset('mask', data=res.mask.astype(numpy.int).copy(), compression=1)
-#        h5out.create_dataset('exp_mask', data=expected_fill_mask, compression=1)
-#        h5out['data'].attrs['CLASS'] = 'IMAGE'
-#        h5out['mask'].attrs['CLASS'] = 'IMAGE'
-#        h5out['exp_mask'].attrs['CLASS'] = 'IMAGE'                
-#        h5out.close()
 
         self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask), 
                          msg='Failed to create fill mask on masked data')
