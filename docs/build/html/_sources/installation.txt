@@ -3,11 +3,9 @@ Installing Pyresample
 Pyresample depends on pyproj, numpy(>= 1.3), scipy(>= 0.7), multiprocessing 
 (builtin package for Python > 2.5) and configobj.
 
-The packages pyproj, numpy and scipy do not easy_install well so they will not be installed automatically 
-when installing this package with easy_install.
+The correct version of the packages should be installed on your system 
+(refer to numpy and scipy installation instructions) or use easy_install to handle dependencies automatically.
 
-Install pyproj and the correct versions of numpy and scipy on your system 
-(refer to numpy and scipy installation instructions).
 
 Package test
 ************
