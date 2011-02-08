@@ -29,7 +29,7 @@ setup(name='pyresample',
       author_email='esn@dmi.dk',
       package_dir = {'pyresample': 'pyresample'},
       packages = ['pyresample'],      
-      install_requires=['configobj', 'multiprocessing']
+      install_requires=['pyproj', 'numpy', 'scipy', 'configobj', 'multiprocessing']
       )
 
 
