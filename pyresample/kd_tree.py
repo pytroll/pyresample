@@ -185,14 +185,14 @@ def resample_custom(source_geo_def, data, target_geo_def,
     data : numpy array 
         Source data resampled to target geometry
     """
-    
-    if data.ndim > 1:
+    try:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
-                raise TypeError('weight_func must be function object')
-    elif not isinstance(weight_funcs, types.FunctionType):
+                raise TypeError('weight_func must be function object')        
+    except:
+        if not isinstance(weight_funcs, types.FunctionType):
             raise TypeError('weight_func must be function object')
-        
+    
     return _resample(source_geo_def, data, target_geo_def, 'custom',
                      radius_of_influence, neighbours=neighbours,
                      epsilon=epsilon, weight_funcs=weight_funcs,
@@ -332,6 +332,12 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
     source_lons = source_lons.ravel()
     source_lats = source_lats.ravel()
+    
+    if source_lons.size == 0 or source_lats.size == 0:
+        raise ValueError('Cannot resample empty data set')
+    elif source_lons.size != source_lats.size or \
+            source_lons.shape != source_lats.shape:
+        raise ValueError('Mismatch between lons and lats')
     
     #Remove illegal values
     valid_data = ((source_lons >= -180) & (source_lons <= 180) & 
@@ -512,6 +518,14 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     data : numpy array 
         Source data resampled to target geometry
     """
+    
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == valid_input_index.size:
+        data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
+    elif data.shape[0] != valid_input_index.size:
+        data = data.ravel()
+    
+    if valid_input_index.size != data.shape[0]:
+        raise ValueError('Mismatch between geometry and dataset')
     
     is_multi_channel = (data.ndim > 1)
     

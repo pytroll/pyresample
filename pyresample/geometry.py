@@ -16,10 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
+import weakref
 
 import numpy as np
 
 import _spatial_mp
+
+
+class DimensionError(Exception):
+    pass
 
 
 class Boundary(object):
@@ -47,6 +52,9 @@ class _GeoCoords(object):
             else:
                 return self._get_coords(key)
         
+        def _set_data(self, data):
+            self.data = data
+        
         def _get_coords(self, *args):
             raise NotImplementedError('Slice calculation not implemented '
                                       'in base class')
@@ -54,6 +62,9 @@ class _GeoCoords(object):
         @property
         def boundary(self):
             """Returns Boundary object"""
+#            if self.data.ndim != 2:
+#                raise DimensionError(('Can only retrieve bondary for 2D '
+#                                      'geometry not %D') % self.data.ndim)
             
             side1 = self[0, :]
             side2 = self[:, -1]
@@ -69,6 +80,10 @@ class _GeoCoordsCached(_GeoCoords):
         super(_GeoCoordsCached, self).__init__(data)
         self._holder = holder
         self._index = index
+    
+    def _set_data(self, data):
+        self.data = data
+        self._holder._reset()
         
     def _get_coords(self, key):
         """Method for delegating caching"""
@@ -112,6 +127,10 @@ class _Holder(object):
         self.last_slice = None
         self.last_data = None
     
+    def _reset(self):
+        self.last_slice = None
+        self.last_data = None
+    
     def _get_coords(self, key):
         """Retrieve coordinates with caching"""
         
@@ -129,7 +148,6 @@ class _Holder(object):
                 else:
                     raise ValueError('slice could not be interpreted')
             data = self._get_function(data_slice=data_slice)
-            
             self.last_slice = key
             self.last_data = data
             
@@ -146,11 +164,12 @@ class BaseDefinition(object):
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
         self.nprocs = nprocs
-        lonlat_holder = _Holder(self._get_lonlats)
+
+        lonlat_holder = _Holder(weakref.proxy(self)._get_lonlats)
         self.lons = _Lons(lonlat_holder, data=lons)
         self.lats = _Lats(lonlat_holder, data=lats)
         
-        cartesian_holder = _Holder(self._get_cartesian_coords)
+        cartesian_holder = _Holder(weakref.proxy(self)._get_cartesian_coords)
         self.cartesian_coords = _CartesianCoords(cartesian_holder)
     
     def __eq__(self, other):
@@ -191,7 +210,10 @@ class BaseDefinition(object):
         (lon, lat) : tuple of floats
         """
         
-        if self.lons.data is None or self.lats.data is None:
+        if self.ndim != 2:
+            raise DimensionError(('operation undefined '
+                                  'for %sD geometry ') % self.ndim)
+        elif self.lons.data is None or self.lats.data is None:
             raise ValueError('lon/lat values are not defined')
         return self.lons.data[row, col], self.lats.data[row, col]
     
@@ -369,6 +391,25 @@ class CoordinateDefinition(BaseDefinition):
                              'lon/lats of the same shape') % 
                              self.__class__.__name__)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
+        
+    def concatenate(self, other):
+        if self.ndim != other.ndim:
+            raise DimensionError(('Unable to concatenate %sD and %sD '
+                                  'geometries') % (self.ndim, other.ndim))
+        klass = _get_highest_level_class(self, other)        
+        lons = np.concatenate((self.lons.data, other.lons.data))
+        lats = np.concatenate((self.lats.data, other.lats.data))
+        nprocs = min(self.nprocs, other.nprocs)
+        return klass(lons, lats, nprocs=nprocs)
+        
+    def append(self, other):    
+        if self.ndim != other.ndim:
+            raise DimensionError(('Unable to append %sD and %sD '
+                                  'geometries') % (self.ndim, other.ndim))
+        lons = np.concatenate((self.lons.data, other.lons.data))
+        lats = np.concatenate((self.lats.data, other.lats.data))
+        self.lons._set_data(lons)
+        self.lats._set_data(lats)
 
 
 class GridDefinition(CoordinateDefinition):
@@ -561,7 +602,7 @@ class AreaDefinition(BaseDefinition):
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
         
-        proj_coords_holder = _Holder(self._get_proj_coords)
+        proj_coords_holder = _Holder(weakref.proxy(self)._get_proj_coords)
         self.projection_x_coords = _ProjectionXCoords(proj_coords_holder)
         self.projection_y_coords = _ProjectionYCoords(proj_coords_holder)
         
@@ -780,6 +821,20 @@ def _flatten_cartesian_coords(cartesian_coords):
     if len(shape) > 2:
         cartesian_coords = cartesian_coords.reshape(shape[0] * 
                                                     shape[1], 3)
-    return cartesian_coords    
+    return cartesian_coords
+
+def _get_highest_level_class(obj1, obj2):
+    if (not issubclass(obj1.__class__, obj2.__class__) or 
+        not issubclass(obj2.__class__, obj1.__class__)):
+        raise TypeError('No common superclass for %s and %s' % 
+                        (obj1.__class__, obj2.__class__))
+
+    if obj1.__class__ == obj2.__class__:
+        klass = obj1.__class__
+    elif issubclass(obj1.__class__, obj2.__class__):
+        klass = obj2.__class__
+    else:
+        klass = obj1.__class__
+    return klass    
            
         

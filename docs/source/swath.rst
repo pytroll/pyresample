@@ -1,3 +1,5 @@
+.. _swath:
+
 Resampling of swath data
 ========================
 
@@ -61,7 +63,7 @@ Example showing how to resample a generated swath dataset to a grid using neares
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
+ >>> result = kd_tree.resample_nearest(swath_def, data,
  ... area_def, radius_of_influence=50000, epsilon=100)
 
 If the arguments **swath_def** and **area_def** where switched (and **data** matched the dimensions of **area_def**) the grid of **area_def**
@@ -72,9 +74,11 @@ Note the keyword arguments:
 * **radius_of_influence**: The radius around each grid pixel in meters to search for neighbours in the swath.
 * **epsilon**: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.
 
-If **data** if a masked array the mask will follow the neighbour pixel assignment.
+If **data** is a masked array the mask will follow the neighbour pixel assignment.
 
-If there are multiple channels in the dataset the data argument should be of the shape (number_of_data_points, channels).
+If there are multiple channels in the dataset the **data** argument should be of the shape of the lons and lat arrays 
+with the channels along the last axis e.g. (rows, cols, channels). Note: the convention of pyresample < 0.7.4 is to pass
+**data** in the form of (number_of_data_points, channels) is still accepted.
 
 .. doctest::
 
@@ -90,7 +94,7 @@ If there are multiple channels in the dataset the data argument should be of the
  >>> channel1 = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> channel2 = np.fromfunction(lambda y, x: y*x, (50, 10)) * 2
  >>> channel3 = np.fromfunction(lambda y, x: y*x, (50, 10)) * 3
- >>> data = np.column_stack((channel1.ravel(), channel2.ravel(), channel3.ravel()))
+ >>> data = np.dstack((channel1, channel2, channel3))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
@@ -121,12 +125,12 @@ Example showing how to resample a generated swath dataset to a grid using Gaussi
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = kd_tree.resample_gauss(swath_def, data.ravel(), 
+ >>> result = kd_tree.resample_gauss(swath_def, data, 
  ... area_def, radius_of_influence=50000, sigmas=25000)
 
 If more channels are present in **data** the keyword argument **sigmas** must be a list containing a sigma for each channel.
 
-If **data** if a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
+If **data** is a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
 
 resample_custom
 ***************
@@ -148,15 +152,15 @@ Example showing how to resample a generated swath dataset to a grid using an arb
  ...                                 1029087.28, 1490031.36])
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
- >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> wf = lambda r: 1 - r/100000.0
- >>> result  = kd_tree.resample_custom(swath_def, data.ravel(),
+ >>> result  = kd_tree.resample_custom(swath_def, data,
  ...  area_def, radius_of_influence=50000, weight_funcs=wf)
 
 If more channels are present in **data** the keyword argument **weight_funcs** must be a list containing a radial function for each channel.
 
-If **data** if a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
+If **data** is a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
 
 Resampling from neighbour info
 ******************************
@@ -188,7 +192,7 @@ retrieve the resampled data from each of the datasets fast.
  ...                        kd_tree.get_neighbour_info(swath_def, 
  ...                               	                   area_def, 50000,  
  ...                                                   neighbours=1)
- >>> res = kd_tree.get_sample_from_neighbour_info('nn', area_def.shape, data.ravel(), 
+ >>> res = kd_tree.get_sample_from_neighbour_info('nn', area_def.shape, data, 
  ...                                              valid_input_index, valid_output_index,
  ...                                              index_array)
  

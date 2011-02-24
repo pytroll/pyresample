@@ -141,7 +141,21 @@ A swath is defined by the lon and lat values of the data points
  >>> lons = np.ones((500, 20))
  >>> lats = np.ones((500, 20))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ 
+Two swaths can be concatenated if their coloumn count matches
 
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import geometry
+ >>> lons1 = np.ones((500, 20))
+ >>> lats1 = np.ones((500, 20))
+ >>> swath_def1 = geometry.SwathDefinition(lons=lons1, lats=lats1)
+ >>> lons2 = np.ones((300, 20))
+ >>> lats2 = np.ones((300, 20))
+ >>> swath_def2 = geometry.SwathDefinition(lons=lons2, lats=lats2)
+ >>> swath_def3 = swath_def1.concatenate(swath_def2) 
+ 
 Geographic coordinates and boundaries
 -------------------------------------
 A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).

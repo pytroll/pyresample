@@ -24,14 +24,14 @@ area covering the lon lat grid
  >>> grid_lons, grid_lats = area_def.get_lonlats()
  >>> reduced_lons, reduced_lats, reduced_data = \
  ... 				data_reduce.swath_from_lonlat_grid(grid_lons, grid_lats, 
- ...												   lons, lats, data, 
- ...												   radius_of_influence=3000)
+ ...				lons, lats, data, 
+ ...				radius_of_influence=3000)
  
- **radius_of_influence** is used to calculate a buffer zone around the grid where swath data points
- are not reduced.
+**radius_of_influence** is used to calculate a buffer zone around the grid where swath data points
+are not reduced.
  
- The function **get_valid_index_from_lonlat_grid** returns a boolean array of same size as the swath
- indicating the relevant swath data points compared to the grid
+The function **get_valid_index_from_lonlat_grid** returns a boolean array of same size as the swath
+indicating the relevant swath data points compared to the grid
  
 .. doctest::
 
@@ -49,6 +49,6 @@ area covering the lon lat grid
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> grid_lons, grid_lats = area_def.get_lonlats()
  >>> valid_index = data_reduce.get_valid_index_from_lonlat_grid(grid_lons, grid_lats, 
- ...												   			lons, lats, 
- ...												   			radius_of_influence=3000)
+ ...						lons, lats, 
+ ...						radius_of_influence=3000)
  

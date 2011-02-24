@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Geometry definitions &mdash; pyresample v0.7.3 documentation</title>
+    <title>Geometry definitions &mdash; pyresample v0.7.4 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.3',
+        VERSION:     '0.7.4',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,8 +19,8 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.3 documentation" href="index.html" />
-    <link rel="next" title="Resampling of gridded data" href="grid.html" />
+    <link rel="top" title="pyresample v0.7.4 documentation" href="index.html" />
+    <link rel="next" title="Geographic filtering" href="geo_filter.html" />
     <link rel="prev" title="Installing Pyresample" href="installation.html" /> 
   </head>
   <body>
@@ -34,12 +34,12 @@
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="grid.html" title="Resampling of gridded data"
+          <a href="geo_filter.html" title="Geographic filtering"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -177,6 +177,18 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Two swaths can be concatenated if their coloumn count matches</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">geometry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">500</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def1</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons1</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def2</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons2</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def3</span> <span class="o">=</span> <span class="n">swath_def1</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">swath_def2</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -333,8 +345,8 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
             <p class="topless"><a href="installation.html"
                                   title="previous chapter">Installing Pyresample</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="grid.html"
-                                  title="next chapter">Resampling of gridded data</a></p>
+            <p class="topless"><a href="geo_filter.html"
+                                  title="next chapter">Geographic filtering</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
               <li><a href="_sources/geo_def.txt"
@@ -367,12 +379,12 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="grid.html" title="Resampling of gridded data"
+          <a href="geo_filter.html" title="Geographic filtering"
              >next</a> |</li>
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

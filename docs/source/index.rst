@@ -16,6 +16,7 @@ Documentation
 
    installation
    geo_def
+   geo_filter
    grid
    swath
    multi

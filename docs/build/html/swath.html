@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Resampling of swath data &mdash; pyresample v0.7.3 documentation</title>
+    <title>Resampling of swath data &mdash; pyresample v0.7.4 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.3',
+        VERSION:     '0.7.4',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.3 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.4 documentation" href="index.html" />
     <link rel="next" title="Using multiple processor cores" href="multi.html" />
     <link rel="prev" title="Resampling of gridded data" href="grid.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -49,7 +49,7 @@
           <div class="body">
             
   <div class="section" id="resampling-of-swath-data">
-<h1>Resampling of swath data<a class="headerlink" href="#resampling-of-swath-data" title="Permalink to this headline">¶</a></h1>
+<span id="swath"></span><h1>Resampling of swath data<a class="headerlink" href="#resampling-of-swath-data" title="Permalink to this headline">¶</a></h1>
 <p>Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath.
 Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function.</p>
 <div class="section" id="pyresample-image">
@@ -98,7 +98,7 @@ assigned a fill value set <strong>fill_value=None</strong> when calling the <str
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
 <span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -109,8 +109,10 @@ would be resampled to the swath defined by <strong>swath_def</strong>.</p>
 <li><strong>radius_of_influence</strong>: The radius around each grid pixel in meters to search for neighbours in the swath.</li>
 <li><strong>epsilon</strong>: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.</li>
 </ul>
-<p>If <strong>data</strong> if a masked array the mask will follow the neighbour pixel assignment.</p>
-<p>If there are multiple channels in the dataset the data argument should be of the shape (number_of_data_points, channels).</p>
+<p>If <strong>data</strong> is a masked array the mask will follow the neighbour pixel assignment.</p>
+<p>If there are multiple channels in the dataset the <strong>data</strong> argument should be of the shape of the lons and lat arrays
+with the channels along the last axis e.g. (rows, cols, channels). Note: the convention of pyresample &lt; 0.7.4 is to pass
+<strong>data</strong> in the form of (number_of_data_points, channels) is still accepted.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">kd_tree</span><span class="p">,</span> <span class="n">geometry</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
@@ -123,7 +125,7 @@ would be resampled to the swath defined by <strong>swath_def</strong>.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">channel1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">channel2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">channel3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span> <span class="o">*</span> <span class="mi">3</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">channel1</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">channel2</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">channel3</span><span class="o">.</span><span class="n">ravel</span><span class="p">()))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">((</span><span class="n">channel1</span><span class="p">,</span> <span class="n">channel2</span><span class="p">,</span> <span class="n">channel3</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
@@ -150,12 +152,12 @@ would be resampled to the swath defined by <strong>swath_def</strong>.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_gauss</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_gauss</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
 <span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">sigmas</span><span class="o">=</span><span class="mi">25000</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If more channels are present in <strong>data</strong> the keyword argument <strong>sigmas</strong> must be a list containing a sigma for each channel.</p>
-<p>If <strong>data</strong> if a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
+<p>If <strong>data</strong> is a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
 </div>
 <div class="section" id="resample-custom">
 <h3>resample_custom<a class="headerlink" href="#resample-custom" title="Permalink to this headline">¶</a></h3>
@@ -172,15 +174,15 @@ would be resampled to the swath defined by <strong>swath_def</strong>.</p>
 <span class="gp">... </span>                                <span class="mf">1029087.28</span><span class="p">,</span> <span class="mf">1490031.36</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">wf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="o">/</span><span class="mf">100000.0</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span>  <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_custom</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span>  <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_custom</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
 <span class="gp">... </span> <span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">weight_funcs</span><span class="o">=</span><span class="n">wf</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If more channels are present in <strong>data</strong> the keyword argument <strong>weight_funcs</strong> must be a list containing a radial function for each channel.</p>
-<p>If <strong>data</strong> if a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
+<p>If <strong>data</strong> is a masked array any pixel in the result data that has been &#8220;contaminated&#8221; by weighting of a masked pixel is masked.</p>
 </div>
 <div class="section" id="resampling-from-neighbour-info">
 <h3>Resampling from neighbour info<a class="headerlink" href="#resampling-from-neighbour-info" title="Permalink to this headline">¶</a></h3>
@@ -207,7 +209,7 @@ retrieve the resampled data from each of the datasets fast.</p>
 <span class="gp">... </span>                       <span class="n">kd_tree</span><span class="o">.</span><span class="n">get_neighbour_info</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span>
 <span class="gp">... </span>                                                      <span class="n">area_def</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span>
 <span class="gp">... </span>                                                  <span class="n">neighbours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">get_sample_from_neighbour_info</span><span class="p">(</span><span class="s">&#39;nn&#39;</span><span class="p">,</span> <span class="n">area_def</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">res</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">get_sample_from_neighbour_info</span><span class="p">(</span><span class="s">&#39;nn&#39;</span><span class="p">,</span> <span class="n">area_def</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
 <span class="gp">... </span>                                             <span class="n">valid_input_index</span><span class="p">,</span> <span class="n">valid_output_index</span><span class="p">,</span>
 <span class="gp">... </span>                                             <span class="n">index_array</span><span class="p">)</span>
 </pre></div>
@@ -288,7 +290,7 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

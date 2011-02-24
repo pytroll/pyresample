@@ -1,4 +1,4 @@
-Results of doctest builder run on 2010-12-20 10:51:59
+Results of doctest builder run on 2011-02-24 15:10:53
 =====================================================
 
 Document: data_reduce
@@ -12,9 +12,17 @@ Test passed.
 Document: geo_def
 -----------------
 1 items passed all tests:
- 118 tests in default
-118 tests in 1 items.
-118 passed and 0 failed.
+ 127 tests in default
+127 tests in 1 items.
+127 passed and 0 failed.
+Test passed.
+
+Document: geo_filter
+--------------------
+1 items passed all tests:
+  10 tests in default
+10 tests in 1 items.
+10 passed and 0 failed.
 Test passed.
 
 Document: grid
@@ -51,6 +59,6 @@ Test passed.
 
 Doctest summary
 ===============
-  238 tests
+  257 tests
     0 failures in tests
     0 failures in setup code

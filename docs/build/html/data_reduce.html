@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Reduction of swath data &mdash; pyresample v0.7.3 documentation</title>
+    <title>Reduction of swath data &mdash; pyresample v0.7.4 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.3',
+        VERSION:     '0.7.4',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.3 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.4 documentation" href="index.html" />
     <link rel="next" title="pyresample API" href="API.html" />
     <link rel="prev" title="Preprocessing of grids" href="preproc.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="preproc.html" title="Preprocessing of grids"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -70,16 +70,14 @@ area covering the lon lat grid</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">grid_lons</span><span class="p">,</span> <span class="n">grid_lats</span> <span class="o">=</span> <span class="n">area_def</span><span class="o">.</span><span class="n">get_lonlats</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">reduced_lons</span><span class="p">,</span> <span class="n">reduced_lats</span><span class="p">,</span> <span class="n">reduced_data</span> <span class="o">=</span> \
 <span class="gp">... </span>                           <span class="n">data_reduce</span><span class="o">.</span><span class="n">swath_from_lonlat_grid</span><span class="p">(</span><span class="n">grid_lons</span><span class="p">,</span> <span class="n">grid_lats</span><span class="p">,</span>
-<span class="gp">... </span>                                                                                              <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
-<span class="gp">... </span>                                                                                              <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
-
-<span class="go">**radius_of_influence** is used to calculate a buffer zone around the grid where swath data points</span>
-<span class="go">are not reduced.</span>
-
-<span class="go">The function **get_valid_index_from_lonlat_grid** returns a boolean array of same size as the swath</span>
-<span class="go">indicating the relevant swath data points compared to the grid</span>
+<span class="gp">... </span>                           <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>                           <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
 </pre></div>
 </div>
+<p><strong>radius_of_influence</strong> is used to calculate a buffer zone around the grid where swath data points
+are not reduced.</p>
+<p>The function <strong>get_valid_index_from_lonlat_grid</strong> returns a boolean array of same size as the swath
+indicating the relevant swath data points compared to the grid</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">geometry</span><span class="p">,</span> <span class="n">data_reduce</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
@@ -94,8 +92,8 @@ area covering the lon lat grid</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">grid_lons</span><span class="p">,</span> <span class="n">grid_lats</span> <span class="o">=</span> <span class="n">area_def</span><span class="o">.</span><span class="n">get_lonlats</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">valid_index</span> <span class="o">=</span> <span class="n">data_reduce</span><span class="o">.</span><span class="n">get_valid_index_from_lonlat_grid</span><span class="p">(</span><span class="n">grid_lons</span><span class="p">,</span> <span class="n">grid_lats</span><span class="p">,</span>
-<span class="gp">... </span>                                                                                                                   <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span>
-<span class="gp">... </span>                                                                                                                   <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
+<span class="gp">... </span>                                           <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span>
+<span class="gp">... </span>                                           <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -149,7 +147,7 @@ area covering the lon lat grid</p>
         <li class="right" >
           <a href="preproc.html" title="Preprocessing of grids"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
