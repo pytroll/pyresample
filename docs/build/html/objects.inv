@@ -1,6 +1,6 @@
 # Sphinx inventory version 1
 # Project: pyresample
-# Version: 0.7.4
+# Version: 0.7.5
 geometry mod API.html
 image mod API.html
 grid mod API.html
@@ -11,17 +11,18 @@ geometry.SwathDefinition class API.html
 utils.AreaNotFound exception API.html
 geometry.BaseDefinition.overlaps method API.html
 image.ImageContainer.get_array_from_linesample method API.html
+kd_tree.get_sample_from_neighbour_info function API.html
 utils.generate_nearest_neighbour_linesample_arrays function API.html
 geometry.AreaDefinition.proj4_string attribute API.html
 geometry.Boundary class API.html
-geometry.AreaDefinition class API.html
+image.ImageContainerQuick.resample method API.html
 kd_tree.resample_nearest function API.html
 geometry.BaseDefinition class API.html
 grid.get_linesample function API.html
 geometry.BaseDefinition.get_lonlats method API.html
 geometry.BaseDefinition.get_area method API.html
 data_reduce.swath_from_lonlat_grid function API.html
-image.ImageContainerQuick.resample method API.html
+geometry.AreaDefinition class API.html
 geometry.BaseDefinition.overlap_rate method API.html
 geometry.AreaDefinition.get_lonlats method API.html
 kd_tree.resample_gauss function API.html
@@ -29,7 +30,7 @@ grid.get_image_from_linesample function API.html
 geometry.BaseDefinition.corners attribute API.html
 image.ImageContainer.get_array_from_neighbour_info method API.html
 data_reduce.get_valid_index_from_lonlat_boundaries function API.html
-kd_tree.get_sample_from_neighbour_info function API.html
+geometry.AreaDefinition.get_lonlat method API.html
 data_reduce.get_valid_index_from_lonlat_grid function API.html
 image.ImageContainerNearest.resample method API.html
 geometry.BaseDefinition.get_lonlat method API.html
@@ -49,7 +50,6 @@ data_reduce.swath_from_lonlat_boundaries function API.html
 image.ImageContainer class API.html
 geometry.AreaDefinition.get_proj_coords method API.html
 image.ImageContainerNearest class API.html
-geometry.AreaDefinition.get_lonlat method API.html
 geometry.BaseDefinition.intersection method API.html
 data_reduce.get_valid_index_from_cartesian_grid function API.html
 utils.get_area_def function API.html
