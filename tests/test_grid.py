@@ -1,13 +1,17 @@
 import copy
 import unittest
 
-import numpy
+import numpy as np
 
 from pyresample import grid, geometry, utils
 
 
 def mp(f):
     f.mp = True
+    return f
+
+def tmp(f):
+    f.tmp = True
     return f
 
 class Test(unittest.TestCase):
@@ -56,38 +60,38 @@ class Test(unittest.TestCase):
                                     )
 
     def test_linesample(self):
-        data = numpy.fromfunction(lambda y, x: y*x, (40, 40))
-        rows = numpy.array([[1, 2], [3, 4]])
-        cols = numpy.array([[25, 26], [27, 28]])
+        data = np.fromfunction(lambda y, x: y*x, (40, 40))
+        rows = np.array([[1, 2], [3, 4]])
+        cols = np.array([[25, 26], [27, 28]])
         res = grid.get_image_from_linesample(rows, cols, data)
-        expected = numpy.array([[25., 52.], [81., 112.]])
-        self.failUnless(numpy.array_equal(res, expected), 'Linesample failed')
+        expected = np.array([[25., 52.], [81., 112.]])
+        self.failUnless(np.array_equal(res, expected), 'Linesample failed')
         
     def test_linesample_multi(self):
-        data1 = numpy.fromfunction(lambda y, x: y*x, (40, 40))
-        data2 = numpy.fromfunction(lambda y, x: 2*y*x, (40, 40))
-        data3 = numpy.fromfunction(lambda y, x: 3*y*x, (40, 40))
-        data = numpy.zeros((40, 40, 3))
+        data1 = np.fromfunction(lambda y, x: y*x, (40, 40))
+        data2 = np.fromfunction(lambda y, x: 2*y*x, (40, 40))
+        data3 = np.fromfunction(lambda y, x: 3*y*x, (40, 40))
+        data = np.zeros((40, 40, 3))
         data[:, :, 0] = data1
         data[:, :, 1] = data2
         data[:, :, 2] = data3
-        rows = numpy.array([[1, 2], [3, 4]])
-        cols = numpy.array([[25, 26], [27, 28]])
+        rows = np.array([[1, 2], [3, 4]])
+        cols = np.array([[25, 26], [27, 28]])
         res = grid.get_image_from_linesample(rows, cols, data)
-        expected = numpy.array([[[25., 50., 75.],
+        expected = np.array([[[25., 50., 75.],
                                  [52., 104., 156.]],
                                [[81., 162., 243.],
                                 [ 112.,  224.,  336.]]])
-        self.failUnless(numpy.array_equal(res, expected), 'Linesample failed')
+        self.failUnless(np.array_equal(res, expected), 'Linesample failed')
         
     def test_from_latlon(self):
-        data = numpy.fromfunction(lambda y, x: y*x, (800, 800))
-        lons = numpy.fromfunction(lambda y, x: x, (10, 10))
-        lats = numpy.fromfunction(lambda y, x: 50 - (5.0/10)*y, (10, 10))
+        data = np.fromfunction(lambda y, x: y*x, (800, 800))
+        lons = np.fromfunction(lambda y, x: x, (10, 10))
+        lats = np.fromfunction(lambda y, x: 50 - (5.0/10)*y, (10, 10))
         #source_def = grid.AreaDefinition.get_from_area_def(self.area_def)
         source_def = self.area_def
         res = grid.get_image_from_lonlats(lons, lats, source_def, data)        
-        expected = numpy.array([[ 129276.,  141032.,  153370.,  165804.,  178334.,  190575.,
+        expected = np.array([[ 129276.,  141032.,  153370.,  165804.,  178334.,  190575.,
                             202864.,  214768.,  226176.,  238080.],
                             [ 133056.,  146016.,  158808.,  171696.,  184320.,  196992.,
                              209712.,  222480.,  234840.,  247715.],
@@ -107,7 +111,7 @@ class Test(unittest.TestCase):
                              260820.,  277564.,  293664.,  310408.],
                             [ 161696.,  179470.,  197100.,  214834.,  232320.,  250236.,
                              267448.,  285090.,  302328.,  320229.]])
-        self.failUnless(numpy.array_equal(res, expected), 'Sampling from lat lon failed')
+        self.failUnless(np.array_equal(res, expected), 'Sampling from lat lon failed')
         
     def test_proj_coords(self):
         #res = grid.get_proj_coords(self.area_def2)
@@ -132,7 +136,7 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Calculation of lat lons failed')
         
     def test_resampled_image(self):
-        data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
+        data = np.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         target_def = self.area_def
         source_def = self.msg_area
         res = grid.get_resampled_image(target_def, source_def, data, segments=1)
@@ -140,18 +144,21 @@ class Test(unittest.TestCase):
         expected = 399936.39392500359
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Resampling of image failed')
 
+    @tmp
     def test_generate_linesample(self):
-        data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
+        data = np.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         row_indices, col_indices = utils.generate_quick_linesample_arrays(self.msg_area,
                                                                     self.area_def)
         res = data[row_indices, col_indices]
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.failUnlessAlmostEqual(cross_sum, expected, msg='Generate linesample failed')
+        self.failIf(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16, 
+                    'Generate linesample failed. Downcast to uint16 expected')
     
     @mp
     def test_resampled_image_mp(self):
-        data = numpy.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
+        data = np.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
         target_def = self.area_def
         source_def = self.msg_area
         res = grid.get_resampled_image(target_def, source_def, data, nprocs=2, segments=1)
