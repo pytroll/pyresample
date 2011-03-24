@@ -166,6 +166,11 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     source_pixel_y, source_pixel_x = grid.get_linesample(lons, lats, 
                                                          source_area_def, 
                                                          nprocs=nprocs)
+    
+    source_pixel_x = _downcast_index_array(source_pixel_x, 
+                                           source_area_def.shape[1]) 
+    source_pixel_y = _downcast_index_array(source_pixel_y, 
+                                           source_area_def.shape[0])
                      
     return source_pixel_y, source_pixel_x
 
@@ -221,13 +226,31 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     row_indices = row_sample.reshape(target_area_def.shape)
     col_indices = col_sample.reshape(target_area_def.shape)
     
+    row_indices = _downcast_index_array(row_indices, 
+                                        source_area_def.shape[0])
+    col_indices = _downcast_index_array(col_indices, 
+                                        source_area_def.shape[1])
+    
     return row_indices, col_indices
     
 def _get_proj4_args(proj4_args):
-    """Create dict from proj4 args"""
+    """Create dict from proj4 args
+    """
     
     if isinstance(proj4_args, str):
         proj_config = ConfigObj(proj4_args.replace('+', '').split())
     else:
         proj_config = ConfigObj(proj4_args)
     return proj_config.dict()
+
+
+def _downcast_index_array(index_array, size):
+    """Try to downcast array to uint16
+    """
+    
+    if size <= np.iinfo(np.uint16).max:
+        mask = (index_array < 0) | (index_array >= size)
+        index_array[mask] = size
+        index_array = index_array.astype(np.uint16)
+    return index_array
+        

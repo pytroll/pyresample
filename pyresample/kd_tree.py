@@ -265,14 +265,14 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
             segments = 1
     
     #Find reduced input coordinate set
-    valid_input_index = _get_valid_input_index(source_geo_def, target_geo_def, 
+    valid_input_index, source_lons, source_lats = _get_valid_input_index(source_geo_def, target_geo_def, 
                                                reduce_data, 
                                                radius_of_influence, 
                                                nprocs=nprocs)    
     
     #Create kd-tree
     try:
-        resample_kdtree = _create_resample_kdtree(source_geo_def, 
+        resample_kdtree = _create_resample_kdtree(source_lons, source_lats, 
                                                   valid_input_index, 
                                                   nprocs=nprocs)
     except EmptyResult:
@@ -369,7 +369,7 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
         #Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
     
-    return valid_input_index
+    return valid_input_index, source_lons, source_lats
 
 def _get_valid_output_index(source_geo_def, target_geo_def, target_lons, 
                             target_lats, reduce_data, radius_of_influence):
@@ -400,9 +400,10 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
     
     return valid_output_index
         
-def _create_resample_kdtree(source_geo_def, valid_input_index, nprocs=1):
+def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=1):
     """Set up kd tree on input"""
     
+    """
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise TypeError('source_geo_def must be of geometry type')
     
@@ -410,7 +411,18 @@ def _create_resample_kdtree(source_geo_def, valid_input_index, nprocs=1):
     source_cartesian_coords = source_geo_def.get_cartesian_coords(nprocs=nprocs)
     input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
     input_coords = input_coords[valid_input_index]
+    """
+    
+    source_lons_valid = source_lons[valid_input_index]
+    source_lats_valid = source_lats[valid_input_index]
+    
+    if nprocs > 1:
+        cartesian = _spatial_mp.Cartesian_MP(nprocs)
+    else:
+        cartesian = _spatial_mp.Cartesian()
 
+    input_coords = cartesian.transform_lonlats(source_lons_valid, source_lats_valid)
+    
     if input_coords.size == 0:
         raise EmptyResult('No valid data points in input data')
 
@@ -451,11 +463,15 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
                                                  radius_of_influence)
 
     #Get cartesian target coordinates and select reduced set
-    target_cartesian_coords = target_geo_def._get_cartesian_coords(nprocs=nprocs, 
-                                                                   data_slice=data_slice)
-    output_coords = geometry._flatten_cartesian_coords(target_cartesian_coords)
+    if nprocs > 1:
+        cartesian = _spatial_mp.Cartesian_MP(nprocs)
+    else:
+        cartesian = _spatial_mp.Cartesian()
+        
+    target_lons_valid = target_lons.ravel()[valid_output_index] 
+    target_lats_valid = target_lats.ravel()[valid_output_index]
     
-    output_coords = output_coords[valid_output_index] 
+    output_coords = cartesian.transform_lonlats(target_lons_valid, target_lats_valid) 
     
     #Query kd-tree        
     distance_array, index_array = resample_kdtree.query(output_coords, 

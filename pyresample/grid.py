@@ -54,7 +54,7 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     #free memory
     del(row_indices)
     del(col_indices)
-
+    
     #get valid part of image
     target_image = source_image[valid_rows, valid_cols]
     
@@ -71,6 +71,7 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     #free memory
     del(row_mask)
     del(col_mask)
+    
     #fill the non valid part of the image
     if fill_value is not None:
         target_filled = (target_image * valid_data + 
@@ -113,10 +114,10 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
 
     #Find corresponding pixels (element by element conversion of ndarrays)
     source_pixel_x = (source_area_def.pixel_offset_x + \
-                      source_x / source_area_def.pixel_size_x).astype(np.int)
+                      source_x / source_area_def.pixel_size_x).astype(np.int32)
     
     source_pixel_y = (source_area_def.pixel_offset_y - \
-                      source_y / source_area_def.pixel_size_y).astype(np.int)
+                      source_y / source_area_def.pixel_size_y).astype(np.int32)
                     
     return source_pixel_y, source_pixel_x
                           
