@@ -19,7 +19,7 @@ from setuptools import setup, Extension
 import sys
 import os
 
-sys.path.append(os.path.abspath('pyresample'))
+sys.path.insert(0, os.path.abspath('pyresample'))
 import version
 
 setup(name='pyresample',
