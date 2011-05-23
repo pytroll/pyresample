@@ -155,6 +155,19 @@ REGION: ease_nh <span class="o">{</span>
 </pre></div>
 </div>
 <p>Note: In the configuration file <strong>REGION</strong> maps to <strong>area_id</strong> and <strong>PCS_ID</strong> maps to <strong>proj_id</strong>.</p>
+<p>Several area definitions can be read at once using the region names in an argument list</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nh_def</span><span class="p">,</span> <span class="n">sh_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_nh&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sh_def</span>
+<span class="go">Area ID: ease_sh</span>
+<span class="go">Name: Antarctic EASE grid</span>
+<span class="go">Projection ID: ease_sh</span>
+<span class="go">Projection: {&#39;a&#39;: &#39;6371228.0&#39;, &#39;units&#39;: &#39;m&#39;, &#39;lon_0&#39;: &#39;0&#39;, &#39;proj&#39;: &#39;laea&#39;, &#39;lat_0&#39;: &#39;-90&#39;}</span>
+<span class="go">Number of columns: 425</span>
+<span class="go">Number of rows: 425</span>
+<span class="go">Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="griddefinition">

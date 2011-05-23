@@ -117,6 +117,21 @@ An area definition dict can be read using
 
 Note: In the configuration file **REGION** maps to **area_id** and **PCS_ID** maps to **proj_id**.
 
+Several area definitions can be read at once using the region names in an argument list
+
+.. doctest::
+
+ >>> from pyresample import utils
+ >>> nh_def, sh_def = utils.parse_area_file('/tmp/areas.cfg', 'ease_nh', 'ease_sh')
+ >>> print sh_def
+ Area ID: ease_sh
+ Name: Antarctic EASE grid
+ Projection ID: ease_sh
+ Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
 GridDefinition
 --------------
 If the lons and lats grid values are known the area definition information can be skipped for some types
