@@ -70,6 +70,7 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(lat, 52.566998432390619, 
                                    msg='lat retrieval from precomputated grid failed')
         
+    @tmp
     def test_cartesian(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -84,8 +85,8 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        cart_coords = area_def.get_cartesian_coords()        
-        self.failUnlessAlmostEqual(cart_coords.sum(), 5872042754516.1591797,
+        cart_coords = area_def.get_cartesian_coords()
+        self.failUnlessAlmostEqual(cart_coords.sum(), 5872039989466.8457031,
                                    places=1,
                                    msg='Calculation of cartesian coordinates failed')
         
@@ -444,3 +445,22 @@ class Test(unittest.TestCase):
                              429087.28, 669087.28, 909087.28])
         self.failUnless(np.allclose(proj_x_boundary.side1, expected), 
                         'Failed to find proejction boundary')
+        
+    def test_area_extent_ll(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
+                                   {'a': '6378144.0',
+                                    'b': '6356759.0',
+                                    'lat_0': '50.00',
+                                    'lat_ts': '50.00',
+                                    'lon_0': '8.00',
+                                    'proj': 'stere'}, 
+                                    10,
+                                    10,
+                                    [-1370912.72,
+                                     -909968.64000000001,
+                                     1029087.28,
+                                     1490031.3600000001])
+        self.failUnlessAlmostEqual(sum(area_def.area_extent_ll), 
+                                   122.06448093539757, 5, 
+                                   'Failed to get lon and lats of area extent')
+        

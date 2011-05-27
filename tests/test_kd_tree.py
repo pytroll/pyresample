@@ -57,7 +57,6 @@ class Test(unittest.TestCase):
         self.failUnlessAlmostEqual(res[0], 2.2020729, 5, \
                                    'Failed to calculate gaussian weighting')
     
-    @tmp
     def test_custom_base(self):
         def wf(dist):
             return 1 - dist/100000.0
@@ -326,7 +325,7 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_custom(swath_def, data_multi,\
                                     self.area_def, 50000, [wf1, wf2, wf3], segments=1)
         cross_sum = res.sum()
-        expected = 1461.84298477
+        expected = 1461.842980746
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel custom resampling failed')
         
@@ -554,7 +553,8 @@ class Test(unittest.TestCase):
         expected = 15874591.0
         self.failUnlessEqual(cross_sum, expected,\
                              msg='Swath resampling from neighbour info nearest failed')
-      
+    
+    @tmp  
     def test_custom_multi_from_sample(self):
         def wf1(dist):
             return 1 - dist/100000.0
@@ -582,7 +582,8 @@ class Test(unittest.TestCase):
                                                    weight_funcs=[wf1, wf2, wf3])
             
         cross_sum = res.sum()
-        expected = 1461.84298477
+        
+        expected = 1461.842980746
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel custom resampling from neighbour info failed 1')
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800), 
@@ -590,9 +591,10 @@ class Test(unittest.TestCase):
                                                    valid_input_index, valid_output_index, 
                                                    index_array, distance_array, 
                                                    weight_funcs=[wf1, wf2, wf3])
-            
+        
+        # Look for error where input data has been manipulated    
         cross_sum = res.sum()
-        expected = 1461.84298477
+        expected = 1461.842980746
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel custom resampling from neighbour info failed 2')
 
