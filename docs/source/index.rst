@@ -21,6 +21,7 @@ Documentation
    swath
    multi
    preproc
+   plot
    data_reduce
    API
 

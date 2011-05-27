@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample v0.7.6 documentation</title>
+    <title>pyresample API &mdash; pyresample v0.7.7 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.6',
+        VERSION:     '0.7.7',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.6 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.7 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.6 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.7 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -109,7 +109,9 @@
 <dt>size <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
 <dd>Number of points in grid</dd>
 <dt>area_extent <span class="classifier-delimiter">:</span> <span class="classifier">tuple     </span></dt>
-<dd>Area extent as a list (LL_x, LL_y, UR_x, UR_y)</dd>
+<dd>Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)</dd>
+<dt>area_extent_ll <span class="classifier-delimiter">:</span> <span class="classifier">tuple     </span></dt>
+<dd>Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)</dd>
 <dt>pixel_size_x <span class="classifier-delimiter">:</span> <span class="classifier">float    </span></dt>
 <dd>Pixel width in projection units</dd>
 <dt>pixel_size_y <span class="classifier-delimiter">:</span> <span class="classifier">float    </span></dt>
@@ -540,7 +542,7 @@ with undetermined pixels masked</dd>
 <dl class="docutils">
 <dt>row_indices <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
 <dd>Row indices. Dimensions must match col_indices</dd>
-<dt>col_indices <span class="classifier-delimiter">:</span> <span class="classifier">numpy array of</span></dt>
+<dt>col_indices <span class="classifier-delimiter">:</span> <span class="classifier">numpy array </span></dt>
 <dd>Col indices. Dimensions must match row_indices</dd>
 </dl>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1617,7 +1619,7 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.6 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.7 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

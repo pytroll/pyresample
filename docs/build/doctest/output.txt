@@ -1,4 +1,4 @@
-Results of doctest builder run on 2011-05-23 15:55:22
+Results of doctest builder run on 2011-05-27 15:11:57
 =====================================================
 
 Document: data_reduce
@@ -41,6 +41,14 @@ Document: multi
 8 passed and 0 failed.
 Test passed.
 
+Document: plot
+--------------
+1 items passed all tests:
+  22 tests in default
+22 tests in 1 items.
+22 passed and 0 failed.
+Test passed.
+
 Document: preproc
 -----------------
 1 items passed all tests:
@@ -59,6 +67,6 @@ Test passed.
 
 Doctest summary
 ===============
-  260 tests
+  282 tests
     0 failures in tests
     0 failures in setup code
