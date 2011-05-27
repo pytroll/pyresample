@@ -25,7 +25,7 @@ import multiprocessing as mp
 from _multi_proc import shmem_as_ndarray, Scheduler
 
 #Earth radius
-R = 6371000
+R = 6370997.0
 
 
 class cKDTree_MP(object):

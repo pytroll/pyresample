@@ -536,7 +536,9 @@ class AreaDefinition(BaseDefinition):
     size : int
         Number of points in grid
     area_extent : tuple     
-        Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+        Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)
+    area_extent_ll : tuple     
+        Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)
     pixel_size_x : float    
         Pixel width in projection units
     pixel_size_y : float    
@@ -589,6 +591,14 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
         self.proj_dict = proj_dict
         self.area_extent = tuple(area_extent)
+        
+        # Calculate area_extent in lon lat
+        proj = _spatial_mp.Proj(**proj_dict)
+        corner_lons, corner_lats = proj((area_extent[0], area_extent[2]), 
+                                        (area_extent[1], area_extent[3]), 
+                                        inverse=True)
+        self.area_extent_ll = (corner_lons[0], corner_lats[0], 
+                               corner_lons[1], corner_lats[1])
                 
         #Calculate projection coordinates of center of upper left pixel
         self.pixel_upper_left = \

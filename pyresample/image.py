@@ -93,7 +93,7 @@ class ImageContainer(object):
         :Parameters:
         row_indices : numpy array
             Row indices. Dimensions must match col_indices
-        col_indices : numpy array of
+        col_indices : numpy array 
             Col indices. Dimensions must match row_indices 
         
         :Returns: 

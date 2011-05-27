@@ -20,5 +20,6 @@ import image
 import kd_tree
 import utils
 import version
+import plot
 
 __version__ = version.__version__

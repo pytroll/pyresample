@@ -21,7 +21,7 @@ import numpy as np
 
 
 #Earth radius
-R = 6371000
+R = 6370997.0
 
 def swath_from_cartesian_grid(cart_grid, lons, lats, data, 
                               radius_of_influence):
