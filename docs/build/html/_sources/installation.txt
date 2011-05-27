@@ -6,6 +6,8 @@ Pyresample depends on pyproj, numpy(>= 1.3), scipy(>= 0.7), multiprocessing
 The correct version of the packages should be installed on your system 
 (refer to numpy and scipy installation instructions) or use easy_install to handle dependencies automatically.
 
+In order to use the pyresample plotting functionality Basemap and matplotlib (>= 0.98) must be installed. 
+These packages are not a prerequisite for using any other pyresample functionality. 
 
 Package test
 ************
