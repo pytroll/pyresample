@@ -119,7 +119,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     bmap.drawcoastlines()
     bmap.drawmeridians(np.arange(0, 360, num_meridians))
     bmap.drawparallels(np.arange(-90, 90, num_parallels))
-    col = bmap.imshow(data, origin='upper')
+    col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
     plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
     return plt
     
@@ -185,7 +185,7 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
     """
     
     import matplotlib
-    matplotlib.use(backend)
+    matplotlib.use(backend, warn=False)
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax, 
                          label=label, num_meridians=num_meridians, 
                          num_parallels=num_parallels, coast_res=coast_res)
