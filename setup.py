@@ -19,8 +19,9 @@ from setuptools import setup
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath('pyresample'))
-import version
+import imp
+
+version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 setup(name='pyresample',
       version=version.__version__,
