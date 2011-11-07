@@ -32,6 +32,19 @@ Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
         
         self.assertTrue(nh_found and sh_found, msg='Failed to parse areas correctly')
+    
+    def test_load_area(self):
+        ease_nh = utils.load_area(os.path.join(os.path.dirname(__file__), 
+                                                              'test_files', 
+                                                              'areas.cfg'), 'ease_nh')
+        nh_found = (ease_nh.__str__() =="""Area ID: ease_nh
+Name: Arctic EASE grid
+Projection ID: ease_nh
+Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '90'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
+        self.assertTrue(nh_found, msg='Failed to load area correctly') 
         
     def test_not_found_exception(self):
         self.assertRaises(utils.AreaNotFound, utils.parse_area_file, 

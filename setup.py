@@ -23,6 +23,11 @@ import imp
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
+requirements = ['pyproj', 'numpy', 'scipy', 'configobj']
+if sys.version_info < (2, 6):
+    # multiprocessing is not in the standard library
+    requirements.append('multiprocessing')
+
 setup(name='pyresample',
       version=version.__version__,
       description='Resampling of remote sensing data in Python',
@@ -30,7 +35,7 @@ setup(name='pyresample',
       author_email='esn@dmi.dk',
       package_dir = {'pyresample': 'pyresample'},
       packages = ['pyresample'],      
-      install_requires=['pyproj', 'numpy', 'scipy', 'configobj', 'multiprocessing'], 
+      install_requires=requirements,
       zip_safe = False
       )
 

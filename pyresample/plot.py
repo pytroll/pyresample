@@ -114,13 +114,18 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     """Get default Basemap matplotlib plot
     """
     
+    if area_def.shape != data.shape:
+        raise ValueError('area_def shape %s does not match data shape %s' % 
+                         (list(area_def.shape), list(data.shape)))
     import matplotlib.pyplot as plt
     bmap = area_def2basemap(area_def, resolution=coast_res)
     bmap.drawcoastlines()
     bmap.drawmeridians(np.arange(0, 360, num_meridians))
     bmap.drawparallels(np.arange(-90, 90, num_parallels))
-    col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
-    plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
+    if not (np.ma.isMaskedArray(data) and data.mask.all()):
+        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
+        plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
+        
     return plt
     
 def show_quicklook(area_def, data, vmin=None, vmax=None, 

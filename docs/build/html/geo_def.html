@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Geometry definitions &mdash; pyresample v0.7.8 documentation</title>
+    <title>Geometry definitions &mdash; pyresample v0.7.9 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.8',
+        VERSION:     '0.7.9',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.8 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.9 documentation" href="index.html" />
     <link rel="next" title="Geographic filtering" href="geo_filter.html" />
     <link rel="prev" title="Installing Pyresample" href="installation.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.8 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.9 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -120,7 +120,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.</p>
 <span class="go">Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)</span>
 </pre></div>
 </div>
-<p>The <strong>parse_area_file</strong> function can be used to parse area definitions from a configuration file.
+<p>The <strong>load_area</strong> function can be used to parse area definitions from a configuration file.
 Assuming the file <strong>/tmp/areas.cfg</strong> exists with the following content</p>
 <div class="highlight-bash"><div class="highlight"><pre>REGION: ease_sh <span class="o">{</span>
        NAME:           Antarctic EASE grid
@@ -143,8 +143,8 @@ REGION: ease_nh <span class="o">{</span>
 </div>
 <p>An area definition dict can be read using</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">areas</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_nh&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">areas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_nh&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">area</span>
 <span class="go">Area ID: ease_nh</span>
 <span class="go">Name: Arctic EASE grid</span>
 <span class="go">Projection ID: ease_nh</span>
@@ -157,7 +157,7 @@ REGION: ease_nh <span class="o">{</span>
 <p>Note: In the configuration file <strong>REGION</strong> maps to <strong>area_id</strong> and <strong>PCS_ID</strong> maps to <strong>proj_id</strong>.</p>
 <p>Several area definitions can be read at once using the region names in an argument list</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">utils</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">nh_def</span><span class="p">,</span> <span class="n">sh_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_nh&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nh_def</span><span class="p">,</span> <span class="n">sh_def</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_nh&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">sh_def</span>
 <span class="go">Area ID: ease_sh</span>
 <span class="go">Name: Antarctic EASE grid</span>
@@ -397,7 +397,7 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
         <li class="right" >
           <a href="installation.html" title="Installing Pyresample"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.8 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.9 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

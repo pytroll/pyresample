@@ -1,4 +1,4 @@
-Results of doctest builder run on 2011-05-27 15:11:57
+Results of doctest builder run on 2011-11-07 14:48:54
 =====================================================
 
 Document: data_reduce

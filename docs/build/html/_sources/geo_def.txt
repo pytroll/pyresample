@@ -77,7 +77,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 
-The **parse_area_file** function can be used to parse area definitions from a configuration file. 
+The **load_area** function can be used to parse area definitions from a configuration file. 
 Assuming the file **/tmp/areas.cfg** exists with the following content
 
 .. code-block:: bash
@@ -105,8 +105,8 @@ An area definition dict can be read using
 .. doctest::
 
  >>> from pyresample import utils
- >>> areas = utils.parse_area_file('/tmp/areas.cfg', 'ease_nh')
- >>> print areas[0]
+ >>> area = utils.load_area('/tmp/areas.cfg', 'ease_nh')
+ >>> print area
  Area ID: ease_nh
  Name: Arctic EASE grid
  Projection ID: ease_nh
@@ -122,7 +122,7 @@ Several area definitions can be read at once using the region names in an argume
 .. doctest::
 
  >>> from pyresample import utils
- >>> nh_def, sh_def = utils.parse_area_file('/tmp/areas.cfg', 'ease_nh', 'ease_sh')
+ >>> nh_def, sh_def = utils.load_area('/tmp/areas.cfg', 'ease_nh', 'ease_sh')
  >>> print sh_def
  Area ID: ease_sh
  Name: Antarctic EASE grid

@@ -27,11 +27,37 @@ class AreaNotFound(Exception):
     """Exception raised when specified are is no found in file"""
     pass
 
+def load_area(area_file_name, *regions):
+    """Load area(s) from area file
+    
+    :Parameters:
+    area_file_name : str
+        Path to area definition file
+    regions : str argument list 
+        Regions to parse. If no regions are specified all 
+        regions in the file are returned
+             
+    :Returns:
+    area_defs : object or list
+        If one area name is specified a single AreaDefinition object is returned
+        If several area names are specified a list of AreaDefinition objects is returned
+        
+    :Raises:
+    AreaNotFound
+        If a specified area name is not found
+    """
+    
+    area_list = parse_area_file(area_file_name, *regions)
+    if len(area_list) == 1:
+        return area_list[0]
+    else:
+        return area_list
+
 def parse_area_file(area_file_name, *regions):
     """Parse area information from area file
     
     :Parameters:
-    area_file : str
+    area_file_name : str
         Path to area definition file
     regions : str argument list 
         Regions to parse. If no regions are specified all 

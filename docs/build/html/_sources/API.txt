@@ -31,5 +31,9 @@ pyresample.data_reduce
 .. automodule:: data_reduce
 	:members:
 
+pyresample.plot
+---------------------------------
+.. automodule:: plot
+	:members:
 
 	

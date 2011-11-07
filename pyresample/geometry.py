@@ -410,6 +410,8 @@ class CoordinateDefinition(BaseDefinition):
         lats = np.concatenate((self.lats.data, other.lats.data))
         self.lons._set_data(lons)
         self.lats._set_data(lats)
+        self.shape = lons.shape
+        self.size = lons.size
 
 
 class GridDefinition(CoordinateDefinition):

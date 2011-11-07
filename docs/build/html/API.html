@@ -5,13 +5,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample v0.7.8 documentation</title>
+    <title>pyresample API &mdash; pyresample v0.7.9 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '#',
-        VERSION:     '0.7.8',
+        VERSION:     '0.7.9',
         COLLAPSE_MODINDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -19,7 +19,7 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.8 documentation" href="index.html" />
+    <link rel="top" title="pyresample v0.7.9 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.8 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.9 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -1307,6 +1307,52 @@ If set to None an estimate will be calculated</dd>
 </dd></dl>
 
 <dl class="function">
+<dt id="utils.load_area">
+<tt class="descclassname">utils.</tt><tt class="descname">load_area</tt><big>(</big><em>area_file_name</em>, <em>*regions</em><big>)</big><a class="headerlink" href="#utils.load_area" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load area(s) from area file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>area_file_name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Path to area definition file</dd>
+<dt>regions <span class="classifier-delimiter">:</span> <span class="classifier">str argument list </span></dt>
+<dd>Regions to parse. If no regions are specified all 
+regions in the file are returned</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>area_defs <span class="classifier-delimiter">:</span> <span class="classifier">object or list</span></dt>
+<dd>If one area name is specified a single AreaDefinition object is returned
+If several area names are specified a list of AreaDefinition objects is returned</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Raises:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>AreaNotFound</dt>
+<dd>If a specified area name is not found</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
 <dt id="utils.parse_area_file">
 <tt class="descclassname">utils.</tt><tt class="descname">parse_area_file</tt><big>(</big><em>area_file_name</em>, <em>*regions</em><big>)</big><a class="headerlink" href="#utils.parse_area_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse area information from area file</p>
@@ -1319,7 +1365,7 @@ If set to None an estimate will be calculated</dd>
 </tbody>
 </table>
 <dl class="docutils">
-<dt>area_file <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dt>area_file_name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
 <dd>Path to area definition file</dd>
 <dt>regions <span class="classifier-delimiter">:</span> <span class="classifier">str argument list </span></dt>
 <dd>Regions to parse. If no regions are specified all 
@@ -1561,6 +1607,142 @@ lon lat grid</p>
 </dd></dl>
 
 </div>
+<div class="section" id="module-plot">
+<h2>pyresample.plot<a class="headerlink" href="#module-plot" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="plot.area_def2basemap">
+<tt class="descclassname">plot.</tt><tt class="descname">area_def2basemap</tt><big>(</big><em>area_def</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#plot.area_def2basemap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Basemap object from AreaDefinition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>geometry.AreaDefinition object</dd>
+<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs: Keyword arguments</dt>
+<dd>Additional initialization arguments for Basemap</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>bmap : Basemap object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot.ellps2axis">
+<tt class="descclassname">plot.</tt><tt class="descname">ellps2axis</tt><big>(</big><em>ellps_name</em><big>)</big><a class="headerlink" href="#plot.ellps2axis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get semi-major and semi-minor axis from ellipsis definition</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>ellps_name <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>Standard name of ellipsis</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>(a, b) : semi-major and semi-minor axis</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot.save_quicklook">
+<tt class="descclassname">plot.</tt><tt class="descname">save_quicklook</tt><big>(</big><em>filename</em>, <em>area_def</em>, <em>data</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>label='Variable (units)'</em>, <em>num_meridians=45</em>, <em>num_parallels=10</em>, <em>coast_res='c'</em>, <em>backend='AGG'</em><big>)</big><a class="headerlink" href="#plot.save_quicklook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display default quicklook plot</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>filename <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
+<dd>path to output file</dd>
+<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>geometry.AreaDefinition object</dd>
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array | numpy masked array</span></dt>
+<dd>2D array matching area_def. Use masked array for transparent values</dd>
+<dt>vmin <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
+<dd>Min value for luminescence scaling</dd>
+<dt>vmax <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
+<dd>Max value for luminescence scaling</dd>
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd>Label for data</dd>
+<dt>num_meridians <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of meridians to plot on the globe</dd>
+<dt>num_parallels <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of parallels to plot on the globe</dd>
+<dt>coast_res <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;c&#8217;, &#8216;l&#8217;, &#8216;i&#8217;, &#8216;h&#8217;, &#8216;f&#8217;}, optional</span></dt>
+<dd>Resolution of coastlines</dd>
+<dt>backend <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd>matplotlib backend to use&#8217;</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot.show_quicklook">
+<tt class="descclassname">plot.</tt><tt class="descname">show_quicklook</tt><big>(</big><em>area_def</em>, <em>data</em>, <em>vmin=None</em>, <em>vmax=None</em>, <em>label='Variable (units)'</em>, <em>num_meridians=45</em>, <em>num_parallels=10</em>, <em>coast_res='c'</em><big>)</big><a class="headerlink" href="#plot.show_quicklook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display default quicklook plot</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>area_def <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
+<dd>geometry.AreaDefinition object</dd>
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">numpy array | numpy masked array</span></dt>
+<dd>2D array matching area_def. Use masked array for transparent values</dd>
+<dt>vmin <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
+<dd>Min value for luminescence scaling</dd>
+<dt>vmax <span class="classifier-delimiter">:</span> <span class="classifier">float, optional</span></dt>
+<dd>Max value for luminescence scaling</dd>
+<dt>label <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
+<dd>Label for data</dd>
+<dt>num_meridians <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of meridians to plot on the globe</dd>
+<dt>num_parallels <span class="classifier-delimiter">:</span> <span class="classifier">int, optional</span></dt>
+<dd>Number of parallels to plot on the globe</dd>
+<dt>coast_res <span class="classifier-delimiter">:</span> <span class="classifier">{&#8216;c&#8217;, &#8216;l&#8217;, &#8216;i&#8217;, &#8216;h&#8217;, &#8216;f&#8217;}, optional</span></dt>
+<dd>Resolution of coastlines</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>bmap : Basemap object</p>
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -1578,6 +1760,7 @@ lon lat grid</p>
 <li><a class="reference external" href="#module-kd_tree">pyresample.kd_tree</a></li>
 <li><a class="reference external" href="#module-utils">pyresample.utils</a></li>
 <li><a class="reference external" href="#module-data_reduce">pyresample.data_reduce</a></li>
+<li><a class="reference external" href="#module-plot">pyresample.plot</a></li>
 </ul>
 </li>
 </ul>
@@ -1619,7 +1802,7 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.8 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample v0.7.9 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
