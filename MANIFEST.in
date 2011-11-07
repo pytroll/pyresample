@@ -1,0 +1,4 @@
+include docs/Makefile
+include docs/source/*
+include LICENSE.txt
+include MANIFEST.in
