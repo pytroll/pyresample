@@ -413,6 +413,12 @@ class CoordinateDefinition(BaseDefinition):
         self.shape = lons.shape
         self.size = lons.size
 
+    def __str__(self):
+        #Rely on numpy's object printing
+        return ('Shape: %s\nLons: %s\nLats: %s') % (str(self.shape), 
+                                                    str(self.lons.data),
+                                                    str(self.lats.data))
+        
 
 class GridDefinition(CoordinateDefinition):
     """Grid defined by lons and lats
@@ -619,11 +625,17 @@ class AreaDefinition(BaseDefinition):
         self.projection_y_coords = _ProjectionYCoords(proj_coords_holder)
         
     def __str__(self):
+        #We need a sorted dictionary for a unique hash of str(self)
+        proj_dict = self.proj_dict
+        proj_str = ('{' + 
+                    ', '.join(["'%s': '%s'"%(str(k), str(proj_dict[k]))
+                               for k in sorted(proj_dict.keys())]) +
+                    '}')
         return ('Area ID: %s\nName: %s\nProjection ID: %s\n'
-               'Projection: %s\nNumber of columns: %s\nNumber of rows: %s\n'
-               'Area extent: %s') % (self.area_id, self.name, self.proj_id, 
-                                   self.proj_dict, self.x_size, self.y_size, 
-                                   self.area_extent)
+                'Projection: %s\nNumber of columns: %s\nNumber of rows: %s\n'
+                'Area extent: %s') % (self.area_id, self.name, self.proj_id, 
+                                      proj_str, self.x_size, self.y_size, 
+                                      self.area_extent)
                
     __repr__ = __str__
     

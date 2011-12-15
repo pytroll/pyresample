@@ -18,7 +18,7 @@ class Test(unittest.TestCase):
         nh_found = (ease_nh.__str__() =="""Area ID: ease_nh
 Name: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '90'}
+Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
@@ -26,7 +26,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
         sh_found = (ease_sh.__str__() =="""Area ID: ease_sh
 Name: Antarctic EASE grid
 Projection ID: ease_sh
-Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
@@ -40,7 +40,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
         nh_found = (ease_nh.__str__() =="""Area ID: ease_nh
 Name: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '90'}
+Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
