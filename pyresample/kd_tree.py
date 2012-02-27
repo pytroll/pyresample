@@ -497,13 +497,13 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
 def _create_empty_info(source_geo_def, target_geo_def, neighbours):
     """Creates dummy info for empty result set"""
     
-    valid_output_index = np.ones(target_geo_def.size, dtype=np.int)
+    valid_output_index = np.ones(target_geo_def.size, dtype=np.bool)
     if neighbours > 1:
         index_array = (np.ones((target_geo_def.size, neighbours), 
-                               dtype=np.int) * source_geo_def.size)
+                               dtype=np.int32) * source_geo_def.size)
         distance_array = np.ones((target_geo_def.size, neighbours))
     else:
-        index_array = (np.ones(target_geo_def.size, dtype=np.int) * 
+        index_array = (np.ones(target_geo_def.size, dtype=np.int32) * 
                        source_geo_def.size)
         distance_array = np.ones(target_geo_def.size)
         
@@ -568,8 +568,8 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         #Handle empty result set
         if fill_value is None:
             #Use masked array for fill values
-            return np.ma.array(np.zeros(output_shape), 
-                               mask=np.ones(output_shape))
+            return np.ma.array(np.zeros(output_shape, data.dtype), 
+                               mask=np.ones(output_shape, dtype=np.bool))
         else:
             #Return fill vaues for all pixels
             return np.ones(output_shape, dtype=data.dtype) * fill_value  
