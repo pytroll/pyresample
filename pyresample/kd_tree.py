@@ -18,6 +18,7 @@
 """Handles reprojection of geolocated data. Several types of resampling are supported"""
 
 import types
+import warnings
 
 import numpy as np
 import scipy.spatial as sp
@@ -257,6 +258,10 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         Neighbour resampling info
     """
 
+    if source_geo_def.size < neighbours:
+        warnings.warn('Searching for %s neighbours in %s data points' % 
+                      (neighbours, source_geo_def.size))
+
     if segments is None:
         cut_off = 3000000
         if target_geo_def.size > cut_off:
@@ -322,6 +327,13 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                                            epsilon=epsilon, 
                                            reduce_data=reduce_data, 
                                            nprocs=nprocs)
+    
+    # Check if number of neighbours is potentially too low
+    if neighbours > 1:
+        if not np.all(np.isinf(distance_array[:, -1])):
+            warnings.warn(('Possible more than %s neighbours '
+                           'within %s m for some data points') % 
+                          (neighbours, radius_of_influence))
          
     return valid_input_index, valid_output_index, index_array, distance_array           
 
@@ -485,13 +497,13 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
 def _create_empty_info(source_geo_def, target_geo_def, neighbours):
     """Creates dummy info for empty result set"""
     
-    valid_output_index = np.ones(target_geo_def.size, dtype=np.int)
+    valid_output_index = np.ones(target_geo_def.size, dtype=np.bool)
     if neighbours > 1:
         index_array = (np.ones((target_geo_def.size, neighbours), 
-                               dtype=np.int) * source_geo_def.size)
+                               dtype=np.int32) * source_geo_def.size)
         distance_array = np.ones((target_geo_def.size, neighbours))
     else:
-        index_array = (np.ones(target_geo_def.size, dtype=np.int) * 
+        index_array = (np.ones(target_geo_def.size, dtype=np.int32) * 
                        source_geo_def.size)
         distance_array = np.ones(target_geo_def.size)
         
@@ -556,8 +568,8 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         #Handle empty result set
         if fill_value is None:
             #Use masked array for fill values
-            return np.ma.array(np.zeros(output_shape), 
-                               mask=np.ones(output_shape))
+            return np.ma.array(np.zeros(output_shape, data.dtype), 
+                               mask=np.ones(output_shape, dtype=np.bool))
         else:
             #Return fill vaues for all pixels
             return np.ones(output_shape, dtype=data.dtype) * fill_value  
@@ -657,10 +669,12 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
             
             if new_data.ndim > 1:
                 #Calculate weights for each channel
+                num_weights = valid_output_index.sum()
                 weights = []
                 for j in range(new_data.shape[1]):                    
                     calc_weight = weight_funcs[j](distance)
-                    expanded_calc_weight = np.ones(output_size) * calc_weight
+                    #Use broadcasting to account for constant weight
+                    expanded_calc_weight = np.ones(num_weights) * calc_weight
                     weights.append(expanded_calc_weight)
                 weight_list.append(np.column_stack(weights))
             else:

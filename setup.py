@@ -1,6 +1,6 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
+#Copyright (C) 2012  Esben S. Nielsen
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -36,7 +36,15 @@ setup(name='pyresample',
       package_dir = {'pyresample': 'pyresample'},
       packages = ['pyresample'],      
       install_requires=requirements,
-      zip_safe = False
+      zip_safe = False,
+      classifiers=[
+      'Development Status :: 5 - Production/Stable',
+      'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+      'Programming Language :: Python',
+      'Operating System :: OS Independent',
+      'Intended Audience :: Science/Research',
+      'Topic :: Scientific/Engineering'
+      ]
       )
 
 

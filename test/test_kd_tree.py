@@ -1,6 +1,13 @@
-import os
-import unittest
+from __future__ import with_statement
 
+import os
+import sys
+import unittest
+import warnings
+if sys.version_info < (2, 6):
+    warnings.simplefilter("ignore")
+else:    
+    warnings.simplefilter("always")
 import numpy
 
 from pyresample import kd_tree, utils, geometry, grid, data_reduce
@@ -50,20 +57,37 @@ class Test(unittest.TestCase):
                                      100000, reduce_data=False, segments=1)
         self.failUnless(res[0] == 2, 'Failed to calculate nearest neighbour')
     
-    def test_gauss_base(self):     
-        res = kd_tree.resample_gauss(self.tswath, \
-                                     self.tdata.ravel(), self.tgrid,\
-                                     50000, 25000, reduce_data=False, segments=1)
+    @tmp
+    def test_gauss_base(self):
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(self.tswath, \
+                                             self.tdata.ravel(), self.tgrid,\
+                                             50000, 25000, reduce_data=False, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(self.tswath, \
+                                             self.tdata.ravel(), self.tgrid,\
+                                             50000, 25000, reduce_data=False, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
+                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')    
         self.failUnlessAlmostEqual(res[0], 2.2020729, 5, \
                                    'Failed to calculate gaussian weighting')
-    
+        
     def test_custom_base(self):
         def wf(dist):
             return 1 - dist/100000.0
-             
-        res = kd_tree.resample_custom(self.tswath,\
-                                     self.tdata.ravel(), self.tgrid,\
-                                     50000, wf, reduce_data=False, segments=1)        
+        
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_custom(self.tswath,\
+                                         self.tdata.ravel(), self.tgrid,\
+                                         50000, wf, reduce_data=False, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:     
+                res = kd_tree.resample_custom(self.tswath,\
+                                             self.tdata.ravel(), self.tgrid,\
+                                             50000, wf, reduce_data=False, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
+                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')        
         self.failUnlessAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
     def test_nearest(self):
@@ -225,8 +249,15 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
         lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        res = kd_tree.resample_gauss(swath_def, data.ravel(),\
-                                     self.area_def, 50000, 25000, segments=1)        
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(swath_def, data.ravel(),\
+                                         self.area_def, 50000, 25000, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(swath_def, data.ravel(),\
+                                             self.area_def, 50000, 25000, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')        
         cross_sum = res.sum()        
         expected = 4872.81050892
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -239,8 +270,15 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
-        res = kd_tree.resample_gauss(swath_def, data_multi,\
-                                     self.area_def, 50000, [25000, 15000, 10000], segments=1)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                         self.area_def, 50000, [25000, 15000, 10000], segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                             self.area_def, 50000, [25000, 15000, 10000], segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
         cross_sum = res.sum()        
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -253,9 +291,17 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
-        res = kd_tree.resample_gauss(swath_def, data_multi,\
-                                     self.area_def, 50000, [25000, 15000, 10000],\
-                                     nprocs=2, segments=1)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                         self.area_def, 50000, [25000, 15000, 10000],\
+                                         nprocs=2, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                             self.area_def, 50000, [25000, 15000, 10000],\
+                                             nprocs=2, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
         cross_sum = res.sum()
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -268,9 +314,17 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
-        res = kd_tree.resample_gauss(swath_def, data_multi,\
-                                     self.area_def, 50000, [25000, 15000, 10000],\
-                                     nprocs=2, segments=1)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                         self.area_def, 50000, [25000, 15000, 10000],\
+                                         nprocs=2, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(swath_def, data_multi,\
+                                             self.area_def, 50000, [25000, 15000, 10000],\
+                                             nprocs=2, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -299,13 +353,20 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
         lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        res = kd_tree.resample_custom(swath_def, data.ravel(),\
-                                     self.area_def, 50000, wf, segments=1)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_custom(swath_def, data.ravel(),\
+                                          self.area_def, 50000, wf, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_custom(swath_def, data.ravel(),\
+                                              self.area_def, 50000, wf, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 4872.81050729
         self.failUnlessAlmostEqual(cross_sum, expected,\
                                    msg='Swath custom resampling failed')
-        
+     
     def test_custom_multi(self):
         def wf1(dist):
             return 1 - dist/100000.0
@@ -322,8 +383,15 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
-        res = kd_tree.resample_custom(swath_def, data_multi,\
-                                    self.area_def, 50000, [wf1, wf2, wf3], segments=1)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_custom(swath_def, data_multi,\
+                                          self.area_def, 50000, [wf1, wf2, wf3], segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_custom(swath_def, data_multi,\
+                                              self.area_def, 50000, [wf1, wf2, wf3], segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.842980746
         self.failUnlessAlmostEqual(cross_sum, expected,\
@@ -554,7 +622,6 @@ class Test(unittest.TestCase):
         self.failUnlessEqual(cross_sum, expected,\
                              msg='Swath resampling from neighbour info nearest failed')
     
-    @tmp  
     def test_custom_multi_from_sample(self):
         def wf1(dist):
             return 1 - dist/100000.0
@@ -571,16 +638,27 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
-        valid_input_index, valid_output_index, index_array, distance_array = \
-                                    kd_tree.get_neighbour_info(swath_def, 
-                                                             self.area_def, 
-                                                             50000, segments=1)
-        res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800), 
-                                                   data_multi, 
-                                                   valid_input_index, valid_output_index, 
-                                                   index_array, distance_array, 
-                                                   weight_funcs=[wf1, wf2, wf3])
+        
+        if sys.version_info < (2, 6):
+            valid_input_index, valid_output_index, index_array, distance_array = \
+                                        kd_tree.get_neighbour_info(swath_def, 
+                                                                   self.area_def, 
+                                                                   50000, segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                valid_input_index, valid_output_index, index_array, distance_array = \
+                                            kd_tree.get_neighbour_info(swath_def, 
+                                                                       self.area_def, 
+                                                                       50000, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
             
+        res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800), 
+                                                     data_multi, 
+                                                     valid_input_index, valid_output_index, 
+                                                     index_array, distance_array, 
+                                                     weight_funcs=[wf1, wf2, wf3])
+                        
         cross_sum = res.sum()
         
         expected = 1461.842980746

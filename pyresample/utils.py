@@ -231,9 +231,9 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
                                                        nprocs=nprocs)
     #Enumerate rows and cols
     rows = np.fromfunction(lambda i, j: i, source_area_def.shape, 
-                           dtype=np.int).ravel()
+                           dtype=np.int32).ravel()
     cols = np.fromfunction(lambda i, j: j, source_area_def.shape, 
-                           dtype=np.int).ravel()
+                           dtype=np.int32).ravel()
     
     #Reduce to match resampling data set
     rows_valid = rows[valid_input_index]

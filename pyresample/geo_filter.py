@@ -51,9 +51,9 @@ class GridFilter(object):
                         
         #Find array indices of coordinates   
         target_x = ((x_coord / self.area_def.pixel_size_x) + 
-                    self.area_def.pixel_offset_x).astype(np.int)
+                    self.area_def.pixel_offset_x).astype(np.int32)
         target_y = (self.area_def.pixel_offset_y - 
-                    (y_coord / self.area_def.pixel_size_y)).astype(np.int)        
+                    (y_coord / self.area_def.pixel_size_y)).astype(np.int32)        
         
         #Create mask for pixels outside array (invalid pixels)
         target_x_valid = (target_x >= 0) & (target_x < self.area_def.x_size)
