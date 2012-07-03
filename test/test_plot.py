@@ -33,8 +33,11 @@ class Test(unittest.TestCase):
         self.failUnless(bmap.rmajor == bmap.rminor and 
                         bmap.rmajor == 6371228.0, 
                         'Failed to create Basemap object')
-	        
+
+    @tmp	        
     def test_plate_carreeplot(self):
+        import matplotlib
+        matplotlib.use('Agg')
         area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
                                             'test_files', 'areas.cfg'), 'pc_world')[0]
         swath_def = pr.geometry.SwathDefinition(self.lons, self.lats)
@@ -45,6 +48,8 @@ class Test(unittest.TestCase):
                                      num_parallels=0)
             
     def test_easeplot(self):
+        import matplotlib
+        matplotlib.use('Agg')
         area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
                                             'test_files', 'areas.cfg'), 'ease_sh')[0]
         swath_def = pr.geometry.SwathDefinition(self.lons, self.lats)
