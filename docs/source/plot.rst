@@ -28,6 +28,38 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data the res
   
 The data passed to the functions is a 2D array matching the AreaDefinition.
 
+The Plate Carree projection
++++++++++++++++++++++++++++
+The Plate Carree projection (regular lon/lat grid) is named **eqc** in Proj.4 and **cyl** in Basemap. pyresample uses the Proj.4 name.
+Assuming the file **/tmp/areas.cfg** has the following area definition:
+
+.. code-block:: bash
+
+ REGION: pc_world {
+    NAME:    Plate Carree world map
+    PCS_ID:  pc_world
+    PCS_DEF: proj=eqc
+    XSIZE: 640
+    YSIZE: 480
+    AREA_EXTENT:  (-20037508.34, -10018754.17, 20037508.34, 10018754.17)
+ };
+
+**Example usage:**
+
+ >>> import numpy as np 
+ >>> import pyresample as pr
+ >>> lons = np.zeros(1000)
+ >>> lats = np.arange(-80, -90, -0.01)
+ >>> tb37v = np.arange(1000)
+ >>> area_def = pr.utils.parse_area_file('/tmp/areas.cfg', 'pc_world')[0]
+ >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
+ >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
+ >>> pr.plot.save_quicklook('/tmp/tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+
+Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
+  .. image:: _static/images/tb37v_pc.png
+
+
 Getting a Basemap object
 ------------------------
 In order to make more advanced plots than the preconfigured quicklooks a Basemap object can be generated from an

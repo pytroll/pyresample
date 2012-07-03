@@ -258,6 +258,21 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
                                         source_area_def.shape[1])
     
     return row_indices, col_indices
+
+def fwhm2sigma(fwhm):
+    """Calculate sigma for gauss function from FWHM (3 dB level)
+    
+    :Parameters:
+    fwhm : float 
+        FWHM of gauss function (3 dB level of beam footprint)
+
+    :Returns: 
+    sigma : float
+        sigma for use in resampling gauss function
+        
+    """
+    
+    return fwhm / (2 * np.sqrt(np.log(2)))
     
 def _get_proj4_args(proj4_args):
     """Create dict from proj4 args

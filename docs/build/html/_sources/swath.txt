@@ -132,6 +132,8 @@ If more channels are present in **data** the keyword argument **sigmas** must be
 
 If **data** is a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
 
+Using the function **utils.fwhm2sigma** the sigma argument to the gauss resampling can be calculated from 3 dB FOV levels.
+
 resample_custom
 ***************
 

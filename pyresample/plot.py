@@ -87,8 +87,9 @@ def area_def2basemap(area_def, **kwargs):
             except KeyError:
                 b = a
         except KeyError:
-            raise ValueError('Could not determine ellipsis for projection')
-    
+            # Default to WGS84 ellipsoid
+            a, b = ellps2axis('wgs84')
+            
     # Add projection specific basemap args to args passed to function    
     basemap_args = kwargs
     llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat = area_def.area_extent_ll
@@ -96,7 +97,10 @@ def area_def2basemap(area_def, **kwargs):
     basemap_args['llcrnrlat'] = llcrnrlat
     basemap_args['urcrnrlon'] = urcrnrlon
     basemap_args['urcrnrlat'] = urcrnrlat
-    basemap_args['projection'] = area_def.proj_dict['proj']
+    if area_def.proj_dict['proj'] == 'eqc':
+        basemap_args['projection'] = 'cyl'
+    else:
+        basemap_args['projection'] = area_def.proj_dict['proj']
     basemap_args['lon_0'] = area_def.proj_dict.get('lon_0', None)
     basemap_args['lat_0'] = area_def.proj_dict.get('lat_0', None) 
     basemap_args['lon_1'] = area_def.proj_dict.get('lon_1', None)
@@ -120,8 +124,10 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     import matplotlib.pyplot as plt
     bmap = area_def2basemap(area_def, resolution=coast_res)
     bmap.drawcoastlines()
-    bmap.drawmeridians(np.arange(0, 360, num_meridians))
-    bmap.drawparallels(np.arange(-90, 90, num_parallels))
+    if num_meridians > 0:
+        bmap.drawmeridians(np.arange(-180, 180, num_meridians))
+    if num_parallels > 0:
+        bmap.drawparallels(np.arange(-90, 90, num_parallels))
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
         col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
         plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)

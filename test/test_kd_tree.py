@@ -57,7 +57,6 @@ class Test(unittest.TestCase):
                                      100000, reduce_data=False, segments=1)
         self.failUnless(res[0] == 2, 'Failed to calculate nearest neighbour')
     
-    @tmp
     def test_gauss_base(self):
         if sys.version_info < (2, 6):
             res = kd_tree.resample_gauss(self.tswath, \
@@ -256,6 +255,26 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_gauss(swath_def, data.ravel(),\
                                              self.area_def, 50000, 25000, segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')        
+        cross_sum = res.sum()        
+        expected = 4872.81050892
+        self.failUnlessAlmostEqual(cross_sum, expected,\
+                                   msg='Swath resampling gauss failed')
+
+    @tmp
+    def test_gauss_fwhm(self):
+        data = numpy.fromfunction(lambda y, x: (y + x)*10**-5, (5000, 100))        
+        lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
+        lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        if sys.version_info < (2, 6):
+            res = kd_tree.resample_gauss(swath_def, data.ravel(),\
+                                         self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res = kd_tree.resample_gauss(swath_def, data.ravel(),\
+                                             self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
                 self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
                 self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')        
         cross_sum = res.sum()        
