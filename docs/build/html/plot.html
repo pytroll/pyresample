@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,14 +12,15 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
+        URL_ROOT:    '',
         VERSION:     '0.7.11',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
     <link rel="next" title="Reduction of swath data" href="data_reduce.html" />
@@ -31,8 +34,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="N">next</a> |</li>
@@ -62,7 +65,7 @@ The function <strong>plot.save_quicklook</strong> saves the Basemap image direct
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">tb37v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">tb37v</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span>
 <span class="gp">... </span>                                     <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
@@ -95,7 +98,7 @@ Assuming the file <strong>/tmp/areas.cfg</strong> has the following area definit
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">tb37v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;pc_world&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;pc_world&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">tb37v</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pr</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">save_quicklook</span><span class="p">(</span><span class="s">&#39;/tmp/tb37v_pc.png&#39;</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">num_meridians</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_parallels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Tb 37v (K)&#39;</span><span class="p">)</span>
@@ -119,7 +122,7 @@ AreaDefintion using the <strong>plot.area_def2basemap(area_def, **kwargs)</stron
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">tb37v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">parse_area_file</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ease_sh&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">tb37v</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span>
 <span class="gp">... </span>                                     <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
@@ -157,43 +160,43 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Plotting with pyresample and Basemap</a><ul>
-<li><a class="reference external" href="#displaying-data-quickly">Displaying data quickly</a><ul>
-<li><a class="reference external" href="#the-plate-carree-projection">The Plate Carree projection</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plotting with pyresample and Basemap</a><ul>
+<li><a class="reference internal" href="#displaying-data-quickly">Displaying data quickly</a><ul>
+<li><a class="reference internal" href="#the-plate-carree-projection">The Plate Carree projection</a></li>
 </ul>
 </li>
-<li><a class="reference external" href="#getting-a-basemap-object">Getting a Basemap object</a></li>
-<li><a class="reference external" href="#limitations">Limitations</a></li>
+<li><a class="reference internal" href="#getting-a-basemap-object">Getting a Basemap object</a></li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="preproc.html"
-                                  title="previous chapter">Preprocessing of grids</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="data_reduce.html"
-                                  title="next chapter">Reduction of swath data</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/plot.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preproc.html"
+                        title="previous chapter">Preprocessing of grids</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data_reduce.html"
+                        title="next chapter">Reduction of swath data</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/plot.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -205,7 +208,7 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
@@ -217,8 +220,8 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

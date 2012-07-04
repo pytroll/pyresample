@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,14 +12,15 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
+        URL_ROOT:    '',
         VERSION:     '0.7.11',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
     <link rel="next" title="Geographic filtering" href="geo_filter.html" />
@@ -31,8 +34,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="geo_filter.html" title="Geographic filtering"
              accesskey="N">next</a> |</li>
@@ -339,45 +342,45 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Geometry definitions</a><ul>
-<li><a class="reference external" href="#areadefinition">AreaDefinition</a><ul>
-<li><a class="reference external" href="#pyresample-utils">pyresample.utils</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Geometry definitions</a><ul>
+<li><a class="reference internal" href="#areadefinition">AreaDefinition</a><ul>
+<li><a class="reference internal" href="#pyresample-utils">pyresample.utils</a></li>
 </ul>
 </li>
-<li><a class="reference external" href="#griddefinition">GridDefinition</a></li>
-<li><a class="reference external" href="#swathdefinition">SwathDefinition</a></li>
-<li><a class="reference external" href="#geographic-coordinates-and-boundaries">Geographic coordinates and boundaries</a></li>
-<li><a class="reference external" href="#spherical-geometry-operations">Spherical geometry operations</a></li>
+<li><a class="reference internal" href="#griddefinition">GridDefinition</a></li>
+<li><a class="reference internal" href="#swathdefinition">SwathDefinition</a></li>
+<li><a class="reference internal" href="#geographic-coordinates-and-boundaries">Geographic coordinates and boundaries</a></li>
+<li><a class="reference internal" href="#spherical-geometry-operations">Spherical geometry operations</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="installation.html"
-                                  title="previous chapter">Installing Pyresample</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="geo_filter.html"
-                                  title="next chapter">Geographic filtering</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/geo_def.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">Installing Pyresample</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="geo_filter.html"
+                        title="next chapter">Geographic filtering</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/geo_def.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -389,7 +392,7 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="geo_filter.html" title="Geographic filtering"
@@ -401,8 +404,8 @@ are calculated based on the corners of a GeometryDefinition (2D SwathDefinition 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,14 +12,15 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
+        URL_ROOT:    '',
         VERSION:     '0.7.11',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
     <link rel="next" title="Using multiple processor cores" href="multi.html" />
@@ -31,8 +34,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="multi.html" title="Using multiple processor cores"
              accesskey="N">next</a> |</li>
@@ -232,46 +235,46 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Resampling of swath data</a><ul>
-<li><a class="reference external" href="#pyresample-image">pyresample.image</a></li>
-<li><a class="reference external" href="#pyresample-swath">pyresample.swath</a><ul>
-<li><a class="reference external" href="#resample-nearest">resample_nearest</a></li>
-<li><a class="reference external" href="#resample-gauss">resample_gauss</a></li>
-<li><a class="reference external" href="#resample-custom">resample_custom</a></li>
-<li><a class="reference external" href="#resampling-from-neighbour-info">Resampling from neighbour info</a></li>
-<li><a class="reference external" href="#segmented-resampling">Segmented resampling</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Resampling of swath data</a><ul>
+<li><a class="reference internal" href="#pyresample-image">pyresample.image</a></li>
+<li><a class="reference internal" href="#pyresample-swath">pyresample.swath</a><ul>
+<li><a class="reference internal" href="#resample-nearest">resample_nearest</a></li>
+<li><a class="reference internal" href="#resample-gauss">resample_gauss</a></li>
+<li><a class="reference internal" href="#resample-custom">resample_custom</a></li>
+<li><a class="reference internal" href="#resampling-from-neighbour-info">Resampling from neighbour info</a></li>
+<li><a class="reference internal" href="#segmented-resampling">Segmented resampling</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="grid.html"
-                                  title="previous chapter">Resampling of gridded data</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="multi.html"
-                                  title="next chapter">Using multiple processor cores</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/swath.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="grid.html"
+                        title="previous chapter">Resampling of gridded data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="multi.html"
+                        title="next chapter">Using multiple processor cores</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/swath.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -283,7 +286,7 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="multi.html" title="Using multiple processor cores"
@@ -295,8 +298,8 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

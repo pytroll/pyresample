@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,14 +12,15 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
+        URL_ROOT:    '',
         VERSION:     '0.7.11',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
     <link rel="next" title="Resampling of swath data" href="swath.html" />
@@ -31,8 +34,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
              accesskey="N">next</a> |</li>
@@ -166,7 +169,7 @@ distance to search for a neighbour for each point in the target grid. The unit i
 <h3>Constructor arguments<a class="headerlink" href="#constructor-arguments" title="Permalink to this headline">¶</a></h3>
 <p>The full list of constructor arguments:</p>
 <blockquote>
-<strong>ImageContainerQuick</strong>:</blockquote>
+<div><strong>ImageContainerQuick</strong>:</div></blockquote>
 <ul class="simple">
 <li>image_data : Dataset. Masked arrays can be used.</li>
 <li>image_data : Geometry definition.</li>
@@ -175,7 +178,7 @@ distance to search for a neighbour for each point in the target grid. The unit i
 <li>segments (optional) : Number of segments to split resampling in. Defaults to auto estimation.</li>
 </ul>
 <blockquote>
-<strong>ImageContainerNearest</strong>:</blockquote>
+<div><strong>ImageContainerNearest</strong>:</div></blockquote>
 <ul class="simple">
 <li>image_data : Dataset. Masked arrays can be used.</li>
 <li>image_data : Geometry definition.</li>
@@ -189,7 +192,7 @@ distance to search for a neighbour for each point in the target grid. The unit i
 </div>
 <div class="section" id="preprocessing-of-grid-resampling">
 <h3>Preprocessing of grid resampling<a class="headerlink" href="#preprocessing-of-grid-resampling" title="Permalink to this headline">¶</a></h3>
-<p>For preprocessing of grid resampling see <a class="reference external" href="preproc.html#preproc"><em>Preprocessing of grids</em></a></p>
+<p>For preprocessing of grid resampling see <a class="reference internal" href="preproc.html#preproc"><em>Preprocessing of grids</em></a></p>
 </div>
 </div>
 </div>
@@ -200,44 +203,44 @@ distance to search for a neighbour for each point in the target grid. The unit i
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Resampling of gridded data</a><ul>
-<li><a class="reference external" href="#pyresample-image">pyresample.image</a><ul>
-<li><a class="reference external" href="#multi-channel-images">Multi channel images</a></li>
-<li><a class="reference external" href="#segmented-resampling">Segmented resampling</a></li>
-<li><a class="reference external" href="#constructor-arguments">Constructor arguments</a></li>
-<li><a class="reference external" href="#preprocessing-of-grid-resampling">Preprocessing of grid resampling</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Resampling of gridded data</a><ul>
+<li><a class="reference internal" href="#pyresample-image">pyresample.image</a><ul>
+<li><a class="reference internal" href="#multi-channel-images">Multi channel images</a></li>
+<li><a class="reference internal" href="#segmented-resampling">Segmented resampling</a></li>
+<li><a class="reference internal" href="#constructor-arguments">Constructor arguments</a></li>
+<li><a class="reference internal" href="#preprocessing-of-grid-resampling">Preprocessing of grid resampling</a></li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="geo_filter.html"
-                                  title="previous chapter">Geographic filtering</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="swath.html"
-                                  title="next chapter">Resampling of swath data</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/grid.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="geo_filter.html"
+                        title="previous chapter">Geographic filtering</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="swath.html"
+                        title="next chapter">Resampling of swath data</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/grid.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -249,7 +252,7 @@ distance to search for a neighbour for each point in the target grid. The unit i
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
@@ -261,8 +264,8 @@ distance to search for a neighbour for each point in the target grid. The unit i
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

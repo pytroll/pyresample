@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,14 +12,15 @@
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
+        URL_ROOT:    '',
         VERSION:     '0.7.11',
-        COLLAPSE_MODINDEX: false,
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
@@ -30,8 +33,8 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
@@ -47,7 +50,7 @@
   <div class="section" id="pyresample-api">
 <h1>pyresample API<a class="headerlink" href="#pyresample-api" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-geometry">
-<h2>pyresample.geometry<a class="headerlink" href="#module-geometry" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-geometry"></span><h2>pyresample.geometry<a class="headerlink" href="#module-geometry" title="Permalink to this headline">¶</a></h2>
 <p>Classes for geometry operations</p>
 <dl class="class">
 <dt id="geometry.AreaDefinition">
@@ -57,7 +60,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -87,7 +90,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -128,7 +131,7 @@ left pixel in units of pixels..</dd>
 <p>Properties:
 proj4_string : str</p>
 <blockquote>
-Projection defined as Proj.4 string</blockquote>
+<div>Projection defined as Proj.4 string</div></blockquote>
 <dl class="docutils">
 <dt>lons <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid lons</dd>
@@ -149,7 +152,7 @@ Projection defined as Proj.4 string</blockquote>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -159,7 +162,7 @@ col : int</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -174,7 +177,7 @@ col : int</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -187,7 +190,7 @@ Defaults to the nprocs set when instantiating object</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -205,7 +208,7 @@ Defaults to the nprocs set when instantiating object</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -218,7 +221,8 @@ Defaults to the nprocs set when instantiating object</dd>
 <dl class="attribute">
 <dt id="geometry.AreaDefinition.proj4_string">
 <tt class="descname">proj4_string</tt><a class="headerlink" href="#geometry.AreaDefinition.proj4_string" title="Permalink to this definition">¶</a></dt>
-<dd>Returns projection definition as Proj.4 string</dd></dl>
+<dd><p>Returns projection definition as Proj.4 string</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -229,13 +233,15 @@ Defaults to the nprocs set when instantiating object</dd>
 <dl class="attribute">
 <dt id="geometry.BaseDefinition.corners">
 <tt class="descname">corners</tt><a class="headerlink" href="#geometry.BaseDefinition.corners" title="Permalink to this definition">¶</a></dt>
-<dd>Returns the corners of the current area.</dd></dl>
+<dd><p>Returns the corners of the current area.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="geometry.BaseDefinition.get_area">
 <tt class="descname">get_area</tt><big>(</big><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_area" title="Permalink to this definition">¶</a></dt>
-<dd>Get the area of the convex area defined by the corners of the current
-area.</dd></dl>
+<dd><p>Get the area of the convex area defined by the corners of the current
+area.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="geometry.BaseDefinition.get_cartesian_coords">
@@ -245,7 +251,7 @@ area.</dd></dl>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -258,7 +264,7 @@ Defaults to the nprocs set when instantiating object</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -273,7 +279,7 @@ Defaults to the nprocs set when instantiating object</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -283,7 +289,7 @@ col : int</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -293,7 +299,8 @@ col : int</p>
 <dl class="method">
 <dt id="geometry.BaseDefinition.get_lonlats">
 <tt class="descname">get_lonlats</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#geometry.BaseDefinition.get_lonlats" title="Permalink to this definition">¶</a></dt>
-<dd>Retrieve lons and lats of geometry definition</dd></dl>
+<dd><p>Retrieve lons and lats of geometry definition</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="geometry.BaseDefinition.intersection">
@@ -304,7 +311,7 @@ with <em>other</em>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -316,7 +323,7 @@ with <em>other</em>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -331,7 +338,7 @@ with <em>other</em>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -343,7 +350,7 @@ with <em>other</em>.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -360,7 +367,7 @@ circles.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -372,7 +379,7 @@ circles.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -384,13 +391,15 @@ circles.</p>
 <dl class="class">
 <dt id="geometry.Boundary">
 <em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">Boundary</tt><big>(</big><em>side1</em>, <em>side2</em>, <em>side3</em>, <em>side4</em><big>)</big><a class="headerlink" href="#geometry.Boundary" title="Permalink to this definition">¶</a></dt>
-<dd>Container for geometry boundary.
-Labelling starts in upper left corner and proceeds clockwise</dd></dl>
+<dd><p>Container for geometry boundary.
+Labelling starts in upper left corner and proceeds clockwise</p>
+</dd></dl>
 
 <dl class="class">
 <dt id="geometry.CoordinateDefinition">
 <em class="property">class </em><tt class="descclassname">geometry.</tt><tt class="descname">CoordinateDefinition</tt><big>(</big><em>lons</em>, <em>lats</em>, <em>nprocs=1</em><big>)</big><a class="headerlink" href="#geometry.CoordinateDefinition" title="Permalink to this definition">¶</a></dt>
-<dd>Base class for geometry definitions defined by lons and lats only</dd></dl>
+<dd><p>Base class for geometry definitions defined by lons and lats only</p>
+</dd></dl>
 
 <dl class="class">
 <dt id="geometry.GridDefinition">
@@ -400,7 +409,7 @@ Labelling starts in upper left corner and proceeds clockwise</dd></dl>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -408,12 +417,12 @@ Labelling starts in upper left corner and proceeds clockwise</dd></dl>
 lats : numpy array
 nprocs : int, optional</p>
 <blockquote>
-Number of processor cores to be used for calculations.</blockquote>
+<div>Number of processor cores to be used for calculations.</div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -426,7 +435,7 @@ Number of processor cores to be used for calculations.</blockquote>
 <p>Properties:
 lons : object</p>
 <blockquote>
-Grid lons</blockquote>
+<div>Grid lons</div></blockquote>
 <dl class="docutils">
 <dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Grid lats</dd>
@@ -443,7 +452,7 @@ Grid lons</blockquote>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -451,12 +460,12 @@ Grid lons</blockquote>
 lats : numpy array
 nprocs : int, optional</p>
 <blockquote>
-Number of processor cores to be used for calculations.</blockquote>
+<div>Number of processor cores to be used for calculations.</div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -471,7 +480,7 @@ Number of processor cores to be used for calculations.</blockquote>
 <p>Properties:
 lons : object</p>
 <blockquote>
-Swath lons</blockquote>
+<div>Swath lons</div></blockquote>
 <dl class="docutils">
 <dt>lats <span class="classifier-delimiter">:</span> <span class="classifier">object</span></dt>
 <dd>Swath lats</dd>
@@ -482,7 +491,7 @@ Swath lons</blockquote>
 
 </div>
 <div class="section" id="module-image">
-<h2>pyresample.image<a class="headerlink" href="#module-image" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-image"></span><h2>pyresample.image<a class="headerlink" href="#module-image" title="Permalink to this headline">¶</a></h2>
 <p>Handles resampling of images with assigned geometry definitions</p>
 <dl class="class">
 <dt id="image.ImageContainer">
@@ -493,7 +502,7 @@ Allows indexing with linesample arrays.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -513,7 +522,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -535,7 +544,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -549,7 +558,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -562,12 +571,14 @@ with undetermined pixels masked</dd>
 <dl class="method">
 <dt id="image.ImageContainer.get_array_from_neighbour_info">
 <tt class="descname">get_array_from_neighbour_info</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#image.ImageContainer.get_array_from_neighbour_info" title="Permalink to this definition">¶</a></dt>
-<dd>Base method for resampling from preprocessed data.</dd></dl>
+<dd><p>Base method for resampling from preprocessed data.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="image.ImageContainer.resample">
 <tt class="descname">resample</tt><big>(</big><em>target_geo_def</em><big>)</big><a class="headerlink" href="#image.ImageContainer.resample" title="Permalink to this definition">¶</a></dt>
-<dd>Base method for resampling</dd></dl>
+<dd><p>Base method for resampling</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -580,7 +591,7 @@ Allows nearest neighbour resampling to new geometry definition.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -611,7 +622,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -642,7 +653,7 @@ approach</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -654,7 +665,7 @@ approach</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -675,7 +686,7 @@ Allows quick resampling within area.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -698,7 +709,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Attributes:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Attributes :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -725,7 +736,7 @@ approach in projection coordinates.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -737,7 +748,7 @@ approach in projection coordinates.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -751,7 +762,7 @@ approach in projection coordinates.</p>
 
 </div>
 <div class="section" id="module-grid">
-<h2>pyresample.grid<a class="headerlink" href="#module-grid" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-grid"></span><h2>pyresample.grid<a class="headerlink" href="#module-grid" title="Permalink to this headline">¶</a></h2>
 <p>Resample image from one projection to another 
 using nearest neighbour method in cartesian projection coordinate systems</p>
 <dl class="function">
@@ -762,7 +773,7 @@ using nearest neighbour method in cartesian projection coordinate systems</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -782,7 +793,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -801,7 +812,7 @@ using nearest neighbour method in cartesian projection coordinate systems.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -825,7 +836,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -843,7 +854,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -861,7 +872,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -880,7 +891,7 @@ projection coordinate systems.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -905,7 +916,7 @@ If set to None an estimate will be calculated.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -917,7 +928,7 @@ If set to None an estimate will be calculated.</dd>
 
 </div>
 <div class="section" id="module-kd_tree">
-<h2>pyresample.kd_tree<a class="headerlink" href="#module-kd_tree" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-kd-tree"></span><h2>pyresample.kd_tree<a class="headerlink" href="#module-kd_tree" title="Permalink to this headline">¶</a></h2>
 <p>Handles reprojection of geolocated data. Several types of resampling are supported</p>
 <dl class="function">
 <dt id="kd_tree.get_neighbour_info">
@@ -927,7 +938,7 @@ If set to None an estimate will be calculated.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -960,14 +971,14 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
 <p>(valid_input_index, valid_output_index, 
 index_array, distance_array) : tuple of numpy arrays</p>
 <blockquote>
-Neighbour resampling info</blockquote>
+<div>Neighbour resampling info</div></blockquote>
 </dd></dl>
 
 <dl class="function">
@@ -978,7 +989,7 @@ Neighbour resampling info</blockquote>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1012,7 +1023,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1030,7 +1041,7 @@ with undetermined pixels masked</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1071,7 +1082,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1089,7 +1100,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1129,7 +1140,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1147,7 +1158,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1181,7 +1192,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1193,12 +1204,13 @@ If set to None an estimate will be calculated</dd>
 
 </div>
 <div class="section" id="module-utils">
-<h2>pyresample.utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-utils"></span><h2>pyresample.utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
 <p>Utility functions for pyresample</p>
 <dl class="exception">
 <dt id="utils.AreaNotFound">
 <em class="property">exception </em><tt class="descclassname">utils.</tt><tt class="descname">AreaNotFound</tt><a class="headerlink" href="#utils.AreaNotFound" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised when specified are is no found in file</dd></dl>
+<dd><p>Exception raised when specified are is no found in file</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="utils.fwhm2sigma">
@@ -1208,7 +1220,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1220,7 +1232,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1238,7 +1250,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1256,7 +1268,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1271,7 +1283,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1287,7 +1299,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1302,7 +1314,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1326,7 +1338,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1344,7 +1356,7 @@ If set to None an estimate will be calculated</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1359,7 +1371,7 @@ regions in the file are returned</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1372,7 +1384,7 @@ If several area names are specified a list of AreaDefinition objects is returned
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Raises:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Raises :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1390,7 +1402,7 @@ If several area names are specified a list of AreaDefinition objects is returned
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1405,7 +1417,7 @@ regions in the file are returned</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1417,7 +1429,7 @@ regions in the file are returned</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Raises:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Raises :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1429,7 +1441,7 @@ regions in the file are returned</dd>
 
 </div>
 <div class="section" id="module-data_reduce">
-<h2>pyresample.data_reduce<a class="headerlink" href="#module-data_reduce" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-data-reduce"></span><h2>pyresample.data_reduce<a class="headerlink" href="#module-data_reduce" title="Permalink to this headline">¶</a></h2>
 <p>Reduce data sets based on geographical information</p>
 <dl class="function">
 <dt id="data_reduce.get_valid_index_from_cartesian_grid">
@@ -1440,7 +1452,7 @@ data by comparison with cartesian grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1460,7 +1472,7 @@ data by comparison with cartesian grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1473,8 +1485,9 @@ data by comparison with cartesian grid</p>
 <dl class="function">
 <dt id="data_reduce.get_valid_index_from_lonlat_boundaries">
 <tt class="descclassname">data_reduce.</tt><tt class="descname">get_valid_index_from_lonlat_boundaries</tt><big>(</big><em>boundary_lons</em>, <em>boundary_lats</em>, <em>lons</em>, <em>lats</em>, <em>radius_of_influence</em><big>)</big><a class="headerlink" href="#data_reduce.get_valid_index_from_lonlat_boundaries" title="Permalink to this definition">¶</a></dt>
-<dd>Find relevant indices from grid boundaries using the 
-winding number theorem</dd></dl>
+<dd><p>Find relevant indices from grid boundaries using the 
+winding number theorem</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="data_reduce.get_valid_index_from_lonlat_grid">
@@ -1485,7 +1498,7 @@ data by comparison with lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1505,7 +1518,7 @@ data by comparison with lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1524,7 +1537,7 @@ cartesian grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1544,7 +1557,7 @@ cartesian grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1563,7 +1576,7 @@ lon lat boundary</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1585,7 +1598,7 @@ lon lat boundary</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1604,7 +1617,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1626,7 +1639,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1638,7 +1651,7 @@ lon lat grid</p>
 
 </div>
 <div class="section" id="module-plot">
-<h2>pyresample.plot<a class="headerlink" href="#module-plot" title="Permalink to this headline">¶</a></h2>
+<span id="pyresample-plot"></span><h2>pyresample.plot<a class="headerlink" href="#module-plot" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="plot.area_def2basemap">
 <tt class="descclassname">plot.</tt><tt class="descname">area_def2basemap</tt><big>(</big><em>area_def</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#plot.area_def2basemap" title="Permalink to this definition">¶</a></dt>
@@ -1647,7 +1660,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1661,7 +1674,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1676,7 +1689,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1688,7 +1701,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1703,7 +1716,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1739,7 +1752,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Parameters :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1765,7 +1778,7 @@ lon lat grid</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"></td>
+<tr class="field"><th class="field-name">Returns :</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>
@@ -1781,41 +1794,41 @@ lon lat grid</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">pyresample API</a><ul>
-<li><a class="reference external" href="#module-geometry">pyresample.geometry</a></li>
-<li><a class="reference external" href="#module-image">pyresample.image</a></li>
-<li><a class="reference external" href="#module-grid">pyresample.grid</a></li>
-<li><a class="reference external" href="#module-kd_tree">pyresample.kd_tree</a></li>
-<li><a class="reference external" href="#module-utils">pyresample.utils</a></li>
-<li><a class="reference external" href="#module-data_reduce">pyresample.data_reduce</a></li>
-<li><a class="reference external" href="#module-plot">pyresample.plot</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyresample API</a><ul>
+<li><a class="reference internal" href="#module-geometry">pyresample.geometry</a></li>
+<li><a class="reference internal" href="#module-image">pyresample.image</a></li>
+<li><a class="reference internal" href="#module-grid">pyresample.grid</a></li>
+<li><a class="reference internal" href="#module-kd_tree">pyresample.kd_tree</a></li>
+<li><a class="reference internal" href="#module-utils">pyresample.utils</a></li>
+<li><a class="reference internal" href="#module-data_reduce">pyresample.data_reduce</a></li>
+<li><a class="reference internal" href="#module-plot">pyresample.plot</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="data_reduce.html"
-                                  title="previous chapter">Reduction of swath data</a></p>
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/API.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data_reduce.html"
+                        title="previous chapter">Reduction of swath data</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/API.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -1827,7 +1840,7 @@ lon lat grid</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
@@ -1836,8 +1849,8 @@ lon lat grid</p>
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2010, Esben S. Nielsen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

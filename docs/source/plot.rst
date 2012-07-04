@@ -17,7 +17,7 @@ The function **plot.save_quicklook** saves the Basemap image directly to file.
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.parse_area_file('/tmp/areas.cfg', 'ease_sh')[0]
+ >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ease_sh')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
  ...                                      radius_of_influence=20000, fill_value=None)
@@ -51,7 +51,7 @@ Assuming the file **/tmp/areas.cfg** has the following area definition:
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.parse_area_file('/tmp/areas.cfg', 'pc_world')[0]
+ >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'pc_world')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> pr.plot.save_quicklook('/tmp/tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
@@ -75,7 +75,7 @@ AreaDefintion using the **plot.area_def2basemap(area_def, **kwargs)** function.
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.parse_area_file('/tmp/areas.cfg', 'ease_sh')[0]
+ >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ease_sh')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
  ...                                      radius_of_influence=20000, fill_value=None)
