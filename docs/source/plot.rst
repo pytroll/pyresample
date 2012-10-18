@@ -1,6 +1,6 @@
 Plotting with pyresample and Basemap
 ====================================
-Pyresample supports basic integration with Basemap (http://matplotlib.sourceforge.net/basemap/doc/html/).
+Pyresample supports basic integration with Basemap (http://matplotlib.sourceforge.net/basemap).
 
 Displaying data quickly
 -----------------------
@@ -58,6 +58,38 @@ Assuming the file **/tmp/areas.cfg** has the following area definition:
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_pc.png
+
+
+The Globe projections
++++++++++++++++++++++
+From v0.7.12 pyresample can use the geos, ortho and nsper projections with Basemap.
+Assuming the file **/tmp/areas.cfg** has the following area definition for an ortho projection area:
+
+.. code-block:: bash
+
+ REGION: ortho {
+   NAME:    Ortho globe
+   PCS_ID:  ortho_globe
+   PCS_DEF: proj=ortho, a=6370997.0, lon_0=40, lat_0=-40
+   XSIZE: 640
+   YSIZE: 480
+   AREA_EXTENT:  (-10000000, -10000000, 10000000, 10000000) 
+ };
+
+**Example usage:**
+
+ >>> import numpy as np 
+ >>> import pyresample as pr
+ >>> lons = np.zeros(1000)
+ >>> lats = np.arange(-80, -90, -0.01)
+ >>> tb37v = np.arange(1000)
+ >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ortho')
+ >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
+ >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
+ >>> pr.plot.save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+
+Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
+  .. image:: _static/images/tb37v_ortho.png
 
 
 Getting a Basemap object

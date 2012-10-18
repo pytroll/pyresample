@@ -149,7 +149,7 @@ The full list of constructor arguments:
 * image_data : Dataset. Masked arrays can be used.
 * image_data : Geometry definition.
 * radius_of_influence : Cut off radius in meters when considering neighbour pixels.
-* epsilon (optional) : Allowed uncertainty in meters.
+* epsilon (optional) : The distance to a found value is guaranteed to be no further than (1 + eps) times the distance to the correct neighbour.
 * fill_value (optional) : Fill value for undefined pixels. Defaults to 0. If set to **None** they will be masked out.
 * reduce_data (optional) : Apply geographic reduction of dataset before resampling. Defaults to True
 * nprocs (optional) : Number of processor cores to use. Defaults to 1.

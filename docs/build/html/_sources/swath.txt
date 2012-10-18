@@ -64,7 +64,7 @@ Example showing how to resample a generated swath dataset to a grid using neares
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> result = kd_tree.resample_nearest(swath_def, data,
- ... area_def, radius_of_influence=50000, epsilon=100)
+ ... area_def, radius_of_influence=50000, epsilon=0.5)
 
 If the arguments **swath_def** and **area_def** where switched (and **data** matched the dimensions of **area_def**) the grid of **area_def**
 would be resampled to the swath defined by **swath_def**.  
@@ -72,7 +72,7 @@ would be resampled to the swath defined by **swath_def**.
 Note the keyword arguments:
 
 * **radius_of_influence**: The radius around each grid pixel in meters to search for neighbours in the swath.
-* **epsilon**: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.
+* **epsilon**: The distance to a found value is guaranteed to be no further than (1 + eps) times the distance to the correct neighbour. Allowing for uncertanty decreases execution time.
 
 If **data** is a masked array the mask will follow the neighbour pixel assignment.
 
@@ -99,7 +99,7 @@ with the channels along the last axis e.g. (rows, cols, channels). Note: the con
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> result = kd_tree.resample_nearest(swath_def, data,
- ... area_def, radius_of_influence=50000, epsilon=100) 
+ ... area_def, radius_of_influence=50000) 
 
 For nearest neighbour resampling the class **image.ImageContainerNearest** can be used as well as **kd_tree.resample_nearest**
 
@@ -107,7 +107,7 @@ resample_gauss
 **************
 
 Function for resampling using nearest Gussian weighting. The Gauss weigh function is defined as exp(-dist^2/sigma^2).
-
+Note the pyresample sigma is **not** the standard deviation of the gaussian.
 Example showing how to resample a generated swath dataset to a grid using Gaussian weighting:
 
 .. doctest::

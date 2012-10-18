@@ -3,13 +3,16 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Resampling of swath data &mdash; pyresample v0.7.11 documentation</title>
+    <title>Resampling of swath data &mdash; pyresample 0.7.11 documentation</title>
+    
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
@@ -22,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
+    <link rel="top" title="pyresample 0.7.11 documentation" href="index.html" />
     <link rel="next" title="Using multiple processor cores" href="multi.html" />
     <link rel="prev" title="Resampling of gridded data" href="grid.html" /> 
   </head>
@@ -42,7 +45,7 @@
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.11 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.7.11 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -102,7 +105,7 @@ assigned a fill value set <strong>fill_value=None</strong> when calling the <str
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
-<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If the arguments <strong>swath_def</strong> and <strong>area_def</strong> where switched (and <strong>data</strong> matched the dimensions of <strong>area_def</strong>) the grid of <strong>area_def</strong>
@@ -110,7 +113,7 @@ would be resampled to the swath defined by <strong>swath_def</strong>.</p>
 <p>Note the keyword arguments:</p>
 <ul class="simple">
 <li><strong>radius_of_influence</strong>: The radius around each grid pixel in meters to search for neighbours in the swath.</li>
-<li><strong>epsilon</strong>: Allowed uncertainty in nearest neighbour search in meters. Allowing for uncertanty decreases execution time.</li>
+<li><strong>epsilon</strong>: The distance to a found value is guaranteed to be no further than (1 + eps) times the distance to the correct neighbour. Allowing for uncertanty decreases execution time.</li>
 </ul>
 <p>If <strong>data</strong> is a masked array the mask will follow the neighbour pixel assignment.</p>
 <p>If there are multiple channels in the dataset the <strong>data</strong> argument should be of the shape of the lons and lat arrays
@@ -133,15 +136,16 @@ with the channels along the last axis e.g. (rows, cols, channels). Note: the con
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromfunction</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="mi">75</span> <span class="o">-</span> <span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="o">=</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="o">=</span><span class="n">lats</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
-<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">50000</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For nearest neighbour resampling the class <strong>image.ImageContainerNearest</strong> can be used as well as <strong>kd_tree.resample_nearest</strong></p>
 </div>
 <div class="section" id="resample-gauss">
 <h3>resample_gauss<a class="headerlink" href="#resample-gauss" title="Permalink to this headline">¶</a></h3>
-<p>Function for resampling using nearest Gussian weighting. The Gauss weigh function is defined as exp(-dist^2/sigma^2).</p>
-<p>Example showing how to resample a generated swath dataset to a grid using Gaussian weighting:</p>
+<p>Function for resampling using nearest Gussian weighting. The Gauss weigh function is defined as exp(-dist^2/sigma^2).
+Note the pyresample sigma is <strong>not</strong> the standard deviation of the gaussian.
+Example showing how to resample a generated swath dataset to a grid using Gaussian weighting:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyresample</span> <span class="kn">import</span> <span class="n">kd_tree</span><span class="p">,</span> <span class="n">geometry</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">AreaDefinition</span><span class="p">(</span><span class="s">&#39;areaD&#39;</span><span class="p">,</span> <span class="s">&#39;Europe (3km, HRV, VTC)&#39;</span><span class="p">,</span> <span class="s">&#39;areaD&#39;</span><span class="p">,</span>
@@ -265,7 +269,7 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -294,12 +298,12 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.11 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.7.11 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

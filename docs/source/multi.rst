@@ -24,7 +24,7 @@ Example of resampling in parallel using 4 processes:
  >>> lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> result = kd_tree.resample_nearest(swath_def, data.ravel(),
- ... area_def, radius_of_influence=50000, epsilon=100, nprocs=4)
+ ... area_def, radius_of_influence=50000, nprocs=4)
 
 Note: Do not use more processes than available processor cores. As there is a process creation overhead 
 there might be neglible performance improvement using say 8 compared to 4 processor cores. 
