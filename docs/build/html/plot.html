@@ -3,17 +3,20 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Plotting with pyresample and Basemap &mdash; pyresample v0.7.11 documentation</title>
+    <title>Plotting with pyresample and Basemap &mdash; pyresample 0.7.12 documentation</title>
+    
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.7.11',
+        VERSION:     '0.7.12',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample v0.7.11 documentation" href="index.html" />
+    <link rel="top" title="pyresample 0.7.12 documentation" href="index.html" />
     <link rel="next" title="Reduction of swath data" href="data_reduce.html" />
     <link rel="prev" title="Preprocessing of grids" href="preproc.html" /> 
   </head>
@@ -42,7 +45,7 @@
         <li class="right" >
           <a href="preproc.html" title="Preprocessing of grids"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.11 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.7.12 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,7 +56,7 @@
             
   <div class="section" id="plotting-with-pyresample-and-basemap">
 <h1>Plotting with pyresample and Basemap<a class="headerlink" href="#plotting-with-pyresample-and-basemap" title="Permalink to this headline">¶</a></h1>
-<p>Pyresample supports basic integration with Basemap (<a class="reference external" href="http://matplotlib.sourceforge.net/basemap/doc/html/">http://matplotlib.sourceforge.net/basemap/doc/html/</a>).</p>
+<p>Pyresample supports basic integration with Basemap (<a class="reference external" href="http://matplotlib.sourceforge.net/basemap">http://matplotlib.sourceforge.net/basemap</a>).</p>
 <div class="section" id="displaying-data-quickly">
 <h2>Displaying data quickly<a class="headerlink" href="#displaying-data-quickly" title="Permalink to this headline">¶</a></h2>
 <p>Pyresample has some convenience functions for displaying data from a single channel.
@@ -107,6 +110,38 @@ Assuming the file <strong>/tmp/areas.cfg</strong> has the following area definit
 <dl class="docutils">
 <dt>Assuming <strong>lons</strong>, <strong>lats</strong> and <strong>tb37v</strong> are initialized with real data the result might look something like this:</dt>
 <dd><img alt="_images/tb37v_pc.png" class="first last" src="_images/tb37v_pc.png" />
+</dd>
+</dl>
+</div>
+<div class="section" id="the-globe-projections">
+<h3>The Globe projections<a class="headerlink" href="#the-globe-projections" title="Permalink to this headline">¶</a></h3>
+<p>From v0.7.12 pyresample can use the geos, ortho and nsper projections with Basemap.
+Assuming the file <strong>/tmp/areas.cfg</strong> has the following area definition for an ortho projection area:</p>
+<div class="highlight-bash"><div class="highlight"><pre>REGION: ortho <span class="o">{</span>
+  NAME:    Ortho globe
+  PCS_ID:  ortho_globe
+  PCS_DEF: <span class="nv">proj</span><span class="o">=</span>ortho, <span class="nv">a</span><span class="o">=</span>6370997.0, <span class="nv">lon_0</span><span class="o">=</span>40, <span class="nv">lat_0</span><span class="o">=</span>-40
+  XSIZE: 640
+  YSIZE: 480
+  AREA_EXTENT:  <span class="o">(</span>-10000000, -10000000, 10000000, 10000000<span class="o">)</span>
+<span class="o">}</span>;
+</pre></div>
+</div>
+<p><strong>Example usage:</strong></p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyresample</span> <span class="kn">as</span> <span class="nn">pr</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tb37v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">load_area</span><span class="p">(</span><span class="s">&#39;/tmp/areas.cfg&#39;</span><span class="p">,</span> <span class="s">&#39;ortho&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">swath_def</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">SwathDefinition</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">pr</span><span class="o">.</span><span class="n">kd_tree</span><span class="o">.</span><span class="n">resample_nearest</span><span class="p">(</span><span class="n">swath_def</span><span class="p">,</span> <span class="n">tb37v</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span> <span class="n">radius_of_influence</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pr</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">save_quicklook</span><span class="p">(</span><span class="s">&#39;tb37v_ortho.png&#39;</span><span class="p">,</span> <span class="n">area_def</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">num_meridians</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_parallels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&#39;Tb 37v (K)&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Assuming <strong>lons</strong>, <strong>lats</strong> and <strong>tb37v</strong> are initialized with real data the result might look something like this:</dt>
+<dd><img alt="_images/tb37v_ortho.png" class="first last" src="_images/tb37v_ortho.png" />
 </dd>
 </dl>
 </div>
@@ -165,6 +200,7 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
 <li><a class="reference internal" href="#">Plotting with pyresample and Basemap</a><ul>
 <li><a class="reference internal" href="#displaying-data-quickly">Displaying data quickly</a><ul>
 <li><a class="reference internal" href="#the-plate-carree-projection">The Plate Carree projection</a></li>
+<li><a class="reference internal" href="#the-globe-projections">The Globe projections</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#getting-a-basemap-object">Getting a Basemap object</a></li>
@@ -187,7 +223,7 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" size="18" />
+      <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
@@ -216,12 +252,12 @@ If the ellipsoid is not defined in terms of &#8216;ellps&#8217;, &#8216;a&#8217;
         <li class="right" >
           <a href="preproc.html" title="Preprocessing of grids"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample v0.7.11 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.7.12 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Esben S. Nielsen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>

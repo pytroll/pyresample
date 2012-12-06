@@ -79,37 +79,76 @@ def area_def2basemap(area_def, **kwargs):
     from mpl_toolkits.basemap import Basemap
     try:
         a, b = ellps2axis(area_def.proj_dict['ellps'])
+        rsphere = (a, b)
     except KeyError:
         try:
             a = float(area_def.proj_dict['a'])
             try:
                 b = float(area_def.proj_dict['b'])
+                rsphere = (a, b)
             except KeyError:
-                b = a
+                rsphere = a
         except KeyError:
             # Default to WGS84 ellipsoid
             a, b = ellps2axis('wgs84')
+            rsphere = (a, b)
             
     # Add projection specific basemap args to args passed to function    
     basemap_args = kwargs
-    llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat = area_def.area_extent_ll
-    basemap_args['llcrnrlon'] = llcrnrlon
-    basemap_args['llcrnrlat'] = llcrnrlat
-    basemap_args['urcrnrlon'] = urcrnrlon
-    basemap_args['urcrnrlat'] = urcrnrlat
+    basemap_args['rsphere'] = rsphere
+
+    if area_def.proj_dict['proj'] in ('ortho', 'geos', 'nsper'):
+        llcrnrx, llcrnry, urcrnrx, urcrnry = area_def.area_extent
+        basemap_args['llcrnrx'] = llcrnrx
+        basemap_args['llcrnry'] = llcrnry
+        basemap_args['urcrnrx'] = urcrnrx
+        basemap_args['urcrnry'] = urcrnry
+    else:
+        llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat = area_def.area_extent_ll
+        basemap_args['llcrnrlon'] = llcrnrlon
+        basemap_args['llcrnrlat'] = llcrnrlat
+        basemap_args['urcrnrlon'] = urcrnrlon
+        basemap_args['urcrnrlat'] = urcrnrlat
+
     if area_def.proj_dict['proj'] == 'eqc':
         basemap_args['projection'] = 'cyl'
     else:
         basemap_args['projection'] = area_def.proj_dict['proj']
-    basemap_args['lon_0'] = area_def.proj_dict.get('lon_0', None)
-    basemap_args['lat_0'] = area_def.proj_dict.get('lat_0', None) 
-    basemap_args['lon_1'] = area_def.proj_dict.get('lon_1', None)
-    basemap_args['lat_1'] = area_def.proj_dict.get('lat_1', None)
-    basemap_args['lon_2'] = area_def.proj_dict.get('lon_2', None)
-    basemap_args['lat_2'] = area_def.proj_dict.get('lat_3', None)    
-    basemap_args['lat_ts'] = area_def.proj_dict.get('lat_ts', None)
-    basemap_args['rsphere'] = (a, b)
-    
+    try:
+        basemap_args['lon_0'] = float(area_def.proj_dict['lon_0'])
+    except KeyError:
+        pass
+
+    try:
+        basemap_args['lat_0'] = float(area_def.proj_dict['lat_0']) 
+    except KeyError:
+        pass
+
+    try:
+        basemap_args['lon_1'] = float(area_def.proj_dict['lon_1']) 
+    except KeyError:
+        pass  
+
+    try:
+        basemap_args['lat_1'] = float(area_def.proj_dict['lat_1']) 
+    except KeyError:
+        pass  
+
+    try:
+        basemap_args['lon_2'] = float(area_def.proj_dict['lon_2']) 
+    except KeyError:
+        pass
+
+    try:
+        basemap_args['lat_2'] = float(area_def.proj_dict['lat_2']) 
+    except KeyError:
+        pass
+
+    try:
+        basemap_args['lat_ts'] = float(area_def.proj_dict['lat_ts']) 
+    except KeyError:
+        pass
+
     return Basemap(**basemap_args) 
             
 def _get_quicklook(area_def, data, vmin=None, vmax=None, 

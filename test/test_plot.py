@@ -25,7 +25,8 @@ class Test(unittest.TestCase):
                                    msg='Failed to get semi-major axis of ellipsis')
         self.failUnlessAlmostEqual(b, 6356752.3142451793, 
                                    msg='Failed to get semi-minor axis of ellipsis')
-        
+    
+    @tmp   
     def test_area_def2basemap(self):
         area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
                                          'test_files', 'areas.cfg'), 'ease_sh')[0]
@@ -34,7 +35,7 @@ class Test(unittest.TestCase):
                         bmap.rmajor == 6371228.0, 
                         'Failed to create Basemap object')
 
-    @tmp	        
+    	        
     def test_plate_carreeplot(self):
         import matplotlib
         matplotlib.use('Agg')
@@ -52,6 +53,17 @@ class Test(unittest.TestCase):
         matplotlib.use('Agg')
         area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
                                             'test_files', 'areas.cfg'), 'ease_sh')[0]
+        swath_def = pr.geometry.SwathDefinition(self.lons, self.lats)
+        result = pr.kd_tree.resample_nearest(swath_def, self.tb37v, area_def, 
+                                             radius_of_influence=20000, 
+                                             fill_value=None)		
+        plt = pr.plot._get_quicklook(area_def, result)
+
+    def test_orthoplot(self):
+        import matplotlib
+        matplotlib.use('Agg')
+        area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
+                                            'test_files', 'areas.cfg'), 'ortho')[0]
         swath_def = pr.geometry.SwathDefinition(self.lons, self.lats)
         result = pr.kd_tree.resample_nearest(swath_def, self.tb37v, area_def, 
                                              radius_of_influence=20000, 
