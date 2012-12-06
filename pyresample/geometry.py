@@ -184,7 +184,7 @@ class BaseDefinition(object):
                                 rtol=5e-9) and
                     np.allclose(self.lats.data, other.lats.data, atol=1e-6, 
                                 rtol=5e-9))
-        except AttributeError:
+        except (AttributeError, ValueError):
             return False
     
     def __ne__(self, other):
