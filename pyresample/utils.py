@@ -113,10 +113,10 @@ def parse_area_file(area_file_name, *regions):
 
 def _create_area(area_id, area_content):
     """Parse area configuration"""
-    
-    config_obj = ConfigObj(area_content.replace(':', '=').replace('{', ''). 
-                           replace('};', '').splitlines())
 
+    config_obj = area_content.replace('{', '').replace('};', '')
+    config_obj = ConfigObj([line.replace(':', '=', 1)
+                            for line in config_obj.splitlines()])
     config = config_obj.dict()
     config['REGION'] = area_id
     try:
