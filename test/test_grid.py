@@ -65,7 +65,7 @@ class Test(unittest.TestCase):
         cols = np.array([[25, 26], [27, 28]])
         res = grid.get_image_from_linesample(rows, cols, data)
         expected = np.array([[25., 52.], [81., 112.]])
-        self.failUnless(np.array_equal(res, expected), 'Linesample failed')
+        self.assertTrue(np.array_equal(res, expected), 'Linesample failed')
         
     def test_linesample_multi(self):
         data1 = np.fromfunction(lambda y, x: y*x, (40, 40))
@@ -82,7 +82,7 @@ class Test(unittest.TestCase):
                                  [52., 104., 156.]],
                                [[81., 162., 243.],
                                 [ 112.,  224.,  336.]]])
-        self.failUnless(np.array_equal(res, expected), 'Linesample failed')
+        self.assertTrue(np.array_equal(res, expected), 'Linesample failed')
         
     def test_from_latlon(self):
         data = np.fromfunction(lambda y, x: y*x, (800, 800))
@@ -111,21 +111,21 @@ class Test(unittest.TestCase):
                              260820.,  277564.,  293664.,  310408.],
                             [ 161696.,  179470.,  197100.,  214834.,  232320.,  250236.,
                              267448.,  285090.,  302328.,  320229.]])
-        self.failUnless(np.array_equal(res, expected), 'Sampling from lat lon failed')
+        self.assertTrue(np.array_equal(res, expected), 'Sampling from lat lon failed')
         
     def test_proj_coords(self):
         #res = grid.get_proj_coords(self.area_def2)
         res = self.area_def2.get_proj_coords()
         cross_sum = res[0].sum() + res[1].sum() 
         expected = 2977965.9999999963
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Calculation of proj coords failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Calculation of proj coords failed')
         
     def test_latlons(self):
         #res = grid.get_lonlats(self.area_def2)
         res = self.area_def2.get_lonlats()
         cross_sum = res[0].sum() + res[1].sum() 
         expected = 1440.8280578215431
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Calculation of lat lons failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Calculation of lat lons failed')
         
     @mp
     def test_latlons_mp(self):
@@ -133,7 +133,7 @@ class Test(unittest.TestCase):
         res = self.area_def2.get_lonlats(nprocs=2)
         cross_sum = res[0].sum() + res[1].sum() 
         expected = 1440.8280578215431
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Calculation of lat lons failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Calculation of lat lons failed')
         
     def test_resampled_image(self):
         data = np.fromfunction(lambda y, x: y*x*10**-6, (3712, 3712))
@@ -142,7 +142,7 @@ class Test(unittest.TestCase):
         res = grid.get_resampled_image(target_def, source_def, data, segments=1)
         cross_sum = res.sum()
         expected = 399936.39392500359
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Resampling of image failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Resampling of image failed')
 
     @tmp
     def test_generate_linesample(self):
@@ -152,7 +152,7 @@ class Test(unittest.TestCase):
         res = data[row_indices, col_indices]
         cross_sum = res.sum()
         expected = 399936.39392500359
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Generate linesample failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Generate linesample failed')
         self.failIf(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16, 
                     'Generate linesample failed. Downcast to uint16 expected')
     
@@ -164,14 +164,14 @@ class Test(unittest.TestCase):
         res = grid.get_resampled_image(target_def, source_def, data, nprocs=2, segments=1)
         cross_sum = res.sum()
         expected = 399936.39392500359
-        self.failUnlessAlmostEqual(cross_sum, expected, msg='Resampling of image mp failed')
+        self.assertAlmostEqual(cross_sum, expected, msg='Resampling of image mp failed')
         
     def test_single_lonlat(self):
         lon, lat = self.area_def.get_lonlat(400, 400)
-        self.failUnlessAlmostEqual(lon, 5.5028467120975835, msg='Resampling of single lon failed')
-        self.failUnlessAlmostEqual(lat, 52.566998432390619, msg='Resampling of single lat failed')
+        self.assertAlmostEqual(lon, 5.5028467120975835, msg='Resampling of single lon failed')
+        self.assertAlmostEqual(lat, 52.566998432390619, msg='Resampling of single lat failed')
         
     def test_proj4_string(self):
         proj4_string = self.area_def.proj4_string
-        self.failUnlessEqual(proj4_string, '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00')
+        self.assertEqual(proj4_string, '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00')
     

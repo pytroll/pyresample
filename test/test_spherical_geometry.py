@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import numpy as np
 import unittest
 import math
@@ -36,13 +38,11 @@ class TestOverlap(unittest.TestCase):
         point = Coordinate(-180, 12)
         self.assertFalse(point in area)
 
-        #point = Coordinate(0, 192)
-        self.failUnlessRaises(ValueError, Coordinate, 0, 192)
+        with self.assertRaises(ValueError):
+            point = Coordinate(0, 192)
 
-        #point = Coordinate(0, -192)
-        self.failUnlessRaises(ValueError, Coordinate, 15, -91)
-        #self.assertFalse(point in area)
-
+        with self.assertRaises(ValueError):
+            point = Coordinate(15, -91)
 
         # case of the north pole
         lons = np.array([[0, 90], [-90, 180]])

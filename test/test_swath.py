@@ -37,7 +37,7 @@ class Test(unittest.TestCase):
                 self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
                 self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
        
-        self.failUnlessAlmostEqual(res.sum() / 100., 668848.082208, 1, 
+        self.assertAlmostEqual(res.sum() / 100., 668848.082208, 1, 
                                 msg='Failed self mapping swath for 1 channel')
                            
     def test_self_map_multi(self):
@@ -53,10 +53,10 @@ class Test(unittest.TestCase):
                 self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
                 self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
                 
-        self.failUnlessAlmostEqual(res[:, 0].sum() / 100., 668848.082208, 1, 
+        self.assertAlmostEqual(res[:, 0].sum() / 100., 668848.082208, 1, 
                                    msg='Failed self mapping swath multi for channel 1')
-        self.failUnlessAlmostEqual(res[:, 1].sum() / 100., 668848.082208, 1, 
+        self.assertAlmostEqual(res[:, 1].sum() / 100., 668848.082208, 1, 
                                    msg='Failed self mapping swath multi for channel 2')
-        self.failUnlessAlmostEqual(res[:, 2].sum() / 100., 668848.082208, 1, 
+        self.assertAlmostEqual(res[:, 2].sum() / 100., 668848.082208, 1, 
                                    msg='Failed self mapping swath multi for channel 3')            
     

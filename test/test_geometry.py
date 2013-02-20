@@ -30,7 +30,7 @@ class Test(unittest.TestCase):
         lons2 = area_def.lons[:]
         lats2 = area_def.lats[:]
         lons3, lats3 = area_def.get_lonlats()
-        self.failUnless(np.array_equal(lons1, lons2) and np.array_equal(lats1, lats2), 
+        self.assertTrue(np.array_equal(lons1, lons2) and np.array_equal(lats1, lats2), 
                         'method and property lon lat calculation does not give same result')
         self.failIf(id(lons3) != id(lons2) or id(lats3) != id(lats2), 
                     'Caching of lon lat arrays does not work')
@@ -65,9 +65,9 @@ class Test(unittest.TestCase):
                                      1490031.3600000001],
                                      lons=lons, lats=lats)
         lon, lat = area_def.get_lonlat(400, 400)
-        self.failUnlessAlmostEqual(lon, 5.5028467120975835, 
+        self.assertAlmostEqual(lon, 5.5028467120975835, 
                                    msg='lon retrieval from precomputated grid failed')
-        self.failUnlessAlmostEqual(lat, 52.566998432390619, 
+        self.assertAlmostEqual(lat, 52.566998432390619, 
                                    msg='lat retrieval from precomputated grid failed')
         
     @tmp
@@ -86,7 +86,7 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
         cart_coords = area_def.get_cartesian_coords()
-        self.failUnlessAlmostEqual(cart_coords.sum(), 5872039989466.8457031,
+        self.assertAlmostEqual(cart_coords.sum(), 5872039989466.8457031,
                                    places=1,
                                    msg='Calculation of cartesian coordinates failed')
         
@@ -298,7 +298,7 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def_concat = swath_def1.concatenate(swath_def2) 
         expected = np.array([1, 2, 3, 4, 5, 6])
-        self.failUnless(np.array_equal(swath_def_concat.lons.data, expected) and 
+        self.assertTrue(np.array_equal(swath_def_concat.lons.data, expected) and 
                         np.array_equal(swath_def_concat.lons.data, expected), 
                         'Failed to concatenate 1D swaths')
 
@@ -311,7 +311,7 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def_concat = swath_def1.concatenate(swath_def2) 
         expected = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.failUnless(np.array_equal(swath_def_concat.lons.data, expected) and 
+        self.assertTrue(np.array_equal(swath_def_concat.lons.data, expected) and 
                         np.array_equal(swath_def_concat.lons.data, expected), 
                         'Failed to concatenate 2D swaths')
         
@@ -324,7 +324,7 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def1.append(swath_def2) 
         expected = np.array([1, 2, 3, 4, 5, 6])
-        self.failUnless(np.array_equal(swath_def1.lons.data, expected) and 
+        self.assertTrue(np.array_equal(swath_def1.lons.data, expected) and 
                         np.array_equal(swath_def1.lons.data, expected), 
                         'Failed to append 1D swaths')
 
@@ -337,7 +337,7 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def1.append(swath_def2) 
         expected = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.failUnless(np.array_equal(swath_def1.lons.data, expected) and 
+        self.assertTrue(np.array_equal(swath_def1.lons.data, expected) and 
                         np.array_equal(swath_def1.lons.data, expected), 
                         'Failed to append 2D swaths')
 
@@ -361,7 +361,7 @@ class Test(unittest.TestCase):
         grid_filter = geo_filter.GridFilter(filter_area, filter)
         valid_index = grid_filter.get_valid_index(swath_def)        
         expected = np.array([1, 0, 0, 1])
-        self.failUnless(np.array_equal(valid_index, expected), 'Failed to find grid filter')
+        self.assertTrue(np.array_equal(valid_index, expected), 'Failed to find grid filter')
     
     def test_grid_filter(self):
         lons = np.array([-170, -30, 30, 170])
@@ -384,10 +384,10 @@ class Test(unittest.TestCase):
         grid_filter = geo_filter.GridFilter(filter_area, filter)
         swath_def_f, data_f = grid_filter.filter(swath_def, data)
         expected = np.array([1, 4])
-        self.failUnless(np.array_equal(data_f, expected), 'Failed grid filtering data')
+        self.assertTrue(np.array_equal(data_f, expected), 'Failed grid filtering data')
         expected_lons = np.array([-170, 170])
         expected_lats = np.array([20, -80])
-        self.failUnless(np.array_equal(swath_def_f.lons[:], expected_lons) 
+        self.assertTrue(np.array_equal(swath_def_f.lons[:], expected_lons) 
                         and np.array_equal(swath_def_f.lats[:], expected_lats), 
                         'Failed finding grid filtering lon lats')
         
@@ -417,10 +417,10 @@ class Test(unittest.TestCase):
         grid_filter = geo_filter.GridFilter(filter_area, filter, nprocs=2)
         swath_def_f, data_f = grid_filter.filter(swath_def, data)
         expected = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]])        
-        self.failUnless(np.array_equal(data_f, expected), 'Failed 2D grid filtering data')
+        self.assertTrue(np.array_equal(data_f, expected), 'Failed 2D grid filtering data')
         expected_lons = np.array([-170, 170, -170, 170])
         expected_lats = np.array([20, -80, 25, -75])
-        self.failUnless(np.array_equal(swath_def_f.lons[:], expected_lons) 
+        self.assertTrue(np.array_equal(swath_def_f.lons[:], expected_lons) 
                         and np.array_equal(swath_def_f.lats[:], expected_lats), 
                         'Failed finding 2D grid filtering lon lats')
     
@@ -443,7 +443,7 @@ class Test(unittest.TestCase):
         expected = np.array([-1250912.72, -1010912.72, -770912.72, 
                              -530912.72, -290912.72, -50912.72, 189087.28, 
                              429087.28, 669087.28, 909087.28])
-        self.failUnless(np.allclose(proj_x_boundary.side1, expected), 
+        self.assertTrue(np.allclose(proj_x_boundary.side1, expected), 
                         'Failed to find proejction boundary')
         
     def test_area_extent_ll(self):
@@ -460,7 +460,7 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        self.failUnlessAlmostEqual(sum(area_def.area_extent_ll), 
+        self.assertAlmostEqual(sum(area_def.area_extent_ll), 
                                    122.06448093539757, 5, 
                                    'Failed to get lon and lats of area extent')
         
