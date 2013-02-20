@@ -23,7 +23,7 @@ import imp
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
-requirements = ['pyproj', 'numpy', 'scipy', 'configobj']
+requirements = ['pyproj', 'numpy', 'configobj']
 if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
     requirements.append('multiprocessing')

@@ -21,16 +21,31 @@ import types
 import warnings
 
 import numpy as np
-import scipy.spatial as sp
 
 import geometry
 import data_reduce
 import _spatial_mp
-        
 
+kd_tree_name = None
+try:
+    from pykdtree.kdtree import KDTree
+    kd_tree_name = 'pykdtree'
+except ImportError:
+    try:
+        import scipy.spatial as sp
+        kd_tree_name = 'scipy.spatial'        
+    except ImportError:
+        raise ImportError('Either pykdtree or scipy must be available')
+        
 class EmptyResult(Exception):
     pass
-        
+
+def which_kdtree():
+    """Returns the name of the kdtree used for resampling
+    """
+    
+    return kd_tree_name
+
 def resample_nearest(source_geo_def, data, target_geo_def,
                      radius_of_influence, epsilon=0,
                      fill_value=0, reduce_data=True, nprocs=1, segments=None):
@@ -439,7 +454,9 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
         raise EmptyResult('No valid data points in input data')
 
     #Build kd-tree on input
-    if nprocs > 1:        
+    if kd_tree_name == 'pykdtree':
+        resample_kdtree = KDTree(input_coords)
+    elif nprocs > 1:        
         resample_kdtree = _spatial_mp.cKDTree_MP(input_coords,
                                                  nprocs=nprocs)
     else:

@@ -463,4 +463,16 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(sum(area_def.area_extent_ll), 
                                    122.06448093539757, 5, 
                                    'Failed to get lon and lats of area extent')
+    
+    @tmp                               
+    def test_latlong_area(self):
+        area_def = geometry.AreaDefinition('', '', '', 
+                                   {'proj': 'latlong'}, 
+                                    360, 180,
+                                    [-180, -90, 180, 90])
+        lons, lats = area_def.get_lonlats()
+        self.assertEqual(lons[0, 0], -179.5)
+        self.assertEqual(lats[0, 0], 89.5)
+        
+        
         
