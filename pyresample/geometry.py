@@ -654,6 +654,33 @@ class AreaDefinition(BaseDefinition):
         
         return not self.__eq__(other)
                
+    def get_xy_from_lonlat(self, lon, lat):
+        """Retrieve closest x and y coordinates (column, row indices) for the
+        specified geolocation (lon,lat) if inside area
+        
+        :Parameters:
+        row : int
+        col : int
+        
+        :Returns:
+        (x, y) : tuple of ints
+        """
+
+        pobj = _spatial_mp.Proj(self.proj4_string)
+        upl_x = self.area_extent[0]
+        upl_y = self.area_extent[3]
+        xscale = abs(self.area_extent[2] - self.area_extent[0]) / self.x_size
+        yscale = abs(self.area_extent[1] - self.area_extent[3]) / self.y_size
+
+        xm_, ym_ = pobj(lon, lat)
+        x__ = (xm_ - upl_x) / xscale
+        y__ = (upl_y - ym_) / yscale
+
+        #raise NotImplementedError('Getting column,row indices from ' +
+        #                          'lon,lat is not implemented yet!')
+        
+        return int(x__ + 0.5), int(y__ + 0.5)
+
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
         
