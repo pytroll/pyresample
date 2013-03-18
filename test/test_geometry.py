@@ -10,7 +10,7 @@ def tmp(f):
     return f
 
 class Test(unittest.TestCase):
-    
+    """Unit testing the geometry and geo_filter modules"""
     def test_lonlat_caching(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -474,5 +474,88 @@ class Test(unittest.TestCase):
         self.assertEqual(lons[0, 0], -179.5)
         self.assertEqual(lats[0, 0], 89.5)
         
-        
-        
+
+    def test_get_xy_from_lonlat(self):
+        """Test the function get_xy_from_lonlat"""
+        from pyresample import utils
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 2
+        y_size = 2
+        area_extent = [1000000, 0, 1050000, 50000] 
+        proj_dict = {"proj": 'laea', 
+                     'lat_0': '60', 
+                     'lon_0': '0', 
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = utils.get_area_def(area_id, 
+                                      area_name, 
+                                      proj_id, 
+                                      proj_dict, 
+                                      x_size, y_size, 
+                                      area_extent)
+        import pyproj
+        p__ = pyproj.Proj(proj_dict)
+        lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
+        lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
+        lon_ll, lat_ll = p__(1000000, 0, inverse=True)
+        lon_lr, lat_lr = p__(1050000, 0, inverse=True)
+        print lon_ul, lat_ul
+        print lon_ur, lat_ur
+        print lon_ll, lat_ll
+        print lon_lr, lat_lr
+
+        eps_lonlat = 0.01
+        eps_meters = 100
+        x__, y__ = area_def.get_xy_from_lonlat(lon_ul + eps_lonlat, 
+                                               lat_ul - eps_lonlat)
+        x_expect, y_expect = 0, 0
+        self.assertEqual(x__, x_expect)
+        self.assertEqual(y__, y_expect)
+        x__, y__ = area_def.get_xy_from_lonlat(lon_ur - eps_lonlat, 
+                                               lat_ur - eps_lonlat)
+        self.assertEqual(x__, 1)
+        self.assertEqual(y__, 0)
+        x__, y__ = area_def.get_xy_from_lonlat(lon_ll + eps_lonlat, 
+                                               lat_ll + eps_lonlat)
+        self.assertEqual(x__, 0)
+        self.assertEqual(y__, 1)
+        x__, y__ = area_def.get_xy_from_lonlat(lon_lr - eps_lonlat, 
+                                               lat_lr + eps_lonlat)
+        self.assertEqual(x__, 1)
+        self.assertEqual(y__, 1)
+
+        lon, lat = p__(1025000 - eps_meters, 25000 - eps_meters, inverse=True)
+        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        self.assertEqual(x__, 0)
+        self.assertEqual(y__, 1)
+
+        lon, lat = p__(1025000 + eps_meters, 25000 - eps_meters, inverse=True)
+        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        self.assertEqual(x__, 1)
+        self.assertEqual(y__, 1)
+
+        lon, lat = p__(1025000 - eps_meters, 25000 + eps_meters, inverse=True)
+        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        self.assertEqual(x__, 0)
+        self.assertEqual(y__, 0)
+
+        lon, lat = p__(1025000 + eps_meters, 25000 + eps_meters, inverse=True)
+        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        self.assertEqual(x__, 1)
+        self.assertEqual(y__, 0)
+
+        lon, lat = p__(999000, -10, inverse=True)
+        raised = False
+        try:
+            x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        except ValueError:
+            raised = True
+        self.assertTrue(raised)
+
+        raised = False
+        try:
+            x__, y__ = area_def.get_xy_from_lonlat(0., 0.)
+        except ValueError:
+            raised = True
+        self.assertTrue(raised)

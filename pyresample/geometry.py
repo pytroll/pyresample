@@ -1,6 +1,6 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
+#Copyright (C) 2010, 2013  Esben S. Nielsen
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -669,17 +669,19 @@ class AreaDefinition(BaseDefinition):
         pobj = _spatial_mp.Proj(self.proj4_string)
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
-        xscale = abs(self.area_extent[2] - self.area_extent[0]) / self.x_size
-        yscale = abs(self.area_extent[1] - self.area_extent[3]) / self.y_size
+        xscale = abs(self.area_extent[2] - 
+                     self.area_extent[0]) / float(self.x_size)
+        yscale = abs(self.area_extent[1] - 
+                     self.area_extent[3]) / float(self.y_size)
 
         xm_, ym_ = pobj(lon, lat)
         x__ = (xm_ - upl_x) / xscale
         y__ = (upl_y - ym_) / yscale
+        if ((x__ < 0 or x__ > self.x_size) or
+            (y__ < 0 or y__ > self.y_size)):
+            raise ValueError('Point outside area:( %f %f)' % (x__, y__))
 
-        #raise NotImplementedError('Getting column,row indices from ' +
-        #                          'lon,lat is not implemented yet!')
-        
-        return int(x__ + 0.5), int(y__ + 0.5)
+        return int(x__), int(y__)
 
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
