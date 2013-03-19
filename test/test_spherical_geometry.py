@@ -18,7 +18,7 @@ class TestOverlap(unittest.TestCase):
         if sys.version_info < (2, 7):
             self.assertRaises(exception, call_able, *args)
         else:
-            with self.assertRaises(ValueError):
+            with self.assertRaises(exception):
                 call_able(*args)
 
     def test_inside(self):
