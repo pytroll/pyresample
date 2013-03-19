@@ -11,6 +11,16 @@ def tmp(f):
 
 class Test(unittest.TestCase):
     """Unit testing the geometry and geo_filter modules"""
+    def assert_raises(self, exception, call_able, *args):
+        """assertRaises() has changed from py2.6 to 2.7! Here is an attempt to
+        cover both"""
+        import sys
+        if sys.version_info < (2, 7):
+            self.assertRaises(exception, call_able, *args)
+        else:
+            with self.assertRaises(exception):
+                call_able(*args)
+
     def test_lonlat_caching(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -553,9 +563,10 @@ class Test(unittest.TestCase):
             raised = True
         self.assertTrue(raised)
 
-        raised = False
-        try:
-            x__, y__ = area_def.get_xy_from_lonlat(0., 0.)
-        except ValueError:
-            raised = True
-        self.assertTrue(raised)
+        self.assert_raises(ValueError, area_def.get_xy_from_lonlat, 0., 0.)
+        #raised = False
+        #try:
+        #    x__, y__ = area_def.get_xy_from_lonlat(0., 0.)
+        #except ValueError:
+        #    raised = True
+        #self.assertTrue(raised)
