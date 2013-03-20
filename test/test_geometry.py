@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import unittest
 
 import numpy as np
@@ -96,9 +98,9 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
         cart_coords = area_def.get_cartesian_coords()
-        self.assertAlmostEqual(cart_coords.sum(), 5872039989466.8457031,
-                                   places=1,
-                                   msg='Calculation of cartesian coordinates failed')
+        exp = 5872039989466.8457031
+        self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp, 
+                        msg='Calculation of cartesian coordinates failed')
         
     def test_cartesian_caching(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
