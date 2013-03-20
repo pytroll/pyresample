@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Resampling of swath data &mdash; pyresample 0.7.13 documentation</title>
+    <title>Resampling of swath data &mdash; pyresample 0.8.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.7.13',
+        VERSION:     '0.8.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,8 +25,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample 0.7.13 documentation" href="index.html" />
-    <link rel="next" title="Using multiple processor cores" href="multi.html" />
+    <link rel="top" title="pyresample 0.8.0 documentation" href="index.html" />
+    <link rel="next" title="Using multiple processor cores and pykdtree" href="multi.html" />
     <link rel="prev" title="Resampling of gridded data" href="grid.html" /> 
   </head>
   <body>
@@ -40,12 +40,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="multi.html" title="Using multiple processor cores"
+          <a href="multi.html" title="Using multiple processor cores and pykdtree"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -230,6 +230,10 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
 <h3>Segmented resampling<a class="headerlink" href="#segmented-resampling" title="Permalink to this headline">¶</a></h3>
 <p>Whenever a resampling function takes the keyword argument <strong>segments</strong> the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of <strong>segments</strong> is left to default pyresample will estimate the number of segments to use.</p>
 </div>
+<div class="section" id="speedup-using-pykdtree">
+<h3>Speedup using pykdtree<a class="headerlink" href="#speedup-using-pykdtree" title="Permalink to this headline">¶</a></h3>
+<p>pykdtree can be used instead of scipy to gain significant speedup for large datasets. See <a class="reference internal" href="multi.html#multi"><em>Using multiple processor cores and pykdtree</em></a>.</p>
+</div>
 </div>
 </div>
 
@@ -249,6 +253,7 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
 <li><a class="reference internal" href="#resample-custom">resample_custom</a></li>
 <li><a class="reference internal" href="#resampling-from-neighbour-info">Resampling from neighbour info</a></li>
 <li><a class="reference internal" href="#segmented-resampling">Segmented resampling</a></li>
+<li><a class="reference internal" href="#speedup-using-pykdtree">Speedup using pykdtree</a></li>
 </ul>
 </li>
 </ul>
@@ -260,7 +265,7 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
                         title="previous chapter">Resampling of gridded data</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="multi.html"
-                        title="next chapter">Using multiple processor cores</a></p>
+                        title="next chapter">Using multiple processor cores and pykdtree</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/swath.txt"
@@ -293,16 +298,16 @@ grid point (the nearest neighbour). Also note <strong>distance_array</strong> is
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="multi.html" title="Using multiple processor cores"
+          <a href="multi.html" title="Using multiple processor cores and pykdtree"
              >next</a> |</li>
         <li class="right" >
           <a href="grid.html" title="Resampling of gridded data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2010, Esben S. Nielsen.
+        &copy; Copyright 2013, Esben S. Nielsen.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

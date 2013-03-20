@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pyresample API &mdash; pyresample 0.7.13 documentation</title>
+    <title>pyresample API &mdash; pyresample 0.8.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.7.13',
+        VERSION:     '0.8.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample 0.7.13 documentation" href="index.html" />
+    <link rel="top" title="pyresample 0.8.0 documentation" href="index.html" />
     <link rel="prev" title="Reduction of swath data" href="data_reduce.html" /> 
   </head>
   <body>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -219,6 +219,32 @@ Defaults to the nprocs set when instantiating object</dd>
 <dt>(target_x, target_y) <span class="classifier-delimiter">:</span> <span class="classifier">tuple of numpy arrays</span></dt>
 <dd>Grids of area x- and y-coordinates in projection units</dd>
 </dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="geometry.AreaDefinition.get_xy_from_lonlat">
+<tt class="descname">get_xy_from_lonlat</tt><big>(</big><em>lon</em>, <em>lat</em><big>)</big><a class="headerlink" href="#geometry.AreaDefinition.get_xy_from_lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve closest x and y coordinates (column, row indices) for the
+specified geolocation (lon,lat) if inside area</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>row : int
+col : int</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns :</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<p>(x, y) : tuple of ints</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1205,6 +1231,12 @@ If set to None an estimate will be calculated</dd>
 </dl>
 </dd></dl>
 
+<dl class="function">
+<dt id="kd_tree.which_kdtree">
+<tt class="descclassname">kd_tree.</tt><tt class="descname">which_kdtree</tt><big>(</big><big>)</big><a class="headerlink" href="#kd_tree.which_kdtree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the name of the kdtree used for resampling</p>
+</dd></dl>
+
 </div>
 <div class="section" id="module-utils">
 <span id="pyresample-utils"></span><h2>pyresample.utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
@@ -1848,11 +1880,11 @@ lon lat grid</p>
         <li class="right" >
           <a href="data_reduce.html" title="Reduction of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2010, Esben S. Nielsen.
+        &copy; Copyright 2013, Esben S. Nielsen.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

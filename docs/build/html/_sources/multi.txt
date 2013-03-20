@@ -1,5 +1,10 @@
-Using multiple processor cores
-==============================
+.. _multi:
+
+Using multiple processor cores and pykdtree
+===========================================
+
+Multi core processing
+*********************
 
 Bottlenecks of pyresample can be executed in parallel. Parallel computing can be executed if the 
 pyresample function has the **nprocs** keyword argument. **nprocs** specifies the number of processes 
@@ -29,3 +34,24 @@ Example of resampling in parallel using 4 processes:
 Note: Do not use more processes than available processor cores. As there is a process creation overhead 
 there might be neglible performance improvement using say 8 compared to 4 processor cores. 
 Test on the actual system to determine the most sensible number of processes to use. 
+
+Using pykdtree
+**************
+
+As of pyresample v0.8.0 pykdtree can be used as backend instead of scipy. 
+This enables significant speedups for large datasets.
+
+pykdtree is used as a drop-in replacement for scipy. If it's available it will be used otherwise scipy will be used.
+To check which backend is active for your pyresample installation do:
+
+ >>> import pyresample as pr
+ >>> pr.kd_tree.which_kdtree()
+
+which returns either 'pykdtree' or 'scipy.spatial'.
+
+Please refere to pykdtree_ for installation description.
+
+If pykdtree is built with OpenMP support the number of threads is controlled with the standard OpenMP environment variable OMP_NUM_THREADS.
+The *nprocs* argument has no effect on pykdtree.
+
+.. _pykdtree: https://github.com/storpipfugl/pykdtree

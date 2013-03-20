@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Using multiple processor cores &mdash; pyresample 0.7.13 documentation</title>
+    <title>Using multiple processor cores and pykdtree &mdash; pyresample 0.8.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.7.13',
+        VERSION:     '0.8.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pyresample 0.7.13 documentation" href="index.html" />
+    <link rel="top" title="pyresample 0.8.0 documentation" href="index.html" />
     <link rel="next" title="Preprocessing of grids" href="preproc.html" />
     <link rel="prev" title="Resampling of swath data" href="swath.html" /> 
   </head>
@@ -45,7 +45,7 @@
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,8 +54,10 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="using-multiple-processor-cores">
-<h1>Using multiple processor cores<a class="headerlink" href="#using-multiple-processor-cores" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="using-multiple-processor-cores-and-pykdtree">
+<span id="multi"></span><h1>Using multiple processor cores and pykdtree<a class="headerlink" href="#using-multiple-processor-cores-and-pykdtree" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="multi-core-processing">
+<h2>Multi core processing<a class="headerlink" href="#multi-core-processing" title="Permalink to this headline">¶</a></h2>
 <p>Bottlenecks of pyresample can be executed in parallel. Parallel computing can be executed if the
 pyresample function has the <strong>nprocs</strong> keyword argument. <strong>nprocs</strong> specifies the number of processes
 to be used for calculation. If a class takes the constructor argument <strong>nprocs</strong> this sets <strong>nprocs</strong> for
@@ -82,6 +84,22 @@ all methods of this class</p>
 there might be neglible performance improvement using say 8 compared to 4 processor cores.
 Test on the actual system to determine the most sensible number of processes to use.</p>
 </div>
+<div class="section" id="using-pykdtree">
+<h2>Using pykdtree<a class="headerlink" href="#using-pykdtree" title="Permalink to this headline">¶</a></h2>
+<p>As of pyresample v0.8.0 pykdtree can be used as backend instead of scipy.
+This enables significant speedups for large datasets.</p>
+<p>pykdtree is used as a drop-in replacement for scipy. If it&#8217;s available it will be used otherwise scipy will be used.
+To check which backend is active for your pyresample installation do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyresample</span> <span class="kn">as</span> <span class="nn">pr</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pr</span><span class="o">.</span><span class="n">kd_tree</span><span class="o">.</span><span class="n">which_kdtree</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>which returns either &#8216;pykdtree&#8217; or &#8216;scipy.spatial&#8217;.</p>
+<p>Please refere to <a class="reference external" href="https://github.com/storpipfugl/pykdtree">pykdtree</a> for installation description.</p>
+<p>If pykdtree is built with OpenMP support the number of threads is controlled with the standard OpenMP environment variable OMP_NUM_THREADS.
+The <em>nprocs</em> argument has no effect on pykdtree.</p>
+</div>
+</div>
 
 
           </div>
@@ -89,6 +107,15 @@ Test on the actual system to determine the most sensible number of processes to 
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using multiple processor cores and pykdtree</a><ul>
+<li><a class="reference internal" href="#multi-core-processing">Multi core processing</a></li>
+<li><a class="reference internal" href="#using-pykdtree">Using pykdtree</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="swath.html"
                         title="previous chapter">Resampling of swath data</a></p>
@@ -132,11 +159,11 @@ Test on the actual system to determine the most sensible number of processes to 
         <li class="right" >
           <a href="swath.html" title="Resampling of swath data"
              >previous</a> |</li>
-        <li><a href="index.html">pyresample 0.7.13 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pyresample 0.8.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2010, Esben S. Nielsen.
+        &copy; Copyright 2013, Esben S. Nielsen.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
