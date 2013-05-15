@@ -7,9 +7,20 @@ import math
 from pyresample.spherical_geometry import Coordinate, Arc
 from pyresample import geometry
 
+
 class TestOverlap(unittest.TestCase):
     """Testing overlapping functions in pyresample.
     """
+    def assert_raises(self, exception, call_able, *args):
+        """assertRaises() has changed from py2.6 to 2.7! Here is an attempt to
+        cover both"""
+        import sys
+        if sys.version_info < (2, 7):
+            self.assertRaises(exception, call_able, *args)
+        else:
+            with self.assertRaises(exception):
+                call_able(*args)
+
     def test_inside(self):
         """Testing if a point is inside an area.
         """
@@ -38,11 +49,15 @@ class TestOverlap(unittest.TestCase):
         point = Coordinate(-180, 12)
         self.assertFalse(point in area)
 
-        with self.assertRaises(ValueError):
-            point = Coordinate(0, 192)
+        #with self.assertRaises(ValueError):
+        #    point = Coordinate(0, 192)
+        #self.assertRaises(ValueError, Coordinate, 0, 192)
+        self.assert_raises(ValueError, Coordinate, 0, 192)
 
-        with self.assertRaises(ValueError):
-            point = Coordinate(15, -91)
+        #with self.assertRaises(ValueError):
+        #    point = Coordinate(15, -91)
+        #self.assertRaises(ValueError, Coordinate, 15, -91)
+        self.assert_raises(ValueError, Coordinate, 15, -91)
 
         # case of the north pole
         lons = np.array([[0, 90], [-90, 180]])
