@@ -1,6 +1,6 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
+#Copyright (C) 2010, 2013  Esben S. Nielsen, Martin Raspaud
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -21,6 +21,11 @@ import numpy as np
 import pyproj
 #import scipy.spatial as sp
 import multiprocessing as mp
+
+try:
+    import numexpr as ne
+except ImportError:
+    ne = None
 
 from _multi_proc import shmem_as_ndarray, Scheduler
 
@@ -155,13 +160,17 @@ class Cartesian(object):
     
     def transform_lonlats(self, lons, lats):
     
-        coords = np.zeros((lons.size, 3))
-        lons_rad = np.radians(lons)
-        lats_rad = np.radians(lats)
-        coords[:, 0] = R*np.cos(lats_rad)*np.cos(lons_rad)
-        coords[:, 1] = R*np.cos(lats_rad)*np.sin(lons_rad)
-        coords[:, 2] = R*np.sin(lats_rad)
-        
+        coords = np.zeros((lons.size, 3), dtype=lons.dtype)
+        deg2rad = lons.dtype.type(np.pi / 180)
+        if ne:
+            coords[:, 0] = ne.evaluate("R*cos(lats*deg2rad)*cos(lons*deg2rad)")
+            coords[:, 1] = ne.evaluate("R*cos(lats*deg2rad)*sin(lons*deg2rad)")
+            coords[:, 2] = ne.evaluate("R*sin(lats*deg2rad)")
+        else:
+            coords[:, 0] = R*np.cos(lats*deg2rad)*np.cos(lons*deg2rad)
+            coords[:, 1] = R*np.cos(lats*deg2rad)*np.sin(lons*deg2rad)
+            coords[:, 2] = R*np.sin(lats*deg2rad)
+        print coords.dtype
         return coords
     
     
