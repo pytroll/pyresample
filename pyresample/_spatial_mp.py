@@ -173,7 +173,6 @@ class Cartesian(object):
             coords[:, 0] = R*np.cos(lats*deg2rad)*np.cos(lons*deg2rad)
             coords[:, 1] = R*np.cos(lats*deg2rad)*np.sin(lons*deg2rad)
             coords[:, 2] = R*np.sin(lats*deg2rad)
-        print coords.dtype
         return coords
      
 Cartesian_MP = Cartesian
