@@ -23,30 +23,7 @@ class Test(unittest.TestCase):
             with self.assertRaises(exception):
                 call_able(*args)
 
-    def test_lonlat_caching(self):
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
-                                   {'a': '6378144.0',
-                                    'b': '6356759.0',
-                                    'lat_0': '50.00',
-                                    'lat_ts': '50.00',
-                                    'lon_0': '8.00',
-                                    'proj': 'stere'}, 
-                                    800,
-                                    800,
-                                    [-1370912.72,
-                                     -909968.64000000001,
-                                     1029087.28,
-                                     1490031.3600000001])
-        
-        lons1, lats1 = area_def.get_lonlats()
-        lons2 = area_def.lons[:]
-        lats2 = area_def.lats[:]
-        lons3, lats3 = area_def.get_lonlats()
-        self.assertTrue(np.array_equal(lons1, lons2) and np.array_equal(lats1, lats2), 
-                        'method and property lon lat calculation does not give same result')
-        self.failIf(id(lons3) != id(lons2) or id(lats3) != id(lats2), 
-                    'Caching of lon lat arrays does not work')
-        
+           
     def test_lonlat_precomp(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -100,27 +77,7 @@ class Test(unittest.TestCase):
         cart_coords = area_def.get_cartesian_coords()
         exp = 5872039989466.8457031
         self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp, 
-                        msg='Calculation of cartesian coordinates failed')
-        
-    def test_cartesian_caching(self):
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
-                                   {'a': '6378144.0',
-                                    'b': '6356759.0',
-                                    'lat_0': '50.00',
-                                    'lat_ts': '50.00',
-                                    'lon_0': '8.00',
-                                    'proj': 'stere'}, 
-                                    800,
-                                    800,
-                                    [-1370912.72,
-                                     -909968.64000000001,
-                                     1029087.28,
-                                     1490031.3600000001])
-        cart_coords1 = area_def.cartesian_coords[:]
-        cart_coords2 = area_def.get_cartesian_coords()
-        self.failIf(id(cart_coords1) != id(cart_coords2), 
-                    msg='Caching of cartesian coordinates failed')
-        
+                        msg='Calculation of cartesian coordinates failed')   
     
     def test_swath(self):
         lons1 = np.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
@@ -132,28 +89,7 @@ class Test(unittest.TestCase):
         
         self.failIf(id(lons1) != id(lons2) or id(lats1) != id(lats2), 
                     msg='Caching of swath coordinates failed')
-        
-    def test_slice_caching(self):
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
-                                   {'a': '6378144.0',
-                                    'b': '6356759.0',
-                                    'lat_0': '50.00',
-                                    'lat_ts': '50.00',
-                                    'lon_0': '8.00',
-                                    'proj': 'stere'}, 
-                                    800,
-                                    800,
-                                    [-1370912.72,
-                                     -909968.64000000001,
-                                     1029087.28,
-                                     1490031.3600000001])
-        
-        cart_coords1 = area_def.cartesian_coords[200:350, 400:500]
-        cart_coords2 = area_def.cartesian_coords[200:350, 400:500]
-        
-        self.failIf(id(cart_coords1) != id(cart_coords2), 
-                    msg='Caching of sliced cartesian coordinates failed')
-        
+               
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -310,8 +246,8 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def_concat = swath_def1.concatenate(swath_def2) 
         expected = np.array([1, 2, 3, 4, 5, 6])
-        self.assertTrue(np.array_equal(swath_def_concat.lons.data, expected) and 
-                        np.array_equal(swath_def_concat.lons.data, expected), 
+        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and 
+                        np.array_equal(swath_def_concat.lons, expected), 
                         'Failed to concatenate 1D swaths')
 
     def test_concat_2d(self):
@@ -323,8 +259,8 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def_concat = swath_def1.concatenate(swath_def2) 
         expected = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.assertTrue(np.array_equal(swath_def_concat.lons.data, expected) and 
-                        np.array_equal(swath_def_concat.lons.data, expected), 
+        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and 
+                        np.array_equal(swath_def_concat.lons, expected), 
                         'Failed to concatenate 2D swaths')
         
     def test_append_1d(self):
@@ -336,8 +272,8 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def1.append(swath_def2) 
         expected = np.array([1, 2, 3, 4, 5, 6])
-        self.assertTrue(np.array_equal(swath_def1.lons.data, expected) and 
-                        np.array_equal(swath_def1.lons.data, expected), 
+        self.assertTrue(np.array_equal(swath_def1.lons, expected) and 
+                        np.array_equal(swath_def1.lons, expected), 
                         'Failed to append 1D swaths')
 
     def test_append_2d(self):
@@ -349,8 +285,8 @@ class Test(unittest.TestCase):
         swath_def2 = geometry.SwathDefinition(lons2, lats2)
         swath_def1.append(swath_def2) 
         expected = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.assertTrue(np.array_equal(swath_def1.lons.data, expected) and 
-                        np.array_equal(swath_def1.lons.data, expected), 
+        self.assertTrue(np.array_equal(swath_def1.lons, expected) and 
+                        np.array_equal(swath_def1.lons, expected), 
                         'Failed to append 2D swaths')
 
     def test_grid_filter_valid(self):
@@ -451,7 +387,7 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        proj_x_boundary = area_def.projection_x_coords.boundary
+        proj_x_boundary, proj_y_boundary = area_def.boundary_proj_coords()
         expected = np.array([-1250912.72, -1010912.72, -770912.72, 
                              -530912.72, -290912.72, -50912.72, 189087.28, 
                              429087.28, 669087.28, 909087.28])
