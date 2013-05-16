@@ -23,3 +23,20 @@ import version
 import plot
 
 __version__ = version.__version__
+
+def get_capabilities():
+    cap = {}
+
+    try:
+        from pykdtree.kdtree import KDTree
+        cap['pykdtree'] = True 
+    except ImportError:
+        cap['pykdtree'] = False
+
+    try:
+        import numexpr
+        cap['numexpr'] = True 
+    except ImportError:
+        cap['numexpr'] = False 
+
+    return cap
