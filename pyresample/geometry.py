@@ -449,7 +449,7 @@ class AreaDefinition(BaseDefinition):
                   
             
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent, nprocs=1, lons=None, lats=None):
+                 area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
@@ -494,6 +494,8 @@ class AreaDefinition(BaseDefinition):
         
         self.projection_x_coords = None
         self.projection_y_coords = None
+
+        self._dtype = dtype
         
     def __str__(self):
         #We need a sorted dictionary for a unique hash of str(self)
@@ -651,13 +653,13 @@ class AreaDefinition(BaseDefinition):
                                    self.pixel_size_x + 
                                    self.pixel_upper_left[0],
                                    (rows, 
-                                    cols))
+                                    cols), dtype=self._dtype)
     
         target_y = np.fromfunction(lambda i, j: 
                                    self.pixel_upper_left[1] - 
                                    (i + row_start) * self.pixel_size_y,
                                    (rows, 
-                                    cols))
+                                    cols), dtype=self._dtype)
         
         if is_single_value:
             #Return single values
@@ -718,7 +720,9 @@ class AreaDefinition(BaseDefinition):
             
             #Get corresponding longitude and latitude values
             lons, lats = target_proj(target_x, target_y, inverse=True,
-                                     nprocs=nprocs)        
+                                     nprocs=nprocs)
+            lons = np.asanyarray(lons, dtype=self._dtype)
+            lats = np.asanyarray(lats, dtype=self._dtype)
             
             if cache and data_slice is None:
                 # Cache the result if requested

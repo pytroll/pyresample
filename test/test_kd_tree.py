@@ -432,8 +432,9 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
-        lons, lats, data = data_reduce.swath_from_lonlat_boundaries(self.area_def.lons.boundary,
-                                                              self.area_def.lats.boundary, 
+        boundary_lonlats = self.area_def.boundary_lonlats()
+        lons, lats, data = data_reduce.swath_from_lonlat_boundaries(boundary_lonlats[0],
+                                                              boundary_lonlats[1], 
                                                               lons, lats, data, 
                                                               7000)
         cross_sum = data.sum()
@@ -445,7 +446,7 @@ class Test(unittest.TestCase):
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
         #grid = utils.generate_cartesian_grid(self.area_def)
-        grid = self.area_def.cartesian_coords[:]       
+        grid = self.area_def.get_cartesian_coords()       
         lons, lats, data = data_reduce.swath_from_cartesian_grid(grid, lons, lats, data, 
                                                                  7000)
         cross_sum = data.sum()
@@ -468,7 +469,7 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
-        cart_grid = self.area_def.cartesian_coords[:]
+        cart_grid = self.area_def.get_cartesian_coords()
         valid_index = data_reduce.get_valid_index_from_cartesian_grid(cart_grid, 
                                                                       lons, lats, 7000)
         data = data[valid_index]

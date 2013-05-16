@@ -380,11 +380,12 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
                                         geometry.AreaDefinition)) and
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition))):
-            #Resampling from swath to grid or from grid to grid    
+            #Resampling from swath to grid or from grid to grid
+            lonlat_boundary = target_geo_def.boundary_lonlats()
             valid_input_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
-                                            target_geo_def.lons.boundary,
-                                            target_geo_def.lats.boundary, 
+                                            lonlat_boundary[0],
+                                            lonlat_boundary[1], 
                                             source_lons, source_lats, 
                                             radius_of_influence)
     
@@ -409,10 +410,11 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                                          geometry.AreaDefinition)) and \
              isinstance(target_geo_def, geometry.CoordinateDefinition):
             #Resampling from grid to swath
+            lonlat_boundary = source_geo_def.boundary_lonlats()
             valid_output_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
-                                            source_geo_def.lons.boundary,
-                                            source_geo_def.lats.boundary, 
+                                            lonlat_boundary[0],
+                                            lonlat_boundary[1], 
                                             target_lons, 
                                             target_lats, 
                                             radius_of_influence)
@@ -480,7 +482,7 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
         raise TypeError('epsilon must be number')
     
     #Get sliced target coordinates
-    target_lons, target_lats = target_geo_def._get_lonlats(nprocs=nprocs, 
+    target_lons, target_lats = target_geo_def.get_lonlats(nprocs=nprocs, 
                                                            data_slice=data_slice)
     
     #Find indiced of reduced target coordinates

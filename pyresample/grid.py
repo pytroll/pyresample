@@ -207,8 +207,7 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
                                                   target_area_def.shape)):
             
             #Select data from segment with slice
-            lons = target_area_def.lons[target_slice]
-            lats = target_area_def.lats[target_slice]
+            lons, lats = target_area_def.get_lonlats(nprocs=nprocs, data_slice=target_slice)
             
             #Calculate partial result
             next_result = get_image_from_lonlats(lons, lats, source_area_def, 
