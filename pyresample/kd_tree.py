@@ -483,7 +483,7 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
     
     #Get sliced target coordinates
     target_lons, target_lats = target_geo_def.get_lonlats(nprocs=nprocs, 
-                                                           data_slice=data_slice)
+                                                           data_slice=data_slice, dtype=source_geo_def.dtype)
     
     #Find indiced of reduced target coordinates
     valid_output_index = _get_valid_output_index(source_geo_def, 

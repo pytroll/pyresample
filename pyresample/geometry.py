@@ -47,6 +47,7 @@ class BaseDefinition(object):
         elif lons is not None:
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
+            
         self.nprocs = nprocs
 
         self.lons = lons
@@ -270,13 +271,14 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
      
     def __init__(self, lons, lats, nprocs=1):
-        if lons.shape == lats.shape:
+        if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
             self.size = lons.size
-            self.ndim = lons.ndim        
+            self.ndim = lons.ndim
+            self.dtype = lons.dtype
         else:
             raise ValueError(('%s must be created with either '
-                             'lon/lats of the same shape') % 
+                             'lon/lats of the same shape with same dtype') % 
                              self.__class__.__name__)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         
@@ -495,7 +497,7 @@ class AreaDefinition(BaseDefinition):
         self.projection_x_coords = None
         self.projection_y_coords = None
 
-        self._dtype = dtype
+        self.dtype = dtype
         
     def __str__(self):
         #We need a sorted dictionary for a unique hash of str(self)
@@ -569,7 +571,7 @@ class AreaDefinition(BaseDefinition):
         
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
        
-    def get_proj_coords(self, data_slice=None, cache=False):
+    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid 
     
         :Parameters:
@@ -602,7 +604,10 @@ class AreaDefinition(BaseDefinition):
                 return self.projection_x_coords[data_slice], self.projection_y_coords[data_slice]
 
         is_single_value = False
-        is_1d_select = False    
+        is_1d_select = False
+
+        if dtype is None:
+            dtype = self.dtype
 
         #create coordinates of local area as ndarrays
         if data_slice is None or data_slice == slice(None):
@@ -653,13 +658,13 @@ class AreaDefinition(BaseDefinition):
                                    self.pixel_size_x + 
                                    self.pixel_upper_left[0],
                                    (rows, 
-                                    cols), dtype=self._dtype)
+                                    cols), dtype=dtype)
     
         target_y = np.fromfunction(lambda i, j: 
                                    self.pixel_upper_left[1] - 
                                    (i + row_start) * self.pixel_size_y,
                                    (rows, 
-                                    cols), dtype=self._dtype)
+                                    cols), dtype=dtype)
         
         if is_single_value:
             #Return single values
@@ -687,7 +692,7 @@ class AreaDefinition(BaseDefinition):
             return Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]), Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1])
 
  
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
     
         :Parameters:        
@@ -704,6 +709,9 @@ class AreaDefinition(BaseDefinition):
             Grids of area lons and and lats
         """ 
 
+        if dtype is None:
+            dtype = self.dtype
+
         if self.lons is None or self.lats is None:
             #Data is not cached
             if nprocs is None:
@@ -716,13 +724,13 @@ class AreaDefinition(BaseDefinition):
                 target_proj = _spatial_mp.Proj(**self.proj_dict)
         
             #Get coordinates of local area as ndarrays
-            target_x, target_y = self.get_proj_coords(data_slice=data_slice)
+            target_x, target_y = self.get_proj_coords(data_slice=data_slice, dtype=dtype)
             
             #Get corresponding longitude and latitude values
             lons, lats = target_proj(target_x, target_y, inverse=True,
                                      nprocs=nprocs)
-            lons = np.asanyarray(lons, dtype=self._dtype)
-            lats = np.asanyarray(lats, dtype=self._dtype)
+            lons = np.asanyarray(lons, dtype=dtype)
+            lats = np.asanyarray(lats, dtype=dtype)
             
             if cache and data_slice is None:
                 # Cache the result if requested
