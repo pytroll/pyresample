@@ -49,14 +49,8 @@ class TestOverlap(unittest.TestCase):
         point = Coordinate(-180, 12)
         self.assertFalse(point in area)
 
-        #with self.assertRaises(ValueError):
-        #    point = Coordinate(0, 192)
-        #self.assertRaises(ValueError, Coordinate, 0, 192)
         self.assert_raises(ValueError, Coordinate, 0, 192)
 
-        #with self.assertRaises(ValueError):
-        #    point = Coordinate(15, -91)
-        #self.assertRaises(ValueError, Coordinate, 15, -91)
         self.assert_raises(ValueError, Coordinate, 15, -91)
 
         # case of the north pole

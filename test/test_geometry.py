@@ -558,17 +558,5 @@ class Test(unittest.TestCase):
         self.assertEqual(y__, 0)
 
         lon, lat = p__(999000, -10, inverse=True)
-        raised = False
-        try:
-            x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
-        except ValueError:
-            raised = True
-        self.assertTrue(raised)
-
+        self.assert_raises(ValueError, area_def.get_xy_from_lonlat, lon, lat)
         self.assert_raises(ValueError, area_def.get_xy_from_lonlat, 0., 0.)
-        #raised = False
-        #try:
-        #    x__, y__ = area_def.get_xy_from_lonlat(0., 0.)
-        #except ValueError:
-        #    raised = True
-        #self.assertTrue(raised)
