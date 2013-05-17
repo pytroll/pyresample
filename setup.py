@@ -24,6 +24,8 @@ import imp
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 requirements = ['pyproj', 'numpy', 'configobj']
+extras_require = {'pykdtree': ['pykdtree'], 'numexpr': ['numexpr']}
+
 if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
     requirements.append('multiprocessing')
@@ -36,6 +38,7 @@ setup(name='pyresample',
       package_dir = {'pyresample': 'pyresample'},
       packages = ['pyresample'],      
       install_requires=requirements,
+      extras_require = extras_require,
       zip_safe = False,
       classifiers=[
       'Development Status :: 5 - Production/Stable',

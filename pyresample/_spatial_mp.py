@@ -1,6 +1,6 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
+#Copyright (C) 2010, 2013  Esben S. Nielsen, Martin Raspaud
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -21,6 +21,11 @@ import numpy as np
 import pyproj
 #import scipy.spatial as sp
 import multiprocessing as mp
+
+try:
+    import numexpr as ne
+except ImportError:
+    ne = None
 
 from _multi_proc import shmem_as_ndarray, Scheduler
 
@@ -153,55 +158,24 @@ class Proj_MP(pyproj.Proj):
 
 class Cartesian(object):
     
+    def __init__(self, *args, **kwargs):
+        pass
+    
     def transform_lonlats(self, lons, lats):
     
-        coords = np.zeros((lons.size, 3))
-        lons_rad = np.radians(lons)
-        lats_rad = np.radians(lats)
-        coords[:, 0] = R*np.cos(lats_rad)*np.cos(lons_rad)
-        coords[:, 1] = R*np.cos(lats_rad)*np.sin(lons_rad)
-        coords[:, 2] = R*np.sin(lats_rad)
-        
+        coords = np.zeros((lons.size, 3), dtype=lons.dtype)
+        deg2rad = lons.dtype.type(np.pi / 180)
+        if ne:
+            coords[:, 0] = ne.evaluate("R*cos(lats*deg2rad)*cos(lons*deg2rad)")
+            coords[:, 1] = ne.evaluate("R*cos(lats*deg2rad)*sin(lons*deg2rad)")
+            coords[:, 2] = ne.evaluate("R*sin(lats*deg2rad)")
+        else:
+            coords[:, 0] = R*np.cos(lats*deg2rad)*np.cos(lons*deg2rad)
+            coords[:, 1] = R*np.cos(lats*deg2rad)*np.sin(lons*deg2rad)
+            coords[:, 2] = R*np.sin(lats*deg2rad)
         return coords
-    
-    
-class Cartesian_MP(object):
-    
-    def __init__(self, nprocs=2, chunk=None, schedule='guided'):
-        self._nprocs = nprocs
-        self._chunk = chunk
-        self._schedule = schedule
-    
-    def transform_lonlats(self, lons, lats):
-        n = lons.size
-        
-        #Create shared memory
-        shmem_lons = mp.RawArray(ctypes.c_double, n)
-        shmem_lats = mp.RawArray(ctypes.c_double, n)        
-        shmem_coords = mp.RawArray(ctypes.c_double, 3*n)
-        
-        # view shared memory as ndarrays
-        _lons = shmem_as_ndarray(shmem_lons)
-        _lats = shmem_as_ndarray(shmem_lats)
-        #_coords_x = shmem_as_ndarray(shmem_coords_x)
-        #_coords_y = shmem_as_ndarray(shmem_coords_y)
-        #_coords_z = shmem_as_ndarray(shmem_coords_z)
-        _coords = shmem_as_ndarray(shmem_coords).reshape((n, 3))
-        
-        
-        # copy input data to shared memory
-        _lons[:] = lons.ravel()
-        _lats[:] = lats.ravel()
-        
-        # set up a scheduler to load balance the query        
-        scheduler = Scheduler(n, self._nprocs, chunk=self._chunk, schedule=self._schedule)
-        
-        # Projection with multiple processes
-        transform_call_args = [scheduler, shmem_lons, shmem_lats, n, shmem_coords]
-        
-        _run_jobs(_parallel_transform, transform_call_args, self._nprocs)
-        return _coords.copy()
-        
+     
+Cartesian_MP = Cartesian
 
 def _run_jobs(target, args, nprocs):
     """Run process pool
