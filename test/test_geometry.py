@@ -372,7 +372,6 @@ class Test(unittest.TestCase):
                         and np.array_equal(swath_def_f.lats[:], expected_lats), 
                         'Failed finding 2D grid filtering lon lats')
     
-    @tmp    
     def test_boundary(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -387,13 +386,19 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        proj_x_boundary, proj_y_boundary = area_def.boundary_proj_coords()
-        expected = np.array([-1250912.72, -1010912.72, -770912.72, 
+        proj_x_boundary, proj_y_boundary = area_def.proj_x_coords, area_def.proj_y_coords
+        expected_x = np.array([-1250912.72, -1010912.72, -770912.72, 
                              -530912.72, -290912.72, -50912.72, 189087.28, 
                              429087.28, 669087.28, 909087.28])
-        self.assertTrue(np.allclose(proj_x_boundary.side1, expected), 
-                        'Failed to find proejction boundary')
-        
+        expected_y = np.array([1370031.36, 1130031.36, 890031.36, 650031.36, 
+                               410031.36, 170031.36, -69968.64, -309968.64,  
+                               -549968.64, -789968.64])
+        self.assertTrue(np.allclose(proj_x_boundary, expected_x), 
+                        'Failed to find projection x coords')
+        self.assertTrue(np.allclose(proj_y_boundary, expected_y), 
+                        'Failed to find projection y coords')
+
+   
     def test_area_extent_ll(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -448,11 +453,7 @@ class Test(unittest.TestCase):
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
         lon_ll, lat_ll = p__(1000000, 0, inverse=True)
         lon_lr, lat_lr = p__(1050000, 0, inverse=True)
-        print lon_ul, lat_ul
-        print lon_ur, lat_ur
-        print lon_ll, lat_ll
-        print lon_lr, lat_lr
-
+        
         eps_lonlat = 0.01
         eps_meters = 100
         x__, y__ = area_def.get_xy_from_lonlat(lon_ul + eps_lonlat, 

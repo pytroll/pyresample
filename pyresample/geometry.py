@@ -110,9 +110,9 @@ class BaseDefinition(object):
             return self.lons, self.lats
         else:
             return self.lons[data_slice], self.lats[data_slice]
-    
-    def boundary_lonlats(self):
-            """Returns Boundary object"""
+   
+    def get_boundary_lonlats(self):
+            """Returns Boundary objects"""
             
             side1 = self.get_lonlats(data_slice=(0, slice(None)))
             side2 = self.get_lonlats(data_slice=(slice(None), -1))
@@ -689,17 +689,16 @@ class AreaDefinition(BaseDefinition):
             self.projection_y_coords = target_y
 
         return target_x, target_y
-     
-    def boundary_proj_coords(self):
-            """Returns Boundary object"""
-            
-            side1 = self.get_proj_coords(data_slice=(0, slice(None)))
-            side2 = self.get_proj_coords(data_slice=(slice(None), -1))
-            side3 = self.get_proj_coords(data_slice=(-1, slice(None)))
-            side4 = self.get_proj_coords(data_slice=(slice(None), 0))
-            return Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]), Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1])
+        
+    @property
+    def proj_x_coords(self):
+        return self.get_proj_coords(data_slice=(0, slice(None)))[0]
 
- 
+    @property
+    def proj_y_coords(self):
+        return self.get_proj_coords(data_slice=(slice(None), 0))[1]
+
+
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
     

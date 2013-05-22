@@ -381,7 +381,7 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition))):
             #Resampling from swath to grid or from grid to grid
-            lonlat_boundary = target_geo_def.boundary_lonlats()
+            lonlat_boundary = target_geo_def.get_boundary_lonlats()
             valid_input_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
                                             lonlat_boundary[0],
@@ -410,7 +410,7 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                                          geometry.AreaDefinition)) and \
              isinstance(target_geo_def, geometry.CoordinateDefinition):
             #Resampling from grid to swath
-            lonlat_boundary = source_geo_def.boundary_lonlats()
+            lonlat_boundary = source_geo_def.get_boundary_lonlats()
             valid_output_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
                                             lonlat_boundary[0],

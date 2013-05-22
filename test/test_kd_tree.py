@@ -432,7 +432,7 @@ class Test(unittest.TestCase):
         data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
         lons = numpy.fromfunction(lambda y, x: -180 + (360.0/1000)*x, (1000, 1000))
         lats = numpy.fromfunction(lambda y, x: -90 + (180.0/1000)*y, (1000, 1000))
-        boundary_lonlats = self.area_def.boundary_lonlats()
+        boundary_lonlats = self.area_def.get_boundary_lonlats()
         lons, lats, data = data_reduce.swath_from_lonlat_boundaries(boundary_lonlats[0],
                                                               boundary_lonlats[1], 
                                                               lons, lats, data, 
