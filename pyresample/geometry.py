@@ -59,17 +59,25 @@ class BaseDefinition(object):
         """Test for approximate equality"""
 
         if other.lons is None or other.lats is None:
-            other.lons, other.lats = other.get_lonlats()
+            other_lons, other_lats = other.get_lonlats()
+        else:
+            other_lons = other.lons
+            other_lats = other.lats
+
         if self.lons is None or self.lats is None:
-            self.lons, self.lats = self.get_lonlats()
+            self_lons, self_lats = self.get_lonlats()
+        else:
+            self_lons = self.lons
+            self_lats = self.lats
+
         try:
-            return (np.allclose(self.lons, other.lons, atol=1e-6, 
+            return (np.allclose(self_lons, other_lons, atol=1e-6,
                                 rtol=5e-9) and
-                    np.allclose(self.lats, other.lats, atol=1e-6, 
+                    np.allclose(self_lats, other_lats, atol=1e-6,
                                 rtol=5e-9))
         except (AttributeError, ValueError):
-            return False
-    
+            return False  
+
     def __ne__(self, other):
         """Test for approximate equality"""
         
