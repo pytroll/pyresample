@@ -539,15 +539,34 @@ class AreaDefinition(BaseDefinition):
                
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates (column, row indices) for the
-        specified geolocation (lon,lat) if inside area
+        specified geolocation (lon,lat) if inside area. If lon,lat is a point a
+        ValueError is raised if the return point is outside the area domain. If
+        lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
+        masked arrays are returned.
         
-        :Parameters:
-        row : int
-        col : int
-        
+        :Input:
+        lon : point or sequence (list or array) of longitudes
+        lat : point or sequence (list or array) of latitudes
+
         :Returns:
-        (x, y) : tuple of ints
+        (x, y) : tuple of integer points/arrays
         """
+
+        if isinstance(lon, list):
+            lon = np.array(lon)
+        if isinstance(lat, list):
+            lat = np.array(lat)
+
+        if ((isinstance(lon, np.ndarray) and 
+             not isinstance(lat, np.ndarray)) or 
+            (not isinstance(lon, np.ndarray) and 
+             isinstance(lat, np.ndarray))):
+            raise ValueError("Both lon and lat needs to be of " + 
+                             "the same type and have the same dimensions!")
+        
+        if isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray):
+            if lon.shape != lat.shape:
+                raise ValueError("lon and lat is not of the same shape!")
 
         pobj = _spatial_mp.Proj(self.proj4_string)
         upl_x = self.area_extent[0]
@@ -556,15 +575,23 @@ class AreaDefinition(BaseDefinition):
                      self.area_extent[0]) / float(self.x_size)
         yscale = abs(self.area_extent[1] - 
                      self.area_extent[3]) / float(self.y_size)
-
+  
         xm_, ym_ = pobj(lon, lat)
         x__ = (xm_ - upl_x) / xscale
         y__ = (upl_y - ym_) / yscale
-        if ((x__ < 0 or x__ > self.x_size) or
-            (y__ < 0 or y__ > self.y_size)):
-            raise ValueError('Point outside area:( %f %f)' % (x__, y__))
 
-        return int(x__), int(y__)
+        if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
+            mask = (((x__ < 0 ) | (x__ > self.x_size)) | 
+                    ((y__ < 0)  | (y__ > self.y_size)))
+            return (np.ma.masked_array(x__.astype('int'), mask=mask, 
+                                       fill_value=-1),
+                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                                       fill_value=-1))
+        else:
+            if ((x__ < 0 or x__ > self.x_size) or
+                (y__ < 0 or y__ > self.y_size)):
+                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
+            return int(x__), int(y__)
 
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid

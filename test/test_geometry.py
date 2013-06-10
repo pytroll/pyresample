@@ -497,3 +497,13 @@ class Test(unittest.TestCase):
         lon, lat = p__(999000, -10, inverse=True)
         self.assert_raises(ValueError, area_def.get_xy_from_lonlat, lon, lat)
         self.assert_raises(ValueError, area_def.get_xy_from_lonlat, 0., 0.)
+
+        # Test getting arrays back:
+        lons = [lon_ll + eps_lonlat, lon_ur - eps_lonlat]
+        lats = [lat_ll + eps_lonlat, lat_ur - eps_lonlat]
+        x__, y__ = area_def.get_xy_from_lonlat(lons, lats)
+
+        x_expects = np.array([0, 1])
+        y_expects = np.array([1, 0])
+        self.assertEqual(x__.data, x_expects)
+        self.assertEqual(y__.data, y_expects)
