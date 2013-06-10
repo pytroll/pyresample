@@ -505,5 +505,9 @@ class Test(unittest.TestCase):
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
-        self.assertEqual(x__.data, x_expects)
-        self.assertEqual(y__.data, y_expects)
+        self.assertTrue((x__.data == x_expects).all())
+        self.assertTrue((y__.data == y_expects).all())
+
+
+if __name__ == '__main__':
+    unittest.main()
