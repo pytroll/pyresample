@@ -176,7 +176,7 @@ Geographic coordinates and boundaries
 A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
 
 All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**. 
-AreaDefinition exposes projection coordinates as **projection_x_coords** and **projection_y_coords**
+AreaDefinition exposes the full set of projection coordinates as **projection_x_coords** and **projection_y_coords** 
 
 Get full coordinate set:
 
@@ -210,7 +210,7 @@ Get slice of coordinate set:
  ...                  			   x_size, y_size, area_extent)
  >>> cart_subset = area_def.cartesian_coords[100:200, 350:]
  
-If only the coordinates along the boundaries are required they can be extracted using th **boundary** property of a geographic coordinate
+If only the 1D range of a projection coordinate is required it can be extraxted using the **proj_x_coord** or **proj_y_coords** property of a geographic coordinate
 
 .. doctest::
 	
@@ -224,11 +224,8 @@ If only the coordinates along the boundaries are required they can be extracted 
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
  ...                  			   x_size, y_size, area_extent)
- >>> proj_x_boundary = area_def.projection_x_coords.boundary
- >>> proj_x_side1 = proj_x_boundary.side1
+ >>> proj_x_range = area_def.proj_x_coord
  
-The labelling of the boundary arrays is **side1**, **side2**, **side3** and **side4** starting with **side1** between upper left corner ((row, col) = (0, 0)) and upper right corner ((row, col) = (0, cols)). The labelling proceeds clockwise.
-
 Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The spherical geometry operations
