@@ -89,6 +89,66 @@ class Test(unittest.TestCase):
                 self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')        
         self.assertAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
+
+    @tmp
+    def test_gauss_uncert(self):
+        import numpy as np
+        def gauss(sigma):
+            #Return gauss functinon object
+            return lambda r: np.exp(-r**2 / float(sigma)**2)
+
+        def weighted_incremental_variance(dataWeightPairs):
+            sumweight = 0
+            mean = 0
+            M2 = 0
+         
+            print 'dwp', dataWeightPairs
+            for x, weight in dataWeightPairs:
+                print x, weight
+                temp = weight + sumweight
+                delta = x - mean
+                R = delta * weight / temp
+                mean = mean + R
+                M2 = M2 + sumweight * delta * R  
+                sumweight = temp
+         
+            variance_n = M2/sumweight
+            variance = variance_n * len(dataWeightPairs)/(len(dataWeightPairs) - 1)
+            return variance
+
+        valid_input_index, valid_output_index, index_array, distance_array = \
+                                    kd_tree.get_neighbour_info(self.tswath, 
+                                                               self.tgrid, 
+                                                               100000, neighbours=3)
+        sigma = utils.fwhm2sigma(41627.730557884883)
+        g = gauss(sigma)
+        weights = g(distance_array)
+        data = self.tdata[index_array]
+        print index_array, distance_array, weights, self.tdata
+        print 'mean = ', data.mean()
+        print 'weights sum = ', weights.sum()
+        print 'weights sqr sum = ', (weights ** 2).sum()
+        v1 = weights.sum()
+        v2 = (weights ** 2).sum()
+        wm = (data * weights).sum() / v1
+        wstddev = np.sqrt((v1 / (v1 ** 2 - v2)) * (weights * (data - wm) ** 2).sum())
+        wstddevb = np.sqrt((weights * (data - wm) ** 2).sum() / v1)
+        print 'running sqr sum', (weights * (data - wm) ** 2).sum()
+        print 'weighted mean = ', wm
+        print 'weighted unbiased stdev = ', wstddev
+        print 'weighted biased stdev = ', wstddevb
+        print 'input ', zip(list(data), list(weights))
+        wistddev = np.sqrt(weighted_incremental_variance(zip(list(data[0]), list(weights[0]))))
+        print 'incremental weighted stddev = ', wistddev
+        res, stddev, counts = kd_tree.resample_gauss_uncert(self.tswath, self.tdata, self.tgrid, 100000, sigma)
+        print 'res', res, stddev, counts
+        self.assertAlmostEqual(res[0], 2.20206560694, 5, \
+                                   'Failed to calculate gaussian weighting with uncertainty')
+        self.assertAlmostEqual(stddev[0], 0.707115076173, 5, \
+                                   'Failed to calculate uncertainty for gaussian weighting')
+        self.assertEqual(counts[0], 3, 'Wrong data point count for gaussian weighting with uncertainty')
+
+
     def test_nearest(self):
         data = numpy.fromfunction(lambda y, x: y*x, (50, 10))        
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
@@ -262,7 +322,6 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected,\
                                    msg='Swath resampling gauss failed')
 
-    @tmp
     def test_gauss_fwhm(self):
         data = numpy.fromfunction(lambda y, x: (y + x)*10**-5, (5000, 100))        
         lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))

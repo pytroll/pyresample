@@ -96,8 +96,8 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     source_geo_def : object
         Geometry definition of source
     data : numpy array               
-        1d array of single channel data points or
-        (source_size, k) array of k channels of datapoints
+        Array of single channel data points or
+        (source_geo_def.shape, k) array of k channels of datapoints
     target_geo_def : object
         Geometry definition of target
     radius_of_influence : float 
@@ -128,9 +128,25 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     data : numpy array 
         Source data resampled to target geometry
     """
+
+    return _resample_gauss(source_geo_def, data, target_geo_def,
+                   radius_of_influence, sigmas, neighbours=neighbours, 
+                   epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=False)
+
+def resample_gauss_uncert(source_geo_def, data, target_geo_def,
+                   radius_of_influence, sigmas, neighbours=8, epsilon=0,
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None):
+
+    return _resample_gauss(source_geo_def, data, target_geo_def,
+                   radius_of_influence, sigmas, neighbours=neighbours, 
+                   epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=True)
+
+def _resample_gauss(source_geo_def, data, target_geo_def,
+                   radius_of_influence, sigmas, neighbours=8, epsilon=0,
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
     
     def gauss(sigma):
-        #Return gauss functino object
+        #Return gauss functinon object
         return lambda r: np.exp(-r**2 / float(sigma)**2)
     
     #Build correct sigma argument
@@ -156,7 +172,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     return _resample(source_geo_def, data, target_geo_def, 'custom',
                      radius_of_influence, neighbours=neighbours,
                      epsilon=epsilon, weight_funcs=weight_funcs, fill_value=fill_value,
-                     reduce_data=reduce_data, nprocs=nprocs, segments=segments)
+                     reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=with_uncert)
 
 def resample_custom(source_geo_def, data, target_geo_def,
                     radius_of_influence, weight_funcs, neighbours=8,
@@ -168,8 +184,8 @@ def resample_custom(source_geo_def, data, target_geo_def,
     source_geo_def : object
         Geometry definition of source
     data : numpy array               
-        1d array of single channel data points or
-        (source_size, k) array of k channels of datapoints
+        Array of single channel data points or
+        (source_geo_def.shape, k) array of k channels of datapoints
     target_geo_def : object
         Geometry definition of target
     radius_of_influence : float 
@@ -217,7 +233,7 @@ def resample_custom(source_geo_def, data, target_geo_def,
 
 def _resample(source_geo_def, data, target_geo_def, resample_type,
              radius_of_influence, neighbours=8, epsilon=0, weight_funcs=None,
-             fill_value=0, reduce_data=True, nprocs=1, segments=None):
+             fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
     """Resamples swath using kd-tree approach"""    
                 
     valid_input_index, valid_output_index, index_array, distance_array = \
@@ -236,7 +252,8 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                           valid_output_index, index_array, 
                                           distance_array=distance_array, 
                                           weight_funcs=weight_funcs, 
-                                          fill_value=fill_value)
+                                          fill_value=fill_value, 
+                                          with_uncert=with_uncert)
     
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
                        neighbours=8, epsilon=0, reduce_data=True, nprocs=1, segments=None):
@@ -532,7 +549,8 @@ def _create_empty_info(source_geo_def, target_geo_def, neighbours):
 def get_sample_from_neighbour_info(resample_type, output_shape, data, 
                                    valid_input_index, valid_output_index, 
                                    index_array, distance_array=None, 
-                                   weight_funcs=None, fill_value=0):
+                                   weight_funcs=None, fill_value=0, 
+                                   with_uncert=False):
     """Resamples swath based on neighbour info
     
     :Parameters:
@@ -541,6 +559,8 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         'custom': Resample based on weight_funcs
     output_shape : (int, int)
         Shape of output as (rows, cols)
+    data : numpy array
+        Source data
     valid_input_index : numpy array
         valid_input_index from get_neighbour_info
     valid_output_index : numpy array
@@ -562,7 +582,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         with undetermined pixels masked
         
     :Returns: 
-    data : numpy array 
+    result : numpy array 
         Source data resampled to target geometry
     """
     
@@ -666,60 +686,98 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         result = new_data[new_index_array]
         result[index_mask] = fill_value
     else:
-        #Calculate result using weighting
+        # Calculate result using weighting.
+        # Note: the code below has low readability in order 
+        #       to avoid looping over numpy arrays
                 
         #Get neighbours and masks of valid indices
         ch_neighbour_list = []
         index_mask_list = []
-        for i in range(neighbours):
+        for i in range(neighbours): # Iterate over number of neighbours
+            # Make working copy neighbour index and 
+            # set out of bounds indices to zero
             index_ni = index_array[:, i].copy()
             index_mask_ni = (index_ni == input_size)
             index_ni[index_mask_ni] = 0
+
+            # Get channel data for the corresponing indices
             ch_ni = new_data[index_ni]
             ch_neighbour_list.append(ch_ni) 
             index_mask_list.append(index_mask_ni)
         
         #Calculate weights 
         weight_list = []
-        for i in range(neighbours):
-            #Set out of bounds distance to 1 in order to avoid numerical Inf
+        for i in range(neighbours): # Iterate over number of neighbours
+            # Make working copy of neighbour distances and
+            # set out of bounds distance to 1 in order to avoid numerical Inf
             distance = distance_array[:, i].copy()
             distance[index_mask_list[i]] = 1
             
-            if new_data.ndim > 1:
-                #Calculate weights for each channel
-                num_weights = valid_output_index.sum()
+            if new_data.ndim > 1: # More than one channel in data set.
+                # Calculate weights for each channel
                 weights = []
-                for j in range(new_data.shape[1]):                    
+                num_weights = valid_output_index.sum()
+                num_channels = new_data.shape[1]
+                for j in range(num_channels):                    
                     calc_weight = weight_funcs[j](distance)
-                    #Use broadcasting to account for constant weight
+                    # Turn a scalar weight into a numpy array 
+                    # (no effect if calc_weight already is an array)
                     expanded_calc_weight = np.ones(num_weights) * calc_weight
                     weights.append(expanded_calc_weight)
+
+                # Collect weights for all channels for neighbour number    
                 weight_list.append(np.column_stack(weights))
-            else:
+            else: # Only one channel
                 weights = weight_funcs(distance)
                 weight_list.append(weights)
                         
         result = 0
         norm = 0
-        
-        #Calculate result       
-        for i in range(neighbours):   
-            #Find invalid indices to be masked of from calculation
-            if new_data.ndim > 1:
+        count = 0
+        norm_sqr = 0
+        stddev = 0
+
+        # Calculate result       
+        for i in range(neighbours): # Iterate over number of neighbours   
+            # Find invalid indices to be masked of from calculation
+            if new_data.ndim > 1: # More than one channel in data set.
                 inv_index_mask = np.expand_dims(np.invert(index_mask_list[i]), axis=1)
-            else:
+            else: # Only one channel
                 inv_index_mask = np.invert(index_mask_list[i])
             
             #Aggregate result and norm
-            result += inv_index_mask * ch_neighbour_list[i] * weight_list[i]
-            norm += inv_index_mask * weight_list[i]
-                                
+            weights_tmp = inv_index_mask * weight_list[i]
+            result += weights_tmp * ch_neighbour_list[i]
+            norm += weights_tmp
+
+            if with_uncert:
+                count += inv_index_mask
+                norm_sqr += weights_tmp ** 2
+
         #Normalize result and set fillvalue
         new_valid_index = (norm > 0)
         result[new_valid_index] /= norm[new_valid_index]
         result[np.invert(new_valid_index)] = fill_value 
-    
+
+        if with_uncert:
+            # 2. pass to calculate standard devaition
+            for i in range(neighbours): # Iterate over number of neighbours   
+                # Find invalid indices to be masked of from calculation
+                if new_data.ndim > 1: # More than one channel in data set.
+                    inv_index_mask = np.expand_dims(np.invert(index_mask_list[i]), axis=1)
+                else: # Only one channel
+                    inv_index_mask = np.invert(index_mask_list[i])
+
+                weights_tmp = inv_index_mask * weight_list[i]
+                values = inv_index_mask * ch_neighbour_list[i]
+                stddev += weights_tmp * (values - result) ** 2
+
+            new_valid_index = (count > 1)
+            v1 = norm[new_valid_index]
+            v2 = norm_sqr[new_valid_index]
+            stddev[new_valid_index] = np.sqrt((v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
+            stddev[~new_valid_index] = np.NaN
+
     #Add fill values
     if new_data.ndim > 1:
         full_result = np.ones((output_size, new_data.shape[1])) * fill_value
@@ -728,7 +786,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     full_result[valid_output_index] = result 
     result = full_result
     
-    #Calculte correct output shape    
+    #Calculate correct output shape    
     if new_data.ndim > 1:
         output_shape = list(output_shape)
         output_shape.append(new_data.shape[1])
@@ -746,8 +804,12 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         
     #Set output data type to input data type if relevant
     if conserve_input_data_type:
-        result = result.astype(input_data_type)        
-    return result
+        result = result.astype(input_data_type)
+
+    if with_uncert:
+        return result, stddev, count
+    else:
+        return result
 
 def _get_fill_mask_value(data_dtype):
     """Returns the maximum value of dtype"""
