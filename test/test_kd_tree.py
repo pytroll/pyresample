@@ -90,7 +90,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
 
-    @tmp
+    
     def test_gauss_uncert(self):
         import numpy as np
         def gauss(sigma):
@@ -147,6 +147,21 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(stddev[0], 0.707115076173, 5, \
                                    'Failed to calculate uncertainty for gaussian weighting')
         self.assertEqual(counts[0], 3, 'Wrong data point count for gaussian weighting with uncertainty')
+
+    @tmp
+    def test_custom_uncert(self):
+        def wf(dist):
+            return 1 - dist/100000.0
+
+        res, stddev, counts = kd_tree.resample_custom_uncert(self.tswath,
+                                             self.tdata, self.tgrid,
+                                             100000, wf)
+
+        self.assertAlmostEqual(res[0], 2.32193149, 5, \
+                                   'Failed to calculate custom weighting with uncertainty')
+        self.assertAlmostEqual(stddev[0], 0.81817972, 5, \
+                                   'Failed to calculate custom for gaussian weighting')
+        self.assertEqual(counts[0], 3, 'Wrong data point count for custom weighting with uncertainty')
 
 
     def test_nearest(self):
@@ -359,6 +374,32 @@ class Test(unittest.TestCase):
                 self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
         cross_sum = res.sum()        
         expected = 1461.84313918
+        self.assertAlmostEqual(cross_sum, expected,\
+                                   msg='Swath multi channel resampling gauss failed')
+
+    @tmp
+    def test_gauss_multi_uncert(self):
+        data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        
+        lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
+        lats = numpy.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
+                                         data.ravel()))
+        if sys.version_info < (2, 6):
+            res, stddev, counts = kd_tree.resample_gauss_uncert(swath_def, data_multi,\
+                                                self.area_def, 50000, [25000, 15000, 10000], segments=1)
+        else:
+            with warnings.catch_warnings(record=True) as w:
+                res, stddev, counts = kd_tree.resample_gauss_uncert(swath_def, data_multi,\
+                                                    self.area_def, 50000, [25000, 15000, 10000], segments=1)
+                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
+        cross_sum = res.sum()        
+        expected = 1461.84313918
+        print res.sum()
+        print stddev.sum()
+        print counts.sum()
+        self.assertTrue(False)
         self.assertAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel resampling gauss failed')
     

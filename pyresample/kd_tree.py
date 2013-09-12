@@ -217,6 +217,24 @@ def resample_custom(source_geo_def, data, target_geo_def,
     data : numpy array 
         Source data resampled to target geometry
     """
+
+    return _resample_custom(source_geo_def, data, target_geo_def,
+                            radius_of_influence, weight_funcs, neighbours=neighbours, 
+                            epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=False)
+
+def resample_custom_uncert(source_geo_def, data, target_geo_def,
+                           radius_of_influence, weight_funcs, neighbours=8,
+                           epsilon=0, fill_value=0, reduce_data=True, nprocs=1, 
+                           segments=None):
+
+    return _resample_custom(source_geo_def, data, target_geo_def,
+                            radius_of_influence, weight_funcs, neighbours=neighbours, 
+                            epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=True)
+
+def _resample_custom(source_geo_def, data, target_geo_def,
+                    radius_of_influence, weight_funcs, neighbours=8,
+                    epsilon=0, fill_value=0, reduce_data=True, nprocs=1, 
+                    segments=None, with_uncert=False):
     try:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
@@ -229,7 +247,7 @@ def resample_custom(source_geo_def, data, target_geo_def,
                      radius_of_influence, neighbours=neighbours,
                      epsilon=epsilon, weight_funcs=weight_funcs,
                      fill_value=fill_value, reduce_data=reduce_data,
-                     nprocs=nprocs, segments=segments)
+                     nprocs=nprocs, segments=segments, with_uncert=with_uncert)
 
 def _resample(source_geo_def, data, target_geo_def, resample_type,
              radius_of_influence, neighbours=8, epsilon=0, weight_funcs=None,
@@ -246,14 +264,23 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                                     nprocs=nprocs,
                                                     segments=segments)
     
-    return get_sample_from_neighbour_info(resample_type, 
-                                          target_geo_def.shape, 
-                                          data, valid_input_index, 
-                                          valid_output_index, index_array, 
-                                          distance_array=distance_array, 
-                                          weight_funcs=weight_funcs, 
-                                          fill_value=fill_value, 
-                                          with_uncert=with_uncert)
+    if with_uncert:
+        return get_sample_from_neighbour_info_uncert(resample_type, 
+                                                     target_geo_def.shape, 
+                                                     data, valid_input_index, 
+                                                     valid_output_index, 
+                                                     index_array, 
+                                                     distance_array=distance_array, 
+                                                     weight_funcs=weight_funcs, 
+                                                     fill_value=fill_value)
+    else:
+        return get_sample_from_neighbour_info(resample_type, 
+                                              target_geo_def.shape, 
+                                              data, valid_input_index, 
+                                              valid_output_index, index_array, 
+                                              distance_array=distance_array, 
+                                              weight_funcs=weight_funcs, 
+                                              fill_value=fill_value)
     
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
                        neighbours=8, epsilon=0, reduce_data=True, nprocs=1, segments=None):
@@ -545,8 +572,29 @@ def _create_empty_info(source_geo_def, target_geo_def, neighbours):
         
     return valid_output_index, index_array, distance_array 
     
-
 def get_sample_from_neighbour_info(resample_type, output_shape, data, 
+                                   valid_input_index, valid_output_index, 
+                                   index_array, distance_array=None, 
+                                   weight_funcs=None, fill_value=0):
+
+    return _get_sample_from_neighbour_info(resample_type, output_shape, data, 
+                                   valid_input_index, valid_output_index, 
+                                   index_array, distance_array=distance_array, 
+                                   weight_funcs=weight_funcs, fill_value=fill_value, 
+                                   with_uncert=False)
+
+def get_sample_from_neighbour_info_uncert(resample_type, output_shape, data, 
+                                   valid_input_index, valid_output_index, 
+                                   index_array, distance_array=None, 
+                                   weight_funcs=None, fill_value=0):
+
+    return _get_sample_from_neighbour_info(resample_type, output_shape, data, 
+                                   valid_input_index, valid_output_index, 
+                                   index_array, distance_array=distance_array, 
+                                   weight_funcs=weight_funcs, fill_value=fill_value, 
+                                   with_uncert=True)
+
+def _get_sample_from_neighbour_info(resample_type, output_shape, data, 
                                    valid_input_index, valid_output_index, 
                                    index_array, distance_array=None, 
                                    weight_funcs=None, fill_value=0, 
@@ -687,7 +735,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         result[index_mask] = fill_value
     else:
         # Calculate result using weighting.
-        # Note: the code below has low readability in order 
+        # Note: the code below has low readability in order
         #       to avoid looping over numpy arrays
                 
         #Get neighbours and masks of valid indices
@@ -750,16 +798,12 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
             result += weights_tmp * ch_neighbour_list[i]
             norm += weights_tmp
 
-            if with_uncert:
-                count += inv_index_mask
-                norm_sqr += weights_tmp ** 2
-
         #Normalize result and set fillvalue
         new_valid_index = (norm > 0)
         result[new_valid_index] /= norm[new_valid_index]
         result[np.invert(new_valid_index)] = fill_value 
 
-        if with_uncert:
+        if with_uncert:  # Calculate uncertainties
             # 2. pass to calculate standard devaition
             for i in range(neighbours): # Iterate over number of neighbours   
                 # Find invalid indices to be masked of from calculation
@@ -768,10 +812,14 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
                 else: # Only one channel
                     inv_index_mask = np.invert(index_mask_list[i])
 
+                # Aggregate stddev information
                 weights_tmp = inv_index_mask * weight_list[i]
+                count += inv_index_mask
+                norm_sqr += weights_tmp ** 2
                 values = inv_index_mask * ch_neighbour_list[i]
                 stddev += weights_tmp * (values - result) ** 2
 
+            # Calculate final stddev
             new_valid_index = (count > 1)
             v1 = norm[new_valid_index]
             v2 = norm_sqr[new_valid_index]
@@ -779,13 +827,15 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
             stddev[~new_valid_index] = np.NaN
 
     #Add fill values
-    if new_data.ndim > 1:
-        full_result = np.ones((output_size, new_data.shape[1])) * fill_value
-    else:
-        full_result = np.ones(output_size) * fill_value
+    if new_data.ndim > 1: # More than one channel
+        output_raw_shape = ((output_size, new_data.shape[1]))
+    else: # One channel
+        output_raw_shape = output_size
+
+    full_result = np.ones(output_raw_shape) * fill_value
     full_result[valid_output_index] = result 
     result = full_result
-    
+
     #Calculate correct output shape    
     if new_data.ndim > 1:
         output_shape = list(output_shape)
@@ -793,6 +843,26 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     
     #Reshape resampled data to correct shape
     result = result.reshape(output_shape)
+
+    if with_uncert:  # Add fill values for uncertainty
+        full_stddev = np.ones(output_raw_shape) * np.nan
+        full_count = np.zeros(output_raw_shape)
+        full_stddev[valid_output_index] = stddev
+        full_count[valid_output_index] = count
+        stddev = full_stddev
+        count = full_count
+
+        if is_masked_data:
+            resampled_mask = stddev[:, -1:]
+            stddev_mask = (np.isnan(stddev) & resampled_mask)
+            stddev = np.ma.array(stddev[:, :-1], mask=stddev_mask)
+            count = np.ma.array(count[:, :-1], mask=resampled_mask)
+        else:
+            stddev = np.ma.array(stddev, mask=np.isnan(stddev))
+
+        stddev = stddev.reshape(output_shape)
+        count = count.reshape(output_shape)
+
     
     #Remap mask channels to create masked output
     if is_masked_data:
