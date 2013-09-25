@@ -140,7 +140,9 @@ class Test(unittest.TestCase):
         print 'input ', zip(list(data), list(weights))
         wistddev = np.sqrt(weighted_incremental_variance(zip(list(data[0]), list(weights[0]))))
         print 'incremental weighted stddev = ', wistddev
-        res, stddev, counts = kd_tree.resample_gauss_uncert(self.tswath, self.tdata, self.tgrid, 100000, sigma)
+        res, stddev, counts = kd_tree.resample_gauss(self.tswath, self.tdata, 
+                                                     self.tgrid, 100000, sigma, 
+                                                     with_uncert=True)
         print 'res', res, stddev, counts
         self.assertAlmostEqual(res[0], 2.20206560694, 5, \
                                    'Failed to calculate gaussian weighting with uncertainty')
@@ -153,9 +155,9 @@ class Test(unittest.TestCase):
         def wf(dist):
             return 1 - dist/100000.0
 
-        res, stddev, counts = kd_tree.resample_custom_uncert(self.tswath,
+        res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                              self.tdata, self.tgrid,
-                                             100000, wf)
+                                             100000, wf, with_uncert=True)
 
         self.assertAlmostEqual(res[0], 2.32193149, 5, \
                                    'Failed to calculate custom weighting with uncertainty')
@@ -386,22 +388,33 @@ class Test(unittest.TestCase):
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),\
                                          data.ravel()))
         if sys.version_info < (2, 6):
-            res, stddev, counts = kd_tree.resample_gauss_uncert(swath_def, data_multi,\
-                                                self.area_def, 50000, [25000, 15000, 10000], segments=1)
+            res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,\
+                                                self.area_def, 50000, [25000, 15000, 10000], 
+                                                segments=1, with_uncert=True)
         else:
             with warnings.catch_warnings(record=True) as w:
-                res, stddev, counts = kd_tree.resample_gauss_uncert(swath_def, data_multi,\
-                                                    self.area_def, 50000, [25000, 15000, 10000], segments=1)
+                res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,\
+                                                    self.area_def, 50000, [25000, 15000, 10000], 
+                                                    segments=1, with_uncert=True)
                 self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
                 self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
-        cross_sum = res.sum()        
+        cross_sum = res.sum()
+        cross_sum_stddev = stddev.sum()
+        cross_sum_counts = counts.sum()
         expected = 1461.84313918
-        print res.sum()
-        print stddev.sum()
-        print counts.sum()
-        self.assertTrue(False)
-        self.assertAlmostEqual(cross_sum, expected,\
-                                   msg='Swath multi channel resampling gauss failed')
+        expected_stddev = 0.446204424799
+        expected_counts = 4934802.0
+        print res.sum(), res.shape
+        print stddev.sum(), stddev.shape
+        print counts.sum(), counts.shape
+        self.assertTrue(res.shape == stddev.shape and stddev.shape == counts.shape and counts.shape == (800, 800, 3))
+        #self.assertTrue(False)
+        self.assertAlmostEqual(cross_sum, expected,
+                                msg='Swath multi channel resampling gauss failed on data')
+        self.assertAlmostEqual(cross_sum_stddev, expected_stddev,
+                                msg='Swath multi channel resampling gauss failed on stddev')
+        self.assertAlmostEqual(cross_sum_counts, expected_counts,
+                                msg='Swath multi channel resampling gauss failed on counts')
     
     def test_gauss_multi_mp(self):
         data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        

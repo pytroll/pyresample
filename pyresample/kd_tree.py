@@ -89,7 +89,7 @@ def resample_nearest(source_geo_def, data, target_geo_def,
 
 def resample_gauss(source_geo_def, data, target_geo_def,
                    radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None):
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
     """Resamples data using kd-tree gaussian weighting neighbour approach
 
     :Parameters:
@@ -123,28 +123,19 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     segments : {int, None}
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
+    with_uncert : bool, optional
+        Calculate uncertainty estimates
     
-    :Returns: 
-    data : numpy array 
+    :Returns:
+    data : numpy array (default)
         Source data resampled to target geometry
+
+    data, stddev, counts : numpy array, numpy array, numpy array (if with_uncert == True)
+        Source data resampled to target geometry.
+        Weighted standard devaition for all pixels having more than one source value
+        Counts of number of source values used in weighting per pixel        
     """
 
-    return _resample_gauss(source_geo_def, data, target_geo_def,
-                   radius_of_influence, sigmas, neighbours=neighbours, 
-                   epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=False)
-
-def resample_gauss_uncert(source_geo_def, data, target_geo_def,
-                   radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None):
-
-    return _resample_gauss(source_geo_def, data, target_geo_def,
-                   radius_of_influence, sigmas, neighbours=neighbours, 
-                   epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=True)
-
-def _resample_gauss(source_geo_def, data, target_geo_def,
-                   radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
-    
     def gauss(sigma):
         #Return gauss functinon object
         return lambda r: np.exp(-r**2 / float(sigma)**2)
@@ -177,7 +168,7 @@ def _resample_gauss(source_geo_def, data, target_geo_def,
 def resample_custom(source_geo_def, data, target_geo_def,
                     radius_of_influence, weight_funcs, neighbours=8,
                     epsilon=0, fill_value=0, reduce_data=True, nprocs=1, 
-                    segments=None):
+                    segments=None, with_uncert=False):
     """Resamples data using kd-tree custom radial weighting neighbour approach
 
     :Parameters:
@@ -213,28 +204,16 @@ def resample_custom(source_geo_def, data, target_geo_def,
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
     
-    :Returns: 
-    data : numpy array 
+    :Returns:
+    data : numpy array (default)
         Source data resampled to target geometry
+
+    data, stddev, counts : numpy array, numpy array, numpy array (if with_uncert == True)
+        Source data resampled to target geometry.
+        Weighted standard devaition for all pixels having more than one source value
+        Counts of number of source values used in weighting per pixel
     """
 
-    return _resample_custom(source_geo_def, data, target_geo_def,
-                            radius_of_influence, weight_funcs, neighbours=neighbours, 
-                            epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=False)
-
-def resample_custom_uncert(source_geo_def, data, target_geo_def,
-                           radius_of_influence, weight_funcs, neighbours=8,
-                           epsilon=0, fill_value=0, reduce_data=True, nprocs=1, 
-                           segments=None):
-
-    return _resample_custom(source_geo_def, data, target_geo_def,
-                            radius_of_influence, weight_funcs, neighbours=neighbours, 
-                            epsilon=epsilon, fill_value=fill_value, reduce_data=reduce_data, nprocs=nprocs, segments=segments, with_uncert=True)
-
-def _resample_custom(source_geo_def, data, target_geo_def,
-                    radius_of_influence, weight_funcs, neighbours=8,
-                    epsilon=0, fill_value=0, reduce_data=True, nprocs=1, 
-                    segments=None, with_uncert=False):
     try:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
