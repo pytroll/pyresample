@@ -612,7 +612,7 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
     result : numpy array 
         Source data resampled to target geometry
     """
-    
+
     if data.ndim > 2 and data.shape[0] * data.shape[1] == valid_input_index.size:
         data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
     elif data.shape[0] != valid_input_index.size:
@@ -622,16 +622,20 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         raise ValueError('Mismatch between geometry and dataset')
     
     is_multi_channel = (data.ndim > 1)
-    
+    #if is_multi_channel:
+    #    output_shape = list(output_shape)
+    #    output_shape.append(data.shape[1])
+
     valid_input_size = valid_input_index.sum()
     valid_output_size = valid_output_index.sum()
     
-    if valid_input_size == 0 or valid_output_size == 0:
+    #Handle empty result set
+    if valid_input_size == 0 or valid_output_size == 0: 
         if is_multi_channel:
             output_shape = list(output_shape)
             output_shape.append(data.shape[1])
             
-        #Handle empty result set
+        
         if fill_value is None:
             #Use masked array for fill values
             return np.ma.array(np.zeros(output_shape, data.dtype), 
@@ -639,13 +643,17 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         else:
             #Return fill vaues for all pixels
             return np.ones(output_shape, dtype=data.dtype) * fill_value  
-    
+
     #Get size of output and reduced input
     input_size = valid_input_size
     if len(output_shape) > 1:
         output_size = output_shape[0] * output_shape[1]
     else:
         output_size = output_shape[0]
+
+    #if data.ndim > 1:
+    #    output_shape = list(output_shape)
+    #    output_shape.append(data.shape[1])
         
     #Check validity of input
     if not isinstance(data, np.ndarray):
@@ -691,6 +699,11 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         #Add the mask as channels to the dataset
         is_masked_data = True
         new_data = np.column_stack((new_data.data, new_data.mask))
+
+    if new_data.ndim > 1:
+        output_shape = list(output_shape)
+        output_shape.append(new_data.shape[1])
+
     
     #Prepare weight_funcs argument for handeling mask data
     if weight_funcs is not None and is_masked_data:
@@ -778,9 +791,8 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
             norm += weights_tmp
 
         #Normalize result and set fillvalue
-        new_valid_index = (norm > 0)
-        result[new_valid_index] /= norm[new_valid_index]
-        result[np.invert(new_valid_index)] = fill_value 
+        result_valid_index = (norm > 0)
+        result[result_valid_index] /= norm[result_valid_index]
 
         if with_uncert:  # Calculate uncertainties
             # 2. pass to calculate standard devaition
@@ -805,7 +817,10 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
             stddev[new_valid_index] = np.sqrt((v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
             stddev[~new_valid_index] = np.NaN
 
-    #Add fill values
+        #Add fill values
+        result[np.invert(result_valid_index)] = fill_value 
+
+    # Create full result
     if new_data.ndim > 1: # More than one channel
         output_raw_shape = ((output_size, new_data.shape[1]))
     else: # One channel
@@ -815,14 +830,6 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
     full_result[valid_output_index] = result 
     result = full_result
 
-    #Calculate correct output shape    
-    if new_data.ndim > 1:
-        output_shape = list(output_shape)
-        output_shape.append(new_data.shape[1])
-    
-    #Reshape resampled data to correct shape
-    result = result.reshape(output_shape)
-
     if with_uncert:  # Add fill values for uncertainty
         full_stddev = np.ones(output_raw_shape) * np.nan
         full_count = np.zeros(output_raw_shape)
@@ -831,18 +838,33 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         stddev = full_stddev
         count = full_count
 
-        if is_masked_data:
-            resampled_mask = stddev[:, -1:]
-            stddev_mask = (np.isnan(stddev) & resampled_mask)
-            stddev = np.ma.array(stddev[:, :-1], mask=stddev_mask)
-            count = np.ma.array(count[:, :-1], mask=resampled_mask)
-        else:
-            stddev = np.ma.array(stddev, mask=np.isnan(stddev))
+        print 'stddev.shape', stddev.shape
+        #if is_masked_data: # Ignore uncert computation of masks
+        #    channels = result.shape[-1]
+        #    stddev = stddev[..., :(channels // 2)]
+        #    count = count[..., :(channels // 2)]
 
+        # Reshape to correct shape
+        print stddev.shape, output_shape
         stddev = stddev.reshape(output_shape)
         count = count.reshape(output_shape)
 
-    
+        if is_masked_data: # Ignore uncert computation of masks
+            channels = result.shape[-1]
+            stddev = stddev[..., :(channels // 2)]
+            count = count[..., :(channels // 2)]
+
+        stddev = np.ma.array(stddev, mask=np.isnan(stddev))
+
+
+    # Calculate correct output shape    
+    #if new_data.ndim > 1:
+    #    output_shape = list(output_shape)
+    #    output_shape.append(new_data.shape[1])
+
+    #Reshape resampled data to correct shape
+    result = result.reshape(output_shape)
+
     #Remap mask channels to create masked output
     if is_masked_data:
         result = _remask_data(result)
@@ -856,6 +878,9 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         result = result.astype(input_data_type)
 
     if with_uncert:
+        if np.ma.isMA(result):
+            stddev = np.ma.array(stddev, mask=(result.mask & stddev.mask))
+            count = np.ma.array(count, mask=result.mask)
         return result, stddev, count
     else:
         return result

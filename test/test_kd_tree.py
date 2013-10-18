@@ -150,7 +150,7 @@ class Test(unittest.TestCase):
                                    'Failed to calculate uncertainty for gaussian weighting')
         self.assertEqual(counts[0], 3, 'Wrong data point count for gaussian weighting with uncertainty')
 
-    @tmp
+    
     def test_custom_uncert(self):
         def wf(dist):
             return 1 - dist/100000.0
