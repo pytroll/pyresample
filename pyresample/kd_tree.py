@@ -838,24 +838,26 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
         stddev = full_stddev
         count = full_count
 
-        print 'stddev.shape', stddev.shape
+        
         #if is_masked_data: # Ignore uncert computation of masks
         #    channels = result.shape[-1]
         #    stddev = stddev[..., :(channels // 2)]
         #    count = count[..., :(channels // 2)]
 
         # Reshape to correct shape
-        print stddev.shape, output_shape
+        
         stddev = stddev.reshape(output_shape)
         count = count.reshape(output_shape)
 
         if is_masked_data: # Ignore uncert computation of masks
-            channels = result.shape[-1]
-            stddev = stddev[..., :(channels // 2)]
-            count = count[..., :(channels // 2)]
+            stddev = _remask_data(stddev, is_to_be_masked=False)
+            count = _remask_data(count, is_to_be_masked=False)
+            #channels = result.shape[-1]
+            #stddev = stddev[..., :(channels // 2)]
+            #count = count[..., :(channels // 2)]
 
         stddev = np.ma.array(stddev, mask=np.isnan(stddev))
-
+        count = np.ma.array(count, mask=(count == 1))
 
     # Calculate correct output shape    
     #if new_data.ndim > 1:
@@ -879,8 +881,8 @@ def _get_sample_from_neighbour_info(resample_type, output_shape, data,
 
     if with_uncert:
         if np.ma.isMA(result):
-            stddev = np.ma.array(stddev, mask=(result.mask & stddev.mask))
-            count = np.ma.array(count, mask=result.mask)
+            stddev = np.ma.array(stddev, mask=(result.mask | stddev.mask))
+            count = np.ma.array(count, mask=(result.mask | count.mask))
         return result, stddev, count
     else:
         return result
@@ -897,14 +899,18 @@ def _get_fill_mask_value(data_dtype):
                         data_dtype.type)
     return fill_value
 
-def _remask_data(data):
+def _remask_data(data, is_to_be_masked=True):
     """Interprets half the array as mask for the other half"""
     
     channels = data.shape[-1]
-    mask = data[..., (channels // 2):]            
-    #All pixels affected by masked pixels are masked out
-    mask = (mask != 0)
-    data = np.ma.array(data[..., :(channels // 2)], mask=mask)
+    if is_to_be_masked:
+        mask = data[..., (channels // 2):]            
+        #All pixels affected by masked pixels are masked out
+        mask = (mask != 0)
+        data = np.ma.array(data[..., :(channels // 2)], mask=mask)
+    else:
+        data = data[..., :(channels // 2)]
+
     if data.shape[-1] == 1:
         data = data.reshape(data.shape[:-1])
     return data

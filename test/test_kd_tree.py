@@ -403,7 +403,7 @@ class Test(unittest.TestCase):
         cross_sum_counts = counts.sum()
         expected = 1461.84313918
         expected_stddev = 0.446204424799
-        expected_counts = 4934802.0
+        expected_counts = 4934796.0
         print res.sum(), res.shape
         print stddev.sum(), stddev.shape
         print counts.sum(), counts.shape
