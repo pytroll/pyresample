@@ -137,7 +137,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     """
 
     def gauss(sigma):
-        #Return gauss functinon object
+        #Return gauss function object
         return lambda r: np.exp(-r**2 / float(sigma)**2)
     
     #Build correct sigma argument
@@ -243,23 +243,16 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                                     nprocs=nprocs,
                                                     segments=segments)
     
-    if with_uncert:
-        return get_sample_from_neighbour_info_uncert(resample_type, 
-                                                     target_geo_def.shape, 
-                                                     data, valid_input_index, 
-                                                     valid_output_index, 
-                                                     index_array, 
-                                                     distance_array=distance_array, 
-                                                     weight_funcs=weight_funcs, 
-                                                     fill_value=fill_value)
-    else:
-        return get_sample_from_neighbour_info(resample_type, 
-                                              target_geo_def.shape, 
-                                              data, valid_input_index, 
-                                              valid_output_index, index_array, 
-                                              distance_array=distance_array, 
-                                              weight_funcs=weight_funcs, 
-                                              fill_value=fill_value)
+    
+    return get_sample_from_neighbour_info(resample_type, 
+                                         target_geo_def.shape, 
+                                         data, valid_input_index, 
+                                         valid_output_index, 
+                                         index_array, 
+                                         distance_array=distance_array, 
+                                         weight_funcs=weight_funcs, 
+                                         fill_value=fill_value, 
+                                         with_uncert=with_uncert)
     
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
                        neighbours=8, epsilon=0, reduce_data=True, nprocs=1, segments=None):
@@ -552,28 +545,6 @@ def _create_empty_info(source_geo_def, target_geo_def, neighbours):
     return valid_output_index, index_array, distance_array 
     
 def get_sample_from_neighbour_info(resample_type, output_shape, data, 
-                                   valid_input_index, valid_output_index, 
-                                   index_array, distance_array=None, 
-                                   weight_funcs=None, fill_value=0):
-
-    return _get_sample_from_neighbour_info(resample_type, output_shape, data, 
-                                   valid_input_index, valid_output_index, 
-                                   index_array, distance_array=distance_array, 
-                                   weight_funcs=weight_funcs, fill_value=fill_value, 
-                                   with_uncert=False)
-
-def get_sample_from_neighbour_info_uncert(resample_type, output_shape, data, 
-                                   valid_input_index, valid_output_index, 
-                                   index_array, distance_array=None, 
-                                   weight_funcs=None, fill_value=0):
-
-    return _get_sample_from_neighbour_info(resample_type, output_shape, data, 
-                                   valid_input_index, valid_output_index, 
-                                   index_array, distance_array=distance_array, 
-                                   weight_funcs=weight_funcs, fill_value=fill_value, 
-                                   with_uncert=True)
-
-def _get_sample_from_neighbour_info(resample_type, output_shape, data, 
                                    valid_input_index, valid_output_index, 
                                    index_array, distance_array=None, 
                                    weight_funcs=None, fill_value=0, 
