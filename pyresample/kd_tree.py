@@ -593,10 +593,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         raise ValueError('Mismatch between geometry and dataset')
     
     is_multi_channel = (data.ndim > 1)
-    #if is_multi_channel:
-    #    output_shape = list(output_shape)
-    #    output_shape.append(data.shape[1])
-
     valid_input_size = valid_input_index.sum()
     valid_output_size = valid_output_index.sum()
     
@@ -606,7 +602,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
             output_shape = list(output_shape)
             output_shape.append(data.shape[1])
             
-        
         if fill_value is None:
             #Use masked array for fill values
             return np.ma.array(np.zeros(output_shape, data.dtype), 
@@ -621,10 +616,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         output_size = output_shape[0] * output_shape[1]
     else:
         output_size = output_shape[0]
-
-    #if data.ndim > 1:
-    #    output_shape = list(output_shape)
-    #    output_shape.append(data.shape[1])
         
     #Check validity of input
     if not isinstance(data, np.ndarray):
@@ -671,7 +662,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         is_masked_data = True
         new_data = np.column_stack((new_data.data, new_data.mask))
 
-    if new_data.ndim > 1:
+    if new_data.ndim > 1: # Multiple channels or masked input
         output_shape = list(output_shape)
         output_shape.append(new_data.shape[1])
 
@@ -766,7 +757,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         result[result_valid_index] /= norm[result_valid_index]
 
         if with_uncert:  # Calculate uncertainties
-            # 2. pass to calculate standard devaition
+            # 2. pass to calculate standard deviation
             for i in range(neighbours): # Iterate over number of neighbours   
                 # Find invalid indices to be masked of from calculation
                 if new_data.ndim > 1: # More than one channel in data set.
@@ -808,14 +799,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         full_count[valid_output_index] = count
         stddev = full_stddev
         count = full_count
-
-        
-        #if is_masked_data: # Ignore uncert computation of masks
-        #    channels = result.shape[-1]
-        #    stddev = stddev[..., :(channels // 2)]
-        #    count = count[..., :(channels // 2)]
-
-        # Reshape to correct shape
         
         stddev = stddev.reshape(output_shape)
         count = count.reshape(output_shape)
@@ -823,17 +806,10 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         if is_masked_data: # Ignore uncert computation of masks
             stddev = _remask_data(stddev, is_to_be_masked=False)
             count = _remask_data(count, is_to_be_masked=False)
-            #channels = result.shape[-1]
-            #stddev = stddev[..., :(channels // 2)]
-            #count = count[..., :(channels // 2)]
 
+        # Set masks for invalid stddev and weighting count below 2
         stddev = np.ma.array(stddev, mask=np.isnan(stddev))
-        count = np.ma.array(count, mask=(count == 1))
-
-    # Calculate correct output shape    
-    #if new_data.ndim > 1:
-    #    output_shape = list(output_shape)
-    #    output_shape.append(new_data.shape[1])
+        count = np.ma.array(count, mask=(count < 2))
 
     #Reshape resampled data to correct shape
     result = result.reshape(output_shape)
