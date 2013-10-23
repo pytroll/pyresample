@@ -367,7 +367,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected,\
                                    msg='Swath multi channel resampling gauss failed')
 
-    
+    @tmp
     def test_gauss_multi_uncert(self):
         data = numpy.fromfunction(lambda y, x: (y + x)*10**-6, (5000, 100))        
         lons = numpy.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
@@ -391,7 +391,7 @@ class Test(unittest.TestCase):
         cross_sum_counts = counts.sum()
         expected = 1461.84313918
         expected_stddev = 0.446204424799
-        expected_counts = 4934796.0
+        expected_counts = 4934802.0
         self.assertTrue(res.shape == stddev.shape and stddev.shape == counts.shape and counts.shape == (800, 800, 3))
         self.assertAlmostEqual(cross_sum, expected,
                                 msg='Swath multi channel resampling gauss failed on data')

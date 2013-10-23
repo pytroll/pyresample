@@ -29,10 +29,10 @@ The ImageContainerNearest class can be used for nearest neighbour resampling of 
  >>> area_con = swath_con.resample(area_def)
  >>> result = area_con.image_data
 
-For other resampling types or splitting the process in two steps use the functions in **pyresample.swath** described below. 
+For other resampling types or splitting the process in two steps use the functions in **pyresample.kd_tree** described below. 
 
-pyresample.swath
-----------------
+pyresample.kd_tree
+------------------
 
 This module contains several functions for resampling swath data.
 
@@ -163,6 +163,37 @@ Example showing how to resample a generated swath dataset to a grid using an arb
 If more channels are present in **data** the keyword argument **weight_funcs** must be a list containing a radial function for each channel.
 
 If **data** is a masked array any pixel in the result data that has been "contaminated" by weighting of a masked pixel is masked.
+
+Uncertainty estimates
+*********************
+
+Uncertainty estimates in the form of weighted standard deviation can be obtained from the **resample_custom** and **resample_gauss** functions.
+By default the functions return the result of the resampling as a single numpy array. If the functions are given the keyword argument **with_uncert=True**
+then the following list of numpy arrays will be returned instead: **(result, stddev, count)**. **result** is the usual result. **stddev** is the weighted standard deviation for each element in the result. **count** is the number of data values used in the weighting for each element in the result.
+
+The principle is to view the calculated value for each element in the result as a weighted average of values sampled from a statistical variable. 
+As an estimate of the standard deviation of this sample is calculated using the unbiased weighted estimator given as 
+**stddev = sqrt((V1 / (V1 ** 2 + V2)) * sum(wi * (xi - result) ** 2))** where **result** is the result of the resampling. **xi** is the value of a contributing neighbour 
+and **wi** is the corresponding weight. The coefficients are given as **V1 = sum(wi)** and **V2 = sum(wi ** 2)**. The standard deviation is only calculated for elements in
+the result where more than one neighbour has contributed to the weighting. The **count** numpy array can be used for filtering at a higher number of contributing neigbours.
+
+Usage only differs in the number of return values from **resample_gauss** and **resample_custom**. E.g.:
+
+ >>> result, stddev, count = pr.kd_tree.resample_gauss(swath_def, ice_conc, area_def, 
+ ...                                                   radius_of_influence=20000, 
+ ...                                                   sigmas=pr.utils.fwhm2sigma(35000), 
+ ...                                                   fill_value=None, with_uncert=True)
+
+Below is shown a plot of the result of the resampling using a real data set:
+  .. image:: _static/images/uncert_conc_nh.png
+
+The corresponding standard deviations:
+  .. image:: _static/images/uncert_stddev_nh.png
+
+And the number of contributing neighbours for each element:
+  .. image:: _static/images/uncert_count_nh.png
+
+Notice the standard deviation is only calculated where there are more than one contributing neighbour.
 
 Resampling from neighbour info
 ******************************

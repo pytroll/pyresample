@@ -114,40 +114,14 @@ def area_def2basemap(area_def, **kwargs):
         basemap_args['projection'] = 'cyl'
     else:
         basemap_args['projection'] = area_def.proj_dict['proj']
-    try:
-        basemap_args['lon_0'] = float(area_def.proj_dict['lon_0'])
-    except KeyError:
-        pass
-
-    try:
-        basemap_args['lat_0'] = float(area_def.proj_dict['lat_0']) 
-    except KeyError:
-        pass
-
-    try:
-        basemap_args['lon_1'] = float(area_def.proj_dict['lon_1']) 
-    except KeyError:
-        pass  
-
-    try:
-        basemap_args['lat_1'] = float(area_def.proj_dict['lat_1']) 
-    except KeyError:
-        pass  
-
-    try:
-        basemap_args['lon_2'] = float(area_def.proj_dict['lon_2']) 
-    except KeyError:
-        pass
-
-    try:
-        basemap_args['lat_2'] = float(area_def.proj_dict['lat_2']) 
-    except KeyError:
-        pass
-
-    try:
-        basemap_args['lat_ts'] = float(area_def.proj_dict['lat_ts']) 
-    except KeyError:
-        pass
+    
+    # Try adding potentially remaining args
+    for key in ('lon_0', 'lat_0', 'lon_1', 'lat_1', 'lon_2', 'lat_2', 
+                'lat_ts'):
+        try:
+            basemap_args[key] = float(area_def.proj_dict[key])
+        except KeyError:
+            pass
 
     return Basemap(**basemap_args) 
             

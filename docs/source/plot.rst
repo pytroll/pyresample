@@ -1,3 +1,5 @@
+.. _plot:
+
 Plotting with pyresample and Basemap
 ====================================
 Pyresample supports basic integration with Basemap (http://matplotlib.sourceforge.net/basemap).
@@ -133,7 +135,7 @@ Currently only the following set of Proj.4 arguments can be interpreted in the c
 {'proj', 'a', 'b', 'ellps', 'lon_0', 'lat_0', 'lon_1', 'lat_1', 'lon_2', 'lat_2', 'lat_ts'}
 
 Any other Proj.4 parameters will be ignored. 
-If the ellipsoid is not defined in terms of 'ellps', 'a' or ('a', 'b') an exception will be raised.
+If the ellipsoid is not defined in terms of 'ellps', 'a' or ('a', 'b') it will default to WGS84.
 
 The xsize and ysize in an AreaDefinition will only be used during resampling when the image data for use in
 **basemap.imshow** is created. The actual size and shape of the final plot is handled by matplotlib.

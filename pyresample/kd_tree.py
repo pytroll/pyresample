@@ -807,9 +807,8 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
             stddev = _remask_data(stddev, is_to_be_masked=False)
             count = _remask_data(count, is_to_be_masked=False)
 
-        # Set masks for invalid stddev and weighting count below 2
+        # Set masks for invalid stddev
         stddev = np.ma.array(stddev, mask=np.isnan(stddev))
-        count = np.ma.array(count, mask=(count < 2))
 
     #Reshape resampled data to correct shape
     result = result.reshape(output_shape)
@@ -829,7 +828,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     if with_uncert:
         if np.ma.isMA(result):
             stddev = np.ma.array(stddev, mask=(result.mask | stddev.mask))
-            count = np.ma.array(count, mask=(result.mask | count.mask))
+            count = np.ma.array(count, mask=result.mask)
         return result, stddev, count
     else:
         return result
