@@ -172,7 +172,7 @@ By default the functions return the result of the resampling as a single numpy a
 then the following list of numpy arrays will be returned instead: **(result, stddev, count)**. **result** is the usual result. **stddev** is the weighted standard deviation for each element in the result. **count** is the number of data values used in the weighting for each element in the result.
 
 The principle is to view the calculated value for each element in the result as a weighted average of values sampled from a statistical variable. 
-As an estimate of the standard deviation of this sample is calculated using the unbiased weighted estimator given as 
+An estimate of the standard deviation of the distribution is calculated using the unbiased weighted estimator given as 
 **stddev = sqrt((V1 / (V1 ** 2 + V2)) * sum(wi * (xi - result) ** 2))** where **result** is the result of the resampling. **xi** is the value of a contributing neighbour 
 and **wi** is the corresponding weight. The coefficients are given as **V1 = sum(wi)** and **V2 = sum(wi ** 2)**. The standard deviation is only calculated for elements in
 the result where more than one neighbour has contributed to the weighting. The **count** numpy array can be used for filtering at a higher number of contributing neigbours.
