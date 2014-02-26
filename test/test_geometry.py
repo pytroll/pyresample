@@ -509,5 +509,48 @@ class Test(unittest.TestCase):
         self.assertTrue((y__.data == y_expects).all())
 
 
+    def test_corners(self):
+        """Test the corner properties"""
+        from pyresample import utils
+        import numpy as np
+        area_id = 'baws'
+        area_name = 'Test area baws'
+        proj_id = 'baws'
+        x_size = 1400
+        y_size = 1400
+        area_extent = [-475617.0, 5324430.0, 924383.0, 6724430.0]
+        proj_dict = {'ellps': 'bessel', 
+                     'lon_0': '14', 
+                     'proj': 'aea', 
+                     'lat_1': '60', 
+                     'lat_2': '60'}
+        area_def = utils.get_area_def(area_id, 
+                                      area_name, 
+                                      proj_id, 
+                                      proj_dict, 
+                                      x_size, y_size, 
+                                      area_extent)
+
+        corners = area_def.corners
+        self.assertAlmostEqual(np.rad2deg(corners[0].lon), 3.6330765317047953)
+        self.assertAlmostEqual(np.rad2deg(corners[0].lat), 65.814387639583856)
+        self.assertAlmostEqual(np.rad2deg(corners[1].lon), 33.719973797301968)
+        self.assertAlmostEqual(np.rad2deg(corners[1].lat), 64.899876035407289)
+        self.assertAlmostEqual(np.rad2deg(corners[2].lon), 27.673973672109508)
+        self.assertAlmostEqual(np.rad2deg(corners[2].lat), 52.700325218767617)
+        self.assertAlmostEqual(np.rad2deg(corners[3].lon), 6.893594960144088)
+        self.assertAlmostEqual(np.rad2deg(corners[3].lat), 53.335796768826384)
+
+        ob_corners = area_def.outer_boundary_corners
+        self.assertAlmostEqual(np.rad2deg(ob_corners[0].lon), 3.6206470940779134)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[0].lat), 65.818140630566901)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[1].lon), 33.733114510263896)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[1].lat), 64.902858589601166)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[2].lon), 27.67965639582464)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[2].lat), 52.694968994188152)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[3].lon), 6.8869748038970524)
+        self.assertAlmostEqual(np.rad2deg(ob_corners[3].lat), 53.330819380313962)
+
+
 if __name__ == '__main__':
     unittest.main()

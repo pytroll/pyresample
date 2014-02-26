@@ -1,6 +1,6 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010, 2013  Esben S. Nielsen
+#Copyright (C) 2010, 2013, 2014  Esben S. Nielsen
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -484,8 +484,8 @@ class AreaDefinition(BaseDefinition):
         
         # Calculate area_extent in lon lat
         proj = _spatial_mp.Proj(**proj_dict)
-        corner_lons, corner_lats = proj((area_extent[0], area_extent[2]), 
-                                        (area_extent[1], area_extent[3]), 
+        corner_lons, corner_lats = proj((area_extent[0], area_extent[2]),
+                                        (area_extent[1], area_extent[3]),
                                         inverse=True)
         self.area_extent_ll = (corner_lons[0], corner_lats[0], 
                                corner_lons[1], corner_lats[1])
@@ -724,6 +724,23 @@ class AreaDefinition(BaseDefinition):
     @property
     def proj_y_coords(self):
         return self.get_proj_coords(data_slice=(slice(None), 0))[1]
+
+    @property
+    def outer_boundary_corners(self):
+        """Returns the lon,lat of the outer edges of the corner points
+        """
+        from pyresample.spherical_geometry import Coordinate
+        proj = _spatial_mp.Proj(**self.proj_dict)
+
+        corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
+                                         self.area_extent[2], self.area_extent[0]), 
+                                        (self.area_extent[3], self.area_extent[3],
+                                         self.area_extent[1], self.area_extent[1]),
+                                        inverse=True)
+        return [Coordinate(corner_lons[0], corner_lats[0]),
+                Coordinate(corner_lons[1], corner_lats[1]),
+                Coordinate(corner_lons[2], corner_lats[2]),
+                Coordinate(corner_lons[3], corner_lats[3])]
 
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
