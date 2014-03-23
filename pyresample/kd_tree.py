@@ -1,7 +1,7 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
-#
+# Copyright (C) 2010, 2014  Esben S. Nielsen
+#                           Adam.Dybbroe
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
 #the Free Software Foundation, either version 3 of the License, or
@@ -15,7 +15,8 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Handles reprojection of geolocated data. Several types of resampling are supported"""
+"""Handles reprojection of geolocated data. Several types of resampling are
+supported"""
 
 import types
 import warnings
@@ -137,10 +138,10 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     """
 
     def gauss(sigma):
-        #Return gauss function object
+        # Return gauss function object
         return lambda r: np.exp(-r**2 / float(sigma)**2)
     
-    #Build correct sigma argument
+    # Build correct sigma argument
     is_multi_channel = False
     try:
         sigmas.__iter__()
@@ -229,8 +230,9 @@ def resample_custom(source_geo_def, data, target_geo_def,
                      nprocs=nprocs, segments=segments, with_uncert=with_uncert)
 
 def _resample(source_geo_def, data, target_geo_def, resample_type,
-             radius_of_influence, neighbours=8, epsilon=0, weight_funcs=None,
-             fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
+              radius_of_influence, neighbours=8, epsilon=0, weight_funcs=None,
+              fill_value=0, reduce_data=True, nprocs=1, segments=None, 
+              with_uncert=False):
     """Resamples swath using kd-tree approach"""    
                 
     valid_input_index, valid_output_index, index_array, distance_array = \
@@ -245,17 +247,18 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
     
     
     return get_sample_from_neighbour_info(resample_type, 
-                                         target_geo_def.shape, 
-                                         data, valid_input_index, 
-                                         valid_output_index, 
-                                         index_array, 
-                                         distance_array=distance_array, 
-                                         weight_funcs=weight_funcs, 
-                                         fill_value=fill_value, 
-                                         with_uncert=with_uncert)
+                                          target_geo_def.shape, 
+                                          data, valid_input_index, 
+                                          valid_output_index, 
+                                          index_array, 
+                                          distance_array=distance_array, 
+                                          weight_funcs=weight_funcs, 
+                                          fill_value=fill_value, 
+                                          with_uncert=with_uncert)
     
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
-                       neighbours=8, epsilon=0, reduce_data=True, nprocs=1, segments=None):
+                       neighbours=8, epsilon=0, reduce_data=True, 
+                       nprocs=1, segments=None):
     """Returns neighbour info
     
     :Parameters:
@@ -300,30 +303,30 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         else:
             segments = 1
     
-    #Find reduced input coordinate set
+    # Find reduced input coordinate set
     valid_input_index, source_lons, source_lats = _get_valid_input_index(source_geo_def, target_geo_def, 
                                                reduce_data, 
                                                radius_of_influence, 
                                                nprocs=nprocs)    
     
-    #Create kd-tree
+    # Create kd-tree
     try:
         resample_kdtree = _create_resample_kdtree(source_lons, source_lats, 
                                                   valid_input_index, 
                                                   nprocs=nprocs)
     except EmptyResult:
-        #Handle if all input data is reduced away
+        # Handle if all input data is reduced away
          valid_output_index, index_array, distance_array = \
              _create_empty_info(source_geo_def, target_geo_def, neighbours)
          return (valid_input_index, valid_output_index, index_array, 
                  distance_array)
      
     if segments > 1:
-        #Iterate through segments     
+        # Iterate through segments     
         for i, target_slice in enumerate(geometry._get_slice(segments, 
                                                    target_geo_def.shape)):
 
-            #Query on slice of target coordinates
+            # Query on slice of target coordinates
             next_voi, next_ia, next_da = \
                     _query_resample_kdtree(resample_kdtree, source_geo_def, 
                                            target_geo_def, 
@@ -333,9 +336,9 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                                            reduce_data=reduce_data, 
                                            nprocs=nprocs)
 
-            #Build result iteratively
+            # Build result iteratively
             if i == 0:
-                #First iteration
+                # First iteration
                 valid_output_index = next_voi
                 index_array = next_ia
                 distance_array = next_da
@@ -348,7 +351,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                     index_array = np.append(index_array, next_ia)
                     distance_array = np.append(distance_array, next_da)        
     else:
-        #Query kd-tree with full target coordinate set        
+        # Query kd-tree with full target coordinate set        
         full_slice = slice(None)
         valid_output_index, index_array, distance_array = \
                     _query_resample_kdtree(resample_kdtree, source_geo_def, 
@@ -382,35 +385,42 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
             source_lons.shape != source_lats.shape:
         raise ValueError('Mismatch between lons and lats')
     
-    #Remove illegal values
+    # Remove illegal values
     valid_data = ((source_lons >= -180) & (source_lons <= 180) & 
                   (source_lats <= 90) & (source_lats >= -90))
     valid_input_index = np.ones(source_geo_def.size, dtype=np.bool)
     
     if reduce_data:
-        #Reduce dataset 
+        # Reduce dataset 
+        print("target is of type CoordinateDefinition? " + 
+              str(isinstance(target_geo_def, geometry.CoordinateDefinition)))
         if (isinstance(source_geo_def, geometry.CoordinateDefinition) and 
             isinstance(target_geo_def, (geometry.GridDefinition, 
-                                       geometry.AreaDefinition))) or \
+                                        geometry.AreaDefinition))) or \
            (isinstance(source_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition)) and
             isinstance(target_geo_def, (geometry.GridDefinition, 
-                                        geometry.AreaDefinition))):
-            #Resampling from swath to grid or from grid to grid
-            lonlat_boundary = target_geo_def.get_boundary_lonlats()
-            valid_input_index = \
-                data_reduce.get_valid_index_from_lonlat_boundaries(
+                                        geometry.AreaDefinition))) or \
+           (isinstance(source_geo_def, geometry.CoordinateDefinition) and
+            isinstance(target_geo_def, geometry.CoordinateDefinition)): 
+           # Resampling from swath to grid or from grid to grid, or from swath
+           # to swath:
+           print("Reducing data...")
+           lonlat_boundary = target_geo_def.get_boundary_lonlats()
+           valid_input_index = \
+               data_reduce.get_valid_index_from_lonlat_boundaries(
                                             lonlat_boundary[0],
                                             lonlat_boundary[1], 
                                             source_lons, source_lats, 
-                                            radius_of_influence)
+                                            radius_of_influence)        
+           print("Data reduced...")
     
-    #Combine reduced and legal values
+    # Combine reduced and legal values
     valid_input_index = (valid_data & valid_input_index)
     
     
     if(isinstance(valid_input_index, np.ma.core.MaskedArray)):
-        #Make sure valid_input_index is not a masked array
+        # Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
     
     return valid_input_index, source_lons, source_lats
@@ -423,9 +433,9 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
     
     if reduce_data:
         if isinstance(source_geo_def, (geometry.GridDefinition, 
-                                         geometry.AreaDefinition)) and \
+                                       geometry.AreaDefinition)) and \
              isinstance(target_geo_def, geometry.CoordinateDefinition):
-            #Resampling from grid to swath
+            # Resampling from grid to swath
             lonlat_boundary = source_geo_def.get_boundary_lonlats()
             valid_output_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
@@ -436,16 +446,17 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                                             radius_of_influence)
             valid_output_index = valid_output_index.astype(np.bool)
             
-    #Remove illegal values
+    # Remove illegal values
     valid_out = ((target_lons >= -180) & (target_lons <= 180) & 
                   (target_lats <= 90) & (target_lats >= -90))
     
-    #Combine reduced and legal values
+    # Combine reduced and legal values
     valid_output_index = (valid_output_index & valid_out)
     
     return valid_output_index
         
-def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=1):
+def _create_resample_kdtree(source_lons, source_lats, valid_input_index, 
+                            nprocs=1):
     """Set up kd tree on input"""
     
     """
