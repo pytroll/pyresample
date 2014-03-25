@@ -392,7 +392,6 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
     
     if reduce_data:
         # Reduce dataset 
-        print("target is of type CoordinateDefinition? " + 
               str(isinstance(target_geo_def, geometry.CoordinateDefinition)))
         if (isinstance(source_geo_def, geometry.CoordinateDefinition) and 
             isinstance(target_geo_def, (geometry.GridDefinition, 
@@ -405,7 +404,6 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
             isinstance(target_geo_def, geometry.CoordinateDefinition)): 
            # Resampling from swath to grid or from grid to grid, or from swath
            # to swath:
-           print("Reducing data...")
            lonlat_boundary = target_geo_def.get_boundary_lonlats()
            valid_input_index = \
                data_reduce.get_valid_index_from_lonlat_boundaries(
@@ -413,7 +411,6 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
                                             lonlat_boundary[1], 
                                             source_lons, source_lats, 
                                             radius_of_influence)        
-           print("Data reduced...")
     
     # Combine reduced and legal values
     valid_input_index = (valid_data & valid_input_index)
