@@ -392,16 +392,13 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
     
     if reduce_data:
         # Reduce dataset 
-              str(isinstance(target_geo_def, geometry.CoordinateDefinition)))
         if (isinstance(source_geo_def, geometry.CoordinateDefinition) and 
             isinstance(target_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition))) or \
            (isinstance(source_geo_def, (geometry.GridDefinition, 
                                         geometry.AreaDefinition)) and
             isinstance(target_geo_def, (geometry.GridDefinition, 
-                                        geometry.AreaDefinition))) or \
-           (isinstance(source_geo_def, geometry.CoordinateDefinition) and
-            isinstance(target_geo_def, geometry.CoordinateDefinition)): 
+                                        geometry.AreaDefinition))):
            # Resampling from swath to grid or from grid to grid, or from swath
            # to swath:
            lonlat_boundary = target_geo_def.get_boundary_lonlats()
