@@ -24,6 +24,8 @@ import numpy as np
 cimport numpy as np
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
+cimport cython
+@cython.boundscheck(False)
 def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, area_extent, size):
     """Trishchenko stuff.
     """
@@ -50,22 +52,29 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
     yp = -yp
     yl = -yl
 
-    cdef int p0 = 1024
-    cdef int l0 = 2840
+    cdef int pmax = data.shape[1] - 1
+    cdef int lmax = data.shape[0] - 1
 
-    cols = range(len(y_1d))
-    cols.reverse()
-    lines = range(len(x_1d))
+    cdef int p0 = pmax / 2
+    cdef int l0 = lmax / 2
+
+    cdef int l_a, l_b, p_a, p_b
+
+    #cols = range(len(y_1d))
+    #cols.reverse()
+    lines = range(x_size)
 
     cdef int maxcol = 2048
     cdef int maxline = 5680
 
-    cdef int i, j
-    cdef double dx, dy, d
+    cdef size_t i, j
+    cdef double dx, dy, d, dl, dp, w_l, w_p
 
     cdef int cnt = 0
 
-    for i in cols:
+
+
+    for i in range(y_size):
         lines.reverse()
         for j in lines:
             cnt = 0
@@ -73,35 +82,55 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
                 cnt += 1
                 # algorithm does not converge.
                 if cnt > 5:
-                    image[x_size - 1 - i, j] = 0
                     break
 
-                try:
+                if l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0:
                     dx = x_1d[j] - source_x[l0, p0]
                     dy = y_1d[i] - source_y[l0, p0]
-                except IndexError:
-                    image[x_size - 1 - i, j] = 0
-                    l0 = max(0, min(maxline - 1, l0))
-                    p0 = max(0, min(maxcol - 1, p0))
+                else:
+                    l0 = max(0, min(lmax - 1, l0))
+                    p0 = max(0, min(pmax - 1, p0))
                     break
 
                 d = yl[l0, p0]*xp[l0, p0] - yp[l0, p0]*xl[l0, p0]
                 dl = -(yl[l0, p0]*dx - xl[l0, p0]*dy) / d
                 dp = (yp[l0, p0]*dx - xp[l0, p0]*dy) / d
 
-                l0 += int(dl)
-                p0 += int(dp)
-
                 if abs(dp) < 1 and abs(dl) < 1:
-                    try:
-                        image[x_size - 1 - i, j] = data[l0, p0]
+                    if l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0:
+                        # bilinear interpolation
+                        if dl < 0:
+                            l_a = l0 - 1
+                            l_b = l0
+                            w_l = 1 + dl
+                        else:
+                            l_a = l0
+                            l_b = l0 + 1
+                            w_l = dl
 
-                    except IndexError:
-                        l0 = min(maxline - 1, l0)
-                        l0 = max(0, l0)
-                        p0 = min(maxcol - 1, p0)
-                        p0 = max(0, p0)
+                        if dp < 0:
+                            p_a = p0 - 1
+                            p_b = p0
+                            w_p = 1 + dp
+                        else:
+                            p_a = p0
+                            p_b = p0 + 1
+                            w_p = dp
+                        image[x_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] + 
+                                                    (1 - w_l) * w_p * data[l_a, p_b] + 
+                                                    w_l * (1 - w_p) * data[l_b, p_a] + 
+                                                    w_l * w_p * data[l_b, p_b])
+
+                        # simple mode
+                        #image[x_size - 1 - i, j] = data[l0, p0]
+                    else:
+                        l0 = max(0, min(lmax - 1, l0))
+                        p0 = max(0, min(pmax - 1, p0))
                     break
+                else:
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+
 
 
     return image

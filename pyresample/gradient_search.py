@@ -122,19 +122,24 @@ def show(data):
     img = pil.fromarray(np.array((data - data.min()) * 255.0 /
                                  (data.max() - data.min()), np.uint8))
     img.show()
-
+    img.save("/tmp/gradient2.png")
 
 
 if __name__ == '__main__':
     t = datetime(2013, 3, 18, 8, 15, 22, 352000)
     g = PolarFactory.create_scene("noaa", "16", "avhrr", t, orbit="64374")
     g.load()
+
     # for comparison
 
-    tic = datetime.now()
-    l = g.project("scan2")
-    toc = datetime.now()
-    print "pyresample took", toc - tic
+    # tic = datetime.now()
+    # l = g.project("scan2")
+    # toc = datetime.now()
+    # print "pyresample took", toc - tic
+
+
+
+
     import numpy as np
     import pyproj
 
