@@ -34,10 +34,10 @@ debug_on()
 import mpop.utils
 mpop.utils.debug_on()
 import pyximport; pyximport.install()
-from _gradient_search import fast_gradient_search
+from _gradient_search import fast_gradient_search, two_step_fast_gradient_search
 from pyresample import data_reduce
 
-def gradient_search(data, lons, lats, area):
+def gradient_search(data, lons, lats, area, chunk_size=0):
 
     tic = datetime.now()
     p = pyproj.Proj(**area.proj_dict)
@@ -51,6 +51,13 @@ def gradient_search(data, lons, lats, area):
 
     colsmin, colsmax = np.arange(lons.shape[1])[np.sum(idx, 0, bool)][[0, -1]]
     linesmin, linesmax = np.arange(lons.shape[0])[np.sum(idx, 1, bool)][[0, -1]]
+
+    if chunk_size != 0:
+        linesmin -= linesmin%chunk_size
+        linesmax += chunk_size
+        linesmax -= linesmax%chunk_size
+
+
     projection_x_coords, projection_y_coords = p(lons[linesmin:linesmax,
                                                       colsmin:colsmax],
                                                  lats[linesmin:linesmax,
@@ -59,11 +66,21 @@ def gradient_search(data, lons, lats, area):
     toc2 = datetime.now()
     print "pyproj took", toc2 - tic
     tic2 = datetime.now()
-    image = fast_gradient_search(g[0.6].data[linesmin:linesmax,
-                                             colsmin:colsmax],
-                                 projection_x_coords, projection_y_coords,
-                                 area.area_extent,
-                                 area.shape)
+
+    if chunk_size == 0:
+        image = fast_gradient_search(data[linesmin:linesmax,
+                                          colsmin:colsmax],
+                                     projection_x_coords, projection_y_coords,
+                                     area.area_extent,
+                                     area.shape)
+    else:
+        image = two_step_fast_gradient_search(data[linesmin:linesmax,
+                                                   colsmin:colsmax],
+                                              projection_x_coords, projection_y_coords,
+                                              chunk_size,
+                                              area.area_extent,
+                                              area.shape)
+
 
     toc = datetime.now()
 
@@ -83,9 +100,32 @@ def show(data):
 
 
 if __name__ == '__main__':
-    t = datetime(2013, 3, 18, 8, 15, 22, 352000)
-    g = PolarFactory.create_scene("noaa", "16", "avhrr", t, orbit="64374")
-    g.load()
+    # avhrr example
+    # t = datetime(2013, 3, 18, 8, 15, 22, 352000)
+    # g = PolarFactory.create_scene("noaa", "16", "avhrr", t, orbit="64374")
+    # g.load()
+
+    # from mpop.projector import get_area_def
+
+    # area = get_area_def("scan2")
+
+    # # for comparison
+
+    # tic = datetime.now()
+    # l = g.project(area)
+    # toc = datetime.now()
+    # print "pyresample took", toc - tic
+
+
+    # res = gradient_search(g[0.6].data, g.area.lons, g.area.lats, area)
+
+    # show(res)
+
+    # modis example
+
+    t = datetime(2012, 12, 10, 10, 29, 35)
+    g = PolarFactory.create_scene("terra", "", "modis", t)
+    g.load([0.635])
 
     from mpop.projector import get_area_def
 
@@ -93,12 +133,11 @@ if __name__ == '__main__':
 
     # for comparison
 
-    tic = datetime.now()
-    l = g.project(area)
-    toc = datetime.now()
-    print "pyresample took", toc - tic
+    #tic = datetime.now()
+    #l = g.project(area)
+    #toc = datetime.now()
+    #print "pyresample took", toc - tic
 
-
-    res = gradient_search(g[0.6].data, g.area.lons, g.area.lats, area)
+    res = gradient_search(g[0.635].data.astype(np.float64), g[0.635].area.lons, g[0.635].area.lats, area, 10)
 
     show(res)
