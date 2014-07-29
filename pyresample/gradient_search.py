@@ -33,15 +33,20 @@ debug_on()
 
 import mpop.utils
 mpop.utils.debug_on()
-import pyximport; pyximport.install()
+import pyximport
+pyximport.install()
 from _gradient_search import fast_gradient_search, two_step_fast_gradient_search
 from pyresample import data_reduce
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def gradient_search(data, lons, lats, area, chunk_size=0):
 
     tic = datetime.now()
     p = pyproj.Proj(**area.proj_dict)
-
 
     lon_bound, lat_bound = area.get_boundary_lonlats()
     idx = data_reduce.get_valid_index_from_lonlat_boundaries(lon_bound,
@@ -50,13 +55,13 @@ def gradient_search(data, lons, lats, area, chunk_size=0):
                                                              5000)
 
     colsmin, colsmax = np.arange(lons.shape[1])[np.sum(idx, 0, bool)][[0, -1]]
-    linesmin, linesmax = np.arange(lons.shape[0])[np.sum(idx, 1, bool)][[0, -1]]
+    linesmin, linesmax = np.arange(
+        lons.shape[0])[np.sum(idx, 1, bool)][[0, -1]]
 
     if chunk_size != 0:
-        linesmin -= linesmin%chunk_size
+        linesmin -= linesmin % chunk_size
         linesmax += chunk_size
-        linesmax -= linesmax%chunk_size
-
+        linesmax -= linesmax % chunk_size
 
     projection_x_coords, projection_y_coords = p(lons[linesmin:linesmax,
                                                       colsmin:colsmax],
@@ -64,7 +69,7 @@ def gradient_search(data, lons, lats, area, chunk_size=0):
                                                       colsmin:colsmax])
 
     toc2 = datetime.now()
-    print "pyproj took", toc2 - tic
+    logger.debug("pyproj took %s", str(toc2 - tic))
     tic2 = datetime.now()
 
     if chunk_size == 0:
@@ -81,11 +86,10 @@ def gradient_search(data, lons, lats, area, chunk_size=0):
                                               area.area_extent,
                                               area.shape)
 
-
     toc = datetime.now()
 
-    print "resampling took", toc - tic
-    print "from which fast_gradient_search took", toc - tic2
+    logger.debug("resampling took %s", str(toc - tic))
+    logger.debug("from which gradient search took %s", str(toc - tic2))
     return image
 
 
@@ -100,6 +104,7 @@ def show(data):
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger("gradient_search")
     # avhrr example
     # t = datetime(2013, 3, 18, 8, 15, 22, 352000)
     # g = PolarFactory.create_scene("noaa", "16", "avhrr", t, orbit="64374")
@@ -109,13 +114,12 @@ if __name__ == '__main__':
 
     # area = get_area_def("scan2")
 
-    # # for comparison
+    # for comparison
 
     # tic = datetime.now()
     # l = g.project(area)
     # toc = datetime.now()
     # print "pyresample took", toc - tic
-
 
     # res = gradient_search(g[0.6].data, g.area.lons, g.area.lats, area)
 
@@ -125,19 +129,33 @@ if __name__ == '__main__':
 
     t = datetime(2012, 12, 10, 10, 29, 35)
     g = PolarFactory.create_scene("terra", "", "modis", t)
-    g.load([0.635])
+    g.load([0.635, 0.85], resolution=1000)
+    g.load([10.8])
 
     from mpop.projector import get_area_def
 
-    area = get_area_def("scan2")
+    area = get_area_def("euron1")
 
     # for comparison
 
-    #tic = datetime.now()
-    #l = g.project(area)
-    #toc = datetime.now()
-    #print "pyresample took", toc - tic
+    tic = datetime.now()
+    l = g.project(area)
+    toc = datetime.now()
+    print "pyresample took", toc - tic
 
-    res = gradient_search(g[0.635].data.astype(np.float64), g[0.635].area.lons, g[0.635].area.lats, area, 10)
+    #res = gradient_search(g[0.635].data.astype(np.float64), g[0.635].area.lons, g[0.635].area.lats, area, 10)
 
-    show(res)
+    for wl in [0.635, 0.85]:
+
+        res = gradient_search(g[wl].data.astype(
+            np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
+        g[wl] = np.ma.masked_values(res, 0)
+
+    for wl in [10.8]:
+
+        res = gradient_search(g[wl].data.astype(
+            np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
+        g[wl] = np.ma.masked_values(res, 0)
+
+    # show(res)
+    g.image.overview().show()
