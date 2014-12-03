@@ -1,6 +1,10 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010  Esben S. Nielsen
+#Copyright (C) 2010-2014
+#
+# Authors:
+#    Esben S. Nielsen
+#    Thomas Lavergne
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -294,4 +298,19 @@ def _downcast_index_array(index_array, size):
         index_array[mask] = size
         index_array = index_array.astype(np.uint16)
     return index_array
+
+def wrap_longitudes(lons):
+    """Wrap longitudes to the [-180:+180] validity range (preserves dtype)
+    
+    :Parameters:
+    lons : numpy array
+        Longitudes in degrees
+
+    :Returns: 
+    lons : numpy array
+        Longitudes wrapped into [-180:+180] validity range
         
+    """
+    lons_wrap = (lons + 180) % (360) - 180
+    return lons_wrap.astype(lons.dtype)
+

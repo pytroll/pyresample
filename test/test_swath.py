@@ -23,6 +23,13 @@ class Test(unittest.TestCase):
     lons = data[:, 0].astype(np.float64)
     lats = data[:, 1].astype(np.float64)
     tb37v = data[:, 2].astype(np.float64)
+
+    # screen out the fill values
+    fvalue = -10000000000.0
+    valid_fov = (lons != fvalue) * (lats != fvalue) * (tb37v != fvalue)
+    lons = lons[valid_fov]
+    lats = lats[valid_fov] 
+    tb37v = tb37v[valid_fov]
     
     @tmp           
     def test_self_map(self):

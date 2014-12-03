@@ -1,6 +1,10 @@
 #pyresample, Resampling of remote sensing image data in python
 # 
-#Copyright (C) 2010, 2013  Esben S. Nielsen
+#Copyright (C) 2010-2014
+#
+#Authors:
+#    Esben S. Nielsen
+#    Thomas Lavergne
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -18,8 +22,12 @@
 """Classes for geometry operations"""
 import weakref
 
+import warnings
+
+import math
 import numpy as np
 
+import utils
 import _spatial_mp
 
 
@@ -47,11 +55,18 @@ class BaseDefinition(object):
         elif lons is not None:
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
-            
-        self.nprocs = nprocs
+            if lons.min() < -180. or lons.max() > +180.:
+                warnings.warn('All geometry objects expect longitudes in the [-180:+180] range. ' + \
+                              'We will now automatically wrap your longitudes into [-180:+180], and continue. ' + \
+                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
 
-        self.lons = lons
+        self.nprocs = nprocs
         self.lats = lats
+        if lons is not None and ( (lons.min() < -180. or lons.max() > +180.) ):
+            # wrap longitudes to [-180;+180]
+            self.lons = utils.wrap_longitudes(lons)
+        else:
+            self.lons = lons
         
         self.cartesian_coords = None
     

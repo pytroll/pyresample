@@ -23,6 +23,13 @@ class Test(unittest.TestCase):
     lons = data[:, 0].astype(np.float64)
     lats = data[:, 1].astype(np.float64)
     tb37v = data[:, 2].astype(np.float64)
+
+    # screen out the fill values
+    fvalue = -10000000000.0
+    valid_fov = (lons != fvalue) * (lats != fvalue) * (tb37v != fvalue)
+    lons = lons[valid_fov]
+    lats = lats[valid_fov] 
+    tb37v = tb37v[valid_fov]
  
     def test_ellps2axis(self):
         a, b = pr.plot.ellps2axis('WGS84')
@@ -51,6 +58,7 @@ class Test(unittest.TestCase):
     def test_easeplot(self):
         area_def = pr.utils.parse_area_file(os.path.join(os.path.dirname(__file__), 
                                             'test_files', 'areas.cfg'), 'ease_sh')[0]
+
         swath_def = pr.geometry.SwathDefinition(self.lons, self.lats)
         result = pr.kd_tree.resample_nearest(swath_def, self.tb37v, area_def, 
                                              radius_of_influence=20000, 

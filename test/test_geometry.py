@@ -1,8 +1,15 @@
 from __future__ import with_statement
 
+import sys
 import unittest
 
 import numpy as np
+
+import warnings
+if sys.version_info < (2, 6):
+    warnings.simplefilter("ignore")
+else:
+    warnings.simplefilter("always")
 
 from pyresample import geometry, geo_filter
 
@@ -79,6 +86,67 @@ class Test(unittest.TestCase):
         self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp, 
                         msg='Calculation of cartesian coordinates failed')   
     
+    def test_base_lon_wrapping(self):
+
+        lons1 = np.arange(-135.,+135,50.)
+        lats  = np.ones_like(lons1) * 70.
+
+        with warnings.catch_warnings(record=True) as w1:
+            base_def1 = geometry.BaseDefinition(lons1,lats)
+            self.assertFalse(len(w1) != 0, 'Got warning <%s>, but was not expecting one' % w1)
+       
+        lons2 = np.where(lons1<0,lons1+360,lons1)
+        with warnings.catch_warnings(record=True) as w2:
+            base_def2 = geometry.BaseDefinition(lons2,lats)
+            self.assertFalse(len(w2) != 1, 'Failed to trigger a warning on longitude wrapping')
+            self.assertFalse(('-180:+180' not in str(w2[0].message)), \
+                             'Failed to trigger correct warning about longitude wrapping')
+
+        self.assertFalse(base_def1 != base_def2, 'longitude wrapping to [-180:+180] did not work')
+
+        with warnings.catch_warnings(record=True) as w3:
+            base_def3 = geometry.BaseDefinition(None,None)
+            self.assertFalse(len(w3) != 0, 'Got warning <%s>, but was not expecting one' % w3)
+
+        self.assert_raises(ValueError, base_def3.get_lonlats)
+
+    def test_base_type(self):
+        lons1 = np.arange(-135.,+135,50.)
+        lats =  np.ones_like(lons1) * 70.
+
+        # Test dtype is preserved without longitude wrapping
+        basedef = geometry.BaseDefinition(lons1,lats)
+        lons,_  = basedef.get_lonlats()
+        self.assertEqual(lons.dtype,lons1.dtype,\
+                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" % \
+                         (lons1.dtype,lons.dtype,))
+
+        lons1_ints = lons1.astype('int')
+        basedef = geometry.BaseDefinition(lons1_ints,lats)
+        lons,_  = basedef.get_lonlats()
+        self.assertEqual(lons.dtype,lons1_ints.dtype,\
+                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" % \
+                         (lons1_ints.dtype,lons.dtype,))
+
+        # Test dtype is preserved with automatic longitude wrapping
+        lons2 = np.where(lons1<0,lons1+360,lons1)
+        with warnings.catch_warnings(record=True) as w:
+            basedef = geometry.BaseDefinition(lons2,lats)
+
+        lons,_  = basedef.get_lonlats()
+        self.assertEqual(lons.dtype,lons2.dtype,\
+                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" % \
+                         (lons2.dtype,lons.dtype,))
+
+        lons2_ints = lons2.astype('int')
+        with warnings.catch_warnings(record=True) as w:
+            basedef = geometry.BaseDefinition(lons2_ints,lats)
+
+        lons,_  = basedef.get_lonlats()
+        self.assertEqual(lons.dtype,lons2_ints.dtype,\
+                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" % \
+                         (lons2_ints.dtype,lons.dtype,))
+
     def test_swath(self):
         lons1 = np.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
         lats1 = np.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
@@ -87,8 +155,27 @@ class Test(unittest.TestCase):
         
         lons2, lats2 = swath_def.get_lonlats()
         
-        self.failIf(id(lons1) != id(lons2) or id(lats1) != id(lats2), 
+        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2), 
                     msg='Caching of swath coordinates failed')
+
+    def test_swath_wrap(self):
+        lons1 = np.fromfunction(lambda y, x: 3 + (10.0/100)*x, (5000, 100))
+        lats1 = np.fromfunction(lambda y, x: 75 - (50.0/5000)*y, (5000, 100))
+
+        lons1 += 180.
+
+        with warnings.catch_warnings(record=True) as w1:
+            swath_def = geometry.BaseDefinition(lons1,lats1)
+            self.assertFalse(len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
+            self.assertFalse(('-180:+180' not in str(w1[0].message)), \
+                             'Failed to trigger correct warning about longitude wrapping')
+        
+        lons2, lats2 = swath_def.get_lonlats()
+        
+        self.assertTrue(id(lons1) != id(lons2), 
+                    msg='Caching of swath coordinates failed with longitude wrapping')
+
+        self.assertTrue(lons2.min() > -180 and lons2.max() < 180, 'Wrapping of longitudes failed for SwathDefinition')
                
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -117,7 +204,7 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        self.failIf(area_def != area_def2, 'area_defs are not equal as expected')
+        self.assertFalse(area_def != area_def2, 'area_defs are not equal as expected')
          
     def test_not_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -148,14 +235,14 @@ class Test(unittest.TestCase):
                                     5568742.4000000004,
                                     5568742.4000000004]
                                     )
-        self.failIf(area_def == msg_area, 'area_defs are not expected to be equal')
+        self.assertFalse(area_def == msg_area, 'area_defs are not expected to be equal')
        
     def test_swath_equal(self):
         lons = np.array([1.2, 1.3, 1.4, 1.5])
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
         swath_def2 = geometry.SwathDefinition(lons, lats)
-        self.failIf(swath_def != swath_def2, 'swath_defs are not equal as expected')
+        self.assertFalse(swath_def != swath_def2, 'swath_defs are not equal as expected')
         
     def test_swath_not_equal(self):
         lats1 = np.array([65.9, 65.86, 65.82, 65.78])
@@ -163,7 +250,7 @@ class Test(unittest.TestCase):
         lats2 = np.array([65.91, 65.85, 65.80, 65.75])
         swath_def = geometry.SwathDefinition(lons, lats1)
         swath_def2 = geometry.SwathDefinition(lons, lats2)
-        self.failIf(swath_def == swath_def2, 'swath_defs are not expected to be equal')
+        self.assertFalse(swath_def == swath_def2, 'swath_defs are not expected to be equal')
 
     def test_swath_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -182,7 +269,7 @@ class Test(unittest.TestCase):
         
         swath_def = geometry.SwathDefinition(*area_def.get_lonlats())
 
-        self.failIf(swath_def != area_def, "swath_def and area_def should be equal")
+        self.assertFalse(swath_def != area_def, "swath_def and area_def should be equal")
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -198,7 +285,7 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
 
-        self.failIf(area_def != swath_def, "swath_def and area_def should be equal")
+        self.assertFalse(area_def != swath_def, "swath_def and area_def should be equal")
 
     def test_swath_not_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -219,7 +306,7 @@ class Test(unittest.TestCase):
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
 
-        self.failIf(swath_def == area_def, "swath_def and area_def should be different")
+        self.assertFalse(swath_def == area_def, "swath_def and area_def should be different")
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -235,7 +322,7 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
 
-        self.failIf(area_def == swath_def, "swath_def and area_def should be different")
+        self.assertFalse(area_def == swath_def, "swath_def and area_def should be different")
         
     def test_concat_1d(self):
         lons1 = np.array([1, 2, 3])

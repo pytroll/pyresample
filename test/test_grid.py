@@ -153,7 +153,7 @@ class Test(unittest.TestCase):
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.assertAlmostEqual(cross_sum, expected, msg='Generate linesample failed')
-        self.failIf(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16, 
+        self.assertFalse(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16, 
                     'Generate linesample failed. Downcast to uint16 expected')
     
     @mp
