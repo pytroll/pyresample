@@ -85,7 +85,16 @@ class Test(unittest.TestCase):
         exp = 5872039989466.8457031
         self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp, 
                         msg='Calculation of cartesian coordinates failed')   
-    
+
+    def test_base_lat_invalid(self):
+        
+        lons = np.arange(-135.,+135,20.)
+        lats = np.ones_like(lons) * 70.
+        lats[0] = -95
+        lats[1] = +95
+        print lats, lons, type(lats), type(lons)
+        self.assertRaises(ValueError,geometry.BaseDefinition,lons=lons,lats=lats)
+
     def test_base_lon_wrapping(self):
 
         lons1 = np.arange(-135.,+135,50.)
@@ -113,6 +122,7 @@ class Test(unittest.TestCase):
     def test_base_type(self):
         lons1 = np.arange(-135.,+135,50.)
         lats =  np.ones_like(lons1) * 70.
+
 
         # Test dtype is preserved without longitude wrapping
         basedef = geometry.BaseDefinition(lons1,lats)

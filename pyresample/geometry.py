@@ -55,14 +55,22 @@ class BaseDefinition(object):
         elif lons is not None:
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
-            if lons.min() < -180. or lons.max() > +180.:
-                warnings.warn('All geometry objects expect longitudes in the [-180:+180] range. ' + \
-                              'We will now automatically wrap your longitudes into [-180:+180], and continue. ' + \
-                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
 
         self.nprocs = nprocs
-        self.lats = lats
+
+        # check the latitutes
+        if lats is not None and ( (lats.min() < -90. or lats.max() > +90.) ):
+            # throw exception
+            raise ValueError('Some latitudes are outside the [-90.;+90] validity range')
+        else:
+            self.lats = lats
+
+        # check the longitudes
         if lons is not None and ( (lons.min() < -180. or lons.max() > +180.) ):
+            # issue warning
+            warnings.warn('All geometry objects expect longitudes in the [-180:+180] range. ' + \
+                          'We will now automatically wrap your longitudes into [-180:+180], and continue. ' + \
+                          'To avoid this warning next time, use routine utils.wrap_longitudes().')
             # wrap longitudes to [-180;+180]
             self.lons = utils.wrap_longitudes(lons)
         else:
