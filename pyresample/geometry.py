@@ -66,12 +66,12 @@ class BaseDefinition(object):
             self.lats = lats
 
         # check the longitudes
-        if lons is not None and ( (lons.min() < -180. or lons.max() > +180.) ):
+        if lons is not None and ( (lons.min() < -180. or lons.max() >= +180.) ):
             # issue warning
-            warnings.warn('All geometry objects expect longitudes in the [-180:+180] range. ' + \
-                          'We will now automatically wrap your longitudes into [-180:+180], and continue. ' + \
+            warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' + \
+                          'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' + \
                           'To avoid this warning next time, use routine utils.wrap_longitudes().')
-            # wrap longitudes to [-180;+180]
+            # wrap longitudes to [-180;+180[
             self.lons = utils.wrap_longitudes(lons)
         else:
             self.lons = lons

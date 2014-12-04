@@ -3,6 +3,7 @@ import unittest
 
 from pyresample import utils
 
+import numpy as np
 
 def tmp(f):
     f.tmp = True
@@ -51,3 +52,11 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
                           os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 
                           'no_area')
         
+    def test_wrap_longitudes(self):
+        # test that we indeed wrap to [-180:+180[
+        step = 60
+        lons = np.arange(-360,360+step,step)
+        self.assertTrue((lons.min() < -180) and (lons.max() >= 180) and (+180 in lons))
+        wlons = utils.wrap_longitudes(lons)
+        self.assertFalse((wlons.min() < -180) or (wlons.max() >= 180) or (+180 in wlons))
+

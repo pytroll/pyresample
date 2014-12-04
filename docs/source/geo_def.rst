@@ -7,11 +7,11 @@ Remarks
 -------
 
 All longitudes and latitudes provided to **pyresample.geometry** must be in degrees.
-Longitudes must additionally be in the [-180;+180] validity range.
+Longitudes must additionally be in the [-180;+180[ validity range.
 
 As of version 1.1.1, the **pyresample.geometry** contructors will check the range of 
 longitude values, send a warning if some of them fall outside validity range, 
-and automatically correct the invalid values into [-180;+180]. 
+and automatically correct the invalid values into [-180;+180[. 
 
 Use function **utils.wrap_longitudes** for wrapping longitudes yourself.
 
