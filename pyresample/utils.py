@@ -300,7 +300,7 @@ def _downcast_index_array(index_array, size):
     return index_array
 
 def wrap_longitudes(lons):
-    """Wrap longitudes to the [-180:+180] validity range (preserves dtype)
+    """Wrap longitudes to the [-180:+180[ validity range (preserves dtype)
     
     :Parameters:
     lons : numpy array
@@ -308,7 +308,7 @@ def wrap_longitudes(lons):
 
     :Returns: 
     lons : numpy array
-        Longitudes wrapped into [-180:+180] validity range
+        Longitudes wrapped into [-180:+180[ validity range
         
     """
     lons_wrap = (lons + 180) % (360) - 180
