@@ -19,8 +19,6 @@
 
 from __future__ import absolute_import
 
-import weakref
-
 import numpy as np
 
 from . import _spatial_mp

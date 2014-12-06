@@ -18,9 +18,10 @@
 from __future__ import absolute_import
 
 import ctypes
-
 import multiprocessing as mp
+
 import numpy as np
+
 
 class Scheduler(object):
     
@@ -46,61 +47,52 @@ class Scheduler(object):
             self._chunk = min_chunk
             
     def __iter__(self):
-        return self
-
-    def next(self):
-        self._lock.acquire()
-        ndata = self._ndata.value
-        nprocs = self._nprocs
-        start = self._start.value
-        if self._schedule == 'guided':
-            _chunk = ndata // nprocs
-            chunk = max(self._chunk, _chunk)
-        else:
-            chunk = self._chunk
-        if ndata:
-            if chunk > ndata:
-                s0 = start
-                s1 = start + ndata
-                self._ndata.value = 0
+        while True:
+            self._lock.acquire()
+            ndata = self._ndata.value
+            nprocs = self._nprocs
+            start = self._start.value
+            if self._schedule == 'guided':
+                _chunk = ndata // nprocs
+                chunk = max(self._chunk, _chunk)
             else:
-                s0 = start
-                s1 = start + chunk
-                self._ndata.value = ndata - chunk
-                self._start.value = start + chunk
-            self._lock.release()
-            return slice(s0, s1)
-        else:
-            self._lock.release()
-            raise StopIteration
-
+                chunk = self._chunk
+            if ndata:
+                if chunk > ndata:
+                    s0 = start
+                    s1 = start + ndata
+                    self._ndata.value = 0
+                else:
+                    s0 = start
+                    s1 = start + chunk
+                    self._ndata.value = ndata - chunk
+                    self._start.value = start + chunk
+                self._lock.release()
+                yield slice(s0, s1)
+            else:
+                self._lock.release()
+                raise StopIteration
 
 def shmem_as_ndarray(raw_array):
     _ctypes_to_numpy = {
-                        ctypes.c_char : np.int8,
-                        ctypes.c_wchar : np.int16,
-                        ctypes.c_byte : np.int8,
-                        ctypes.c_ubyte : np.uint8,
-                        ctypes.c_short : np.int16,
-                        ctypes.c_ushort : np.uint16,
-                        ctypes.c_int : np.int32,
-                        ctypes.c_uint : np.int32,
-                        ctypes.c_long : np.int32,
-                        ctypes.c_ulong : np.int32,
-                        ctypes.c_float : np.float32,
-                        ctypes.c_double : np.float64
-                        }
-    address = raw_array._wrapper.get_address()
-    size = raw_array._wrapper.get_size()
+        ctypes.c_char: np.int8,
+        ctypes.c_wchar: np.int16,
+        ctypes.c_byte: np.int8,
+        ctypes.c_ubyte: np.uint8,
+        ctypes.c_short: np.int16,
+        ctypes.c_ushort: np.uint16,
+        ctypes.c_int: np.int32,
+        ctypes.c_uint: np.int32,
+        ctypes.c_long: np.int32,
+        ctypes.c_ulong: np.int32,
+        ctypes.c_float: np.float32,
+        ctypes.c_double: np.float64
+    }
     dtype = _ctypes_to_numpy[raw_array._type_]
-    class Dummy(object): pass
-    d = Dummy()
-    d.__array_interface__ = {
-                             'data' : (address, False),
-                             'typestr' : np.dtype(np.uint8).str,
-                             'descr' : np.dtype(np.uint8).descr,
-                             'shape' : (size,),
-                             'strides' : None,
-                             'version' : 3
-                             }                            
-    return np.asarray(d).view(dtype=dtype)
+
+    # The following works too, but occasionally raises
+    # RuntimeWarning: Item size computed from the PEP 3118 buffer format string does not match the actual item size.
+    # and appears to be slower.
+    # return np.ctypeslib.as_array(raw_array)
+
+    return np.frombuffer(raw_array, dtype=dtype)
