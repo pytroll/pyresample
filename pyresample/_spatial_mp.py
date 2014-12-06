@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #pyresample, Resampling of remote sensing image data in python
 # 
 #Copyright (C) 2010, 2013  Esben S. Nielsen, Martin Raspaud
@@ -16,13 +15,14 @@ from __future__ import absolute_import
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
+
 import ctypes
 
 import numpy as np
 import pyproj
 #import scipy.spatial as sp
 import multiprocessing as mp
-from six.moves import range
 
 try:
     import numexpr as ne

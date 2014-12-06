@@ -16,7 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
+
 from __future__ import absolute_import
+
 import weakref
 
 import numpy as np
@@ -791,7 +793,7 @@ class AreaDefinition(BaseDefinition):
     def proj4_string(self):
         """Returns projection definition as Proj.4 string"""
         
-        items = list(self.proj_dict.items())
+        items = self.proj_dict.items()
         return '+' + ' +'.join([ t[0] + '=' + t[1] for t in items])         
     
 

@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Handles reprojection of geolocated data. Several types of resampling are supported"""
+
 from __future__ import absolute_import
 
 import types
@@ -26,8 +27,11 @@ import numpy as np
 from . import geometry
 from . import data_reduce
 from . import _spatial_mp
-from six.moves import map
-from six.moves import range
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 kd_tree_name = None
 try:

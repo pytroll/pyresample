@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Reduce data sets based on geographical information"""
+
 from __future__ import absolute_import
 
 import numpy as np

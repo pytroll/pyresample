@@ -17,13 +17,18 @@
 
 """Resample image from one projection to another 
 using nearest neighbour method in cartesian projection coordinate systems"""
+
 from __future__ import absolute_import
 
 import numpy as np
 
 from . import geometry
 from . import _spatial_mp
-from six.moves import range
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 
 def get_image_from_linesample(row_indices, col_indices, source_image,
