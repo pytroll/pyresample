@@ -16,15 +16,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Handles reprojection of geolocated data. Several types of resampling are supported"""
+from __future__ import absolute_import
 
 import types
 import warnings
 
 import numpy as np
 
-import geometry
-import data_reduce
-import _spatial_mp
+from . import geometry
+from . import data_reduce
+from . import _spatial_mp
+from six.moves import map
+from six.moves import range
 
 kd_tree_name = None
 try:
@@ -151,12 +154,12 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         
         
     for sigma in sigma_list:
-        if not isinstance(sigma, (long, int, float)):
+        if not isinstance(sigma, (int, int, float)):
             raise TypeError('sigma must be number')    
     
     #Get gauss function objects
     if is_multi_channel:
-        weight_funcs = map(gauss, sigma_list) 
+        weight_funcs = list(map(gauss, sigma_list)) 
     else:
         weight_funcs = gauss(sigmas)
         
@@ -490,11 +493,11 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
     #Check validity of input    
     if not isinstance(target_geo_def, geometry.BaseDefinition):
         raise TypeError('target_geo_def must be of geometry type')    
-    elif not isinstance(radius_of_influence, (long, int, float)):
+    elif not isinstance(radius_of_influence, (int, int, float)):
         raise TypeError('radius_of_influence must be number')
     elif not isinstance(neighbours, int):
         raise TypeError('neighbours must be integer')
-    elif not isinstance(epsilon, (long, int, float)):
+    elif not isinstance(epsilon, (int, int, float)):
         raise TypeError('epsilon must be number')
     
     #Get sliced target coordinates
@@ -634,7 +637,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         raise ValueError('weight_funcs must be supplied when using '
                           'custom resampling')
     
-    if not isinstance(fill_value, (long, int, float)) and fill_value is not None:
+    if not isinstance(fill_value, (int, int, float)) and fill_value is not None:
         raise TypeError('fill_value must be number or None')
     
     if index_array.ndim == 1:

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #pyresample, Resampling of remote sensing image data in python
 # 
 #Copyright (C) 2010  Esben S. Nielsen
@@ -24,7 +25,7 @@ class Scheduler(object):
     
     def __init__(self, ndata, nprocs, chunk=None, schedule='guided'):
         if not schedule in ['guided','dynamic', 'static']:
-            raise ValueError, 'unknown scheduling strategy'
+            raise ValueError('unknown scheduling strategy')
         self._ndata = mp.RawValue(ctypes.c_int, ndata)
         self._start = mp.RawValue(ctypes.c_int, 0)
         self._lock = mp.Lock()

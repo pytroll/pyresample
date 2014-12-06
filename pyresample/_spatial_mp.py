@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #pyresample, Resampling of remote sensing image data in python
 # 
 #Copyright (C) 2010, 2013  Esben S. Nielsen, Martin Raspaud
@@ -21,13 +22,14 @@ import numpy as np
 import pyproj
 #import scipy.spatial as sp
 import multiprocessing as mp
+from six.moves import range
 
 try:
     import numexpr as ne
 except ImportError:
     ne = None
 
-from _multi_proc import shmem_as_ndarray, Scheduler
+from ._multi_proc import shmem_as_ndarray, Scheduler
 
 #Earth radius
 R = 6370997.0
@@ -192,8 +194,7 @@ def _run_jobs(target, args, nprocs):
     for p in pool: p.start()
     for p in pool: p.join()
     if ierr.value != 0:
-        raise RuntimeError,\
-                ('%d errors in worker processes. Last one reported:\n%s'%\
+        raise RuntimeError('%d errors in worker processes. Last one reported:\n%s'%\
                  (ierr.value, err_msg.value))
                 
 # This is executed in an external process:
@@ -229,7 +230,7 @@ def _parallel_query(scheduler, # scheduler for load balancing
                                                 distance_upper_bound=dub)
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
         err_msg.value = e.message  
         
@@ -252,7 +253,7 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,\
     
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
         err_msg.value = e.message  
         
@@ -270,6 +271,6 @@ def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
             _coords[s, 2] = R*np.sin(np.radians(_lats[s]))
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
         err_msg.value = e.message  

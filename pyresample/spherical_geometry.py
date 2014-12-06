@@ -16,9 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for spherical geometry operations"""
+from __future__ import absolute_import
 
 import math
 import numpy as np
+from six.moves import range
 
 EPSILON = 0.0000001
 

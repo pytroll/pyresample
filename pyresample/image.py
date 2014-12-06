@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Handles resampling of images with assigned geometry definitions"""
+from __future__ import absolute_import
 
 import numpy as np
 
-import geometry, grid, kd_tree
+from . import geometry, grid, kd_tree
 
 
 class ImageContainer(object):

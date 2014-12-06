@@ -16,12 +16,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utility functions for pyresample"""
+from __future__ import absolute_import
 
 import numpy as np
 from configobj import ConfigObj
 
-import geometry, grid, kd_tree
-import _spatial_mp
+from . import geometry, grid, kd_tree
+from . import _spatial_mp
 
 class AreaNotFound(Exception):
     """Exception raised when specified are is no found in file"""
