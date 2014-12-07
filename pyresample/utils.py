@@ -17,11 +17,13 @@
 
 """Utility functions for pyresample"""
 
+from __future__ import absolute_import
+
 import numpy as np
 from configobj import ConfigObj
 
-import geometry, grid, kd_tree
-import _spatial_mp
+from . import geometry, grid, kd_tree
+
 
 class AreaNotFound(Exception):
     """Exception raised when specified are is no found in file"""
@@ -119,11 +121,14 @@ def _create_area(area_id, area_content):
                             for line in config_obj.splitlines()])
     config = config_obj.dict()
     config['REGION'] = area_id
+
     try:
-        config['NAME'].__iter__()
+        string_types = basestring
+    except NameError:
+        string_types = str
+    if not isinstance(config['NAME'], string_types):
         config['NAME'] = ', '.join(config['NAME'])
-    except:
-        config['NAME'] = ''.join(config['NAME'])
+
     config['XSIZE'] = int(config['XSIZE'])
     config['YSIZE'] = int(config['YSIZE'])
     config['AREA_EXTENT'][0] = config['AREA_EXTENT'][0].replace('(', '')

@@ -15,12 +15,14 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import grid
-import image
-import kd_tree
-import utils
-import version
-import plot
+from __future__ import absolute_import
+
+from . import grid
+from . import image
+from . import kd_tree
+from . import utils
+from . import version
+from . import plot
 
 __version__ = version.__version__
 
