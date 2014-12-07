@@ -35,7 +35,10 @@ import mpop.utils
 mpop.utils.debug_on()
 import pyximport
 pyximport.install()
-from _gradient_search import fast_gradient_search, two_step_fast_gradient_search
+from _gradient_search import (fast_gradient_search,
+                              two_step_fast_gradient_search,
+                              two_step_fast_gradient_search_with_mask,
+                              fast_gradient_search_with_mask)
 from pyresample import data_reduce
 
 import logging
@@ -43,7 +46,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def gradient_search(data, lons, lats, area, chunk_size=0):
+def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     tic = datetime.now()
     p = pyproj.Proj(**area.proj_dict)
@@ -73,18 +76,37 @@ def gradient_search(data, lons, lats, area, chunk_size=0):
     tic2 = datetime.now()
 
     if chunk_size == 0:
-        image = fast_gradient_search(data[linesmin:linesmax,
-                                          colsmin:colsmax],
-                                     projection_x_coords, projection_y_coords,
-                                     area.area_extent,
-                                     area.shape)
-    else:
+        if mask is None:
+            image = fast_gradient_search(data[linesmin:linesmax,
+                                              colsmin:colsmax],
+                                         projection_x_coords, projection_y_coords,
+                                         area.area_extent,
+                                         area.shape)
+        else:
+            image = fast_gradient_search_with_mask(data[linesmin:linesmax,
+                                                        colsmin:colsmax],
+                                                   projection_x_coords, projection_y_coords,
+                                                   area.area_extent,
+                                                   area.shape,
+                                                   mask[linesmin:linesmax,
+                                                        colsmin:colsmax])
+
+    elif mask is None:
         image = two_step_fast_gradient_search(data[linesmin:linesmax,
                                                    colsmin:colsmax],
                                               projection_x_coords, projection_y_coords,
                                               chunk_size,
                                               area.area_extent,
                                               area.shape)
+    else:
+        image = two_step_fast_gradient_search_with_mask(data[linesmin:linesmax,
+                                                             colsmin:colsmax],
+                                                        projection_x_coords, projection_y_coords,
+                                                        chunk_size,
+                                                        area.area_extent,
+                                                        area.shape,
+                                                        mask[linesmin:linesmax,
+                                                             colsmin:colsmax])
 
     toc = datetime.now()
 
@@ -127,35 +149,74 @@ if __name__ == '__main__':
 
     # modis example
 
-    t = datetime(2012, 12, 10, 10, 29, 35)
-    g = PolarFactory.create_scene("terra", "", "modis", t)
-    g.load([0.635, 0.85], resolution=1000)
-    g.load([10.8])
+    # t = datetime(2012, 12, 10, 10, 29, 35)
+    # g = PolarFactory.create_scene("terra", "", "modis", t)
+    # g.load([0.635, 0.85], resolution=1000)
+    # g.load([10.8])
 
-    from mpop.projector import get_area_def
+    # from mpop.projector import get_area_def
 
-    area = get_area_def("euron1")
+    # area = get_area_def("euron1")
 
     # for comparison
 
-    tic = datetime.now()
-    l = g.project(area)
-    toc = datetime.now()
-    print "pyresample took", toc - tic
+    # tic = datetime.now()
+    # l = g.project(area)
+    # toc = datetime.now()
+    # print "pyresample took", toc - tic
 
-    #res = gradient_search(g[0.635].data.astype(np.float64), g[0.635].area.lons, g[0.635].area.lats, area, 10)
+    # res = gradient_search(g[0.635].data.astype(np.float64),
+    # g[0.635].area.lons, g[0.635].area.lats, area, 10)
 
-    for wl in [0.635, 0.85]:
+    # for wl in [0.635, 0.85]:
 
-        res = gradient_search(g[wl].data.astype(
-            np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
-        g[wl] = np.ma.masked_values(res, 0)
+    #     res = gradient_search(g[wl].data.astype(
+    #         np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
+    #     g[wl] = np.ma.masked_values(res, 0)
 
-    for wl in [10.8]:
+    # for wl in [10.8]:
 
-        res = gradient_search(g[wl].data.astype(
-            np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
-        g[wl] = np.ma.masked_values(res, 0)
+    #     res = gradient_search(g[wl].data.astype(
+    #         np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
+    #     g[wl] = np.ma.masked_values(res, 0)
 
     # show(res)
-    g.image.overview().show()
+    # g.image.overview().show()
+
+    # npp example
+
+    t = datetime(2013, 6, 11, 2, 17)
+    t1 = datetime(2013, 6, 11, 2, 20)
+    t2 = datetime(2013, 6, 11, 2, 27)
+    g = PolarFactory.create_scene("npp", "", "viirs", t, orbit="08395")
+    wl = 10.8
+    chunk = 16
+    wl = "I05"
+    chunk = 32
+    #chunk = 0
+    g.load([wl], time_interval=(t1, t2))
+    from mpop.projector import get_area_def
+
+    print g[wl].area.lons[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
+    print g[wl].area.lats[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
+
+    area = get_area_def("bsea250")
+
+    mask = g[wl].data.mask.astype(np.uint8)
+    lons = g[wl].area.lons.data
+    lats = g[wl].area.lats.data
+    data = g[wl].data.data.astype(np.double)
+    res = gradient_search(data, lons, lats, area, chunk, mask)
+    print "max valid", np.max(g[wl].data.compressed())
+    print "max res", np.max(res)
+    print "mask", np.min(mask), np.max(mask)
+    print data.shape, mask.shape
+    show(np.ma.masked_equal(res, 0.0))
+
+    # for comparison
+
+    # tic = datetime.now()
+    # l = g.project(area)
+    # toc = datetime.now()
+    # print "pyresample took", toc - tic
+    # l.image.hr_overview().show()

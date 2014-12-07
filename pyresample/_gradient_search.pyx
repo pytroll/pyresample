@@ -49,13 +49,9 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
     cdef np.ndarray[DTYPE_t, ndim = 2] image = np.zeros([y_size, x_size], dtype=DTYPE)
     # gradient of output y/x grids (in pixel and line directions)
     cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
-    yp, yl = np.gradient(source_y)
+    yl, yp = np.gradient(source_y)
     cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
-    xp, xl = np.gradient(source_x)
-    xp = -xp
-    xl = -xl
-    yp = -yp
-    yl = -yl
+    xl, xp = np.gradient(source_x)
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = data.shape[1] - 1
     cdef int lmax = data.shape[0] - 1
@@ -91,11 +87,11 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
                     # reset such that we are back in the input image bounds
                     l0 = max(0, min(lmax - 1, l0))
                     p0 = max(0, min(pmax - 1, p0))
-                    break
+                    continue
                 # distance from pixel/line to output location
                 d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
-                dl = -(yl[l0, p0] * dx - xl[l0, p0] * dy) / d
-                dp = (yp[l0, p0] * dx - xp[l0, p0] * dy) / d
+                dl = (xp[l0, p0] * dy - yp[l0, p0] * dx) / d
+                dp = (yl[l0, p0] * dx - xl[l0, p0] * dy) / d
                 # check that our distance to an output location is less than 1
                 # pixel/line
                 if abs(dp) < 1 and abs(dl) < 1:
@@ -168,8 +164,8 @@ def two_step_fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[D
 
     # reduce the source_x and source_y arrays for inter-segment search
     cdef np.ndarray[DTYPE_t, ndim = 2] reduced_x, reduced_y
-    #reduced_x = (source_x[4::chunk_size, :] + source_x[5::chunk_size]) / 2.0
-    #reduced_y = (source_y[4::chunk_size, :] + source_y[5::chunk_size]) / 2.0
+    # reduced_x = (source_x[4::chunk_size, :] + source_x[5::chunk_size]) / 2.0
+    # reduced_y = (source_y[4::chunk_size, :] + source_y[5::chunk_size]) / 2.0
     reduced_x = (source_x[::chunk_size, :] + source_x[1::chunk_size] + source_x[2::chunk_size, :] + source_x[3::chunk_size] + source_x[4::chunk_size,
                                                                                                                                        :] + source_x[5::chunk_size] + source_x[6::chunk_size, :] + source_x[7::chunk_size] + source_x[8::chunk_size, :] + source_x[9::chunk_size]) / chunk_size
     reduced_y = (source_y[::chunk_size, :] + source_y[1::chunk_size] + source_y[2::chunk_size, :] + source_y[3::chunk_size] + source_y[4::chunk_size,
@@ -196,8 +192,8 @@ def two_step_fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[D
         fxp[i * chunk_size:(i + 1) * chunk_size, :], fxl[i * chunk_size:(i + 1) *
                                                          chunk_size, :] = np.gradient(source_x[i * chunk_size:(i + 1) * chunk_size, :])
 
-    #fyp, fyl = np.gradient(source_y)
-    #fxp, fxl = np.gradient(source_x)
+    # fyp, fyl = np.gradient(source_y)
+    # fxp, fxl = np.gradient(source_x)
     fxp = -fxp
     fxl = -fxl
     fyp = -fyp
@@ -317,6 +313,789 @@ def two_step_fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[D
                                                 w_l * (1 - w_p) * data[l_b, p_a] +
                                                 w_l * w_p * data[l_b, p_b])
                     # image[y_size - 1 - i, j] = data[l0, p0]
+                    # found our solution, next
+                    break
+                else:
+                    # increment...
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+    # return the output image
+    return image
+
+
+@cython.boundscheck(False)
+def fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, area_extent, size, np.ndarray[np.uint8_t, ndim=2] mask):
+    """Gradient search, simple case variant.
+    """
+    # area extent bounds --> area_def.area_extent
+    cdef double x_min, y_min, x_max, y_max
+    x_min, y_min, x_max, y_max = area_extent
+    # change the output size (x_size, y_size) to match area_def.shape:
+    # (lines,pixels)
+    cdef int x_size, y_size
+    y_size, x_size = size
+    # step in x direction (meters); x-output locations (centre of pixel);
+    # repeat for y
+    cdef double x_inc = (x_max - x_min) / x_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] x_1d = np.arange(x_min + x_inc / 2, x_max, x_inc)
+    cdef double y_inc = (y_max - y_min) / y_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] y_1d = np.arange(y_min + y_inc / 2, y_max, y_inc)
+    # output image array --> needs to be (lines, pixels) --> y,x
+    cdef np.ndarray[DTYPE_t, ndim = 2] image = np.zeros([y_size, x_size], dtype=DTYPE)
+    # gradient of output y/x grids (in pixel and line directions)
+    cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
+    yl, yp = np.gradient(source_y)
+    cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
+    xl, xp = np.gradient(source_x)
+    # pixel max ---> data is expected in [lines, pixels]
+    cdef int pmax = data.shape[1] - 1
+    cdef int lmax = data.shape[0] - 1
+    # centre of input image - starting point
+    cdef int p0 = pmax / 2
+    cdef int l0 = lmax / 2
+    cdef int oldp, oldl
+    # intermediate variables:
+    cdef int l_a, l_b, p_a, p_b, nnl, nnp
+    cdef size_t i, j
+    cdef double dx, dy, d, dl, dp, w_l, w_p
+    # number of iterations
+    cdef int cnt = 0
+    cdef int inc = 0
+    # this was a bit confusing -- "lines" was based on x_size; change this
+    # variable to elements - make it a numpy array (long==numpy int dtype)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    for i in range(y_size):
+        # lines.reverse() --> swapped to elements - provide a reverse view of
+        # the array
+        elements = elements[::-1]
+        for j in elements:
+            cnt = 0
+            while True:
+                cnt += 1
+                # algorithm does not converge.
+                if cnt > 15:
+                    break
+                # step size
+                dx = x_1d[j] - source_x[l0, p0]
+                dy = y_1d[i] - source_y[l0, p0]
+
+                # distance from pixel/line to output location
+                d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                dl = (xp[l0, p0] * dy - yp[l0, p0] * dx) / d
+                dp = (yl[l0, p0] * dx - xl[l0, p0] * dy) / d
+                # check that our distance to an output location is less than 1
+                # pixel/line
+                if abs(dp) < 1 and abs(dl) < 1:
+                    image[y_size - 1 - i, j] = data[l0, p0]
+                    # found our solution, next
+                    break
+                else:
+                    # increment...
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+                    # if dl > 0 and l0 % chunk_size == chunk_size - 1:
+                    #    l0 += 2
+                    # if dl < 0 and l0 % chunk_size == 0:
+                    #    l0 -= 2
+
+                    # oldp = p0
+                    # oldl = l0
+                    # p0 = max(0, min(pmax - 1, int(p0 + dp)))
+                    # l0 = int(l0 + dl)
+                    # inc = int(dl)
+                    # if inc > 0:
+                    #     while (inc > 0 or mask[l0, p0] != 0) and l0 < lmax:
+                    #         if mask[l0, p0] == 0:
+                    #             inc -= 1
+                    #         l0 += 1
+                    #     if l0 >= lmax:
+                    #         l0 = oldl
+                    # else:
+                    #     while (inc < 0 or mask[l0, p0] != 0) and l0 >= 0:
+                    #         if mask[l0, p0] == 0:
+                    #             inc += 1
+                    #         l0 -= 1
+                    #     if l0 < 0:
+                    #         l0 = oldl
+                    # if oldp == p0 and oldl == l0:
+                    #     break
+    # return the output image
+    return image
+
+
+@cython.boundscheck(False)
+def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, int chunk_size, area_extent, size, np.ndarray[np.uint8_t, ndim=2] mask):
+    """Gradient search, discontinuity handling variant (Modis)
+    """
+    # area extent bounds --> area_def.area_extent
+    cdef double x_min, y_min, x_max, y_max
+    x_min, y_min, x_max, y_max = area_extent
+    # change the output size (x_size, y_size) to match area_def.shape:
+    # (lines,pixels)
+    cdef int x_size, y_size
+    y_size, x_size = size
+    # step in x direction (meters); x-output locations (centre of pixel);
+    # repeat for y
+    cdef double x_inc = (x_max - x_min) / x_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] x_1d = np.arange(x_min + x_inc / 2, x_max, x_inc)
+    cdef double y_inc = (y_max - y_min) / y_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] y_1d = np.arange(y_min + y_inc / 2, y_max, y_inc)
+    # output image array --> needs to be (lines, pixels) --> y,x
+    cdef np.ndarray[DTYPE_t, ndim = 2] image = np.zeros([y_size, x_size], dtype=DTYPE)
+
+    cdef size_t i, j
+
+    # reduce the source_x and source_y arrays for inter-segment search
+    cdef np.ndarray[DTYPE_t, ndim = 2] reduced_x, reduced_y
+    reduced_x = np.zeros([data.shape[0] / chunk_size, data.shape[1]],
+                         dtype=DTYPE)
+    reduced_y = np.zeros([data.shape[0] / chunk_size, data.shape[1]],
+                         dtype=DTYPE)
+    for i in range(chunk_size):
+        reduced_x += source_x[i::chunk_size, :]
+        reduced_y += source_y[i::chunk_size, :]
+    reduced_x /= chunk_size
+    reduced_y /= chunk_size
+    cdef np.ndarray[DTYPE_t, ndim = 2] ryp, ryl
+    ryp, ryl = np.gradient(reduced_y)
+    cdef np.ndarray[DTYPE_t, ndim = 2] rxp, rxl
+    rxp, rxl = np.gradient(reduced_x)
+    rxp = -rxp
+    rxl = -rxl
+    ryp = -ryp
+    ryl = -ryl
+
+    # gradient of full output y/x grids (in pixel and line directions)
+    cdef np.ndarray[DTYPE_t, ndim = 2] fyp, fyl
+    cdef np.ndarray[DTYPE_t, ndim = 2] fxp, fxl
+    fyp = np.zeros_like(source_y)
+    fyl = np.zeros_like(source_y)
+    fxp = np.zeros_like(source_x)
+    fxl = np.zeros_like(source_x)
+    for i in range(data.shape[0] / chunk_size):
+        fyp[i * chunk_size:(i + 1) * chunk_size, :], fyl[i * chunk_size:(i + 1) *
+                                                         chunk_size, :] = np.gradient(source_y[i * chunk_size:(i + 1) * chunk_size, :])
+        fxp[i * chunk_size:(i + 1) * chunk_size, :], fxl[i * chunk_size:(i + 1) *
+                                                         chunk_size, :] = np.gradient(source_x[i * chunk_size:(i + 1) * chunk_size, :])
+
+    #fyp, fyl = np.gradient(source_y)
+    #fxp, fxl = np.gradient(source_x)
+    fxp = -fxp
+    fxl = -fxl
+    fyp = -fyp
+    fyl = -fyl
+
+    cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
+    cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
+    cdef np.ndarray[DTYPE_t, ndim = 2] array_x, array_y
+    # pixel max ---> data is expected in [lines, pixels]
+    cdef int pmax = data.shape[1] - 1
+    cdef int flmax = data.shape[0] - 1
+    cdef int rlmax = reduced_x.shape[0] - 1
+    cdef int lmax
+    # centre of input image - starting point
+    cdef int p0 = pmax / 2
+    cdef int l0 = flmax / 2
+    # intermediate variables:
+    cdef int nnl, nnp
+    cdef int l_a00, l_a01, l_a10, l_a11, p_a00, p_a01, p_a10, p_a11
+    cdef double dx, dy, d, dl, dp, w_l, w_p
+    # number of iterations
+    cdef int cnt = 0
+    cdef int adj = False
+    cdef int undefined = 0
+    cdef double distance
+    # this was a bit confusing -- "lines" was based on x_size; change this
+    # variable to elements - make it a numpy array (long==numpy int dtype)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    lmax = rlmax
+    l0 /= chunk_size
+    xp, xl, yp, yl = rxp, rxl, ryp, ryl
+    array_x, array_y = reduced_x, reduced_y
+    for i in range(y_size):
+        # lines.reverse() --> swapped to elements - provide a reverse view of
+        # the array
+        elements = elements[::-1]
+        for j in elements:
+            cnt = 0
+            adj = False
+            while True:
+                cnt += 1
+                # algorithm does not converge
+                if cnt > 5:
+                    break
+
+                # check we are within the input image bounds
+                if not (l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0):
+                    # reset such that we are back in the input image bounds
+                    l0 = max(0, min(lmax - 1, l0))
+                    p0 = max(0, min(pmax - 1, p0))
+                # step size
+                dx = x_1d[j] - array_x[l0, p0]
+                dy = y_1d[i] - array_y[l0, p0]
+
+                # distance from pixel/line to output location
+                d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                dl = -(yl[l0, p0] * dx - xl[l0, p0] * dy) / d
+                dp = (yp[l0, p0] * dx - xp[l0, p0] * dy) / d
+
+                # check that our distance to an output location is less than 1
+                # pixel/line
+                if ((abs(dp) < 1) and (abs(dl) < 1) and
+                    not (mask[l0, p0] != 0 or
+                         (l0 < lmax - 1 and mask[l0 + 1, p0] != 0) or
+                         (l0 > 0 and mask[l0 - 1, p0] != 0))):
+                    if lmax == rlmax:  # switch to full resolution
+                        print "switching to full res", i, j
+                        # nearest neighbour
+                        l0 = l0 * chunk_size + chunk_size / 2
+                        lmax = flmax
+                        xp, xl, yp, yl = fxp, fxl, fyp, fyl
+                        array_x, array_y = source_x, source_y
+                        cnt = 0
+                        continue
+
+                    #image[y_size - 1 - i, j] = data[l0, p0]
+                    # bilinear interpolation
+                    if dl < 0:
+                        l_a = max(0, l0 - 1)
+                        l_b = l0
+                        w_l = 1 + dl
+                    else:
+                        l_a = l0
+                        l_b = min(l0 + 1, lmax - 1)
+                        w_l = dl
+                    if dp < 0:
+                        p_a = max(0, p0 - 1)
+                        p_b = p0
+                        w_p = 1 + dp
+                    else:
+                        p_a = p0
+                        p_b = min(p0 + 1, pmax - 1)
+                        w_p = dp
+
+                    image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] +
+                                                (1 - w_l) * w_p * data[l_a, p_b] +
+                                                w_l * (1 - w_p) * data[l_b, p_a] +
+                                                w_l * w_p * data[l_b, p_b])
+
+                    # we found our solution, next
+                    break
+                else:
+                    # increment...
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+                    # if dl > 0 and l0 % chunk_size >= chunk_size - 1:
+                    #    l0 += 2
+                    # if dl < 0 and l0 % chunk_size < 1:
+                    #    l0 -= 2
+                    if l0 >= lmax or l0 < 0 or p0 >= pmax or p0 < 0:
+                        continue
+
+                    if dl > 0 and (mask[l0, p0] != 0 or
+                                   (l0 < lmax - 1 and
+                                    mask[l0 + 1, p0] != 0)):
+                        while (l0 < lmax - 1 and
+                               (mask[l0, p0] != 0 or
+                                mask[l0 + 1, p0] != 0)):
+                            l0 += 1
+                        l0 = min(lmax - 1, l0 + 1)
+
+                    if dl < 0 and (mask[l0, p0] != 0 or
+                                   (l0 > 0 and
+                                    mask[l0 - 1, p0] != 0)):
+
+                        while (l0 > 0 and
+                               (mask[l0, p0] != 0 or
+                                mask[l0 - 1, p0] != 0)):
+                            l0 -= 1
+                        l0 = max(0, l0 - 1)
+
+    # return the output image
+    print "undefined", undefined
+    return image
+
+
+@cython.boundscheck(False)
+def two_step_fast_gradient_search_with_mask_old(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, int chunk_size, area_extent, size, np.ndarray[np.uint8_t, ndim=2] mask):
+    """Gradient search, discontinuity handling variant (Modis)
+    """
+    # area extent bounds --> area_def.area_extent
+    cdef double x_min, y_min, x_max, y_max
+    x_min, y_min, x_max, y_max = area_extent
+    # change the output size (x_size, y_size) to match area_def.shape:
+    # (lines,pixels)
+    cdef int x_size, y_size
+    y_size, x_size = size
+    # step in x direction (meters); x-output locations (centre of pixel);
+    # repeat for y
+    cdef double x_inc = (x_max - x_min) / x_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] x_1d = np.arange(x_min + x_inc / 2, x_max, x_inc)
+    cdef double y_inc = (y_max - y_min) / y_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] y_1d = np.arange(y_min + y_inc / 2, y_max, y_inc)
+    # output image array --> needs to be (lines, pixels) --> y,x
+    cdef np.ndarray[DTYPE_t, ndim = 2] image = np.zeros([y_size, x_size], dtype=DTYPE)
+
+    cdef size_t i, j
+
+    # reduce the source_x and source_y arrays for inter-segment search
+    cdef np.ndarray[DTYPE_t, ndim = 2] reduced_x, reduced_y
+    # reduced_x = (source_x[4::chunk_size, :] + source_x[5::chunk_size]) / 2.0
+    # reduced_y = (source_y[4::chunk_size, :] + source_y[5::chunk_size]) / 2.0
+    # reduced_x = (source_x[::chunk_size, :] + source_x[1::chunk_size] + source_x[2::chunk_size, :] + source_x[3::chunk_size] + source_x[4::chunk_size,:] + source_x[5::chunk_size] + source_x[6::chunk_size, :] + source_x[7::chunk_size] + source_x[8::chunk_size, :] + source_x[9::chunk_size]) / chunk_size
+    # reduced_y = (source_y[::chunk_size, :] + source_y[1::chunk_size] + source_y[2::chunk_size, :] + source_y[3::chunk_size] + source_y[4::chunk_size, :] + source_y[5::chunk_size] + source_y[6::chunk_size, :] + source_y[7::chunk_size] + source_y[8::chunk_size, :] + source_y[9::chunk_size]) / chunk_size
+    reduced_x = np.zeros([data.shape[0] / chunk_size, data.shape[1]],
+                         dtype=DTYPE)
+    reduced_y = np.zeros([data.shape[0] / chunk_size, data.shape[1]],
+                         dtype=DTYPE)
+    for i in range(chunk_size):
+        reduced_x += source_x[i::chunk_size, :]
+        reduced_y += source_y[i::chunk_size, :]
+    reduced_x /= chunk_size
+    reduced_y /= chunk_size
+    cdef np.ndarray[DTYPE_t, ndim = 2] ryp, ryl
+    ryp, ryl = np.gradient(reduced_y)
+    cdef np.ndarray[DTYPE_t, ndim = 2] rxp, rxl
+    rxp, rxl = np.gradient(reduced_x)
+    rxp = -rxp
+    rxl = -rxl
+    ryp = -ryp
+    ryl = -ryl
+
+    # gradient of full output y/x grids (in pixel and line directions)
+    cdef np.ndarray[DTYPE_t, ndim = 2] fyp, fyl
+    cdef np.ndarray[DTYPE_t, ndim = 2] fxp, fxl
+    fyp = np.zeros_like(source_y)
+    fyl = np.zeros_like(source_y)
+    fxp = np.zeros_like(source_x)
+    fxl = np.zeros_like(source_x)
+    for i in range(data.shape[0] / chunk_size):
+        fyp[i * chunk_size:(i + 1) * chunk_size, :], fyl[i * chunk_size:(i + 1) *
+                                                         chunk_size, :] = np.gradient(source_y[i * chunk_size:(i + 1) * chunk_size, :])
+        fxp[i * chunk_size:(i + 1) * chunk_size, :], fxl[i * chunk_size:(i + 1) *
+                                                         chunk_size, :] = np.gradient(source_x[i * chunk_size:(i + 1) * chunk_size, :])
+
+    # fyp, fyl = np.gradient(source_y)
+    # fxp, fxl = np.gradient(source_x)
+    fxp = -fxp
+    fxl = -fxl
+    fyp = -fyp
+    fyl = -fyl
+
+    cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
+    cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
+    cdef np.ndarray[DTYPE_t, ndim = 2] array_x, array_y
+    # pixel max ---> data is expected in [lines, pixels]
+    cdef int pmax = data.shape[1] - 1
+    cdef int flmax = data.shape[0] - 1
+    cdef int rlmax = reduced_x.shape[0] - 1
+    cdef int lmax
+    # centre of input image - starting point
+    cdef int p0 = pmax / 2
+    cdef int l0 = flmax / 2
+    # intermediate variables:
+    cdef int nnl, nnp
+    cdef int l_a00, l_a01, l_a10, l_a11, p_a00, p_a01, p_a10, p_a11
+    cdef double dx, dy, d, dl, dp, w_l, w_p
+    # number of iterations
+    cdef int cnt = 0
+    cdef int adj = False
+    cdef int undefined = 0
+    cdef double distance
+    # this was a bit confusing -- "lines" was based on x_size; change this
+    # variable to elements - make it a numpy array (long==numpy int dtype)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    lmax = rlmax
+    l0 /= chunk_size
+    xp, xl, yp, yl = rxp, rxl, ryp, ryl
+    array_x, array_y = reduced_x, reduced_y
+    for i in range(y_size):
+        # lines.reverse() --> swapped to elements - provide a reverse view of
+        # the array
+        elements = elements[::-1]
+        for j in elements:
+            cnt = 0
+            adj = False
+            while True:
+                cnt += 1
+                # algorithm does not converge, try jumping to the next chunk
+                if cnt > 5:
+                    break
+                    # if adj and l0 % chunk_size >= chunk_size / 2.0:
+                    #     l0 += chunk_size
+                    #     adj = True
+                    #     cnt = 0
+                    # elif not adj and l0 % chunk_size < chunk_size / 2.0:
+                    #     l0 -= chunk_size
+                    #     adj = True
+                    #     cnt = 0
+                    # else:
+                    # distance = np.sqrt((source_y[l0, p0] - y_1d[i]) ** 2 +
+                    # (source_x[l0, p0] - x_1d[j]) ** 2)
+                    # TODO: this should be done dynamically or from arg
+                    # if distance < 1:
+                    # image[y_size - 1 - i, j] = data[l0, p0]
+                    # else:
+                    # undefined += 1
+                    #     break
+
+                # check we are within the input image bounds
+                if l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0:
+                    if mask[l0, p0] != 0:
+                        if dl > 0:
+                            while l0 < lmax and mask[l0, p0] != 0:
+                                l0 += 1
+                            if l0 >= lmax:
+                                l0 = lmax - 1
+                                break
+                        else:
+                            while l0 >= 0 and mask[l0, p0] != 0:
+                                l0 -= 1
+                            if l0 < 0:
+                                l0 = 0
+                                break
+
+                    # step size
+                    dx = x_1d[j] - array_x[l0, p0]
+                    dy = y_1d[i] - array_y[l0, p0]
+                else:
+                    # reset such that we are back in the input image bounds
+                    l0 = max(0, min(lmax - 1, l0))
+                    p0 = max(0, min(pmax - 1, p0))
+                    dx = x_1d[j] - array_x[l0, p0]
+                    dy = y_1d[i] - array_y[l0, p0]
+
+                # distance from pixel/line to output location
+                d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                dl = -(yl[l0, p0] * dx - xl[l0, p0] * dy) / d
+                dp = (yp[l0, p0] * dx - xp[l0, p0] * dy) / d
+
+                # take care of pixels outside
+                if ((l0 == lmax - 1 and dl > 0.5) or
+                        (l0 == 0 and dl < -0.5) or
+                        (p0 == pmax - 1 and dp > 0.5) or
+                        (p0 == 0 and dp < -0.5)):
+                    break
+
+                # check that our distance to an output location is less than 1
+                # pixel/line
+                if (abs(dp) < 1) and (abs(dl) < 1):
+                    if lmax == rlmax:  # switch to full resolution
+                        print "switching to full res", i, j
+                        # nearest neighbour
+                        l0 = l0 * chunk_size + chunk_size / 2
+                        lmax = flmax
+                        xp, xl, yp, yl = fxp, fxl, fyp, fyl
+                        array_x, array_y = source_x, source_y
+                        cnt = 0
+                        continue
+                    # switch to next chunk if too close from bow-tie borders
+                    # if not adj and l0 % chunk_size == chunk_size - 1:
+                    #     l0 += chunk_size / 2
+                    #     adj = True
+                    #     cnt = 0
+                    #     continue
+                    # elif not adj and l0 % chunk_size == 0:
+                    #     l0 -= chunk_size / 2
+                    #     adj = True
+                    #     cnt = 0
+                    #     continue
+                    # check if the data is masked
+                    if mask[l0, p0] != 0:
+                        # if dl > 0:
+                        #     while mask[l0, p0] != 0:
+                        #         l0 += 1
+                        # else:
+                        #     while mask[l0, p0] != 0:
+                        #         l0 -= 1
+                        if l0 % chunk_size > chunk_size / 2:
+                            while l0 < lmax and mask[l0, p0] != 0:
+                                l0 += 1
+                            if l0 >= lmax:
+                                l0 = lmax - 1
+                                break
+                        else:
+                            while l0 >= 0 and mask[l0, p0] != 0:
+                                l0 -= 1
+                            if l0 < 0:
+                                l0 = 0
+                                break
+                        cnt -= 1
+                        continue
+
+                    # image[y_size - 1 - i, j] = data[l0, p0]
+
+                    # bilinear interpolation
+                    # if dl < 0:
+                    #     l_a = max(0, l0 - 1)
+                    #     l_b = l0
+                    #     w_l = 1 + dl
+                    # else:
+                    #     l_a = l0
+                    #     l_b = min(l0 + 1, lmax - 1)
+                    #     w_l = dl
+                    # if dp < 0:
+                    #     p_a = max(0, p0 - 1)
+                    #     p_b = p0
+                    #     w_p = 1 + dp
+                    # else:
+                    #     p_a = p0
+                    #     p_b = min(p0 + 1, pmax - 1)
+                    #     w_p = dp
+
+                    if dl < 0 and dp < 0:
+                        w_l = 1 + dl
+                        w_p = 1 + dp
+                        l_a00 = l0 - 1
+                        p_a00 = p0 - 1
+                        l_a01 = l0 - 1
+                        p_a01 = p0
+                        l_a10 = l0
+                        p_a10 = p0 - 1
+                        l_a11 = l0
+                        p_a11 = p0
+                        while l_a01 > 0 and mask[l_a01, p_a01] != 0:
+                            l_a01 -= 1
+                        if mask[l_a00, p_a00] != 0:
+                            l_a00 = l_a01
+                            p_a00 += 1
+                        if mask[l_a10, p_a10] != 0:
+                            p_a10 += 1
+
+                    if dl > 0 and dp < 0:
+                        w_l = dl
+                        w_p = 1 + dp
+                        l_a00 = l0
+                        p_a00 = p0 - 1
+                        l_a01 = l0
+                        p_a01 = p0
+                        l_a10 = l0 + 1
+                        p_a10 = p0 - 1
+                        l_a11 = l0 + 1
+                        p_a11 = p0
+                        if mask[l_a00, p_a00] != 0:
+                            p_a00 += 1
+                        while l_a11 < lmax - 1 and mask[l_a11, p_a11] != 0:
+                            l_a11 += 1
+                        if mask[l_a10, p_a10] != 0:
+                            l_a10 = l_a11
+                            p_a10 += 1
+
+                    if dl > 0 and dp > 0:
+                        w_l = dl
+                        w_p = dp
+                        l_a00 = l0
+                        p_a00 = p0
+                        l_a01 = l0
+                        p_a01 = p0 + 1
+                        l_a10 = l0 + 1
+                        p_a10 = p0
+                        l_a11 = l0 + 1
+                        p_a11 = p0 + 1
+                        if mask[l_a01, p_a01] != 0:
+                            p_a01 -= 1
+                        while l_a10 < lmax - 1 and mask[l_a10, p_a10] != 0:
+                            l_a10 += 1
+                        if mask[l_a11, p_a11] != 0:
+                            l_a11 = l_a10
+                            p_a11 -= 1
+
+                    if dl < 0 and dp > 0:
+                        w_l = 1 + dl
+                        w_p = dp
+                        l_a00 = l0 - 1
+                        p_a00 = p0
+                        l_a01 = l0 - 1
+                        p_a01 = p0 + 1
+                        l_a10 = l0
+                        p_a10 = p0
+                        l_a11 = l0
+                        p_a11 = p0 + 1
+
+                        while l_a00 > 0 and mask[l_a00, p_a00] != 0:
+                            l_a00 -= 1
+                        if mask[l_a01, p_a01] != 0:
+                            l_a01 = l_a00
+                            p_a01 -= 1
+                        if mask[l_a11, p_a11] != 0:
+                            p_a11 -= 1
+
+                    # assign image output... (was x_size in the first dimension
+                    # --> needs to be y_size)
+                    image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a00, p_a00] +
+                                                (1 - w_l) * w_p * data[l_a01, p_a01] +
+                                                w_l * (1 - w_p) * data[l_a10, p_a10] +
+                                                w_l * w_p * data[l_a11, p_a11])
+
+                    # nearest neighbour
+                    # nnl = l0
+                    # nnp = p0
+                    # if dp < -0.5 and nnp > 0 and mask[nnl, nnp - 1] == 0:
+                    #     nnp -= 1
+                    # elif dp > 0.5 and nnp < pmax - 1 and mask[nnl, nnp + 1] == 0:
+                    #     nnp += 1
+                    # if dl < -0.5 and nnl > 0 and mask[nnl - 1, nnp] == 0:
+                    #     nnl -= 1
+                    # elif dl > 0.5 and nnl < lmax - 1 and mask[nnl + 1, nnp] == 0:
+                    #     nnl += 1
+                    # image[y_size - 1 - i, j] = data[nnl, nnp]
+
+                    # we found our solution, next
+                    break
+                else:
+                    # increment...
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+                    if dl > 0 and l0 % chunk_size == chunk_size - 1:
+                        l0 += 2
+                    if dl < 0 and l0 % chunk_size == 0:
+                        l0 -= 2
+    # return the output image
+    print "undefined", undefined
+    return image
+
+
+@cython.boundscheck(False)
+def fast_gradient_search_with_mask_old(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, area_extent, size, np.ndarray[np.uint8_t, ndim=2] mask):
+    """Gradient search, simple case variant, with masked data.
+    """
+    # area extent bounds --> area_def.area_extent
+    cdef double x_min, y_min, x_max, y_max
+    x_min, y_min, x_max, y_max = area_extent
+    # change the output size (x_size, y_size) to match area_def.shape:
+    # (lines,pixels)
+    cdef int x_size, y_size
+    y_size, x_size = size
+    # step in x direction (meters); x-output locations (centre of pixel);
+    # repeat for y
+    cdef double x_inc = (x_max - x_min) / x_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] x_1d = np.arange(x_min + x_inc / 2, x_max, x_inc)
+    cdef double y_inc = (y_max - y_min) / y_size
+    cdef np.ndarray[DTYPE_t, ndim = 1] y_1d = np.arange(y_min + y_inc / 2, y_max, y_inc)
+    # output image array --> needs to be (lines, pixels) --> y,x
+    cdef np.ndarray[DTYPE_t, ndim = 2] image = np.zeros([y_size, x_size], dtype=DTYPE)
+    # gradient of output y/x grids (in pixel and line directions)
+    cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
+    yl, yp = np.gradient(source_y)
+    cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
+    xl, xp = np.gradient(source_x)
+    # pixel max ---> data is expected in [lines, pixels]
+    cdef int pmax = data.shape[1] - 1
+    cdef int lmax = data.shape[0] - 1
+    # centre of input image - starting point
+    cdef int p0 = pmax / 2
+    cdef int l0 = lmax / 2
+    # intermediate variables:
+    cdef int l_a, l_b, p_a, p_b, nnl, nnp
+    cdef size_t i, j
+    cdef double dx, dy, d, dl, dp, w_l, w_p
+    dl = 0
+    dp = 0
+    # number of iterations
+    cdef int cnt = 0
+    # this was a bit confusing -- "lines" was based on x_size; change this
+    # variable to elements - make it a numpy array (long==numpy int dtype)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    for i in range(y_size):
+        # lines.reverse() --> swapped to elements - provide a reverse view of
+        # the array
+        elements = elements[::-1]
+        for j in elements:
+            cnt = 0
+            while True:
+                cnt += 1
+
+                # algorithm does not converge.
+                if cnt > 5:
+                    # TODO: this should be done dynamically or from arg
+                    # distance = np.sqrt((source_y[l0, p0] - y_1d[i]) ** 2 +
+                    #                   (source_x[l0, p0] - x_1d[j]) ** 2)
+                    # if distance < 5000 and mask[l0, p0] != 0:
+                    #    image[y_size - 1 - i, j] = data[l0, p0]
+                    break
+                # check we are within the input image bounds
+                if l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0:
+                    if mask[l0, p0] != 0:
+                        if dl >= 0:
+                            while l0 < lmax and mask[l0, p0] != 0:
+                                l0 += 1
+                            if l0 >= lmax:
+                                l0 = lmax - 1
+                                break
+                        else:
+                            while l0 >= 0 and mask[l0, p0] != 0:
+                                l0 -= 1
+                            if l0 < 0:
+                                l0 = 0
+                                break
+                else:
+                    # reset such that we are back in the input image bounds
+                    l0 = max(0, min(lmax - 1, l0))
+                    p0 = max(0, min(pmax - 1, p0))
+                # step size
+                dx = x_1d[j] - source_x[l0, p0]
+                dy = y_1d[i] - source_y[l0, p0]
+
+                # distance from pixel/line to output location
+                d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                if d == 0:
+                    image[y_size - 1 - i, j] = data[l0, p0]
+                    break
+                dp = (yl[l0, p0] * dx - xl[l0, p0] * dy) / d
+                dl = (xp[l0, p0] * dy - yp[l0, p0] * dx) / d
+                # check that our distance to an output location is less than 1
+                # pixel/line
+                if abs(dp) < 1 and abs(dl) < 1:
+                    # nearest neighbour
+                    # nnl = l0
+                    # if dl < -0.5 and nnl > 0:
+                    #     nnl -= 1
+                    # elif dl > 0.5 and nnl < lmax - 1:
+                    #     nnl += 1
+                    # nnp = p0
+                    # if dp < -0.5 and nnp > 0:
+                    #     nnp -= 1
+                    # elif dp > 0.5 and nnp < pmax - 1:
+                    #     nnp += 1
+                    # image[y_size - 1 - i, j] = data[nnl, nnp]
+                    # bilinear interpolation
+                    if dl < 0:
+                        l_a = max(0, l0 - 1)
+                        l_b = l0
+                        w_l = 1 + dl
+                    else:
+                        l_a = l0
+                        l_b = min(l0 + 1, lmax - 1)
+                        w_l = dl
+                    if dp < 0:
+                        p_a = max(0, p0 - 1)
+                        p_b = p0
+                        w_p = 1 + dp
+                    else:
+                        p_a = p0
+                        p_b = min(p0 + 1, pmax - 1)
+                        w_p = dp
+                    # assign image output... (was x_size in the first dimension
+                    # --> needs to be y_size)
+                    image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] +
+                                                (1 - w_l) * w_p * data[l_a, p_b] +
+                                                w_l * (1 - w_p) * data[l_b, p_a] +
+                                                w_l * w_p * data[l_b, p_b])
+                    if mask[l0, p0] != 0:
+                        if dl >= 0:
+                            while l0 < lmax and mask[l0, p0] != 0:
+                                l0 += 1
+                            if l0 >= lmax:
+                                l0 = lmax - 1
+                                break
+                        else:
+                            while l0 >= 0 and mask[l0, p0] != 0:
+                                l0 -= 1
+                            if l0 < 0:
+                                l0 = 0
+                                break
+
+                    image[y_size - 1 - i, j] = data[l0, p0]
                     # found our solution, next
                     break
                 else:
