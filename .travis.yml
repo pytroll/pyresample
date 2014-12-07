@@ -8,5 +8,6 @@ python:
 install:
 - pip install .
 - pip install coveralls
+- pip install pykdtree
 script: python setup.py nosetests --with-coverage --cover-package pyresample
 after_success: coveralls
