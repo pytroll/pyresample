@@ -165,7 +165,7 @@ class Test(unittest.TestCase):
         
         lons2, lats2 = swath_def.get_lonlats()
         
-        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2), 
+        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
                     msg='Caching of swath coordinates failed')
 
     def test_swath_wrap(self):

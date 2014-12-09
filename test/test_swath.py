@@ -39,10 +39,10 @@ class Test(unittest.TestCase):
                                          radius_of_influence=70000, sigmas=56500)
         else:
             with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, self.tb37v.copy(), swath_def, 
+                res = kd_tree.resample_gauss(swath_def, self.tb37v.copy(), swath_def,
                                              radius_of_influence=70000, sigmas=56500)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
        
         self.assertAlmostEqual(res.sum() / 100., 668848.082208, 1, 
                                 msg='Failed self mapping swath for 1 channel')
@@ -57,8 +57,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_gauss(swath_def, data, swath_def, 
                                              radius_of_influence=70000, sigmas=[56500, 56500, 56500])
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
                 
         self.assertAlmostEqual(res[:, 0].sum() / 100., 668848.082208, 1, 
                                    msg='Failed self mapping swath multi for channel 1')

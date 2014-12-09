@@ -20,15 +20,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
-import weakref
+
+from __future__ import absolute_import
 
 import warnings
 
 import math
 import numpy as np
 
-import utils
-import _spatial_mp
+from . import utils
+from . import _spatial_mp
 
 
 class DimensionError(Exception):

@@ -17,8 +17,15 @@
 
 """Classes for spherical geometry operations"""
 
+from __future__ import absolute_import
+
 import math
 import numpy as np
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 EPSILON = 0.0000001
 
