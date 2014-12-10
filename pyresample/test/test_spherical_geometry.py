@@ -9,8 +9,10 @@ from pyresample import geometry
 
 
 class TestOverlap(unittest.TestCase):
+
     """Testing overlapping functions in pyresample.
     """
+
     def assert_raises(self, exception, call_able, *args):
         """assertRaises() has changed from py2.6 to 2.7! Here is an attempt to
         cover both"""
@@ -27,14 +29,13 @@ class TestOverlap(unittest.TestCase):
         lons = np.array([[-11, 11], [-11, 11]])
         lats = np.array([[11, 11], [-11, -11]])
         area = geometry.SwathDefinition(lons, lats)
-        
+
         point = Coordinate(0, 0)
 
         self.assertTrue(point in area)
 
         point = Coordinate(0, 12)
         self.assertFalse(point in area)
-
 
         lons = np.array([[-179, 179], [-179, 179]])
         lats = np.array([[1, 1], [-1, -1]])
@@ -67,7 +68,7 @@ class TestOverlap(unittest.TestCase):
         lons1 = np.array([[0, 90], [-90, 180]])
         lats1 = np.array([[89, 89], [89, 89]])
         area1 = geometry.SwathDefinition(lons1, lats1)
-        
+
         lons2 = np.array([[45, 135], [-45, -135]])
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
@@ -78,14 +79,14 @@ class TestOverlap(unittest.TestCase):
         lons1 = np.array([[0, 45], [135, 90]])
         lats1 = np.array([[89, 89], [89, 89]])
         area1 = geometry.SwathDefinition(lons1, lats1)
-        
+
         lons2 = np.array([[180, -135], [-45, -90]])
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
         self.assertFalse(area1.overlaps(area2))
         self.assertFalse(area2.overlaps(area1))
-        
+
         lons1 = np.array([[-1, 1], [-1, 1]])
         lats1 = np.array([[1, 1], [-1, -1]])
         area1 = geometry.SwathDefinition(lons1, lats1)
@@ -96,7 +97,6 @@ class TestOverlap(unittest.TestCase):
 
         self.assertTrue(area1.overlaps(area2))
         self.assertTrue(area2.overlaps(area1))
-        
 
         lons1 = np.array([[-1, 0], [-1, 0]])
         lats1 = np.array([[1, 2], [-1, 0]])
@@ -105,10 +105,9 @@ class TestOverlap(unittest.TestCase):
         lons2 = np.array([[1, 2], [1, 2]])
         lats2 = np.array([[1, 2], [-1, 0]])
         area2 = geometry.SwathDefinition(lons2, lats2)
-        
+
         self.assertFalse(area1.overlaps(area2))
         self.assertFalse(area2.overlaps(area1))
-
 
     def test_overlap_rate(self):
         """Test how much two areas overlap.
@@ -124,23 +123,22 @@ class TestOverlap(unittest.TestCase):
 
         self.assertAlmostEqual(area1.overlap_rate(area2), 0.25, 3)
         self.assertAlmostEqual(area2.overlap_rate(area1), 0.25, 3)
-        
+
         lons1 = np.array([[82.829699999999974, 36.888300000000001],
                           [98.145499999999984, 2.8773]])
         lats1 = np.array([[60.5944, 52.859999999999999],
                           [80.395899999999997, 66.7547]])
         area1 = geometry.SwathDefinition(lons1, lats1)
-        
+
         lons2 = np.array([[7.8098183315148422, 26.189349044600252],
                           [7.8098183315148422, 26.189349044600252]])
         lats2 = np.array([[62.953206630716465, 62.953206630716465],
                           [53.301561187195546, 53.301561187195546]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-
         self.assertAlmostEqual(area1.overlap_rate(area2), 0.07, 2)
         self.assertAlmostEqual(area2.overlap_rate(area1), 0.012, 3)
-        
+
         lons1 = np.array([[82.829699999999974, 36.888300000000001],
                           [98.145499999999984, 2.8773]])
         lats1 = np.array([[60.5944, 52.859999999999999],
@@ -153,13 +151,12 @@ class TestOverlap(unittest.TestCase):
                           [57.304862819933433, 57.304862819933433]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        
         self.assertAlmostEqual(area1.overlap_rate(area2), 0.5, 2)
         self.assertAlmostEqual(area2.overlap_rate(area1), 0.068, 3)
 
 
-
 class TestSphereGeometry(unittest.TestCase):
+
     """Testing sphere geometry from this module.
     """
 
@@ -207,7 +204,6 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertAlmostEqual(arc4.angle(arc2), math.pi,
                                msg="this should be pi")
 
-
         p5_ = Coordinate(base + 1, base + 1)
         p6_ = Coordinate(base + 1, base - 1)
         p7_ = Coordinate(base - 1, base - 1)
@@ -238,13 +234,11 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertAlmostEqual(arc1.angle(arc6), 3 * math.pi / 4, 3,
                                msg="this should be 3pi/4")
 
-
         c0_ = Coordinate(180, 0)
         c1_ = Coordinate(180, 1)
         c2_ = Coordinate(-179, 0)
         c3_ = Coordinate(-180, -1)
         c4_ = Coordinate(179, 0)
-
 
         arc1 = Arc(c0_, c1_)
         arc2 = Arc(c0_, c2_)
@@ -300,15 +294,14 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertAlmostEqual(arc2.angle(arc1), -math.pi / 2,
                                msg="this should be -pi/2")
 
-        self.assertAlmostEqual(Arc(c1_, c2_).angle(arc1), math.pi/4, 3,
+        self.assertAlmostEqual(Arc(c1_, c2_).angle(arc1), math.pi / 4, 3,
                                msg="this should be pi/4")
-                               
-        self.assertAlmostEqual(Arc(c4_, c3_).angle(arc4), -math.pi/4, 3,
+
+        self.assertAlmostEqual(Arc(c4_, c3_).angle(arc4), -math.pi / 4, 3,
                                msg="this should be -pi/4")
 
-        self.assertAlmostEqual(Arc(c1_, c4_).angle(arc1), -math.pi/4, 3,
+        self.assertAlmostEqual(Arc(c1_, c4_).angle(arc1), -math.pi / 4, 3,
                                msg="this should be -pi/4")
-
 
     def test_intersects(self):
         """Test if two arcs intersect.
@@ -346,8 +339,6 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertFalse(arc45.intersects(arc02))
 
         self.assertTrue(arc35.intersects(arc24))
-
-
 
         p0_ = Coordinate(180, 0)
         p1_ = Coordinate(180, 1)
@@ -389,7 +380,7 @@ class TestSphereGeometry(unittest.TestCase):
         p1_ = Coordinate(0, 89)
         p2_ = Coordinate(90, 89)
         p3_ = Coordinate(180, 89)
-        p4_ = Coordinate(-90, 89)    
+        p4_ = Coordinate(-90, 89)
         p5_ = Coordinate(45, 89)
         p6_ = Coordinate(135, 89)
 
@@ -420,8 +411,16 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertTrue(arc35.intersects(arc24))
 
 
+def suite():
+    """The test suite.
+    """
+    loader = unittest.TestLoader()
+    mysuite = unittest.TestSuite()
+    mysuite.addTest(loader.loadTestsFromTestCase(TestOverlap))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestSphereGeometry))
+
+    return mysuite
+
 
 if __name__ == '__main__':
     unittest.main()
-
-
