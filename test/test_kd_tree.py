@@ -68,8 +68,8 @@ class Test(unittest.TestCase):
                 res = kd_tree.resample_gauss(self.tswath, \
                                              self.tdata.ravel(), self.tgrid,\
                                              50000, 25000, reduce_data=False, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
-                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')    
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour warning')
+                self.assertFalse(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
         self.assertAlmostEqual(res[0], 2.2020729, 5, \
                                    'Failed to calculate gaussian weighting')
     
@@ -87,8 +87,8 @@ class Test(unittest.TestCase):
                 res = kd_tree.resample_custom(self.tswath,\
                                              self.tdata.ravel(), self.tgrid,\
                                              50000, wf, reduce_data=False, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
-                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')        
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour warning')
+                self.assertFalse(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
         self.assertAlmostEqual(res[0], 2.4356757, 5,\
                                    'Failed to calculate custom weighting')
 
@@ -104,8 +104,8 @@ class Test(unittest.TestCase):
                 res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata, 
                                                             self.tgrid, 100000, sigma, 
                                                             with_uncert=True)
-                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
-                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour warning')
+                self.assertFalse(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
 
         expected_res = 2.20206560694
         expected_stddev = 0.707115076173
@@ -130,8 +130,8 @@ class Test(unittest.TestCase):
                 res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                                          self.tdata, self.tgrid,
                                                          100000, wf, with_uncert=True)   
-                self.failIf(len(w) != 1, 'Failed to create neighbour warning')
-                self.failIf(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour warning')
+                self.assertFalse(('Searching' not in str(w[0].message)), 'Failed to create correct neighbour warning')
 
         self.assertAlmostEqual(res[0], 2.32193149, 5, \
                                    'Failed to calculate custom weighting with uncertainty')
@@ -318,8 +318,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_gauss(swath_def, data.ravel(),\
                                              self.area_def, 50000, 25000, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')        
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()        
         expected = 4872.81050892
         self.assertAlmostEqual(cross_sum, expected,\
@@ -338,8 +338,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_gauss(swath_def, data.ravel(),\
                                              self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')        
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()        
         expected = 4872.81050892
         self.assertAlmostEqual(cross_sum, expected,\
@@ -360,8 +360,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_gauss(swath_def, data_multi,\
                                              self.area_def, 50000, [25000, 15000, 10000], segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()        
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,\
@@ -384,8 +384,8 @@ class Test(unittest.TestCase):
                 res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,\
                                                     self.area_def, 50000, [25000, 15000, 10000], 
                                                     segments=1, with_uncert=True)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         cross_sum_stddev = stddev.sum()
         cross_sum_counts = counts.sum()
@@ -417,8 +417,8 @@ class Test(unittest.TestCase):
                 res = kd_tree.resample_gauss(swath_def, data_multi,\
                                              self.area_def, 50000, [25000, 15000, 10000],\
                                              nprocs=2, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning') 
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,\
@@ -441,8 +441,8 @@ class Test(unittest.TestCase):
                 res = kd_tree.resample_gauss(swath_def, data_multi,\
                                              self.area_def, 50000, [25000, 15000, 10000],\
                                              nprocs=2, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,\
@@ -480,8 +480,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_custom(swath_def, data.ravel(),\
                                               self.area_def, 50000, wf, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 4872.81050729
         self.assertAlmostEqual(cross_sum, expected,\
@@ -511,8 +511,8 @@ class Test(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 res = kd_tree.resample_custom(swath_def, data_multi,\
                                               self.area_def, 50000, [wf1, wf2, wf3], segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.842980746
         self.assertAlmostEqual(cross_sum, expected,\
@@ -773,8 +773,8 @@ class Test(unittest.TestCase):
                                             kd_tree.get_neighbour_info(swath_def, 
                                                                        self.area_def, 
                                                                        50000, segments=1)
-                self.failIf(len(w) != 1, 'Failed to create neighbour radius warning')
-                self.failIf(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
+                self.assertFalse(len(w) != 1, 'Failed to create neighbour radius warning')
+                self.assertFalse(('Possible more' not in str(w[0].message)), 'Failed to create correct neighbour radius warning')
             
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800), 
                                                      data_multi, 

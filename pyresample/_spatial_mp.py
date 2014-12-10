@@ -15,6 +15,8 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
+
 import ctypes
 
 import numpy as np
@@ -27,7 +29,7 @@ try:
 except ImportError:
     ne = None
 
-from _multi_proc import shmem_as_ndarray, Scheduler
+from ._multi_proc import shmem_as_ndarray, Scheduler
 
 #Earth radius
 R = 6370997.0
@@ -133,13 +135,13 @@ class Proj_MP(pyproj.Proj):
         shmem_data2 = mp.RawArray(ctypes.c_double, n)
         shmem_res1 = mp.RawArray(ctypes.c_double, n)
         shmem_res2 = mp.RawArray(ctypes.c_double, n)
-        
+
         # view shared memory as ndarrays
         _data1 = shmem_as_ndarray(shmem_data1)
         _data2 = shmem_as_ndarray(shmem_data2)
         _res1 = shmem_as_ndarray(shmem_res1)
         _res2 = shmem_as_ndarray(shmem_res2)
-        
+
         # copy input data to shared memory
         _data1[:] = data1.ravel()
         _data2[:] = data2.ravel()
@@ -192,9 +194,8 @@ def _run_jobs(target, args, nprocs):
     for p in pool: p.start()
     for p in pool: p.join()
     if ierr.value != 0:
-        raise RuntimeError,\
-                ('%d errors in worker processes. Last one reported:\n%s'%\
-                 (ierr.value, err_msg.value))
+        raise RuntimeError('%d errors in worker processes. Last one reported:\n%s'%\
+                 (ierr.value, err_msg.value.decode()))
                 
 # This is executed in an external process:
 def _parallel_query(scheduler, # scheduler for load balancing
@@ -229,9 +230,9 @@ def _parallel_query(scheduler, # scheduler for load balancing
                                                 distance_upper_bound=dub)
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
-        err_msg.value = e.message  
+        err_msg.value = str(e).encode()
         
 def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,\
                    inverse, radians, errcheck, ierr, err_msg):
@@ -249,12 +250,12 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,\
         for s in scheduler:
             _res1[s], _res2[s] = proj(_data1[s], _data2[s], inverse=inverse,\
                                        radians=radians, errcheck=errcheck)
-    
+
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
-        err_msg.value = e.message  
+        err_msg.value = str(e).encode()
         
 def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
     try:
@@ -270,6 +271,6 @@ def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
             _coords[s, 2] = R*np.sin(np.radians(_lats[s]))
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
-    except Exception, e:
+    except Exception as e:
         ierr.value += 1
-        err_msg.value = e.message  
+        err_msg.value = str(e).encode()

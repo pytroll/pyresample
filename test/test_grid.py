@@ -153,7 +153,7 @@ class Test(unittest.TestCase):
         cross_sum = res.sum()
         expected = 399936.39392500359
         self.assertAlmostEqual(cross_sum, expected, msg='Generate linesample failed')
-        self.failIf(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16, 
+        self.assertFalse(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16,
                     'Generate linesample failed. Downcast to uint16 expected')
     
     @mp
@@ -173,5 +173,6 @@ class Test(unittest.TestCase):
         
     def test_proj4_string(self):
         proj4_string = self.area_def.proj4_string
-        self.assertEqual(proj4_string, '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00')
+        expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00'
+        self.assertEqual(frozenset(proj4_string.split()), frozenset(expected_string.split()))
     
