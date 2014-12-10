@@ -18,6 +18,8 @@ Look at http://code.google.com/p/pyresample/ and http://pytroll.org/ for more in
 
 
 ===News===
+  * *2014-12-10*: Pyresample-1.1.1 released. Wrapping of longitudes and latitudes is now implemented.
+
   * *2013-10-23*: Pyresample-1.1.0 released. Added option for calculating uncertainties for weighted kd-tree resampling. From now on pyresample will adhere to [http://semver.org/ semantic versioning].
 
   * *2013-07-03*: Pyresample-1.0.0 released. Minor API change to the geometry.py module as the boundary variable is removed and replaced by proj_x_coords and proj_y_coords. Caching scheme removed from projection coordinate calculation in geometry.py as it introduced excessive complications. The numexpr package is now used for minor bottleneck optimization if available. Version number bumped to 1.0.0 as pyresample has been running stable in production environments for several years now.
