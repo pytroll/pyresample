@@ -87,7 +87,7 @@ class Test(unittest.TestCase):
         
         lons2, lats2 = swath_def.get_lonlats()
         
-        self.failIf(id(lons1) != id(lons2) or id(lats1) != id(lats2), 
+        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
                     msg='Caching of swath coordinates failed')
                
     def test_area_equal(self):
@@ -117,7 +117,7 @@ class Test(unittest.TestCase):
                                      -909968.64000000001,
                                      1029087.28,
                                      1490031.3600000001])
-        self.failIf(area_def != area_def2, 'area_defs are not equal as expected')
+        self.assertFalse(area_def != area_def2, 'area_defs are not equal as expected')
          
     def test_not_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -148,14 +148,14 @@ class Test(unittest.TestCase):
                                     5568742.4000000004,
                                     5568742.4000000004]
                                     )
-        self.failIf(area_def == msg_area, 'area_defs are not expected to be equal')
+        self.assertFalse(area_def == msg_area, 'area_defs are not expected to be equal')
        
     def test_swath_equal(self):
         lons = np.array([1.2, 1.3, 1.4, 1.5])
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
         swath_def2 = geometry.SwathDefinition(lons, lats)
-        self.failIf(swath_def != swath_def2, 'swath_defs are not equal as expected')
+        self.assertFalse(swath_def != swath_def2, 'swath_defs are not equal as expected')
         
     def test_swath_not_equal(self):
         lats1 = np.array([65.9, 65.86, 65.82, 65.78])
@@ -163,7 +163,7 @@ class Test(unittest.TestCase):
         lats2 = np.array([65.91, 65.85, 65.80, 65.75])
         swath_def = geometry.SwathDefinition(lons, lats1)
         swath_def2 = geometry.SwathDefinition(lons, lats2)
-        self.failIf(swath_def == swath_def2, 'swath_defs are not expected to be equal')
+        self.assertFalse(swath_def == swath_def2, 'swath_defs are not expected to be equal')
 
     def test_swath_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -182,7 +182,7 @@ class Test(unittest.TestCase):
         
         swath_def = geometry.SwathDefinition(*area_def.get_lonlats())
 
-        self.failIf(swath_def != area_def, "swath_def and area_def should be equal")
+        self.assertFalse(swath_def != area_def, "swath_def and area_def should be equal")
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -198,7 +198,7 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
 
-        self.failIf(area_def != swath_def, "swath_def and area_def should be equal")
+        self.assertFalse(area_def != swath_def, "swath_def and area_def should be equal")
 
     def test_swath_not_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
@@ -219,7 +219,7 @@ class Test(unittest.TestCase):
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
 
-        self.failIf(swath_def == area_def, "swath_def and area_def should be different")
+        self.assertFalse(swath_def == area_def, "swath_def and area_def should be different")
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD', 
                                    {'a': '6378144.0',
@@ -235,7 +235,7 @@ class Test(unittest.TestCase):
                                      1029087.28,
                                      1490031.3600000001])
 
-        self.failIf(area_def == swath_def, "swath_def and area_def should be different")
+        self.assertFalse(area_def == swath_def, "swath_def and area_def should be different")
         
     def test_concat_1d(self):
         lons1 = np.array([1, 2, 3])

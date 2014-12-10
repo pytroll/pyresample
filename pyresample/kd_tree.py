@@ -18,14 +18,22 @@
 """Handles reprojection of geolocated data. Several types of resampling are
 supported"""
 
+from __future__ import absolute_import
+
 import types
 import warnings
+import sys
 
 import numpy as np
 
-import geometry
-import data_reduce
-import _spatial_mp
+from . import geometry
+from . import data_reduce
+from . import _spatial_mp
+
+if sys.version < '3':
+    range = xrange
+else:
+    long = int
 
 kd_tree_name = None
 try:
@@ -157,7 +165,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     
     #Get gauss function objects
     if is_multi_channel:
-        weight_funcs = map(gauss, sigma_list) 
+        weight_funcs = list(map(gauss, sigma_list)) 
     else:
         weight_funcs = gauss(sigmas)
         

@@ -1,7 +1,9 @@
+from __future__ import absolute_import
+
 import numpy as np
 
-import _spatial_mp
-import geometry
+from . import _spatial_mp
+from . import geometry
 
 class GridFilter(object):
     """Geographic filter from a grid
