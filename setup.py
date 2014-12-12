@@ -27,7 +27,7 @@ version = imp.load_source('pyresample.version', 'pyresample/version.py')
 requirements = ['pyproj', 'numpy', 'configobj']
 extras_require = {'pykdtree': ['pykdtree'],
                   'numexpr': ['numexpr'],
-                  'plot': ['matplotlib', 'basemap']}
+                  'quicklooks': ['matplotlib', 'basemap']}
 
 if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
