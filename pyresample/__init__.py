@@ -18,6 +18,12 @@
 from __future__ import absolute_import
 
 from pyresample.version import __version__
+from pyresample import geometry
+from pyresample import grid
+from pyresample import image
+from pyresample import kd_tree
+from pyresample import utils
+from pyresample import plot
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry']
