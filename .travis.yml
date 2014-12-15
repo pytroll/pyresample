@@ -6,9 +6,10 @@ python:
 - '3.3'
 - '3.4'
 before_install:
+- sudo add-apt-repository ppa:ubuntugis/ppa -y
 - sudo apt-get update -qq
 - sudo apt-get install libfreetype6-dev
-- sudo apt-get install libgeos-c1 libgeos-dev
+- sudo apt-get install libgeos-3.3.8 libgeos-c1 libgeos-dev
 install:
 - pip install -e ".[pykdtree, quicklooks]" --allow-external basemap --allow-unverified basemap
 - pip install coveralls
