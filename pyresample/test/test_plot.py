@@ -82,7 +82,6 @@ def suite():
     """
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
-    if os.environ.get("TRAVIS") != "true":
-        mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(Test))
 
     return mysuite
