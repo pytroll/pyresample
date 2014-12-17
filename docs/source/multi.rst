@@ -34,3 +34,6 @@ Example of resampling in parallel using 4 processes:
 Note: Do not use more processes than available processor cores. As there is a process creation overhead 
 there might be neglible performance improvement using say 8 compared to 4 processor cores. 
 Test on the actual system to determine the most sensible number of processes to use. 
+
+Here is an example of the performance for a varying number of processors on a 64-bit ubuntu 14.04, 32 GB RAM, 2 x Intel Xeon E5-2630 with 6 physical cores each:
+  .. image:: _static/images/time_vs_nproc_1-12.png

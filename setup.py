@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# workaround python bug: http://bugs.python.org/issue15881#msg170215
+import multiprocessing
 from setuptools import setup
 import sys
 
@@ -23,7 +25,9 @@ import imp
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 requirements = ['pyproj', 'numpy', 'configobj']
-extras_require = {'pykdtree': ['pykdtree'], 'numexpr': ['numexpr']}
+extras_require = {'pykdtree': ['pykdtree'],
+                  'numexpr': ['numexpr'],
+                  'quicklook': ['matplotlib', 'basemap']}
 
 if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
@@ -38,6 +42,7 @@ setup(name='pyresample',
       packages=['pyresample'],
       install_requires=requirements,
       extras_require=extras_require,
+      test_suite='pyresample.test.suite',
       zip_safe=False,
       classifiers=[
           'Development Status :: 5 - Production/Stable',

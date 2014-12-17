@@ -5,9 +5,14 @@ python:
 - '3.2'
 - '3.3'
 - '3.4'
+before_install:
+- sudo add-apt-repository ppa:ubuntugis/ppa -y
+- sudo apt-get update -qq
+- sudo apt-get install libfreetype6-dev
+- sudo apt-get install libgeos-3.3.8 libgeos-c1 libgeos-dev
 install:
-- pip install .
+- pip install -r requirements.txt
+- pip install -e ".[pykdtree]"
 - pip install coveralls
-- pip install pykdtree
-script: python setup.py nosetests --with-coverage --cover-package pyresample
+script: coverage run --source=pyresample setup.py test
 after_success: coveralls
