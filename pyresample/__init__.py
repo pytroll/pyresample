@@ -15,12 +15,15 @@
 #You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import data_reduce
 import grid
 import image
 import kd_tree
 import utils
 import version
 import plot
+import gradient_search
+import _gradient_search
 
 __version__ = version.__version__
 
