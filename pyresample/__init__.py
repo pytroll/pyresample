@@ -1,6 +1,6 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010, 2014  Esben S. Nielsen
+# Copyright (C) 2010, 2014, 2015  Esben S. Nielsen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@ from pyresample import image
 from pyresample import kd_tree
 from pyresample import utils
 from pyresample import plot
+from pyresample import data_reduce
+from pyresample import gradient_search
+from pyresample import _gradient_search
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry']
