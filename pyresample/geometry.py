@@ -1,23 +1,23 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2014
+# Copyright (C) 2010-2015
 #
 # Authors:
 #    Esben S. Nielsen
 #    Thomas Lavergne
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
 
@@ -766,7 +766,7 @@ class AreaDefinition(BaseDefinition):
         proj = _spatial_mp.Proj(**self.proj_dict)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
-                                         self.area_extent[2], self.area_extent[0]), 
+                                         self.area_extent[2], self.area_extent[0]),
                                         (self.area_extent[3], self.area_extent[3],
                                          self.area_extent[1], self.area_extent[1]),
                                         inverse=True)
@@ -774,7 +774,6 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[1], corner_lats[1]),
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
-
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
