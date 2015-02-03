@@ -1,19 +1,19 @@
-#pyresample, Resampling of remote sensing image data in python
-# 
-#Copyright (C) 2010  Martin Raspaud
+# pyresample, Resampling of remote sensing image data in python
 #
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Copyright (C) 2010, 2015  Martin Raspaud
 #
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
 #
-#You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for spherical geometry operations"""
 
@@ -31,7 +31,9 @@ EPSILON = 0.0000001
 
 # FIXME: this has not been tested with R != 1
 
+
 class Coordinate(object):
+
     """Point on earth in terms of lat and lon.
     """
     lat = None
@@ -39,7 +41,7 @@ class Coordinate(object):
     x__ = None
     y__ = None
     z__ = None
-    
+
     def __init__(self, lon=None, lat=None,
                  x__=None, y__=None, z__=None, R__=1):
 
@@ -47,7 +49,7 @@ class Coordinate(object):
         if lat is not None and lon is not None:
             if not(-180 <= lon <= 180 and -90 <= lat <= 90):
                 raise ValueError('Illegal (lon, lat) coordinates: (%s, %s)'
-                                  % (lon, lat))
+                                 % (lon, lat))
             self.lat = math.radians(lat)
             self.lon = math.radians(lon)
             self._update_cart()
@@ -64,15 +66,14 @@ class Coordinate(object):
         self.x__ = math.cos(self.lat) * math.cos(self.lon)
         self.y__ = math.cos(self.lat) * math.sin(self.lon)
         self.z__ = math.sin(self.lat)
-        
 
     def _update_lonlat(self):
         """Convert cartesian to lon/lat.
         """
-        
+
         self.lat = math.degrees(math.asin(self.z__ / self.R__))
         self.lon = math.degrees(math.atan2(self.y__, self.x__))
-        
+
     def __ne__(self, other):
         if(abs(self.lat - other.lat) < EPSILON and
            abs(self.lon - other.lon) < EPSILON):
@@ -85,7 +86,7 @@ class Coordinate(object):
 
     def __str__(self):
         return str((math.degrees(self.lon), math.degrees(self.lat)))
-    
+
     def __repr__(self):
         return str((math.degrees(self.lon), math.degrees(self.lat)))
 
@@ -145,7 +146,7 @@ class Coordinate(object):
         x__ = self.y__ * point.z__ - self.z__ * point.y__
         y__ = self.z__ * point.x__ - self.x__ * point.z__
         z__ = self.x__ * point.y__ - self.y__ * point.x__
-        
+
         return Coordinate(x__=x__, y__=y__, z__=z__)
 
     def dot(self, point):
@@ -155,7 +156,9 @@ class Coordinate(object):
                 self.y__ * point.y__ +
                 self.z__ * point.z__)
 
+
 class Arc(object):
+
     """An arc of the great circle between two points.
     """
     start = None
@@ -174,9 +177,9 @@ class Arc(object):
             val = 1
         elif val < -1:
             val = -1
-        
+
         return math.acos(val)
-                           
+
     def __eq__(self, other):
         if(self.start == other.start and self.end == other.end):
             return 1
@@ -213,26 +216,25 @@ class Arc(object):
         ua_ = a__.cross(b__)
         ub_ = a__.cross(c__)
 
-        val =  ua_.dot(ub_) / (ua_.norm() * ub_.norm())
+        val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
         if abs(val - 1) < EPSILON:
             angle = 0
         elif abs(val + 1) < EPSILON:
             angle = math.pi
         else:
-            angle = math.acos(val)    
+            angle = math.acos(val)
 
         n__ = ua_.normalize()
         if n__.dot(c__) > 0:
             return -angle
         else:
             return angle
-        
+
     def intersections(self, other_arc):
         """Gives the two intersections of the greats circles defined by the 
        current arc and *other_arc*.
         """
-        
-        
+
         if self.end.lon - self.start.lon > math.pi:
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
@@ -241,7 +243,7 @@ class Arc(object):
             self.end.lon += 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon < -math.pi:
             other_arc.end.lon += 2 * math.pi
-            
+
         ea_ = self.start.cross2cart(self.end).normalize()
         eb_ = other_arc.start.cross2cart(other_arc.end).normalize()
 
@@ -266,13 +268,11 @@ class Arc(object):
         two points.
         """
 
-
         for i in self.intersections(other_arc):
             a__ = self.start
             b__ = self.end
             c__ = other_arc.start
             d__ = other_arc.end
-
 
             ab_ = a__.distance(b__)
             cd_ = c__.distance(d__)
@@ -282,10 +282,12 @@ class Arc(object):
                 return i
         return None
 
+
 def modpi(val):
     """Puts *val* between -pi and pi.
     """
     return (val + math.pi) % (2 * math.pi) - math.pi
+
 
 def get_polygon_area(corners):
     """Get the area of the convex area defined by *corners*.
@@ -293,25 +295,26 @@ def get_polygon_area(corners):
     # We assume the earth is spherical !!!
     # Should be the radius of the earth at the observed position
     R = 1
-    
+
     c1_ = corners[0]
     area = 0
-    
+
     for idx in range(1, len(corners) - 1):
         b1_ = Arc(c1_, corners[idx])
         b2_ = Arc(c1_, corners[idx + 1])
         b3_ = Arc(corners[idx], corners[idx + 1])
         e__ = (abs(b1_.angle(b2_)) +
-            abs(b2_.angle(b3_)) + 
-                   abs(b3_.angle(b1_)))
+               abs(b2_.angle(b3_)) +
+               abs(b3_.angle(b1_)))
         area += R ** 2 * e__ - math.pi
     return area
+
 
 def get_intersections(b__, boundaries):
     """Get the intersections of *b__* with *boundaries*.
     Returns both the intersection coordinates and the concerned boundaries.
     """
-    
+
     intersections = []
     bounds = []
     for other_b in boundaries:
@@ -320,7 +323,8 @@ def get_intersections(b__, boundaries):
             intersections.append(inter)
             bounds.append(other_b)
     return intersections, bounds
-    
+
+
 def get_first_intersection(b__, boundaries):
     """Get the first intersection on *b__* with *boundaries*.
     """
@@ -331,6 +335,7 @@ def get_first_intersection(b__, boundaries):
     if len(intersections) > 0:
         return intersections[indices[0]]
     return None
+
 
 def get_next_intersection(p__, b__, boundaries):
     """Get the next intersection from the intersection of arcs *p__* and *b__*
@@ -346,6 +351,7 @@ def get_next_intersection(p__, b__, boundaries):
         return intersections[indices[1]], bounds[indices[1]]
     return None, None
 
+
 def point_inside(point, corners):
     """Is a point inside the 4 corners ? This uses great circle arcs as area
     boundaries.
@@ -354,7 +360,7 @@ def point_inside(point, corners):
     arc2 = Arc(corners[1], corners[2])
     arc3 = Arc(corners[2], corners[3])
     arc4 = Arc(corners[3], corners[0])
-    
+
     arc5 = Arc(corners[1], point)
     arc6 = Arc(corners[3], point)
 
@@ -365,9 +371,10 @@ def point_inside(point, corners):
     angle2bis = modpi(arc3.angle(arc6))
 
     return (np.sign(angle1) == np.sign(angle1bis) and
-            abs(angle1) > abs(angle1bis) and 
+            abs(angle1) > abs(angle1bis) and
             np.sign(angle2) == np.sign(angle2bis) and
             abs(angle2) > abs(angle2bis))
+
 
 def intersection_polygon(area_corners, segment_corners):
     """Get the intersection polygon between two areas.
@@ -418,5 +425,3 @@ def intersection_polygon(area_corners, segment_corners):
             b__ = b2_
             boundaries, other_boundaries = other_boundaries, boundaries
     return poly[:-1]
-
-
