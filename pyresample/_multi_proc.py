@@ -1,19 +1,19 @@
-#pyresample, Resampling of remote sensing image data in python
-# 
-#Copyright (C) 2010  Esben S. Nielsen
+# pyresample, Resampling of remote sensing image data in python
 #
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# Copyright (C) 2010, 2015  Esben S. Nielsen
 #
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
 #
-#You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
 
@@ -24,9 +24,9 @@ import numpy as np
 
 
 class Scheduler(object):
-    
+
     def __init__(self, ndata, nprocs, chunk=None, schedule='guided'):
-        if not schedule in ['guided','dynamic', 'static']:
+        if not schedule in ['guided', 'dynamic', 'static']:
             raise ValueError('unknown scheduling strategy')
         self._ndata = mp.RawValue(ctypes.c_int, ndata)
         self._start = mp.RawValue(ctypes.c_int, 0)
@@ -34,7 +34,7 @@ class Scheduler(object):
         self._schedule = schedule
         self._nprocs = nprocs
         if schedule == 'guided' or schedule == 'dynamic':
-            min_chunk = ndata // (10*nprocs)
+            min_chunk = ndata // (10 * nprocs)
             if chunk:
                 min_chunk = chunk
             min_chunk = max(min_chunk, 1)
@@ -45,7 +45,7 @@ class Scheduler(object):
                 min_chunk = max(chunk, min_chunk)
             min_chunk = max(min_chunk, 1)
             self._chunk = min_chunk
-            
+
     def __iter__(self):
         while True:
             self._lock.acquire()
@@ -72,6 +72,7 @@ class Scheduler(object):
             else:
                 self._lock.release()
                 raise StopIteration
+
 
 def shmem_as_ndarray(raw_array):
     _ctypes_to_numpy = {
