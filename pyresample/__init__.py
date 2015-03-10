@@ -18,15 +18,15 @@
 from __future__ import absolute_import
 
 from pyresample.version import __version__
-from pyresample import geometry
-from pyresample import grid
-from pyresample import image
-from pyresample import kd_tree
-from pyresample import utils
-from pyresample import plot
-from pyresample import data_reduce
-from pyresample import gradient_search
-from pyresample import _gradient_search
+import geometry
+import grid
+import image
+import kd_tree
+import utils
+import plot
+import data_reduce
+#import gradient_search
+#import _gradient_search
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry']

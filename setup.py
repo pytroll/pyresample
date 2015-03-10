@@ -1,6 +1,6 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2012, 2014  Esben S. Nielsen
+# Copyright (C) 2012, 2014, 2015  Esben S. Nielsen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ from setuptools import setup
 import sys
 
 import imp
+from Cython.Build import cythonize
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
@@ -44,6 +45,7 @@ setup(name='pyresample',
       extras_require=extras_require,
       test_suite='pyresample.test.suite',
       zip_safe=False,
+      ext_modules=cythonize("pyresample/_gradient_search.pyx"),
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

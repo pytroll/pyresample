@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -504,6 +504,8 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
     cdef int cnt = 0
     cdef int adj = False
     cdef int undefined = 0
+    cdef int sdp = 1
+    cdef int sdl = 1
     cdef double distance
     # this was a bit confusing -- "lines" was based on x_size; change this
     # variable to elements - make it a numpy array (long==numpy int dtype)
@@ -512,6 +514,8 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
     l0 /= chunk_size
     xp, xl, yp, yl = rxp, rxl, ryp, ryl
     array_x, array_y = reduced_x, reduced_y
+
+    check = (4080, 1890)
     for i in range(y_size):
         # lines.reverse() --> swapped to elements - provide a reverse view of
         # the array
@@ -542,9 +546,10 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
                 # check that our distance to an output location is less than 1
                 # pixel/line
                 if ((abs(dp) < 1) and (abs(dl) < 1) and
-                    not (mask[l0, p0] != 0 or
-                         (l0 < lmax - 1 and mask[l0 + 1, p0] != 0) or
-                         (l0 > 0 and mask[l0 - 1, p0] != 0))):
+                        mask[l0, p0] == 0):
+                    # not (mask[l0, p0] != 0 or
+                    #     (l0 < lmax - 1 and mask[l0 + 1, p0] != 0) or
+                    #     (l0 > 0 and mask[l0 - 1, p0] != 0))):
                     if lmax == rlmax:  # switch to full resolution
                         print "switching to full res", i, j
                         # nearest neighbour
@@ -555,33 +560,53 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
                         cnt = 0
                         continue
 
-                    #image[y_size - 1 - i, j] = data[l0, p0]
-                    # bilinear interpolation
-                    if dl < 0:
-                        l_a = max(0, l0 - 1)
-                        l_b = l0
-                        w_l = 1 + dl
-                    else:
-                        l_a = l0
-                        l_b = min(l0 + 1, lmax - 1)
-                        w_l = dl
-                    if dp < 0:
-                        p_a = max(0, p0 - 1)
-                        p_b = p0
-                        w_p = 1 + dp
-                    else:
-                        p_a = p0
-                        p_b = min(p0 + 1, pmax - 1)
-                        w_p = dp
+                    image[y_size - 1 - i, j] = data[l0, p0]
 
-                    image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] +
-                                                (1 - w_l) * w_p * data[l_a, p_b] +
-                                                w_l * (1 - w_p) * data[l_b, p_a] +
-                                                w_l * w_p * data[l_b, p_b])
+                    # bilinear interpolation
+
+                    # l_a = l0
+                    # p_a = p0
+
+                    # if dl < 0:
+                    #     sdl = -1
+
+                    # if dp < 0:
+                    #     sdp = -1
+
+                    # l_b = l0
+                    # p_b = p0 + sdp
+
+                    # if dl < 0:
+                    #     l_a = max(0, l0 - 1)
+                    #     while (l_a > 0 and
+                    #            mask[l_a, p0] != 0):
+                    #         l0 += 1
+                    #     l0 = min(lmax - 1, l0)
+                    #     l_b = l0
+                    #     w_l = 1 + dl
+                    # else:
+                    #     l_a = l0
+                    #     l_b = min(l0 + 1, lmax - 1)
+                    #     w_l = dl
+                    # if dp < 0:
+                    #     p_a = max(0, p0 - 1)
+                    #     p_b = p0
+                    #     w_p = 1 + dp
+                    # else:
+                    #     p_a = p0
+                    #     p_b = min(p0 + 1, pmax - 1)
+                    #     w_p = dp
+
+                    # image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] +
+                    #                             (1 - w_l) * w_p * data[l_a, p_b] +
+                    #                             w_l * (1 - w_p) * data[l_b, p_a] +
+                    #                             w_l * w_p * data[l_b, p_b])
 
                     # we found our solution, next
                     break
                 else:
+                    if (i, j) == check:
+                        print l0, p0, dl, dp
                     # increment...
                     l0 = int(l0 + dl)
                     p0 = int(p0 + dp)
@@ -592,29 +617,51 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
                     if l0 >= lmax or l0 < 0 or p0 >= pmax or p0 < 0:
                         continue
 
-                    if dl > 0 and (mask[l0, p0] != 0 or
-                                   (l0 < lmax - 1 and
-                                    mask[l0 + 1, p0] != 0)):
-                        while (l0 < lmax - 1 and
-                               (mask[l0, p0] != 0 or
-                                mask[l0 + 1, p0] != 0)):
-                            l0 += 1
-                        l0 = min(lmax - 1, l0 + 1)
+                    # if dl > 0 and (mask[l0, p0] != 0 or
+                    #                (l0 < lmax - 1 and
+                    #                 mask[l0 + 1, p0] != 0)):
+                    #     while (l0 < lmax - 1 and
+                    #            (mask[l0, p0] != 0 or
+                    #             mask[l0 + 1, p0] != 0)):
+                    #         l0 += 1
+                    #     l0 = min(lmax - 1, l0)
 
-                    if dl < 0 and (mask[l0, p0] != 0 or
-                                   (l0 > 0 and
-                                    mask[l0 - 1, p0] != 0)):
+                    # if dl < 0 and (mask[l0, p0] != 0 or
+                    #                (l0 > 0 and
+                    #                 mask[l0 - 1, p0] != 0)):
+
+                    #     while (l0 > 0 and
+                    #            (mask[l0, p0] != 0 or
+                    #             mask[l0 - 1, p0] != 0)):
+                    #         l0 -= 1
+                    #     l0 = max(0, l0)
+                    if dl > 0 and mask[l0, p0] != 0:
+                        while (l0 < lmax - 1 and
+                               mask[l0, p0] != 0):
+                            l0 += 1
+                        l0 = min(lmax - 1, l0)
+
+                    if dl < 0 and mask[l0, p0] != 0:
 
                         while (l0 > 0 and
-                               (mask[l0, p0] != 0 or
-                                mask[l0 - 1, p0] != 0)):
+                               mask[l0, p0] != 0):
                             l0 -= 1
-                        l0 = max(0, l0 - 1)
+                        l0 = max(0, l0)
 
     # return the output image
     print "undefined", undefined
     return image
 
+
+#############################
+########################
+######################
+#############
+#
+#  Old stuff
+#
+######
+##
 
 @cython.boundscheck(False)
 def two_step_fast_gradient_search_with_mask_old(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, int chunk_size, area_extent, size, np.ndarray[np.uint8_t, ndim=2] mask):

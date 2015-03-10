@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014 Martin Raspaud
+# Copyright (c) 2013, 2014, 2015 Martin Raspaud
 
 # Author(s):
 
@@ -33,6 +33,7 @@ debug_on()
 
 import mpop.utils
 mpop.utils.debug_on()
+import h5py
 import pyximport
 pyximport.install()
 from _gradient_search import (fast_gradient_search,
@@ -107,6 +108,8 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
                                                         area.shape,
                                                         mask[linesmin:linesmax,
                                                              colsmin:colsmax])
+
+    logger.debug("min %f max  %f", image.min(), image.max())
 
     toc = datetime.now()
 
@@ -200,7 +203,7 @@ if __name__ == '__main__':
     print g[wl].area.lons[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
     print g[wl].area.lats[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
 
-    area = get_area_def("bsea250")
+    area = get_area_def("test250")
 
     mask = g[wl].data.mask.astype(np.uint8)
     lons = g[wl].area.lons.data
@@ -208,6 +211,7 @@ if __name__ == '__main__':
     data = g[wl].data.data.astype(np.double)
     res = gradient_search(data, lons, lats, area, chunk, mask)
     print "max valid", np.max(g[wl].data.compressed())
+    print "min valid", np.min(g[wl].data.compressed())
     print "max res", np.max(res)
     print "mask", np.min(mask), np.max(mask)
     print data.shape, mask.shape

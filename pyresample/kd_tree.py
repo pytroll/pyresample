@@ -1,10 +1,10 @@
-#pyresample, Resampling of remote sensing image data in python
-# 
-# Copyright (C) 2010, 2014  Esben S. Nielsen
+# pyresample, Resampling of remote sensing image data in python
+#
+# Copyright (C) 2010, 2014, 2015  Esben S. Nielsen
 #                           Adam.Dybbroe
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
 #(at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -26,9 +26,9 @@ import sys
 
 import numpy as np
 
-from . import geometry
-from . import data_reduce
-from . import _spatial_mp
+from pyresample import geometry
+from pyresample import data_reduce
+from pyresample import _spatial_mp
 
 if sys.version < '3':
     range = xrange
@@ -266,11 +266,11 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
                                           weight_funcs=weight_funcs,
                                           fill_value=fill_value,
                                           with_uncert=with_uncert)
-    
-def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence, 
-                       neighbours=8, epsilon=0, reduce_data=True, 
-                       nprocs=1, segments=None):
 
+
+def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
+                       neighbours=8, epsilon=0, reduce_data=True,
+                       nprocs=1, segments=None):
     """Returns neighbour info
 
     :Parameters:

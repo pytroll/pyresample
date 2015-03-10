@@ -1,6 +1,6 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010, 2014  Esben S. Nielsen
+# Copyright (C) 2010, 2014, 2015  Esben S. Nielsen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from . import geometry
-from . import _spatial_mp
+from pyresample import geometry
+from pyresample import _spatial_mp
 
 try:
     range = xrange

@@ -1,6 +1,6 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2014
+# Copyright (C) 2010-2015
 #
 # Authors:
 #    Esben S. Nielsen
@@ -27,8 +27,8 @@ import warnings
 
 import numpy as np
 
-from . import utils
-from . import _spatial_mp
+from pyresample import utils
+from pyresample import _spatial_mp
 
 
 class DimensionError(Exception):
@@ -766,7 +766,7 @@ class AreaDefinition(BaseDefinition):
         proj = _spatial_mp.Proj(**self.proj_dict)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
-                                         self.area_extent[2], self.area_extent[0]), 
+                                         self.area_extent[2], self.area_extent[0]),
                                         (self.area_extent[3], self.area_extent[3],
                                          self.area_extent[1], self.area_extent[1]),
                                         inverse=True)
@@ -774,7 +774,6 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[1], corner_lats[1]),
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
-
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
