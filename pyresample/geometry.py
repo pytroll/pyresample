@@ -851,7 +851,7 @@ def _get_slice(segments, shape):
         raise ValueError('Cannot segment array of shape: %s' % str(shape))
     else:
         size = shape[0]
-        slice_length = np.ceil(float(size) / segments)
+        slice_length = int(np.ceil(float(size) / segments))
         start_idx = 0
         end_idx = slice_length
         while start_idx < size:
