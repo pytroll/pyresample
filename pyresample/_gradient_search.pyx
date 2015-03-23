@@ -478,8 +478,8 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
         fxp[i * chunk_size:(i + 1) * chunk_size, :], fxl[i * chunk_size:(i + 1) *
                                                          chunk_size, :] = np.gradient(source_x[i * chunk_size:(i + 1) * chunk_size, :])
 
-    #fyp, fyl = np.gradient(source_y)
-    #fxp, fxl = np.gradient(source_x)
+    # fyp, fyl = np.gradient(source_y)
+    # fxp, fxl = np.gradient(source_x)
     fxp = -fxp
     fxl = -fxl
     fyp = -fyp
@@ -498,7 +498,7 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
     cdef int l0 = flmax / 2
     # intermediate variables:
     cdef int nnl, nnp
-    cdef int l_a00, l_a01, l_a10, l_a11, p_a00, p_a01, p_a10, p_a11
+    cdef int l_a, l_b, l_c, l_d, p_a, p_b, p_c, p_d
     cdef double dx, dy, d, dl, dp, w_l, w_p
     # number of iterations
     cdef int cnt = 0
@@ -506,7 +506,9 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
     cdef int undefined = 0
     cdef int sdp = 1
     cdef int sdl = 1
+    cdef int n_l, n_p
     cdef double distance
+    cdef int masked = False
     # this was a bit confusing -- "lines" was based on x_size; change this
     # variable to elements - make it a numpy array (long==numpy int dtype)
     cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
@@ -515,7 +517,6 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
     xp, xl, yp, yl = rxp, rxl, ryp, ryl
     array_x, array_y = reduced_x, reduced_y
 
-    check = (4080, 1890)
     for i in range(y_size):
         # lines.reverse() --> swapped to elements - provide a reverse view of
         # the array
@@ -560,53 +561,90 @@ def two_step_fast_gradient_search_with_mask(np.ndarray[DTYPE_t, ndim=2] data, np
                         cnt = 0
                         continue
 
-                    image[y_size - 1 - i, j] = data[l0, p0]
+                    # crude
+                    #image[y_size - 1 - i, j] = data[l0, p0]
+
+                    # nearest neighbour
+                    n_l = max(0, min(lmax - 1, int(l0 + dl)))
+                    n_p = max(0, min(pmax - 1, int(p0 + dp)))
+
+                    if mask[n_l, n_p] != 0:
+                        image[y_size - 1 - i, j] = data[l0, p0]
+                    else:
+                        image[y_size - 1 - i, j] = data[n_l, n_p]
 
                     # bilinear interpolation
 
-                    # l_a = l0
-                    # p_a = p0
-
                     # if dl < 0:
                     #     sdl = -1
-
+                    # else:
+                    #     sdl = 1
                     # if dp < 0:
                     #     sdp = -1
-
-                    # l_b = l0
-                    # p_b = p0 + sdp
-
-                    # if dl < 0:
-                    #     l_a = max(0, l0 - 1)
-                    #     while (l_a > 0 and
-                    #            mask[l_a, p0] != 0):
-                    #         l0 += 1
-                    #     l0 = min(lmax - 1, l0)
-                    #     l_b = l0
-                    #     w_l = 1 + dl
                     # else:
-                    #     l_a = l0
-                    #     l_b = min(l0 + 1, lmax - 1)
-                    #     w_l = dl
-                    # if dp < 0:
-                    #     p_a = max(0, p0 - 1)
-                    #     p_b = p0
-                    #     w_p = 1 + dp
-                    # else:
-                    #     p_a = p0
-                    #     p_b = min(p0 + 1, pmax - 1)
-                    #     w_p = dp
+                    #     sdp = 1
 
-                    # image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_a, p_a] +
-                    #                             (1 - w_l) * w_p * data[l_a, p_b] +
-                    #                             w_l * (1 - w_p) * data[l_b, p_a] +
-                    #                             w_l * w_p * data[l_b, p_b])
+                    # l_a, p_a = l0, p0
+                    # masked = False
+
+                    # l_b, p_b = l0, max(0, min(p0 + sdp, pmax - 1))
+                    # while (l_b >= 0 and l_b < lmax
+                    #        and mask[l_b, p_b] != 0):
+                    #     l_b -= sdl
+                    #     masked = True
+                    # l_b = max(0, min(l_b, lmax - 1))
+                    # if mask[l_b, p_b] != 0:
+                    #     l_b, p_b = l_a, p_a
+
+                    # l_c, p_c = (max(0, min(l0 + sdl, lmax - 1)),
+                    #             max(0, min(p0 + sdp, pmax - 1)))
+                    # while (l_c >= 0 and l_c < lmax and
+                    #        mask[l_c, p_c] != 0):
+                    #     l_c += sdl
+                    #     masked = True
+                    # l_c = max(0, min(l_c, lmax - 1))
+                    # if mask[l_c, p_c] != 0:
+                    #     l_c, p_c = l_a, p_a
+
+                    # l_d, p_d = max(0, min(l0 + sdl, lmax - 1)), p0
+                    # while (l_d >= 0 and l_d < lmax and
+                    #        mask[l_d, p_d] != 0):
+                    #     l_d += sdl
+                    #     masked = True
+                    # l_d = max(0, min(l_d, lmax - 1))
+                    # if mask[l_d, p_d] != 0:
+                    #     l_d, p_d = l_a, p_a
+
+                    # if masked and abs(l_a - l_d) > 9:
+                    #     print "masked: lines", l_a, l_b, l_c, l_d,
+                    #     print "cols:", p_a, p_b, p_c, p_d
+
+                    # recompute dl and dp
+                    # if masked and l_a != l_d and p_a != p_b:
+                    #     print "before", dl, dp
+                    #     d = ((source_y[l_a, p_a] - source_y[l_d, p_d]) *
+                    #          (source_x[l_a, p_a] - source_x[l_b, p_b]) -
+                    #          (source_y[l_a, p_a] - source_y[l_b, p_b]) *
+                    #          (source_x[l_a, p_a] - source_x[l_d, p_d]))
+                    #     dp = -((source_y[l_a, p_a] - source_y[l_d, p_d]) *
+                    #            dx - (source_x[l_a, p_a] - source_x[l_d, p_d]) * dy) / d
+                    #     dl = ((source_y[l_a, p_a] - source_y[l_b, p_b]) *
+                    #           dx - (source_x[l_a, p_a] - source_x[l_b, p_b]) * dy) / d
+                    #     print "after", dl, dp
+                    #     dp = min(1, max(dp, -1))
+                    #     dl = min(1, max(dl, -1))
+
+                    # w_l = 1 - abs(dl)
+                    # w_p = 1 - abs(dp)
+
+                    # image[y_size - 1 - i, j] = ((1 - w_l) * (1 - w_p) * data[l_c, p_c] +
+                    #                             (1 - w_l) * w_p * data[l_d, p_d] +
+                    #                             w_l * (1 - w_p) * data[l_b, p_b] +
+                    #                             w_l * w_p * data[l_a, p_a])
 
                     # we found our solution, next
                     break
                 else:
-                    if (i, j) == check:
-                        print l0, p0, dl, dp
                     # increment...
                     l0 = int(l0 + dl)
                     p0 = int(p0 + dp)
@@ -690,7 +728,11 @@ def two_step_fast_gradient_search_with_mask_old(np.ndarray[DTYPE_t, ndim=2] data
     # reduced_x = (source_x[4::chunk_size, :] + source_x[5::chunk_size]) / 2.0
     # reduced_y = (source_y[4::chunk_size, :] + source_y[5::chunk_size]) / 2.0
     # reduced_x = (source_x[::chunk_size, :] + source_x[1::chunk_size] + source_x[2::chunk_size, :] + source_x[3::chunk_size] + source_x[4::chunk_size,:] + source_x[5::chunk_size] + source_x[6::chunk_size, :] + source_x[7::chunk_size] + source_x[8::chunk_size, :] + source_x[9::chunk_size]) / chunk_size
-    # reduced_y = (source_y[::chunk_size, :] + source_y[1::chunk_size] + source_y[2::chunk_size, :] + source_y[3::chunk_size] + source_y[4::chunk_size, :] + source_y[5::chunk_size] + source_y[6::chunk_size, :] + source_y[7::chunk_size] + source_y[8::chunk_size, :] + source_y[9::chunk_size]) / chunk_size
+    # reduced_y = (source_y[::chunk_size, :] + source_y[1::chunk_size] +
+    # source_y[2::chunk_size, :] + source_y[3::chunk_size] +
+    # source_y[4::chunk_size, :] + source_y[5::chunk_size] +
+    # source_y[6::chunk_size, :] + source_y[7::chunk_size] +
+    # source_y[8::chunk_size, :] + source_y[9::chunk_size]) / chunk_size
     reduced_x = np.zeros([data.shape[0] / chunk_size, data.shape[1]],
                          dtype=DTYPE)
     reduced_y = np.zeros([data.shape[0] / chunk_size, data.shape[1]],

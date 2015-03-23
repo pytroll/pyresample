@@ -219,8 +219,9 @@ if __name__ == '__main__':
 
     # for comparison
 
-    # tic = datetime.now()
-    # l = g.project(area)
-    # toc = datetime.now()
-    # print "pyresample took", toc - tic
+    tic = datetime.now()
+    l = g.project("bsea250")
+    #l = g.project(area)
+    toc = datetime.now()
+    print "pyresample took", toc - tic
     # l.image.hr_overview().show()
