@@ -296,8 +296,8 @@ def _get_proj4_args(proj4_args):
     """Create dict from proj4 args
     """
 
-    if isinstance(proj4_args, str):
-        proj_config = ConfigObj(proj4_args.replace('+', '').split())
+    if isinstance(proj4_args, (str, unicode)):
+        proj_config = ConfigObj(str(proj4_args).replace('+', '').split())
     else:
         proj_config = ConfigObj(proj4_args)
     return proj_config.dict()
