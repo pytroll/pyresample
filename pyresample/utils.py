@@ -27,7 +27,7 @@ import numpy as np
 from configobj import ConfigObj
 
 import pyresample as pr
-
+import six
 
 class AreaNotFound(Exception):
 
@@ -296,7 +296,7 @@ def _get_proj4_args(proj4_args):
     """Create dict from proj4 args
     """
 
-    if isinstance(proj4_args, (str, unicode)):
+    if isinstance(proj4_args, (str, six.text_type)):
         proj_config = ConfigObj(str(proj4_args).replace('+', '').split())
     else:
         proj_config = ConfigObj(proj4_args)
