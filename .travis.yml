@@ -2,7 +2,6 @@ language: python
 python:
 - '2.6'
 - '2.7'
-- '3.2'
 - '3.3'
 - '3.4'
 before_install:
@@ -16,3 +15,5 @@ install:
 - pip install coveralls
 script: coverage run --source=pyresample setup.py test
 after_success: coveralls
+notifications:
+  slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt
