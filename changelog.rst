@@ -6,6 +6,17 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.1.4 → 1.1.5. [Martin Raspaud]
+
+- Don't build on 3.2 anymore (because of coverage's lack of support for
+  3.2). [Martin Raspaud]
+
+- Fix build badge adress. [Martin Raspaud]
+
+- Fix the unicode problem in python3. [Martin Raspaud]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.1.3 → 1.1.4. [Martin Raspaud]
 
 - Bugfix: Accept unicode proj4 strings. Fixes #24. [Martin Raspaud]
