@@ -22,6 +22,7 @@
 """Classes for geometry operations"""
 
 from __future__ import absolute_import
+from collections import OrderedDict
 
 import warnings
 
@@ -486,11 +487,17 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
+    def __init__(self, area_id, name, proj_id, proj_def, x_size, y_size,
                  area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
-        if not isinstance(proj_dict, dict):
-            raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
-                            % type(proj_dict))
+
+        if not isinstance(proj_def, dict):
+            try:
+                proj_dict = convert_projstring_to_projdict(proj_def)
+            except:
+                raise TypeError('Wrong type for proj_def: %s. Expected dict or string'
+                            % type(proj_def))
+        else:
+            proj_dict = OrderedDict(sorted(proj_def.items()))
 
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
@@ -842,6 +849,13 @@ class AreaDefinition(BaseDefinition):
 
         items = self.proj_dict.items()
         return '+' + ' +'.join([t[0] + '=' + t[1] for t in items])
+
+
+def convert_projstring_to_projdict(proj4_string):
+    """ Returns projection defition as a Proj.4 dict"""
+    proj_dict = dict(item.strip().split("=") for item in proj4_string.split("+")[1:])
+    sorted_proj_dict = OrderedDict(sorted(proj_dict.items()))
+    return sorted_proj_dict
 
 
 def _get_slice(segments, shape):
