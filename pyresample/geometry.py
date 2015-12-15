@@ -765,6 +765,24 @@ class AreaDefinition(BaseDefinition):
     def proj_y_coords(self):
         return self.get_proj_coords(data_slice=(slice(None), 0))[1]
 
+    @property
+    def outer_boundary_corners(self):
+        """Returns the lon,lat of the outer edges of the corner points
+        """
+        from pyresample.spherical_geometry import Coordinate
+        proj = _spatial_mp.Proj(**self.proj_dict)
+
+        corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
+                                         self.area_extent[2], self.area_extent[0]), 
+                                        (self.area_extent[3], self.area_extent[3],
+                                         self.area_extent[1], self.area_extent[1]),
+                                        inverse=True)
+        return [Coordinate(corner_lons[0], corner_lats[0]),
+                Coordinate(corner_lons[1], corner_lats[1]),
+                Coordinate(corner_lons[2], corner_lats[2]),
+                Coordinate(corner_lons[3], corner_lats[3])]
+
+
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
 
