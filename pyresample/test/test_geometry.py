@@ -631,6 +631,37 @@ class Test(unittest.TestCase):
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
 
+    def test_initialize_areafinition_with_projstring(self):
+        from pyresample.geometry import convert_projstring_to_projdict
+        self.area_id = 'test-area'
+        self.name = 'Test Area'
+        self.proj_id = 'test-area'
+        self.proj_string = "+proj=laea +lat_0=60 +lon_0=30 +a=6371228 +units=m"
+        self.proj_dict = {'proj': 'laea',
+                          'lat_0': '60',
+                          'lon_0': '30',
+                          'a': '6371228.0',
+                          'units': 'm'}
+        self.x_size = 1000
+        self.y_size = 1000
+        self.area_extent = (-319929.9787432588,
+                            -544766.0133604591,
+                             319929.9787432582,
+                             566082.4534703239)
+
+        self.area_def = geometry.AreaDefinition(self.area_id,
+                                                self.name,
+                                                self.proj_id,
+                                                self.proj_string,
+                                                self.x_size,
+                                                self.y_size,
+                                                self.area_extent)
+
+        self.assertIsInstance(self.area_def.proj_dict, dict)
+        self.assertIsInstance(self.area_def.proj4_string, str)
+
+        sorted_proj_dict = convert_projstring_to_projdict(self.proj_string)
+        self.assertEqual(self.area_def.proj_dict, sorted_proj_dict)
 
 def suite():
     """The test suite.
