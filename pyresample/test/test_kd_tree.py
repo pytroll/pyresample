@@ -786,6 +786,18 @@ class Test(unittest.TestCase):
         self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
                         msg='Failed to create fill mask on masked data')
 
+    def test_dtype(self):
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        grid_def = geometry.GridDefinition(lons, lats)
+        lons = numpy.asarray(lons, dtype='f4')
+        lats  = numpy.asarray(lats, dtype='f4')
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        valid_input_index, valid_output_index, index_array, distance_array = \
+            kd_tree.get_neighbour_info(swath_def,
+                                       grid_def,
+                                       50000, neighbours=1, segments=1)
+
     def test_nearest_from_sample(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))

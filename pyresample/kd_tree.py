@@ -541,6 +541,10 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
     output_coords = cartesian.transform_lonlats(
         target_lons_valid, target_lats_valid)
 
+    # pykdtree requires query points have same data type as kdtree.
+    dt = resample_kdtree.data_pts.dtype
+    output_coords = np.asarray(output_coords, dtype=dt)
+
     # Query kd-tree
     distance_array, index_array = resample_kdtree.query(output_coords,
                                                         k=neighbours,
