@@ -400,6 +400,13 @@ class Test(unittest.TestCase):
                                                          segments=1, with_uncert=True)
         else:
             with warnings.catch_warnings(record=True) as w:
+                # The assertion below checks if there is only one warning raised
+                # and whether it contains a specific message from pyresample
+                # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
+                # that cause to fail, so we ignore the unrelated warnings.
+                # TODO: better way would be to filter UserWarning correctly
+                from numpy import VisibleDeprecationWarning
+                warnings.simplefilter('ignore', (DeprecationWarning, VisibleDeprecationWarning))
                 res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,
                                                              self.area_def, 50000, [
                                                                  25000, 15000, 10000],
