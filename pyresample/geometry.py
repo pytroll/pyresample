@@ -1,34 +1,26 @@
-# pyresample, Resampling of remote sensing image data in python
+#pyresample, Resampling of remote sensing image data in python
+# 
+#Copyright (C) 2010, 2013  Esben S. Nielsen
 #
-# Copyright (C) 2010-2015
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
 #
-# Authors:
-#    Esben S. Nielsen
-#    Thomas Lavergne
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
 #
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License as published by the Free
-# Software Foundation, either version 3 of the License, or (at your option) any
-# later version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
-# details.
-#
-# You should have received a copy of the GNU Lesser General Public License along
-# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
-
-from __future__ import absolute_import
-
-import warnings
+import weakref
 
 import numpy as np
 
-from . import utils
-from . import _spatial_mp
+import _spatial_mp
 
 
 class DimensionError(Exception):
@@ -36,10 +28,9 @@ class DimensionError(Exception):
 
 
 class Boundary(object):
-
     """Container for geometry boundary.
     Labelling starts in upper left corner and proceeds clockwise"""
-
+      
     def __init__(self, side1, side2, side3, side4):
         self.side1 = side1
         self.side2 = side2
@@ -48,39 +39,22 @@ class Boundary(object):
 
 
 class BaseDefinition(object):
-
     """Base class for geometry definitions"""
-
+           
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
-
+            
         self.nprocs = nprocs
 
-        # check the latitutes
-        if lats is not None and ((lats.min() < -90. or lats.max() > +90.)):
-            # throw exception
-            raise ValueError(
-                'Some latitudes are outside the [-90.;+90] validity range')
-        else:
-            self.lats = lats
-
-        # check the longitudes
-        if lons is not None and ((lons.min() < -180. or lons.max() >= +180.)):
-            # issue warning
-            warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
-                          'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
-                          'To avoid this warning next time, use routine utils.wrap_longitudes().')
-            # wrap longitudes to [-180;+180[
-            self.lons = utils.wrap_longitudes(lons)
-        else:
-            self.lons = lons
-
+        self.lons = lons
+        self.lats = lats
+        
         self.cartesian_coords = None
-
+    
     def __eq__(self, other):
         """Test for approximate equality"""
 
@@ -102,53 +76,53 @@ class BaseDefinition(object):
                     np.allclose(self_lats, other_lats, atol=1e-6,
                                 rtol=5e-9))
         except (AttributeError, ValueError):
-            return False
+            return False  
 
     def __ne__(self, other):
         """Test for approximate equality"""
-
+        
         return not self.__eq__(other)
-
+    
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
-
+        
         :Parameters:
         row : int
         col : int
-
+        
         :Returns:
         (lon, lat) : tuple of floats
         """
-
+        
         if self.ndim != 2:
             raise DimensionError(('operation undefined '
                                   'for %sD geometry ') % self.ndim)
         elif self.lons is None or self.lats is None:
             raise ValueError('lon/lat values are not defined')
         return self.lons[row, col], self.lats[row, col]
-
+    
     def get_lonlats(self, data_slice=None, **kwargs):
         """Base method for lon lat retrieval with slicing"""
-
+        
         if self.lons is None or self.lats is None:
             raise ValueError('lon/lat values are not defined')
         elif data_slice is None:
             return self.lons, self.lats
         else:
             return self.lons[data_slice], self.lats[data_slice]
-
+   
     def get_boundary_lonlats(self):
-        """Returns Boundary objects"""
-
-        side1 = self.get_lonlats(data_slice=(0, slice(None)))
-        side2 = self.get_lonlats(data_slice=(slice(None), -1))
-        side3 = self.get_lonlats(data_slice=(-1, slice(None)))
-        side4 = self.get_lonlats(data_slice=(slice(None), 0))
-        return Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]), Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1])
-
+            """Returns Boundary objects"""
+            
+            side1 = self.get_lonlats(data_slice=(0, slice(None)))
+            side2 = self.get_lonlats(data_slice=(slice(None), -1))
+            side3 = self.get_lonlats(data_slice=(-1, slice(None)))
+            side4 = self.get_lonlats(data_slice=(slice(None), 0))
+            return Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]), Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1])
+         
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition
-
+        
         :Parameters:
         nprocs : int, optional
             Number of processor cores to be used.
@@ -157,45 +131,46 @@ class BaseDefinition(object):
             Calculate only cartesian coordnates for the defined slice
         cache : bool, optional
             Store result the result. Requires data_slice to be None
-
+            
         :Returns:
         cartesian_coords : numpy array
         """
 
         if self.cartesian_coords is None:
-            # Coordinates are not cached
+            #Coordinates are not cached
             if nprocs is None:
                 nprocs = self.nprocs
-
+            
             if data_slice is None:
-                # Use full slice
+                #Use full slice
                 data_slice = slice(None)
-
+                
             lons, lats = self.get_lonlats(nprocs=nprocs, data_slice=data_slice)
-
+                    
             if nprocs > 1:
                 cartesian = _spatial_mp.Cartesian_MP(nprocs)
             else:
                 cartesian = _spatial_mp.Cartesian()
-
-            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons),
+                            
+            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons), 
                                                            np.ravel(lats))
-
+            
             if isinstance(lons, np.ndarray) and lons.ndim > 1:
-                # Reshape to correct shape
-                cartesian_coords = cartesian_coords.reshape(lons.shape[0],
+                #Reshape to correct shape
+                cartesian_coords = cartesian_coords.reshape(lons.shape[0], 
                                                             lons.shape[1], 3)
-
-            if cache and data_slice is None:
-                self.cartesian_coords = cartesian_coords
+            
+            if cache and data_slice == slice(None):
+                self.cartesian_coords = cartesian_coords  
         else:
-            # Coordinates are cached
+            print "... Coordinates are cached"
+            #Coordinates are cached
             if data_slice is None:
                 cartesian_coords = self.cartesian_coords
             else:
                 cartesian_coords = self.cartesian_coords[data_slice]
-
-        return cartesian_coords
+                
+        return cartesian_coords    
 
     @property
     def corners(self):
@@ -206,7 +181,7 @@ class BaseDefinition(object):
                 Coordinate(*self.get_lonlat(0, -1)),
                 Coordinate(*self.get_lonlat(-1, -1)),
                 Coordinate(*self.get_lonlat(-1, 0))]
-
+        
     def __contains__(self, point):
         """Is a point inside the 4 corners of the current area? This uses
         great circle arcs as area boundaries.
@@ -223,28 +198,28 @@ class BaseDefinition(object):
         """Tests if the current area overlaps the *other* area. This is based
         solely on the corners of areas, assuming the boundaries to be great
         circles.
-
+        
         :Parameters:
         other : object
             Instance of subclass of BaseDefinition
-
+            
         :Returns:
         overlaps : bool
         """
 
         from pyresample.spherical_geometry import Arc
-
+        
         self_corners = self.corners
 
         other_corners = other.corners
-
+        
         for i in self_corners:
             if i in other:
                 return True
         for i in other_corners:
             if i in self:
                 return True
-
+    
         self_arc1 = Arc(self_corners[0], self_corners[1])
         self_arc2 = Arc(self_corners[1], self_corners[2])
         self_arc3 = Arc(self_corners[2], self_corners[3])
@@ -272,11 +247,11 @@ class BaseDefinition(object):
     def intersection(self, other):
         """Returns the corners of the intersection polygon of the current area
         with *other*.
-
+        
         :Parameters:
         other : object
             Instance of subclass of BaseDefinition
-
+            
         :Returns:
         (corner1, corner2, corner3, corner4) : tuple of points
         """
@@ -285,25 +260,25 @@ class BaseDefinition(object):
 
     def overlap_rate(self, other):
         """Get how much the current area overlaps an *other* area.
-
+        
         :Parameters:
         other : object
             Instance of subclass of BaseDefinition
-
+            
         :Returns:
         overlap_rate : float
         """
-
+        
         from pyresample.spherical_geometry import get_polygon_area
         other_area = other.get_area()
         inter_area = get_polygon_area(self.intersection(other))
         return inter_area / other_area
 
 
+ 
 class CoordinateDefinition(BaseDefinition):
-
     """Base class for geometry definitions defined by lons and lats only"""
-
+     
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
@@ -312,21 +287,21 @@ class CoordinateDefinition(BaseDefinition):
             self.dtype = lons.dtype
         else:
             raise ValueError(('%s must be created with either '
-                              'lon/lats of the same shape with same dtype') %
+                             'lon/lats of the same shape with same dtype') % 
                              self.__class__.__name__)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
-
+        
     def concatenate(self, other):
         if self.ndim != other.ndim:
             raise DimensionError(('Unable to concatenate %sD and %sD '
                                   'geometries') % (self.ndim, other.ndim))
-        klass = _get_highest_level_class(self, other)
+        klass = _get_highest_level_class(self, other)        
         lons = np.concatenate((self.lons, other.lons))
         lats = np.concatenate((self.lats, other.lats))
         nprocs = min(self.nprocs, other.nprocs)
         return klass(lons, lats, nprocs=nprocs)
-
-    def append(self, other):
+        
+    def append(self, other):    
         if self.ndim != other.ndim:
             raise DimensionError(('Unable to append %sD and %sD '
                                   'geometries') % (self.ndim, other.ndim))
@@ -336,28 +311,27 @@ class CoordinateDefinition(BaseDefinition):
         self.size = self.lons.size
 
     def __str__(self):
-        # Rely on numpy's object printing
-        return ('Shape: %s\nLons: %s\nLats: %s') % (str(self.shape),
+        #Rely on numpy's object printing
+        return ('Shape: %s\nLons: %s\nLats: %s') % (str(self.shape), 
                                                     str(self.lons),
                                                     str(self.lats))
-
+        
 
 class GridDefinition(CoordinateDefinition):
-
     """Grid defined by lons and lats
-
+    
     :Parameters:
     lons : numpy array
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
-
+        
     :Attributes:
     shape : tuple
         Grid shape as (rows, cols)
     size : int
         Number of elements in grid
-
+        
     Properties:
     lons : object
         Grid lons
@@ -366,26 +340,25 @@ class GridDefinition(CoordinateDefinition):
     cartesian_coords : object
         Grid cartesian coordinates
     """
-
+    
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
         elif lons.ndim != 2:
             raise ValueError('2 dimensional lon lat grid expected')
-
+        
         super(GridDefinition, self).__init__(lons, lats, nprocs)
 
 
 class SwathDefinition(CoordinateDefinition):
-
     """Swath defined by lons and lats
-
+    
     :Parameters:
     lons : numpy array
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
-
+        
     :Attributes:
     shape : tuple
         Swath shape
@@ -393,7 +366,7 @@ class SwathDefinition(CoordinateDefinition):
         Number of elements in swath
     ndims : int
         Swath dimensions
-
+        
     Properties:
     lons : object
         Swath lons
@@ -402,7 +375,7 @@ class SwathDefinition(CoordinateDefinition):
     cartesian_coords : object
         Swath cartesian coordinates
     """
-
+    
     def __init__(self, lons, lats, nprocs=1):
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
@@ -411,8 +384,7 @@ class SwathDefinition(CoordinateDefinition):
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
 
 
-class AreaDefinition(BaseDefinition):
-
+class AreaDefinition(BaseDefinition):    
     """Holds definition of an area.
 
     :Parameters:
@@ -436,7 +408,7 @@ class AreaDefinition(BaseDefinition):
         Grid lons
     lats : numpy array, optional
         Grid lats
-
+    
     :Attributes:
     area_id : str         
         ID of area
@@ -470,7 +442,7 @@ class AreaDefinition(BaseDefinition):
     pixel_offset_y : float 
         y offset between projection center and upper left corner of upper 
         left pixel in units of pixels..
-
+    
     Properties:
     proj4_string : str
         Projection defined as Proj.4 string
@@ -485,7 +457,8 @@ class AreaDefinition(BaseDefinition):
     projection_y_coords : object
         Grid projection y coordinate
     """
-
+                  
+            
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
         if not isinstance(proj_dict, dict):
@@ -509,69 +482,69 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
         self.proj_dict = proj_dict
         self.area_extent = tuple(area_extent)
-
+        
         # Calculate area_extent in lon lat
         proj = _spatial_mp.Proj(**proj_dict)
-        corner_lons, corner_lats = proj((area_extent[0], area_extent[2]),
-                                        (area_extent[1], area_extent[3]),
+        corner_lons, corner_lats = proj((area_extent[0], area_extent[2]), 
+                                        (area_extent[1], area_extent[3]), 
                                         inverse=True)
-        self.area_extent_ll = (corner_lons[0], corner_lats[0],
+        self.area_extent_ll = (corner_lons[0], corner_lats[0], 
                                corner_lons[1], corner_lats[1])
-
-        # Calculate projection coordinates of center of upper left pixel
+                
+        #Calculate projection coordinates of center of upper left pixel
         self.pixel_upper_left = \
-            (float(area_extent[0]) +
-             float(self.pixel_size_x) / 2,
-             float(area_extent[3]) -
-             float(self.pixel_size_y) / 2)
-
-        # Pixel_offset defines the distance to projection center from origen (UL)
-        # of image in units of pixels.
+                              (float(area_extent[0]) + 
+                               float(self.pixel_size_x) / 2,
+                               float(area_extent[3]) - 
+                               float(self.pixel_size_y) / 2)
+        
+        #Pixel_offset defines the distance to projection center from origen (UL)
+        #of image in units of pixels. 
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
-
+        
         self.projection_x_coords = None
         self.projection_y_coords = None
 
         self.dtype = dtype
-
+        
     def __str__(self):
-        # We need a sorted dictionary for a unique hash of str(self)
+        #We need a sorted dictionary for a unique hash of str(self)
         proj_dict = self.proj_dict
-        proj_str = ('{' +
-                    ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k]))
+        proj_str = ('{' + 
+                    ', '.join(["'%s': '%s'"%(str(k), str(proj_dict[k]))
                                for k in sorted(proj_dict.keys())]) +
                     '}')
         return ('Area ID: %s\nName: %s\nProjection ID: %s\n'
                 'Projection: %s\nNumber of columns: %s\nNumber of rows: %s\n'
-                'Area extent: %s') % (self.area_id, self.name, self.proj_id,
-                                      proj_str, self.x_size, self.y_size,
+                'Area extent: %s') % (self.area_id, self.name, self.proj_id, 
+                                      proj_str, self.x_size, self.y_size, 
                                       self.area_extent)
-
+               
     __repr__ = __str__
-
+    
     def __eq__(self, other):
         """Test for equality"""
-
+        
         try:
             return ((self.proj_dict == other.proj_dict) and
                     (self.shape == other.shape) and
                     (self.area_extent == other.area_extent))
         except AttributeError:
             return super(AreaDefinition, self).__eq__(other)
-
+        
     def __ne__(self, other):
         """Test for equality"""
-
+        
         return not self.__eq__(other)
-
-    def get_xy_from_lonlat(self, lon, lat):
+               
+    def get_xy_from_lonlat(self, lon, lat, outside_error=True, return_int=True):
         """Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
         lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
         masked arrays are returned.
-
+        
         :Input:
         lon : point or sequence (list or array) of longitudes
         lat : point or sequence (list or array) of latitudes
@@ -585,13 +558,13 @@ class AreaDefinition(BaseDefinition):
         if isinstance(lat, list):
             lat = np.array(lat)
 
-        if ((isinstance(lon, np.ndarray) and
-             not isinstance(lat, np.ndarray)) or
-            (not isinstance(lon, np.ndarray) and
+        if ((isinstance(lon, np.ndarray) and 
+             not isinstance(lat, np.ndarray)) or 
+            (not isinstance(lon, np.ndarray) and 
              isinstance(lat, np.ndarray))):
-            raise ValueError("Both lon and lat needs to be of " +
+            raise ValueError("Both lon and lat needs to be of " + 
                              "the same type and have the same dimensions!")
-
+        
         if isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray):
             if lon.shape != lat.shape:
                 raise ValueError("lon and lat is not of the same shape!")
@@ -599,44 +572,88 @@ class AreaDefinition(BaseDefinition):
         pobj = _spatial_mp.Proj(self.proj4_string)
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
-        xscale = abs(self.area_extent[2] -
+        xscale = abs(self.area_extent[2] - 
                      self.area_extent[0]) / float(self.x_size)
-        yscale = abs(self.area_extent[1] -
+        yscale = abs(self.area_extent[1] - 
                      self.area_extent[3]) / float(self.y_size)
-
+  
         xm_, ym_ = pobj(lon, lat)
         x__ = (xm_ - upl_x) / xscale
         y__ = (upl_y - ym_) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ > self.x_size)) |
-                    ((y__ < 0) | (y__ > self.y_size)))
-            return (np.ma.masked_array(x__.astype('int'), mask=mask,
+            mask = (((x__ < 0 ) | (x__ > self.x_size)) | 
+                    ((y__ < 0)  | (y__ > self.y_size)))
+            if return_int:
+                rtype='int'
+            else:
+                rtype='float'
+            return (np.ma.masked_array(x__.astype(rtype), mask=mask, 
                                        fill_value=-1),
-                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                    np.ma.masked_array(y__.astype(rtype), mask=mask,
                                        fill_value=-1))
         else:
             if ((x__ < 0 or x__ > self.x_size) or
-                    (y__ < 0 or y__ > self.y_size)):
-                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return int(x__), int(y__)
+                (y__ < 0 or y__ > self.y_size)):
+                if outside_error:
+                    raise ValueError('Point outside area:( %f %f)' % (x__, y__))
+                else:
+                    if return_int:
+                        return int(x__), int(y__)
+                    else:
+                        return x__, y__
+            if return_int:
+                return int(x__), int(y__)
+            else:
+                return x__, y__
 
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
-
+        
         :Parameters:
         row : int
         col : int
-
+        
         :Returns:
         (lon, lat) : tuple of floats
         """
-
+        
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
+       
+    # function by UH 
+    def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
+        """Retrieves area_extent for a subdomain 
+        rows    are counted from upper left to lower left
+        columns are counted from upper left to upper right 
+
+        :Parameters:
+        row_LR : int
+            row of the lower right pixel 
+        col_LR : int
+            col of the lower right pixel
+        row_UL : int
+            row of the upper left pixel 
+        col_UL : int
+            col of the upper left pixel
+
+        :Returns:
+        area_extent : list 
+            Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+        """
+        
+        (a,b) = self.get_proj_coords( data_slice=(row_LR,col_LR) )
+        a = a - 0.5*self.pixel_size_x
+        b = b - 0.5*self.pixel_size_y
+        (c,d) = self.get_proj_coords( data_slice=(row_UL,col_UL) )
+        c = c + 0.5*self.pixel_size_x
+        d = d + 0.5*self.pixel_size_y
+
+        return (a,b,c,d)
+
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid 
-
+    
         :Parameters:
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
@@ -647,18 +664,18 @@ class AreaDefinition(BaseDefinition):
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
         """
-
+        
         def get_val(val, sub_val, max):
-            # Get value with substitution and wrapping
+            #Get value with substitution and wrapping
             if val is None:
                 return sub_val
             else:
                 if val < 0:
-                    # Wrap index
+                    #Wrap index
                     return max + val
                 else:
                     return val
-
+        
         if self.projection_x_coords is not None and self.projection_y_coords is not None:
             # Projection coords are cached
             if data_slice is None:
@@ -672,84 +689,79 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        # create coordinates of local area as ndarrays
+        #create coordinates of local area as ndarrays
         if data_slice is None or data_slice == slice(None):
-            # Full slice
+            #Full slice
             rows = self.y_size
             cols = self.x_size
             row_start = 0
             col_start = 0
-        else:
+        else:            
             if isinstance(data_slice, slice):
-                # Row slice
+                #Row slice
                 row_start = get_val(data_slice.start, 0, self.y_size)
                 col_start = 0
-                rows = get_val(
-                    data_slice.stop, self.y_size, self.y_size) - row_start
+                rows = get_val(data_slice.stop, self.y_size, self.y_size) - row_start                                 
                 cols = self.x_size
             elif isinstance(data_slice[0], slice) and isinstance(data_slice[1], slice):
-                # Block slice
+                #Block slice
                 row_start = get_val(data_slice[0].start, 0, self.y_size)
                 col_start = get_val(data_slice[1].start, 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
+                rows = get_val(data_slice[0].stop, self.y_size, self.y_size) - row_start
+                cols = get_val(data_slice[1].stop, self.x_size, self.x_size) - col_start
             elif isinstance(data_slice[0], slice):
-                # Select from col
+                #Select from col
                 is_1d_select = True
                 row_start = get_val(data_slice[0].start, 0, self.y_size)
                 col_start = get_val(data_slice[1], 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
+                rows = get_val(data_slice[0].stop, self.y_size, self.y_size) - row_start
                 cols = 1
             elif isinstance(data_slice[1], slice):
-                # Select from row
+                #Select from row
                 is_1d_select = True
                 row_start = get_val(data_slice[0], 0, self.y_size)
                 col_start = get_val(data_slice[1].start, 0, self.x_size)
                 rows = 1
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
+                cols = get_val(data_slice[1].stop, self.x_size, self.x_size) - col_start
             else:
-                # Single element select
+                #Single element select
                 is_single_value = True
-
-                row_start = get_val(data_slice[0], 0, self.y_size)
+                
+                row_start = get_val(data_slice[0], 0, self.y_size)                
                 col_start = get_val(data_slice[1], 0, self.x_size)
-
+                    
                 rows = 1
-                cols = 1
-
-        # Calculate coordinates
-        target_x = np.fromfunction(lambda i, j: (j + col_start) *
-                                   self.pixel_size_x +
+                cols = 1    
+        
+        #Calculate coordinates
+        target_x = np.fromfunction(lambda i, j: (j + col_start) * 
+                                   self.pixel_size_x + 
                                    self.pixel_upper_left[0],
-                                   (rows,
+                                   (rows, 
                                     cols), dtype=dtype)
-
-        target_y = np.fromfunction(lambda i, j:
-                                   self.pixel_upper_left[1] -
+    
+        target_y = np.fromfunction(lambda i, j: 
+                                   self.pixel_upper_left[1] - 
                                    (i + row_start) * self.pixel_size_y,
-                                   (rows,
+                                   (rows, 
                                     cols), dtype=dtype)
-
+        
         if is_single_value:
-            # Return single values
+            #Return single values
             target_x = float(target_x)
             target_y = float(target_y)
         elif is_1d_select:
-            # Reshape to 1D array
+            #Reshape to 1D array
             target_x = target_x.reshape((target_x.size,))
             target_y = target_y.reshape((target_y.size,))
-
+       
         if cache and data_slice is None:
             # Cache the result if requested
             self.projection_x_coords = target_x
             self.projection_y_coords = target_y
 
         return target_x, target_y
-
+        
     @property
     def proj_x_coords(self):
         return self.get_proj_coords(data_slice=(0, slice(None)))[0]
@@ -758,26 +770,10 @@ class AreaDefinition(BaseDefinition):
     def proj_y_coords(self):
         return self.get_proj_coords(data_slice=(slice(None), 0))[1]
 
-    @property
-    def outer_boundary_corners(self):
-        """Returns the lon,lat of the outer edges of the corner points
-        """
-        from pyresample.spherical_geometry import Coordinate
-        proj = _spatial_mp.Proj(**self.proj_dict)
-
-        corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
-                                         self.area_extent[2], self.area_extent[0]),
-                                        (self.area_extent[3], self.area_extent[3],
-                                         self.area_extent[1], self.area_extent[1]),
-                                        inverse=True)
-        return [Coordinate(corner_lons[0], corner_lats[0]),
-                Coordinate(corner_lons[1], corner_lats[1]),
-                Coordinate(corner_lons[2], corner_lats[2]),
-                Coordinate(corner_lons[3], corner_lats[3])]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
-
+    
         :Parameters:        
         nprocs : int, optional 
             Number of processor cores to be used.
@@ -790,7 +786,7 @@ class AreaDefinition(BaseDefinition):
         :Returns: 
         (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
-        """
+        """ 
 
         if dtype is None:
             dtype = self.dtype
@@ -799,59 +795,58 @@ class AreaDefinition(BaseDefinition):
             #Data is not cached
             if nprocs is None:
                 nprocs = self.nprocs
-
-            # Proj.4 definition of target area projection
+                
+            #Proj.4 definition of target area projection
             if nprocs > 1:
                 target_proj = _spatial_mp.Proj_MP(**self.proj_dict)
             else:
                 target_proj = _spatial_mp.Proj(**self.proj_dict)
-
-            # Get coordinates of local area as ndarrays
-            target_x, target_y = self.get_proj_coords(
-                data_slice=data_slice, dtype=dtype)
-
-            # Get corresponding longitude and latitude values
+        
+            #Get coordinates of local area as ndarrays
+            target_x, target_y = self.get_proj_coords(data_slice=data_slice, dtype=dtype)
+            
+            #Get corresponding longitude and latitude values
             lons, lats = target_proj(target_x, target_y, inverse=True,
                                      nprocs=nprocs)
             lons = np.asanyarray(lons, dtype=dtype)
             lats = np.asanyarray(lats, dtype=dtype)
-
+            
             if cache and data_slice is None:
                 # Cache the result if requested
                 self.lons = lons
                 self.lats = lats
 
-            # Free memory
+            #Free memory
             del(target_x)
             del(target_y)
         else:
             #Data is cached
             if data_slice is None:
-                # Full slice
+                #Full slice
                 lons = self.lons
                 lats = self.lats
             else:
                 lons = self.lons[data_slice]
                 lats = self.lats[data_slice]
-
+            
         return lons, lats
 
     @property
     def proj4_string(self):
         """Returns projection definition as Proj.4 string"""
-
+        
         items = self.proj_dict.items()
-        return '+' + ' +'.join([t[0] + '=' + t[1] for t in items])
-
+        return '+' + ' +'.join([ t[0] + '=' + t[1] for t in items])         
+    
 
 def _get_slice(segments, shape):
     """Generator for segmenting a 1D or 2D array"""
-
+    
     if not (1 <= len(shape) <= 2):
         raise ValueError('Cannot segment array of shape: %s' % str(shape))
     else:
         size = shape[0]
-        slice_length = int(np.ceil(float(size) / segments))
+        slice_length = np.ceil(float(size) / segments)
         start_idx = 0
         end_idx = slice_length
         while start_idx < size:
@@ -862,21 +857,19 @@ def _get_slice(segments, shape):
             start_idx = end_idx
             end_idx = min(start_idx + slice_length, size)
 
-
 def _flatten_cartesian_coords(cartesian_coords):
     """Flatten array to (n, 3) shape"""
-
-    shape = cartesian_coords.shape
+    
+    shape = cartesian_coords.shape 
     if len(shape) > 2:
-        cartesian_coords = cartesian_coords.reshape(shape[0] *
+        cartesian_coords = cartesian_coords.reshape(shape[0] * 
                                                     shape[1], 3)
     return cartesian_coords
 
-
 def _get_highest_level_class(obj1, obj2):
-    if (not issubclass(obj1.__class__, obj2.__class__) or
-            not issubclass(obj2.__class__, obj1.__class__)):
-        raise TypeError('No common superclass for %s and %s' %
+    if (not issubclass(obj1.__class__, obj2.__class__) or 
+        not issubclass(obj2.__class__, obj1.__class__)):
+        raise TypeError('No common superclass for %s and %s' % 
                         (obj1.__class__, obj2.__class__))
 
     if obj1.__class__ == obj2.__class__:
@@ -885,4 +878,6 @@ def _get_highest_level_class(obj1, obj2):
         klass = obj2.__class__
     else:
         klass = obj1.__class__
-    return klass
+    return klass    
+           
+        
