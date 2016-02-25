@@ -542,7 +542,10 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
         target_lons_valid, target_lats_valid)
 
     # pykdtree requires query points have same data type as kdtree.
-    dt = resample_kdtree.data_pts.dtype
+    try:
+        dt = resample_kdtree.data_pts.dtype
+    except AttributeError:
+        dt = resample_kdtree.data.dtype
     output_coords = np.asarray(output_coords, dtype=dt)
 
     # Query kd-tree
