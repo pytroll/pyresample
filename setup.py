@@ -16,9 +16,11 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
-import multiprocessing
 from setuptools import setup
+from distutils.extension import Extension
+import os
 import sys
+import numpy
 
 import imp
 
@@ -33,6 +35,36 @@ if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
     requirements.append('multiprocessing')
 
+extensions = [
+    Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"], extra_compile_args=["-O3", "-Wno-unused-function"]),
+    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=["-O3", "-Wno-unused-function"])
+]
+
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = None
+
+if not os.getenv("USE_CYTHON", False) or cythonize is None:
+    print("Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
+    def cythonize(extensions, **_ignore):
+        """Fake function to compile from C/C++ files instead of compiling .pyx files with cython.
+        """
+        for extension in extensions:
+            sources = []
+            for sfile in extension.sources:
+                path, ext = os.path.splitext(sfile)
+                if ext in ('.pyx', '.py'):
+                    if extension.language == 'c++':
+                        ext = '.cpp'
+                    else:
+                        ext = '.c'
+                    sfile = path + ext
+                sources.append(sfile)
+            extension.sources[:] = sources
+        return extensions
+
+
 setup(name='pyresample',
       version=version.__version__,
       description='Resampling of remote sensing data in Python',
@@ -42,6 +74,8 @@ setup(name='pyresample',
       packages=['pyresample'],
       install_requires=requirements,
       extras_require=extras_require,
+      ext_modules=cythonize(extensions),
+      include_dirs=[numpy.get_include()],
       test_suite='pyresample.test.suite',
       zip_safe=False,
       classifiers=[
