@@ -42,51 +42,11 @@ __docformat__ = "restructuredtext en"
 import os
 import sys
 import logging
-
 import numpy
-
-from polar2grid.remap import ms2gt
 import _fornav
 
-try:
-    import psutil
-    get_free_memory = lambda: psutil.phymem_usage().free
-except ImportError:
-    psutil = None
-    get_free_memory = lambda: None
-
-DEFAULT_GROUP_SIZE = os.getenv("P2G_EWA_DEF_GROUP_SIZE", None)
-GROUP_SIZE = os.getenv("P2G_EWA_GROUP_SIZE", None)
-
-
+GROUP_SIZE = os.getenv("PYRESAMPLE_EWA_GROUP_SIZE", None)
 LOG = logging.getLogger(__name__)
-
-
-def calculate_group_size(swath_cols, swath_rows, grid_cols, grid_rows, default_group_size=DEFAULT_GROUP_SIZE,
-                         grid_multiplier=3, swath_multiplier=1, geo_multiplier=2, additional_used=0):
-    """Split a swath scene in to reasonably sized groups based on shared geolocation.
-
-    If `use_memory` is True and available memory is known then the groups are split based on number of bytes.
-
-    Default items in a group is 5.
-    """
-    free_memory_bytes = get_free_memory()
-    if free_memory_bytes is None:
-        if default_group_size is None:
-            return None
-        return int(default_group_size)
-
-    # Assumes input and output of 32-bit float type
-    item_size = 4
-    swath_size = swath_cols * swath_rows * item_size
-    grid_size = grid_cols * grid_rows * item_size
-    grid_effect = grid_size * grid_multiplier
-    geo_effect = swath_size * geo_multiplier
-    swath_effect = swath_size * swath_multiplier
-    max_group_size = max(int((free_memory_bytes - geo_effect - additional_used) / (grid_effect + swath_effect)), 1)
-    LOG.debug("Max group size calculated to be %d (free: %d, grid: %d, geo: %d, swath: %d)",
-              max_group_size, free_memory_bytes, grid_effect, geo_effect, swath_effect)
-    return max_group_size
 
 
 def group_iter(input_arrays, swath_cols, swath_rows, input_dtype, output_arrays, grid_cols, grid_rows, group_size):
@@ -157,13 +117,9 @@ def fornav(cols_array, rows_array, rows_per_scan, input_arrays, input_dtype=None
 
     if use_group_size:
         if GROUP_SIZE is not None:
-            group_size = GROUP_SIZE
+            group_size = int(GROUP_SIZE)
         else:
             group_size = None
-            # It seems like this could be a smart way of handling this is we were using multiprocessing, but
-            # a lot of testing is required to verify that assumption. The proper way to handle this or make it faster
-            # in general is to have parrallel operations inside fornav (OpenMP or OpenCL/GPU).
-            # group_size = calculate_group_size(cols_array.shape[1], cols_array.shape[0], grid_cols, grid_rows)
     if group_size is None:
         group_size = len(input_arrays)
 
@@ -183,38 +139,6 @@ def fornav(cols_array, rows_array, rows_per_scan, input_arrays, input_dtype=None
         return valid_list, output_arrays
     else:
         return valid_list
-
-
-def ms2gt_fornav(*args, **kwargs):
-    """Run the ms2gt wrapper for fornav.
-
-    This is how we use to run it from remap.py
-
-    run_fornav_c(
-        len(product_filepaths),
-        swath_def["swath_columns"],
-        swath_def["swath_rows"]/rows_per_scan,
-        rows_per_scan,
-        cols_fn,
-        rows_fn,
-        product_filepaths,
-        grid_def["width"],
-        grid_def["height"],
-        fornav_filepaths,
-        swath_data_type_1="f4",
-        swath_fill_1=swath_scene.get_fill_value(product_names),
-        grid_fill_1=numpy.nan,
-        weight_delta_max=fornav_D,
-        weight_distance_max=kwargs.get("fornav_d", None),
-        maximum_weight_mode=kwargs.get("maximum_weight_mode", None),
-        # We only specify start_scan for the 'image'/channel
-        # data because ll2cr is not 'forced' so it only writes
-        # useful data to the output cols/rows files
-        start_scan=(0, 0),
-        )
-    """
-    return ms2gt.fornav(*args, **kwargs)
-
 
 
 def main():
