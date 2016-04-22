@@ -548,6 +548,21 @@ class AreaDefinition(BaseDefinition):
                                       proj_str, self.x_size, self.y_size,
                                       self.area_extent)
 
+    def create_areas_def(self):
+        proj_dict = self.proj_dict
+        proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
+
+        fmt = "REGION: {name} {{\n"
+        fmt += "\tNAME:\t{name}\n"
+        fmt += "\tPCS_ID:\t{area_id}\n"
+        fmt += "\tPCS_DEF:\t{proj_str}\n"
+        fmt += "\tXSIZE:\t{x_size}\n"
+        fmt += "\tYSIZE:\t{y_size}\n"
+        fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
+        area_def_str = fmt.format(name=self.name, area_id=self.area_id, proj_str=proj_str,
+                                x_size=self.x_size, y_size=self.y_size, area_extent=self.area_extent)
+        return area_def_str
+
     __repr__ = __str__
 
     def __eq__(self, other):
