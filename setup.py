@@ -16,6 +16,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
+import multiprocessing
 from setuptools import setup
 from distutils.extension import Extension
 import os
