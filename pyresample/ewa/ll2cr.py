@@ -42,7 +42,7 @@ import logging
 
 import numpy
 
-from polar2grid.core.proj import Proj
+from pyresample._spatial_mp import Proj
 import _ll2cr
 
 
