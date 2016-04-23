@@ -155,3 +155,17 @@ class TestLL2CRDynamic(unittest.TestCase):
         self.assertEqual(lat_arr[-1, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
         self.assertTrue(np.all(np.diff(lon_arr[0]) >= 0), "ll2cr didn't return monotonic columns over the dateline")
 
+
+def suite():
+    """The test suite.
+    """
+    loader = unittest.TestLoader()
+    mysuite = unittest.TestSuite()
+    mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRStatic))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRDynamic))
+
+    return mysuite
+
+
+if __name__ == '__main__':
+    unittest.main()
