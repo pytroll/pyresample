@@ -24,7 +24,17 @@
 """
 
 
-from pyresample.test import test_geometry, test_grid, test_image, test_kd_tree, test_plot, test_spherical_geometry, test_swath, test_utils
+from pyresample.test import (
+    test_geometry,
+    test_grid,
+    test_image,
+    test_kd_tree,
+    test_plot,
+    test_spherical_geometry,
+    test_swath,
+    test_utils,
+    test_ewa_ll2cr,
+    )
 
 import unittest
 
@@ -42,5 +52,6 @@ def suite():
     mysuite.addTests(test_spherical_geometry.suite())
     mysuite.addTests(test_swath.suite())
     mysuite.addTests(test_utils.suite())
+    mysuite.addTests(test_ewa_ll2cr.suite())
 
     return mysuite
