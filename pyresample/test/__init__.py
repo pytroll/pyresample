@@ -44,3 +44,7 @@ def suite():
     mysuite.addTests(test_utils.suite())
 
     return mysuite
+
+
+def load_tests(loader, tests, pattern):
+    return suite()
