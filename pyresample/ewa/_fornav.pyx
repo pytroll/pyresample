@@ -177,6 +177,48 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
            size_t rows_per_scan,
            unsigned int weight_count=10000, weight_type weight_min=0.01, weight_type weight_distance_max=1.0, weight_type weight_delta_max=10.0, weight_type weight_sum_min=-1.0,
            cpython.bool maximum_weight_mode=False):
+    """Python wrapper around the C interface to fornav.
+
+    The main difficulty is that the C code can operate on multiple input
+    arrays, but the python->C cython interface doesn't automatically know
+    the data type of the numpy arrays inside a tuple. This function casts
+    the array pointers to the corresponding C type and then calls the
+    templated cython and C++ functions.
+
+    This algorithm works under the assumption that the data is observed
+    one scan line at a time. However, good results can still be achieved
+    for non-scan based data is provided if `rows_per_scan` is set to the
+    number of rows in the entire swath.
+
+    :param cols_array: numpy array of grid column coordinates for each input swath pixel
+    :param rows_array: numpy array of grid row coordinates for each input swath pixel
+    :param input_arrays: tuple of numpy arrays with the same geolocation and same dtype
+    :param output_arrays: tuple of empty numpy arrays to be filled with gridded data (must be writeable)
+    :param input_fill: fill value in input data arrays representing invalid/bad values
+    :param output_fill: fill value written to output data arrays representing invalid/bad or out of swath values
+    :param rows_per_scan: number of input swath rows making up one scan line or all of the rows in the swath
+    :param weight_count: number of elements to create in the gaussian weight
+                         table. Default is 10000. Must be at least 2
+    :param weight_min: the minimum value to store in the last position of the
+                       weight table. Default is 0.01, which, with a
+                       `weight_distance_max` of 1.0 produces a weight of 0.01
+                       at a grid cell distance of 1.0. Must be greater than 0.
+    :param weight_distance_max: distance in grid cell units at which to
+                                apply a weight of `weight_min`. Default is
+                                1.0. Must be greater than 0.
+    :param weight_delta_max: maximum distance in grid cells in each grid
+             dimension over which to distribute a single swath cell.
+             Default is 10.0.
+    :param weight_sum_min: minimum weight sum value. Cells whose weight sums
+             are less than `weight_sum_min` are set to the grid fill value.
+             Default is EPSILON.
+    :param maximum_weight_mode: If -m is not present, a weighted average of
+             all swath cells that map to a particular grid cell is used.
+             If -m is present, the swath cell having the maximum weight of all
+             swath cells that map to a particular grid cell is used. The -m
+             option should be used for coded data, i.e. snow cover.
+    :return: tuple of valid grid points written for each output array
+    """
     cdef size_t num_items = len(input_arrays)
     cdef size_t num_outputs = len(output_arrays)
     cdef size_t swath_cols = cols_array.shape[1]

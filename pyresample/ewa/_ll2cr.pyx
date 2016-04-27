@@ -153,6 +153,9 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
         1. Convert (lon, lat) points to (X, Y) points in the projection space
         2. If grid is missing some parameters (dynamic grid), then fill them in
         3. Convert (X, Y) points to (column, row) points in the grid space
+
+    Note longitude and latitude arrays are limited to 64-bit floats because
+    of that same limitation in pyproj.
     """
     # pure python stuff for now
     p = MyProj(proj4_definition)
@@ -283,6 +286,9 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
 
         1. Convert (lon, lat) points to (X, Y) points in the projection space
         2. Convert (X, Y) points to (column, row) points in the grid space
+
+    Note longitude and latitude arrays are limited to 64-bit floats because
+    of that same limitation in pyproj.
 
     """
     # pure python stuff for now
