@@ -1,47 +1,28 @@
-# Copyright (C) 2014 Space Science and Engineering Center (SSEC),
-#  University of Wisconsin-Madison.
-#
-#     This program is free software: you can redistribute it and/or modify
-#     it under the terms of the GNU General Public License as published by
-#     the Free Software Foundation, either version 3 of the License, or
-#     (at your option) any later version.
-#
-#     This program is distributed in the hope that it will be useful,
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#     GNU General Public License for more details.
-#
-#     You should have received a copy of the GNU General Public License
-#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# This file is part of the polar2grid software package. Polar2grid takes
-# satellite observation data, remaps it, and writes it to a file format for
-# input into another program.
-# Documentation: http://www.ssec.wisc.edu/software/polar2grid/
-#
-#     Written by David Hoese    December 2014
-#     University of Wisconsin-Madison
-#     Space Science and Engineering Center
-#     1225 West Dayton Street
-#     Madison, WI  53706
-#     david.hoese@ssec.wisc.edu
-"""Map longitude/latitude points to column/rows of a grid.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-:author:       David Hoese (davidh)
-:contact:      david.hoese@ssec.wisc.edu
-:organization: Space Science and Engineering Center (SSEC)
-:copyright:    Copyright (c) 2014 University of Wisconsin SSEC. All rights reserved.
-:date:         Jan 2014
-:license:      GNU GPLv3
+# Copyright (c) 2016
+
+# Author(s):
+
+#   David Hoese <david.hoese@ssec.wisc.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Map longitude/latitude points to column/rows of a grid.
 """
 __docformat__ = "restructuredtext en"
 
-# cython _ll2cr.pyx
-# Too compile: gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -L /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/ -L /opt/local/lib/ -I /opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/ -I /opt/local/include/ -o _ll2cr.so _ll2cr.c -lpython2.7
-# Second Try: gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -L /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/ -L /opt/local/lib/ -I /opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/ -I /opt/local/include/ -I /opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/numpy/core/include/ -o _ll2cr.so _ll2cr.c -lpython2.7
-
-
-# from polar2grid.proj import Proj
 from pyproj import _proj, Proj
 import numpy
 cimport cython
@@ -49,36 +30,11 @@ from cpython cimport bool
 cimport numpy
 from libc.math cimport isnan
 
-# DTYPE = numpy.float32
-# DTYPE = numpy.float64
-# ctypedef numpy.float32_t DTYPE_t
-
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
 ctypedef fused cr_dtype:
     # numpy.float32_t
     numpy.float64_t
-
-# @cython.boundscheck(False)
-# @cython.wraparound(False)
-# def minmax_float32(numpy.ndarray[DTYPE_t, ndim=2] arr):
-#     cdef DTYPE_t fmin = arr[0, 0]
-#     cdef DTYPE_t fmax = arr[0, 0]
-#     cdef DTYPE_t val
-#     cdef unsigned int row_max = arr.shape[0]
-#     cdef unsigned int col_max = arr.shape[1]
-#     cdef unsigned int x, y
-#     for y in range(row_max):
-#         for x in range(col_max):
-#             val = arr[y, x]
-#             # min = arr[y, x] if arr[y, x] < min else min
-#             # max = arr[y, x] if arr[y, x] > max else max
-#             if val < fmin:
-#                 fmin = val
-#             elif val > fmax:
-#                 fmax = val
-#
-#     return fmin, fmax
 
 
 class MyProj(Proj):
@@ -122,6 +78,7 @@ def projection_circumference(p):
         return 0.0
     return abs(x1 - x0) * 2
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -132,21 +89,26 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
                   origin_x=None, origin_y=None):
     """Project longitude and latitude points to column rows in the specified grid in place
 
+    This function is meant to operate on dynamic grids and is theoretically
+    slower than the `ll2cr_static` function. Dynamic grids are those that
+    have one or more set of parameters unspecified like the number of pixels
+    in the grid (width, height) or the origin coordinates of the grid
+    (origin_x, origin_y). This function will analyze the provided lon/lat data
+    and determine what the missing parameters must be so all input swath data
+    falls in the resulting grid.
+
     :param lon_arr: Numpy array of longitude floats
     :param lat_arr: Numpy array of latitude floats
     :param grid_info: dictionary of grid information (see below)
     :param fill_in: Fill value for input longitude and latitude arrays and used for output
-    :returns: tuple(points_in_grid, cols_out, rows_out)
-
-    The provided grid info must have the following parameters (optional grids mean dynamic):
-
-        - proj4_definition
-        - cell_width
-        - cell_height
-        - width (optional/None)
-        - height (optional/None)
-        - origin_x (optional/None)
-        - origin_y (optional/None)
+    :param proj4_definition: PROJ.4 string projection definition
+    :param cell_width: Pixel resolution in the X direction in projection space
+    :param cell_height: Pixel resolution in the Y direction in projection space
+    :param width: (optional) Number of pixels in the X direction in the final output grid
+    :param height: (optional) Number of pixels in the Y direction in the final output grid
+    :param origin_x: (optional) Grid X coordinate for the upper-left pixel of the output grid
+    :param origin_y: (optional) Grid Y coordinate for the upper-left pixel of the output grid
+    :returns: tuple(points_in_grid, cols_out, rows_out, origin_x, origin_y, width, height)
 
     Steps taken in this function:
 
@@ -155,13 +117,10 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
         3. Convert (X, Y) points to (column, row) points in the grid space
 
     Note longitude and latitude arrays are limited to 64-bit floats because
-    of that same limitation in pyproj.
+    of limitations in pyproj.
     """
     # pure python stuff for now
     p = MyProj(proj4_definition)
-    # when we update this to not make copies we can probably just make this a view
-    # rows_arr = numpy.empty_like(lat_arr)
-    # cols_arr = numpy.empty_like(lon_arr)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
@@ -279,7 +238,8 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     :param cell_height: Pixel resolution in the Y direction in projection space
     :param width: Number of pixels in the X direction in the final output grid
     :param height: Number of pixels in the Y direction in the final output grid
-    :param origin_x:
+    :param origin_x: Grid X coordinate for the upper-left pixel of the output grid
+    :param origin_y: Grid Y coordinate for the upper-left pixel of the output grid
     :returns: tuple(points_in_grid, cols_out, rows_out)
 
     Steps taken in this function:
@@ -288,7 +248,7 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
         2. Convert (X, Y) points to (column, row) points in the grid space
 
     Note longitude and latitude arrays are limited to 64-bit floats because
-    of that same limitation in pyproj.
+    of limitations in pyproj.
 
     """
     # pure python stuff for now
