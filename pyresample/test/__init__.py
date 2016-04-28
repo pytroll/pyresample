@@ -34,6 +34,7 @@ from pyresample.test import (
     test_swath,
     test_utils,
     test_ewa_ll2cr,
+    test_ewa_fornav,
     )
 
 import unittest
@@ -53,6 +54,7 @@ def suite():
     mysuite.addTests(test_swath.suite())
     mysuite.addTests(test_utils.suite())
     mysuite.addTests(test_ewa_ll2cr.suite())
+    mysuite.addTests(test_ewa_fornav.suite())
 
     return mysuite
 
