@@ -26,7 +26,7 @@ from Cython.Build import cythonize
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 requirements = ['pyproj', 'numpy', 'configobj']
-extras_require = {'pykdtree': ['pykdtree'],
+extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'basemap']}
 
