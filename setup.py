@@ -2,18 +2,18 @@
 #
 # Copyright (C) 2012, 2014, 2015  Esben S. Nielsen
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or
 #(at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing
@@ -37,8 +37,8 @@ if sys.version_info < (2, 6):
 setup(name='pyresample',
       version=version.__version__,
       description='Resampling of remote sensing data in Python',
-      author='Esben S. Nielsen',
-      author_email='esn@dmi.dk',
+      author='Thomas Lavergne',
+      author_email='t.lavergne@met.no',
       package_dir={'pyresample': 'pyresample'},
       packages=['pyresample'],
       install_requires=requirements,
@@ -48,7 +48,7 @@ setup(name='pyresample',
       ext_modules=cythonize("pyresample/_gradient_search.pyx"),
       classifiers=[
           'Development Status :: 5 - Production/Stable',
-          'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
           'Programming Language :: Python',
           'Operating System :: OS Independent',
           'Intended Audience :: Science/Research',

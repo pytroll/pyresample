@@ -400,6 +400,13 @@ class Test(unittest.TestCase):
                                                          segments=1, with_uncert=True)
         else:
             with warnings.catch_warnings(record=True) as w:
+                # The assertion below checks if there is only one warning raised
+                # and whether it contains a specific message from pyresample
+                # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
+                # that cause to fail, so we ignore the unrelated warnings.
+                # TODO: better way would be to filter UserWarning correctly
+                from numpy import VisibleDeprecationWarning
+                warnings.simplefilter('ignore', (DeprecationWarning, VisibleDeprecationWarning))
                 res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,
                                                              self.area_def, 50000, [
                                                                  25000, 15000, 10000],
@@ -785,6 +792,18 @@ class Test(unittest.TestCase):
                                msg='Failed to resample masked data')
         self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
                         msg='Failed to create fill mask on masked data')
+
+    def test_dtype(self):
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        grid_def = geometry.GridDefinition(lons, lats)
+        lons = numpy.asarray(lons, dtype='f4')
+        lats  = numpy.asarray(lats, dtype='f4')
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        valid_input_index, valid_output_index, index_array, distance_array = \
+            kd_tree.get_neighbour_info(swath_def,
+                                       grid_def,
+                                       50000, neighbours=1, segments=1)
 
     def test_nearest_from_sample(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))

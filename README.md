@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mraspaud/pyresample.svg?branch=master)](https://travis-ci.org/mraspaud/pyresample)
+[![Build Status](https://travis-ci.org/pytroll/pyresample.svg?branch=master)](https://travis-ci.org/pytroll/pyresample)
 
 Python package for geospatial resampling
 ----------------------------------------
@@ -9,18 +9,21 @@ Pyresample is designed for resampling of remote sensing data and supports resamp
 Several types of resampling are supported including nearest neighbour, gaussian weighting and weighting with a user defined radial function.
 Pyresample works with Numpy arrays including support for masked arrays.
 Support for parallel resampling using multiple processor cores.
-Plotting capablity using Basemap. As of v0.8.0 [https://github.com/storpipfugl/pykdtree pykdtree] can be used to speed up processing.
+Plotting capablity using Basemap. As of v0.8.0 [pykdtree](https://github.com/storpipfugl/pykdtree) can be used to speed up processing.
 
-Pyresample is tested with Python 2.5, 2.6 and 2.7.
+Pyresample is tested with Python 2.6, 2.7, 3.2, 3.3, and 3.4.
 
 Note: For numpy >= 1.6.2 use pyresample >= 0.7.13  
 
-[https://pyresample.readthedocs.org/en/latest/ Documentation]
-[http://code.google.com/p/pyresample/downloads/detail?name=pyresample-1.1.0.tar.gz Latest download]
-Look at http://code.google.com/p/pyresample/ and http://pytroll.org/ for more information.
+[Documentation](https://pyresample.readthedocs.org/en/latest/)
+Look at [pytroll.org](http://pytroll.org/) for more information.
 
 
 ===News===
+  * *2015-02-03*: Pyresample-1.1.3 released. Switch to LGPLv3.
+
+  * *2014-12-17*: Pyresample-1.1.2 released. Fix to allow tests to run on travis.
+
   * *2014-12-10*: Pyresample-1.1.1 released. Wrapping of longitudes and latitudes is now implemented.
 
   * *2013-10-23*: Pyresample-1.1.0 released. Added option for calculating uncertainties for weighted kd-tree resampling. From now on pyresample will adhere to [http://semver.org/ semantic versioning].

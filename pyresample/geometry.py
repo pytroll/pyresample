@@ -6,18 +6,18 @@
 #    Esben S. Nielsen
 #    Thomas Lavergne
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
 
@@ -851,7 +851,7 @@ def _get_slice(segments, shape):
         raise ValueError('Cannot segment array of shape: %s' % str(shape))
     else:
         size = shape[0]
-        slice_length = np.ceil(float(size) / segments)
+        slice_length = int(np.ceil(float(size) / segments))
         start_idx = 0
         end_idx = slice_length
         while start_idx < size:
