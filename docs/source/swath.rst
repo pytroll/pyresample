@@ -241,3 +241,67 @@ Speedup using pykdtree
 **********************
 
 pykdtree can be used instead of scipy to gain significant speedup for large datasets. See :ref:`multi`. 
+
+pyresample.ewa
+--------------
+
+Pyresample makes it possible to resampling swath data to a uniform grid
+using an Elliptical Weighted Averaging algorithm or EWA for short.
+This algorithm behaves differently than the KDTree based resampling
+algorithms that pyresample provides. The EWA algorithm consists of two
+steps: ll2cr and fornav. The algorithm was originally part of the
+MODIS Swath to Grid Toolbox (ms2gt) created by the
+NASA National Snow & Ice Data Center (NSIDC). It's default parameters
+work best with MODIS L1B data, but it has been proven to produce high
+quality images from VIIRS and AVHRR data with the right parameters.
+
+.. note::
+
+    This code was originally part of the Polar2Grid project. This
+    documentation and the API documentation for this algorithm may still
+    use references or concepts from Polar2Grid until everything can
+    be updated.
+
+Gridding
+********
+
+The first step is called 'll2cr' which stands for "longitude/latitude to
+column/row". This step maps the pixel location (lon/lat space) into area (grid)
+space. Areas in pyresample are defined by a PROJ.4 projection specification.
+An area is defined by the following parameters:
+
+ - Grid Name
+ - PROJ.4 String (either lat/lon or metered projection space)
+ - Width (number of pixels in the X direction)
+ - Height (number of pixels in the Y direction)
+ - Cell Width (pixel size in the X direction in grid units)
+ - Cell Height (pixel size in the Y direction in grid units)
+ - X Origin (upper-left X coordinate in grid units)
+ - Y Origin (upper-left Y coordinate in grid units)
+
+
+
+Resampling
+**********
+
+The second step of EWA remapping is called "fornav", short for
+"forward navigation". This EWA algorithm processes one input scan line
+at a time. The algorithm weights the effect of an input pixel on an output
+pixel based on its location in the scan line and other calculated
+coefficients. It can also handle swaths that are not scan based by specifying
+`rows_per_scan` as the number of rows in the entire swath.
+How the algorithm treats the data can be configured with various
+keyword arguments, see the API documentation for more information.
+
+Example
+*******
+
+.. note::
+
+    EWA resampling in pyresample is still in an alpha stage. As development
+    continues, EWA resampling may be called differently.
+
+.. doctest::
+
+ >>> from pyresample.ewa import _fornav
+
