@@ -1,3 +1,2 @@
-requirements_file:
 python:
     setup_py_install: true
