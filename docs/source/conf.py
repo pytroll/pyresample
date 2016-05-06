@@ -33,10 +33,12 @@ class Mock(object):
         else:
             return Mock()
 
-# MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
-#                 'scipy', 'scipy.spatial']
-# for mod_name in MOCK_MODULES:
-#     sys.modules[mod_name] = Mock()
+# If we are on read the docs then just mock external packages
+if os.environ.get("READTHEDOCS") == "True":
+    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
+                    'scipy', 'scipy.spatial']
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
