@@ -18,10 +18,10 @@
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing
 from setuptools import setup
+from setuptools.command.build_ext import build_ext as _build_ext
 from distutils.extension import Extension
 import os
 import sys
-import numpy
 
 import imp
 
@@ -66,6 +66,22 @@ if not os.getenv("USE_CYTHON", False) or cythonize is None:
         return extensions
 
 
+class build_ext(_build_ext):
+    """Work around to bootstrap numpy includes in to extensions.
+
+    Copied from:
+
+        http://stackoverflow.com/questions/19919905/how-to-bootstrap-numpy-installation-in-setup-py
+
+    """
+    def finalize_options(self):
+        _build_ext.finalize_options(self)
+        # Prevent numpy from thinking it is still in its setup process:
+        __builtins__.__NUMPY_SETUP__ = False
+        import numpy
+        self.include_dirs.append(numpy.get_include())
+
+
 setup(name='pyresample',
       version=version.__version__,
       description='Resampling of remote sensing data in Python',
@@ -73,10 +89,11 @@ setup(name='pyresample',
       author_email='t.lavergne@met.no',
       package_dir={'pyresample': 'pyresample'},
       packages=['pyresample'],
+      setup_requires=['numpy'],
       install_requires=requirements,
       extras_require=extras_require,
+      cmdclass={'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      include_dirs=[numpy.get_include()],
       test_suite='pyresample.test.suite',
       zip_safe=False,
       classifiers=[
