@@ -11,7 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
+
 
 class Mock(object):
     def __init__(self, *args, **kwargs):
@@ -53,9 +55,17 @@ sys.path.insert(0, os.path.abspath('../../pyresample'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc']
+extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
+# DocTest Settings
 doctest_test_doctest_blocks = ''
+
+# Napoleon Settings (to support numpy style docs)
+napoleon_numpy_docstring = False
+napoleon_numpy_docstring = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
