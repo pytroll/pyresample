@@ -27,8 +27,7 @@ import warnings
 
 import numpy as np
 
-from . import utils
-from . import _spatial_mp
+from pyresample import utils, _spatial_mp
 
 
 class DimensionError(Exception):

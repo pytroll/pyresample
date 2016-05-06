@@ -27,9 +27,7 @@ import sys
 
 import numpy as np
 
-from . import geometry
-from . import data_reduce
-from . import _spatial_mp
+from pyresample import geometry, data_reduce, _spatial_mp
 
 if sys.version < '3':
     range = xrange
