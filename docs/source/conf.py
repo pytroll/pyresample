@@ -33,10 +33,10 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj', 
-                'scipy', 'scipy.spatial']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+# MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
+#                 'scipy', 'scipy.spatial']
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -52,6 +52,8 @@ sys.path.insert(0, os.path.abspath('../../pyresample'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc']
+
+doctest_test_doctest_blocks = ''
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
