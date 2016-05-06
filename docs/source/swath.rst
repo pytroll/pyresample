@@ -303,5 +303,37 @@ Example
 
 .. doctest::
 
- >>> from pyresample.ewa import _fornav
+ >>> import numpy as np
+ >>> from pyresample.ewa import _ll2cr, _fornav
+ >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+ ...                                {'a': '6378144.0', 'b': '6356759.0',
+ ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
+ ...                                800, 800,
+ ...                                [-1370912.72, -909968.64,
+ ...                                 1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> # ll2cr currently requires 64-bit floats for lon/lat arrays
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10)).astype(np.float64)
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10)).astype(np.float64)
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> # Break the input area up in to the expected parameters for ll2cr
+ >>> p = area_def.proj4_string
+ >>> cw = area_def.pixel_size_x
+ >>> # cell height must be negative for this to work as expected
+ >>> ch = -abs(area_def.pixel_size_y)
+ >>> w = area_def.x_size
+ >>> h = area_def.y_size
+ >>> ox = area_def.area_extent[0]
+ >>> oy = area_def.area_extent[3]
+ >>> fill = np.nan
+ >>> rows_per_scan = 5
+ >>> # ll2cr writes to lons, lats inplace to become cols, rows
+ >>> swath_points_in_grid = _ll2cr.ll2cr_static(lons, lats, fill,
+ ...                                            p, cw, ch, w, h, ox, oy)
+ >>> out_arr = np.empty(area_def.shape, dtype=data.dtype)
+ >>> results = _fornav.fornav_wrapper(lons, lats, (data,), (out_arr,), fill, fill,
+ ...                                  rows_per_scan)
+ >>> # number of valid grid points written as output
+ >>> num_valid_points = results[0]
 
