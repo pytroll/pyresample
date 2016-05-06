@@ -19,7 +19,7 @@ install:
 - if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "matplotlib>=1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "matplotlib>=1.5.0"; fi
 - pip install -r requirements.txt
-- pip install -e ".[pykdtree]"
+- pip install -e ".[pykdtree,quicklook]"
 - pip install coveralls
 script: coverage run --source=pyresample setup.py test
 after_success: coveralls
