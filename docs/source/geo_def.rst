@@ -90,7 +90,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.
 
 
 The **load_area** function can be used to parse area definitions from a configuration file. 
-Assuming the file **/tmp/areas.cfg** exists with the following content
+Assuming the file **areas.cfg** exists with the following content
 
 .. code-block:: bash
 
@@ -117,7 +117,7 @@ An area definition dict can be read using
 .. doctest::
 
  >>> from pyresample import utils
- >>> area = utils.load_area('/tmp/areas.cfg', 'ease_nh')
+ >>> area = utils.load_area('areas.cfg', 'ease_nh')
  >>> print area
  Area ID: ease_nh
  Name: Arctic EASE grid
@@ -134,7 +134,7 @@ Several area definitions can be read at once using the region names in an argume
 .. doctest::
 
  >>> from pyresample import utils
- >>> nh_def, sh_def = utils.load_area('/tmp/areas.cfg', 'ease_nh', 'ease_sh')
+ >>> nh_def, sh_def = utils.load_area('areas.cfg', 'ease_nh', 'ease_sh')
  >>> print sh_def
  Area ID: ease_sh
  Name: Antarctic EASE grid
