@@ -56,7 +56,7 @@ Creating an area definition:
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -83,7 +83,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -122,7 +122,7 @@ An area definition dict can be read using
  Area ID: ease_nh
  Name: Arctic EASE grid
  Projection ID: ease_nh
- Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '90'}
+ Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -139,7 +139,7 @@ Several area definitions can be read at once using the region names in an argume
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -203,8 +203,8 @@ Get full coordinate set:
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
- ...                  			   x_size, y_size, area_extent)
- >>> lons = area_def.lons[:]
+ ...                               x_size, y_size, area_extent)
+ >>> lons, lats = area_def.get_lonlats()
 
 Get slice of coordinate set:
 
@@ -219,8 +219,8 @@ Get slice of coordinate set:
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
- ...                  			   x_size, y_size, area_extent)
- >>> cart_subset = area_def.cartesian_coords[100:200, 350:]
+ ...                               x_size, y_size, area_extent)
+ >>> cart_subset = area_def.get_cartesian_coords()[100:200, 350:]
  
 If only the 1D range of a projection coordinate is required it can be extraxted using the **proj_x_coord** or **proj_y_coords** property of a geographic coordinate
 
@@ -236,7 +236,7 @@ If only the 1D range of a projection coordinate is required it can be extraxted 
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
  ...                  			   x_size, y_size, area_extent)
- >>> proj_x_range = area_def.proj_x_coord
+ >>> proj_x_range = area_def.proj_x_coords
  
 Spherical geometry operations
 -----------------------------
