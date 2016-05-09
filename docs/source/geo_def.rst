@@ -52,7 +52,7 @@ Creating an area definition:
  ...              'proj': 'laea', 'lat_0': '-90'}
  >>> area_def = geometry.AreaDefinition(area_id, name, proj_id, proj_dict, x_size,
  ...                                    y_size, area_extent)
- >>> print area_def
+ >>> print(area_def)
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
@@ -79,7 +79,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
  ...                  			   x_size, y_size, area_extent)
- >>> print area_def
+ >>> print(area_def)
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
@@ -118,7 +118,7 @@ An area definition dict can be read using
 
  >>> from pyresample import utils
  >>> area = utils.load_area('areas.cfg', 'ease_nh')
- >>> print area
+ >>> print(area)
  Area ID: ease_nh
  Name: Arctic EASE grid
  Projection ID: ease_nh
@@ -135,7 +135,7 @@ Several area definitions can be read at once using the region names in an argume
 
  >>> from pyresample import utils
  >>> nh_def, sh_def = utils.load_area('areas.cfg', 'ease_nh', 'ease_sh')
- >>> print sh_def
+ >>> print(sh_def)
  Area ID: ease_sh
  Name: Antarctic EASE grid
  Projection ID: ease_sh
@@ -261,7 +261,7 @@ It can be tested if geometries overlaps
  >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
  >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
  >>> swath_def = geometry.SwathDefinition(lons, lats)
- >>> print swath_def.overlaps(area_def)
+ >>> print(swath_def.overlaps(area_def))
  True
  
 The fraction of overlap can be calculated
@@ -319,6 +319,6 @@ It can be tested if a (lon, lat) point is inside a GeometryDefinition
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
  ...                  			   x_size, y_size, area_extent)
- >>> print (0, -90) in area_def
+ >>> print((0, -90) in area_def)
  True
      
