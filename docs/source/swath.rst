@@ -303,6 +303,10 @@ coefficients. It can also handle swaths that are not scan based by specifying
 `rows_per_scan` as the number of rows in the entire swath.
 How the algorithm treats the data can be configured with various
 keyword arguments, see the API documentation for more information.
+Both steps provide additional information to inform the user how much data
+was used in the result. The first returned value of ll2cr tells you how many
+of the input swath pixels overlap the grid. The first returned value of fornav
+tells you how many grid points have valid data values in them.
 
 Example
 *******
@@ -327,8 +331,9 @@ Example
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> # ll2cr writes to lons, lats inplace to become cols, rows
+ >>> # ll2cr converts swath longitudes and latitudes to grid columns and rows
  >>> swath_points_in_grid, cols, rows = ll2cr(swath_def, area_def)
  >>> # if the data is scan based, specify how many data rows make up one scan
  >>> rows_per_scan = 5
+ >>> # fornav resamples the swath data to the gridded area
  >>> num_valid_points, gridded_data = fornav(cols, rows, area_def, data, rows_per_scan=rows_per_scan)
