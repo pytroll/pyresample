@@ -245,13 +245,26 @@ pykdtree can be used instead of scipy to gain significant speedup for large data
 pyresample.ewa
 --------------
 
-Pyresample makes it possible to resampling swath data to a uniform grid
+Pyresample makes it possible to resample swath data to a uniform grid
 using an Elliptical Weighted Averaging algorithm or EWA for short.
 This algorithm behaves differently than the KDTree based resampling
-algorithms that pyresample provides. The EWA algorithm consists of two
+algorithms that pyresample provides. The KDTree-based algorithms
+process each output grid pixel by searching for all "nearby" input
+pixels and applying a certain interpolation (nearest neighbor, gaussian, etc).
+The EWA algorithm processes each input pixel mapping it to one or more output
+pixels. Once each input pixel has been analyzed the intermediate results are
+averaged to produce the final gridded result.
+
+The EWA algorithm also has limitations on how the input data is structured
+compared to the generic KDTree algorithms. EWA assumes that data in the array
+is organized geographically; adjacent data in the array is adjacent data
+geographically. The algorithm uses this to configure parameters based on the
+size and location of the swath pixels.
+
+The EWA algorithm consists of two
 steps: ll2cr and fornav. The algorithm was originally part of the
 MODIS Swath to Grid Toolbox (ms2gt) created by the
-NASA National Snow & Ice Data Center (NSIDC). It's default parameters
+NASA National Snow & Ice Data Center (NSIDC). Its default parameters
 work best with MODIS L1B data, but it has been proven to produce high
 quality images from VIIRS and AVHRR data with the right parameters.
 
@@ -279,8 +292,6 @@ An area is defined by the following parameters:
  - X Origin (upper-left X coordinate in grid units)
  - Y Origin (upper-left Y coordinate in grid units)
 
-
-
 Resampling
 **********
 
@@ -304,7 +315,7 @@ Example
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample.ewa import _ll2cr, _fornav
+ >>> from pyresample.ewa import ll2cr, fornav
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -313,27 +324,11 @@ Example
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
- >>> # ll2cr currently requires 64-bit floats for lon/lat arrays
- >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10)).astype(np.float64)
- >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10)).astype(np.float64)
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> # Break the input area up in to the expected parameters for ll2cr
- >>> p = area_def.proj4_string
- >>> cw = area_def.pixel_size_x
- >>> # cell height must be negative for this to work as expected
- >>> ch = -abs(area_def.pixel_size_y)
- >>> w = area_def.x_size
- >>> h = area_def.y_size
- >>> ox = area_def.area_extent[0]
- >>> oy = area_def.area_extent[3]
- >>> fill = np.nan
- >>> rows_per_scan = 5
  >>> # ll2cr writes to lons, lats inplace to become cols, rows
- >>> swath_points_in_grid = _ll2cr.ll2cr_static(lons, lats, fill,
- ...                                            p, cw, ch, w, h, ox, oy)
- >>> out_arr = np.empty(area_def.shape, dtype=data.dtype)
- >>> results = _fornav.fornav_wrapper(lons, lats, (data,), (out_arr,), fill, fill,
- ...                                  rows_per_scan)
- >>> # number of valid grid points written as output
- >>> num_valid_points = results[0]
-
+ >>> swath_points_in_grid, cols, rows = ll2cr(swath_def, area_def)
+ >>> # if the data is scan based, specify how many data rows make up one scan
+ >>> rows_per_scan = 5
+ >>> num_valid_points, gridded_data = fornav(cols, rows, area_def, data, rows_per_scan=rows_per_scan)

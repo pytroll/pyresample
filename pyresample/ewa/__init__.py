@@ -67,4 +67,85 @@ corresponding modules.
 
 """
 
+import logging
+import numpy as np
+from pyresample.ewa import _ll2cr, _fornav
+
+LOG = logging.getLogger(__name__)
+
+
+def ll2cr(swath_def, area_def, fill=np.nan, **kwargs):
+    lons, lats = swath_def.get_lonlats()
+    # ll2cr requires 64-bit floats due to pyproj limitations
+    # also need a copy of lons, lats since they are written to in-place
+    lons = lons.astype(np.float64, copy=kwargs.get("copy", True))
+    lats = lats.astype(np.float64, copy=kwargs.get("copy", True))
+
+    # Break the input area up in to the expected parameters for ll2cr
+    p = area_def.proj4_string
+    cw = area_def.pixel_size_x
+    # cell height must be negative for this to work as expected
+    ch = -abs(area_def.pixel_size_y)
+    w = area_def.x_size
+    h = area_def.y_size
+    ox = area_def.area_extent[0]
+    oy = area_def.area_extent[3]
+    swath_points_in_grid = _ll2cr.ll2cr_static(lons, lats, fill,
+                                               p, cw, ch, w, h, ox, oy)
+    return swath_points_in_grid, lons, lats
+
+
+def fornav(cols, rows, area_def, *data_in, **kwargs):
+    # we can only support one data type per call at this time
+    assert(in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
+
+    # need a list for replacing these arrays later
+    data_in = list(data_in)
+    # determine a fill value
+    if "fill" in kwargs:
+        # they told us what they have as a fill value in the numpy arrays
+        fill = kwargs["fill"]
+    elif np.issubdtype(data_in[0].dtype, np.floating):
+        fill = np.nan
+    elif np.issubdtype(data_in[0].dtype, np.integer):
+        fill = -999
+    else:
+        raise ValueError("Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+
+    convert_to_masked = False
+    for idx, in_arr in enumerate(data_in):
+        if isinstance(in_arr, np.ma.MaskedArray):
+            convert_to_masked = True
+            # convert masked arrays to single numpy arrays
+            data_in[idx] = in_arr.filled(fill)
+    data_in = tuple(data_in)
+
+    if "outs" in kwargs:
+        # the user may have provided memmapped arrays or other array-like objects
+        outs = tuple(kwargs["outs"])
+    else:
+        # create a place for output data to be written
+        outs = tuple(np.empty(area_def.shape, dtype=in_arr.dtype) for in_arr in data_in)
+
+    # see if the user specified rows per scan
+    # otherwise, use the entire swath as one "scanline"
+    rows_per_scan = kwargs.get("rows_per_scan") or data_in[0].shape[0]
+
+    results = _fornav.fornav_wrapper(cols, rows, data_in, outs,
+                                     np.nan, np.nan, rows_per_scan)
+
+    def _mask_helper(data, fill):
+        if np.isnan(fill):
+            return np.isnan(data)
+        else:
+            return data == fill
+
+    if convert_to_masked:
+        # they gave us masked arrays so give them masked arrays back
+        outs = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr) for out_arr in outs]
+    if len(outs) == 1:
+        # they only gave us one data array as input, so give them one back
+        outs = outs[0]
+
+    return results, outs
 
