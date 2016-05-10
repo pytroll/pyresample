@@ -74,12 +74,40 @@ from pyresample.ewa import _ll2cr, _fornav
 LOG = logging.getLogger(__name__)
 
 
-def ll2cr(swath_def, area_def, fill=np.nan, **kwargs):
+def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
+    """Map input swath pixels to output grid column and rows.
+
+    Parameters
+    ----------
+
+    swath_def : SwathDefinition
+        Navigation definition for swath data to remap
+    area_def : AreaDefinition
+        Grid definition to be mapped to
+    fill : float, optional
+        Fill value used in longitude and latitude arrays
+    copy : bool, optional
+        Create a copy of the longitude and latitude arrays (default: True)
+
+    Returns
+    -------
+
+    (swath_points_in_grid, cols, rows) : tuple of integer, numpy array, numpy array
+        Number of points from the input swath overlapping the destination
+        area and the column and row arrays to pass to `fornav`.
+
+    .. note::
+
+        ll2cr uses the pyproj library which is limited to 64-bit float
+        navigation arrays in order to not do additional copying or casting
+        of data types.
+
+    """
     lons, lats = swath_def.get_lonlats()
     # ll2cr requires 64-bit floats due to pyproj limitations
     # also need a copy of lons, lats since they are written to in-place
-    lons = lons.astype(np.float64, copy=kwargs.get("copy", True))
-    lats = lats.astype(np.float64, copy=kwargs.get("copy", True))
+    lons = lons.astype(np.float64, copy=copy)
+    lats = lats.astype(np.float64, copy=copy)
 
     # Break the input area up in to the expected parameters for ll2cr
     p = area_def.proj4_string
@@ -95,22 +123,96 @@ def ll2cr(swath_def, area_def, fill=np.nan, **kwargs):
     return swath_points_in_grid, lons, lats
 
 
-def fornav(cols, rows, area_def, *data_in, **kwargs):
-    # we can only support one data type per call at this time
-    assert(in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
+def fornav(cols, rows, area_def, data_in,
+           rows_per_scan=None, fill=None, out=None,
+           weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
+           weight_delta_max=10.0, weight_sum_min=-1.0,
+           maximum_weight_mode=False):
+    """Remap data in to output grid using elliptical weighted averaging.
+
+    This algorithm works under the assumption that the data is observed
+    one scan line at a time. However, good results can still be achieved
+    for non-scan based data is provided if `rows_per_scan` is set to the
+    number of rows in the entire swath or by setting it to `None`.
+
+    Parameters
+    ----------
+
+    cols : numpy array
+        Column location for each input swath pixel (from `ll2cr`)
+    rows : numpy array
+        Row location for each input swath pixel (from `ll2cr`)
+    area_def : AreaDefinition
+        Grid definition to be mapped to
+    data_in : numpy array or tuple of numpy arrays
+        Swath data to be remapped to output grid
+    rows_per_scan : int or None, optional
+        Number of data rows for every observed scanline. If None then the
+        entire swath is treated as one large scanline.
+    fill : float/int or None, optional
+        If `data_in` is made of numpy arrays then this represents the fill
+        value used to mark invalid data pixels. This value will also be
+        used in the output array(s). If None, then np.nan will be used
+        for float arrays and -999 will be used for integer arrays.
+    out : numpy array or tuple of numpy arrays, optional
+        Specify a numpy array to be written to for each input array. This can
+        be used as an optimization by providing `np.memmap` arrays or other
+        array-like objects.
+    weight_count : int, optional
+        number of elements to create in the gaussian weight table.
+        Default is 10000. Must be at least 2
+    weight_min : float, optional
+        the minimum value to store in the last position of the
+        weight table. Default is 0.01, which, with a
+        `weight_distance_max` of 1.0 produces a weight of 0.01
+        at a grid cell distance of 1.0. Must be greater than 0.
+    weight_distance_max : float, optional
+        distance in grid cell units at which to
+        apply a weight of `weight_min`. Default is
+        1.0. Must be greater than 0.
+    weight_delta_max : float, optional
+        maximum distance in grid cells in each grid
+        dimension over which to distribute a single swath cell.
+        Default is 10.0.
+    weight_sum_min : float, optional
+        minimum weight sum value. Cells whose weight sums
+        are less than `weight_sum_min` are set to the grid fill value.
+        Default is EPSILON.
+    maximum_weight_mode : bool, optional
+        If False (default), a weighted average of
+        all swath cells that map to a particular grid cell is used.
+        If True, the swath cell having the maximum weight of all
+        swath cells that map to a particular grid cell is used. This
+        option should be used for coded/category data, i.e. snow cover.
+
+    Returns
+    -------
+
+    (valid grid points, output arrays): tuple of integer tuples and numpy array tuples
+        The valid_grid_points tuple holds the number of output grid pixels that
+        were written with valid data. The second element in the tuple is a tuple of
+        output grid numpy arrays for each input array. If there was only one input
+        array provided then the returned tuple is simply the singe points integer
+        and single output grid array.
+    """
+    if isinstance(data_in, (tuple, list)):
+        # we can only support one data type per call at this time
+        assert(in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
+    else:
+        # assume they gave us a single numpy array-like object
+        data_in = [data_in]
 
     # need a list for replacing these arrays later
     data_in = list(data_in)
-    # determine a fill value
-    if "fill" in kwargs:
-        # they told us what they have as a fill value in the numpy arrays
-        fill = kwargs["fill"]
-    elif np.issubdtype(data_in[0].dtype, np.floating):
-        fill = np.nan
-    elif np.issubdtype(data_in[0].dtype, np.integer):
-        fill = -999
-    else:
-        raise ValueError("Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+    # determine a fill value if they didn't tell us what they have as a
+    # fill value in the numpy arrays
+    if "fill" is None:
+        if np.issubdtype(data_in[0].dtype, np.floating):
+            fill = np.nan
+        elif np.issubdtype(data_in[0].dtype, np.integer):
+            fill = -999
+        else:
+            raise ValueError("Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
 
     convert_to_masked = False
     for idx, in_arr in enumerate(data_in):
@@ -120,18 +222,18 @@ def fornav(cols, rows, area_def, *data_in, **kwargs):
             data_in[idx] = in_arr.filled(fill)
     data_in = tuple(data_in)
 
-    if "outs" in kwargs:
+    if out is not None:
         # the user may have provided memmapped arrays or other array-like objects
-        outs = tuple(kwargs["outs"])
+        out = tuple("out")
     else:
         # create a place for output data to be written
-        outs = tuple(np.empty(area_def.shape, dtype=in_arr.dtype) for in_arr in data_in)
+        out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype) for in_arr in data_in)
 
     # see if the user specified rows per scan
     # otherwise, use the entire swath as one "scanline"
-    rows_per_scan = kwargs.get("rows_per_scan") or data_in[0].shape[0]
+    rows_per_scan = rows_per_scan or data_in[0].shape[0]
 
-    results = _fornav.fornav_wrapper(cols, rows, data_in, outs,
+    results = _fornav.fornav_wrapper(cols, rows, data_in, out,
                                      np.nan, np.nan, rows_per_scan)
 
     def _mask_helper(data, fill):
@@ -142,10 +244,11 @@ def fornav(cols, rows, area_def, *data_in, **kwargs):
 
     if convert_to_masked:
         # they gave us masked arrays so give them masked arrays back
-        outs = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr) for out_arr in outs]
-    if len(outs) == 1:
+        out = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr) for out_arr in out]
+    if len(out) == 1:
         # they only gave us one data array as input, so give them one back
-        outs = outs[0]
+        out = out[0]
+        results = results[0]
 
-    return results, outs
+    return results, out
 
