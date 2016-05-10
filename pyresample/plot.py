@@ -95,7 +95,7 @@ def area_def2basemap(area_def, **kwargs):
     ---------
     area_def : object
         geometry.AreaDefinition object
-    **kwargs: Keyword arguments
+    \*\*kwargs: Keyword arguments
         Additional initialization arguments for Basemap
 
     Returns

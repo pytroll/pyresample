@@ -96,6 +96,7 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
         Number of points from the input swath overlapping the destination
         area and the column and row arrays to pass to `fornav`.
 
+
     .. note::
 
         ll2cr uses the pyproj library which is limited to 64-bit float
