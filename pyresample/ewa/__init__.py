@@ -117,8 +117,8 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
     ch = -abs(area_def.pixel_size_y)
     w = area_def.x_size
     h = area_def.y_size
-    ox = area_def.area_extent[0]
-    oy = area_def.area_extent[3]
+    ox = area_def.area_extent[0] + cw / 2.
+    oy = area_def.area_extent[3] - ch / 2.
     swath_points_in_grid = _ll2cr.ll2cr_static(lons, lats, fill,
                                                p, cw, ch, w, h, ox, oy)
     return swath_points_in_grid, lons, lats
