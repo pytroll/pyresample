@@ -405,8 +405,14 @@ class Test(unittest.TestCase):
                 # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
                 # that cause to fail, so we ignore the unrelated warnings.
                 # TODO: better way would be to filter UserWarning correctly
-                from numpy import VisibleDeprecationWarning
-                warnings.simplefilter('ignore', (DeprecationWarning, VisibleDeprecationWarning))
+                ignore_list = [DeprecationWarning]
+                try:
+                    from numpy import VisibleDeprecationWarning
+                except ImportError:
+                    pass
+                else:
+                    ignore_list.append(VisibleDeprecationWarning)
+                warnings.simplefilter('ignore', tuple(ignore_list))
                 res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,
                                                              self.area_def, 50000, [
                                                                  25000, 15000, 10000],

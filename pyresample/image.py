@@ -21,7 +21,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from . import geometry, grid, kd_tree
+from pyresample import geometry, grid, kd_tree
 
 
 class ImageContainer(object):
@@ -29,24 +29,26 @@ class ImageContainer(object):
     """Holds image with geometry definition. 
     Allows indexing with linesample arrays.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
     geo_def : object 
         Geometry definition
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
         If fill_value is None a masked array is returned 
         with undetermined pixels masked
     nprocs : int, optional 
         Number of processor cores to be used
 
-    :Attributes:
-    image_data : numpy array 
+    Attributes
+    ----------
+    image_data : numpy array
         Image data
     geo_def : object 
         Geometry definition
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
     nprocs : int
         Number of processor cores to be used for geometry operations
@@ -93,13 +95,15 @@ class ImageContainer(object):
     def get_array_from_linesample(self, row_indices, col_indices):
         """Samples from image based on index arrays.
 
-        :Parameters:
+        Parameters
+        ----------
         row_indices : numpy array
             Row indices. Dimensions must match col_indices
         col_indices : numpy array 
             Col indices. Dimensions must match row_indices 
 
-        :Returns: 
+        Returns
+        -------
         image_data : numpy_array
             Resampled image data
         """
@@ -125,33 +129,35 @@ class ImageContainerQuick(ImageContainer):
     """Holds image with area definition. '
     Allows quick resampling within area.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
     geo_def : object 
         Area definition as AreaDefinition object
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
         If fill_value is None a masked array is returned 
         with undetermined pixels masked
     nprocs : int, optional 
         Number of processor cores to be used for geometry operations
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
 
-    :Attributes:
-    image_data : numpy array 
+    Attributes
+    ----------
+    image_data : numpy array
         Image data
     geo_def : object 
         Area definition as AreaDefinition object
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
         If fill_value is None a masked array is returned 
         with undetermined pixels masked 
     nprocs : int
         Number of processor cores to be used
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling      
     """
 
@@ -169,11 +175,13 @@ class ImageContainerQuick(ImageContainer):
         """Resamples image to area definition using nearest neighbour 
         approach in projection coordinates.
 
-        :Parameters:
-        target_area_def : object 
+        Parameters
+        ----------
+        target_area_def : object
             Target area definition as AreaDefinition object
 
-        :Returns: 
+        Returns
+        -------
         image_container : object
             ImageContainerQuick object of resampled area   
         """
@@ -195,8 +203,9 @@ class ImageContainerNearest(ImageContainer):
     """Holds image with geometry definition. 
     Allows nearest neighbour resampling to new geometry definition.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
     geo_def : object 
         Geometry definition
@@ -205,7 +214,7 @@ class ImageContainerNearest(ImageContainer):
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
         If fill_value is None a masked array is returned 
         with undetermined pixels masked
@@ -214,11 +223,13 @@ class ImageContainerNearest(ImageContainer):
         to reduce execution time
     nprocs : int, optional 
         Number of processor cores to be used for geometry operations
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
 
-    :Attributes:
+    Attributes
+    ----------
+
     image_data : numpy array 
         Image data
     geo_def : object 
@@ -227,13 +238,13 @@ class ImageContainerNearest(ImageContainer):
         Cut off distance in meters    
     epsilon : float
         Allowed uncertainty in meters
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
     reduce_data : bool
         Perform coarse data reduction before resampling
     nprocs : int
         Number of processor cores to be used
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling   
     """
 
@@ -251,11 +262,13 @@ class ImageContainerNearest(ImageContainer):
         """Resamples image to area definition using nearest neighbour 
         approach
 
-        :Parameters:
+        Parameters
+        ----------
         target_geo_def : object 
             Target geometry definition         
 
-        :Returns: 
+        Returns
+        -------
         image_container : object
             ImageContainerNearest object of resampled geometry   
         """

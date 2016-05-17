@@ -29,6 +29,7 @@ from configobj import ConfigObj
 import pyresample as pr
 import six
 
+
 class AreaNotFound(Exception):
 
     """Exception raised when specified are is no found in file"""
@@ -38,20 +39,23 @@ class AreaNotFound(Exception):
 def load_area(area_file_name, *regions):
     """Load area(s) from area file
 
-    :Parameters:
+    Parameters
+    -----------
     area_file_name : str
         Path to area definition file
     regions : str argument list 
         Regions to parse. If no regions are specified all 
         regions in the file are returned
 
-    :Returns:
+    Returns
+    -------
     area_defs : object or list
         If one area name is specified a single AreaDefinition object is returned
         If several area names are specified a list of AreaDefinition objects is returned
 
-    :Raises:
-    AreaNotFound
+    Raises
+    ------
+    AreaNotFound:
         If a specified area name is not found
     """
 
@@ -65,19 +69,22 @@ def load_area(area_file_name, *regions):
 def parse_area_file(area_file_name, *regions):
     """Parse area information from area file
 
-    :Parameters:
+    Parameters
+    -----------
     area_file_name : str
         Path to area definition file
     regions : str argument list 
         Regions to parse. If no regions are specified all 
         regions in the file are returned
 
-    :Returns:
+    Returns
+    -------
     area_defs : list
         List of AreaDefinition objects
 
-    :Raises:
-    AreaNotFound
+    Raises
+    ------
+    AreaNotFound:
         If a specified area is not found
     """
 
@@ -157,7 +164,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
                  area_extent):
     """Construct AreaDefinition object from arguments
 
-    :Parameters:
+    Parameters
+    -----------
     area_id : str
         ID of area
     proj_id : str
@@ -173,7 +181,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     area_extent : list 
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 
-    :Returns: 
+    Returns
+    -------
     area_def : object
         AreaDefinition object
     """
@@ -186,7 +195,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
 def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
     """Generate linesample arrays for quick grid resampling
 
-    :Parameters:
+    Parameters
+    -----------
     source_area_def : object 
         Source area definition as AreaDefinition object
     target_area_def : object 
@@ -194,7 +204,8 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     nprocs : int, optional 
         Number of processor cores to be used
 
-    :Returns: 
+    Returns
+    -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
     if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
@@ -220,7 +231,8 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
                                                  radius_of_influence, nprocs=1):
     """Generate linesample arrays for nearest neighbour grid resampling
 
-    :Parameters:
+    Parameters
+    -----------
     source_area_def : object 
         Source area definition as AreaDefinition object
     target_area_def : object 
@@ -230,7 +242,8 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     nprocs : int, optional 
         Number of processor cores to be used
 
-    :Returns: 
+    Returns
+    -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
 
@@ -279,11 +292,13 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
 def fwhm2sigma(fwhm):
     """Calculate sigma for gauss function from FWHM (3 dB level)
 
-    :Parameters:
+    Parameters
+    ----------
     fwhm : float 
         FWHM of gauss function (3 dB level of beam footprint)
 
-    :Returns: 
+    Returns
+    -------
     sigma : float
         sigma for use in resampling gauss function
 
@@ -317,11 +332,13 @@ def _downcast_index_array(index_array, size):
 def wrap_longitudes(lons):
     """Wrap longitudes to the [-180:+180[ validity range (preserves dtype)
 
-    :Parameters:
+    Parameters
+    ----------
     lons : numpy array
         Longitudes in degrees
 
-    :Returns: 
+    Returns
+    -------
     lons : numpy array
         Longitudes wrapped into [-180:+180[ validity range
 

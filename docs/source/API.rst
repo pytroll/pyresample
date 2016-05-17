@@ -36,4 +36,9 @@ pyresample.plot
 .. automodule:: plot
 	:members:
 
+pyresample.ewa
+--------------
+.. automodule:: ewa
+    :members:
+
 	
