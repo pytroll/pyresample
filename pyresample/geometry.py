@@ -1,10 +1,11 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2015
+# Copyright (C) 2010-2016
 #
 # Authors:
 #    Esben S. Nielsen
 #    Thomas Lavergne
+#    Adam Dybbroe
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -79,6 +80,7 @@ class BaseDefinition(object):
         else:
             self.lons = lons
 
+        self.ndim = None
         self.cartesian_coords = None
 
     def __eq__(self, other):
@@ -305,6 +307,7 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
+        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
             self.size = lons.size
@@ -314,7 +317,6 @@ class CoordinateDefinition(BaseDefinition):
             raise ValueError(('%s must be created with either '
                               'lon/lats of the same shape with same dtype') %
                              self.__class__.__name__)
-        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
 
     def concatenate(self, other):
         if self.ndim != other.ndim:
@@ -368,12 +370,11 @@ class GridDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        super(GridDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
         elif lons.ndim != 2:
             raise ValueError('2 dimensional lon lat grid expected')
-
-        super(GridDefinition, self).__init__(lons, lats, nprocs)
 
 
 class SwathDefinition(CoordinateDefinition):
@@ -404,11 +405,11 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
-        super(SwathDefinition, self).__init__(lons, lats, nprocs)
 
 
 class AreaDefinition(BaseDefinition):
