@@ -31,7 +31,8 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
     """Makes coarse data reduction of swath data by comparison with 
     cartesian grid
 
-    :Parameters:
+    Parameters
+    ----------
     chart_grid : numpy array          
         Grid of area cartesian coordinates
     lons : numpy array                
@@ -43,7 +44,8 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
     radius_of_influence : float 
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set
     """
@@ -63,7 +65,8 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
     """Calculates relevant data indices using coarse data reduction of swath 
     data by comparison with cartesian grid
 
-    :Parameters:
+    Parameters
+    ----------
     chart_grid : numpy array          
         Grid of area cartesian coordinates
     lons : numpy array                
@@ -75,7 +78,8 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
     radius_of_influence : float 
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     valid_index : numpy array
         Boolean array of same size as lons and lats indicating relevant indices
     """
@@ -109,7 +113,8 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
     """Makes coarse data reduction of swath data by comparison with 
     lon lat grid
 
-    :Parameters:
+    Parameters
+    ----------
     grid_lons : numpy array          
         Grid of area lons
     grid_lats : numpy array           
@@ -123,7 +128,8 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
     radius_of_influence : float 
         Cut off distance in meters
 
-    :Returns:
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set 
     """
@@ -143,7 +149,8 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
     """Makes coarse data reduction of swath data by comparison with 
     lon lat boundary
 
-    :Parameters:
+    Parameters
+    ----------
     boundary_lons : numpy array          
         Grid of area lons
     boundary_lats : numpy array           
@@ -157,7 +164,8 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
     radius_of_influence : float 
         Cut off distance in meters
 
-    :Returns:
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set 
     """
@@ -176,7 +184,8 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
     """Calculates relevant data indices using coarse data reduction of swath 
     data by comparison with lon lat grid
 
-    :Parameters:
+    Parameters
+    ----------
     chart_grid : numpy array          
         Grid of area cartesian coordinates
     lons : numpy array                
@@ -188,7 +197,8 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
     radius_of_influence : float 
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     valid_index : numpy array
         Boolean array of same size as lon and lat indicating relevant indices
     """

@@ -19,11 +19,11 @@ The function **plot.save_quicklook** saves the Basemap image directly to file.
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ease_sh')
+ >>> area_def = pr.utils.load_area('areas.cfg', 'ease_sh')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
  ...                                      radius_of_influence=20000, fill_value=None)
- >>> pr.plot.save_quicklook('/tmp/tb37v_quick.png', area_def, result, label='Tb 37v (K)')
+ >>> pr.plot.save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_quick.png
@@ -33,7 +33,7 @@ The data passed to the functions is a 2D array matching the AreaDefinition.
 The Plate Carree projection
 +++++++++++++++++++++++++++
 The Plate Carree projection (regular lon/lat grid) is named **eqc** in Proj.4 and **cyl** in Basemap. pyresample uses the Proj.4 name.
-Assuming the file **/tmp/areas.cfg** has the following area definition:
+Assuming the file **areas.cfg** has the following area definition:
 
 .. code-block:: bash
 
@@ -53,10 +53,10 @@ Assuming the file **/tmp/areas.cfg** has the following area definition:
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'pc_world')
+ >>> area_def = pr.utils.load_area('areas.cfg', 'pc_world')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> pr.plot.save_quicklook('/tmp/tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+ >>> pr.plot.save_quicklook('tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_pc.png
@@ -65,7 +65,7 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data the res
 The Globe projections
 +++++++++++++++++++++
 From v0.7.12 pyresample can use the geos, ortho and nsper projections with Basemap.
-Assuming the file **/tmp/areas.cfg** has the following area definition for an ortho projection area:
+Assuming the file **areas.cfg** has the following area definition for an ortho projection area:
 
 .. code-block:: bash
 
@@ -85,7 +85,7 @@ Assuming the file **/tmp/areas.cfg** has the following area definition for an or
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ortho')
+ >>> area_def = pr.utils.load_area('areas.cfg', 'ortho')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> pr.plot.save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
@@ -109,14 +109,14 @@ AreaDefintion using the **plot.area_def2basemap(area_def, **kwargs)** function.
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('/tmp/areas.cfg', 'ease_sh')
+ >>> area_def = pr.utils.load_area('areas.cfg', 'ease_sh')
  >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
  >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
  ...                                      radius_of_influence=20000, fill_value=None)
  >>> bmap = pr.plot.area_def2basemap(area_def)
  >>> bmng = bmap.bluemarble()
  >>> col = bmap.imshow(result, origin='upper')
- >>> plt.savefig('/tmp/tb37v_bmng.png', bbox_inches='tight')
+ >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_bmng.png

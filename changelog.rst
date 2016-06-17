@@ -6,6 +6,46 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.1.5 → 1.1.6. [Martin Raspaud]
+
+- Fix #35 supporting scipy kdtree again. [Martin Raspaud]
+
+  A previous commit was looking for a 'data_pts' attribute in the kdtree
+  object, which is available in pykdtree, but not scipy.
+
+- Merge pull request #32 from mitkin/master. [Martin Raspaud]
+
+  [tests] Skip deprecation warnings in test_gauss_multi_uncert
+
+- Merge remote-tracking branch 'gh-pytroll/pre-master' [Mikhail Itkin]
+
+- Put quotes around pip version specifiers to make things work. [Martin
+  Raspaud]
+
+- Install the right matplotlib in travis. [Martin Raspaud]
+
+  The latest matplotlib (1.5) doesn't support python 2.6 and 3.3. This patch
+  chooses the right matplotlib version to install depending on the python
+  version at hand.
+
+- Skip deprecation warnings. [Mikhail Itkin]
+
+  Catch the rest of the warnings. Check if there is only one, and
+  whether it contains the relevant message ('possible more than 8
+  neighbours found'). This patch is necessary for python 2.7.9 and newer
+
+
+- Merge pull request #31 from bhawkins/fix-kdtree-dtype. [Martin
+  Raspaud]
+
+  Fix possible type mismatch with pykdtree.
+
+- Add test to expose pykdtree TypeError exception. [Brian Hawkins]
+
+- Fix possible type mismatch with pykdtree. [Brian Hawkins]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.1.4 → 1.1.5. [Martin Raspaud]
 
 - Don't build on 3.2 anymore (because of coverage's lack of support for

@@ -36,10 +36,12 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
-                'scipy', 'scipy.spatial']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+# If we are on read the docs then just mock external packages
+if os.environ.get("READTHEDOCS") == "True":
+    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
+                    'scipy', 'scipy.spatial', 'pyresample.ewa']
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -54,7 +56,18 @@ sys.path.insert(0, os.path.abspath('../../pyresample'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc']
+extensions = [
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+
+# DocTest Settings
+doctest_test_doctest_blocks = ''
+
+# Napoleon Settings (to support numpy style docs)
+napoleon_numpy_docstring = False
+napoleon_numpy_docstring = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
