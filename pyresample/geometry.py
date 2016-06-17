@@ -104,6 +104,7 @@ class BaseDefinition(object):
 
         return not self.__eq__(other)
 
+
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
 
@@ -425,17 +426,17 @@ class AreaDefinition(BaseDefinition):
         ID of area
     name : str
         Name of area
-    proj_id : str 
+    proj_id : str
         ID of projection
-    proj_dict : dict 
+    proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int 
+    x_size : int
         x dimension in number of pixels
-    y_size : int     
-        y dimension in number of pixels    
-    area_extent : list 
+    y_size : int
+        y dimension in number of pixels
+    area_extent : list
         Area extent as a list (LL_x, LL_y, UR_x, UR_y)
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
         Grid lons
@@ -448,33 +449,33 @@ class AreaDefinition(BaseDefinition):
         ID of area
     name : str
         Name of area
-    proj_id : str         
+    proj_id : str
         ID of projection
-    proj_dict : dict        
+    proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int          
+    x_size : int
         x dimension in number of pixels
-    y_size : int          
+    y_size : int
         y dimension in number of pixels
     shape : tuple
         Corresponding array shape as (rows, cols)
     size : int
         Number of points in grid
-    area_extent : tuple     
+    area_extent : tuple
         Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)
-    area_extent_ll : tuple     
+    area_extent_ll : tuple
         Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)
-    pixel_size_x : float    
+    pixel_size_x : float
         Pixel width in projection units
-    pixel_size_y : float    
+    pixel_size_y : float
         Pixel height in projection units
-    pixel_upper_left : list 
+    pixel_upper_left : list
         Coordinates (x, y) of center of upper left pixel in projection units
-    pixel_offset_x : float 
-        x offset between projection center and upper left corner of upper 
+    pixel_offset_x : float
+        x offset between projection center and upper left corner of upper
         left pixel in units of pixels.
-    pixel_offset_y : float 
-        y offset between projection center and upper left corner of upper 
+    pixel_offset_y : float
+        y offset between projection center and upper left corner of upper
         left pixel in units of pixels..
     proj4_string : str
         Projection defined as Proj.4 string
@@ -584,6 +585,29 @@ class AreaDefinition(BaseDefinition):
 
         return not self.__eq__(other)
 
+
+    def colrow2lonlat(self,cols,rows):
+        """
+        Return longitudes and latitudes for the given image columns
+        and rows. Both scalars and arrays are supported.
+        To be used with scarse data points instead of slices
+        (see get_lonlats).
+        """
+        p = _spatial_mp.Proj(self.proj4_string)
+        x = self.proj_x_coords
+        y = self.proj_y_coords
+        return p(y[y.size-cols], x[x.size-rows], inverse=True)
+
+
+    def lonlat2colrow(self, lons, lats):
+        """
+        Return image columns and rows for the given longitudes
+        and latitudes. Both scalars and arrays are supported.
+        Same as get_xy_from_lonlat, renamed for convenience.
+        """
+        return self.get_xy_from_lonlat(lons, lats)
+
+
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
@@ -658,7 +682,7 @@ class AreaDefinition(BaseDefinition):
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
-        """Get projection coordinates of grid 
+        """Get projection coordinates of grid
 
         Parameters
         ----------
