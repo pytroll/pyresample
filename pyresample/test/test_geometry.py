@@ -551,6 +551,84 @@ class Test(unittest.TestCase):
         self.assertEqual(lons[0, 0], -179.5)
         self.assertEqual(lats[0, 0], 89.5)
 
+
+    def test_lonlat2colrow(self):
+
+        from pyresample import utils
+        area_id = 'meteosat_0deg'
+        area_name = 'Meteosat 0 degree Service'
+        proj_id = 'geos0'
+        x_size = 3712
+        y_size = 3712
+        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
+        proj_dict = {'a': '6378169.00',
+                     'b': '6356583.80',
+                     'h': '35785831.0',
+                     'lon_0': '0.0',
+                     'proj': 'geos'}
+        area = utils.get_area_def(area_id,
+                                  area_name,
+                                  proj_id,
+                                  proj_dict,
+                                  x_size, y_size,
+                                  area_extent)
+
+        # Imatra, Wiesbaden
+        longitudes = np.array([28.75242, 8.24932])
+        latitudes = np.array([61.17185, 50.08258])
+        cols__, rows__ = area.lonlat2colrow(longitudes, latitudes)
+
+        # test arrays
+        cols_expects = np.array([2304, 2040])
+        rows_expects = np.array([186, 341])
+        self.assertTrue((cols__ == cols_expects).all())
+        self.assertTrue((rows__ == rows_expects).all())
+
+        # test scalars
+        lon, lat = (-8.125547604568746, -14.345524111874646)
+        self.assertTrue(area.lonlat2colrow(lon,lat) == (1567, 2375))
+
+
+    def test_colrow2lonlat(self):
+
+        from pyresample import utils
+        area_id = 'meteosat_0deg'
+        area_name = 'Meteosat 0 degree Service'
+        proj_id = 'geos0'
+        x_size = 3712
+        y_size = 3712
+        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
+        proj_dict = {'a': '6378169.00',
+                     'b': '6356583.80',
+                     'h': '35785831.0',
+                     'lon_0': '0.0',
+                     'proj': 'geos'}
+        area = utils.get_area_def(area_id,
+                                  area_name,
+                                  proj_id,
+                                  proj_dict,
+                                  x_size, y_size,
+                                  area_extent)
+
+        # Imatra, Wiesbaden
+        cols = np.array([2304, 2040])
+        rows = np.array([186, 341])
+        lons__, lats__ = area.colrow2lonlat(cols, rows)
+
+        # test arrays
+        lon_expects = np.array([28.77763033, 8.23765962])
+        lat_expects = np.array([61.20120556, 50.05836402])
+        self.assertTrue(np.allclose(lons__, lon_expects, rtol = 0, atol = 1e-7))
+        self.assertTrue(np.allclose(lats__, lat_expects, rtol = 0, atol = 1e-7))
+
+        # test scalars
+        lon__, lat__ = area.colrow2lonlat(1567, 2375)
+        lon_expect = -8.125547604568746
+        lat_expect = -14.345524111874646
+        self.assertTrue(np.allclose(lon__, lon_expect, rtol = 0, atol = 1e-7))
+        self.assertTrue(np.allclose(lat__, lat_expect, rtol = 0, atol = 1e-7))
+
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat"""
         from pyresample import utils
