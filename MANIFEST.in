@@ -3,3 +3,4 @@ recursive-include docs/source *
 include test/test_files/*
 include LICENSE.txt
 include MANIFEST.in
+include pyresample/ewa/*.h
