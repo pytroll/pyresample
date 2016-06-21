@@ -17,7 +17,7 @@
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.build_ext import build_ext as _build_ext
 from distutils.extension import Extension
 import os
@@ -89,7 +89,7 @@ setup(name='pyresample',
       author='Thomas Lavergne',
       author_email='t.lavergne@met.no',
       package_dir={'pyresample': 'pyresample'},
-      packages=['pyresample'],
+      packages=find_packages(),
       setup_requires=['numpy'],
       install_requires=requirements,
       extras_require=extras_require,
