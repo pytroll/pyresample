@@ -38,7 +38,8 @@ if sys.version_info < (2, 6):
 
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"], extra_compile_args=["-O3", "-Wno-unused-function"]),
-    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=["-O3", "-Wno-unused-function"])
+    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=["-O3", "-Wno-unused-function"],
+              depends=["pyresample/ewa/_fornav_templates.h"])
 ]
 
 try:
