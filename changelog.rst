@@ -6,6 +6,15 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.2 → 1.2.3. [Martin Raspaud]
+
+- Fix list of package names in setup.py. [davidh-ssec]
+
+  'pyresample.ewa' wasn't listed before and was not importable from an installed package.
+
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.2.1 → 1.2.2. [Martin Raspaud]
 
 - Add the header files to the MANIFEST.in. [Martin Raspaud]
