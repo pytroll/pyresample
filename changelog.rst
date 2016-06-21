@@ -6,6 +6,18 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.0 → 1.2.1. [Martin Raspaud]
+
+- Include EWA header files as dependency for extensions. [davidh-ssec]
+
+  The .c and .cpp files are automatically included because they are listed as sources, but the header files are not. When building a source tarball (uploading to PyPI) the _fornav_templates.h file was not included and building would fail.
+
+
+- Merge branch 'pre-master' of github.com:mraspaud/pyresample into pre-
+  master. [Adam.Dybbroe]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.1.6 → 1.2.0. [Martin Raspaud]
 
 - Merge branch 'northaholic-feature-lonlat2colrow' into pre-master.
@@ -13,6 +25,13 @@ Changelog
 
 - Add two convenience methods lonlat2colrow and colrow2lonlat to
   AreaDefinition-class. [Sauli Joro]
+
+- Merge branch 'pre-master' of github.com:mraspaud/pyresample into pre-
+  master. [Adam.Dybbroe]
+
+  Conflicts:
+  	docs/source/conf.py
+
 
 - Fix bug in EWA grid origin calculation. [davidh-ssec]
 
@@ -191,6 +210,12 @@ Changelog
   PyCharm and possibly other IDEs don't really play well with unittest TestSuites, but work as expected when `load_tests` is used.
 
 
+- Update changelog. [Martin Raspaud]
+
+- Bump version: 1.1.5 → 1.1.6. [Martin Raspaud]
+
+- Run the base class init function first. [Adam.Dybbroe]
+
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
@@ -200,10 +225,6 @@ Changelog
   The kdtree object's attribute `data_pts` has been renamed to `data`.
 
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
-
-- Update changelog. [Martin Raspaud]
-
-- Bump version: 1.1.5 → 1.1.6. [Martin Raspaud]
 
 - Fix #35 supporting scipy kdtree again. [Martin Raspaud]
 
