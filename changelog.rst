@@ -6,6 +6,14 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.1 → 1.2.2. [Martin Raspaud]
+
+- Add the header files to the MANIFEST.in. [Martin Raspaud]
+
+  Without this, the compilation of the ewa extension crashes.
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.2.0 → 1.2.1. [Martin Raspaud]
 
 - Include EWA header files as dependency for extensions. [davidh-ssec]
