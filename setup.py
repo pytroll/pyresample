@@ -20,9 +20,8 @@ import imp
 import multiprocessing
 import os
 import sys
-from distutils.extension import Extension
 
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
