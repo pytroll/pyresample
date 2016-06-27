@@ -6,6 +6,14 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.3 → 1.2.4. [Martin Raspaud]
+
+- Fix setup.py extension import and use error. [davidh-ssec]
+
+- Fix case when __builtins__ is a dict. [Martin Raspaud]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.2.2 → 1.2.3. [Martin Raspaud]
 
 - Fix list of package names in setup.py. [davidh-ssec]
