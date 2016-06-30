@@ -61,6 +61,7 @@ install:
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
   - "conda update --yes conda"
+  - "conda config --add channels https://conda.anaconda.org/ioos"
   - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap sphinx pyproj"
   - "activate test"
   - "pip install coveralls"
