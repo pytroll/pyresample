@@ -28,7 +28,6 @@ import numpy
 cimport cython
 from cpython cimport bool
 cimport numpy
-# from libc.math cimport isnan
 
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
