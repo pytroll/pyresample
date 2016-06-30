@@ -399,7 +399,7 @@ unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t gr
        i++, grid_accum++, grid_weights++, output_image++) {
     // Calculate the elliptical weighted average value for each cell (float -> not-float needs rounding)
     // The fill value for the weight and accumulation arrays is static at NaN
-    if (*grid_weights < weight_sum_min or npy_isnan(*grid_accum)) {
+    if (*grid_weights < weight_sum_min || npy_isnan(*grid_accum)) {
       chanf = (accum_type)NPY_NANF;
     } else if (maximum_weight_mode) {
       // keep the current value
