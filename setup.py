@@ -35,10 +35,15 @@ if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
     requirements.append('multiprocessing')
 
+if sys.platform.startswith("win"):
+    extra_compile_args = []
+else:
+    extra_compile_args = ["-O3", "-Wno-unused-function"]
+
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
-              extra_compile_args=["-O3", "-Wno-unused-function"]),
-    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=["-O3", "-Wno-unused-function"],
+              extra_compile_args=extra_compile_args),
+    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=extra_compile_args,
               depends=["pyresample/ewa/_fornav_templates.h"])
 ]
 
