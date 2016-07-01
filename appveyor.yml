@@ -62,7 +62,7 @@ install:
   # target Python version and architecture
   - "conda update --yes conda"
   - "conda config --add channels https://conda.anaconda.org/ioos"
-  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap sphinx pyproj"
+  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap sphinx pyproj scipy"
   - "activate test"
   - "pip install coveralls"
   - "where python"
