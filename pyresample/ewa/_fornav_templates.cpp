@@ -1,6 +1,6 @@
 #include "Python.h"
 #include <stddef.h>
-#include "math.h"
+#include <cmath>
 #include "numpy/arrayobject.h"
 #include "_fornav_templates.h"
 
