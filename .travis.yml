@@ -4,6 +4,7 @@ python:
 - '2.7'
 - '3.3'
 - '3.4'
+- '3.5'
 before_install:
 - sudo add-apt-repository ppa:ubuntugis/ppa -y
 - sudo apt-get update -qq
@@ -11,14 +12,19 @@ before_install:
 - sudo apt-get install libgeos-3.3.8 libgeos-c1 libgeos-dev
 install:
 - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install "matplotlib<1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install unittest2; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install importlib; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "matplotlib>=1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.3" ]]; then pip install "matplotlib<1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "matplotlib>=1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "matplotlib>=1.5.0"; fi
 - pip install -r requirements.txt
-- pip install -e ".[pykdtree]"
+- pip install -e ".[pykdtree,quicklook]"
 - pip install coveralls
-script: coverage run --source=pyresample setup.py test
+- pip install sphinx
+script:
+# Once doctests pass this should be uncommented to replace the other coverage run line
+- coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest
 after_success: coveralls
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt

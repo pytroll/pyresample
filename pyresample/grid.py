@@ -22,8 +22,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from . import geometry
-from . import _spatial_mp
+from pyresample import geometry, _spatial_mp
 
 try:
     range = xrange
@@ -35,19 +34,21 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
                               fill_value=0):
     """Samples from image based on index arrays.
 
-    :Parameters:
-    row_indices : numpy array 
+    Parameters
+    ----------
+    row_indices : numpy array
         Row indices. Dimensions must match col_indices
     col_indices : numpy array 
         Col indices. Dimensions must match row_indices
     source_image : numpy array 
         Source image
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
             Set undetermined pixels to this value.
             If fill_value is None a masked array is returned 
             with undetermined pixels masked
 
-    :Returns: 
+    Returns
+    -------
     image_data : numpy array
         Resampled image 
     """
@@ -96,8 +97,9 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
 def get_linesample(lons, lats, source_area_def, nprocs=1):
     """Returns index row and col arrays for resampling
 
-    :Parameters:
-    lons : numpy array 
+    Parameters
+    ----------
+    lons : numpy array
         Lons. Dimensions must match lats
     lats : numpy array   
         Lats. Dimensions must match lons
@@ -106,7 +108,8 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
     nprocs : int, optional 
         Number of processor cores to be used
 
-    :Returns:
+    Returns
+    -------
     (row_indices, col_indices) : tuple of numpy arrays
         Arrays for resampling area by array indexing
     """
@@ -135,8 +138,9 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
     """Samples from image based on lon lat arrays 
     using nearest neighbour method in cartesian projection coordinate systems.
 
-    :Parameters:
-    lons : numpy array 
+    Parameters
+    ----------
+    lons : numpy array
         Lons. Dimensions must match lats
     lats : numpy array   
         Lats. Dimensions must match lons
@@ -144,15 +148,16 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
         Source definition as AreaDefinition object
     source_image_data : numpy array 
         Source image data
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
             Set undetermined pixels to this value.
             If fill_value is None a masked array is returned 
             with undetermined pixels masked    
     nprocs : int, optional 
         Number of processor cores to be used
 
-    :Returns:
-    image_data : numpy array 
+    Returns
+    -------
+    image_data : numpy array
         Resampled image data
     """
 
@@ -170,8 +175,9 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
     """Resamples image using nearest neighbour method in cartesian 
     projection coordinate systems.
 
-    :Parameters:
-    target_area_def : object 
+    Parameters
+    ----------
+    target_area_def : object
         Target definition as AreaDefinition object
     source_area_def : object 
         Source definition as AreaDefinition object
@@ -187,7 +193,8 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
         Number of segments to use when resampling.
         If set to None an estimate will be calculated. 
 
-    :Returns:
+    Returns
+    -------
     image_data : numpy array 
         Resampled image data    
     """

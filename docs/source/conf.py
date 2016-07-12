@@ -11,9 +11,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
+
 
 class Mock(object):
+
     def __init__(self, *args, **kwargs):
         pass
 
@@ -33,10 +36,12 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj', 
-                'scipy', 'scipy.spatial']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+# If we are on read the docs then just mock external packages
+if os.environ.get("READTHEDOCS") == "True":
+    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
+                    'scipy', 'scipy.spatial', 'pyresample.ewa']
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -44,14 +49,25 @@ for mod_name in MOCK_MODULES:
 #sys.path.insert(0, '/opt/lib/python2.5/site-packages')
 sys.path.insert(0, os.path.abspath('../../'))
 sys.path.insert(0, os.path.abspath('../../pyresample'))
-#sys.path.append('')
-#print sys.path
+# sys.path.append('')
+# print sys.path
 
-# -- General configuration -----------------------------------------------------
+# -- General configuration -----------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc']
+extensions = [
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+
+# DocTest Settings
+doctest_test_doctest_blocks = ''
+
+# Napoleon Settings (to support numpy style docs)
+napoleon_numpy_docstring = False
+napoleon_numpy_docstring = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -118,7 +134,7 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 
-# -- Options for HTML output ---------------------------------------------------
+# -- Options for HTML output ---------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
@@ -192,7 +208,7 @@ html_static_path = ['_static']
 htmlhelp_basename = 'pyresampledoc'
 
 
-# -- Options for LaTeX output --------------------------------------------------
+# -- Options for LaTeX output --------------------------------------------
 
 # The paper size ('letter' or 'a4').
 #latex_paper_size = 'letter'
@@ -203,8 +219,8 @@ htmlhelp_basename = 'pyresampledoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'pyresample.tex', u'pyresample Documentation',
-   u'Esben S. Nielsen', 'manual'),
+    ('index', 'pyresample.tex', u'pyresample Documentation',
+     u'Esben S. Nielsen', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

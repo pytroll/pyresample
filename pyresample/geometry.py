@@ -1,10 +1,11 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2015
+# Copyright (C) 2010-2016
 #
 # Authors:
 #    Esben S. Nielsen
 #    Thomas Lavergne
+#    Adam Dybbroe
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -21,14 +22,9 @@
 
 """Classes for geometry operations"""
 
-from __future__ import absolute_import
-
 import warnings
-
 import numpy as np
-
-from . import utils
-from . import _spatial_mp
+from pyresample import utils, _spatial_mp
 
 
 class DimensionError(Exception):
@@ -79,6 +75,7 @@ class BaseDefinition(object):
         else:
             self.lons = lons
 
+        self.ndim = None
         self.cartesian_coords = None
 
     def __eq__(self, other):
@@ -109,7 +106,6 @@ class BaseDefinition(object):
 
         return not self.__eq__(other)
 
-    # function by Ulrich Hamann 
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
         """Retrieves area_extent for a subdomain 
         rows    are counted from upper left to lower left
@@ -128,6 +124,9 @@ class BaseDefinition(object):
         :Returns:
         area_extent : list 
             Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+
+        :Author:
+        Ulrich Hamann
         """
         
         (a,b) = self.get_proj_coords( data_slice=(row_LR,col_LR) )
@@ -142,11 +141,13 @@ class BaseDefinition(object):
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
 
-        :Parameters:
+        Parameters
+        ----------
         row : int
         col : int
 
-        :Returns:
+        Returns
+        -------
         (lon, lat) : tuple of floats
         """
 
@@ -179,7 +180,8 @@ class BaseDefinition(object):
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition
 
-        :Parameters:
+        Parameters
+        ----------
         nprocs : int, optional
             Number of processor cores to be used.
             Defaults to the nprocs set when instantiating object
@@ -188,7 +190,8 @@ class BaseDefinition(object):
         cache : bool, optional
             Store result the result. Requires data_slice to be None
 
-        :Returns:
+        Returns
+        -------
         cartesian_coords : numpy array
         """
 
@@ -254,11 +257,13 @@ class BaseDefinition(object):
         solely on the corners of areas, assuming the boundaries to be great
         circles.
 
-        :Parameters:
+        Parameters
+        ----------
         other : object
             Instance of subclass of BaseDefinition
 
-        :Returns:
+        Returns
+        -------
         overlaps : bool
         """
 
@@ -303,11 +308,13 @@ class BaseDefinition(object):
         """Returns the corners of the intersection polygon of the current area
         with *other*.
 
-        :Parameters:
+        Parameters
+        ----------
         other : object
             Instance of subclass of BaseDefinition
 
-        :Returns:
+        Returns
+        -------
         (corner1, corner2, corner3, corner4) : tuple of points
         """
         from pyresample.spherical_geometry import intersection_polygon
@@ -316,11 +323,13 @@ class BaseDefinition(object):
     def overlap_rate(self, other):
         """Get how much the current area overlaps an *other* area.
 
-        :Parameters:
+        Parameters
+        ----------
         other : object
             Instance of subclass of BaseDefinition
 
-        :Returns:
+        Returns
+        -------
         overlap_rate : float
         """
 
@@ -331,10 +340,10 @@ class BaseDefinition(object):
 
 
 class CoordinateDefinition(BaseDefinition):
-
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
+        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
             self.size = lons.size
@@ -344,7 +353,6 @@ class CoordinateDefinition(BaseDefinition):
             raise ValueError(('%s must be created with either '
                               'lon/lats of the same shape with same dtype') %
                              self.__class__.__name__)
-        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
 
     def concatenate(self, other):
         if self.ndim != other.ndim:
@@ -376,19 +384,19 @@ class GridDefinition(CoordinateDefinition):
 
     """Grid defined by lons and lats
 
-    :Parameters:
+    Parameters
+    ----------
     lons : numpy array
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
 
-    :Attributes:
+    Attributes
+    ----------
     shape : tuple
         Grid shape as (rows, cols)
     size : int
         Number of elements in grid
-
-    Properties:
     lons : object
         Grid lons
     lats : object
@@ -398,33 +406,32 @@ class GridDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        super(GridDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
         elif lons.ndim != 2:
             raise ValueError('2 dimensional lon lat grid expected')
-
-        super(GridDefinition, self).__init__(lons, lats, nprocs)
 
 
 class SwathDefinition(CoordinateDefinition):
 
     """Swath defined by lons and lats
 
-    :Parameters:
+    Parameters
+    ----------
     lons : numpy array
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
 
-    :Attributes:
+    Attributes
+    ----------
     shape : tuple
         Swath shape
     size : int
         Number of elements in swath
     ndims : int
         Swath dimensions
-
-    Properties:
     lons : object
         Swath lons
     lats : object
@@ -434,74 +441,74 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
-        super(SwathDefinition, self).__init__(lons, lats, nprocs)
 
 
 class AreaDefinition(BaseDefinition):
 
     """Holds definition of an area.
 
-    :Parameters:
-    area_id : str 
+    Parameters
+    ----------
+    area_id : str
         ID of area
     name : str
         Name of area
-    proj_id : str 
+    proj_id : str
         ID of projection
-    proj_dict : dict 
+    proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int 
+    x_size : int
         x dimension in number of pixels
-    y_size : int     
-        y dimension in number of pixels    
-    area_extent : list 
+    y_size : int
+        y dimension in number of pixels
+    area_extent : list
         Area extent as a list (LL_x, LL_y, UR_x, UR_y)
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
         Grid lons
     lats : numpy array, optional
         Grid lats
 
-    :Attributes:
-    area_id : str         
+    Attributes
+    ----------
+    area_id : str
         ID of area
     name : str
         Name of area
-    proj_id : str         
+    proj_id : str
         ID of projection
-    proj_dict : dict        
+    proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int          
+    x_size : int
         x dimension in number of pixels
-    y_size : int          
+    y_size : int
         y dimension in number of pixels
     shape : tuple
         Corresponding array shape as (rows, cols)
     size : int
         Number of points in grid
-    area_extent : tuple     
+    area_extent : tuple
         Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)
-    area_extent_ll : tuple     
+    area_extent_ll : tuple
         Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)
-    pixel_size_x : float    
+    pixel_size_x : float
         Pixel width in projection units
-    pixel_size_y : float    
+    pixel_size_y : float
         Pixel height in projection units
-    pixel_upper_left : list 
+    pixel_upper_left : list
         Coordinates (x, y) of center of upper left pixel in projection units
-    pixel_offset_x : float 
-        x offset between projection center and upper left corner of upper 
+    pixel_offset_x : float
+        x offset between projection center and upper left corner of upper
         left pixel in units of pixels.
-    pixel_offset_y : float 
-        y offset between projection center and upper left corner of upper 
+    pixel_offset_y : float
+        y offset between projection center and upper left corner of upper
         left pixel in units of pixels..
-
-    Properties:
     proj4_string : str
         Projection defined as Proj.4 string
     lons : object
@@ -578,6 +585,21 @@ class AreaDefinition(BaseDefinition):
                                       proj_str, self.x_size, self.y_size,
                                       self.area_extent)
 
+    def create_areas_def(self):
+        proj_dict = self.proj_dict
+        proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
+
+        fmt = "REGION: {name} {{\n"
+        fmt += "\tNAME:\t{name}\n"
+        fmt += "\tPCS_ID:\t{area_id}\n"
+        fmt += "\tPCS_DEF:\t{proj_str}\n"
+        fmt += "\tXSIZE:\t{x_size}\n"
+        fmt += "\tYSIZE:\t{y_size}\n"
+        fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
+        area_def_str = fmt.format(name=self.name, area_id=self.area_id, proj_str=proj_str,
+                                x_size=self.x_size, y_size=self.y_size, area_extent=self.area_extent)
+        return area_def_str
+
     __repr__ = __str__
 
     def __eq__(self, other):
@@ -595,6 +617,29 @@ class AreaDefinition(BaseDefinition):
 
         return not self.__eq__(other)
 
+
+    def colrow2lonlat(self,cols,rows):
+        """
+        Return longitudes and latitudes for the given image columns
+        and rows. Both scalars and arrays are supported.
+        To be used with scarse data points instead of slices
+        (see get_lonlats).
+        """
+        p = _spatial_mp.Proj(self.proj4_string)
+        x = self.proj_x_coords
+        y = self.proj_y_coords
+        return p(y[y.size-cols], x[x.size-rows], inverse=True)
+
+
+    def lonlat2colrow(self, lons, lats):
+        """
+        Return image columns and rows for the given longitudes
+        and latitudes. Both scalars and arrays are supported.
+        Same as get_xy_from_lonlat, renamed for convenience.
+        """
+        return self.get_xy_from_lonlat(lons, lats)
+
+
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
@@ -603,10 +648,12 @@ class AreaDefinition(BaseDefinition):
         masked arrays are returned.
 
         :Input:
+
         lon : point or sequence (list or array) of longitudes
         lat : point or sequence (list or array) of latitudes
 
         :Returns:
+
         (x, y) : tuple of integer points/arrays
         """
 
@@ -710,26 +757,30 @@ class AreaDefinition(BaseDefinition):
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
 
-        :Parameters:
+        Parameters
+        ----------
         row : int
         col : int
 
-        :Returns:
+        Returns
+        -------
         (lon, lat) : tuple of floats
         """
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
-        """Get projection coordinates of grid 
+        """Get projection coordinates of grid
 
-        :Parameters:
+        Parameters
+        ----------
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
         cache : bool, optional
             Store result the result. Requires data_slice to be None
 
-        :Returns: 
+        Returns
+        -------
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
         """
@@ -864,8 +915,9 @@ class AreaDefinition(BaseDefinition):
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
 
-        :Parameters:        
-        nprocs : int, optional 
+        Parameters
+        ----------
+        nprocs : int, optional
             Number of processor cores to be used.
             Defaults to the nprocs set when instantiating object
         data_slice : slice object, optional
@@ -873,7 +925,8 @@ class AreaDefinition(BaseDefinition):
         cache : bool, optional
             Store result the result. Requires data_slice to be None
 
-        :Returns: 
+        Returns
+        -------
         (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
         """
