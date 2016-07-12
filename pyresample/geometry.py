@@ -109,6 +109,36 @@ class BaseDefinition(object):
 
         return not self.__eq__(other)
 
+    # function by Ulrich Hamann 
+    def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
+        """Retrieves area_extent for a subdomain 
+        rows    are counted from upper left to lower left
+        columns are counted from upper left to upper right 
+
+        :Parameters:
+        row_LR : int
+            row of the lower right pixel 
+        col_LR : int
+            col of the lower right pixel
+        row_UL : int
+            row of the upper left pixel 
+        col_UL : int
+            col of the upper left pixel
+
+        :Returns:
+        area_extent : list 
+            Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+        """
+        
+        (a,b) = self.get_proj_coords( data_slice=(row_LR,col_LR) )
+        a = a - 0.5*self.pixel_size_x
+        b = b - 0.5*self.pixel_size_y
+        (c,d) = self.get_proj_coords( data_slice=(row_UL,col_UL) )
+        c = c + 0.5*self.pixel_size_x
+        d = d + 0.5*self.pixel_size_y
+
+        return (a,b,c,d)
+
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
 
