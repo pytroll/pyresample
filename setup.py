@@ -97,26 +97,27 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
-setup(name='pyresample',
-      version=version.__version__,
-      description='Resampling of remote sensing data in Python',
-      author='Thomas Lavergne',
-      author_email='t.lavergne@met.no',
-      package_dir={'pyresample': 'pyresample'},
-      packages=find_packages(),
-      setup_requires=['numpy'],
-      install_requires=requirements,
-      extras_require=extras_require,
-      cmdclass={'build_ext': build_ext},
-      ext_modules=cythonize(extensions),
-      test_suite='pyresample.test.suite',
-      zip_safe=False,
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
-          'Programming Language :: Python',
-          'Operating System :: OS Independent',
-          'Intended Audience :: Science/Research',
-          'Topic :: Scientific/Engineering'
-      ]
-      )
+if __name__ == "__main__":
+    setup(name='pyresample',
+          version=version.__version__,
+          description='Resampling of remote sensing data in Python',
+          author='Thomas Lavergne',
+          author_email='t.lavergne@met.no',
+          package_dir={'pyresample': 'pyresample'},
+          packages=find_packages(),
+          setup_requires=['numpy'],
+          install_requires=requirements,
+          extras_require=extras_require,
+          cmdclass={'build_ext': build_ext},
+          ext_modules=cythonize(extensions),
+          test_suite='pyresample.test.suite',
+          zip_safe=False,
+          classifiers=[
+              'Development Status :: 5 - Production/Stable',
+              'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+              'Programming Language :: Python',
+              'Operating System :: OS Independent',
+              'Intended Audience :: Science/Research',
+              'Topic :: Scientific/Engineering'
+          ]
+          )
