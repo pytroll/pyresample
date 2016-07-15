@@ -65,7 +65,8 @@ install:
   - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap sphinx pyproj scipy"
   - "activate test"
   - "pip install coveralls"
-  - "pip install pykdtree"
+  # Try to install pykdtree, but continue on if we can't
+  - "pip install pykdtree || (call )"
   - "where python"
 
 build: false  # Not a C# project, build stuff at the test step instead.
