@@ -52,26 +52,6 @@ try:
 except ImportError:
     cythonize = None
 
-if not os.getenv("USE_CYTHON", False) or cythonize is None:
-    print("Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
-
-    def cythonize(extensions, **_ignore):
-        """Fake function to compile from C/C++ files instead of compiling .pyx files with cython.
-        """
-        for extension in extensions:
-            sources = []
-            for sfile in extension.sources:
-                path, ext = os.path.splitext(sfile)
-                if ext in ('.pyx', '.py'):
-                    if extension.language == 'c++':
-                        ext = '.cpp'
-                    else:
-                        ext = '.c'
-                    sfile = path + ext
-                sources.append(sfile)
-            extension.sources[:] = sources
-        return extensions
-
 
 def set_builtin(name, value):
     if isinstance(__builtins__, dict):
@@ -98,26 +78,47 @@ class build_ext(_build_ext):
 
 
 if __name__ == "__main__":
+    if not os.getenv("USE_CYTHON", False) or cythonize is None:
+        print("Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
+
+        def cythonize(extensions, **_ignore):
+            """Fake function to compile from C/C++ files instead of compiling .pyx files with cython.
+            """
+            for extension in extensions:
+                sources = []
+                for sfile in extension.sources:
+                    path, ext = os.path.splitext(sfile)
+                    if ext in ('.pyx', '.py'):
+                        if extension.language == 'c++':
+                            ext = '.cpp'
+                        else:
+                            ext = '.c'
+                        sfile = path + ext
+                    sources.append(sfile)
+                extension.sources[:] = sources
+            return extensions
+
+
     setup(name='pyresample',
-          version=version.__version__,
-          description='Resampling of remote sensing data in Python',
-          author='Thomas Lavergne',
-          author_email='t.lavergne@met.no',
-          package_dir={'pyresample': 'pyresample'},
-          packages=find_packages(),
-          setup_requires=['numpy'],
-          install_requires=requirements,
-          extras_require=extras_require,
-          cmdclass={'build_ext': build_ext},
-          ext_modules=cythonize(extensions),
-          test_suite='pyresample.test.suite',
-          zip_safe=False,
-          classifiers=[
-              'Development Status :: 5 - Production/Stable',
-              'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
-              'Programming Language :: Python',
-              'Operating System :: OS Independent',
-              'Intended Audience :: Science/Research',
-              'Topic :: Scientific/Engineering'
-          ]
-          )
+      version=version.__version__,
+      description='Resampling of remote sensing data in Python',
+      author='Thomas Lavergne',
+      author_email='t.lavergne@met.no',
+      package_dir={'pyresample': 'pyresample'},
+      packages=find_packages(),
+      setup_requires=['numpy'],
+      install_requires=requirements,
+      extras_require=extras_require,
+      cmdclass={'build_ext': build_ext},
+      ext_modules=cythonize(extensions),
+      test_suite='pyresample.test.suite',
+      zip_safe=False,
+      classifiers=[
+          'Development Status :: 5 - Production/Stable',
+          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+          'Programming Language :: Python',
+          'Operating System :: OS Independent',
+          'Intended Audience :: Science/Research',
+          'Topic :: Scientific/Engineering'
+      ]
+      )
