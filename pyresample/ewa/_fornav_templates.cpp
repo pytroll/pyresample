@@ -7,7 +7,9 @@
 
 // Overload isnan for integer values
 // Otherwise some newer Windows compilers will raise an error
-int inline isnan(npy_int8 x) { return 0;}
+#ifndef isnan
+    int inline isnan(npy_int8 x) { return 0;}
+#endif
 
 int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max,
         weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight *ewaw) {
