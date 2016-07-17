@@ -180,16 +180,16 @@ class Test(unittest.TestCase):
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
 
         lons1 += 180.
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        # if (sys.version_info < (2, 6) or
+        #         (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        #     swath_def = geometry.BaseDefinition(lons1, lats1)
+        # else:
+        with warnings.catch_warnings(record=True) as w1:
             swath_def = geometry.BaseDefinition(lons1, lats1)
-        else:
-            with warnings.catch_warnings(record=True) as w1:
-                swath_def = geometry.BaseDefinition(lons1, lats1)
-                self.assertFalse(
-                    len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
-                self.assertFalse(('-180:+180' not in str(w1[0].message)),
-                                 'Failed to trigger correct warning about longitude wrapping')
+            self.assertFalse(
+                len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
+            self.assertFalse(('-180:+180' not in str(w1[0].message)),
+                             'Failed to trigger correct warning about longitude wrapping')
 
         lons2, lats2 = swath_def.get_lonlats()
 
