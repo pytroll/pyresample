@@ -5,11 +5,12 @@ import unittest
 
 import numpy as np
 
-import warnings
-if sys.version_info < (2, 6):
-    warnings.simplefilter("ignore")
-else:
-    warnings.simplefilter("always")
+# import warnings
+# if sys.version_info < (2, 6):
+#     warnings.simplefilter("ignore")
+# else:
+#     warnings.simplefilter("always")
+from pyresample.test.utils import catch_warnings
 
 from pyresample import geometry, geo_filter
 
@@ -102,13 +103,13 @@ class Test(unittest.TestCase):
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
 
-        with warnings.catch_warnings(record=True) as w1:
+        with catch_warnings() as w1:
             base_def1 = geometry.BaseDefinition(lons1, lats)
             self.assertFalse(
                 len(w1) != 0, 'Got warning <%s>, but was not expecting one' % w1)
 
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
-        with warnings.catch_warnings(record=True) as w2:
+        with catch_warnings() as w2:
             base_def2 = geometry.BaseDefinition(lons2, lats)
             self.assertFalse(
                 len(w2) != 1, 'Failed to trigger a warning on longitude wrapping')
@@ -118,7 +119,7 @@ class Test(unittest.TestCase):
         self.assertFalse(
             base_def1 != base_def2, 'longitude wrapping to [-180:+180] did not work')
 
-        with warnings.catch_warnings(record=True) as w3:
+        with catch_warnings() as w3:
             base_def3 = geometry.BaseDefinition(None, None)
             self.assertFalse(
                 len(w3) != 0, 'Got warning <%s>, but was not expecting one' % w3)
@@ -145,7 +146,7 @@ class Test(unittest.TestCase):
 
         # Test dtype is preserved with automatic longitude wrapping
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
-        with warnings.catch_warnings(record=True) as w:
+        with catch_warnings() as w:
             basedef = geometry.BaseDefinition(lons2, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -154,7 +155,7 @@ class Test(unittest.TestCase):
                          (lons2.dtype, lons.dtype,))
 
         lons2_ints = lons2.astype('int')
-        with warnings.catch_warnings(record=True) as w:
+        with catch_warnings() as w:
             basedef = geometry.BaseDefinition(lons2_ints, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -184,7 +185,7 @@ class Test(unittest.TestCase):
         #         (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
         #     swath_def = geometry.BaseDefinition(lons1, lats1)
         # else:
-        with warnings.catch_warnings(record=True) as w1:
+        with catch_warnings() as w1:
             swath_def = geometry.BaseDefinition(lons1, lats1)
             self.assertFalse(
                 len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
