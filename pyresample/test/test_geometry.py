@@ -1,23 +1,14 @@
 from __future__ import with_statement
 
 import sys
-import unittest
-
 import numpy as np
-
-# import warnings
-# if sys.version_info < (2, 6):
-#     warnings.simplefilter("ignore")
-# else:
-#     warnings.simplefilter("always")
 from pyresample.test.utils import catch_warnings
-
 from pyresample import geometry, geo_filter
 
-
-def tmp(f):
-    f.tmp = True
-    return f
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class Test(unittest.TestCase):
@@ -69,7 +60,6 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(lat, 52.566998432390619,
                                msg='lat retrieval from precomputated grid failed')
 
-    @tmp
     def test_cartesian(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                            {'a': '6378144.0',
@@ -181,10 +171,6 @@ class Test(unittest.TestCase):
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
 
         lons1 += 180.
-        # if (sys.version_info < (2, 6) or
-        #         (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
-        #     swath_def = geometry.BaseDefinition(lons1, lats1)
-        # else:
         with catch_warnings() as w1:
             swath_def = geometry.BaseDefinition(lons1, lats1)
             self.assertFalse(
@@ -542,7 +528,6 @@ class Test(unittest.TestCase):
                                122.06448093539757, 5,
                                'Failed to get lon and lats of area extent')
 
-    @tmp
     def test_latlong_area(self):
         area_def = geometry.AreaDefinition('', '', '',
                                            {'proj': 'latlong'},
@@ -552,9 +537,7 @@ class Test(unittest.TestCase):
         self.assertEqual(lons[0, 0], -179.5)
         self.assertEqual(lats[0, 0], 89.5)
 
-
     def test_lonlat2colrow(self):
-
         from pyresample import utils
         area_id = 'meteosat_0deg'
         area_name = 'Meteosat 0 degree Service'

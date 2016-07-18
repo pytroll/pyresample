@@ -1,26 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2014, 2015 Martin Raspaud
-
+# Copyright (c) 2016 David Hoese
 # Author(s):
-
-#   Martin Raspaud <martin.raspaud@smhi.se>
-
+#   David Hoese <david.hoese@ssec.wisc.edu>
+#
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or (at your option) any
 # later version.
-
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
-
+#
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Utilities for testing.
 
-"""The test base.
+This mostly takes from astropy's method for checking warnings during tests.
 """
 import sys
 import six
@@ -29,6 +27,9 @@ import warnings
 
 
 _deprecations_as_exceptions = False
+_include_astropy_deprecations = False
+AstropyDeprecationWarning = None
+AstropyPendingDeprecationWarning = None
 
 
 def treat_deprecations_as_exceptions():
@@ -76,6 +77,11 @@ def treat_deprecations_as_exceptions():
     warnings.resetwarnings()
     # Now, turn DeprecationWarnings into exceptions
     warnings.filterwarnings("error", ".*", DeprecationWarning)
+
+    # Only turn astropy deprecation warnings into exceptions if requested
+    if _include_astropy_deprecations:
+        warnings.filterwarnings("error", ".*", AstropyDeprecationWarning)
+        warnings.filterwarnings("error", ".*", AstropyPendingDeprecationWarning)
 
     if sys.version_info[:2] >= (3, 4):
         # py.test reads files with the 'U' flag, which is now
