@@ -5,11 +5,15 @@
 #include "numpy/npy_math.h"
 #include "_fornav_templates.h"
 
-// Overload isnan for integer values
-// Otherwise some newer Windows compilers will raise an error
-#ifndef isnan
-    int inline isnan(npy_int8 x) { return 0;}
-#endif
+template<typename IMAGE_TYPE> int __isnan(IMAGE_TYPE x) {
+    // Return numpy's isnan for normal float arguments (see __isnan below for ints)
+    return npy_isnan(x);
+}
+
+int __isnan(npy_int8 x) {
+    // Sometimes input data may be integers, need to be able to handle those similarly
+    return 0;
+}
 
 int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max,
         weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight *ewaw) {
@@ -230,7 +234,7 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || npy_isnan(u0) || npy_isnan(v0)) {
+      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || npy_isnan(v0)) {
         continue;
       }
 
@@ -279,14 +283,14 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
                 if (maximum_weight_mode) {
                   if (weight > grid_weights[chan][grid_offset]) {
                     ((grid_weights[chan])[grid_offset]) = weight;
-                    if ((this_val == img_fill) || (npy_isnan(this_val))) {
+                    if ((this_val == img_fill) || (__isnan(this_val))) {
                       ((grid_accums[chan])[grid_offset]) = (accum_type)NPY_NANF;
                     } else {
                       ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
                     }
                   }
                 } else {
-                  if ((this_val != img_fill) && !(npy_isnan(this_val))) {
+                  if ((this_val != img_fill) && !(__isnan(this_val))) {
                     ((grid_weights[chan])[grid_offset]) += weight;
                     ((grid_accums[chan])[grid_offset]) += (accum_type)this_val * weight;
                   }
@@ -405,7 +409,7 @@ unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t gr
        i++, grid_accum++, grid_weights++, output_image++) {
     // Calculate the elliptical weighted average value for each cell (float -> not-float needs rounding)
     // The fill value for the weight and accumulation arrays is static at NaN
-    if (*grid_weights < weight_sum_min || npy_isnan(*grid_accum)) {
+    if (*grid_weights < weight_sum_min || __isnan(*grid_accum)) {
       chanf = (accum_type)NPY_NANF;
     } else if (maximum_weight_mode) {
       // keep the current value
@@ -416,7 +420,7 @@ unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t gr
       chanf = *grid_accum / *grid_weights - get_rounding(output_image);
     }
 
-    if (npy_isnan(chanf)) {
+    if (__isnan(chanf)) {
       *output_image = (GRID_TYPE)fill;
     } else {
       valid_count++;
