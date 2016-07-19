@@ -414,7 +414,7 @@ unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t gr
     } else if (maximum_weight_mode) {
       // keep the current value
       chanf = *grid_accum;
-    } else if (chanf >= 0.0) {
+    } else if (*grid_accum >= 0.0) {
       chanf = *grid_accum / *grid_weights + get_rounding(output_image);
     } else {
       chanf = *grid_accum / *grid_weights - get_rounding(output_image);
