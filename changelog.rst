@@ -6,6 +6,73 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.4 → 1.2.5. [Martin Raspaud]
+
+- Fix EWA fornav for integer data and add test. [davidh-ssec]
+
+  There was a bug when doing the averaging in EWA where the current pixel was being rounded based on the previous pixel's value instead of the current pixel. This only affects integer data because values above 0 are rounded up by 0.5 and values below 0 are rounded by 0.5, for floats this round value is 0.0.
+
+
+- Fix certain compilers not liking integers being passed to isnan.
+  [davidh-ssec]
+
+- Replace catch_warnings in all tests with astropy version. [davidh-
+  ssec]
+
+- Use catch_warnings from astropy (or at least try to) [davidh-ssec]
+
+- Test removing version specific warning checks in `test_swath_wrap`
+  [davidh-ssec]
+
+- Move USE_CYTHON handling to if main block in setup.py. [davidh-ssec]
+
+- Fix isnan definition only if a macro doesn't already exist. [davidh-
+  ssec]
+
+  Numpy does some special macro stuff to define a good npy_isnan function. Some systems define a macro for it, others don't. Hopefully this works for all systems. A better solution might be to define a templated isnan that calls npy_isnan if it isn't an integer.
+
+
+- Fix EWA compile failure on windows python 3.5. [David Hoese]
+
+- Make pykdtree install on appveyor optional. [davidh-ssec]
+
+- Add pykdtree to appveyor dependencies. [davidh-ssec]
+
+- Fix setup.py test on windows for multiprocessing tests. [davidh-ssec]
+
+  On Windows when new processes are started the initially command is imported or re-executed. For setup.py this is a big problem since the usual boilerplate does not include `if __name__ == "__main__"` so the setup.py test command gets rerun and rerun. This results in the child processes never actually being run for newer versions of python (2.7+). There still seems to be an issue with `test_nearest_resize` on Windows.
+
+
+- Merge pull request #41 from cpaulik/fix-windows-ewa. [David Hoese]
+
+  Fix Windows CI import Error
+
+- Install scipy in Windows CI to fix import problems. [Christoph Paulik]
+
+- Fix copy/paste error in EWA fornav. [davidh-ssec]
+
+  I had started rewriting EWA in cython then realized it was faster in straight C++ so copied/pasted the cython code and modified it. Seems like I missed this 'or' hanging around.
+
+
+- Fix NAN constant/macro for EWA on Windows. [davidh-ssec]
+
+- Merge branch 'add-windows-CI' into fix-windows-ewa. [davidh-ssec]
+
+- CI: Add IOOS conda channel to get basemap for Windows and python > 2.
+  [Christoph Paulik]
+
+- Merge branch 'add-windows-CI' into fix-windows-ewa. [davidh-ssec]
+
+- Add pyproj to conda install in Appveyor CI. [Christoph Paulik]
+
+- Make extra_compile_args platform dependent. [Christoph Paulik]
+
+- Add Appveyor CI configuration. [Christoph Paulik]
+
+- Fix EWA resampling's isnan to work better with windows. [davidh-ssec]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.2.3 → 1.2.4. [Martin Raspaud]
 
 - Fix setup.py extension import and use error. [davidh-ssec]
