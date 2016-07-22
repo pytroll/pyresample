@@ -87,3 +87,8 @@ artifacts:
 #on_success:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse
 #
+
+notifications:
+  - provider: Slack
+    incoming_webhook:
+      secure: 7bEOYCIxHE5PkCF156zjxbJIeKkv7UpZulyn+Di09jqDlpvZjR0Qj3a1LK9AOjgwWgaQYbeI4BEYEdeq7pPxDs9snK8qvvbFDbuLAzg+HEQ=
