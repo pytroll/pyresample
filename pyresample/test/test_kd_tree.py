@@ -75,10 +75,10 @@ class Test(unittest.TestCase):
             res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata,
                                                         self.tgrid, 100000, sigma,
                                                         with_uncert=True)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour warning')
-            self.assertFalse(('Searching' not in str(
-                w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertTrue(
+                len(w) > 0, 'Failed to create neighbour warning')
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
+                'Failed to create correct neighbour warning')
 
         expected_res = 2.20206560694
         expected_stddev = 0.707115076173
@@ -98,10 +98,10 @@ class Test(unittest.TestCase):
             res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                                           self.tdata, self.tgrid,
                                                           100000, wf, with_uncert=True)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour warning')
-            self.assertFalse(('Searching' not in str(
-                w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertTrue(
+                len(w) > 0, 'Failed to create neighbour warning')
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
+                'Failed to create correct neighbour warning')
 
         self.assertAlmostEqual(res[0], 2.32193149, 5,
                                'Failed to calculate custom weighting with uncertainty')
