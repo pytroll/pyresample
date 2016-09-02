@@ -4,6 +4,8 @@ environment:
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_compiler.cmd"
+  # Don't build pykdtree with openmp because it isn't supported in appveyor's compilers
+    USE_OMP: "0"
 
   matrix:
     - PYTHON: "C:\\Python27_32"
