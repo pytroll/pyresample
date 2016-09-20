@@ -89,6 +89,35 @@ class TestFornav(unittest.TestCase):
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
                         msg="Unexpected interpolation values were returned")
 
+    def test_fornav_swath_smaller_int8(self):
+        """Test that a swath smaller than the output grid is entirely used.
+        """
+        from pyresample.ewa import _fornav
+        swath_shape = (1600, 3200)
+        data_type = np.int8
+        # Create a fake row and cols array
+        rows = np.empty(swath_shape, dtype=np.float32)
+        rows[:] = np.linspace(500, 800, 1600)[:, None]
+        cols = np.empty(swath_shape, dtype=np.float32)
+        cols[:] = np.linspace(200, 600, 3200)
+        rows_per_scan = 16
+        # Create a fake data swath
+        data = np.ones(swath_shape, dtype=data_type)
+        out = np.empty((1000, 1000), dtype=data_type)
+
+        grid_points_covered = _fornav.fornav_wrapper(cols, rows, (data,), (out,),
+                                                     -128, -128, rows_per_scan)
+        one_grid_points_covered = grid_points_covered[0]
+        # The swath was smaller than the grid, make sure its whole area
+        # was covered (percentage of grid rows/cols to overall size)
+        self.assertAlmostEqual(one_grid_points_covered / float(out.size), 0.12, 2,
+                               msg="Not all input swath pixels were used")
+        # The swath was all 1s so there shouldn't be any non-1 values in the
+        # output except outside the swath
+        # import ipdb; ipdb.set_trace()
+        self.assertTrue(((out == 1) | (out == -128)).all(),
+                        msg="Unexpected interpolation values were returned")
+
 def suite():
     """The test suite.
     """

@@ -28,13 +28,15 @@ import numpy
 cimport cython
 from cpython cimport bool
 cimport numpy
-from libc.math cimport isnan
 
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
 ctypedef fused cr_dtype:
     # numpy.float32_t
     numpy.float64_t
+
+cdef extern from "numpy/npy_math.h":
+    bint npy_isnan(double x)
 
 
 class MyProj(Proj):
@@ -154,15 +156,15 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
                 # pyproj library should have set both x and y to the fill value
                 # we technically don't ever check for the fill value, but if fill values are valid lon/lats then WTF
                 continue
-            elif x_tmp < xmin or isnan(xmin):
+            elif x_tmp < xmin or npy_isnan(xmin):
                 xmin = x_tmp
-            elif x_tmp > xmax or isnan(xmax) or xmax == 1e30:
+            elif x_tmp > xmax or npy_isnan(xmax) or xmax == 1e30:
                 # Note: technically 2 valid points are required to get here if there are a lot of NaNs
                 xmax = x_tmp
 
-            if y_tmp < ymin or isnan(ymin):
+            if y_tmp < ymin or npy_isnan(ymin):
                 ymin = y_tmp
-            elif y_tmp > ymax or isnan(ymax) or ymax == 1e30:
+            elif y_tmp > ymax or npy_isnan(ymax) or ymax == 1e30:
                 # Note: technically 2 valid points are required to get here if there are a lot of NaNs
                 ymax = y_tmp
 

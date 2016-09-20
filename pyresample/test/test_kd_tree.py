@@ -2,32 +2,15 @@ from __future__ import with_statement
 
 import os
 import sys
-import unittest
-
-import warnings
-if sys.version_info < (2, 6):
-    warnings.simplefilter("ignore")
-else:
-    warnings.simplefilter("always")
 
 import numpy
-
+from pyresample.test.utils import catch_warnings
 from pyresample import kd_tree, utils, geometry, data_reduce
 
-
-def mp(f):
-    f.mp = True
-    return f
-
-
-def quick(f):
-    f.quick = True
-    return f
-
-
-def tmp(f):
-    f.tmp = True
-    return f
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class Test(unittest.TestCase):
@@ -59,23 +42,15 @@ class Test(unittest.TestCase):
                                        100000, reduce_data=False, segments=1)
         self.assertTrue(res[0] == 2, 'Failed to calculate nearest neighbour')
 
-    @tmp
     def test_gauss_base(self):
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
-
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(self.tswath,
                                          self.tdata.ravel(), self.tgrid,
                                          50000, 25000, reduce_data=False, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(self.tswath,
-                                             self.tdata.ravel(), self.tgrid,
-                                             50000, 25000, reduce_data=False, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour warning')
-                self.assertFalse(('Searching' not in str(
-                    w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour warning')
+            self.assertFalse(('Searching' not in str(
+                w[0].message)), 'Failed to create correct neighbour warning')
         self.assertAlmostEqual(res[0], 2.2020729, 5,
                                'Failed to calculate gaussian weighting')
 
@@ -83,40 +58,27 @@ class Test(unittest.TestCase):
         def wf(dist):
             return 1 - dist / 100000.0
 
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_custom(self.tswath,
                                           self.tdata.ravel(), self.tgrid,
                                           50000, wf, reduce_data=False, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_custom(self.tswath,
-                                              self.tdata.ravel(), self.tgrid,
-                                              50000, wf, reduce_data=False, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour warning')
-                self.assertFalse(('Searching' not in str(
-                    w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour warning')
+            self.assertFalse(('Searching' not in str(
+                w[0].message)), 'Failed to create correct neighbour warning')
         self.assertAlmostEqual(res[0], 2.4356757, 5,
                                'Failed to calculate custom weighting')
 
-    @tmp
     def test_gauss_uncert(self):
         sigma = utils.fwhm2sigma(41627.730557884883)
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata,
                                                         self.tgrid, 100000, sigma,
                                                         with_uncert=True)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata,
-                                                            self.tgrid, 100000, sigma,
-                                                            with_uncert=True)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour warning')
-                self.assertFalse(('Searching' not in str(
-                    w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertTrue(
+                len(w) > 0, 'Failed to create neighbour warning')
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
+                'Failed to create correct neighbour warning')
 
         expected_res = 2.20206560694
         expected_stddev = 0.707115076173
@@ -128,25 +90,18 @@ class Test(unittest.TestCase):
         self.assertEqual(
             count[0], expected_count, 'Wrong data point count for gaussian weighting with uncertainty')
 
-    @tmp
     def test_custom_uncert(self):
         def wf(dist):
             return 1 - dist / 100000.0
 
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                                           self.tdata, self.tgrid,
                                                           100000, wf, with_uncert=True)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res, stddev, counts = kd_tree.resample_custom(self.tswath,
-                                                              self.tdata, self.tgrid,
-                                                              100000, wf, with_uncert=True)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour warning')
-                self.assertFalse(('Searching' not in str(
-                    w[0].message)), 'Failed to create correct neighbour warning')
+            self.assertTrue(
+                len(w) > 0, 'Failed to create neighbour warning')
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
+                'Failed to create correct neighbour warning')
 
         self.assertAlmostEqual(res[0], 2.32193149, 5,
                                'Failed to calculate custom weighting with uncertainty')
@@ -315,18 +270,13 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, 25000, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, data.ravel(),
-                                             self.area_def, 50000, 25000, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 4872.81050892
         self.assertAlmostEqual(cross_sum, expected,
@@ -339,18 +289,13 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, data.ravel(),
-                                             self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 4872.81050892
         self.assertAlmostEqual(cross_sum, expected,
@@ -365,24 +310,18 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [25000, 15000, 10000], segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, data_multi,
-                                             self.area_def, 50000, [25000, 15000, 10000], segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,
                                msg='Swath multi channel resampling gauss failed')
 
-    @tmp
     def test_gauss_multi_uncert(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
         lons = numpy.fromfunction(
@@ -392,35 +331,19 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
+            # The assertion below checks if there is only one warning raised
+            # and whether it contains a specific message from pyresample
+            # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
+            # that cause to fail, so we ignore the unrelated warnings.
             res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,
                                                          self.area_def, 50000, [
                                                              25000, 15000, 10000],
                                                          segments=1, with_uncert=True)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                # The assertion below checks if there is only one warning raised
-                # and whether it contains a specific message from pyresample
-                # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
-                # that cause to fail, so we ignore the unrelated warnings.
-                # TODO: better way would be to filter UserWarning correctly
-                ignore_list = [DeprecationWarning]
-                try:
-                    from numpy import VisibleDeprecationWarning
-                except ImportError:
-                    pass
-                else:
-                    ignore_list.append(VisibleDeprecationWarning)
-                warnings.simplefilter('ignore', tuple(ignore_list))
-                res, stddev, counts = kd_tree.resample_gauss(swath_def, data_multi,
-                                                             self.area_def, 50000, [
-                                                                 25000, 15000, 10000],
-                                                             segments=1, with_uncert=True)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertTrue(
+                len(w) >= 1, 'Failed to create neighbour radius warning')
+            self.assertTrue(any(['Possible more' in str(
+                x.message) for x in w]), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         cross_sum_stddev = stddev.sum()
         cross_sum_counts = counts.sum()
@@ -445,22 +368,15 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
                                          nprocs=2, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, data_multi,
-                                             self.area_def, 50000, [
-                                                 25000, 15000, 10000],
-                                             nprocs=2, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,
@@ -475,22 +391,15 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
                                          nprocs=2, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_gauss(swath_def, data_multi,
-                                             self.area_def, 50000, [
-                                                 25000, 15000, 10000],
-                                             nprocs=2, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.84313918
         self.assertAlmostEqual(cross_sum, expected,
@@ -524,18 +433,13 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_custom(swath_def, data.ravel(),
                                           self.area_def, 50000, wf, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_custom(swath_def, data.ravel(),
-                                              self.area_def, 50000, wf, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 4872.81050729
         self.assertAlmostEqual(cross_sum, expected,
@@ -559,18 +463,13 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             res = kd_tree.resample_custom(swath_def, data_multi,
                                           self.area_def, 50000, [wf1, wf2, wf3], segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                res = kd_tree.resample_custom(swath_def, data_multi,
-                                              self.area_def, 50000, [wf1, wf2, wf3], segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
         expected = 1461.842980746
         self.assertAlmostEqual(cross_sum, expected,
@@ -847,22 +746,15 @@ class Test(unittest.TestCase):
         data_multi = numpy.column_stack((data.ravel(), data.ravel(),
                                          data.ravel()))
 
-        if (sys.version_info < (2, 6) or
-                (sys.version_info >= (3, 0) and sys.version_info < (3, 4))):
+        with catch_warnings() as w:
             valid_input_index, valid_output_index, index_array, distance_array = \
                 kd_tree.get_neighbour_info(swath_def,
                                            self.area_def,
                                            50000, segments=1)
-        else:
-            with warnings.catch_warnings(record=True) as w:
-                valid_input_index, valid_output_index, index_array, distance_array = \
-                    kd_tree.get_neighbour_info(swath_def,
-                                               self.area_def,
-                                               50000, segments=1)
-                self.assertFalse(
-                    len(w) != 1, 'Failed to create neighbour radius warning')
-                self.assertFalse(('Possible more' not in str(
-                    w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(
+                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertFalse(('Possible more' not in str(
+                w[0].message)), 'Failed to create correct neighbour radius warning')
 
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800),
                                                      data_multi,

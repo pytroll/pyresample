@@ -30,7 +30,6 @@ import numpy
 cimport numpy
 cimport cpython
 from libc.stdlib cimport calloc, malloc, free
-from libc.math cimport log, exp, sqrt, isnan, NAN
 
 cdef extern from "_fornav_templates.h":
     ctypedef float weight_type
