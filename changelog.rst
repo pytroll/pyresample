@@ -6,6 +6,51 @@ Changelog
 
 - Update changelog. [Martin Raspaud]
 
+- Bump version: 1.2.5 → 1.2.6. [Martin Raspaud]
+
+- Pre master (#44) [Radar, Satellite and Nowcasting Division]
+
+  * add a subset function to the geometry file
+
+  Often subsets of the SEVIRI disk are save in
+  SEVIRI products. This new function calculated the
+  area extent needed for the specification of the area,
+  starting from the SEVIRI full disk area object.
+
+  * added the get_area_extent_for_subset function
+
+  to the geometry.py file
+
+  * new function for getting area subsets
+
+  * new function get_xy_from_proj_coordinates
+
+  retrieve the pixel indices x and y
+  from the map projection coordinates in meter
+  (very similar to get_xy_from_lonlat)
+
+  * removed pyc file, that should not be in the git repository
+
+
+- Add appveyor status badge to README. [davidh-ssec]
+
+- Merge remote-tracking branch 'deni90/master' into pre-master-davidh.
+  [davidh-ssec]
+
+- Fix test_custom_uncert and test_gauss_uncert for mips* [Daniel
+  Knezevic]
+
+- Fix pykdtree install on appveyor by turning off OpenMP. [davidh-ssec]
+
+- Update appveyor config to install missing headers required by
+  pykdtree. [davidh-ssec]
+
+- Change appveyor to use conda-forge instead of IOOS. [davidh-ssec]
+
+- Add slack notifications from appveyor. [davidh-ssec]
+
+- Update changelog. [Martin Raspaud]
+
 - Bump version: 1.2.4 → 1.2.5. [Martin Raspaud]
 
 - Fix EWA fornav for integer data and add test. [davidh-ssec]
