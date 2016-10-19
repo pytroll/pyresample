@@ -106,6 +106,37 @@ class BaseDefinition(object):
 
         return not self.__eq__(other)
 
+    def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
+        """Retrieves area_extent for a subdomain 
+        rows    are counted from upper left to lower left
+        columns are counted from upper left to upper right 
+
+        :Parameters:
+        row_LR : int
+            row of the lower right pixel 
+        col_LR : int
+            col of the lower right pixel
+        row_UL : int
+            row of the upper left pixel 
+        col_UL : int
+            col of the upper left pixel
+
+        :Returns:
+        area_extent : list 
+            Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+
+        :Author:
+        Ulrich Hamann
+        """
+        
+        (a,b) = self.get_proj_coords( data_slice=(row_LR,col_LR) )
+        a = a - 0.5*self.pixel_size_x
+        b = b - 0.5*self.pixel_size_y
+        (c,d) = self.get_proj_coords( data_slice=(row_UL,col_UL) )
+        c = c + 0.5*self.pixel_size_x
+        d = d + 0.5*self.pixel_size_y
+
+        return (a,b,c,d)
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
@@ -666,6 +697,62 @@ class AreaDefinition(BaseDefinition):
                     (y__ < 0 or y__ > self.y_size)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
+
+
+    def get_xy_from_proj_coords(self, xm_, ym_):
+        """Retrieve closest x and y coordinates (column, row indices) for a 
+        location specified with projection coordinates (xm_,ym_) in meters. 
+        A ValueError is raised, if the return point is outside the area domain. If
+        xm_,ym_ is a tuple of sequences of projection coordinates, a tuple of
+        masked arrays are returned.
+
+        :Input:
+        xm_ : point or sequence (list or array) of x-coordinates in m (map projection)
+        ym_ : point or sequence (list or array) of y-coordinates in m (map projection)
+
+        :Returns:
+        (x, y) : tuple of integer points/arrays
+        """
+
+        if isinstance(xm_, list):
+            xm_ = np.array(xm_)
+        if isinstance(ym_, list):
+            ym_ = np.array(ym_)
+
+        if ((isinstance(xm_, np.ndarray) and
+             not isinstance(ym_, np.ndarray)) or
+            (not isinstance(xm_, np.ndarray) and
+             isinstance(ym_, np.ndarray))):
+            raise ValueError("Both projection coordinates xm_ and ym_ needs to be of " +
+                             "the same type and have the same dimensions!")
+
+        if isinstance(xm_, np.ndarray) and isinstance(ym_, np.ndarray):
+            if xm_.shape != ym_.shape:
+                raise ValueError("projection coordinates xm_ and ym_ is not of the same shape!")
+
+        upl_x = self.area_extent[0]
+        upl_y = self.area_extent[3]
+        xscale = abs(self.area_extent[2] -
+                     self.area_extent[0]) / float(self.x_size)
+        yscale = abs(self.area_extent[1] -
+                     self.area_extent[3]) / float(self.y_size)
+
+        x__ = (xm_ - upl_x) / xscale
+        y__ = (upl_y - ym_) / yscale
+
+        if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
+            mask = (((x__ < 0) | (x__ > self.x_size)) |
+                    ((y__ < 0) | (y__ > self.y_size)))
+            return (np.ma.masked_array(x__.astype('int'), mask=mask,
+                                       fill_value=-1),
+                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                                       fill_value=-1))
+        else:
+            if ((x__ < 0 or x__ > self.x_size) or
+                    (y__ < 0 or y__ > self.y_size)):
+                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
+            return int(x__), int(y__)
+
 
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
