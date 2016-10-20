@@ -48,10 +48,6 @@ install:
 
   # install miniconda with the powershell script install.ps1
   - "powershell ./appveyor/install.ps1"
-  # install missing headers that aren't included with MSVC 2008
-  # https://github.com/omnia-md/conda-recipes/pull/524
-  # Needed for pykdtree to compile on appveyor's Windows machines
-  - "powershell ./appveyor/missing-headers.ps1"
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
@@ -68,11 +64,9 @@ install:
   # target Python version and architecture
   - "conda update --yes conda"
   - "conda config --add channels conda-forge"
-  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap-data-hires sphinx pyproj scipy"
+  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap-data-hires sphinx pyproj scipy pykdtree"
   - "activate test"
   - "pip install coveralls"
-  # Try to install pykdtree, but continue on if we can't
-  - "pip install pykdtree || (call )"
   - "where python"
 
 build: false  # Not a C# project, build stuff at the test step instead.
