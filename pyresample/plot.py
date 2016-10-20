@@ -155,7 +155,7 @@ def area_def2basemap(area_def, **kwargs):
 
 def _get_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c'):
+                   num_parallels=10, coast_res='c', cmap='jet'):
     """Get default Basemap matplotlib plot
     """
 
@@ -170,15 +170,14 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     if num_parallels > 0:
         bmap.drawparallels(np.arange(-90, 90, num_parallels))
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
-        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
+        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
         plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
-
     return plt
 
 
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c'):
+                   num_parallels=10, coast_res='c', cmap='jet'):
     """Display default quicklook plot
 
     Parameters
@@ -207,14 +206,16 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
 
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
-                         num_parallels=num_parallels, coast_res=coast_res)
+                         num_parallels=num_parallels, coast_res=coast_res,
+                         cmap=cmap)
     plt.show()
     plt.close()
 
 
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c', backend='AGG'):
+                   num_parallels=10, coast_res='c', backend='AGG',
+                   cmap='jet'):
     """Display default quicklook plot
 
     Parameters
