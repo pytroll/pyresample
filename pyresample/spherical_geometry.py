@@ -306,8 +306,8 @@ def get_polygon_area(corners):
         e__ = (abs(b1_.angle(b2_)) +
                abs(b2_.angle(b3_)) +
                abs(b3_.angle(b1_)))
-        area += R ** 2 * e__ - math.pi
-    return area
+        area += e__ - math.pi
+    return R ** 2 * area
 
 
 def get_intersections(b__, boundaries):
