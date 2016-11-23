@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/pytroll/pyresample.svg?branch=master)](https://travis-ci.org/pytroll/pyresample)
+[![Build status](https://ci.appveyor.com/api/projects/status/10qdrecp45rgkf73/branch/master?svg=true)](https://ci.appveyor.com/project/davidh-ssec/pyresample-ly2q0/branch/master)
+
 
 Python package for geospatial resampling
 ----------------------------------------

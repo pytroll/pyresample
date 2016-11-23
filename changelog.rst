@@ -1,10 +1,102 @@
 Changelog
 =========
 
-%%version%% (unreleased)
-------------------------
+v1.2.7 (2016-11-15)
+-------------------
 
-- Update changelog. [Martin Raspaud]
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.2.6 → 1.2.7. [Martin Raspaud]
+
+- Add bump and changelog config files. [Martin Raspaud]
+
+- Merge pull request #49 from Funkensieper/fix-polygon-area. [Martin
+  Raspaud]
+
+  Fix polygon area
+
+- Disable snapping of angles in get_polygon_area() [Stephan
+  Finkensieper]
+
+  - Add option to disable snapping in Arc.angle()
+  - Don't snap angles when computing polygon areas in order to
+    prevent negative area values
+  - Adjust reference values in tests on overlap-rate
+
+
+- Fix polygon area computation for R != 1. [Stephan Finkensieper]
+
+  Parentheses were missing, see
+
+  http://mathworld.wolfram.com/SphericalTriangle.html
+
+  for reference. Only affects earth radius R != 1 which is not
+  implemented yet.
+
+
+- Install pykdtree from conda forge in pre-master. [davidh-ssec]
+
+- Merge pull request #47 from mitkin/feature_plot-cmap. [David Hoese]
+
+  Add option to choose colormap
+
+- Add option to choose colormap. [Mikhail Itkin]
+
+  Make possible to indicate which colormap to use when plotting image
+
+
+v1.2.6 (2016-10-19)
+-------------------
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.2.5 → 1.2.6. [Martin Raspaud]
+
+- Pre master (#44) [Radar, Satellite and Nowcasting Division]
+
+  * add a subset function to the geometry file
+
+  Often subsets of the SEVIRI disk are save in
+  SEVIRI products. This new function calculated the
+  area extent needed for the specification of the area,
+  starting from the SEVIRI full disk area object.
+
+  * added the get_area_extent_for_subset function
+
+  to the geometry.py file
+
+  * new function for getting area subsets
+
+  * new function get_xy_from_proj_coordinates
+
+  retrieve the pixel indices x and y
+  from the map projection coordinates in meter
+  (very similar to get_xy_from_lonlat)
+
+  * removed pyc file, that should not be in the git repository
+
+
+- Add appveyor status badge to README. [davidh-ssec]
+
+- Merge remote-tracking branch 'deni90/master' into pre-master-davidh.
+  [davidh-ssec]
+
+- Fix test_custom_uncert and test_gauss_uncert for mips* [Daniel
+  Knezevic]
+
+- Fix pykdtree install on appveyor by turning off OpenMP. [davidh-ssec]
+
+- Update appveyor config to install missing headers required by
+  pykdtree. [davidh-ssec]
+
+- Change appveyor to use conda-forge instead of IOOS. [davidh-ssec]
+
+- Add slack notifications from appveyor. [davidh-ssec]
+
+v1.2.5 (2016-07-21)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.2.4 → 1.2.5. [Martin Raspaud]
 
@@ -32,7 +124,7 @@ Changelog
   Numpy does some special macro stuff to define a good npy_isnan function. Some systems define a macro for it, others don't. Hopefully this works for all systems. A better solution might be to define a templated isnan that calls npy_isnan if it isn't an integer.
 
 
-- Fix EWA compile failure on windows python 3.5. [David Hoese]
+- fix EWA compile failure on windows python 3.5. [David Hoese]
 
 - Make pykdtree install on appveyor optional. [davidh-ssec]
 
@@ -71,7 +163,10 @@ Changelog
 
 - Fix EWA resampling's isnan to work better with windows. [davidh-ssec]
 
-- Update changelog. [Martin Raspaud]
+v1.2.4 (2016-06-27)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.2.3 → 1.2.4. [Martin Raspaud]
 
@@ -79,7 +174,10 @@ Changelog
 
 - Fix case when __builtins__ is a dict. [Martin Raspaud]
 
-- Update changelog. [Martin Raspaud]
+v1.2.3 (2016-06-21)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.2.2 → 1.2.3. [Martin Raspaud]
 
@@ -88,7 +186,10 @@ Changelog
   'pyresample.ewa' wasn't listed before and was not importable from an installed package.
 
 
-- Update changelog. [Martin Raspaud]
+v1.2.2 (2016-06-21)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.2.1 → 1.2.2. [Martin Raspaud]
 
@@ -96,7 +197,10 @@ Changelog
 
   Without this, the compilation of the ewa extension crashes.
 
-- Update changelog. [Martin Raspaud]
+v1.2.1 (2016-06-21)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.2.0 → 1.2.1. [Martin Raspaud]
 
@@ -108,7 +212,19 @@ Changelog
 - Merge branch 'pre-master' of github.com:mraspaud/pyresample into pre-
   master. [Adam.Dybbroe]
 
-- Update changelog. [Martin Raspaud]
+- Merge branch 'pre-master' of github.com:mraspaud/pyresample into pre-
+  master. [Adam.Dybbroe]
+
+  Conflicts:
+  	docs/source/conf.py
+
+
+- Run the base class init function first. [Adam.Dybbroe]
+
+v1.2.0 (2016-06-17)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.1.6 → 1.2.0. [Martin Raspaud]
 
@@ -117,13 +233,6 @@ Changelog
 
 - Add two convenience methods lonlat2colrow and colrow2lonlat to
   AreaDefinition-class. [Sauli Joro]
-
-- Merge branch 'pre-master' of github.com:mraspaud/pyresample into pre-
-  master. [Adam.Dybbroe]
-
-  Conflicts:
-  	docs/source/conf.py
-
 
 - Fix bug in EWA grid origin calculation. [davidh-ssec]
 
@@ -302,12 +411,6 @@ Changelog
   PyCharm and possibly other IDEs don't really play well with unittest TestSuites, but work as expected when `load_tests` is used.
 
 
-- Update changelog. [Martin Raspaud]
-
-- Bump version: 1.1.5 → 1.1.6. [Martin Raspaud]
-
-- Run the base class init function first. [Adam.Dybbroe]
-
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
@@ -317,6 +420,13 @@ Changelog
   The kdtree object's attribute `data_pts` has been renamed to `data`.
 
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
+
+v1.1.6 (2016-02-25)
+-------------------
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.1.5 → 1.1.6. [Martin Raspaud]
 
 - Fix #35 supporting scipy kdtree again. [Martin Raspaud]
 
@@ -354,7 +464,10 @@ Changelog
 
 - Fix possible type mismatch with pykdtree. [Brian Hawkins]
 
-- Update changelog. [Martin Raspaud]
+v1.1.5 (2015-10-12)
+-------------------
+
+- update changelog. [Martin Raspaud]
 
 - Bump version: 1.1.4 → 1.1.5. [Martin Raspaud]
 
@@ -365,11 +478,20 @@ Changelog
 
 - Fix the unicode problem in python3. [Martin Raspaud]
 
-- Update changelog. [Martin Raspaud]
+v1.1.4 (2015-10-08)
+-------------------
 
-- Bump version: 1.1.3 → 1.1.4. [Martin Raspaud]
+Fix
+~~~
 
 - Bugfix: Accept unicode proj4 strings. Fixes #24. [Martin Raspaud]
+
+Other
+~~~~~
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.1.3 → 1.1.4. [Martin Raspaud]
 
 - Add python-configobj as a rpm requirement in setup.cfg. [Martin
   Raspaud]
@@ -380,9 +502,6 @@ Changelog
 
   Numpy won't take non-integer indices soon, so make index an int.
 
-1.1.3 (2015-02-03)
-------------------
-
 - Merge branch 'release-1.1.3' [Martin Raspaud]
 
 - Merge branch 'licence-lgpl' into pre-master. [Martin Raspaud]
@@ -392,9 +511,6 @@ Changelog
 - Swith badge to main repository. [Martin Raspaud]
 
 - Merge branch 'hotfix-v1.1.2' into pre-master. [Martin Raspaud]
-
-1.1.2 (2014-12-17)
-------------------
 
 - Merge branch 'hotfix-v1.1.2' [Martin Raspaud]
 
@@ -426,16 +542,16 @@ Changelog
    * Added travis build status badge
 
 
-- Remove pip `-e` switch. [Mikhail Itkin]
+- remove pip `-e` switch. [Mikhail Itkin]
 
 - Merge branch 'master' of github.com:mitkin/pyresample. [Mikhail Itkin]
 
-- Don't use setup.py for basemap installation. [Mikhail Itkin]
+- don't use setup.py for basemap installation. [Mikhail Itkin]
 
   Instead of putting basemap and matplotlib into `extras_require`
   install them directly
 
-- Don't use setup.py for basemap installation. [Mikhail Itkin]
+- don't use setup.py for basemap installation. [Mikhail Itkin]
 
   Instead of putting basemap and matplotlib into `extras_require`
   install them directly
@@ -463,6 +579,8 @@ Changelog
    * matplotlib requires libfreetype6-dev
    * basemap requires libgeos libgeos-c1 and libgeos-dev
 
+
+- Merge branch 'release-v1.1.1' [Martin Raspaud]
 
 - Merge branch 'release-v1.1.1' [Martin Raspaud]
 
@@ -502,29 +620,9 @@ Changelog
 
 - Merge branch 'release-v1.1.1' into pre-master. [Martin Raspaud]
 
-- Merge branch 'pre-master' of https://code.google.com/p/pyresample into
-  pre-master. [Martin Raspaud]
-
-- A stray line of code is removed and I take back the recent enhancement
-  concerning swath to swath mapping. [Adam Dybbroe]
-
-- Removed debug printouts. [Adam Dybbroe]
-
-- More active support of swath to swath reprojection. [Adam Dybbroe]
-
-- Add a plot on multiprocessing performance increases. [Martin Raspaud]
-
-- Added outer_boundary_corners property to the area def class. [Adam
-  Dybbroe]
-
-1.1.1 (2014-12-10)
-------------------
-
-- Merge branch 'release-v1.1.1' [Martin Raspaud]
-
 - Add news about new release. [Martin Raspaud]
 
-- Remove some relative imports. [Martin Raspaud]
+- remove some relative imports. [Martin Raspaud]
 
 - Cleanup and bump up version number to v1.1.1. [Martin Raspaud]
 
@@ -549,53 +647,68 @@ Changelog
 
 - Update README. [Martin Raspaud]
 
-- Corrected docs. [Esben S. Nielsen]
+- Merge branch 'pre-master' of https://code.google.com/p/pyresample into
+  pre-master. [Martin Raspaud]
 
-- Modified uncert count to show above 0. Updated docs to relect uncert
+- A stray line of code is removed and I take back the recent enhancement
+  concerning swath to swath mapping. [Adam Dybbroe]
+
+- Removed debug printouts. [Adam Dybbroe]
+
+- More active support of swath to swath reprojection. [Adam Dybbroe]
+
+- Add a plot on multiprocessing performance increases. [Martin Raspaud]
+
+- Added outer_boundary_corners property to the area def class. [Adam
+  Dybbroe]
+
+- corrected docs. [Esben S. Nielsen]
+
+- modified uncert count to show above 0. Updated docs to relect uncert
   option. [Esben S. Nielsen]
 
-- Cleaned up code a bit in kd_tree.py. [Esben S. Nielsen]
+- cleaned up code a bit in kd_tree.py. [Esben S. Nielsen]
 
-- Made API doc work with readthedocs and bumped version number. [Esben
+- made API doc work with readthedocs and bumped version number. [Esben
   S. Nielsen]
 
-- Cleaned up code and tests. [Esben S. Nielsen]
+- cleaned up code and tests. [Esben S. Nielsen]
 
-- Added masking of uncert counts. [Esben S. Nielsen]
+- added masking of uncert counts. [Esben S. Nielsen]
 
-- Test passes again for uncertainty calculations. [Esben S. Nielsen]
+- test passes again for uncertainty calculations. [Esben S. Nielsen]
 
-- Changed uncertainty API. First working uncertainty version. [Esben S.
+- changed uncertainty API. First working uncertainty version. [Esben S.
   Nielsen]
 
-- Not quite there. [Esben S. Nielsen]
+- not quite there. [Esben S. Nielsen]
 
-- Basic uncertainty implemented. [Esben S. Nielsen]
+- basic uncertainty implemented. [Esben S. Nielsen]
 
-- Updated docs. [Esben S. Nielsen]
+- updated docs. [Esben S. Nielsen]
 
 - Fixing bug, and adding unittest-main run. [Adam Dybbroe]
 
 - Making get_xy_from_lonlat work on arrays of points as well as single
   points. [Adam Dybbroe]
 
-- Renamed functions in geometry.py and added proj_x_coords and
+- renamed functions in geometry.py and added proj_x_coords and
   proj_y_coords properties. [Esben S. Nielsen]
 
-- Corrected __eq__ in geometry. [Esben S. Nielsen]
+- corrected __eq__ in geometry. [Esben S. Nielsen]
 
 - Merge branch 'pre-master' of https://code.google.com/p/pyresample into
   pre-master. [Adam Dybbroe]
 
-- Now kd_tree resampling selects dtype. [Esben S. Nielsen]
+- now kd_tree resampling selects dtype. [Esben S. Nielsen]
 
-- Removed random print statement. [Esben S. Nielsen]
+- removed random print statement. [Esben S. Nielsen]
 
-- Made get_capabilites function. [Esben S. Nielsen]
+- made get_capabilites function. [Esben S. Nielsen]
 
-- Test passes again. [Esben S. Nielsen]
+- test passes again. [Esben S. Nielsen]
 
-- Removed caching from geometry. [Esben S. Nielsen]
+- removed caching from geometry. [Esben S. Nielsen]
 
 - Merge branch 'pre-master' of https://code.google.com/p/pyresample into
   pre-master. [Martin Raspaud]
@@ -604,14 +717,14 @@ Changelog
 
 - Unittests should work for both py2.6 and 2.7. [Adam Dybbroe]
 
-- Updated docs. [Esben S. Nielsen]
+- updated docs. [Esben S. Nielsen]
 
-- Fixed unit tests. [Esben S. Nielsen]
+- fixed unit tests. [Esben S. Nielsen]
 
 - Using assertRaises in py2.6 and py2.7 compatible version. [Adam
   Dybbroe]
 
-- Bugfix to unittest suite. [Adam Dybbroe]
+- bugfix to unittest suite. [Adam Dybbroe]
 
 - Trying to make test-functions compatible with both python 2.6 and 2.7.
   [Adam Dybbroe]
@@ -621,23 +734,23 @@ Changelog
 
 - Adding function get_xy_from_lonlat. [Adam Dybbroe]
 
-- Integrated pykdtree and handled latlong projection bug. [Esben S.
+- integrated pykdtree and handled latlong projection bug. [Esben S.
   Nielsen]
 
-- Updated unit tests according to deprecation warnings. [Esben S.
+- updated unit tests according to deprecation warnings. [Esben S.
   Nielsen]
 
 - Better parsing of a area definition (allow ':' in value fields) [Lars
   Orum Rasmussen]
 
-- Updated docs. [Esben S. Nielsen]
+- updated docs. [Esben S. Nielsen]
 
 - Merge branch 'pre-master' of https://code.google.com/p/pyresample into
   pre-master. [Martin Raspaud]
 
-- Doc version. [esn]
+- doc version. [esn]
 
-- Improved Basemap integration with globe projections. Updated docs on
+- improved Basemap integration with globe projections. Updated docs on
   epsilon. [esn]
 
 - Accomodate for allclose behaviour change in numpy 1.6.2. [Martin
@@ -647,9 +760,9 @@ Changelog
   broadcasted to the same shape. Hence a ValueError catch to return False.
 
 
-- Updadet doc for plotting. [Esben S. Nielsen]
+- updadet doc for plotting. [Esben S. Nielsen]
 
-- Updated plot test to use AGG. [Esben S. Nielsen]
+- updated plot test to use AGG. [Esben S. Nielsen]
 
 - Now handles plotting in Plate Carre projection. Added utils.fwhm2sigma
   function. [Esben S. Nielsen]
@@ -657,24 +770,24 @@ Changelog
 - Merge branch 'master' of https://code.google.com/p/pyresample. [Esben
   S. Nielsen]
 
-- Added pypi info. [Esben S. Nielsen]
+- added pypi info. [Esben S. Nielsen]
 
-- Built docs. [Esben S. Nielsen]
+- built docs. [Esben S. Nielsen]
 
-- Corrected test_swath.py to account for implementation specific
+- corrected test_swath.py to account for implementation specific
   precision. [Esben S. Nielsen]
 
-- More datatype specifications. [Esben S. Nielsen]
+- more datatype specifications. [Esben S. Nielsen]
 
-- Removed warning check for python 2.5. [Esben S. Nielsen]
+- removed warning check for python 2.5. [Esben S. Nielsen]
 
-- Corrected multi channnel bug. Added warnings for potential problematic
+- corrected multi channnel bug. Added warnings for potential problematic
   neighbour query condition. [Esben S. Nielsen]
 
 - Now str() generates a unique string for area and coordinate definition
   object. [Lars Orum Rasmussen]
 
-- Corrected manifest so doc images are included. [Esben S. Nielsen]
+- corrected manifest so doc images are included. [Esben S. Nielsen]
 
 - Moved tests dir to test. Updated MANIFEST.in. [Esben S. Nielsen]
 
@@ -683,7 +796,7 @@ Changelog
 - Applied setup.py patches. Made plotting more robust. [Esben S.
   Nielsen]
 
-- Applied patch for getting version number. [Esben S. Nielsen]
+- applied patch for getting version number. [Esben S. Nielsen]
 
 - Bugfixing quicklooks. [StorPipfugl]
 
@@ -718,7 +831,7 @@ Changelog
 
 - Updated install_requires. [StorPipfugl]
 
-- Version 0.7.3. [StorPipfugl]
+- version 0.7.3. [StorPipfugl]
 
 - Bugfixes: Correct number of channels in empty result set. Resampling
   of masked data to 1d swath now works. [StorPipfugl]
@@ -737,6 +850,8 @@ Changelog
 - Corrected doc errors. [StorPipfugl]
 
 - Removed dist dir. [StorPipfugl]
+
+- No commit message. [StorPipfugl]
 
 - Updated documentation. New release. [StorPipfugl]
 
@@ -761,8 +876,10 @@ Changelog
 
 - Mime types set. [StorPipfugl]
 
+- No commit message. [StorPipfugl]
+
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 
-- Moved to Google Code. [StorPipfugl]
+- moved to Google Code. [StorPipfugl]
 
 

@@ -191,8 +191,16 @@ class Arc(object):
     def __str__(self):
         return str((str(self.start), str(self.end)))
 
-    def angle(self, other_arc):
+    def angle(self, other_arc, snap=True):
         """Oriented angle between two arcs.
+
+        Parameters
+        ----------
+        other_arc : Arc
+        snap : boolean
+            Snap small angles to 0. Allows for detecting colinearity. Disable
+            snapping when calculating polygon areas as it might lead to
+            negative area values.
         """
         if self.start == other_arc.start:
             a__ = self.start
@@ -217,12 +225,20 @@ class Arc(object):
         ub_ = a__.cross(c__)
 
         val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
-        if abs(val - 1) < EPSILON:
-            angle = 0
-        elif abs(val + 1) < EPSILON:
-            angle = math.pi
+        if snap:
+            if abs(val - 1) < EPSILON:
+                angle = 0
+            elif abs(val + 1) < EPSILON:
+                angle = math.pi
+            else:
+                angle = math.acos(val)
         else:
-            angle = math.acos(val)
+            if 0 <= val - 1 < EPSILON:
+                angle = 0
+            elif -EPSILON < val + 1 <= 0:
+                angle = math.pi
+            else:
+                angle = math.acos(val)
 
         n__ = ua_.normalize()
         if n__.dot(c__) > 0:
@@ -303,11 +319,11 @@ def get_polygon_area(corners):
         b1_ = Arc(c1_, corners[idx])
         b2_ = Arc(c1_, corners[idx + 1])
         b3_ = Arc(corners[idx], corners[idx + 1])
-        e__ = (abs(b1_.angle(b2_)) +
-               abs(b2_.angle(b3_)) +
-               abs(b3_.angle(b1_)))
-        area += R ** 2 * e__ - math.pi
-    return area
+        e__ = (abs(b1_.angle(b2_, snap=False)) +
+               abs(b2_.angle(b3_, snap=False)) +
+               abs(b3_.angle(b1_, snap=False)))
+        area += e__ - math.pi
+    return R ** 2 * area
 
 
 def get_intersections(b__, boundaries):
