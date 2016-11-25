@@ -640,7 +640,7 @@ class AreaDefinition(BaseDefinition):
         return self.get_xy_from_lonlat(lons, lats)
 
 
-    def get_xy_from_lonlat(self, lon, lat):
+    def get_xy_from_lonlat(self, lon, lat, outside_error=True, return_int=True):
         """Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
@@ -688,15 +688,86 @@ class AreaDefinition(BaseDefinition):
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             mask = (((x__ < 0) | (x__ > self.x_size)) |
                     ((y__ < 0) | (y__ > self.y_size)))
-            return (np.ma.masked_array(x__.astype('int'), mask=mask,
+            if return_int:
+                rtype='int'
+            else:
+                rtype='float'
+            return (np.ma.masked_array(x__.astype(rtype), mask=mask,
                                        fill_value=-1),
-                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                    np.ma.masked_array(y__.astype(rtype), mask=mask,
                                        fill_value=-1))
         else:
             if ((x__ < 0 or x__ > self.x_size) or
-                    (y__ < 0 or y__ > self.y_size)):
+                (y__ < 0 or y__ > self.y_size)) and outside_error:
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return int(x__), int(y__)
+
+            if return_int:
+                return int(x__), int(y__)
+            else:
+                return x__, y__
+
+
+    def get_xy_from_proj_coords(self, xm_, ym_, outside_error=True, return_int=True):
+        """Retrieve closest x and y coordinates (column, row indices) for a 
+        location specified with projection coordinates (xm_,ym_) in meters. 
+        A ValueError is raised, if the return point is outside the area domain. If
+        xm_,ym_ is a tuple of sequences of projection coordinates, a tuple of
+        masked arrays are returned.
+
+        :Input:
+        xm_ : point or sequence (list or array) of x-coordinates in m (map projection)
+        ym_ : point or sequence (list or array) of y-coordinates in m (map projection)
+
+        :Returns:
+        (x, y) : tuple of integer points/arrays
+        """
+
+        if isinstance(xm_, list):
+            xm_ = np.array(xm_)
+        if isinstance(ym_, list):
+            ym_ = np.array(ym_)
+
+        if ((isinstance(xm_, np.ndarray) and
+             not isinstance(ym_, np.ndarray)) or
+            (not isinstance(xm_, np.ndarray) and
+             isinstance(ym_, np.ndarray))):
+            raise ValueError("Both projection coordinates xm_ and ym_ needs to be of " +
+                             "the same type and have the same dimensions!")
+
+        if isinstance(xm_, np.ndarray) and isinstance(ym_, np.ndarray):
+            if xm_.shape != ym_.shape:
+                raise ValueError("projection coordinates xm_ and ym_ is not of the same shape!")
+
+        upl_x = self.area_extent[0]
+        upl_y = self.area_extent[3]
+        xscale = abs(self.area_extent[2] -
+                     self.area_extent[0]) / float(self.x_size)
+        yscale = abs(self.area_extent[1] -
+                     self.area_extent[3]) / float(self.y_size)
+
+        x__ = (xm_ - upl_x) / xscale
+        y__ = (upl_y - ym_) / yscale
+
+        if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
+            mask = (((x__ < 0) | (x__ > self.x_size)) |
+                    ((y__ < 0) | (y__ > self.y_size)))
+            if return_int:
+                rtype='int'
+            else:
+                rtype='float'
+            return (np.ma.masked_array(x__.astype(rtype), mask=mask,
+                                       fill_value=-1),
+                    np.ma.masked_array(y__.astype(rtype), mask=mask,
+                                       fill_value=-1))
+        else:
+            if ((x__ < 0 or x__ > self.x_size) or
+                (y__ < 0 or y__ > self.y_size)) and outside_error:
+                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
+
+            if return_int:
+                return int(x__), int(y__)
+            else:
+                return x__, y__
 
 
     def get_xy_from_proj_coords(self, xm_, ym_):
