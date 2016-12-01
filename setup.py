@@ -26,7 +26,7 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
-requirements = ['pyproj', 'numpy', 'configobj']
+requirements = ['pyproj', 'numpy', 'configobj', 'pykdtree>=1.1.1']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'basemap', 'pillow']}
