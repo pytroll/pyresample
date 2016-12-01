@@ -608,7 +608,7 @@ class AreaDefinition(BaseDefinition):
         try:
             return ((self.proj_dict == other.proj_dict) and
                     (self.shape == other.shape) and
-                    (self.area_extent == other.area_extent))
+                    (np.allclose(self.area_extent, other.area_extent)))
         except AttributeError:
             return super(AreaDefinition, self).__eq__(other)
 
