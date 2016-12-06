@@ -1,6 +1,24 @@
 Changelog
 =========
 
+v1.2.8 (2016-12-06)
+-------------------
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.2.7 → 1.2.8. [Martin Raspaud]
+
+- Correct style in setup.py. [Martin Raspaud]
+
+- Make pykdtree a requirement. [Martin Raspaud]
+
+- Correct style in geometry.py. [Martin Raspaud]
+
+- Allow precision errors when comparing area_extents. [Martin Raspaud]
+
+- Allow numbers in proj dict when building proj4 string. [Martin
+  Raspaud]
+
 v1.2.7 (2016-11-15)
 -------------------
 
