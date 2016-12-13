@@ -1,6 +1,24 @@
 Changelog
 =========
 
+v1.2.9 (2016-12-13)
+-------------------
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.2.8 → 1.2.9. [Martin Raspaud]
+
+- Merge pull request #52 from mitkin/mitkin-pr-setuptools32. [Martin
+  Raspaud]
+
+  Specify minimum version of setuptools
+
+- Specify minimum version of setuptools. [Mikhail Itkin]
+
+  Prior to version 3.2 setuptools would not recognize correctly the language of `*.cpp` extensions and would assume it's `*.c` no matter what. Version 3.2 of setuptools fixes that.
+
+- Fix sphinx dependency to support python 2.6 and 3.3. [Martin Raspaud]
+
 v1.2.8 (2016-12-06)
 -------------------
 
