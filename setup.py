@@ -21,12 +21,12 @@ import multiprocessing
 import os
 import sys
 
-from setuptools import find_packages, setup, Extension
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
-requirements = ['pyproj', 'numpy', 'configobj']
+requirements = ['setuptools>=3.2', 'pyproj', 'numpy', 'configobj', 'pykdtree>=1.1.1']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'basemap', 'pillow']}
@@ -79,7 +79,8 @@ class build_ext(_build_ext):
 
 if __name__ == "__main__":
     if not os.getenv("USE_CYTHON", False) or cythonize is None:
-        print("Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
+        print(
+            "Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
 
         def cythonize(extensions, **_ignore):
             """Fake function to compile from C/C++ files instead of compiling .pyx files with cython.
@@ -98,27 +99,26 @@ if __name__ == "__main__":
                 extension.sources[:] = sources
             return extensions
 
-
     setup(name='pyresample',
-      version=version.__version__,
-      description='Resampling of remote sensing data in Python',
-      author='Thomas Lavergne',
-      author_email='t.lavergne@met.no',
-      package_dir={'pyresample': 'pyresample'},
-      packages=find_packages(),
-      setup_requires=['numpy'],
-      install_requires=requirements,
-      extras_require=extras_require,
-      cmdclass={'build_ext': build_ext},
-      ext_modules=cythonize(extensions),
-      test_suite='pyresample.test.suite',
-      zip_safe=False,
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
-          'Programming Language :: Python',
-          'Operating System :: OS Independent',
-          'Intended Audience :: Science/Research',
-          'Topic :: Scientific/Engineering'
-      ]
-      )
+          version=version.__version__,
+          description='Resampling of remote sensing data in Python',
+          author='Thomas Lavergne',
+          author_email='t.lavergne@met.no',
+          package_dir={'pyresample': 'pyresample'},
+          packages=find_packages(),
+          setup_requires=['numpy'],
+          install_requires=requirements,
+          extras_require=extras_require,
+          cmdclass={'build_ext': build_ext},
+          ext_modules=cythonize(extensions),
+          test_suite='pyresample.test.suite',
+          zip_safe=False,
+          classifiers=[
+              'Development Status :: 5 - Production/Stable',
+              'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+              'Programming Language :: Python',
+              'Operating System :: OS Independent',
+              'Intended Audience :: Science/Research',
+              'Topic :: Scientific/Engineering'
+          ]
+          )

@@ -23,8 +23,10 @@
 """Classes for geometry operations"""
 
 import warnings
+
 import numpy as np
-from pyresample import utils, _spatial_mp
+
+from pyresample import _spatial_mp, utils
 
 
 class DimensionError(Exception):
@@ -107,36 +109,36 @@ class BaseDefinition(object):
         return not self.__eq__(other)
 
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
-        """Retrieves area_extent for a subdomain 
+        """Retrieves area_extent for a subdomain
         rows    are counted from upper left to lower left
-        columns are counted from upper left to upper right 
+        columns are counted from upper left to upper right
 
         :Parameters:
         row_LR : int
-            row of the lower right pixel 
+            row of the lower right pixel
         col_LR : int
             col of the lower right pixel
         row_UL : int
-            row of the upper left pixel 
+            row of the upper left pixel
         col_UL : int
             col of the upper left pixel
 
         :Returns:
-        area_extent : list 
+        area_extent : list
             Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
 
         :Author:
         Ulrich Hamann
         """
-        
-        (a,b) = self.get_proj_coords( data_slice=(row_LR,col_LR) )
-        a = a - 0.5*self.pixel_size_x
-        b = b - 0.5*self.pixel_size_y
-        (c,d) = self.get_proj_coords( data_slice=(row_UL,col_UL) )
-        c = c + 0.5*self.pixel_size_x
-        d = d + 0.5*self.pixel_size_y
 
-        return (a,b,c,d)
+        (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
+        a = a - 0.5 * self.pixel_size_x
+        b = b - 0.5 * self.pixel_size_y
+        (c, d) = self.get_proj_coords(data_slice=(row_UL, col_UL))
+        c = c + 0.5 * self.pixel_size_x
+        d = d + 0.5 * self.pixel_size_y
+
+        return (a, b, c, d)
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
@@ -587,7 +589,8 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def(self):
         proj_dict = self.proj_dict
-        proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
+        proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k]))
+                             for k in sorted(proj_dict.keys())])
 
         fmt = "REGION: {name} {{\n"
         fmt += "\tNAME:\t{name}\n"
@@ -597,7 +600,7 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tYSIZE:\t{y_size}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.name, area_id=self.area_id, proj_str=proj_str,
-                                x_size=self.x_size, y_size=self.y_size, area_extent=self.area_extent)
+                                  x_size=self.x_size, y_size=self.y_size, area_extent=self.area_extent)
         return area_def_str
 
     __repr__ = __str__
@@ -608,7 +611,7 @@ class AreaDefinition(BaseDefinition):
         try:
             return ((self.proj_dict == other.proj_dict) and
                     (self.shape == other.shape) and
-                    (self.area_extent == other.area_extent))
+                    (np.allclose(self.area_extent, other.area_extent)))
         except AttributeError:
             return super(AreaDefinition, self).__eq__(other)
 
@@ -617,8 +620,7 @@ class AreaDefinition(BaseDefinition):
 
         return not self.__eq__(other)
 
-
-    def colrow2lonlat(self,cols,rows):
+    def colrow2lonlat(self, cols, rows):
         """
         Return longitudes and latitudes for the given image columns
         and rows. Both scalars and arrays are supported.
@@ -628,8 +630,7 @@ class AreaDefinition(BaseDefinition):
         p = _spatial_mp.Proj(self.proj4_string)
         x = self.proj_x_coords
         y = self.proj_y_coords
-        return p(y[y.size-cols], x[x.size-rows], inverse=True)
-
+        return p(y[y.size - cols], x[x.size - rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
         """
@@ -639,8 +640,8 @@ class AreaDefinition(BaseDefinition):
         """
         return self.get_xy_from_lonlat(lons, lats)
 
-
     def get_xy_from_lonlat(self, lon, lat, outside_error=True, return_int=True):
+
         """Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
@@ -769,10 +770,9 @@ class AreaDefinition(BaseDefinition):
             else:
                 return x__, y__
 
-
     def get_xy_from_proj_coords(self, xm_, ym_):
-        """Retrieve closest x and y coordinates (column, row indices) for a 
-        location specified with projection coordinates (xm_,ym_) in meters. 
+        """Retrieve closest x and y coordinates (column, row indices) for a
+        location specified with projection coordinates (xm_,ym_) in meters.
         A ValueError is raised, if the return point is outside the area domain. If
         xm_,ym_ is a tuple of sequences of projection coordinates, a tuple of
         masked arrays are returned.
@@ -799,7 +799,8 @@ class AreaDefinition(BaseDefinition):
 
         if isinstance(xm_, np.ndarray) and isinstance(ym_, np.ndarray):
             if xm_.shape != ym_.shape:
-                raise ValueError("projection coordinates xm_ and ym_ is not of the same shape!")
+                raise ValueError(
+                    "projection coordinates xm_ and ym_ is not of the same shape!")
 
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
@@ -823,7 +824,6 @@ class AreaDefinition(BaseDefinition):
                     (y__ < 0 or y__ > self.y_size)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
-
 
     def get_lonlat(self, row, col):
         """Retrieves lon and lat values of single point in area grid
@@ -1051,7 +1051,7 @@ class AreaDefinition(BaseDefinition):
         """Returns projection definition as Proj.4 string"""
 
         items = self.proj_dict.items()
-        return '+' + ' +'.join([t[0] + '=' + t[1] for t in items])
+        return '+' + ' +'.join([t[0] + '=' + str(t[1]) for t in items])
 
 
 def _get_slice(segments, shape):

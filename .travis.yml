@@ -14,14 +14,18 @@ install:
 - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install "matplotlib<1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install unittest2; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install importlib; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install "sphinx<1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "sphinx>=1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.3" ]]; then pip install "matplotlib<1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.3" ]]; then pip install "sphinx<1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "sphinx>=1.5.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "sphinx>=1.5.0"; fi
 - pip install -r requirements.txt
 - pip install -e ".[pykdtree,quicklook]"
 - pip install coveralls
-- pip install sphinx
 script:
 # Once doctests pass this should be uncommented to replace the other coverage run line
 - coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest
