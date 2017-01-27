@@ -37,16 +37,19 @@ from pyresample import kd_tree
 LOG = logging.getLogger(__name__)
 
 
-def resample_bilinear(data, t__, s__, input_idxs, new_idx_arr, output_shape,
-                      fill_value=0):
-    """Resample using irregular bilinear algorithm."""
+def resample_bilinear(data, t__, s__, input_idxs, idx_arr, output_shape):
+    """Resample array *data* using irregular bilinear algorithm.
+    Arguments *t*, *s*, *input_idxs* and *idx_arr* are pre-calculated
+    using function pyresample.bilinear.calc_params().  *output_shape* is
+    the shape of the output array, ie. pixel counts as a tuple in (y, x)
+    directions."""
 
     # Ravel the data
     new_data = data.ravel()[input_idxs]
     data_min = np.nanmin(new_data)
     data_max = np.nanmax(new_data)
 
-    new_data = new_data[new_idx_arr]
+    new_data = new_data[idx_arr]
 
     # Get neighbour data to separate variables
     p_1 = new_data[:, 0]
@@ -69,8 +72,15 @@ def resample_bilinear(data, t__, s__, input_idxs, new_idx_arr, output_shape,
     return result
 
 
-def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1):
-    """Calculate parameters *s* and *t* for bilinear parametric lines"""
+def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
+                masked=False):
+    """Calculate parameters *s* and *t* for bilinear parametric lines.
+    Returns also valid input indices and mapping array from valid
+    input pixels to output pixels.  The input parameters are the input
+    and output area definitions, radius of the search area in meters,
+    number of neigbours to colelct and the number of CPUs to use for
+    the neighbour search.
+    """
 
     # Calculate neighbour information
     (input_idxs, output_idxs, idx_ref, dists) = \
@@ -179,15 +189,18 @@ def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1):
     idxs = (t__ < 0) | (t__ > 1)
     t__ = np.ma.masked_where(idxs, t__)
 
-    # For those pixel where a__ was zero, use linear solution bx + c = 0
-    # -> x = -c / b
-    # idxs
-    # t__[a__.mask] = -c__[a__.mask] / b__[a__.mask]
-
     s__ = (out_y - y_1 - y_31 * t__) / (y_2 + y_42 * t__ - y_1 - y_31 * t__)
 
     idxs = (s__ < 0) | (s__ > 1)
     s__ = np.ma.masked_where(idxs, s__)
+
+    # Remove mask and put np.nan at the masked locations instead
+    if not masked:
+        mask = t__.mask | s__.mask
+        t__ = t__.data
+        t__[mask] = np.nan
+        s__ = s__.data
+        s__[mask] = np.nan
 
     return t__, s__, input_idxs, idx_ref
 
