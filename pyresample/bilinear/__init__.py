@@ -48,8 +48,6 @@ def resample_bilinear(data, t__, s__, input_idxs, new_idx_arr, output_shape,
 
     new_data = new_data[new_idx_arr]
 
-    # print new_data.shape
-
     # Get neighbour data to separate variables
     p_1 = new_data[:, 0]
     p_2 = new_data[:, 1]
@@ -71,7 +69,7 @@ def resample_bilinear(data, t__, s__, input_idxs, new_idx_arr, output_shape,
     return result
 
 
-def calc_params(in_area, out_area, radius, neighbours=16, nprocs=1):
+def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1):
     """Calculate parameters *s* and *t* for bilinear parametric lines"""
 
     # Calculate neighbour information
@@ -180,6 +178,11 @@ def calc_params(in_area, out_area, radius, neighbours=16, nprocs=1):
 
     idxs = (t__ < 0) | (t__ > 1)
     t__ = np.ma.masked_where(idxs, t__)
+
+    # For those pixel where a__ was zero, use linear solution bx + c = 0
+    # -> x = -c / b
+    # idxs
+    # t__[a__.mask] = -c__[a__.mask] / b__[a__.mask]
 
     s__ = (out_y - y_1 - y_31 * t__) / (y_2 + y_42 * t__ - y_1 - y_31 * t__)
 
