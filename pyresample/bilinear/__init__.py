@@ -125,7 +125,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
         Source data resampled to target geometry
     """
 
-    # Ravel the data
+    # Reduce data
     new_data = data[input_idxs]
     data_min = np.nanmin(new_data)
     data_max = np.nanmax(new_data)
