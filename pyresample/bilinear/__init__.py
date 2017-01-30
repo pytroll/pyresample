@@ -45,12 +45,12 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
         Geometry definition of source data
     out_area : object
         Geometry definition of target area
-    radius : float
+    radius : float, optional
         Cut-off distance in meters
-    neighbours : int
+    neighbours : int, optional
         Number of neighbours to consider for each grid point when
         searching the closest corner points
-    nprocs : int
+    nprocs : int, optional
         Number of processor cores to be used for getting neighbour info
     fill_value : {int, None}, optional
             Set undetermined pixels to this value.
@@ -67,7 +67,7 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
 
     num_dsets = 1
     # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.size:
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
         num_dsets = data.shape[2]
         data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
     # Also ravel single dataset
@@ -75,18 +75,18 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
         data = data.ravel()
 
     if num_dsets > 1:
-        result = np.nan * np.zeros(data.shape)
+        result = np.nan * np.zeros((out_area.size, num_dsets))
         for i in range(num_dsets):
             result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
                                                     input_idxs, idx_ref,
-                                                    out_area.shape)
+                                                    output_shape=None)
     else:
         result = get_sample_from_bil_info(data[:, i], t__, s__,
                                           input_idxs, idx_ref,
-                                          out_area.shape)
+                                          output_shape=None)
 
     if fill_value is None:
-        result = np.ma.masked_where(result == np.nan, result)
+        result = np.ma.masked_where(np.isnan(result), result)
     else:
         result[result == np.nan] = fill_value
 
@@ -94,13 +94,13 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
 
 
 def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
-                             output_shape):
-    """Resample data using bilinear interolation.
+                             output_shape=None):
+    """Resample data using bilinear interpolation.
 
     Parameters
     ----------
     data : numpy array
-        Single dataset to be interpolated
+        1d array to be resampled
     t__ : numpy array
         Vertical fractional distances from corner to the new points
     s__ : numpy array
@@ -109,8 +109,9 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
         Valid indices in the input data
     idx_arr : numpy array
         Mapping array from valid source points to target points
-    output_shape : tuple
-        Tuple of (y, x) dimension for the target projection
+    output_shape : tuple, optional
+        Tuple of (y, x) dimension for the target projection.
+        If None (default), do not reshape data.
 
     Returns
     -------
@@ -119,7 +120,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
     """
 
     # Ravel the data
-    new_data = data.ravel()[input_idxs]
+    new_data = data[input_idxs]
     data_min = np.nanmin(new_data)
     data_max = np.nanmax(new_data)
 
@@ -141,7 +142,8 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
     result = np.ma.masked_where(mask, result.data)
 
-    result = result.reshape(output_shape)
+    if output_shape is not None:
+        result = result.reshape(output_shape)
 
     return result
 
@@ -154,16 +156,16 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
         Geometry definition of source data
     out_area : object
         Geometry definition of target area
-    radius : float
+    radius : float, optional
         Cut-off distance in meters
-    neighbours : int
+    neighbours : int, optional
         Number of neighbours to consider for each grid point when
         searching the closest corner points
-    nprocs : int
+    nprocs : int, optional
         Number of processor cores to be used for getting neighbour info
-    masked : bool
+    masked : bool, optional
         If true, return masked arrays, else return np.nan values for
-        invalid points
+        invalid points (default)
 
     Returns
     -------
