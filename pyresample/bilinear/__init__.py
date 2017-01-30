@@ -215,12 +215,10 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     t__, s__ = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
     # Remove mask and put np.nan at the masked locations instead
-    if not masked:
-        mask = t__.mask | s__.mask
-        t__ = t__.data
-        t__[mask] = np.nan
-        s__ = s__.data
-        s__[mask] = np.nan
+    if masked:
+        mask = np.isnan(t__) | np.isnan(s__)
+        t__ = np.ma.masked_where(mask, t__)
+        s__ = np.ma.masked_where(mask, s__)
 
     return t__, s__, input_idxs, idx_ref
 
@@ -228,32 +226,142 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
 def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s"""
 
+    t__ = np.nan * np.zeros(out_y.shape)
+    s__ = np.nan * np.zeros(out_y.shape)
+
+    vert_parallel = _find_vert_parallels(pt_1, pt_2, pt_3, pt_4)
+    horiz_parallel = _find_horiz_parallels(pt_1, pt_2, pt_3, pt_4)
+
+    # Cases where verticals are parallel
+    idxs = vert_parallel & np.invert(horiz_parallel)
+    if np.any(idxs):
+        print "verticals area parallel:", np.sum(idxs)
+        t__[idxs], s__[idxs] = \
+            _get_ts_uprights_parallel(pt_1[idxs, :], pt_2[idxs, :],
+                                      pt_3[idxs, :], pt_4[idxs, :],
+                                      out_y[idxs, :], out_x[idxs, :])
+
+    # Cases where both verticals and horizontals are parallel
+    idxs = vert_parallel & horiz_parallel
+    if np.any(idxs):
+        print "parallellograms:", np.sum(idxs)
+        t__[idxs], s__[idxs] = \
+            _get_ts_parallellogram(pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
+                                   out_y[idxs, :], out_x[idxs, :])
+
+    # All the rest, ie. where the verticals are not parallel
+    idxs = np.invert(vert_parallel)
+    if np.any(idxs):
+        print idxs.shape
+        print pt_1.shape
+        print out_y.shape
+        t__[idxs], s__[idxs] = \
+            _get_ts_irregular(pt_1[idxs, :], pt_2[idxs, :],
+                              pt_3[idxs, :], pt_4[idxs, :],
+                              out_y[idxs], out_x[idxs])
+
+    return t__, s__
+
+
+def _find_vert_parallels(pt_1, pt_2, pt_3, pt_4):
+    """Find vertical parallels from rectangle defined by four (x, y)
+    points"""
+    vals = (pt_3[:, 0] - pt_1[:, 0]) * (pt_4[:, 1] - pt_2[:, 1]) - \
+           (pt_4[:, 0] - pt_2[:, 0]) * (pt_3[:, 1] - pt_1[:, 1])
+    idxs = vals == 0.0
+
+    return idxs
+
+
+def _find_horiz_parallels(pt_1, pt_2, pt_3, pt_4):
+    """Find horizontal parallels from rectangle defined by four (x, y)
+    points"""
+    vals = (pt_2[:, 0] - pt_1[:, 0]) * (pt_4[:, 1] - pt_3[:, 1]) - \
+           (pt_4[:, 0] - pt_3[:, 0]) * (pt_2[:, 1] - pt_1[:, 1])
+    idxs = vals == 0.0
+
+    return idxs
+
+
+def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+    """Get parameters for the case where none of the sides are parallel."""
+
     # Pairwise longitudal separations between reference points
-    x_21 = pt_2[0] - pt_1[0]
-    x_31 = pt_3[0] - pt_1[0]
-    x_42 = pt_4[0] - pt_2[0]
+    x_21 = pt_2[:, 0] - pt_1[:, 0]
+    x_31 = pt_3[:, 0] - pt_1[:, 0]
+    x_42 = pt_4[:, 0] - pt_2[:, 0]
 
     # Pairwise latitudal separations between reference points
-    y_21 = pt_2[1] - pt_1[1]
-    y_31 = pt_3[1] - pt_1[1]
-    y_42 = pt_4[1] - pt_2[1]
+    y_21 = pt_2[:, 1] - pt_1[:, 1]
+    y_31 = pt_3[:, 1] - pt_1[:, 1]
+    y_42 = pt_4[:, 1] - pt_2[:, 1]
 
-    # Parameters for 2nd order polynomial
     a__ = x_31 * y_42 - y_31 * x_42
     b__ = out_y * (x_42 - x_31) - out_x * (y_42 - y_31) + \
-        x_31 * pt_2[1] - y_31 * pt_2[0] + pt_1[0] * y_42 - pt_1[1] * x_42
-    c__ = out_y * x_21 - out_x * y_21 + pt_1[0] * pt_2[1] - pt_2[0] * pt_1[1]
+        x_31 * pt_2[:, 1] - y_31 * pt_2[:, 0] + \
+        pt_1[:, 0] * y_42 - pt_1[:, 1] * x_42
+    c__ = out_y * x_21 - out_x * y_21 + pt_1[:, 0] * pt_2[:, 1] - \
+        pt_2[:, 0] * pt_1[:, 1]
 
     # Get the valid roots from interval [0, 1]
     t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
-    s__ = ((out_y - pt_1[1] - y_31 * t__) /
-           (pt_2[1] + y_42 * t__ - pt_1[1] - y_31 * t__))
+    s__ = ((out_y - pt_1[:, 1] - y_31 * t__) /
+           (pt_2[:, 1] + y_42 * t__ - pt_1[:, 1] - y_31 * t__))
 
     # Limit also values of s to interval [0, 1]
-    idxs = (s__ < 0) | (s__ > 1)
-    s__ = np.ma.masked_where(idxs, s__)
+    # idxs = (s__ < 0) | (s__ > 1)
+    # s__ = np.ma.masked_where(idxs, s__)
+
+    return t__, s__
+
+
+def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+    """Get parameters for the case where uprights are parallel"""
+
+    # Pairwise longitudal separations between reference points
+    x_21 = pt_2[:, 0] - pt_1[:, 0]
+    x_31 = pt_3[:, 0] - pt_1[:, 0]
+    x_43 = pt_4[:, 0] - pt_3[:, 0]
+
+    # Pairwise latitudal separations between reference points
+    y_21 = pt_2[:, 1] - pt_1[:, 1]
+    y_31 = pt_3[:, 1] - pt_1[:, 1]
+    y_43 = pt_4[:, 1] - pt_3[:, 1]
+
+    a__ = x_21 * y_43 - y_21 * x_43
+    b__ = out_y * (x_43 - x_21) - out_x * (y_43 - y_21) + \
+        pt_1[:, 0], y_43 - pt_1[:, 1] * x_43 + \
+        x_21 * pt_3[:, 1] - y_21 * pt_3[:, 0]
+    c__ = out_y * x_31 - out_x * y_31 + \
+        pt_1[:, 0] * pt_3[:, 1] - pt_3[:, 0] - pt_1[:, 0]
+
+    s__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
+
+    t__ = (out_y - pt_1[:, 1] - y_21 * s__) / \
+          (pt_3[:, 1] + y_43 * s__ - pt_1[:, 1] - y_21 * s__)
+
+    idxs = (t__ < 0.) | (t__ > 1.)
+    t__[idxs] = np.nan
+
+    return t__, s__
+
+
+def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
+    """Get parameters for the case where uprights are parallel"""
+
+    # Pairwise longitudal separations between reference points
+    x_21 = pt_2[:, 0] - pt_1[:, 0]
+    x_31 = pt_3[:, 0] - pt_1[:, 0]
+
+    # Pairwise latitudal separations between reference points
+    y_21 = pt_2[:, 1] - pt_1[:, 1]
+    y_31 = pt_3[:, 1] - pt_1[:, 1]
+
+    s__ = (out_y - pt_1[:, 1] + y_31) / (y_21 - y_31 * x_21 / x_31)
+
+    t__ = (x_21 * s__ - out_x + pt_1[:, 0]) / x_31
 
     return t__, s__
 
@@ -264,8 +372,10 @@ def _mask_coordinates(lons, lats):
     lats = lats.ravel()
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
-    lons = np.ma.masked_where(idxs, lons)
-    lats = np.ma.masked_where(idxs, lats)
+    # lons = np.ma.masked_where(idxs, lons)
+    # lats = np.ma.masked_where(idxs, lats)
+    lons[idxs] = np.nan
+    lats[idxs] = np.nan
 
     return lons, lats
 
@@ -274,8 +384,12 @@ def _get_corner(stride, valid, in_x, in_y, idx_ref):
     """Get closest set of coordinates from the *valid* locations"""
     idxs = np.argmax(valid, axis=1)
     invalid = np.invert(np.max(valid, axis=1))
-    x__ = np.ma.masked_where(invalid, in_x[stride, idxs])
-    y__ = np.ma.masked_where(invalid, in_y[stride, idxs])
+    # x__ = np.ma.masked_where(invalid, in_x[stride, idxs])
+    # y__ = np.ma.masked_where(invalid, in_y[stride, idxs])
+    x__ = in_x[stride, idxs]
+    x__[invalid] = np.nan
+    y__ = in_y[stride, idxs]
+    y__[invalid] = np.nan
     idx = idx_ref[stride, idxs]
 
     return x__, y__, idx
@@ -318,7 +432,8 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     # Combine sorted indices to idx_ref
     idx_ref = np.vstack((idx_1, idx_2, idx_3, idx_4)).T
 
-    return (x_1, y_1), (x_2, y_2), (x_3, y_3), (x_4, y_4), idx_ref
+    return (np.vstack((x_1, y_1)).T, np.vstack((x_2, y_2)).T,
+            np.vstack((x_3, y_3)).T, np.vstack((x_4, y_4)).T, idx_ref)
 
 
 def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
@@ -326,26 +441,27 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     [*min_val*, *max_val*]"""
 
     # Mask out division by zero
-    a__ = np.ma.masked_where(a__ == 0, a__)
+    # a__ = np.ma.masked_where(a__ == 0, a__)
 
     # Mask out invalid (complex) discriminants
     discriminant = b__ * b__ - 4 * a__ * c__
-    idxs = discriminant < 0
-    discriminant = np.ma.masked_where(idxs, discriminant)
+    # idxs = discriminant < 0
+    # discriminant = np.ma.masked_where(idxs, discriminant)
 
     # Solve the quadratic polynomial
-    t_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
-    t_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
+    x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
+    x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
 
     # Find valid solutions, ie. 0 <= t <= 1
-    t__ = t_1.copy()
-    idxs = (t_1 < min_val) | (t_1 > max_val)
-    t__[idxs] = t_2[idxs]
+    x__ = x_1.copy()
+    idxs = (x_1 < min_val) | (x_1 > max_val)
+    x__[idxs] = x_2[idxs]
 
-    idxs = (t__ < min_val) | (t__ > max_val)
-    t__ = np.ma.masked_where(idxs, t__)
+    idxs = (x__ < min_val) | (x__ > max_val)
+    x__[idxs] = np.nan
+    # x__ = np.ma.masked_where(idxs, t__)
 
-    return t__
+    return x__
 
 
 def _get_output_xy(out_area, proj):
