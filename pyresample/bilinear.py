@@ -206,7 +206,7 @@ def _mask_coordinates(lons, lats):
     return lons, lats
 
 
-def get_corner(stride, valid, in_x, in_y, idx_ref):
+def _get_corner(stride, valid, in_x, in_y, idx_ref):
     """Get closest set of coordinates from the *valid* locations"""
     idxs = np.argmax(valid, axis=1)
     invalid = np.invert(np.max(valid, axis=1))
@@ -237,19 +237,19 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
     # Upper left source pixel
     valid = (x_diff > 0) & (y_diff < 0)
-    x_1, y_1, idx_1 = get_corner(stride, valid, in_x, in_y, idx_ref)
+    x_1, y_1, idx_1 = _get_corner(stride, valid, in_x, in_y, idx_ref)
 
     # Upper right source pixel
     valid = (x_diff < 0) & (y_diff < 0)
-    x_2, y_2, idx_2 = get_corner(stride, valid, in_x, in_y, idx_ref)
+    x_2, y_2, idx_2 = _get_corner(stride, valid, in_x, in_y, idx_ref)
 
     # Lower left source pixel
     valid = (x_diff > 0) & (y_diff > 0)
-    x_3, y_3, idx_3 = get_corner(stride, valid, in_x, in_y, idx_ref)
+    x_3, y_3, idx_3 = _get_corner(stride, valid, in_x, in_y, idx_ref)
 
     # Lower right source pixel
     valid = (x_diff < 0) & (y_diff > 0)
-    x_4, y_4, idx_4 = get_corner(stride, valid, in_x, in_y, idx_ref)
+    x_4, y_4, idx_4 = _get_corner(stride, valid, in_x, in_y, idx_ref)
 
     # Combine sorted indices to idx_ref
     idx_ref = np.vstack((idx_1, idx_2, idx_3, idx_4)).T
