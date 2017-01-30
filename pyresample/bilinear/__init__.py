@@ -41,8 +41,8 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
     data : numpy array
         Array of single channel data points or
         (source_geo_def.shape, k) array of k channels of datapoints
-    in_area : object
-        Geometry definition of source data
+    in_area : object or 2-tuple of numpy arrays
+        Geometry definition of source data or tuple of (lons, lats)
     out_area : object
         Geometry definition of target area
     radius : float, optional
@@ -57,6 +57,12 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
             If fill_value is None a masked array is returned
             with undetermined pixels masked
     """
+
+    # Check in_area
+    if isinstance(in_area, tuple):
+        from pyresample.geometry import SwathDefinition
+        lons, lats = _mask_coordinates(in_area[0], in_area[1])
+        in_area = SwathDefinition(lons, lats)
 
     # Calculate the resampling information
     t__, s__, input_idxs, idx_ref = get_bil_info(in_area, out_area,
@@ -152,8 +158,8 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
                  masked=False):
     """Calculate information needed for bilinear resampling.
 
-    in_area : object
-        Geometry definition of source data
+    in_area : object or 2-tuple of numpy arrays
+        Geometry definition of source data or tuple of (lons, lats)
     out_area : object
         Geometry definition of target area
     radius : float, optional
