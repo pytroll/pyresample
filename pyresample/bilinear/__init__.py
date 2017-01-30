@@ -28,13 +28,69 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 
 """
 
-import logging
 import numpy as np
 from pyproj import Proj
 
 from pyresample import kd_tree
 
-LOG = logging.getLogger(__name__)
+
+def resample_bilinear(data, in_area, out_area, radius=50e3,
+                      neighbours=32, nprocs=1, fill_value=0):
+    """Resample using bilinear interpolation.
+
+    data : numpy array
+        Array of single channel data points or
+        (source_geo_def.shape, k) array of k channels of datapoints
+    in_area : object
+        Geometry definition of source data
+    out_area : object
+        Geometry definition of target area
+    radius : float
+        Cut-off distance in meters
+    neighbours : int
+        Number of neighbours to consider for each grid point when
+        searching the closest corner points
+    nprocs : int
+        Number of processor cores to be used for getting neighbour info
+    fill_value : {int, None}, optional
+            Set undetermined pixels to this value.
+            If fill_value is None a masked array is returned
+            with undetermined pixels masked
+    """
+
+    # Calculate the resampling information
+    t__, s__, input_idxs, idx_ref = get_bil_info(in_area, out_area,
+                                                 radius=radius,
+                                                 neighbours=neighbours,
+                                                 nprocs=nprocs,
+                                                 masked=False)
+
+    num_dsets = 1
+    # Handle multiple datasets
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.size:
+        num_dsets = data.shape[2]
+        data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
+    # Also ravel single dataset
+    elif data.shape[0] != input_idxs.size:
+        data = data.ravel()
+
+    if num_dsets > 1:
+        result = np.nan * np.zeros(data.shape)
+        for i in range(num_dsets):
+            result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
+                                                    input_idxs, idx_ref,
+                                                    out_area.shape)
+    else:
+        result = get_sample_from_bil_info(data[:, i], t__, s__,
+                                          input_idxs, idx_ref,
+                                          out_area.shape)
+
+    if fill_value is None:
+        result = np.ma.masked_where(result == np.nan, result)
+    else:
+        result[result == np.nan] = fill_value
+
+    return result
 
 
 def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
