@@ -37,12 +37,30 @@ from pyresample import kd_tree
 LOG = logging.getLogger(__name__)
 
 
-def resample_bilinear(data, t__, s__, input_idxs, idx_arr, output_shape):
-    """Resample array *data* using irregular bilinear algorithm.
-    Arguments *t*, *s*, *input_idxs* and *idx_arr* are pre-calculated
-    using function pyresample.bilinear.calc_params().  *output_shape* is
-    the shape of the output array, ie. pixel counts as a tuple in (y, x)
-    directions."""
+def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
+                             output_shape):
+    """Resample data using bilinear interolation.
+
+    Parameters
+    ----------
+    data : numpy array
+        Single dataset to be interpolated
+    t__ : numpy array
+        Vertical fractional distances from corner to the new points
+    s__ : numpy array
+        Horizontal fractional distances from corner to the new points
+    input_idxs : numpy array
+        Valid indices in the input data
+    idx_arr : numpy array
+        Mapping array from valid source points to target points
+    output_shape : tuple
+        Tuple of (y, x) dimension for the target projection
+
+    Returns
+    -------
+    result : numpy array
+        Source data resampled to target geometry
+    """
 
     # Ravel the data
     new_data = data.ravel()[input_idxs]
@@ -72,14 +90,35 @@ def resample_bilinear(data, t__, s__, input_idxs, idx_arr, output_shape):
     return result
 
 
-def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
-                masked=False):
-    """Calculate parameters *s* and *t* for bilinear parametric lines.
-    Returns also valid input indices and mapping array from valid
-    input pixels to output pixels.  The input parameters are the input
-    and output area definitions, radius of the search area in meters,
-    number of neigbours to colelct and the number of CPUs to use for
-    the neighbour search.
+def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
+                 masked=False):
+    """Calculate information needed for bilinear resampling.
+
+    in_area : object
+        Geometry definition of source data
+    out_area : object
+        Geometry definition of target area
+    radius : float
+        Cut-off distance in meters
+    neighbours : int
+        Number of neighbours to consider for each grid point when
+        searching the closest corner points
+    nprocs : int
+        Number of processor cores to be used for getting neighbour info
+    masked : bool
+        If true, return masked arrays, else return np.nan values for
+        invalid points
+
+    Returns
+    -------
+    t__ : numpy array
+        Vertical fractional distances from corner to the new points
+    s__ : numpy array
+        Horizontal fractional distances from corner to the new points
+    input_idxs : numpy array
+        Valid indices in the input data
+    idx_arr : numpy array
+        Mapping array from valid source points to target points
     """
 
     # Calculate neighbour information
@@ -99,15 +138,31 @@ def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     proj = Proj(out_area.proj4_string)
 
     # Get output x/y coordinates
-    out_x, out_y = get_output_xy(out_area, proj)
+    out_x, out_y = _get_output_xy(out_area, proj)
 
     # Get input x/ycoordinates
-    in_x, in_y = get_input_xy(in_area, proj, input_idxs, idx_ref)
+    in_x, in_y = _get_input_xy(in_area, proj, input_idxs, idx_ref)
 
     # Get the four closest corner points around each output location
-    pt_1, pt_2, pt_3, pt_4, idx_ref = get_four_closest(in_x, in_y,
-                                                       out_x, out_y,
-                                                       neighbours, idx_ref)
+    pt_1, pt_2, pt_3, pt_4, idx_ref = \
+        _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref)
+
+    # Calculate vertical and horizontal fractional distances t and s
+    t__, s__ = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+
+    # Remove mask and put np.nan at the masked locations instead
+    if not masked:
+        mask = t__.mask | s__.mask
+        t__ = t__.data
+        t__[mask] = np.nan
+        s__ = s__.data
+        s__[mask] = np.nan
+
+    return t__, s__, input_idxs, idx_ref
+
+
+def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
+    """Calculate vertical and horizontal fractional distances t and s"""
 
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[0] - pt_1[0]
@@ -126,7 +181,7 @@ def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     c__ = out_y * x_21 - out_x * y_21 + pt_1[0] * pt_2[1] - pt_2[0] * pt_1[1]
 
     # Get the valid roots from interval [0, 1]
-    t__ = solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
+    t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
     s__ = ((out_y - pt_1[1] - y_31 * t__) /
@@ -136,18 +191,10 @@ def calc_params(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     idxs = (s__ < 0) | (s__ > 1)
     s__ = np.ma.masked_where(idxs, s__)
 
-    # Remove mask and put np.nan at the masked locations instead
-    if not masked:
-        mask = t__.mask | s__.mask
-        t__ = t__.data
-        t__[mask] = np.nan
-        s__ = s__.data
-        s__[mask] = np.nan
-
-    return t__, s__, input_idxs, idx_ref
+    return t__, s__
 
 
-def mask_coordinates(lons, lats):
+def _mask_coordinates(lons, lats):
     """Mask invalid coordinate values"""
     lons = lons.ravel()
     lats = lats.ravel()
@@ -170,8 +217,11 @@ def get_corner(stride, valid, in_x, in_y, idx_ref):
     return x__, y__, idx
 
 
-def get_four_closest(in_x, in_y, out_x, out_y, neighbours, idx_ref):
-    """"""
+def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
+    """Get four closest locations from (in_x, in_y) so that they form a
+    bounding rectangle around the requested location given by (out_x,
+    out_y).
+    """
 
     # Find four closest pixels around the target location
 
@@ -207,7 +257,7 @@ def get_four_closest(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     return (x_1, y_1), (x_2, y_2), (x_3, y_3), (x_4, y_4), idx_ref
 
 
-def solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
+def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     """Solve quadratic equation and return the valid roots from interval
     [*min_val*, *max_val*]"""
 
@@ -234,18 +284,18 @@ def solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     return t__
 
 
-def get_output_xy(out_area, proj):
+def _get_output_xy(out_area, proj):
     """Get x/y coordinates of the target grid."""
     # Read output coordinates
     out_lons, out_lats = out_area.get_lonlats()
-    out_lons, out_lats = mask_coordinates(out_lons, out_lats)
+    out_lons, out_lats = _mask_coordinates(out_lons, out_lats)
 
     out_x, out_y = proj(out_lons, out_lats)
 
     return out_x, out_y
 
 
-def get_input_xy(in_area, proj, input_idxs, idx_ref):
+def _get_input_xy(in_area, proj, input_idxs, idx_ref):
     """Get x/y coordinates for the input area and reduce the data."""
     in_lons, in_lats = in_area.get_lonlats()
 
@@ -254,7 +304,7 @@ def get_input_xy(in_area, proj, input_idxs, idx_ref):
     in_lats = in_lats.ravel()[input_idxs]
 
     # Mask invalid values
-    in_lons, in_lats = mask_coordinates(in_lons, in_lats)
+    in_lons, in_lats = _mask_coordinates(in_lons, in_lats)
 
     # Expand input coordinates for each output location
     in_lons = in_lons[idx_ref]
