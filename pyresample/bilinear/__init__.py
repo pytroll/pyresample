@@ -143,8 +143,9 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
               p_3 * (1 - s__) * t__ +
               p_4 * s__ * t__)
 
-    mask = ((result > data_max) | (result < data_min) |
-            np.isnan(result) | result.mask)
+    with np.errstate(invalid='ignore'):
+        mask = ((result > data_max) | (result < data_min) |
+                np.isnan(result) | result.mask)
 
     result = np.ma.masked_where(mask, result.data)
 
@@ -235,7 +236,6 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     # Cases where verticals are parallel
     idxs = vert_parallel & np.invert(horiz_parallel)
     if np.any(idxs):
-        print "verticals area parallel:", np.sum(idxs)
         t__[idxs], s__[idxs] = \
             _get_ts_uprights_parallel(pt_1[idxs, :], pt_2[idxs, :],
                                       pt_3[idxs, :], pt_4[idxs, :],
@@ -244,7 +244,6 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     # Cases where both verticals and horizontals are parallel
     idxs = vert_parallel & horiz_parallel
     if np.any(idxs):
-        print "parallellograms:", np.sum(idxs)
         t__[idxs], s__[idxs] = \
             _get_ts_parallellogram(pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
                                    out_y[idxs, :], out_x[idxs, :])
@@ -252,13 +251,15 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     # All the rest, ie. where the verticals are not parallel
     idxs = np.invert(vert_parallel)
     if np.any(idxs):
-        print idxs.shape
-        print pt_1.shape
-        print out_y.shape
         t__[idxs], s__[idxs] = \
             _get_ts_irregular(pt_1[idxs, :], pt_2[idxs, :],
                               pt_3[idxs, :], pt_4[idxs, :],
                               out_y[idxs], out_x[idxs])
+
+    with np.errstate(invalid='ignore'):
+        idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
+    t__[idxs] = np.nan
+    s__[idxs] = np.nan
 
     return t__, s__
 
@@ -449,15 +450,18 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     # discriminant = np.ma.masked_where(idxs, discriminant)
 
     # Solve the quadratic polynomial
-    x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
-    x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
+    with np.errstate(invalid='ignore'):
+        x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
+        x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
 
     # Find valid solutions, ie. 0 <= t <= 1
     x__ = x_1.copy()
-    idxs = (x_1 < min_val) | (x_1 > max_val)
+    with np.errstate(invalid='ignore'):
+        idxs = (x_1 < min_val) | (x_1 > max_val)
     x__[idxs] = x_2[idxs]
 
-    idxs = (x__ < min_val) | (x__ > max_val)
+    with np.errstate(invalid='ignore'):
+        idxs = (x__ < min_val) | (x__ > max_val)
     x__[idxs] = np.nan
     # x__ = np.ma.masked_where(idxs, t__)
 
