@@ -94,7 +94,7 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
     if fill_value is None:
         result = np.ma.masked_where(np.isnan(result), result)
     else:
-        result[result == np.nan] = fill_value
+        result[np.isnan(result)] = fill_value
 
     return result
 
@@ -143,11 +143,15 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
               p_3 * (1 - s__) * t__ +
               p_4 * s__ * t__)
 
-    with np.errstate(invalid='ignore'):
-        mask = ((result > data_max) | (result < data_min) |
-                np.isnan(result) | result.mask)
+    if hasattr(result, 'mask'):
+        mask = result.mask
+        result = result.data
+        result[mask] = np.nan
 
-    result = np.ma.masked_where(mask, result.data)
+    with np.errstate(invalid='ignore'):
+        idxs = (result > data_max) | (result < data_min)
+
+    result[idxs] = np.nan
 
     if output_shape is not None:
         result = result.reshape(output_shape)
