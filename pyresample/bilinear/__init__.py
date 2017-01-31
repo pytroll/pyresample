@@ -87,7 +87,7 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
                                                     input_idxs, idx_ref,
                                                     output_shape=None)
     else:
-        result = get_sample_from_bil_info(data[:, i], t__, s__,
+        result = get_sample_from_bil_info(data, t__, s__,
                                           input_idxs, idx_ref,
                                           output_shape=None)
 
