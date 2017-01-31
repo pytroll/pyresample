@@ -313,7 +313,8 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
                (pt_2[:, 1] + y_42 * t__ - pt_1[:, 1] - y_31 * t__))
 
     # Limit also values of s to interval [0, 1]
-    idxs = (s__ < 0) | (s__ > 1)
+    with np.errstate(invalid='ignore'):
+        idxs = (s__ < 0) | (s__ > 1)
     s__[idxs] = np.nan
 
     return t__, s__
