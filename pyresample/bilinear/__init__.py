@@ -308,12 +308,13 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
-    s__ = ((out_y - pt_1[:, 1] - y_31 * t__) /
-           (pt_2[:, 1] + y_42 * t__ - pt_1[:, 1] - y_31 * t__))
+    with np.errstate(divide='ignore'):
+        s__ = ((out_y - pt_1[:, 1] - y_31 * t__) /
+               (pt_2[:, 1] + y_42 * t__ - pt_1[:, 1] - y_31 * t__))
 
     # Limit also values of s to interval [0, 1]
-    # idxs = (s__ < 0) | (s__ > 1)
-    # s__ = np.ma.masked_where(idxs, s__)
+    idxs = (s__ < 0) | (s__ > 1)
+    s__[idxs] = np.nan
 
     return t__, s__
 
@@ -333,7 +334,7 @@ def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
     a__ = x_21 * y_43 - y_21 * x_43
     b__ = out_y * (x_43 - x_21) - out_x * (y_43 - y_21) + \
-        pt_1[:, 0], y_43 - pt_1[:, 1] * x_43 + \
+        pt_1[:, 0] * y_43 - pt_1[:, 1] * x_43 + \
         x_21 * pt_3[:, 1] - y_21 * pt_3[:, 0]
     c__ = out_y * x_31 - out_x * y_31 + \
         pt_1[:, 0] * pt_3[:, 1] - pt_3[:, 0] - pt_1[:, 0]
@@ -360,9 +361,15 @@ def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     y_21 = pt_2[:, 1] - pt_1[:, 1]
     y_31 = pt_3[:, 1] - pt_1[:, 1]
 
-    s__ = (out_y - pt_1[:, 1] + y_31) / (y_21 - y_31 * x_21 / x_31)
+    t__ = (x_21 * (out_y - pt_1[:, 1]) - y_21 * (out_x - pt_1[:, 0])) / \
+          (x_21 * y_31 - y_21 * x_31)
+    idxs = (t__ < 0.) | (t__ > 1.)
+    t__[idxs] = np.nan
 
-    t__ = (x_21 * s__ - out_x + pt_1[:, 0]) / x_31
+    s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
+
+    idxs = (s__ < 0.) | (s__ > 1.)
+    s__[idxs] = np.nan
 
     return t__, s__
 
@@ -373,8 +380,6 @@ def _mask_coordinates(lons, lats):
     lats = lats.ravel()
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
-    # lons = np.ma.masked_where(idxs, lons)
-    # lats = np.ma.masked_where(idxs, lats)
     lons[idxs] = np.nan
     lats[idxs] = np.nan
 
@@ -385,8 +390,7 @@ def _get_corner(stride, valid, in_x, in_y, idx_ref):
     """Get closest set of coordinates from the *valid* locations"""
     idxs = np.argmax(valid, axis=1)
     invalid = np.invert(np.max(valid, axis=1))
-    # x__ = np.ma.masked_where(invalid, in_x[stride, idxs])
-    # y__ = np.ma.masked_where(invalid, in_y[stride, idxs])
+    # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]
     x__[invalid] = np.nan
     y__ = in_y[stride, idxs]
@@ -439,15 +443,24 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
 def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     """Solve quadratic equation and return the valid roots from interval
-    [*min_val*, *max_val*]"""
+    [*min_val*, *max_val*]
 
-    # Mask out division by zero
-    # a__ = np.ma.masked_where(a__ == 0, a__)
+    """
 
-    # Mask out invalid (complex) discriminants
+    if not isinstance(a__, np.ndarray):
+        if isinstance(a__, (int, float)):
+            a__ = [a__]
+        a__ = np.array(a__)
+    if not isinstance(b__, np.ndarray):
+        if isinstance(b__, (int, float)):
+            b__ = [b__]
+        b__ = np.array(b__)
+    if not isinstance(c__, np.ndarray):
+        if isinstance(c__, (int, float)):
+            c__ = [c__]
+        c__ = np.array(c__)
+
     discriminant = b__ * b__ - 4 * a__ * c__
-    # idxs = discriminant < 0
-    # discriminant = np.ma.masked_where(idxs, discriminant)
 
     # Solve the quadratic polynomial
     with np.errstate(invalid='ignore'):
