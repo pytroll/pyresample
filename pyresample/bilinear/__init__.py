@@ -279,35 +279,15 @@ def _find_horiz_parallels(pt_1, pt_2, pt_3, pt_4):
 def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
 
-    # Pairwise longitudal separations between reference points
-    x_21 = pt_2[:, 0] - pt_1[:, 0]
-    x_31 = pt_3[:, 0] - pt_1[:, 0]
-    x_42 = pt_4[:, 0] - pt_2[:, 0]
-
-    # Pairwise latitudal separations between reference points
-    y_21 = pt_2[:, 1] - pt_1[:, 1]
-    y_31 = pt_3[:, 1] - pt_1[:, 1]
-    y_42 = pt_4[:, 1] - pt_2[:, 1]
-
-    a__ = x_31 * y_42 - y_31 * x_42
-    b__ = out_y * (x_42 - x_31) - out_x * (y_42 - y_31) + \
-        x_31 * pt_2[:, 1] - y_31 * pt_2[:, 0] + \
-        pt_1[:, 0] * y_42 - pt_1[:, 1] * x_42
-    c__ = out_y * x_21 - out_x * y_21 + pt_1[:, 0] * pt_2[:, 1] - \
-        pt_2[:, 0] * pt_1[:, 1]
+    # Get parameters for the quadratic equation
+    a__, b__, c__ = _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
     # Get the valid roots from interval [0, 1]
     t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
-    with np.errstate(divide='ignore'):
-        s__ = ((out_y - pt_1[:, 1] - y_31 * t__) /
-               (pt_2[:, 1] + y_42 * t__ - pt_1[:, 1] - y_31 * t__))
-
-    # Limit also values of s to interval [0, 1]
-    with np.errstate(invalid='ignore'):
-        idxs = (s__ < 0) | (s__ > 1)
-    s__[idxs] = np.nan
+    s__ = _solve_another_parameter(t__, pt_1[:, 1], pt_3[:, 1],
+                                   pt_2[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
@@ -315,30 +295,15 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where uprights are parallel"""
 
-    # Pairwise longitudal separations between reference points
-    x_21 = pt_2[:, 0] - pt_1[:, 0]
-    x_31 = pt_3[:, 0] - pt_1[:, 0]
-    x_43 = pt_4[:, 0] - pt_3[:, 0]
+    # Get parameters for the quadratic equation
+    a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
 
-    # Pairwise latitudal separations between reference points
-    y_21 = pt_2[:, 1] - pt_1[:, 1]
-    y_31 = pt_3[:, 1] - pt_1[:, 1]
-    y_43 = pt_4[:, 1] - pt_3[:, 1]
-
-    a__ = x_21 * y_43 - y_21 * x_43
-    b__ = out_y * (x_43 - x_21) - out_x * (y_43 - y_21) + \
-        pt_1[:, 0] * y_43 - pt_1[:, 1] * x_43 + \
-        x_21 * pt_3[:, 1] - y_21 * pt_3[:, 0]
-    c__ = out_y * x_31 - out_x * y_31 + \
-        pt_1[:, 0] * pt_3[:, 1] - pt_3[:, 0] - pt_1[:, 0]
-
+    # Get the valid roots from interval [0, 1]
     s__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
-    t__ = (out_y - pt_1[:, 1] - y_21 * s__) / \
-          (pt_3[:, 1] + y_43 * s__ - pt_1[:, 1] - y_21 * s__)
-
-    idxs = (t__ < 0.) | (t__ > 1.)
-    t__[idxs] = np.nan
+    # Calculate parameter t
+    t__ = _solve_another_parameter(s__, pt_1[:, 1], pt_2[:, 1],
+                                   pt_3[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
@@ -365,6 +330,49 @@ def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     s__[idxs] = np.nan
 
     return t__, s__
+
+
+def _solve_another_parameter(f__, y_1, y_2, y_3, y_4, out_y):
+    """Solve parameter t__ from s__, or vice versa.  For solving s__,
+    switch order of y_2 and y_3."""
+    y_21 = y_2 - y_1
+    y_43 = y_4 - y_3
+
+    with np.errstate(divide='ignore'):
+        g__ = ((out_y - y_1 - y_21 * f__) /
+               (y_3 + y_43 * f__ - y_1 - y_21 * f__))
+
+    # Limit values to interval [0, 1]
+    with np.errstate(invalid='ignore'):
+        idxs = (g__ < 0) | (g__ > 1)
+    g__[idxs] = np.nan
+
+    return g__
+
+
+def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+    """Calculate coefficients for quadratic equation for
+    _get_ts_irregular() and _get_ts_uprights().  For _get_ts_uprights
+    switch order of pt_2 and pt_3.
+    """
+    # Pairwise longitudal separations between reference points
+    x_21 = pt_2[:, 0] - pt_1[:, 0]
+    x_31 = pt_3[:, 0] - pt_1[:, 0]
+    x_42 = pt_4[:, 0] - pt_2[:, 0]
+
+    # Pairwise latitudal separations between reference points
+    y_21 = pt_2[:, 1] - pt_1[:, 1]
+    y_31 = pt_3[:, 1] - pt_1[:, 1]
+    y_42 = pt_4[:, 1] - pt_2[:, 1]
+
+    a__ = x_31 * y_42 - y_31 * x_42
+    b__ = out_y * (x_42 - x_31) - out_x * (y_42 - y_31) + \
+        x_31 * pt_2[:, 1] - y_31 * pt_2[:, 0] + \
+        y_42 * pt_1[:, 0] - x_42 * pt_1[:, 1]
+    c__ = out_y * x_21 - out_x * y_21 + pt_1[:, 0] * pt_2[:, 1] - \
+        pt_2[:, 0] * pt_1[:, 1]
+
+    return a__, b__, c__
 
 
 def _mask_coordinates(lons, lats):
