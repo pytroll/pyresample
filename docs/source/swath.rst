@@ -336,8 +336,8 @@ geostationary satellite image processing.
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> in_area = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> t_params, s_params, input_idxs, idx_ref = \
- ...     bilinear.get_bil_info(data, in_area, out_area)
- >>> res = bilinear.get_sample_from_bil_info(data, t_params, s_params,
+ ...     bilinear.get_bil_info(in_area, out_area, radius=50e3, nprocs=1)
+ >>> res = bilinear.get_sample_from_bil_info(data.ravel(), t_params, s_params,
  ...                                         input_idxs, idx_ref)
 
 
