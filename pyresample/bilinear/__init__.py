@@ -65,25 +65,13 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
                                                  nprocs=nprocs,
                                                  masked=False)
 
-    num_dsets = 1
-    # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
-        num_dsets = data.shape[2]
-        data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
-    # Also ravel single dataset
-    elif data.shape[0] != input_idxs.size:
-        data = data.ravel()
+    data = _check_data_shape(data, input_idxs)
 
-    if num_dsets > 1:
-        result = np.nan * np.zeros((out_area.size, num_dsets))
-        for i in range(num_dsets):
-            result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
-                                                    input_idxs, idx_ref,
-                                                    output_shape=None)
-    else:
-        result = get_sample_from_bil_info(data, t__, s__,
-                                          input_idxs, idx_ref,
-                                          output_shape=None)
+    result = np.nan * np.zeros((out_area.size, data.shape[1]))
+    for i in range(data.shape[1]):
+        result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
+                                                input_idxs, idx_ref,
+                                                output_shape=None)
 
     if fill_value is None:
         result = np.ma.masked_where(np.isnan(result), result)
@@ -516,3 +504,19 @@ def _get_input_xy(in_area, proj, input_idxs, idx_ref):
     in_x, in_y = proj(in_lons, in_lats)
 
     return in_x, in_y
+
+
+def _check_data_shape(data, input_idxs):
+    """Check data shape and adjust if necessary."""
+    # Handle multiple datasets
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
+        data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
+    # Also ravel single dataset
+    elif data.shape[0] != input_idxs.size:
+        data = data.ravel()
+
+    # Ensure two dimensions
+    if data.ndim == 1:
+        data = np.expand_dims(data, 1)
+
+    return data
