@@ -74,7 +74,7 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
                                                 output_shape=None)
 
     if fill_value is None:
-        result = np.ma.masked_where(np.isnan(result), result)
+        result = np.ma.masked_invalid(result)
     else:
         result[np.isnan(result)] = fill_value
 
