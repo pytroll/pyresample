@@ -88,7 +88,7 @@ class Test(unittest.TestCase):
                                             self.pts_vert_parallel[3],
                                             0., 0.)
         self.assertEqual(res[0], 0.5)
-        self.assertAlmostEqual(res[1][0], 0.6513878, 5)
+        self.assertEqual(res[1], 0.5)
 
     def test_get_ts_parallellogram(self):
         res = bil._get_ts_parallellogram(self.pts_both_parallel[0],
