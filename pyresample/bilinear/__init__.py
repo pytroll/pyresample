@@ -448,18 +448,16 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
 
     """
 
-    if not isinstance(a__, np.ndarray):
-        if isinstance(a__, (int, float)):
-            a__ = [a__]
-        a__ = np.array(a__)
-    if not isinstance(b__, np.ndarray):
-        if isinstance(b__, (int, float)):
-            b__ = [b__]
-        b__ = np.array(b__)
-    if not isinstance(c__, np.ndarray):
-        if isinstance(c__, (int, float)):
-            c__ = [c__]
-        c__ = np.array(c__)
+    def int_and_float_to_numpy(val):
+        if not isinstance(val, np.ndarray):
+            if isinstance(val, (int, float)):
+                val = [val]
+            val = np.array(val)
+        return val
+
+    a__ = int_and_float_to_numpy(a__)
+    b__ = int_and_float_to_numpy(b__)
+    c__ = int_and_float_to_numpy(c__)
 
     discriminant = b__ * b__ - 4 * a__ * c__
 
@@ -477,7 +475,6 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     with np.errstate(invalid='ignore'):
         idxs = (x__ < min_val) | (x__ > max_val)
     x__[idxs] = np.nan
-    # x__ = np.ma.masked_where(idxs, t__)
 
     return x__
 
