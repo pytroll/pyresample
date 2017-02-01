@@ -320,6 +320,8 @@ possible to cache the coefficients if the same transformation is done
 over and over again.  This is very typical in operational
 geostationary satellite image processing.
 
+.. doctest::
+
  >>> import numpy as np
  >>> from pyresample import bilinear, geometry
  >>> out_area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
