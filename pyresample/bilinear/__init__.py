@@ -58,12 +58,6 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
             with undetermined pixels masked
     """
 
-    # Check in_area
-    if isinstance(in_area, tuple):
-        from pyresample.geometry import SwathDefinition
-        lons, lats = _mask_coordinates(in_area[0], in_area[1])
-        in_area = SwathDefinition(lons, lats)
-
     # Calculate the resampling information
     t__, s__, input_idxs, idx_ref = get_bil_info(in_area, out_area,
                                                  radius=radius,
@@ -189,6 +183,12 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     idx_arr : numpy array
         Mapping array from valid source points to target points
     """
+
+    # Check in_area
+    if isinstance(in_area, tuple):
+        from pyresample.geometry import SwathDefinition
+        lons, lats = _mask_coordinates(in_area[0], in_area[1])
+        in_area = SwathDefinition(lons, lats)
 
     # Calculate neighbour information
     (input_idxs, output_idxs, idx_ref, dists) = \
