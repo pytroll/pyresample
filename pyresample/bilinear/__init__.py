@@ -286,8 +286,8 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
-    s__ = _solve_another_parameter(t__, pt_1[:, 1], pt_3[:, 1],
-                                   pt_2[:, 1], pt_4[:, 1], out_y)
+    s__ = _solve_another_fractional_distance(t__, pt_1[:, 1], pt_3[:, 1],
+                                             pt_2[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
@@ -302,8 +302,8 @@ def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     s__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter t
-    t__ = _solve_another_parameter(s__, pt_1[:, 1], pt_2[:, 1],
-                                   pt_3[:, 1], pt_4[:, 1], out_y)
+    t__ = _solve_another_fractional_distance(s__, pt_1[:, 1], pt_2[:, 1],
+                                             pt_3[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
@@ -332,7 +332,7 @@ def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     return t__, s__
 
 
-def _solve_another_parameter(f__, y_1, y_2, y_3, y_4, out_y):
+def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
     """Solve parameter t__ from s__, or vice versa.  For solving s__,
     switch order of y_2 and y_3."""
     y_21 = y_2 - y_1
