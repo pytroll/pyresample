@@ -219,25 +219,28 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
 def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s"""
 
+    # General case, ie. where the the corners form an irregular rectangle
+    t__, s__ = _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+
     # Cases where verticals are parallel
-    t__, s__ = _get_ts_uprights_parallel(pt_1, pt_2,
-                                         pt_3, pt_4,
-                                         out_y, out_x)
+    idxs = np.isnan(t__) | np.isnan(s__)
+    # Remove extra dimensions
+    idxs = idxs.ravel()
+
+    if np.any(idxs):
+        t__[idxs], s__[idxs] = \
+            _get_ts_uprights_parallel(pt_1[idxs, :], pt_2[idxs, :],
+                                      pt_3[idxs, :], pt_4[idxs, :],
+                                      out_y[idxs], out_x[idxs])
 
     # Cases where both verticals and horizontals are parallel
     idxs = np.isnan(t__) | np.isnan(s__)
+    # Remove extra dimensions
+    idxs = idxs.ravel()
     if np.any(idxs):
         t__[idxs], s__[idxs] = \
             _get_ts_parallellogram(pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
-                                   out_y[idxs, :], out_x[idxs, :])
-
-    # All the rest, ie. where the verticals are not parallel
-    idxs = np.isnan(t__) | np.isnan(s__)
-    if np.any(idxs):
-        t__[idxs], s__[idxs] = \
-            _get_ts_irregular(pt_1[idxs, :], pt_2[idxs, :],
-                              pt_3[idxs, :], pt_4[idxs, :],
-                              out_y[idxs], out_x[idxs])
+                                   out_y[idxs], out_x[idxs])
 
     with np.errstate(invalid='ignore'):
         idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
@@ -292,12 +295,14 @@ def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 
     t__ = (x_21 * (out_y - pt_1[:, 1]) - y_21 * (out_x - pt_1[:, 0])) / \
           (x_21 * y_31 - y_21 * x_31)
-    idxs = (t__ < 0.) | (t__ > 1.)
+    with np.errstate(invalid='ignore'):
+        idxs = (t__ < 0.) | (t__ > 1.)
     t__[idxs] = np.nan
 
     s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
 
-    idxs = (s__ < 0.) | (s__ > 1.)
+    with np.errstate(invalid='ignore'):
+        idxs = (s__ < 0.) | (s__ > 1.)
     s__[idxs] = np.nan
 
     return t__, s__
@@ -433,7 +438,7 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     discriminant = b__ * b__ - 4 * a__ * c__
 
     # Solve the quadratic polynomial
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid='ignore', divide='ignore'):
         x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
         x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
 
