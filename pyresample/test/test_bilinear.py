@@ -41,7 +41,7 @@ class Test(unittest.TestCase):
     # Input data around the target pixel at 0.63388324, 55.08234642,
     in_shape = (100, 100)
     data1 = np.ones((in_shape[0], in_shape[1]))
-    data2 = 2. * np.ones((in_shape[0], in_shape[1]))
+    data2 = 2. * data1
     lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
                              np.linspace(50., 60., num=in_shape[1]))
     swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
@@ -56,21 +56,19 @@ class Test(unittest.TestCase):
     index_mask = (idx_ref == input_size)
     idx_ref = np.where(index_mask, 0, idx_ref)
 
-    def test_find_vert_parallels(self):
-        res = bil._find_vert_parallels(*self.pts_both_parallel)
-        self.assertTrue(res[0])
-        res = bil._find_vert_parallels(*self.pts_vert_parallel)
-        self.assertTrue(res[0])
-        res = bil._find_vert_parallels(*self.pts_irregular)
-        self.assertFalse(res[0])
-
-    def test_find_horiz_parallels(self):
-        res = bil._find_horiz_parallels(*self.pts_both_parallel)
-        self.assertTrue(res[0])
-        res = bil._find_horiz_parallels(*self.pts_vert_parallel)
-        self.assertFalse(res[0])
-        res = bil._find_horiz_parallels(*self.pts_irregular)
-        self.assertFalse(res[0])
+    def test_calc_abc(self):
+        # No np.nan inputs
+        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
+        res = bil._calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        self.assertFalse(np.isnan(res[0]))
+        self.assertFalse(np.isnan(res[1]))
+        self.assertFalse(np.isnan(res[2]))
+        # np.nan input -> np.nan output
+        res = bil._calc_abc(np.array([[np.nan, np.nan]]),
+                            pt_2, pt_3, pt_4, 0.0, 0.0)
+        self.assertTrue(np.isnan(res[0]))
+        self.assertTrue(np.isnan(res[1]))
+        self.assertTrue(np.isnan(res[2]))
 
     def test_get_ts_irregular(self):
         res = bil._get_ts_irregular(self.pts_irregular[0],
@@ -105,6 +103,31 @@ class Test(unittest.TestCase):
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
+    def test_get_ts(self):
+        out_x = np.array([[0.]])
+        out_y = np.array([[0.]])
+        res = bil._get_ts(self.pts_irregular[0],
+                          self.pts_irregular[1],
+                          self.pts_irregular[2],
+                          self.pts_irregular[3],
+                          out_x, out_y)
+        self.assertEqual(res[0], 0.375)
+        self.assertEqual(res[1], 0.5)
+        res = bil._get_ts(self.pts_both_parallel[0],
+                          self.pts_both_parallel[1],
+                          self.pts_both_parallel[2],
+                          self.pts_both_parallel[3],
+                          out_x, out_y)
+        self.assertEqual(res[0], 0.5)
+        self.assertEqual(res[1], 0.5)
+        res = bil._get_ts(self.pts_vert_parallel[0],
+                          self.pts_vert_parallel[1],
+                          self.pts_vert_parallel[2],
+                          self.pts_vert_parallel[3],
+                          out_x, out_y)
+        self.assertEqual(res[0], 0.5)
+        self.assertEqual(res[1], 0.5)
+
     def test_solve_quadratic(self):
         res = bil._solve_quadratic(1, 0, 0)
         self.assertEqual(res[0], 0.0)
@@ -112,6 +135,16 @@ class Test(unittest.TestCase):
         self.assertTrue(np.isnan(res[0]))
         res = bil._solve_quadratic(1, 2, 1, min_val=-2.)
         self.assertEqual(res[0], -1.0)
+        # Test that small adjustments work
+        pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
+        pt_1 = self.pts_vert_parallel[0].copy()
+        pt_1[0][0] += 1e-7
+        res = bil._calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = bil._solve_quadratic(res[0], res[1], res[2])
+        self.assertAlmostEqual(res[0], 0.5, 5)
+        res = bil._calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        res = bil._solve_quadratic(res[0], res[1], res[2])
+        self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_get_output_xy(self):
         proj = Proj(self.target_area.proj4_string)
@@ -141,19 +174,27 @@ class Test(unittest.TestCase):
     def test_get_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_area)
-        # Only 6th index has valid values
-        self.assertAlmostEqual(t__[5], 0.684850870155, 5)
-        self.assertAlmostEqual(s__[5], 0.775433912393, 5)
+        # Only 6th index should have valid values
+        for i in range(len(t__)):
+            if i == 5:
+                self.assertAlmostEqual(t__[i], 0.684850870155, 5)
+                self.assertAlmostEqual(s__[i], 0.775433912393, 5)
+            else:
+                self.assertTrue(np.isnan(t__[i]))
+                self.assertTrue(np.isnan(s__[i]))
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_area)
+        # Sample from data1
         res = bil.get_sample_from_bil_info(self.data1.ravel(), t__, s__,
                                            input_idxs, idx_arr)
         self.assertEqual(res[5], 1.)
+        # Sample from data2
         res = bil.get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                            input_idxs, idx_arr)
         self.assertEqual(res[5], 2.)
+        # Reshaping
         res = bil.get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                            input_idxs, idx_arr,
                                            output_shape=self.target_area.shape)
@@ -178,7 +219,7 @@ class Test(unittest.TestCase):
         # There should be only one valid pixel
         self.assertEqual(self.target_area.size - res.mask.sum(), 1)
 
-        # Two arrays
+        # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
         res = bil.resample_bilinear(data,
                                     self.swath_def,
