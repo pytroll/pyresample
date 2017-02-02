@@ -674,29 +674,9 @@ class AreaDefinition(BaseDefinition):
                 raise ValueError("lon and lat is not of the same shape!")
 
         pobj = _spatial_mp.Proj(self.proj4_string)
-        upl_x = self.area_extent[0]
-        upl_y = self.area_extent[3]
-        xscale = abs(self.area_extent[2] -
-                     self.area_extent[0]) / float(self.x_size)
-        yscale = abs(self.area_extent[1] -
-                     self.area_extent[3]) / float(self.y_size)
-
         xm_, ym_ = pobj(lon, lat)
-        x__ = (xm_ - upl_x) / xscale
-        y__ = (upl_y - ym_) / yscale
 
-        if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ > self.x_size)) |
-                    ((y__ < 0) | (y__ > self.y_size)))
-            return (np.ma.masked_array(x__.astype('int'), mask=mask,
-                                       fill_value=-1),
-                    np.ma.masked_array(y__.astype('int'), mask=mask,
-                                       fill_value=-1))
-        else:
-            if ((x__ < 0 or x__ > self.x_size) or
-                    (y__ < 0 or y__ > self.y_size)):
-                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return int(x__), int(y__)
+        return self.get_xy_from_proj_coords(xm_, ym_)
 
     def get_xy_from_proj_coords(self, xm_, ym_):
         """Retrieve closest x and y coordinates (column, row indices) for a
