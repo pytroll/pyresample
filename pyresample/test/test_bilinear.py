@@ -80,6 +80,13 @@ class Test(unittest.TestCase):
                                     0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
+        res = bil._get_ts_irregular(self.pts_vert_parallel[0],
+                                    self.pts_vert_parallel[1],
+                                    self.pts_vert_parallel[2],
+                                    self.pts_vert_parallel[3],
+                                    0., 0.)
+        self.assertTrue(np.isnan(res[0]))
+        self.assertTrue(np.isnan(res[1]))
 
     def test_get_ts_uprights_parallel(self):
         res = bil._get_ts_uprights_parallel(self.pts_vert_parallel[0],
