@@ -219,29 +219,20 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
 def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s"""
 
-    t__ = np.nan * np.zeros(out_y.shape)
-    s__ = np.nan * np.zeros(out_y.shape)
-
-    vert_parallel = _find_vert_parallels(pt_1, pt_2, pt_3, pt_4)
-    horiz_parallel = _find_horiz_parallels(pt_1, pt_2, pt_3, pt_4)
-
     # Cases where verticals are parallel
-    idxs = vert_parallel & np.invert(horiz_parallel)
-    if np.any(idxs):
-        t__[idxs], s__[idxs] = \
-            _get_ts_uprights_parallel(pt_1[idxs, :], pt_2[idxs, :],
-                                      pt_3[idxs, :], pt_4[idxs, :],
-                                      out_y[idxs, :], out_x[idxs, :])
+    t__, s__ = _get_ts_uprights_parallel(pt_1, pt_2,
+                                         pt_3, pt_4,
+                                         out_y, out_x)
 
     # Cases where both verticals and horizontals are parallel
-    idxs = vert_parallel & horiz_parallel
+    idxs = np.isnan(t__) | np.isnan(s__)
     if np.any(idxs):
         t__[idxs], s__[idxs] = \
             _get_ts_parallellogram(pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
                                    out_y[idxs, :], out_x[idxs, :])
 
     # All the rest, ie. where the verticals are not parallel
-    idxs = np.invert(vert_parallel)
+    idxs = np.isnan(t__) | np.isnan(s__)
     if np.any(idxs):
         t__[idxs], s__[idxs] = \
             _get_ts_irregular(pt_1[idxs, :], pt_2[idxs, :],
@@ -254,26 +245,6 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     s__[idxs] = np.nan
 
     return t__, s__
-
-
-def _find_vert_parallels(pt_1, pt_2, pt_3, pt_4):
-    """Find vertical parallels from rectangle defined by four (x, y)
-    points"""
-    vals = (pt_3[:, 0] - pt_1[:, 0]) * (pt_4[:, 1] - pt_2[:, 1]) - \
-           (pt_4[:, 0] - pt_2[:, 0]) * (pt_3[:, 1] - pt_1[:, 1])
-    idxs = vals == 0.0
-
-    return idxs
-
-
-def _find_horiz_parallels(pt_1, pt_2, pt_3, pt_4):
-    """Find horizontal parallels from rectangle defined by four (x, y)
-    points"""
-    vals = (pt_2[:, 0] - pt_1[:, 0]) * (pt_4[:, 1] - pt_3[:, 1]) - \
-           (pt_4[:, 0] - pt_3[:, 0]) * (pt_2[:, 1] - pt_1[:, 1])
-    idxs = vals == 0.0
-
-    return idxs
 
 
 def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
