@@ -712,21 +712,22 @@ class AreaDefinition(BaseDefinition):
 
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
-        xscale = abs(self.area_extent[2] -
-                     self.area_extent[0]) / float(self.x_size)
-        yscale = abs(self.area_extent[1] -
-                     self.area_extent[3]) / float(self.y_size)
+        xscale = (self.area_extent[2] -
+                  self.area_extent[0]) / float(self.x_size)
+        # because rows direction is the opposite of y's
+        yscale = (self.area_extent[1] -
+                  self.area_extent[3]) / float(self.y_size)
 
         x__ = (xm_ - upl_x) / xscale
-        y__ = (upl_y - ym_) / yscale
+        y__ = (ym_ - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             mask = (((x__ < 0) | (x__ > self.x_size)) |
                     ((y__ < 0) | (y__ > self.y_size)))
             return (np.ma.masked_array(x__.astype('int'), mask=mask,
-                                       fill_value=-1),
+                                       fill_value=-1, copy=False),
                     np.ma.masked_array(y__.astype('int'), mask=mask,
-                                       fill_value=-1))
+                                       fill_value=-1, copy=False))
         else:
             if ((x__ < 0 or x__ > self.x_size) or
                     (y__ < 0 or y__ > self.y_size)):
