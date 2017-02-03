@@ -173,10 +173,10 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     """
 
     # Check in_area
-    if isinstance(in_area, tuple):
-        from pyresample.geometry import SwathDefinition
-        lons, lats = _mask_coordinates(in_area[0], in_area[1])
-        in_area = SwathDefinition(lons, lats)
+    # if isinstance(in_area, tuple):
+    #     from pyresample.geometry import SwathDefinition
+    #     lons, lats = _mask_coordinates(in_area[0], in_area[1])
+    #     in_area = SwathDefinition(lons, lats)
 
     # Calculate neighbour information
     (input_idxs, output_idxs, idx_ref, dists) = \

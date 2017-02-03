@@ -288,8 +288,11 @@ Function for resampling using bilinear interpolation for irregular source grids.
  ...                                     neighbours=32, nprocs=1, fill_value=0)
 
 The **out_area** needs to be an area definition with **proj4_string**
-attribute.  The **in_area** can be either an area definition as above,
-or a 2-tuple of (lons, lats).
+attribute.
+
+..
+    The **in_area** can be either an area definition as above,
+    or a 2-tuple of (lons, lats).
 
 Keyword arguments:
 
