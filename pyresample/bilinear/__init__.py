@@ -35,7 +35,8 @@ from pyresample import kd_tree
 
 
 def resample_bilinear(data, in_area, out_area, radius=50e3,
-                      neighbours=32, nprocs=1, fill_value=0):
+                      neighbours=32, nprocs=1, fill_value=0,
+                      reduce_data=True, segments=None, epsilon=0):
     """Resample using bilinear interpolation.
 
     data : numpy array
@@ -53,9 +54,18 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
     nprocs : int, optional
         Number of processor cores to be used for getting neighbour info
     fill_value : {int, None}, optional
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned
-            with undetermined pixels masked
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned with undetermined
+        pixels masked
+    reduce_data : bool, optional
+        Perform initial coarse reduction of source dataset in order
+        to reduce execution time
+    segments : int or None
+        Number of segments to use when resampling.
+        If set to None an estimate will be calculated
+    epsilon : float, optional
+        Allowed uncertainty in meters. Increasing uncertainty
+        reduces execution time
 
     Returns
     -------
@@ -68,7 +78,10 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
                                                  radius=radius,
                                                  neighbours=neighbours,
                                                  nprocs=nprocs,
-                                                 masked=False)
+                                                 masked=False,
+                                                 reduce_data=reduce_data,
+                                                 segments=segments,
+                                                 epsilon=epsilon)
 
     data = _check_data_shape(data, input_idxs)
 
@@ -147,7 +160,8 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
 
 def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
-                 masked=False):
+                 masked=False, reduce_data=True, segments=None,
+                 epsilon=0):
     """Calculate information needed for bilinear resampling.
 
     in_area : object or 2-tuple of numpy arrays
@@ -164,6 +178,15 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     masked : bool, optional
         If true, return masked arrays, else return np.nan values for
         invalid points (default)
+    reduce_data : bool, optional
+        Perform initial coarse reduction of source dataset in order
+        to reduce execution time
+    segments : int or None
+        Number of segments to use when resampling.
+        If set to None an estimate will be calculated
+    epsilon : float, optional
+        Allowed uncertainty in meters. Increasing uncertainty
+        reduces execution time
 
     Returns
     -------
@@ -187,7 +210,8 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     (input_idxs, output_idxs, idx_ref, dists) = \
         kd_tree.get_neighbour_info(in_area, out_area,
                                    radius, neighbours=neighbours,
-                                   nprocs=nprocs)
+                                   nprocs=nprocs, reduce_data=reduce_data,
+                                   segments=segments, epsilon=epsilon)
 
     del output_idxs, dists
 
