@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
                              np.linspace(50., 60., num=in_shape[1]))
     swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
-    radius = 50e5
+    radius = 50e3
     neighbours = 32
     input_idxs, output_idxs, idx_ref, dists = \
         kd_tree.get_neighbour_info(swath_def, target_area,
