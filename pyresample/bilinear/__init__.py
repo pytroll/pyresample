@@ -56,6 +56,11 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
             Set undetermined pixels to this value.
             If fill_value is None a masked array is returned
             with undetermined pixels masked
+
+    Returns
+    -------
+    data : numpy array
+        Source data resampled to target geometry
     """
 
     # Calculate the resampling information
