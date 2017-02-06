@@ -273,28 +273,33 @@ Function for resampling using bilinear interpolation for irregular source grids.
 
  >>> import numpy as np
  >>> from pyresample import bilinear, geometry
- >>> out_area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
- ...                                    {'a': '6378144.0', 'b': '6356759.0',
- ...                                     'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                     'lon_0': '8.00', 'proj': 'stere'}, 
- ...                                    800, 800,
- ...                                    [-1370912.72, -909968.64,
- ...                                     1029087.28, 1490031.36])
+ >>> target_def = geometry.AreaDefinition('areaD',
+ ...                                      'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> in_area = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = bilinear.resample_bilinear(data, in_area, out_area, radius=50e3,
- ...                                     neighbours=32, nprocs=1, fill_value=0)
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = bilinear.resample_bilinear(data, source_def, target_def,
+ ...                                     radius=50e3, neighbours=32,
+ ...                                     nprocs=1, fill_value=0,
+ ...                                     reduce_data=True, segments=None,
+ ...                                     epsilon=0)
 
-The **out_area** needs to be an area definition with **proj4_string**
+The **target_area** needs to be an area definition with **proj4_string**
 attribute.
 
 ..
-    The **in_area** can be either an area definition as above,
+    The **source_def** can be either an area definition as above,
     or a 2-tuple of (lons, lats).
 
-Keyword arguments:
+Keyword arguments which are passed to **kd_tree**:
 
 * **radius**: radius around each target pixel in meters to search for
   neighbours in the source data
@@ -303,6 +308,12 @@ Keyword arguments:
 * **nprocs**: number of processors to use for finding the closest pixels
 * **fill_value**: fill invalid pixel with this value.  If
   **fill_value=None** is used, masked arrays will be returned
+* **reduce_data**: do/don't do preliminary data reduction before calculating
+  the neigbour info
+* **segments**: number of segments to use in neighbour search
+* **epsilon**: maximum uncertainty allowed in neighbour search
+
+The example above shows the default value for each keyword argument.
 
 Resampling from bilinear coefficients
 *************************************
@@ -327,19 +338,20 @@ geostationary satellite image processing.
 
  >>> import numpy as np
  >>> from pyresample import bilinear, geometry
- >>> out_area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
- ...                                    {'a': '6378144.0', 'b': '6356759.0',
- ...                                     'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                     'lon_0': '8.00', 'proj': 'stere'},
- ...                                    800, 800,
- ...                                    [-1370912.72, -909968.64,
- ...                                     1029087.28, 1490031.36])
+ >>> target_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
  >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
- >>> in_area = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> t_params, s_params, input_idxs, idx_ref = \
- ...     bilinear.get_bil_info(in_area, out_area, radius=50e3, nprocs=1)
+ ...     bilinear.get_bil_info(source_def, target_def, radius=50e3, nprocs=1)
  >>> res = bilinear.get_sample_from_bil_info(data.ravel(), t_params, s_params,
  ...                                         input_idxs, idx_ref)
 

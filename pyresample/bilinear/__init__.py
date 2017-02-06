@@ -34,7 +34,7 @@ from pyproj import Proj
 from pyresample import kd_tree
 
 
-def resample_bilinear(data, in_area, out_area, radius=50e3,
+def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
                       neighbours=32, nprocs=1, fill_value=0,
                       reduce_data=True, segments=None, epsilon=0):
     """Resample using bilinear interpolation.
@@ -42,9 +42,9 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
     data : numpy array
         Array of single channel data points or
         (source_geo_def.shape, k) array of k channels of datapoints
-    in_area : object or 2-tuple of numpy arrays
-        Geometry definition of source data or tuple of (lons, lats)
-    out_area : object
+    source_geo_def : object
+        Geometry definition of source data
+    target_area_def : object
         Geometry definition of target area
     radius : float, optional
         Cut-off distance in meters
@@ -74,7 +74,8 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
     """
 
     # Calculate the resampling information
-    t__, s__, input_idxs, idx_ref = get_bil_info(in_area, out_area,
+    t__, s__, input_idxs, idx_ref = get_bil_info(source_geo_def,
+                                                 target_area_def,
                                                  radius=radius,
                                                  neighbours=neighbours,
                                                  nprocs=nprocs,
@@ -85,7 +86,7 @@ def resample_bilinear(data, in_area, out_area, radius=50e3,
 
     data = _check_data_shape(data, input_idxs)
 
-    result = np.nan * np.zeros((out_area.size, data.shape[1]))
+    result = np.nan * np.zeros((target_area_def.size, data.shape[1]))
     for i in range(data.shape[1]):
         result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
                                                 input_idxs, idx_ref,
@@ -159,14 +160,14 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
     return result
 
 
-def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
-                 masked=False, reduce_data=True, segments=None,
+def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
+                 nprocs=1, masked=False, reduce_data=True, segments=None,
                  epsilon=0):
     """Calculate information needed for bilinear resampling.
 
-    in_area : object or 2-tuple of numpy arrays
-        Geometry definition of source data or tuple of (lons, lats)
-    out_area : object
+    source_geo_def : object
+        Geometry definition of source data
+    target_area_def : object
         Geometry definition of target area
     radius : float, optional
         Cut-off distance in meters
@@ -200,15 +201,15 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
         Mapping array from valid source points to target points
     """
 
-    # Check in_area
-    # if isinstance(in_area, tuple):
+    # Check source_geo_def
+    # if isinstance(source_geo_def, tuple):
     #     from pyresample.geometry import SwathDefinition
-    #     lons, lats = _mask_coordinates(in_area[0], in_area[1])
-    #     in_area = SwathDefinition(lons, lats)
+    #     lons, lats = _mask_coordinates(source_geo_def[0], source_geo_def[1])
+    #     source_geo_def = SwathDefinition(lons, lats)
 
     # Calculate neighbour information
     (input_idxs, output_idxs, idx_ref, dists) = \
-        kd_tree.get_neighbour_info(in_area, out_area,
+        kd_tree.get_neighbour_info(source_geo_def, target_area_def,
                                    radius, neighbours=neighbours,
                                    nprocs=nprocs, reduce_data=reduce_data,
                                    segments=segments, epsilon=epsilon)
@@ -221,13 +222,13 @@ def get_bil_info(in_area, out_area, radius=50e3, neighbours=32, nprocs=1,
     idx_ref = np.where(index_mask, 0, idx_ref)
 
     # Get output projection as pyproj object
-    proj = Proj(out_area.proj4_string)
+    proj = Proj(target_area_def.proj4_string)
 
     # Get output x/y coordinates
-    out_x, out_y = _get_output_xy(out_area, proj)
+    out_x, out_y = _get_output_xy(target_area_def, proj)
 
     # Get input x/ycoordinates
-    in_x, in_y = _get_input_xy(in_area, proj, input_idxs, idx_ref)
+    in_x, in_y = _get_input_xy(source_geo_def, proj, input_idxs, idx_ref)
 
     # Get the four closest corner points around each output location
     pt_1, pt_2, pt_3, pt_4, idx_ref = \
@@ -484,10 +485,10 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     return x__
 
 
-def _get_output_xy(out_area, proj):
+def _get_output_xy(target_area_def, proj):
     """Get x/y coordinates of the target grid."""
     # Read output coordinates
-    out_lons, out_lats = out_area.get_lonlats()
+    out_lons, out_lats = target_area_def.get_lonlats()
     out_lons, out_lats = _mask_coordinates(out_lons, out_lats)
 
     out_x, out_y = proj(out_lons, out_lats)
@@ -495,9 +496,9 @@ def _get_output_xy(out_area, proj):
     return out_x, out_y
 
 
-def _get_input_xy(in_area, proj, input_idxs, idx_ref):
+def _get_input_xy(source_geo_def, proj, input_idxs, idx_ref):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = in_area.get_lonlats()
+    in_lons, in_lats = source_geo_def.get_lonlats()
 
     # Select valid locations
     in_lons = in_lons.ravel()[input_idxs]

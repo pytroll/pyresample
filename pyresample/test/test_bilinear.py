@@ -23,20 +23,20 @@ class Test(unittest.TestCase):
                          np.array([[1., -1.], ]))
 
     # Area definition with four pixels
-    target_area = geometry.AreaDefinition('areaD',
-                                          'Europe (3km, HRV, VTC)',
-                                          'areaD',
-                                          {'a': '6378144.0',
-                                           'b': '6356759.0',
-                                           'lat_0': '50.00',
-                                           'lat_ts': '50.00',
-                                           'lon_0': '8.00',
-                                           'proj': 'stere'},
-                                          4, 4,
-                                          [-1370912.72,
-                                           -909968.64000000001,
-                                           1029087.28,
-                                           1490031.3600000001])
+    target_def = geometry.AreaDefinition('areaD',
+                                         'Europe (3km, HRV, VTC)',
+                                         'areaD',
+                                         {'a': '6378144.0',
+                                          'b': '6356759.0',
+                                          'lat_0': '50.00',
+                                          'lat_ts': '50.00',
+                                          'lon_0': '8.00',
+                                          'proj': 'stere'},
+                                         4, 4,
+                                         [-1370912.72,
+                                          -909968.64000000001,
+                                          1029087.28,
+                                          1490031.3600000001])
 
     # Input data around the target pixel at 0.63388324, 55.08234642,
     in_shape = (100, 100)
@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
     radius = 50e3
     neighbours = 32
     input_idxs, output_idxs, idx_ref, dists = \
-        kd_tree.get_neighbour_info(swath_def, target_area,
+        kd_tree.get_neighbour_info(swath_def, target_def,
                                    radius, neighbours=neighbours,
                                    nprocs=1)
     input_size = input_idxs.sum()
@@ -147,20 +147,20 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_get_output_xy(self):
-        proj = Proj(self.target_area.proj4_string)
-        out_x, out_y = bil._get_output_xy(self.target_area, proj)
+        proj = Proj(self.target_def.proj4_string)
+        out_x, out_y = bil._get_output_xy(self.target_def, proj)
         self.assertTrue(out_x.all())
         self.assertTrue(out_y.all())
 
     def test_get_input_xy(self):
-        proj = Proj(self.target_area.proj4_string)
+        proj = Proj(self.target_def.proj4_string)
         in_x, in_y = bil._get_output_xy(self.swath_def, proj)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_bounding_corners(self):
-        proj = Proj(self.target_area.proj4_string)
-        out_x, out_y = bil._get_output_xy(self.target_area, proj)
+        proj = Proj(self.target_def.proj4_string)
+        out_x, out_y = bil._get_output_xy(self.target_def, proj)
         in_x, in_y = bil._get_input_xy(self.swath_def, proj,
                                        self.input_idxs, self.idx_ref)
         res = bil._get_bounding_corners(in_x, in_y, out_x, out_y,
@@ -173,7 +173,7 @@ class Test(unittest.TestCase):
 
     def test_get_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_area)
+                                                         self.target_def)
         # Only 6th index should have valid values
         for i in range(len(t__)):
             if i == 5:
@@ -185,7 +185,7 @@ class Test(unittest.TestCase):
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_area)
+                                                         self.target_def)
         # Sample from data1
         res = bil.get_sample_from_bil_info(self.data1.ravel(), t__, s__,
                                            input_idxs, idx_arr)
@@ -197,35 +197,35 @@ class Test(unittest.TestCase):
         # Reshaping
         res = bil.get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                            input_idxs, idx_arr,
-                                           output_shape=self.target_area.shape)
+                                           output_shape=self.target_def.shape)
         res = res.shape
-        self.assertEqual(res[0], self.target_area.shape[0])
-        self.assertEqual(res[1], self.target_area.shape[1])
+        self.assertEqual(res[0], self.target_def.shape[0])
+        self.assertEqual(res[1], self.target_def.shape[1])
 
     def test_resample_bilinear(self):
         # Single array
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
-                                    self.target_area)
-        self.assertEqual(res.size, self.target_area.size)
+                                    self.target_def)
+        self.assertEqual(res.size, self.target_def.size)
         # There should be only one pixel with value 1, all others are 0
         self.assertEqual(res.sum(), 1)
 
         # Single array with masked output
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
-                                    self.target_area, fill_value=None)
+                                    self.target_def, fill_value=None)
         self.assertTrue(hasattr(res, 'mask'))
         # There should be only one valid pixel
-        self.assertEqual(self.target_area.size - res.mask.sum(), 1)
+        self.assertEqual(self.target_def.size - res.mask.sum(), 1)
 
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
         res = bil.resample_bilinear(data,
                                     self.swath_def,
-                                    self.target_area)
+                                    self.target_def)
         shp = res.shape
-        self.assertEqual(shp[0], self.target_area.size)
+        self.assertEqual(shp[0], self.target_def.size)
         self.assertEqual(shp[1], 2)
 
 
