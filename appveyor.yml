@@ -11,12 +11,12 @@ environment:
     - PYTHON: "C:\\Python27_32"
       PYTHON_VERSION: "2.7.8"
       PYTHON_ARCH: "32"
-      MINICONDA_VERSION: ""
+      MINICONDA_VERSION: "2"
 
     - PYTHON: "C:\\Python27_64"
       PYTHON_VERSION: "2.7.8"
       PYTHON_ARCH: "64"
-      MINICONDA_VERSION: ""
+      MINICONDA_VERSION: "2"
 
     - PYTHON: "C:\\Python34_32"
       PYTHON_VERSION: "3.4.1"

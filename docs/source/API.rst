@@ -21,6 +21,11 @@ pyresample.kd_tree
 .. automodule:: kd_tree
 	:members:
 	
+pyresample.bilinear
+---------------------------------
+.. automodule:: bilinear
+	:members:
+	
 pyresample.utils
 ---------------------------------
 .. automodule:: utils
