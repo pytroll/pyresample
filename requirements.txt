@@ -1,1 +1,2 @@
 git+https://github.com/matplotlib/basemap.git
+git+https://github.com/pytroll/pykdtree.git@pre-master
