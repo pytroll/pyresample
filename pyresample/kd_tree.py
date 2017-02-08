@@ -289,10 +289,6 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : int or None, optional
-            Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
     reduce_data : bool, optional
         Perform initial coarse reduction of source dataset in order
         to reduce execution time

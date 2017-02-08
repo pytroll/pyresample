@@ -1,6 +1,148 @@
 Changelog
 =========
 
+v1.3.0 (2017-02-07)
+-------------------
+
+- update changelog. [Martin Raspaud]
+
+- Bump version: 1.2.9 → 1.3.0. [Martin Raspaud]
+
+- Merge pull request #55 from pytroll/feature-bilinear. [Martin Raspaud]
+
+  Feature bilinear
+
+- Add Python2 miniconda version number. [Panu Lahtinen]
+
+- Rename *area_in* to *source_geo_def* and *area_out* to
+  *target_area_def* [Panu Lahtinen]
+
+- Fix search radius from 50e5 meters to 50e3 meters. [Panu Lahtinen]
+
+- Add access to kd_tree parameters reduce_data, segments and epsilon.
+  [Panu Lahtinen]
+
+- Add missing return value to docstring. [Panu Lahtinen]
+
+- Remove possibility to use tuple of coordinates as "in_area" [Panu
+  Lahtinen]
+
+- Try if older version of Pillow is installable with Python 2.6. [Panu
+  Lahtinen]
+
+- Remove obsolete tests + minor adjustments + comments. [Panu Lahtinen]
+
+  Remove tests for functions that were removed.  Add test for getting
+  coefficients for quadratic equations.  Add test for _get_ts().  Test
+  that small variations doesn't cause failures when solving the quadratic
+  equation.  Check all pixels of the output in test_get_bil_info().
+
+
+- Adjust order so that most common case is first. [Panu Lahtinen]
+
+- Remove parallelity checks. [Panu Lahtinen]
+
+  Don't bother checking if lines area parallel, just run the most common
+  (irregular rectangle) for all data, and run the two algorigthms
+  consecutively for those where no valid data is yet present (ie. have
+  np.nan).
+
+
+- Test failure of _get_ts_irregular when verticals are parallel. [Panu
+  Lahtinen]
+
+- Refactor numpyfying. [Panu Lahtinen]
+
+- Clarify function name. [Panu Lahtinen]
+
+- Refactor. [Panu Lahtinen]
+
+  Move common parts of _get_ts_irregular() and _get_ts_uprights_parallel()
+  to two functions: one to get the parameters for quadratic equation and
+  one to solve the other fractional distance not solved from the quadratic
+  equation.
+
+
+- Fix example code. [Panu Lahtinen]
+
+- Enable doctest for resampling from bilinear coefficients. [Panu
+  Lahtinen]
+
+- Fix unittest which had wrong "correct" value. [Panu Lahtinen]
+
+- Replace np.ma.masked_where() with np.ma.masked_invalid() [Panu
+  Lahtinen]
+
+- Move input checks to a function. [Panu Lahtinen]
+
+- Add more unit tests. [Panu Lahtinen]
+
+- Move check of source area to get_bil_info() [Panu Lahtinen]
+
+- Ensure data is not a masked array. [Panu Lahtinen]
+
+- Remove indexing which isn't used. [Panu Lahtinen]
+
+- Unpack result one step further to get a float instead of ndarray.
+  [Panu Lahtinen]
+
+- Mask out warnings about invalid values in less and greater. [Panu
+  Lahtinen]
+
+- Documentation for pyresample.bilinear. [Panu Lahtinen]
+
+- Add few tests for bilinear interpolation. [Panu Lahtinen]
+
+- Fix typos, fix _get_ts_parallellogram() [Panu Lahtinen]
+
+- Adjust comment. [Panu Lahtinen]
+
+- Ignore messages about invalid values due to np.nan. [Panu Lahtinen]
+
+- Handle cases with parallel sides in the rectangle formed by
+  neighbours. [Panu Lahtinen]
+
+- Make it possible to give input coordinates instead of area definition.
+  [Panu Lahtinen]
+
+- Fixes: check for # datasets, output shape for multiple datasets,
+  masking, make output reshaping optional. [Panu Lahtinen]
+
+- Add convenience function resample_bilinear(), remove unused logging.
+  [Panu Lahtinen]
+
+- Rename get_corner() as _get_corner() [Panu Lahtinen]
+
+- Add better docstrings, rename helper functions private. [Panu
+  Lahtinen]
+
+- Cleanup code. [Panu Lahtinen]
+
+- Extend docstrings, add a keyword to return masked arrays or arrays
+  with np.nan:s. [Panu Lahtinen]
+
+- Add default value for search radius, adjust default number of
+  neighbours. [Panu Lahtinen]
+
+- Initial version of bilinear resampling. [Panu Lahtinen]
+
+  NOTE: Only works if both source and destination are area definitions.
+  Also to be added is handling for the cases where a__ equals zero (use
+  linear solution of bx + c = 0), testing, logging and all the error
+  handling.
+
+
+- Allow areas to be flipped. [Martin Raspaud]
+
+- Factorize get_xy_from_lonlat and get_xy_from_proj_coords. [Martin
+  Raspaud]
+
+- Remove `fill_value` documentation for get_neighbour_info. [davidh-
+  ssec]
+
+  Fix #50
+
+
 v1.2.9 (2016-12-13)
 -------------------
 

@@ -242,6 +242,120 @@ Speedup using pykdtree
 
 pykdtree can be used instead of scipy to gain significant speedup for large datasets. See :ref:`multi`. 
 
+pyresample.bilinear
+-------------------
+
+Compared to nearest neighbour resampling, bilinear interpolation
+produces smoother results near swath edges of polar satellite data and
+edges of geostationary satellites.
+
+The algorithm is implemented from http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf
+
+Below is shown a comparison between image generated with nearest
+neighbour resampling (top) and with bilinear interpolation
+(bottom):
+
+.. image:: _static/images/nearest_overview.png
+   :width: 50%
+.. image:: _static/images/bilinear_overview.png
+   :width: 50%
+
+Click images to see the full resolution versions.
+
+The *perceived* sharpness of the bottom image is lower, but there is more detail present.
+
+resample_bilinear
+*****************
+
+Function for resampling using bilinear interpolation for irregular source grids.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import bilinear, geometry
+ >>> target_def = geometry.AreaDefinition('areaD',
+ ...                                      'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = bilinear.resample_bilinear(data, source_def, target_def,
+ ...                                     radius=50e3, neighbours=32,
+ ...                                     nprocs=1, fill_value=0,
+ ...                                     reduce_data=True, segments=None,
+ ...                                     epsilon=0)
+
+The **target_area** needs to be an area definition with **proj4_string**
+attribute.
+
+..
+    The **source_def** can be either an area definition as above,
+    or a 2-tuple of (lons, lats).
+
+Keyword arguments which are passed to **kd_tree**:
+
+* **radius**: radius around each target pixel in meters to search for
+  neighbours in the source data
+* **neighbours**: number of closest locations to consider when
+  selecting the four data points around the target pixel
+* **nprocs**: number of processors to use for finding the closest pixels
+* **fill_value**: fill invalid pixel with this value.  If
+  **fill_value=None** is used, masked arrays will be returned
+* **reduce_data**: do/don't do preliminary data reduction before calculating
+  the neigbour info
+* **segments**: number of segments to use in neighbour search
+* **epsilon**: maximum uncertainty allowed in neighbour search
+
+The example above shows the default value for each keyword argument.
+
+Resampling from bilinear coefficients
+*************************************
+
+As for nearest neighbour resampling, also bilinear interpolation can
+be split in two steps.
+
+* Calculate interpolation coefficients, input data reduction matrix
+  and mapping matrix
+* Use this information to resample several datasets between these two
+  areas/swaths
+
+Only the first step is computationally expensive operation, so by
+re-using this information the overall processing time is reduced
+significantly.  This is also done internally by the
+**resample_bilinear** function, but separating these steps makes it
+possible to cache the coefficients if the same transformation is done
+over and over again.  This is very typical in operational
+geostationary satellite image processing.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import bilinear, geometry
+ >>> target_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> t_params, s_params, input_idxs, idx_ref = \
+ ...     bilinear.get_bil_info(source_def, target_def, radius=50e3, nprocs=1)
+ >>> res = bilinear.get_sample_from_bil_info(data.ravel(), t_params, s_params,
+ ...                                         input_idxs, idx_ref)
+
+
 pyresample.ewa
 --------------
 
