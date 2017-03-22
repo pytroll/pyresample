@@ -149,10 +149,12 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
         result = result.data
         result[mask] = np.nan
 
-    with np.errstate(invalid='ignore'):
-        idxs = (result > data_max) | (result < data_min)
-
-    result[idxs] = np.nan
+    try:
+        with np.errstate(invalid='ignore'):
+            idxs = (result > data_max) | (result < data_min)
+        result[idxs] = np.nan
+    except TypeError:
+        pass
 
     if output_shape is not None:
         result = result.reshape(output_shape)
