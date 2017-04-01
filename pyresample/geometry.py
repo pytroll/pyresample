@@ -980,7 +980,7 @@ def combine_area_extents_vertical(area1, area2):
         raise IncompatibleAreas(
             "Can't concatenate area definitions with "
             "incompatible area extents: "
-            "{} and {}".format(area1, area2))
+            "{0} and {1}".format(area1, area2))
     return current_extent
 
 
@@ -995,7 +995,7 @@ def concatenate_area_defs(area1, area2, axis=0):
     if different_items or not same_size:
         raise IncompatibleAreas("Can't concatenate area definitions with "
                                 "different projections: "
-                                "{} and {}".format(area1, area2))
+                                "{0} and {1}".format(area1, area2))
 
     if axis == 0:
         area_extent = combine_area_extents_vertical(area1, area2)
