@@ -33,6 +33,10 @@ class DimensionError(Exception):
     pass
 
 
+class IncompatibleAreas(Exception):
+    """Error when the areas to combine are not compatible."""
+
+
 class Boundary(object):
 
     """Container for geometry boundary.
@@ -915,7 +919,7 @@ class AreaDefinition(BaseDefinition):
             dtype = self.dtype
 
         if self.lons is None or self.lats is None:
-            #Data is not cached
+            # Data is not cached
             if nprocs is None:
                 nprocs = self.nprocs
 
@@ -944,7 +948,7 @@ class AreaDefinition(BaseDefinition):
             del(target_x)
             del(target_y)
         else:
-            #Data is cached
+            # Data is cached
             if data_slice is None:
                 # Full slice
                 lons = self.lons
@@ -961,6 +965,137 @@ class AreaDefinition(BaseDefinition):
 
         items = self.proj_dict.items()
         return '+' + ' +'.join([t[0] + '=' + str(t[1]) for t in items])
+
+
+def combine_area_extents_vertical(area1, area2):
+    """Combine the area extents of areas 1 and 2."""
+    if (area1.area_extent[0] == area2.area_extent[0] and
+            area1.area_extent[2] == area2.area_extent[2]):
+        current_extent = list(area1.area_extent)
+        if np.isclose(area1.area_extent[1], area2.area_extent[3]):
+            current_extent[1] = area2.area_extent[1]
+        elif np.isclose(area1.area_extent[3], area2.area_extent[1]):
+            current_extent[3] = area2.area_extent[3]
+    else:
+        raise IncompatibleAreas(
+            "Can't concatenate area definitions with "
+            "incompatible area extents: "
+            "{} and {}".format(area1, area2))
+    return current_extent
+
+
+def concatenate_area_defs(area1, area2, axis=0):
+    """Append *area2* to *area1* and return the results"""
+    different_items = (set(area1.proj_dict.items()) ^
+                       set(area2.proj_dict.items()))
+    if axis == 0:
+        same_size = area1.x_size == area2.x_size
+    else:
+        raise NotImplementedError('Only vertical contatenation is supported.')
+    if different_items or not same_size:
+        raise IncompatibleAreas("Can't concatenate area definitions with "
+                                "different projections: "
+                                "{} and {}".format(area1, area2))
+
+    if axis == 0:
+        area_extent = combine_area_extents_vertical(area1, area2)
+        x_size = area1.x_size
+        y_size = area1.y_size + area2.y_size
+    else:
+        raise NotImplementedError('Only vertical contatenation is supported.')
+    return AreaDefinition(area1.area_id, area1.name, area1.proj_id,
+                          area1.proj_dict, x_size, y_size,
+                          area_extent)
+
+
+class StackedAreaDefinition(BaseDefinition):
+    """Definition based on muliple vertically stacked AreaDefinitions."""
+
+    def __init__(self, *definitions, **kwargs):
+        """Base this instance on *definitions*.
+
+        *kwargs* used here are `nprocs` and `dtype` (see AreaDefinition).
+        """
+        nprocs = kwargs.get('nprocs', 1)
+        super(StackedAreaDefinition, self).__init__(nprocs=nprocs)
+        self.dtype = kwargs.get('dtype', np.float64)
+        self.defs = []
+        self.proj_dict = {}
+        for definition in definitions:
+            self.append(definition)
+
+    @property
+    def x_size(self):
+        return self.defs[0].x_size
+
+    @property
+    def y_size(self):
+        return sum(definition.y_size for definition in self.defs)
+
+    @property
+    def size(self):
+        return self.y_size * self.x_size
+
+    def append(self, definition):
+        """Append another definition to the area."""
+        if isinstance(definition, StackedAreaDefinition):
+            for area in definition.defs:
+                self.append(area)
+            return
+        if definition.y_size == 0:
+            return
+        if not self.defs:
+            self.proj_dict = definition.proj_dict
+        elif self.proj_dict != definition.proj_dict:
+            raise NotImplementedError('Cannot append areas:'
+                                      ' Proj.4 dict mismatch')
+        try:
+            self.defs[-1] = concatenate_area_defs(self.defs[-1], definition)
+        except (IncompatibleAreas, IndexError):
+            self.defs.append(definition)
+
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
+        """Return lon and lat arrays of the area."""
+
+        llons = []
+        llats = []
+        try:
+            row_slice, col_slice = data_slice
+        except TypeError:
+            row_slice = slice(0, self.y_size)
+            col_slice = slice(0, self.x_size)
+        offset = 0
+        for definition in self.defs:
+            local_row_slice = slice(max(row_slice.start - offset, 0),
+                                    min(max(row_slice.stop - offset, 0),
+                                        definition.y_size),
+                                    row_slice.step)
+            lons, lats = definition.get_lonlats(nprocs=nprocs,
+                                                data_slice=(local_row_slice,
+                                                            col_slice),
+                                                cache=cache,
+                                                dtype=dtype)
+
+            llons.append(lons)
+            llats.append(lats)
+            offset += lons.shape[0]
+
+        self.lons = np.vstack(llons)
+        self.lats = np.vstack(llats)
+
+        return self.lons, self.lats
+
+    def squeeze(self):
+        """Generate a single AreaDefinition if possible."""
+        if len(self.defs) == 1:
+            return self.defs[0]
+        else:
+            return self
+
+    @property
+    def proj4_string(self):
+        """Returns projection definition as Proj.4 string"""
+        return self.defs[0].proj4_string
 
 
 def _get_slice(segments, shape):

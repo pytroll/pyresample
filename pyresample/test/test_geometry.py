@@ -1,9 +1,16 @@
 from __future__ import with_statement
 
+import random
 import sys
+
 import numpy as np
+from mock import MagicMock, patch
+
+from pyresample import geo_filter, geometry
+from pyresample.geometry import (IncompatibleAreas,
+                                 combine_area_extents_vertical,
+                                 concatenate_area_defs)
 from pyresample.test.utils import catch_warnings
-from pyresample import geometry, geo_filter
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -544,7 +551,8 @@ class Test(unittest.TestCase):
         proj_id = 'geos0'
         x_size = 3712
         y_size = 3712
-        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
+        area_extent = [-5570248.477339261, -5567248.074173444,
+                       5567248.074173444, 5570248.477339261]
         proj_dict = {'a': '6378169.00',
                      'b': '6356583.80',
                      'h': '35785831.0',
@@ -570,8 +578,7 @@ class Test(unittest.TestCase):
 
         # test scalars
         lon, lat = (-8.125547604568746, -14.345524111874646)
-        self.assertTrue(area.lonlat2colrow(lon,lat) == (1567, 2375))
-
+        self.assertTrue(area.lonlat2colrow(lon, lat) == (1567, 2375))
 
     def test_colrow2lonlat(self):
 
@@ -581,7 +588,8 @@ class Test(unittest.TestCase):
         proj_id = 'geos0'
         x_size = 3712
         y_size = 3712
-        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
+        area_extent = [-5570248.477339261, -5567248.074173444,
+                       5567248.074173444, 5570248.477339261]
         proj_dict = {'a': '6378169.00',
                      'b': '6356583.80',
                      'h': '35785831.0',
@@ -602,16 +610,15 @@ class Test(unittest.TestCase):
         # test arrays
         lon_expects = np.array([28.77763033, 8.23765962])
         lat_expects = np.array([61.20120556, 50.05836402])
-        self.assertTrue(np.allclose(lons__, lon_expects, rtol = 0, atol = 1e-7))
-        self.assertTrue(np.allclose(lats__, lat_expects, rtol = 0, atol = 1e-7))
+        self.assertTrue(np.allclose(lons__, lon_expects, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lats__, lat_expects, rtol=0, atol=1e-7))
 
         # test scalars
         lon__, lat__ = area.colrow2lonlat(1567, 2375)
         lon_expect = -8.125547604568746
         lat_expect = -14.345524111874646
-        self.assertTrue(np.allclose(lon__, lon_expect, rtol = 0, atol = 1e-7))
-        self.assertTrue(np.allclose(lat__, lat_expect, rtol = 0, atol = 1e-7))
-
+        self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat"""
@@ -694,12 +701,171 @@ class Test(unittest.TestCase):
         self.assertTrue((y__.data == y_expects).all())
 
 
+class TestStackedAreaDefinition(unittest.TestCase):
+    """Test the StackedAreaDefition."""
+
+    def test_append(self):
+        """Appending new definitions."""
+        area1 = geometry.AreaDefinition("area1", 'area1', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (3738502.0095458371, 3715498.9194295374,
+                                            -1830246.0673044831, 3251436.5796920112)
+                                        )
+
+        area2 = geometry.AreaDefinition("area2", 'area2', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (3738502.0095458371, 4179561.259167064,
+                                            -1830246.0673044831, 3715498.9194295374)
+                                        )
+
+        adef = geometry.StackedAreaDefinition(area1, area2)
+        self.assertEqual(len(adef.defs), 1)
+        self.assertTupleEqual(adef.defs[0].area_extent,
+                              (3738502.0095458371, 4179561.259167064,
+                               -1830246.0673044831, 3251436.5796920112))
+
+        # same
+
+        area3 = geometry.AreaDefinition("area3", 'area3', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (3738502.0095458371, 3251436.5796920112,
+                                         -1830246.0673044831, 2787374.2399544837))
+        adef.append(area3)
+        self.assertEqual(len(adef.defs), 1)
+        self.assertTupleEqual(adef.defs[0].area_extent,
+                              (3738502.0095458371, 4179561.259167064,
+                               -1830246.0673044831, 2787374.2399544837))
+
+        self.assertIsInstance(adef.squeeze(), geometry.AreaDefinition)
+
+        # transition
+        area4 = geometry.AreaDefinition("area4", 'area4', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (5567747.7409681147, 2787374.2399544837,
+                                         -1000.3358822065015, 2323311.9002169576))
+
+        adef.append(area4)
+        self.assertEqual(len(adef.defs), 2)
+        self.assertTupleEqual(adef.defs[-1].area_extent,
+                              (5567747.7409681147, 2787374.2399544837,
+                               -1000.3358822065015, 2323311.9002169576))
+
+        self.assertEqual(adef.y_size, 4 * 464)
+        self.assertIsInstance(adef.squeeze(), geometry.StackedAreaDefinition)
+
+        adef2 = geometry.StackedAreaDefinition()
+        self.assertEqual(len(adef2.defs), 0)
+
+        adef2.append(adef)
+        self.assertEqual(len(adef2.defs), 2)
+        self.assertTupleEqual(adef2.defs[-1].area_extent,
+                              (5567747.7409681147, 2787374.2399544837,
+                               -1000.3358822065015, 2323311.9002169576))
+
+        self.assertEqual(adef2.y_size, 4 * 464)
+
+    def test_get_lonlats(self):
+        """Test get_lonlats on StackedAreaDefinition."""
+        area3 = geometry.AreaDefinition("area3", 'area3', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (3738502.0095458371, 3251436.5796920112,
+                                         -1830246.0673044831, 2787374.2399544837))
+
+        # transition
+        area4 = geometry.AreaDefinition("area4", 'area4', "geosmsg",
+                                        {'a': '6378169.0', 'b': '6356583.8',
+                                         'h': '35785831.0', 'lon_0': '0.0',
+                                         'proj': 'geos', 'units': 'm'},
+                                        5568, 464,
+                                        (5567747.7409681147, 2787374.2399544837,
+                                         -1000.3358822065015, 2323311.9002169576))
+
+        final_area = geometry.StackedAreaDefinition(area3, area4)
+        self.assertEqual(len(final_area.defs), 2)
+        lons, lats = final_area.get_lonlats()
+        lons0, lats0 = final_area.defs[0].get_lonlats()
+        lons1, lats1 = final_area.defs[1].get_lonlats()
+        np.testing.assert_allclose(lons[:464, :], lons0)
+        np.testing.assert_allclose(lons[464:, :], lons1)
+        np.testing.assert_allclose(lats[:464, :], lats0)
+        np.testing.assert_allclose(lats[464:, :], lats1)
+
+    def test_combine_area_extents(self):
+        """Test combination of area extents."""
+        area1 = MagicMock()
+        area1.area_extent = (1, 2, 3, 4)
+        area2 = MagicMock()
+        area2.area_extent = (1, 6, 3, 2)
+        res = combine_area_extents_vertical(area1, area2)
+        self.assertListEqual(res, [1, 6, 3, 4])
+
+        area1 = MagicMock()
+        area1.area_extent = (1, 2, 3, 4)
+        area2 = MagicMock()
+        area2.area_extent = (1, 4, 3, 6)
+        res = combine_area_extents_vertical(area1, area2)
+        self.assertListEqual(res, [1, 2, 3, 6])
+
+    def test_append_area_defs_fail(self):
+        """Fail appending areas."""
+        area1 = MagicMock()
+        area1.proj_dict = {"proj": 'A'}
+        area1.x_size = 4
+        area1.y_size = 5
+        area2 = MagicMock()
+        area2.proj_dict = {'proj': 'B'}
+        area2.x_size = 4
+        area2.y_size = 6
+        # res = combine_area_extents_vertical(area1, area2)
+        self.assertRaises(IncompatibleAreas,
+                          concatenate_area_defs, area1, area2)
+
+    @patch('pyresample.geometry.AreaDefinition')
+    def test_append_area_defs(self, adef):
+        """Test appending area definitions."""
+        x_size = random.randrange(6425)
+        area1 = MagicMock()
+        area1.area_extent = (1, 2, 3, 4)
+        area1.proj_dict = {"proj": 'A'}
+        area1.y_size = random.randrange(6425)
+        area1.x_size = x_size
+
+        area2 = MagicMock()
+        area2.area_extent = (1, 4, 3, 6)
+        area2.proj_dict = {"proj": 'A'}
+        area2.y_size = random.randrange(6425)
+        area2.x_size = x_size
+
+        res = concatenate_area_defs(area1, area2)
+        area_extent = [1, 2, 3, 6]
+        y_size = area1.y_size + area2.y_size
+        adef.assert_called_once_with(area1.area_id, area1.name, area1.proj_id,
+                                     area1.proj_dict, area1.x_size, y_size,
+                                     area_extent)
+
+
 def suite():
     """The test suite.
     """
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
 
     return mysuite
 
