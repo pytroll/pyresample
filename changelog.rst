@@ -2,6 +2,15 @@ Changelog
 =========
 
 
+v1.4.0 (2017-04-02)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.3.1 → 1.4.0. [Martin Raspaud]
+- Add mock to appveyor. [Martin Raspaud]
+- Fix 2.6 compatibility. [Martin Raspaud]
+- Add StackedAreaDefinition class and helper functions. [Martin Raspaud]
+
+
 v1.3.1 (2017-03-22)
 -------------------
 - update changelog. [Martin Raspaud]
