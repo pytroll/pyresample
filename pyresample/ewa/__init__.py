@@ -107,8 +107,12 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
     lons, lats = swath_def.get_lonlats()
     # ll2cr requires 64-bit floats due to pyproj limitations
     # also need a copy of lons, lats since they are written to in-place
-    lons = lons.astype(np.float64, copy=copy)
-    lats = lats.astype(np.float64, copy=copy)
+    try:
+        lons = lons.astype(np.float64, copy=copy)
+        lats = lats.astype(np.float64, copy=copy)
+    except TypeError:
+        lons = lons.astype(np.float64)
+        lats = lats.astype(np.float64)
 
     # Break the input area up in to the expected parameters for ll2cr
     p = area_def.proj4_string
@@ -213,7 +217,8 @@ def fornav(cols, rows, area_def, data_in,
         elif np.issubdtype(data_in[0].dtype, np.integer):
             fill = -999
         else:
-            raise ValueError("Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+            raise ValueError(
+                "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
 
     convert_to_masked = False
     for idx, in_arr in enumerate(data_in):
@@ -224,11 +229,13 @@ def fornav(cols, rows, area_def, data_in,
     data_in = tuple(data_in)
 
     if out is not None:
-        # the user may have provided memmapped arrays or other array-like objects
+        # the user may have provided memmapped arrays or other array-like
+        # objects
         out = tuple("out")
     else:
         # create a place for output data to be written
-        out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype) for in_arr in data_in)
+        out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype)
+                    for in_arr in data_in)
 
     # see if the user specified rows per scan
     # otherwise, use the entire swath as one "scanline"
@@ -245,11 +252,11 @@ def fornav(cols, rows, area_def, data_in,
 
     if convert_to_masked:
         # they gave us masked arrays so give them masked arrays back
-        out = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr) for out_arr in out]
+        out = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr)
+               for out_arr in out]
     if len(out) == 1:
         # they only gave us one data array as input, so give them one back
         out = out[0]
         results = results[0]
 
     return results, out
-
