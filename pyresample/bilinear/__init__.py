@@ -491,8 +491,15 @@ def _get_output_xy(target_area_def, proj):
     """Get x/y coordinates of the target grid."""
     # Read output coordinates
     out_lons, out_lats = target_area_def.get_lonlats()
+
+    # Replace masked arrays with np.nan'd ndarrays
+    out_lons = _convert_masks_to_nans(out_lons)
+    out_lats = _convert_masks_to_nans(out_lats)
+
+    # Mask invalid coordinates
     out_lons, out_lats = _mask_coordinates(out_lons, out_lats)
 
+    # Convert coordinates to output projection x/y space
     out_x, out_y = proj(out_lons, out_lats)
 
     return out_x, out_y
@@ -513,10 +520,23 @@ def _get_input_xy(source_geo_def, proj, input_idxs, idx_ref):
     in_lons = in_lons[idx_ref]
     in_lats = in_lats[idx_ref]
 
+    # Replace masked arrays with np.nan'd ndarrays
+    in_lons = _convert_masks_to_nans(in_lons)
+    in_lats = _convert_masks_to_nans(in_lats)
+
     # Convert coordinates to output projection x/y space
     in_x, in_y = proj(in_lons, in_lats)
 
     return in_x, in_y
+
+
+def _convert_masks_to_nans(arr):
+    """Remove masked array masks and replace corresponding values with nans"""
+    if hasattr(arr, 'mask'):
+        mask = arr.mask
+        arr = arr.data
+        arr[mask] = np.nan
+    return arr
 
 
 def _check_data_shape(data, input_idxs):
