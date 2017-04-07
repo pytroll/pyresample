@@ -208,7 +208,7 @@ def fornav(cols, rows, area_def, data_in,
         data_in = [data_in]
 
     # need a list for replacing these arrays later
-    data_in = list(data_in)
+    data_in = [np.ascontiguousarray(d) for d in data_in]
     # determine a fill value if they didn't tell us what they have as a
     # fill value in the numpy arrays
     if "fill" is None:
@@ -231,7 +231,7 @@ def fornav(cols, rows, area_def, data_in,
     if out is not None:
         # the user may have provided memmapped arrays or other array-like
         # objects
-        out = tuple("out")
+        out = tuple(out)
     else:
         # create a place for output data to be written
         out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype)
@@ -242,7 +242,13 @@ def fornav(cols, rows, area_def, data_in,
     rows_per_scan = rows_per_scan or data_in[0].shape[0]
 
     results = _fornav.fornav_wrapper(cols, rows, data_in, out,
-                                     np.nan, np.nan, rows_per_scan)
+                                     np.nan, np.nan, rows_per_scan,
+                                     weight_count=weight_count,
+                                     weight_min=weight_min,
+                                     weight_distance_max=weight_distance_max,
+                                     weight_delta_max=weight_delta_max,
+                                     weight_sum_min=weight_sum_min,
+                                     maximum_weight_mode=maximum_weight_mode)
 
     def _mask_helper(data, fill):
         if np.isnan(fill):
