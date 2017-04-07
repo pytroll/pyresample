@@ -2,6 +2,20 @@ Changelog
 =========
 
 
+v1.4.1 (2017-04-07)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.4.0 → 1.4.1. [Martin Raspaud]
+- Fix non-contiguous arrays passed to EWA resampling. [davidh-ssec]
+
+  Includes fixes for tuple `out` and proper passing of keyword arguments
+
+- Ensure pyproj gets ndarrays with np.nans instead of masked arrays.
+  [Panu Lahtinen]
+- Handle older numpy versions without "copy" kwrd in .astype() [Panu
+  Lahtinen]
+
+
 v1.4.0 (2017-04-02)
 -------------------
 - update changelog. [Martin Raspaud]
