@@ -118,12 +118,46 @@ class TestFornav(unittest.TestCase):
         self.assertTrue(((out == 1) | (out == -128)).all(),
                         msg="Unexpected interpolation values were returned")
 
+
+class TestFornavWrapper(unittest.TestCase):
+    """Test the function wrapping the lower-level fornav code."""
+    def test_fornav_swath_larger_float32(self):
+        """Test that a swath larger than the output grid fills the entire grid.
+        """
+        from pyresample.ewa import fornav
+        swath_shape = (1600, 3200)
+        data_type = np.float32
+        # Create a fake row and cols array
+        rows = np.empty(swath_shape, dtype=np.float32)
+        rows[:] = np.linspace(-500, 2500, 1600)[:, None]
+        cols = np.empty(swath_shape, dtype=np.float32)
+        cols[:] = np.linspace(-2500, 1500, 3200)
+        # Create a fake data swath
+        data = np.ones(swath_shape, dtype=data_type)
+        out = np.empty((1000, 1000), dtype=data_type)
+        # area can be None because `out` is specified
+        area = None
+
+        grid_points_covered, out_res = fornav(cols, rows, area, data,
+                                              rows_per_scan=16, out=out)
+        self.assertIs(out, out_res)
+        # The swath was larger than the grid, all of the grid should have
+        # been covered by swath pixels
+        self.assertEqual(grid_points_covered, out.size,
+                         msg="Not all grid pixels were filled")
+        # The swath was all 1s so there shouldn't be any non-1 values in the
+        # output except outside the swath
+        self.assertTrue(((out == 1) | np.isnan(out)).all(),
+                        msg="Unexpected interpolation values were returned")
+
+
 def suite():
     """The test suite.
     """
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestFornav))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestFornavWrapper))
 
     return mysuite
 

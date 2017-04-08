@@ -318,6 +318,15 @@ def _get_proj4_args(proj4_args):
     return proj_config.dict()
 
 
+def proj4_str_to_dict(proj4_str):
+    """Convert PROJ.4 compatible string definition to dict
+    
+    Note: Key only parameters will be assigned a value of `True`.
+    """
+    pairs = (x.split('=', 1) for x in proj4_str.split(" "))
+    return {x[0]: (x[1] if len(x) == 2 else True) for x in pairs}
+
+
 def _downcast_index_array(index_array, size):
     """Try to downcast array to uint16
     """

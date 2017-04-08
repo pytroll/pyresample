@@ -231,7 +231,10 @@ def fornav(cols, rows, area_def, data_in,
     if out is not None:
         # the user may have provided memmapped arrays or other array-like
         # objects
-        out = tuple(out)
+        if isinstance(out, (tuple, list)):
+            out = tuple(out)
+        else:
+            out = (out,)
     else:
         # create a place for output data to be written
         out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype)
