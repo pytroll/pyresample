@@ -324,7 +324,7 @@ def proj4_str_to_dict(proj4_str):
     Note: Key only parameters will be assigned a value of `True`.
     """
     pairs = (x.split('=', 1) for x in proj4_str.split(" "))
-    return {x[0]: (x[1] if len(x) == 2 else True) for x in pairs}
+    return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
 
 
 def _downcast_index_array(index_array, size):
