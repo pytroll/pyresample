@@ -24,10 +24,11 @@
 from __future__ import absolute_import
 
 import numpy as np
+import six
+import yaml
 from configobj import ConfigObj
 
 import pyresample as pr
-import six
 
 
 class AreaNotFound(Exception):
@@ -43,8 +44,8 @@ def load_area(area_file_name, *regions):
     -----------
     area_file_name : str
         Path to area definition file
-    regions : str argument list 
-        Regions to parse. If no regions are specified all 
+    regions : str argument list
+        Regions to parse. If no regions are specified all
         regions in the file are returned
 
     Returns
@@ -73,8 +74,8 @@ def parse_area_file(area_file_name, *regions):
     -----------
     area_file_name : str
         Path to area definition file
-    regions : str argument list 
-        Regions to parse. If no regions are specified all 
+    regions : str argument list
+        Regions to parse. If no regions are specified all
         regions in the file are returned
 
     Returns
@@ -87,6 +88,44 @@ def parse_area_file(area_file_name, *regions):
     AreaNotFound:
         If a specified area is not found
     """
+
+    try:
+        return _parse_yaml_area_file(area_file_name, *regions)
+    except yaml.scanner.ScannerError:
+        return _parse_legacy_area_file(area_file_name, *regions)
+
+
+def _parse_yaml_area_file(area_file_name, *regions):
+    """Parse area information from a yaml area file."""
+
+    with open(area_file_name) as fd_:
+        area_dict = yaml.load(fd_)
+
+    area_list = regions or area_dict.keys()
+
+    res = []
+
+    for area_name in area_list:
+        try:
+            params = area_dict[area_name]
+        except KeyError:
+            raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
+                area_name, area_file_name))
+        description = params['description']
+        projection = params['projection']
+        xsize = params['shape']['width']
+        ysize = params['shape']['height']
+        area_extent = (params['area_extent']['lower_left_xy'] +
+                       params['area_extent']['upper_right_xy'])
+        res.append(pr.geometry.AreaDefinition(area_name, description,
+                                              None, projection,
+                                              xsize, ysize,
+                                              area_extent))
+    return res
+
+
+def _parse_legacy_area_file(area_file_name, *regions):
+    """Parse area information from a legacy area file."""
 
     area_file = open(area_file_name, 'r')
     area_list = list(regions)
@@ -176,9 +215,9 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         Proj4 arguments as list of arguments or string
     x_size : int
         Number of pixel in x dimension
-    y_size : int  
+    y_size : int
         Number of pixel in y dimension
-    area_extent : list 
+    area_extent : list
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 
     Returns
@@ -197,11 +236,11 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
 
     Parameters
     -----------
-    source_area_def : object 
+    source_area_def : object
         Source area definition as AreaDefinition object
-    target_area_def : object 
+    target_area_def : object
         Target area definition as AreaDefinition object
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
 
     Returns
@@ -233,13 +272,13 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
 
     Parameters
     -----------
-    source_area_def : object 
+    source_area_def : object
         Source area definition as AreaDefinition object
-    target_area_def : object 
+    target_area_def : object
         Target area definition as AreaDefinition object
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
 
     Returns
@@ -294,7 +333,7 @@ def fwhm2sigma(fwhm):
 
     Parameters
     ----------
-    fwhm : float 
+    fwhm : float
         FWHM of gauss function (3 dB level of beam footprint)
 
     Returns

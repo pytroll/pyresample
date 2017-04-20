@@ -9,21 +9,21 @@ Remarks
 All longitudes and latitudes provided to **pyresample.geometry** must be in degrees.
 Longitudes must additionally be in the [-180;+180[ validity range.
 
-As of version 1.1.1, the **pyresample.geometry** contructors will check the range of 
-longitude values, send a warning if some of them fall outside validity range, 
-and automatically correct the invalid values into [-180;+180[. 
+As of version 1.1.1, the **pyresample.geometry** contructors will check the range of
+longitude values, send a warning if some of them fall outside validity range,
+and automatically correct the invalid values into [-180;+180[.
 
 Use function **utils.wrap_longitudes** for wrapping longitudes yourself.
 
 AreaDefinition
 --------------
 
-The cartographic definition of grid areas used by Pyresample is contained in an object of type AreaDefintion. 
+The cartographic definition of grid areas used by Pyresample is contained in an object of type AreaDefintion.
 The following arguments are needed to initialize an area:
 
-* **area_id** ID of area  
+* **area_id** ID of area
 * **name**: Description
-* **proj_id**: ID of projection 
+* **proj_id**: ID of projection
 * **proj_dict**: Proj4 parameters as dict
 * **x_size**: Number of grid columns
 * **y_size**: Number of grid rows
@@ -39,7 +39,7 @@ where
 Creating an area definition:
 
 .. doctest::
-	
+
  >>> from pyresample import geometry
  >>> area_id = 'ease_sh'
  >>> name = 'Antarctic EASE grid'
@@ -68,7 +68,7 @@ area defintions. The function **get_area_def** can construct an area definition
 based on area extent and a proj4-string or a list of proj4 arguments.
 
 .. doctest::
-	
+
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -77,7 +77,7 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> print(area_def)
  Area ID: ease_sh
@@ -89,7 +89,81 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 
-The **load_area** function can be used to parse area definitions from a configuration file. 
+The **load_area** function can be used to parse area definitions from a configuration file.
+Assuming the file **areas.yaml** exists with the following content
+
+.. code-block:: yaml
+
+	ease_sh:
+	  description: Antarctic EASE grid
+	  projection:
+	    a: 6371228.0
+	    units: m
+	    lon_0: 0
+	    proj: laea
+	    lat_0: -90
+	  shape:
+	    height: 425
+	    width: 425
+	  area_extent:
+	    lower_left_xy: [-5326849.0625, -5326849.0625]
+	    upper_right_xy: [5326849.0625, 5326849.0625]
+	    units: m
+	ease_nh:
+	  description: Arctic EASE grid
+	  projection:
+	    a: 6371228.0
+	    units: m
+	    lon_0: 0
+	    proj: laea
+	    lat_0: 90
+	  shape:
+	    height: 425
+	    width: 425
+	  area_extent:
+	    lower_left_xy: [-5326849.0625, -5326849.0625]
+	    upper_right_xy: [5326849.0625, 5326849.0625]
+	    units: m
+
+
+An area definition dict can be read using
+
+.. doctest::
+
+ >>> from pyresample import utils
+ >>> area = utils.load_area('areas.yaml', 'ease_nh')
+ >>> print(area)
+ Area ID: ease_nh
+ Name: Arctic EASE grid
+ Projection ID: None
+ Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+Note: In the configuration file, the section name maps to **area_id**.
+
+Several area definitions can be read at once using the region names in an argument list
+
+.. doctest::
+
+ >>> from pyresample import utils
+ >>> nh_def, sh_def = utils.load_area('areas.yaml', 'ease_nh', 'ease_sh')
+ >>> print(sh_def)
+ Area ID: ease_sh
+ Name: Antarctic EASE grid
+ Projection ID: None
+ Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+
+
+.. note::
+
+  For backwards compatibility, we still support the legacy area file format:
+
 Assuming the file **areas.cfg** exists with the following content
 
 .. code-block:: bash
@@ -156,7 +230,7 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
  >>> lons = np.ones((100, 100))
  >>> lats = np.ones((100, 100))
  >>> grid_def = geometry.GridDefinition(lons=lons, lats=lats)
- 
+
 SwathDefinition
 ---------------
 A swath is defined by the lon and lat values of the data points
@@ -168,7 +242,7 @@ A swath is defined by the lon and lat values of the data points
  >>> lons = np.ones((500, 20))
  >>> lats = np.ones((500, 20))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- 
+
 Two swaths can be concatenated if their coloumn count matches
 
 .. doctest::
@@ -181,19 +255,19 @@ Two swaths can be concatenated if their coloumn count matches
  >>> lons2 = np.ones((300, 20))
  >>> lats2 = np.ones((300, 20))
  >>> swath_def2 = geometry.SwathDefinition(lons=lons2, lats=lats2)
- >>> swath_def3 = swath_def1.concatenate(swath_def2) 
- 
+ >>> swath_def3 = swath_def1.concatenate(swath_def2)
+
 Geographic coordinates and boundaries
 -------------------------------------
 A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
 
-All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**. 
-AreaDefinition exposes the full set of projection coordinates as **projection_x_coords** and **projection_y_coords** 
+All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**.
+AreaDefinition exposes the full set of projection coordinates as **projection_x_coords** and **projection_y_coords**
 
 Get full coordinate set:
 
 .. doctest::
-	
+
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -202,14 +276,14 @@ Get full coordinate set:
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                               x_size, y_size, area_extent)
  >>> lons, lats = area_def.get_lonlats()
 
 Get slice of coordinate set:
 
 .. doctest::
-	
+
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -218,14 +292,14 @@ Get slice of coordinate set:
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                               x_size, y_size, area_extent)
  >>> cart_subset = area_def.get_cartesian_coords()[100:200, 350:]
- 
+
 If only the 1D range of a projection coordinate is required it can be extraxted using the **proj_x_coord** or **proj_y_coords** property of a geographic coordinate
 
 .. doctest::
-	
+
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -234,10 +308,10 @@ If only the 1D range of a projection coordinate is required it can be extraxted 
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> proj_x_range = area_def.proj_x_coords
- 
+
 Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The spherical geometry operations
@@ -247,7 +321,7 @@ It can be tested if geometries overlaps
 
 .. doctest::
 
- >>> import numpy as np	
+ >>> import numpy as np
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -256,19 +330,19 @@ It can be tested if geometries overlaps
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
  >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
  >>> swath_def = geometry.SwathDefinition(lons, lats)
  >>> print(swath_def.overlaps(area_def))
  True
- 
+
 The fraction of overlap can be calculated
 
 .. doctest::
 
- >>> import numpy as np	
+ >>> import numpy as np
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -277,18 +351,18 @@ The fraction of overlap can be calculated
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
  >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
  >>> swath_def = geometry.SwathDefinition(lons, lats)
  >>> overlap_fraction = swath_def.overlap_rate(area_def)
- 
+
 And the polygon defining the (great circle) boundaries over the overlapping area can be calculated
 
 .. doctest::
 
- >>> import numpy as np	
+ >>> import numpy as np
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -297,18 +371,18 @@ And the polygon defining the (great circle) boundaries over the overlapping area
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
  >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
  >>> swath_def = geometry.SwathDefinition(lons, lats)
  >>> overlap_polygon = swath_def.intersection(area_def)
- 
+
 It can be tested if a (lon, lat) point is inside a GeometryDefinition
 
 .. doctest::
 
- >>> import numpy as np	
+ >>> import numpy as np
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> area_name = 'Antarctic EASE grid'
@@ -317,8 +391,7 @@ It can be tested if a (lon, lat) point is inside a GeometryDefinition
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args, 
+ >>> area_def = utils.get_area_def(area_id, area_name, proj_id, proj4_args,
  ...                  			   x_size, y_size, area_extent)
  >>> print((0, -90) in area_def)
  True
-     
