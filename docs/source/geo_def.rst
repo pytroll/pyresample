@@ -268,7 +268,11 @@ Geographic coordinates and boundaries
 A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
 
 All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**.
-AreaDefinition exposes the full set of projection coordinates as **projection_x_coords** and **projection_y_coords**
+AreaDefinition exposes the full set of projection coordinates as
+**projection_x_coords** and **projection_y_coords**. Note that in the case of
+projection coordinates expressed in longitude and latitude,
+**projection_x_coords** will be longitude and **projection_y_coords** will be
+latitude.
 
 Get full coordinate set:
 
