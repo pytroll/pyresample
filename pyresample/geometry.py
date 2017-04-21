@@ -23,8 +23,10 @@
 """Classes for geometry operations"""
 
 import warnings
+from collections import OrderedDict
 
 import numpy as np
+import yaml
 
 from pyresample import _spatial_mp, utils
 
@@ -585,13 +587,36 @@ class AreaDefinition(BaseDefinition):
                     ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k]))
                                for k in sorted(proj_dict.keys())]) +
                     '}')
-        return ('Area ID: %s\nName: %s\nProjection ID: %s\n'
-                'Projection: %s\nNumber of columns: %s\nNumber of rows: %s\n'
-                'Area extent: %s') % (self.area_id, self.name, self.proj_id,
-                                      proj_str, self.x_size, self.y_size,
-                                      self.area_extent)
+
+        if self.proj_id is None:
+            third_line = ""
+        else:
+            third_line = "Projection ID: {0}\n".format(self.proj_id)
+
+        return ('Area ID: {0}\nDescription: {1}\n{2}'
+                'Projection: {3}\nNumber of columns: {4}\nNumber of rows: {5}\n'
+                'Area extent: {6}').format(self.area_id, self.name, third_line,
+                                           proj_str, self.x_size, self.y_size,
+                                           self.area_extent)
 
     def create_areas_def(self):
+        to_dump = OrderedDict()
+        res = OrderedDict()
+        to_dump[self.area_id] = res
+
+        res['description'] = self.name
+        res['shape'] = OrderedDict([('height', self.y_size),
+                                    ('width', self.x_size)])
+        res['area_extent'] = OrderedDict([('lower_left_xy',
+                                           list(self.area_extent[:2])),
+                                          ('upper_right_xy',
+                                           list(self.area_extent[2:])),
+                                          ('units', 'm')
+                                          ])
+
+        return ordered_dump(to_dump)
+
+    def create_areas_def_legacy(self):
         proj_dict = self.proj_dict
         proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k]))
                              for k in sorted(proj_dict.keys())])
@@ -603,8 +628,10 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
-        area_def_str = fmt.format(name=self.name, area_id=self.area_id, proj_str=proj_str,
-                                  x_size=self.x_size, y_size=self.y_size, area_extent=self.area_extent)
+        area_def_str = fmt.format(name=self.name, area_id=self.area_id,
+                                  proj_str=proj_str, x_size=self.x_size,
+                                  y_size=self.y_size,
+                                  area_extent=self.area_extent)
         return area_def_str
 
     __repr__ = __str__
@@ -1140,3 +1167,16 @@ def _get_highest_level_class(obj1, obj2):
     else:
         klass = obj1.__class__
     return klass
+
+
+def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
+    class OrderedDumper(Dumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items(), flow_style=False)
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)
