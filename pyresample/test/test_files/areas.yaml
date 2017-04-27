@@ -1,0 +1,30 @@
+ease_sh:
+  description: Antarctic EASE grid
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+ease_nh:
+  description: Arctic EASE grid
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: 90
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m

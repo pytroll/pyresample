@@ -1,9 +1,9 @@
 import os
 import unittest
 
-from pyresample import utils
-
 import numpy as np
+
+from pyresample import utils
 
 
 def tmp(f):
@@ -13,42 +13,65 @@ def tmp(f):
 
 class Test(unittest.TestCase):
 
-    def test_area_parser(self):
+    def test_area_parser_legacy(self):
+        """Test legacy area parser."""
         ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
                                                               'test_files',
                                                               'areas.cfg'), 'ease_nh', 'ease_sh')
 
-        nh_found = (ease_nh.__str__() == """Area ID: ease_nh
-Name: Arctic EASE grid
+        nh_str = """Area ID: ease_nh
+Description: Arctic EASE grid
 Projection ID: ease_nh
 Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_nh.__str__(), nh_str)
 
-        sh_found = (ease_sh.__str__() == """Area ID: ease_sh
-Name: Antarctic EASE grid
+        sh_str = """Area ID: ease_sh
+Description: Antarctic EASE grid
 Projection ID: ease_sh
 Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_sh.__str__(), sh_str)
 
-        self.assertTrue(
-            nh_found and sh_found, msg='Failed to parse areas correctly')
+    def test_area_parser_yaml(self):
+        """Test YAML area parser."""
+        ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
+                                                              'test_files',
+                                                              'areas.yaml'),
+                                                 'ease_nh', 'ease_sh')
+
+        nh_str = """Area ID: ease_nh
+Description: Arctic EASE grid
+Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_nh.__str__(), nh_str)
+
+        sh_str = """Area ID: ease_sh
+Description: Antarctic EASE grid
+Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_sh.__str__(), sh_str)
 
     def test_load_area(self):
         ease_nh = utils.load_area(os.path.join(os.path.dirname(__file__),
                                                'test_files',
                                                'areas.cfg'), 'ease_nh')
-        nh_found = (ease_nh.__str__() == """Area ID: ease_nh
-Name: Arctic EASE grid
+        nh_str = """Area ID: ease_nh
+Description: Arctic EASE grid
 Projection ID: ease_nh
 Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""")
-        self.assertTrue(nh_found, msg='Failed to load area correctly')
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(nh_str, ease_nh.__str__())
 
     def test_not_found_exception(self):
         self.assertRaises(utils.AreaNotFound, utils.parse_area_file,
