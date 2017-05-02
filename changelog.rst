@@ -2,6 +2,31 @@ Changelog
 =========
 
 
+v1.5.0 (2017-05-02)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.4.1 → 1.5.0. [Martin Raspaud]
+- Merge pull request #58 from pytroll/feature-yaml-areas. [David Hoese]
+
+  Add support for areas in yaml format
+- Remove support for python 2.6. [Martin Raspaud]
+- Explain that x/y can be lon/lat. [Martin Raspaud]
+- Fix __str__ and dump of area defs to be more explicit. [Martin
+  Raspaud]
+- Add missing doctest file. [Martin Raspaud]
+- Add yaml as a requirement. [Martin Raspaud]
+- Add support for areas in yaml format. [Martin Raspaud]
+- Fix travis script not going back to base directory for coveralls to
+  work. [davidh-ssec]
+
+  Sphinx was used for testing and included a `cd` command but that made coveralls unable to find the .coverage output.
+
+  (cherry picked from commit 33e692a)
+
+- Replace dict comprehension for 2.6 compatibility. [davidh-ssec]
+- Add basic ll2cr and fornav wrapper tests. [davidh-ssec]
+
+
 v1.4.1 (2017-04-07)
 -------------------
 - update changelog. [Martin Raspaud]
