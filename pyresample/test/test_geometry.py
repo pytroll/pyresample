@@ -859,6 +859,46 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      area_extent)
 
 
+class TestDynamicAreaDefinition(unittest.TestCase):
+    """Test the DynamicAreaDefinition class."""
+
+    def test_freeze(self):
+        """Test freezing the area."""
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                              {'proj': 'laea'})
+        lons = [10, 10, 22, 22]
+        lats = [50, 66, 66, 50]
+        result = area.freeze(lons, lats,
+                             resolution=3000,
+                             proj_info={'lon0': 16, 'lat0': 58})
+
+        self.assertTupleEqual(result.area_extent, (538546.7274949469,
+                                                   5380808.879250369,
+                                                   1724415.6519203288,
+                                                   6998895.701001488))
+        self.assertEqual(result.proj_dict['lon0'], 16)
+        self.assertEqual(result.proj_dict['lat0'], 58)
+        self.assertEqual(result.x_size, 395)
+        self.assertEqual(result.y_size, 539)
+
+    def test_compute_domain(self):
+        """Test computing size and area extent."""
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                              {'proj': 'laea'})
+        corners = [1, 1, 9, 9]
+        self.assertRaises(ValueError, area.compute_domain, corners, 1, 1)
+
+        area_extent, x_size, y_size = area.compute_domain(corners, size=(5, 5))
+        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
+        self.assertEqual(x_size, 5)
+        self.assertEqual(y_size, 5)
+
+        area_extent, x_size, y_size = area.compute_domain(corners, resolution=2)
+        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
+        self.assertEqual(x_size, 5)
+        self.assertEqual(y_size, 5)
+
+
 def suite():
     """The test suite.
     """
@@ -866,6 +906,7 @@ def suite():
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
     mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
 
     return mysuite
 

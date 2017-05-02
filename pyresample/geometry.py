@@ -456,6 +456,67 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
 
+class DynamicAreaDefinition():
+    """An AreaDefintion containing just a subset of the needed parameters."""
+
+    def __init__(self, area_id=None, description=None, proj_dict=None,
+                 x_size=None, y_size=None, area_extent=None):
+        """Initialize the DynamicAreaDefinition."""
+        self.area_id = area_id
+        self.description = description
+        self.proj_dict = proj_dict
+        self.x_size = x_size
+        self.y_size = y_size
+        self.area_extent = area_extent
+
+    def compute_domain(self, corners, resolution=None, size=None):
+        """Compute size and area_extent from corners and some more info."""
+        if resolution is not None and size is not None:
+            raise ValueError("Both resolution and size can't be provided.")
+
+        if size:
+            x_size, y_size = size
+            x_resolution = (corners[2] - corners[0]) * 1.0 / (x_size - 1)
+            y_resolution = (corners[3] - corners[1]) * 1.0 / (y_size - 1)
+
+        if resolution:
+            try:
+                x_resolution, y_resolution = resolution
+            except TypeError:
+                x_resolution = y_resolution = resolution
+            x_size = int(np.rint((corners[2] - corners[0]) * 1.0 /
+                                 x_resolution + 1))
+            y_size = int(np.rint((corners[3] - corners[1]) * 1.0 /
+                                 y_resolution + 1))
+
+        area_extent = (corners[0] - x_resolution / 2,
+                       corners[1] - y_resolution / 2,
+                       corners[2] + x_resolution / 2,
+                       corners[3] + y_resolution / 2)
+        return area_extent, x_size, y_size
+
+    def freeze(self, lons=None, lats=None,
+               resolution=None, size=None,
+               proj_info=None):
+        """Create an AreaDefintion from this area with help of the arguments
+        provided to this method."""
+        from pyproj import Proj
+        if proj_info is not None:
+            self.proj_dict.update(proj_info)
+
+        if not self.area_extent or not self.x_size or not self.y_size:
+            proj4 = Proj(**self.proj_dict)
+            xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
+            corners = [np.min(xarr), np.min(yarr), np.max(xarr), np.max(yarr)]
+
+            domain = self.compute_domain(corners, resolution, size)
+            self.area_extent, self.x_size, self.y_size = domain
+
+        return AreaDefinition(self.area_id, self.description, None,
+                              self.proj_dict, self.x_size, self.y_size,
+                              self.area_extent)
+
+
 class AreaDefinition(BaseDefinition):
 
     """Holds definition of an area.

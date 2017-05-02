@@ -113,14 +113,25 @@ def _parse_yaml_area_file(area_file_name, *regions):
                 area_name, area_file_name))
         description = params['description']
         projection = params['projection']
-        xsize = params['shape']['width']
-        ysize = params['shape']['height']
-        area_extent = (params['area_extent']['lower_left_xy'] +
-                       params['area_extent']['upper_right_xy'])
-        res.append(pr.geometry.AreaDefinition(area_name, description,
-                                              None, projection,
-                                              xsize, ysize,
-                                              area_extent))
+        try:
+            xsize = params['shape']['width']
+            ysize = params['shape']['height']
+        except KeyError:
+            xsize, ysize = None, None
+        try:
+            area_extent = (params['area_extent']['lower_left_xy'] +
+                           params['area_extent']['upper_right_xy'])
+        except KeyError:
+            area_extent = None
+        area = pr.geometry.DynamicAreaDefinition(area_name, description,
+                                                 projection, xsize, ysize,
+                                                 area_extent)
+        try:
+            area = area.freeze()
+        except TypeError:
+            pass
+
+        res.append(area)
     return res
 
 
@@ -359,7 +370,7 @@ def _get_proj4_args(proj4_args):
 
 def proj4_str_to_dict(proj4_str):
     """Convert PROJ.4 compatible string definition to dict
-    
+
     Note: Key only parameters will be assigned a value of `True`.
     """
     pairs = (x.split('=', 1) for x in proj4_str.split(" "))
