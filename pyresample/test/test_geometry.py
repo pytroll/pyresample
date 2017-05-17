@@ -976,6 +976,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
     mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
 
     return mysuite
 
