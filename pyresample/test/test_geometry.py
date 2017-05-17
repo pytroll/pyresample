@@ -160,39 +160,6 @@ class Test(unittest.TestCase):
                          "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
                          (lons2_ints.dtype, lons.dtype,))
 
-    def test_swath(self):
-        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats1 = np.fromfunction(
-            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
-
-        swath_def = geometry.SwathDefinition(lons1, lats1)
-
-        lons2, lats2 = swath_def.get_lonlats()
-
-        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
-                         msg='Caching of swath coordinates failed')
-
-    def test_swath_wrap(self):
-        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats1 = np.fromfunction(
-            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
-
-        lons1 += 180.
-        with catch_warnings() as w1:
-            swath_def = geometry.BaseDefinition(lons1, lats1)
-            self.assertFalse(
-                len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
-            self.assertFalse(('-180:+180' not in str(w1[0].message)),
-                             'Failed to trigger correct warning about longitude wrapping')
-
-        lons2, lats2 = swath_def.get_lonlats()
-
-        self.assertTrue(id(lons1) != id(lons2),
-                        msg='Caching of swath coordinates failed with longitude wrapping')
-
-        self.assertTrue(lons2.min() > -180 and lons2.max() < 180,
-                        'Wrapping of longitudes failed for SwathDefinition')
-
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                            {'a': '6378144.0',
@@ -254,23 +221,6 @@ class Test(unittest.TestCase):
                                            )
         self.assertFalse(
             area_def == msg_area, 'area_defs are not expected to be equal')
-
-    def test_swath_equal(self):
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        swath_def = geometry.SwathDefinition(lons, lats)
-        swath_def2 = geometry.SwathDefinition(lons, lats)
-        self.assertFalse(
-            swath_def != swath_def2, 'swath_defs are not equal as expected')
-
-    def test_swath_not_equal(self):
-        lats1 = np.array([65.9, 65.86, 65.82, 65.78])
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats2 = np.array([65.91, 65.85, 65.80, 65.75])
-        swath_def = geometry.SwathDefinition(lons, lats1)
-        swath_def2 = geometry.SwathDefinition(lons, lats2)
-        self.assertFalse(
-            swath_def == swath_def2, 'swath_defs are not expected to be equal')
 
     def test_swath_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -347,60 +297,6 @@ class Test(unittest.TestCase):
 
         self.assertFalse(
             area_def == swath_def, "swath_def and area_def should be different")
-
-    def test_concat_1d(self):
-        lons1 = np.array([1, 2, 3])
-        lats1 = np.array([1, 2, 3])
-        lons2 = np.array([4, 5, 6])
-        lats2 = np.array([4, 5, 6])
-        swath_def1 = geometry.SwathDefinition(lons1, lats1)
-        swath_def2 = geometry.SwathDefinition(lons2, lats2)
-        swath_def_concat = swath_def1.concatenate(swath_def2)
-        expected = np.array([1, 2, 3, 4, 5, 6])
-        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and
-                        np.array_equal(swath_def_concat.lons, expected),
-                        'Failed to concatenate 1D swaths')
-
-    def test_concat_2d(self):
-        lons1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
-        lats1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
-        lons2 = np.array([[4, 5, 6], [6, 7, 8]])
-        lats2 = np.array([[4, 5, 6], [6, 7, 8]])
-        swath_def1 = geometry.SwathDefinition(lons1, lats1)
-        swath_def2 = geometry.SwathDefinition(lons2, lats2)
-        swath_def_concat = swath_def1.concatenate(swath_def2)
-        expected = np.array(
-            [[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and
-                        np.array_equal(swath_def_concat.lons, expected),
-                        'Failed to concatenate 2D swaths')
-
-    def test_append_1d(self):
-        lons1 = np.array([1, 2, 3])
-        lats1 = np.array([1, 2, 3])
-        lons2 = np.array([4, 5, 6])
-        lats2 = np.array([4, 5, 6])
-        swath_def1 = geometry.SwathDefinition(lons1, lats1)
-        swath_def2 = geometry.SwathDefinition(lons2, lats2)
-        swath_def1.append(swath_def2)
-        expected = np.array([1, 2, 3, 4, 5, 6])
-        self.assertTrue(np.array_equal(swath_def1.lons, expected) and
-                        np.array_equal(swath_def1.lons, expected),
-                        'Failed to append 1D swaths')
-
-    def test_append_2d(self):
-        lons1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
-        lats1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
-        lons2 = np.array([[4, 5, 6], [6, 7, 8]])
-        lats2 = np.array([[4, 5, 6], [6, 7, 8]])
-        swath_def1 = geometry.SwathDefinition(lons1, lats1)
-        swath_def2 = geometry.SwathDefinition(lons2, lats2)
-        swath_def1.append(swath_def2)
-        expected = np.array(
-            [[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
-        self.assertTrue(np.array_equal(swath_def1.lons, expected) and
-                        np.array_equal(swath_def1.lons, expected),
-                        'Failed to append 2D swaths')
 
     def test_grid_filter_valid(self):
         lons = np.array([-170, -30, 30, 170])
@@ -699,6 +595,179 @@ class Test(unittest.TestCase):
         y_expects = np.array([1, 0])
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
+
+
+class TestSwathDefintion(unittest.TestCase):
+    """Test the SwathDefinition."""
+
+    def test_swath(self):
+        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
+        lats1 = np.fromfunction(
+            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
+
+        swath_def = geometry.SwathDefinition(lons1, lats1)
+
+        lons2, lats2 = swath_def.get_lonlats()
+
+        self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
+                         msg='Caching of swath coordinates failed')
+
+    def test_swath_wrap(self):
+        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
+        lats1 = np.fromfunction(
+            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
+
+        lons1 += 180.
+        with catch_warnings() as w1:
+            swath_def = geometry.BaseDefinition(lons1, lats1)
+            self.assertFalse(
+                len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
+            self.assertFalse(('-180:+180' not in str(w1[0].message)),
+                             'Failed to trigger correct warning about longitude wrapping')
+
+        lons2, lats2 = swath_def.get_lonlats()
+
+        self.assertTrue(id(lons1) != id(lons2),
+                        msg='Caching of swath coordinates failed with longitude wrapping')
+
+        self.assertTrue(lons2.min() > -180 and lons2.max() < 180,
+                        'Wrapping of longitudes failed for SwathDefinition')
+
+    def test_concat_1d(self):
+        lons1 = np.array([1, 2, 3])
+        lats1 = np.array([1, 2, 3])
+        lons2 = np.array([4, 5, 6])
+        lats2 = np.array([4, 5, 6])
+        swath_def1 = geometry.SwathDefinition(lons1, lats1)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        swath_def_concat = swath_def1.concatenate(swath_def2)
+        expected = np.array([1, 2, 3, 4, 5, 6])
+        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and
+                        np.array_equal(swath_def_concat.lons, expected),
+                        'Failed to concatenate 1D swaths')
+
+    def test_concat_2d(self):
+        lons1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        lats1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        lons2 = np.array([[4, 5, 6], [6, 7, 8]])
+        lats2 = np.array([[4, 5, 6], [6, 7, 8]])
+        swath_def1 = geometry.SwathDefinition(lons1, lats1)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        swath_def_concat = swath_def1.concatenate(swath_def2)
+        expected = np.array(
+            [[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
+        self.assertTrue(np.array_equal(swath_def_concat.lons, expected) and
+                        np.array_equal(swath_def_concat.lons, expected),
+                        'Failed to concatenate 2D swaths')
+
+    def test_append_1d(self):
+        lons1 = np.array([1, 2, 3])
+        lats1 = np.array([1, 2, 3])
+        lons2 = np.array([4, 5, 6])
+        lats2 = np.array([4, 5, 6])
+        swath_def1 = geometry.SwathDefinition(lons1, lats1)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        swath_def1.append(swath_def2)
+        expected = np.array([1, 2, 3, 4, 5, 6])
+        self.assertTrue(np.array_equal(swath_def1.lons, expected) and
+                        np.array_equal(swath_def1.lons, expected),
+                        'Failed to append 1D swaths')
+
+    def test_append_2d(self):
+        lons1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        lats1 = np.array([[1, 2, 3], [3, 4, 5], [5, 6, 7]])
+        lons2 = np.array([[4, 5, 6], [6, 7, 8]])
+        lats2 = np.array([[4, 5, 6], [6, 7, 8]])
+        swath_def1 = geometry.SwathDefinition(lons1, lats1)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        swath_def1.append(swath_def2)
+        expected = np.array(
+            [[1, 2, 3], [3, 4, 5], [5, 6, 7], [4, 5, 6], [6, 7, 8]])
+        self.assertTrue(np.array_equal(swath_def1.lons, expected) and
+                        np.array_equal(swath_def1.lons, expected),
+                        'Failed to append 2D swaths')
+
+    def test_swath_equal(self):
+        """Test swath equality."""
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons, lats)
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+    def test_swath_not_equal(self):
+        """Test swath inequality."""
+        lats1 = np.array([65.9, 65.86, 65.82, 65.78])
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats2 = np.array([65.91, 65.85, 65.80, 65.75])
+        swath_def = geometry.SwathDefinition(lons, lats1)
+        swath_def2 = geometry.SwathDefinition(lons, lats2)
+        self.assertFalse(
+            swath_def == swath_def2, 'swath_defs are not expected to be equal')
+
+    def test_compute_omerc_params(self):
+        """Test omerc parameters computation."""
+        lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                         [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                         [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+
+        lons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                         [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                         [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+
+        area = geometry.SwathDefinition(lons, lats)
+        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+                     'ellps': 'WGS84', 'proj': 'omerc',
+                     'alpha': 19.01983632983149, 'lat_0': 60.7420043944989}
+        self.assertDictEqual(area._compute_omerc_parameters('WGS84'),
+                             proj_dict)
+
+    def test_get_edge_lonlats(self):
+        """Test the `get_edge_lonlats` functionality."""
+        lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                         [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                         [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+
+        lons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                         [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                         [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+
+        area = geometry.SwathDefinition(lons, lats)
+        lons, lats = area.get_edge_lonlats()
+
+        np.testing.assert_allclose(lons, [-90.67900085, 79.11000061,  81.26400757,
+                                          81.26400757, 29.67200089, 10.26000023,
+                                          10.26000023, -5.10700035, -21.52500153,
+                                          -21.52500153, -21.56500053, -90.67900085])
+        np.testing.assert_allclose(lats, [85.23900604, 80.84000397, 67.07600403,
+                                          67.07600403, 54.14700317, 30.54700089,
+                                          30.54700089, 34.0850029, 35.58000183,
+                                          35.58000183, 62.25600433,  85.23900604])
+
+    def test_compute_optimal_bb(self):
+        """Test computing the bb area."""
+        lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                         [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                         [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+
+        lons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                         [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                         [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+
+        area = geometry.SwathDefinition(lons, lats)
+
+        res = area.compute_optimal_bb_area('omerc', 'WGS84')
+
+        np.testing.assert_allclose(res.area_extent, (2286681.5787783717,
+                                                     -2359524.3841862897,
+                                                     11729746.731524916,
+                                                     2436972.5553810494))
+        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+                     'ellps': 'WGS84', 'proj': 'omerc',
+                     'alpha': 19.01983632983149, 'lat_0': 60.7420043944989}
+        self.assertDictEqual(res.proj_dict, proj_dict)
+        self.assertEqual(res.shape, (3, 3))
 
 
 class TestStackedAreaDefinition(unittest.TestCase):

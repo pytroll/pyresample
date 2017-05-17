@@ -27,6 +27,7 @@ from collections import OrderedDict
 
 import numpy as np
 import yaml
+from pyproj import Geod, Proj
 
 from pyresample import _spatial_mp, utils
 
@@ -455,6 +456,56 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def _compute_omerc_parameters(self, ellipsoid):
+        """Compute the oblique mercator projection bouding box parameters."""
+        lines, cols = self.lons.shape
+        lon1, lon, lon2 = self.lons[[0, int(lines / 2), -1], int(cols / 2)]
+        lat1, lat, lat2 = self.lats[[0, int(lines / 2), -1], int(cols / 2)]
+
+        proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
+                            'lat_1': lat1, 'lon_1': lon1,
+                            'lat_2': lat2, 'lon_2': lon2}
+
+        lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
+        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
+        return {'proj': 'omerc', 'alpha': float(180 + az1),
+                'lat_0': float(lat0),  'lonc': float(lonc),
+                'no_rot': True, 'ellps': ellipsoid}
+
+    def get_edge_lonlats(self):
+        """Get the concatenated boundary of the current swath."""
+        lons, lats = self.get_boundary_lonlats()
+        blons = np.ma.concatenate([lons.side1, lons.side2,
+                                   lons.side3, lons.side4])
+        blats = np.ma.concatenate([lats.side1, lats.side2,
+                                   lats.side3, lats.side4])
+        return blons, blats
+
+    def compute_optimal_bb_area(self, projection='omerc', ellipsoid='WGS84'):
+        """Compute the "best" bounding box area for this swath in `projection`.
+
+        By default, `projection` is Oblique Mercator (`omerc` in proj.4), in
+        which case the right projection angle `alpha` is computed from the
+        swath centerline. For other projections, only the appropriate center of
+        projection and area extents are computed.
+
+        `ellipsoid` is WGS84 per default, and is used in the proj4 expressions.
+        """
+        area_id = projection + '_otf'
+        description = 'On-the-fly ' + projection + ' area'
+        lines, cols = self.lons.shape
+        x_size = int(cols * 1.1)
+        y_size = int(lines * 1.1)
+
+        if projection == 'omerc':
+            proj_dict = self._compute_omerc_parameters(ellipsoid)
+        else:
+            raise NotImplementedError('Only omerc supported for now.')
+
+        area = DynamicAreaDefinition(area_id, description, proj_dict)
+        lons, lats = self.get_edge_lonlats()
+        return area.freeze(lons, lats, size=(x_size, y_size))
+
 
 class DynamicAreaDefinition():
     """An AreaDefintion containing just a subset of the needed parameters."""
@@ -500,7 +551,6 @@ class DynamicAreaDefinition():
                proj_info=None):
         """Create an AreaDefintion from this area with help of the arguments
         provided to this method."""
-        from pyproj import Proj
         if proj_info is not None:
             self.proj_dict.update(proj_info)
 
