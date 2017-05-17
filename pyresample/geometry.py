@@ -459,8 +459,10 @@ class SwathDefinition(CoordinateDefinition):
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
         lines, cols = self.lons.shape
-        lon1, lon, lon2 = self.lons[[0, int(lines / 2), -1], int(cols / 2)]
-        lat1, lat, lat2 = self.lats[[0, int(lines / 2), -1], int(cols / 2)]
+        lon1, lon, lon2 = np.asanyarray(
+            self.lons[[0, int(lines / 2), -1], int(cols / 2)])
+        lat1, lat, lat2 = np.asanyarray(
+            self.lats[[0, int(lines / 2), -1], int(cols / 2)])
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
                             'lat_1': lat1, 'lon_1': lon1,
