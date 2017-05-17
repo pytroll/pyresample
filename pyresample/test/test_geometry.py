@@ -597,7 +597,7 @@ class Test(unittest.TestCase):
         self.assertTrue((y__.data == y_expects).all())
 
 
-class TestSwathDefintion(unittest.TestCase):
+class TestSwathDefinition(unittest.TestCase):
     """Test the SwathDefinition."""
 
     def test_swath(self):
