@@ -719,7 +719,7 @@ class TestSwathDefinition(unittest.TestCase):
         area = geometry.SwathDefinition(lons, lats)
         proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.01983632983149, 'lat_0': 60.7420043944989}
+                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
         self.assertDictEqual(area._compute_omerc_parameters('WGS84'),
                              proj_dict)
 
@@ -759,13 +759,13 @@ class TestSwathDefinition(unittest.TestCase):
 
         res = area.compute_optimal_bb_area('omerc', 'WGS84')
 
-        np.testing.assert_allclose(res.area_extent, (2286681.5787783717,
-                                                     -2359524.3841862897,
-                                                     11729746.731524916,
-                                                     2436972.5553810494))
+        np.testing.assert_allclose(res.area_extent, (2286629.731529,
+                                                     -2359693.817959,
+                                                     11729881.856072,
+                                                     2437001.523925))
         proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.01983632983149, 'lat_0': 60.7420043944989}
+                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
         self.assertDictEqual(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
 
