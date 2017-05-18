@@ -501,6 +501,7 @@ class SwathDefinition(CoordinateDefinition):
 
         if projection == 'omerc':
             proj_dict = self._compute_omerc_parameters(ellipsoid)
+            x_size, y_size = y_size, x_size
         else:
             raise NotImplementedError('Only omerc supported for now.')
 
