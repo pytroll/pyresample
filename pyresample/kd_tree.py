@@ -21,13 +21,13 @@ supported"""
 
 from __future__ import absolute_import
 
+import sys
 import types
 import warnings
-import sys
 
 import numpy as np
 
-from pyresample import geometry, data_reduce, _spatial_mp
+from pyresample import _spatial_mp, data_reduce, geometry
 
 if sys.version < '3':
     range = xrange
@@ -66,20 +66,20 @@ def resample_nearest(source_geo_def, data, target_geo_def,
     ----------
     source_geo_def : object
         Geometry definition of source
-    data : numpy array               
+    data : numpy array
         1d array of single channel data points or
         (source_size, k) array of k channels of datapoints
     target_geo_def : object
         Geometry definition of target
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
     fill_value : int or None, optional
             Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
+            If fill_value is None a masked array is returned
+            with undetermined pixels masked
     reduce_data : bool, optional
         Perform initial coarse reduction of source dataset in order
         to reduce execution time
@@ -91,7 +91,7 @@ def resample_nearest(source_geo_def, data, target_geo_def,
 
     Returns
     -------
-    data : numpy array 
+    data : numpy array
         Source data resampled to target geometry
     """
 
@@ -110,26 +110,26 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     ----------
     source_geo_def : object
         Geometry definition of source
-    data : numpy array               
+    data : numpy array
         Array of single channel data points or
         (source_geo_def.shape, k) array of k channels of datapoints
     target_geo_def : object
         Geometry definition of target
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
-    sigmas : list of floats or float            
-        List of sigmas to use for the gauss weighting of each 
+    sigmas : list of floats or float
+        List of sigmas to use for the gauss weighting of each
         channel 1 to k, w_k = exp(-dist^2/sigma_k^2).
         If only one channel is resampled sigmas is a single float value.
-    neighbours : int, optional 
+    neighbours : int, optional
         The number of neigbours to consider for each grid point
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : {int, None}, optional 
+    fill_value : {int, None}, optional
             Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
+            If fill_value is None a masked array is returned
+            with undetermined pixels masked
     reduce_data : bool, optional
         Perform initial coarse reduction of source dataset in order
         to reduce execution time
@@ -148,7 +148,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     data, stddev, counts : numpy array, numpy array, numpy array (if with_uncert == True)
         Source data resampled to target geometry.
         Weighted standard devaition for all pixels having more than one source value
-        Counts of number of source values used in weighting per pixel        
+        Counts of number of source values used in weighting per pixel
     """
 
     def gauss(sigma):
@@ -190,27 +190,27 @@ def resample_custom(source_geo_def, data, target_geo_def,
     ----------
     source_geo_def : object
         Geometry definition of source
-    data : numpy array               
+    data : numpy array
         Array of single channel data points or
         (source_geo_def.shape, k) array of k channels of datapoints
     target_geo_def : object
         Geometry definition of target
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
-    weight_funcs : list of function objects or function object       
-        List of weight functions f(dist) to use for the weighting 
+    weight_funcs : list of function objects or function object
+        List of weight functions f(dist) to use for the weighting
         of each channel 1 to k.
         If only one channel is resampled weight_funcs is
         a single function object.
-    neighbours : int, optional 
+    neighbours : int, optional
         The number of neigbours to consider for each grid point
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : {int, None}, optional 
+    fill_value : {int, None}, optional
             Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
+            If fill_value is None a masked array is returned
+            with undetermined pixels masked
     reduce_data : bool, optional
         Perform initial coarse reduction of source dataset in order
         to reduce execution time
@@ -282,9 +282,9 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         Geometry definition of source
     target_geo_def : object
         Geometry definition of target
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
-    neighbours : int, optional 
+    neighbours : int, optional
         The number of neigbours to consider for each grid point
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
@@ -300,7 +300,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
 
     Returns
     -------
-    (valid_input_index, valid_output_index, 
+    (valid_input_index, valid_output_index,
     index_array, distance_array) : tuple of numpy arrays
         Neighbour resampling info
     """
@@ -467,7 +467,7 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
     """
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise TypeError('source_geo_def must be of geometry type')
-    
+
     #Get reduced cartesian coordinates and flatten them
     source_cartesian_coords = source_geo_def.get_cartesian_coords(nprocs=nprocs)
     input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
@@ -597,20 +597,20 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     distance_array : numpy array, optional
         distance_array from get_neighbour_info
         Not needed for 'nn' resample type
-    weight_funcs : list of function objects or function object, optional       
-        List of weight functions f(dist) to use for the weighting 
+    weight_funcs : list of function objects or function object, optional
+        List of weight functions f(dist) to use for the weighting
         of each channel 1 to k.
         If only one channel is resampled weight_funcs is
         a single function object.
         Must be supplied when using 'custom' resample type
     fill_value : int or None, optional
         Set undetermined pixels to this value.
-        If fill_value is None a masked array is returned 
+        If fill_value is None a masked array is returned
         with undetermined pixels masked
 
     Returns
     -------
-    result : numpy array 
+    result : numpy array
         Source data resampled to target geometry
     """
 
