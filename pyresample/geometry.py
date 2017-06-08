@@ -24,12 +24,15 @@
 
 import warnings
 from collections import OrderedDict
+from logging import getLogger
 
 import numpy as np
 import yaml
 from pyproj import Geod, Proj
 
 from pyresample import _spatial_mp, utils
+
+logger = getLogger(__name__)
 
 
 class DimensionError(Exception):
@@ -60,6 +63,8 @@ class BaseDefinition(object):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
 
@@ -352,6 +357,8 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
+        lons = np.asanyarray(lons)
+        lats = np.asanyarray(lats)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
@@ -450,6 +457,8 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        lons = np.asanyarray(lons)
+        lats = np.asanyarray(lats)
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
@@ -483,38 +492,47 @@ class SwathDefinition(CoordinateDefinition):
                                    lats.side3, lats.side4])
         return blons, blats
 
-    def compute_optimal_bb_area(self, projection='omerc', ellipsoid='WGS84'):
-        """Compute the "best" bounding box area for this swath in `projection`.
+    def compute_bb_proj_params(self, proj_dict):
+        projection = proj_dict['proj']
+        ellipsoid = proj_dict.get('ellps', 'WGS84')
+        if projection == 'omerc':
+            return self._compute_omerc_parameters(ellipsoid)
+        else:
+            raise NotImplementedError('Only omerc supported for now.')
 
-        By default, `projection` is Oblique Mercator (`omerc` in proj.4), in
+    def compute_optimal_bb_area(self, proj_dict=None):
+        """Compute the "best" bounding box area for this swath with `proj_dict`.
+
+        By default, the projection is Oblique Mercator (`omerc` in proj.4), in
         which case the right projection angle `alpha` is computed from the
         swath centerline. For other projections, only the appropriate center of
         projection and area extents are computed.
-
-        `ellipsoid` is WGS84 per default, and is used in the proj4 expressions.
         """
+        if proj_dict is None:
+            proj_dict = {'proj': 'omerc'}
+        projection = proj_dict.get('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
         lines, cols = self.lons.shape
         x_size = int(cols * 1.1)
         y_size = int(lines * 1.1)
 
+        proj_dict = self.compute_bb_proj_params(proj_dict)
+
         if projection == 'omerc':
-            proj_dict = self._compute_omerc_parameters(ellipsoid)
             x_size, y_size = y_size, x_size
-        else:
-            raise NotImplementedError('Only omerc supported for now.')
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
         lons, lats = self.get_edge_lonlats()
-        return area.freeze(lons, lats, size=(x_size, y_size))
+        return area.freeze((lons, lats), size=(x_size, y_size))
 
 
 class DynamicAreaDefinition():
     """An AreaDefintion containing just a subset of the needed parameters."""
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
-                 x_size=None, y_size=None, area_extent=None):
+                 x_size=None, y_size=None, area_extent=None,
+                 optimize_projection=False):
         """Initialize the DynamicAreaDefinition."""
         self.area_id = area_id
         self.description = description
@@ -522,6 +540,7 @@ class DynamicAreaDefinition():
         self.x_size = x_size
         self.y_size = y_size
         self.area_extent = area_extent
+        self.optimize_projection = optimize_projection
 
     def compute_domain(self, corners, resolution=None, size=None):
         """Compute size and area_extent from corners and some more info."""
@@ -549,7 +568,7 @@ class DynamicAreaDefinition():
                        corners[3] + y_resolution / 2)
         return area_extent, x_size, y_size
 
-    def freeze(self, lons=None, lats=None,
+    def freeze(self, lonslats=None,
                resolution=None, size=None,
                proj_info=None):
         """Create an AreaDefintion from this area with help of the arguments
@@ -557,8 +576,15 @@ class DynamicAreaDefinition():
         if proj_info is not None:
             self.proj_dict.update(proj_info)
 
+        if self.optimize_projection:
+            return lonslats.compute_optimal_bb_area(self.proj_dict)
+
         if not self.area_extent or not self.x_size or not self.y_size:
             proj4 = Proj(**self.proj_dict)
+            try:
+                lons, lats = lonslats
+            except (TypeError, ValueError):
+                lons, lats = lonslats.get_lonlats()
             xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
             corners = [np.min(xarr), np.min(yarr), np.max(xarr), np.max(yarr)]
 

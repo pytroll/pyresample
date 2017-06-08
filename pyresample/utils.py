@@ -113,6 +113,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
                 area_name, area_file_name))
         description = params['description']
         projection = params['projection']
+        optimize_projection = params.get('optimize_projection', False)
         try:
             xsize = params['shape']['width']
             ysize = params['shape']['height']
@@ -125,10 +126,11 @@ def _parse_yaml_area_file(area_file_name, *regions):
             area_extent = None
         area = pr.geometry.DynamicAreaDefinition(area_name, description,
                                                  projection, xsize, ysize,
-                                                 area_extent)
+                                                 area_extent,
+                                                 optimize_projection)
         try:
             area = area.freeze()
-        except TypeError:
+        except (TypeError, AttributeError):
             pass
 
         res.append(area)
