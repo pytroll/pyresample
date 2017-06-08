@@ -390,8 +390,8 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
     """Find indices of reduced inputput data"""
 
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
-    source_lons = source_lons.ravel()
-    source_lats = source_lats.ravel()
+    source_lons = np.asanyarray(source_lons).ravel()
+    source_lats = np.asanyarray(source_lats).ravel()
 
     if source_lons.size == 0 or source_lats.size == 0:
         raise ValueError('Cannot resample empty data set')
@@ -400,9 +400,8 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
         raise ValueError('Mismatch between lons and lats')
 
     # Remove illegal values
-    valid_data = ((source_lons >= -180) & (source_lons <= 180) &
-                  (source_lats <= 90) & (source_lats >= -90))
-    valid_input_index = np.ones(source_geo_def.size, dtype=np.bool)
+    valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
+                         (source_lats <= 90) & (source_lats >= -90))
 
     if reduce_data:
         # Reduce dataset
@@ -415,15 +414,14 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
                                         geometry.AreaDefinition))):
             # Resampling from swath to grid or from grid to grid
             lonlat_boundary = target_geo_def.get_boundary_lonlats()
-            valid_input_index = \
+
+            # Combine reduced and legal values
+            valid_input_index &= \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
                     lonlat_boundary[0],
                     lonlat_boundary[1],
                     source_lons, source_lats,
                     radius_of_influence)
-
-    # Combine reduced and legal values
-    valid_input_index = (valid_data & valid_input_index)
 
     if(isinstance(valid_input_index, np.ma.core.MaskedArray)):
         # Make sure valid_input_index is not a masked array
