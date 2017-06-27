@@ -105,9 +105,9 @@ def _read_yaml_area_file_content(area_file_name):
     area_dict = {}
     for area_file_obj in area_file_name:
         if (isinstance(area_file_obj, (str, unicode)) and
-            os.path.isfile(area_file_obj)):
-                # filename
-                area_file_obj = open(area_file_obj)
+           os.path.isfile(area_file_obj)):
+            # filename
+            area_file_obj = open(area_file_obj)
         tmp_dict = yaml.load(area_file_obj)
         area_dict = recursive_dict_update(area_dict, tmp_dict)
     return area_dict
