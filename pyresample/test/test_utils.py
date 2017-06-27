@@ -11,8 +11,7 @@ def tmp(f):
     return f
 
 
-class Test(unittest.TestCase):
-
+class TestLegacyAreaParser(unittest.TestCase):
     def test_area_parser_legacy(self):
         """Test legacy area parser."""
         ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
@@ -31,29 +30,6 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
 Projection ID: ease_sh
-Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_sh.__str__(), sh_str)
-
-    def test_area_parser_yaml(self):
-        """Test YAML area parser."""
-        ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
-                                                              'test_files',
-                                                              'areas.yaml'),
-                                                 'ease_nh', 'ease_sh')
-
-        nh_str = """Area ID: ease_nh
-Description: Arctic EASE grid
-Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_nh.__str__(), nh_str)
-
-        sh_str = """Area ID: ease_sh
-Description: Antarctic EASE grid
 Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
@@ -79,6 +55,71 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
                               os.path.dirname(__file__), 'test_files', 'areas.cfg'),
                           'no_area')
 
+
+class TestYAMLAreaParser(unittest.TestCase):
+    def test_area_parser_yaml(self):
+        """Test YAML area parser."""
+        ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
+                                                              'test_files',
+                                                              'areas.yaml'),
+                                                 'ease_nh', 'ease_sh')
+
+        nh_str = """Area ID: ease_nh
+Description: Arctic EASE grid
+Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_nh.__str__(), nh_str)
+
+        sh_str = """Area ID: ease_sh
+Description: Antarctic EASE grid
+Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 425
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEquals(ease_sh.__str__(), sh_str)
+
+    def test_multiple_file_content(self):
+        area_list = ["""ease_sh:
+  description: Antarctic EASE grid
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+""",
+                     """ease_sh2:
+  description: Antarctic EASE grid
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+"""]
+        results = utils.parse_area_file(area_list)
+        self.assertEquals(len(results), 2)
+        self.assertIn(results[0].area_id, ('ease_sh', 'ease_sh2'))
+        self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
+
+
+class TestMisc(unittest.TestCase):
     def test_wrap_longitudes(self):
         # test that we indeed wrap to [-180:+180[
         step = 60
@@ -102,6 +143,8 @@ def suite():
     """
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestLegacyAreaParser))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestYAMLAreaParser))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestMisc))
 
     return mysuite

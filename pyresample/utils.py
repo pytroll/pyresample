@@ -99,12 +99,12 @@ def parse_area_file(area_file_name, *regions):
 
 def _read_yaml_area_file_content(area_file_name):
     """Read one or more area files in to a single dict object."""
-    if isinstance(area_file_name, (str, unicode)):
+    if isinstance(area_file_name, (str, six.text_type)):
         area_file_name = [area_file_name]
 
     area_dict = {}
     for area_file_obj in area_file_name:
-        if (isinstance(area_file_obj, (str, unicode)) and
+        if (isinstance(area_file_obj, (str, six.text_type)) and
            os.path.isfile(area_file_obj)):
             # filename
             area_file_obj = open(area_file_obj)
@@ -149,17 +149,17 @@ def _parse_yaml_area_file(area_file_name, *regions):
 
 
 def _read_legacy_area_file_lines(area_file_name):
-    if isinstance(area_file_name, (str, unicode)):
+    if isinstance(area_file_name, (str, six.text_type)):
         area_file_name = [area_file_name]
 
     for area_file_obj in area_file_name:
-        if (isinstance(area_file_obj, (str, unicode)) and
+        if (isinstance(area_file_obj, (str, six.text_type)) and
            not os.path.isfile(area_file_obj)):
             # file content string
             for line in area_file_obj.splitlines():
                 yield line
             continue
-        elif isinstance(area_file_obj, (str, unicode)):
+        elif isinstance(area_file_obj, (str, six.text_type)):
             # filename
             area_file_obj = open(area_file_obj, 'r')
 
