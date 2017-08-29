@@ -541,8 +541,8 @@ class AreaDefinition(BaseDefinition):
         self.area_id = area_id
         self.name = name
         self.proj_id = proj_id
-        self.x_size = x_size
-        self.y_size = y_size
+        self.x_size = int(x_size)
+        self.y_size = int(y_size)
         self.shape = (y_size, x_size)
         if lons is not None:
             if lons.shape != self.shape:
@@ -1036,8 +1036,8 @@ def concatenate_area_defs(area1, area2, axis=0):
 
     if axis == 0:
         area_extent = combine_area_extents_vertical(area1, area2)
-        x_size = area1.x_size
-        y_size = area1.y_size + area2.y_size
+        x_size = int(area1.x_size)
+        y_size = int(area1.y_size + area2.y_size)
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
     return AreaDefinition(area1.area_id, area1.name, area1.proj_id,
