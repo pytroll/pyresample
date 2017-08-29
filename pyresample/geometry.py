@@ -531,7 +531,7 @@ class DynamicAreaDefinition():
     """An AreaDefintion containing just a subset of the needed parameters.
 
     The purpose of this class is to be able to adapt the area extent and size of
-    the area to a give set of longitudes and latitudes, such that e.g. polar
+    the area to a given set of longitudes and latitudes, such that e.g. polar
     satellite granules can be resampled optimaly to a give projection."""
 
     def __init__(self, area_id=None, description=None, proj_dict=None,

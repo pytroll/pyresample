@@ -745,6 +745,22 @@ class TestSwathDefinition(unittest.TestCase):
                                           30.54700089, 34.0850029, 35.58000183,
                                           35.58000183, 62.25600433,  85.23900604])
 
+        lats = np.array([[80., 80., 80.],
+                         [80., 90., 80],
+                         [80., 80., 80.]]).T
+
+        lons = np.array([[-45., 0., 45.],
+                         [-90, 0., 90.],
+                         [-135., 180., 135.]]).T
+
+        area = geometry.SwathDefinition(lons, lats)
+        lons, lats = area.get_edge_lonlats()
+
+        np.testing.assert_allclose(lons, [-45., -90., -135., -135., -180., 135.,
+                                          135., 90., 45., 45., 0., -45.])
+        np.testing.assert_allclose(lats, [80., 80., 80., 80., 80., 80., 80.,
+                                          80., 80., 80., 80., 80.])
+
     def test_compute_optimal_bb(self):
         """Test computing the bb area."""
         lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
@@ -941,10 +957,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                              resolution=3000,
                              proj_info={'lon0': 16, 'lat0': 58})
 
-        np.testing.assert_almost_equal(result.area_extent, (538546.7274949469,
-                                                            5380808.879250369,
-                                                            1724415.6519203288,
-                                                            6998895.701001488))
+        np.testing.assert_allclose(result.area_extent, (538546.7274949469,
+                                                        5380808.879250369,
+                                                        1724415.6519203288,
+                                                        6998895.701001488))
         self.assertEqual(result.proj_dict['lon0'], 16)
         self.assertEqual(result.proj_dict['lat0'], 58)
         self.assertEqual(result.x_size, 395)
@@ -983,10 +999,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-        np.testing.assert_almost_equal(result.area_extent, (5050520.6077326955,
-                                                            -336485.86803662963,
-                                                            8223167.9541879389,
-                                                            192612.12645302597))
+        np.testing.assert_allclose(result.area_extent, (5050520.6077326955,
+                                                        -336485.86803662963,
+                                                        8223167.9541879389,
+                                                        192612.12645302597))
         self.assertEqual(result.x_size, 3)
         self.assertEqual(result.y_size, 4)
 
