@@ -941,10 +941,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                              resolution=3000,
                              proj_info={'lon0': 16, 'lat0': 58})
 
-        self.assertTupleEqual(result.area_extent, (538546.7274949469,
-                                                   5380808.879250369,
-                                                   1724415.6519203288,
-                                                   6998895.701001488))
+        np.testing.assert_almost_equal(result.area_extent, (538546.7274949469,
+                                                            5380808.879250369,
+                                                            1724415.6519203288,
+                                                            6998895.701001488))
         self.assertEqual(result.proj_dict['lon0'], 16)
         self.assertEqual(result.proj_dict['lat0'], 58)
         self.assertEqual(result.x_size, 395)
@@ -983,10 +983,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-        self.assertTupleEqual(result.area_extent, (5050520.6077326955,
-                                                   -336485.86803662963,
-                                                   8223167.9541879389,
-                                                   192612.12645302597))
+        np.testing.assert_almost_equal(result.area_extent, (5050520.6077326955,
+                                                            -336485.86803662963,
+                                                            8223167.9541879389,
+                                                            192612.12645302597))
         self.assertEqual(result.x_size, 3)
         self.assertEqual(result.y_size, 4)
 
