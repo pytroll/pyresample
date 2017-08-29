@@ -597,6 +597,16 @@ class Test(unittest.TestCase):
         self.assertTrue((y__.data == y_expects).all())
 
 
+def assert_np_dict_allclose(dict1, dict2):
+
+    assert set(dict1.keys()) == set(dict2.keys())
+    for key, val in dict1.items():
+        try:
+            np.testing.assert_allclose(val, dict2[key])
+        except TypeError:
+            assert(val == dict2[key])
+
+
 class TestSwathDefinition(unittest.TestCase):
     """Test the SwathDefinition."""
 
@@ -720,8 +730,8 @@ class TestSwathDefinition(unittest.TestCase):
         proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
-        self.assertDictEqual(area._compute_omerc_parameters('WGS84'),
-                             proj_dict)
+        assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
+                                proj_dict)
 
     def test_get_edge_lonlats(self):
         """Test the `get_edge_lonlats` functionality."""
@@ -782,7 +792,7 @@ class TestSwathDefinition(unittest.TestCase):
         proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
-        self.assertDictEqual(res.proj_dict, proj_dict)
+        assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
 
 
