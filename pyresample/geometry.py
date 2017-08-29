@@ -468,8 +468,7 @@ class SwathDefinition(CoordinateDefinition):
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
         lines, cols = self.lons.shape
-        lon1, lon, lon2 = np.asanyarray(
-            self.lons[[0, int(lines / 2), -1], int(cols / 2)])
+        lon1, lon2 = np.asanyarray(self.lons[[0, -1], int(cols / 2)])
         lat1, lat, lat2 = np.asanyarray(
             self.lats[[0, int(lines / 2), -1], int(cols / 2)])
 
@@ -479,6 +478,7 @@ class SwathDefinition(CoordinateDefinition):
 
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
         az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
+        del az2, dist
         return {'proj': 'omerc', 'alpha': float(az1),
                 'lat_0': float(lat0),  'lonc': float(lonc),
                 'no_rot': True, 'ellps': ellipsoid}
@@ -527,7 +527,7 @@ class SwathDefinition(CoordinateDefinition):
         return area.freeze((lons, lats), size=(x_size, y_size))
 
 
-class DynamicAreaDefinition():
+class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
     The purpose of this class is to be able to adapt the area extent and size of
