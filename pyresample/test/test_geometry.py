@@ -952,6 +952,25 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
+        # area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+        #                                       {'proj': 'omerc'},
+        #                                       optimize_projection=False)
+        # lons = [[10, 12.1, 14.2, 16.3],
+        #         [10, 12, 14, 16],
+        #         [10, 11.9, 13.8, 15.7]]
+        # lats = [[66, 67, 68, 69.],
+        #         [58, 59, 60, 61],
+        #         [50, 51, 52, 53]]
+        # sdef = geometry.SwathDefinition(lons, lats)
+        # result = area.freeze(sdef,
+        #                      resolution=1000)
+        # self.assertTupleEqual(result.area_extent, (5578795.1654752363,
+        #                                            -270848.61872542271,
+        #                                            7694893.3964453982,
+        #                                            126974.877141819))
+        # self.assertEqual(result.x_size, 2116)
+        # self.assertEqual(result.y_size, 398)
+
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               {'proj': 'omerc'},
                                               optimize_projection=True)
@@ -964,13 +983,12 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-
-        self.assertTupleEqual(result.area_extent, (5578795.1654752363,
-                                                   -270848.61872542271,
-                                                   7694893.3964453982,
-                                                   126974.877141819))
-        self.assertEqual(result.x_size, 2116)
-        self.assertEqual(result.y_size, 398)
+        self.assertTupleEqual(result.area_extent, (5050520.6077326955,
+                                                   -336485.86803662963,
+                                                   8223167.9541879389,
+                                                   192612.12645302597))
+        self.assertEqual(result.x_size, 3)
+        self.assertEqual(result.y_size, 4)
 
     def test_compute_domain(self):
         """Test computing size and area extent."""

@@ -509,7 +509,7 @@ class SwathDefinition(CoordinateDefinition):
         projection and area extents are computed.
         """
         if proj_dict is None:
-            proj_dict = {'proj': 'omerc'}
+            proj_dict = {}
         projection = proj_dict.get('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
