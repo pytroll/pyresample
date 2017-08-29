@@ -528,12 +528,30 @@ class SwathDefinition(CoordinateDefinition):
 
 
 class DynamicAreaDefinition():
-    """An AreaDefintion containing just a subset of the needed parameters."""
+    """An AreaDefintion containing just a subset of the needed parameters.
+
+    The purpose of this class is to be able to adapt the area extent and size of
+    the area to a give set of longitudes and latitudes, such that e.g. polar
+    satellite granules can be resampled optimaly to a give projection."""
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
                  x_size=None, y_size=None, area_extent=None,
                  optimize_projection=False):
-        """Initialize the DynamicAreaDefinition."""
+        """Initialize the DynamicAreaDefinition.
+
+        area_id:
+          The name of the area.
+        description:
+          The description of the area.
+        proj_dict:
+          The dictionary of projection parameters. Doesn't have to be complete.
+        x_size, y_size:
+          The size of the resulting area.
+        area_extent:
+          The area extent of the area.
+        optimize_projection:
+          Whether the projection parameters have to be optimized.
+          """
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
@@ -543,7 +561,8 @@ class DynamicAreaDefinition():
         self.optimize_projection = optimize_projection
 
     def compute_domain(self, corners, resolution=None, size=None):
-        """Compute size and area_extent from corners and some more info."""
+        """Compute size and area_extent from corners and [size or resolution]
+        info."""
         if resolution is not None and size is not None:
             raise ValueError("Both resolution and size can't be provided.")
 
@@ -571,8 +590,20 @@ class DynamicAreaDefinition():
     def freeze(self, lonslats=None,
                resolution=None, size=None,
                proj_info=None):
-        """Create an AreaDefintion from this area with help of the arguments
-        provided to this method."""
+        """Create an AreaDefintion from this area with help of some extra info.
+
+        lonlats:
+          the geographical coordinates to contain in the resulting area.
+        resolution:
+          the resolution of the resulting area.
+        size:
+          the size of the resulting area.
+        proj_info:
+          complementing parameters to the projection info.
+
+        Resolution and Size parameters are ignored if the instance is created
+        with the `optimize_projection` flag set to True.
+        """
         if proj_info is not None:
             self.proj_dict.update(proj_info)
 
