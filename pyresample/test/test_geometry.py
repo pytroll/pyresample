@@ -4,13 +4,18 @@ import random
 import sys
 
 import numpy as np
-from mock import MagicMock, patch
 
 from pyresample import geo_filter, geometry
 from pyresample.geometry import (IncompatibleAreas,
                                  combine_area_extents_vertical,
                                  concatenate_area_defs)
 from pyresample.test.utils import catch_warnings
+
+try:
+    from unittest.mock import MagicMock, patch
+except ImportError:
+    # separate mock package py<3.3
+    from mock import MagicMock, patch
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
