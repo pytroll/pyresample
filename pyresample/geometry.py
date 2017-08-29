@@ -510,7 +510,7 @@ class SwathDefinition(CoordinateDefinition):
         """
         if proj_dict is None:
             proj_dict = {}
-        projection = proj_dict.get('proj', 'omerc')
+        projection = proj_dict.setdefault('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
         lines, cols = self.lons.shape
