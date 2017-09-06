@@ -345,17 +345,19 @@ class Test(unittest.TestCase):
             self.assertTrue(any(['Possible more' in str(
                 x.message) for x in w]), 'Failed to create correct neighbour radius warning')
         cross_sum = res.sum()
-        cross_sum_stddev = stddev.sum()
         cross_sum_counts = counts.sum()
         expected = 1461.84313918
-        expected_stddev = 0.446204424799
+        expected_stddev = [0.446193170875, 0.443606880035, 0.438586349519]
         expected_counts = 4934802.0
         self.assertTrue(res.shape == stddev.shape and stddev.shape ==
                         counts.shape and counts.shape == (800, 800, 3))
         self.assertAlmostEqual(cross_sum, expected,
                                msg='Swath multi channel resampling gauss failed on data')
-        self.assertAlmostEqual(cross_sum_stddev, expected_stddev,
-                               msg='Swath multi channel resampling gauss failed on stddev')
+        for i, e_stddev in enumerate(expected_stddev):
+            cross_sum_stddev = stddev[:, :, i].sum()
+            print(cross_sum_stddev, e_stddev)
+            self.assertAlmostEqual(cross_sum_stddev, e_stddev,
+                                   msg='Swath multi channel resampling gauss failed on stddev (channel {})'.format(i))
         self.assertAlmostEqual(cross_sum_counts, expected_counts,
                                msg='Swath multi channel resampling gauss failed on counts')
 
