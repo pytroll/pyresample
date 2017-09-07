@@ -113,7 +113,7 @@ if __name__ == "__main__":
           setup_requires=['numpy'],
           install_requires=requirements,
           extras_require=extras_require,
-          test_requires=test_requires,
+          tests_require=test_requires,
           cmdclass={'build_ext': build_ext},
           ext_modules=cythonize(extensions),
           test_suite='pyresample.test.suite',
