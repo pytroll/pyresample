@@ -25,6 +25,7 @@ import six
 import types
 import warnings
 
+import numpy as np
 
 _deprecations_as_exceptions = False
 _include_astropy_deprecations = False
@@ -150,4 +151,25 @@ class catch_warnings(warnings.catch_warnings):
     def __exit__(self, type, value, traceback):
         treat_deprecations_as_exceptions()
 
+
+def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
+    if start > stop:
+        stop += 360.0
+
+    lon_row = np.linspace(start, stop, num=shape[1]).astype(dtype)
+    twist_array = np.arange(shape[0]).reshape((shape[0], 1)) * twist_factor
+    lon_array = np.repeat([lon_row], shape[0], axis=0)
+    lon_array += twist_array
+
+    if stop > 360.0:
+        lon_array[lon_array > 360.0] -= 360
+    return lon_array
+
+
+def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
+    lat_col = np.linspace(start, stop, num=shape[0]).astype(dtype).reshape((shape[0], 1))
+    twist_array = np.arange(shape[1]) * twist_factor
+    lat_array = np.repeat(lat_col, shape[1], axis=1)
+    lat_array += twist_array
+    return lat_array
 

@@ -24,34 +24,13 @@
 import sys
 import logging
 import numpy as np
+from pyresample.test.utils import create_test_longitude, create_test_latitude
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
     import unittest
 
 LOG = logging.getLogger(__name__)
-
-
-def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
-    if start > stop:
-        stop += 360.0
-
-    lon_row = np.linspace(start, stop, num=shape[1]).astype(dtype)
-    twist_array = np.arange(shape[0]).reshape((shape[0], 1)) * twist_factor
-    lon_array = np.repeat([lon_row], shape[0], axis=0)
-    lon_array += twist_array
-
-    if stop > 360.0:
-        lon_array[lon_array > 360.0] -= 360
-    return lon_array
-
-
-def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
-    lat_col = np.linspace(start, stop, num=shape[0]).astype(dtype).reshape((shape[0], 1))
-    twist_array = np.arange(shape[1]) * twist_factor
-    lat_array = np.repeat(lat_col, shape[1], axis=1)
-    lat_array += twist_array
-    return lat_array
 
 
 dynamic_wgs84 = {

@@ -288,10 +288,11 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
+    geo_def_cls = (pr.geometry.GridDefinition, pr.geometry.AreaDefinition)
+    if not (isinstance(source_area_def, geo_def_cls) and
+            isinstance(target_area_def, geo_def_cls)):
         raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
+                        'geometry.AreaDefinition or geometry.GridDefinition')
 
     lons, lats = target_area_def.get_lonlats(nprocs)
 
@@ -327,10 +328,11 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     (row_indices, col_indices) : tuple of numpy arrays
     """
 
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
+    geo_def_cls = (pr.geometry.GridDefinition, pr.geometry.AreaDefinition)
+    if not (isinstance(source_area_def, geo_def_cls) and
+                isinstance(target_area_def, geo_def_cls)):
         raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
+                        'geometry.AreaDefinition or geometry.GridDefinition')
 
     valid_input_index, valid_output_index, index_array, distance_array = \
         pr.kd_tree.get_neighbour_info(source_area_def,

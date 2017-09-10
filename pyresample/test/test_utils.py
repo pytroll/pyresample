@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from pyresample import utils
+from pyresample.test.utils import create_test_longitude, create_test_latitude
 
 
 def tmp(f):
@@ -14,6 +14,7 @@ def tmp(f):
 class TestLegacyAreaParser(unittest.TestCase):
     def test_area_parser_legacy(self):
         """Test legacy area parser."""
+        from pyresample import utils
         ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
                                                               'test_files',
                                                               'areas.cfg'), 'ease_nh', 'ease_sh')
@@ -37,6 +38,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEquals(ease_sh.__str__(), sh_str)
 
     def test_load_area(self):
+        from pyresample import utils
         ease_nh = utils.load_area(os.path.join(os.path.dirname(__file__),
                                                'test_files',
                                                'areas.cfg'), 'ease_nh')
@@ -50,6 +52,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEquals(nh_str, ease_nh.__str__())
 
     def test_not_found_exception(self):
+        from pyresample import utils
         self.assertRaises(utils.AreaNotFound, utils.parse_area_file,
                           os.path.join(
                               os.path.dirname(__file__), 'test_files', 'areas.cfg'),
@@ -59,6 +62,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
 class TestYAMLAreaParser(unittest.TestCase):
     def test_area_parser_yaml(self):
         """Test YAML area parser."""
+        from pyresample import utils
         ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
                                                               'test_files',
                                                               'areas.yaml'),
@@ -81,6 +85,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEquals(ease_sh.__str__(), sh_str)
 
     def test_multiple_file_content(self):
+        from pyresample import utils
         area_list = ["""ease_sh:
   description: Antarctic EASE grid
   projection:
@@ -119,9 +124,38 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
 
 
+class TestPreprocessing(unittest.TestCase):
+    def test_nearest_neighbor_area_area(self):
+        from pyresample import utils, geometry
+        proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
+        proj_dict = utils.proj4_str_to_dict(proj_str)
+        extents = [0, 0, 1000. * 5000, 1000. * 5000]
+        area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
+                                           proj_dict, 500, 500, extents)
+
+        extents2 = [-1000, -1000, 1000. * 4000, 1000. * 4000]
+        area_def2 = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
+                                           proj_dict, 700, 700, extents2)
+        rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, area_def2, 12000.)
+
+    def test_nearest_neighbor_area_grid(self):
+        from pyresample import utils, geometry
+        lon_arr = create_test_longitude(-94.9, -94.0, (50, 100), dtype=np.float64)
+        lat_arr = create_test_latitude(25.1, 26.0, (50, 100), dtype=np.float64)
+        grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
+
+        proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
+        proj_dict = utils.proj4_str_to_dict(proj_str)
+        extents = [0, 0, 1000. * 5000, 1000. * 5000]
+        area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
+                                           proj_dict, 500, 500, extents)
+        rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, grid, 12000.)
+
+
 class TestMisc(unittest.TestCase):
     def test_wrap_longitudes(self):
         # test that we indeed wrap to [-180:+180[
+        from pyresample import utils
         step = 60
         lons = np.arange(-360, 360 + step, step)
         self.assertTrue(
@@ -133,6 +167,7 @@ class TestMisc(unittest.TestCase):
     def test_unicode_proj4_string(self):
         """Test that unicode is accepted for area creation.
         """
+        from pyresample import utils
         utils.get_area_def(u"eurol", u"eurol", u"bla",
                            u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
                            1000, 1000, (-1000, -1000, 1000, 1000))
@@ -145,6 +180,7 @@ def suite():
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestLegacyAreaParser))
     mysuite.addTest(loader.loadTestsFromTestCase(TestYAMLAreaParser))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestPreprocessing))
     mysuite.addTest(loader.loadTestsFromTestCase(TestMisc))
 
     return mysuite
