@@ -267,12 +267,17 @@ Geographic coordinates and boundaries
 -------------------------------------
 A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
 
-All ***definition** objects exposes the coordinates **lons**, **lats** and **cartesian_coords**.
+All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
 AreaDefinition exposes the full set of projection coordinates as
 **projection_x_coords** and **projection_y_coords**. Note that in the case of
 projection coordinates expressed in longitude and latitude,
 **projection_x_coords** will be longitude and **projection_y_coords** will be
 latitude.
+
+.. versionchanged:: 1.5.1
+
+    Renamed `proj_x_coords` to `projection_x_coords` and `proj_y_coords`
+    to `projection_y_coords`.
 
 Get full coordinate set:
 
@@ -306,8 +311,8 @@ Get slice of coordinate set:
  ...                               x_size, y_size, area_extent)
  >>> cart_subset = area_def.get_cartesian_coords()[100:200, 350:]
 
-If only the 1D range of a projection coordinate is required it can be extraxted
-using the **proj_x_coord** or **proj_y_coords** property of a geographic coordinate
+If only the 1D range of a projection coordinate is required it can be extracted
+using the **projection_x_coord** or **projection_y_coords** property of a geographic coordinate
 
 .. doctest::
 
@@ -321,7 +326,7 @@ using the **proj_x_coord** or **proj_y_coords** property of a geographic coordin
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> area_def = utils.get_area_def(area_id, description, proj_id, projection,
  ...                  			   x_size, y_size, area_extent)
- >>> proj_x_range = area_def.proj_x_coords
+ >>> proj_x_range = area_def.projection_x_coords
 
 Spherical geometry operations
 -----------------------------

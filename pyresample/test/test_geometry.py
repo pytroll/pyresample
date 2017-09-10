@@ -510,7 +510,7 @@ class Test(unittest.TestCase):
                                                -909968.64000000001,
                                                1029087.28,
                                                1490031.3600000001])
-        proj_x_boundary, proj_y_boundary = area_def.proj_x_coords, area_def.proj_y_coords
+        proj_x_boundary, proj_y_boundary = area_def.projection_x_coords, area_def.projection_y_coords
         expected_x = np.array([-1250912.72, -1010912.72, -770912.72,
                                -530912.72, -290912.72, -50912.72, 189087.28,
                                429087.28, 669087.28, 909087.28])
