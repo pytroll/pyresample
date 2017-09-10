@@ -140,8 +140,8 @@ class TestPreprocessing(unittest.TestCase):
 
     def test_nearest_neighbor_area_grid(self):
         from pyresample import utils, geometry
-        lon_arr = create_test_longitude(-94.9, -94.0, (50, 100), dtype=np.float64)
-        lat_arr = create_test_latitude(25.1, 26.0, (50, 100), dtype=np.float64)
+        lon_arr = create_test_longitude(-94.9, -90.0, (50, 100), dtype=np.float64)
+        lat_arr = create_test_latitude(25.1, 30.0, (50, 100), dtype=np.float64)
         grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
 
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
@@ -150,6 +150,30 @@ class TestPreprocessing(unittest.TestCase):
         area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
                                            proj_dict, 500, 500, extents)
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, grid, 12000.)
+
+    def test_nearest_neighbor_grid_area(self):
+        from pyresample import utils, geometry
+        proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
+        proj_dict = utils.proj4_str_to_dict(proj_str)
+        extents = [0, 0, 1000., 1000.]
+        area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
+                                           proj_dict, 50, 50, extents)
+
+        lon_arr = create_test_longitude(-100.0, -80.0, (500, 500), dtype=np.float64)
+        lat_arr = create_test_latitude(20.0, 40.0, (500, 500), dtype=np.float64)
+        grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
+        rows, cols = utils.generate_nearest_neighbour_linesample_arrays(grid, area_def, 12000.)
+
+    def test_nearest_neighbor_grid_grid(self):
+        from pyresample import utils, geometry
+        lon_arr = create_test_longitude(-95.0, -85.0, (50, 50), dtype=np.float64)
+        lat_arr = create_test_latitude(25.0, 35.0, (50, 50), dtype=np.float64)
+        grid_dst = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
+
+        lon_arr = create_test_longitude(-100.0, -80.0, (500, 500), dtype=np.float64)
+        lat_arr = create_test_latitude(20.0, 40.0, (500, 500), dtype=np.float64)
+        grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
+        rows, cols = utils.generate_nearest_neighbour_linesample_arrays(grid, grid_dst, 12000.)
 
 
 class TestMisc(unittest.TestCase):

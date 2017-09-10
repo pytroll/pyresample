@@ -278,9 +278,9 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     nprocs : int, optional
         Number of processor cores to be used
 
@@ -288,12 +288,6 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-    geo_def_cls = (pr.geometry.GridDefinition, pr.geometry.AreaDefinition)
-    if not (isinstance(source_area_def, geo_def_cls) and
-            isinstance(target_area_def, geo_def_cls)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition or geometry.GridDefinition')
-
     lons, lats = target_area_def.get_lonlats(nprocs)
 
     source_pixel_y, source_pixel_x = pr.grid.get_linesample(lons, lats,
@@ -315,9 +309,9 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     radius_of_influence : float
         Cut off distance in meters
     nprocs : int, optional
@@ -327,12 +321,6 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-
-    geo_def_cls = (pr.geometry.GridDefinition, pr.geometry.AreaDefinition)
-    if not (isinstance(source_area_def, geo_def_cls) and
-                isinstance(target_area_def, geo_def_cls)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition or geometry.GridDefinition')
 
     valid_input_index, valid_output_index, index_array, distance_array = \
         pr.kd_tree.get_neighbour_info(source_area_def,
