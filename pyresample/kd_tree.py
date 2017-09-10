@@ -716,7 +716,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         # Get nearest neighbour using array indexing
         index_mask = (index_array == input_size)
         new_index_array = np.where(index_mask, 0, index_array)
-        result = new_data[new_index_array]
+        result = new_data[new_index_array].copy()
         result[index_mask] = fill_value
     else:
         # Calculate result using weighting.
