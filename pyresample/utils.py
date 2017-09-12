@@ -407,6 +407,34 @@ def proj4_str_to_dict(proj4_str):
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
 
 
+def proj4_radius_parameters(proj4_dict_or_str):
+    """Calculate 'a' and 'b' radius parameters.
+
+    Returns:
+        a (float), b (float): equatorial and polar radius
+    """
+    if isinstance(proj4_dict_or_str, str):
+        new_info = proj4_dict_or_str(proj4_dict_or_str)
+    else:
+        new_info = proj4_dict_or_str.copy()
+
+    # load information from PROJ.4 about the ellipsis if possible
+    if '+ellps' in new_info and '+a' not in new_info or '+b' not in new_info:
+        import pyproj
+        ellps = pyproj.pj_ellps[new_info['+ellps']]
+        new_info['+a'] = ellps['a']
+        if 'b' not in ellps and 'rf' in ellps:
+            new_info['+f'] = 1. / ellps['rf']
+        else:
+            new_info['+b'] = ellps['b']
+
+    if '+a' in new_info and '+f' in new_info and '+b' not in new_info:
+        # add a 'b' attribute back in if they used 'f' instead
+        new_info['+b'] = new_info['+a'] * (1 - new_info['+f'])
+
+    return float(new_info['+a']), float(new_info['+b'])
+
+
 def _downcast_index_array(index_array, size):
     """Try to downcast array to uint16
     """
