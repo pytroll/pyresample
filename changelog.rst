@@ -2,6 +2,51 @@ Changelog
 =========
 
 
+v1.6.0 (2017-09-12)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.5.0 → 1.6.0. [Martin Raspaud]
+- Make sure x_size and y_size are ints. [Martin Raspaud]
+- Merge pull request #69 from pytroll/bugfix-66. [Martin Raspaud]
+
+  Fix write to mask affecting original mask in future versions of numpy
+
+  Fixes #66
+- Add python 3.6 to travis tests. [davidh-ssec]
+- Fix write to mask affecting original mask in future versions of numpy.
+  [davidh-ssec]
+
+  Fix #66
+
+- Merge pull request #67 from pytroll/bugfix-13. [Martin Raspaud]
+
+  Rename `proj_x/y_coords` to `projection_x/y_coords`
+- Rename `proj_x/y_coords` to `projection_x/y_coords` [davidh-ssec]
+
+  Fix #13
+
+- Merge pull request #63 from pytroll/feature-multiple-area-files.
+  [David Hoese]
+
+  Parse multiple area files
+- Fix tests_require in setup.py. [davidh-ssec]
+- Use libgeos-dev to depend on the C++ libgeos-X.X.X and libgeos-c1.
+  [davidh-ssec]
+- Add simple tests for parsing multiple yaml area strings. [davidh-ssec]
+- Fix indentation in area file parsing functions. [davidh-ssec]
+- Add ability to parse multiple area files at once. [davidh-ssec]
+- Merge pull request #65 from pytroll/fix-numpy-1.13. [Martin Raspaud]
+
+  Fix numpy 1.13 compatibility
+- Fix boolean mask array usage in gaussian resampling. [davidh-ssec]
+
+  In numpy 1.13 it is illegal to index an array with a boolean
+  array of a different size.
+
+- Add mock to test dependencies for python <3.3. [davidh-ssec]
+- Use prepackaged numexpr in bdist_rpm. [Martin Raspaud]
+
+
 v1.5.0 (2017-05-02)
 -------------------
 - update changelog. [Martin Raspaud]
