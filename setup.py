@@ -27,11 +27,14 @@ from setuptools.command.build_ext import build_ext as _build_ext
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 requirements = ['setuptools>=3.2', 'pyproj', 'numpy', 'configobj',
-                'pykdtree>=1.1.1', 'pyyaml']
+                'pykdtree>=1.1.1', 'pyyaml', 'six']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'basemap', 'pillow']}
 
+test_requires = []
+if sys.version_info < (3, 3):
+    test_requires.append('mock')
 if sys.version_info < (2, 6):
     # multiprocessing is not in the standard library
     requirements.append('multiprocessing')
@@ -110,6 +113,7 @@ if __name__ == "__main__":
           setup_requires=['numpy'],
           install_requires=requirements,
           extras_require=extras_require,
+          tests_require=test_requires,
           cmdclass={'build_ext': build_ext},
           ext_modules=cythonize(extensions),
           test_suite='pyresample.test.suite',

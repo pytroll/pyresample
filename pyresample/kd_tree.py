@@ -714,7 +714,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         # Get nearest neighbour using array indexing
         index_mask = (index_array == input_size)
         new_index_array = np.where(index_mask, 0, index_array)
-        result = new_data[new_index_array]
+        result = new_data[new_index_array].copy()
         result[index_mask] = fill_value
     else:
         # Calculate result using weighting.
@@ -805,11 +805,22 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
             # Calculate final stddev
             new_valid_index = (count > 1)
-            v1 = norm[new_valid_index]
-            v2 = norm_sqr[new_valid_index]
-            stddev[new_valid_index] = np.sqrt(
-                (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
-            stddev[~new_valid_index] = np.NaN
+            if stddev.ndim >= 2:
+                # If given more than 1 input data array
+                new_valid_index = new_valid_index[:, 0]
+                for i in range(stddev.shape[-1]):
+                    v1 = norm[new_valid_index, i]
+                    v2 = norm_sqr[new_valid_index, i]
+                    stddev[new_valid_index, i] = np.sqrt(
+                        (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index, i])
+                    stddev[~new_valid_index, i] = np.NaN
+            else:
+                # If given single input data array
+                v1 = norm[new_valid_index]
+                v2 = norm_sqr[new_valid_index]
+                stddev[new_valid_index] = np.sqrt(
+                    (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
+                stddev[~new_valid_index] = np.NaN
 
         # Add fill values
         result[np.invert(result_valid_index)] = fill_value

@@ -23,10 +23,12 @@
 
 from __future__ import absolute_import
 
+import os
 import numpy as np
 import six
 import yaml
 from configobj import ConfigObj
+from collections import Mapping
 
 import pyresample as pr
 
@@ -95,12 +97,34 @@ def parse_area_file(area_file_name, *regions):
         return _parse_legacy_area_file(area_file_name, *regions)
 
 
+def _read_yaml_area_file_content(area_file_name):
+    """Read one or more area files in to a single dict object."""
+    if isinstance(area_file_name, (str, six.text_type)):
+        area_file_name = [area_file_name]
+
+    area_dict = {}
+    for area_file_obj in area_file_name:
+        if (isinstance(area_file_obj, (str, six.text_type)) and
+           os.path.isfile(area_file_obj)):
+            # filename
+            area_file_obj = open(area_file_obj)
+        tmp_dict = yaml.load(area_file_obj)
+        area_dict = recursive_dict_update(area_dict, tmp_dict)
+    return area_dict
+
+
 def _parse_yaml_area_file(area_file_name, *regions):
-    """Parse area information from a yaml area file."""
+    """Parse area information from a yaml area file.
 
-    with open(area_file_name) as fd_:
-        area_dict = yaml.load(fd_)
+    Args:
+        area_file_name: filename, file-like object, yaml string, or list of
+                        these.
 
+    The result of loading multiple area files is the combination of all
+    the files, using the first file as the "base", replacing things after
+    that.
+    """
+    area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
 
     res = []
@@ -137,10 +161,29 @@ def _parse_yaml_area_file(area_file_name, *regions):
     return res
 
 
+def _read_legacy_area_file_lines(area_file_name):
+    if isinstance(area_file_name, (str, six.text_type)):
+        area_file_name = [area_file_name]
+
+    for area_file_obj in area_file_name:
+        if (isinstance(area_file_obj, (str, six.text_type)) and
+           not os.path.isfile(area_file_obj)):
+            # file content string
+            for line in area_file_obj.splitlines():
+                yield line
+            continue
+        elif isinstance(area_file_obj, (str, six.text_type)):
+            # filename
+            area_file_obj = open(area_file_obj, 'r')
+
+        for line in area_file_obj.readlines():
+            yield line
+
+
 def _parse_legacy_area_file(area_file_name, *regions):
     """Parse area information from a legacy area file."""
 
-    area_file = open(area_file_name, 'r')
+    area_file = _read_legacy_area_file_lines(area_file_name)
     area_list = list(regions)
     if len(area_list) == 0:
         select_all_areas = True
@@ -151,7 +194,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
 
     # Extract area from file
     in_area = False
-    for line in area_file.readlines():
+    for line in area_file:
         if not in_area:
             if 'REGION' in line:
                 area_id = line.replace('REGION:', ''). \
@@ -168,8 +211,6 @@ def _parse_legacy_area_file(area_file_name, *regions):
                                                                    area_content)
         else:
             area_content += line
-
-    area_file.close()
 
     # Check if all specified areas were found
     if not select_all_areas:
@@ -250,9 +291,9 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     nprocs : int, optional
         Number of processor cores to be used
 
@@ -260,11 +301,6 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
-
     lons, lats = target_area_def.get_lonlats(nprocs)
 
     source_pixel_y, source_pixel_x = pr.grid.get_linesample(lons, lats,
@@ -286,9 +322,9 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     radius_of_influence : float
         Cut off distance in meters
     nprocs : int, optional
@@ -298,11 +334,6 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
 
     valid_input_index, valid_output_index, index_array, distance_array = \
         pr.kd_tree.get_neighbour_info(source_area_def,
@@ -406,3 +437,20 @@ def wrap_longitudes(lons):
     """
     lons_wrap = (lons + 180) % (360) - 180
     return lons_wrap.astype(lons.dtype)
+
+
+def recursive_dict_update(d, u):
+    """Recursive dictionary update using
+
+    Copied from:
+
+        http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+
+    """
+    for k, v in u.items():
+        if isinstance(v, Mapping):
+            r = recursive_dict_update(d.get(k, {}), v)
+            d[k] = r
+        else:
+            d[k] = u[k]
+    return d

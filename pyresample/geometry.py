@@ -712,8 +712,8 @@ class AreaDefinition(BaseDefinition):
         self.area_id = area_id
         self.name = name
         self.proj_id = proj_id
-        self.x_size = x_size
-        self.y_size = y_size
+        self.x_size = int(x_size)
+        self.y_size = int(y_size)
         self.shape = (y_size, x_size)
         if lons is not None:
             if lons.shape != self.shape:
@@ -746,8 +746,8 @@ class AreaDefinition(BaseDefinition):
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
 
-        self.projection_x_coords = None
-        self.projection_y_coords = None
+        self._projection_x_coords = None
+        self._projection_y_coords = None
 
         self.dtype = dtype
 
@@ -830,8 +830,8 @@ class AreaDefinition(BaseDefinition):
         (see get_lonlats).
         """
         p = _spatial_mp.Proj(self.proj4_string)
-        x = self.proj_x_coords
-        y = self.proj_y_coords
+        x = self.projection_x_coords
+        y = self.projection_y_coords
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
@@ -978,12 +978,12 @@ class AreaDefinition(BaseDefinition):
                 else:
                     return val
 
-        if self.projection_x_coords is not None and self.projection_y_coords is not None:
+        if self._projection_x_coords is not None and self._projection_y_coords is not None:
             # Projection coords are cached
             if data_slice is None:
-                return self.projection_x_coords, self.projection_y_coords
+                return self._projection_x_coords, self._projection_y_coords
             else:
-                return self.projection_x_coords[data_slice], self.projection_y_coords[data_slice]
+                return self._projection_x_coords[data_slice], self._projection_y_coords[data_slice]
 
         is_single_value = False
         is_1d_select = False
@@ -1064,18 +1064,28 @@ class AreaDefinition(BaseDefinition):
 
         if cache and data_slice is None:
             # Cache the result if requested
-            self.projection_x_coords = target_x
-            self.projection_y_coords = target_y
+            self._projection_x_coords = target_x
+            self._projection_y_coords = target_y
 
         return target_x, target_y
 
     @property
-    def proj_x_coords(self):
+    def projection_x_coords(self):
         return self.get_proj_coords(data_slice=(0, slice(None)))[0]
 
     @property
-    def proj_y_coords(self):
+    def projection_y_coords(self):
         return self.get_proj_coords(data_slice=(slice(None), 0))[1]
+
+    @property
+    def proj_x_coords(self):
+        warnings.warn("Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
+        return self.projection_x_coords
+
+    @property
+    def proj_y_coords(self):
+        warnings.warn("Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
+        return self.projection_y_coords
 
     @property
     def outer_boundary_corners(self):
@@ -1197,8 +1207,8 @@ def concatenate_area_defs(area1, area2, axis=0):
 
     if axis == 0:
         area_extent = combine_area_extents_vertical(area1, area2)
-        x_size = area1.x_size
-        y_size = area1.y_size + area2.y_size
+        x_size = int(area1.x_size)
+        y_size = int(area1.y_size + area2.y_size)
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
     return AreaDefinition(area1.area_id, area1.name, area1.proj_id,
