@@ -2,6 +2,56 @@ Changelog
 =========
 
 
+v1.6.1 (2017-09-18)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.6.0 → 1.6.1. [Martin Raspaud]
+- Merge pull request #60 from pytroll/feature-dynamic-area. [David
+  Hoese]
+
+  Add support for dynamic areas
+- Merge branch 'develop' into feature-dynamic-area. [Martin Raspaud]
+- Apply assert_allclose to proj dicts for tests. [Martin Raspaud]
+- Fix some style issues. [Martin Raspaud]
+- Set DynamicArea proj to `omerc` by default. [Martin Raspaud]
+- Implement proposed changes in PR review. [Martin Raspaud]
+- Use numpy's assert almost equal for area_extent comparisons. [Martin
+  Raspaud]
+- Document the DynamicArea class. [Martin Raspaud]
+- Fix optimal projection computation tests. [Martin Raspaud]
+- Pep8 cleanup. [Martin Raspaud]
+- Valid index computation optimization. [Martin Raspaud]
+- Change bb computation api to use the whole proj_dict. [Martin Raspaud]
+- Fix unittests for updated omerc computations. [Martin Raspaud]
+- Use other azimuth direction for omerc. [Martin Raspaud]
+- Flip x and y size in omerc projection. [Martin Raspaud]
+- Bugfix typo. [Martin Raspaud]
+- Allow lons and lats to be any array in bb computation. [Martin
+  Raspaud]
+- Add SwathDefinition tests to the test suite. [Martin Raspaud]
+- Support bounding box area computation from SwathDefintion. [Martin
+  Raspaud]
+
+  This add support for computing a bounding box area from a swath definition that would fit optimally. The default projection is oblique mercator, with is optimal for locally received imager passes.
+- Add support for dynamic areas. [Martin Raspaud]
+- Merge pull request #70 from pytroll/feature-radius-parameters. [David
+  Hoese]
+
+  Add 'proj4_radius_parameters' to calculate 'a' and 'b' from ellps
+- Add tests for proj4_radius_parameters. [davidh-ssec]
+- Fix typo in function call in radius parameters. [davidh-ssec]
+- Add 'proj4_radius_parameters' to calculate 'a' and 'b' from ellps.
+  [davidh-ssec]
+- Merge pull request #68 from pytroll/feature-56. [Martin Raspaud]
+
+  Fix GridDefinition as permitted definition in preprocessing utils
+- Add more preprocessing tests. [davidh-ssec]
+- Fix preprocessing functions to use duck type on provided areas.
+  [davidh-ssec]
+- Fix GridDefinition as permitted definition in preprocessing utils.
+  [davidh-ssec]
+
+
 v1.6.0 (2017-09-12)
 -------------------
 - update changelog. [Martin Raspaud]
