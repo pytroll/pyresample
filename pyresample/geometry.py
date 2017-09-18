@@ -24,11 +24,15 @@
 
 import warnings
 from collections import OrderedDict
+from logging import getLogger
 
 import numpy as np
 import yaml
+from pyproj import Geod, Proj
 
 from pyresample import _spatial_mp, utils
+
+logger = getLogger(__name__)
 
 
 class DimensionError(Exception):
@@ -59,6 +63,8 @@ class BaseDefinition(object):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
 
@@ -351,6 +357,8 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
+        lons = np.asanyarray(lons)
+        lats = np.asanyarray(lats)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
@@ -449,11 +457,174 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        lons = np.asanyarray(lons)
+        lats = np.asanyarray(lats)
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+
+    def _compute_omerc_parameters(self, ellipsoid):
+        """Compute the oblique mercator projection bouding box parameters."""
+        lines, cols = self.lons.shape
+        lon1, lon2 = np.asanyarray(self.lons[[0, -1], int(cols / 2)])
+        lat1, lat, lat2 = np.asanyarray(
+            self.lats[[0, int(lines / 2), -1], int(cols / 2)])
+
+        proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
+                            'lat_1': lat1, 'lon_1': lon1,
+                            'lat_2': lat2, 'lon_2': lon2}
+
+        lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
+        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
+        del az2, dist
+        return {'proj': 'omerc', 'alpha': float(az1),
+                'lat_0': float(lat0),  'lonc': float(lonc),
+                'no_rot': True, 'ellps': ellipsoid}
+
+    def get_edge_lonlats(self):
+        """Get the concatenated boundary of the current swath."""
+        lons, lats = self.get_boundary_lonlats()
+        blons = np.ma.concatenate([lons.side1, lons.side2,
+                                   lons.side3, lons.side4])
+        blats = np.ma.concatenate([lats.side1, lats.side2,
+                                   lats.side3, lats.side4])
+        return blons, blats
+
+    def compute_bb_proj_params(self, proj_dict):
+        projection = proj_dict['proj']
+        ellipsoid = proj_dict.get('ellps', 'WGS84')
+        if projection == 'omerc':
+            return self._compute_omerc_parameters(ellipsoid)
+        else:
+            raise NotImplementedError('Only omerc supported for now.')
+
+    def compute_optimal_bb_area(self, proj_dict=None):
+        """Compute the "best" bounding box area for this swath with `proj_dict`.
+
+        By default, the projection is Oblique Mercator (`omerc` in proj.4), in
+        which case the right projection angle `alpha` is computed from the
+        swath centerline. For other projections, only the appropriate center of
+        projection and area extents are computed.
+        """
+        if proj_dict is None:
+            proj_dict = {}
+        projection = proj_dict.setdefault('proj', 'omerc')
+        area_id = projection + '_otf'
+        description = 'On-the-fly ' + projection + ' area'
+        lines, cols = self.lons.shape
+        x_size = int(cols * 1.1)
+        y_size = int(lines * 1.1)
+
+        proj_dict = self.compute_bb_proj_params(proj_dict)
+
+        if projection == 'omerc':
+            x_size, y_size = y_size, x_size
+
+        area = DynamicAreaDefinition(area_id, description, proj_dict)
+        lons, lats = self.get_edge_lonlats()
+        return area.freeze((lons, lats), size=(x_size, y_size))
+
+
+class DynamicAreaDefinition(object):
+    """An AreaDefintion containing just a subset of the needed parameters.
+
+    The purpose of this class is to be able to adapt the area extent and size of
+    the area to a given set of longitudes and latitudes, such that e.g. polar
+    satellite granules can be resampled optimaly to a give projection."""
+
+    def __init__(self, area_id=None, description=None, proj_dict=None,
+                 x_size=None, y_size=None, area_extent=None,
+                 optimize_projection=False):
+        """Initialize the DynamicAreaDefinition.
+
+        area_id:
+          The name of the area.
+        description:
+          The description of the area.
+        proj_dict:
+          The dictionary of projection parameters. Doesn't have to be complete.
+        x_size, y_size:
+          The size of the resulting area.
+        area_extent:
+          The area extent of the area.
+        optimize_projection:
+          Whether the projection parameters have to be optimized.
+          """
+        self.area_id = area_id
+        self.description = description
+        self.proj_dict = proj_dict
+        self.x_size = x_size
+        self.y_size = y_size
+        self.area_extent = area_extent
+        self.optimize_projection = optimize_projection
+
+    def compute_domain(self, corners, resolution=None, size=None):
+        """Compute size and area_extent from corners and [size or resolution]
+        info."""
+        if resolution is not None and size is not None:
+            raise ValueError("Both resolution and size can't be provided.")
+
+        if size:
+            x_size, y_size = size
+            x_resolution = (corners[2] - corners[0]) * 1.0 / (x_size - 1)
+            y_resolution = (corners[3] - corners[1]) * 1.0 / (y_size - 1)
+
+        if resolution:
+            try:
+                x_resolution, y_resolution = resolution
+            except TypeError:
+                x_resolution = y_resolution = resolution
+            x_size = int(np.rint((corners[2] - corners[0]) * 1.0 /
+                                 x_resolution + 1))
+            y_size = int(np.rint((corners[3] - corners[1]) * 1.0 /
+                                 y_resolution + 1))
+
+        area_extent = (corners[0] - x_resolution / 2,
+                       corners[1] - y_resolution / 2,
+                       corners[2] + x_resolution / 2,
+                       corners[3] + y_resolution / 2)
+        return area_extent, x_size, y_size
+
+    def freeze(self, lonslats=None,
+               resolution=None, size=None,
+               proj_info=None):
+        """Create an AreaDefintion from this area with help of some extra info.
+
+        lonlats:
+          the geographical coordinates to contain in the resulting area.
+        resolution:
+          the resolution of the resulting area.
+        size:
+          the size of the resulting area.
+        proj_info:
+          complementing parameters to the projection info.
+
+        Resolution and Size parameters are ignored if the instance is created
+        with the `optimize_projection` flag set to True.
+        """
+        if proj_info is not None:
+            self.proj_dict.update(proj_info)
+
+        if self.optimize_projection:
+            return lonslats.compute_optimal_bb_area(self.proj_dict)
+
+        if not self.area_extent or not self.x_size or not self.y_size:
+            proj4 = Proj(**self.proj_dict)
+            try:
+                lons, lats = lonslats
+            except (TypeError, ValueError):
+                lons, lats = lonslats.get_lonlats()
+            xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
+            corners = [np.min(xarr), np.min(yarr), np.max(xarr), np.max(yarr)]
+
+            domain = self.compute_domain(corners, resolution, size)
+            self.area_extent, self.x_size, self.y_size = domain
+
+        return AreaDefinition(self.area_id, self.description, None,
+                              self.proj_dict, self.x_size, self.y_size,
+                              self.area_extent)
 
 
 class AreaDefinition(BaseDefinition):
