@@ -21,13 +21,16 @@ supported"""
 
 from __future__ import absolute_import
 
+import sys
 import types
 import warnings
-import sys
 
+import dask.array as da
 import numpy as np
+from memory_profiler import profile
+from xarray import DataArray
 
-from pyresample import geometry, data_reduce, _spatial_mp
+from pyresample import _spatial_mp, data_reduce, geometry
 
 if sys.version < '3':
     range = xrange
@@ -875,6 +878,253 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         return result, stddev, count
     else:
         return result
+
+
+class XArrayResamplerNN(object):
+
+    def __init__(self, source_geo_def, target_geo_def, radius_of_influence,
+                 neighbours=8, epsilon=0, reduce_data=True,
+                 nprocs=1, segments=None):
+        self.valid_input_index = None
+        self.valid_output_index = None
+        self.index_array = None
+        self.distance_array = None
+        self.neighbours = neighbours
+        self.epsilon = epsilon
+        self.reduce_data = reduce_data
+        self.nprocs = nprocs
+        self.segments = segments
+        self.source_geo_def = source_geo_def
+        self.target_geo_def = target_geo_def
+        self.radius_of_influence = radius_of_influence
+
+    def transform_lonlats(self, lons, lats):
+        R = 6370997.0
+        x_coords = R * da.cos(da.deg2rad(lats)) * da.cos(da.deg2rad(lons))
+        y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
+        z_coords = R * da.sin(da.deg2rad(lats))
+
+        return da.stack((x_coords, y_coords, z_coords), axis=-1)
+
+    def _create_resample_kdtree(self, source_lons, source_lats, valid_input_index):
+        """Set up kd tree on input"""
+
+        """
+        if not isinstance(source_geo_def, geometry.BaseDefinition):
+            raise TypeError('source_geo_def must be of geometry type')
+
+        #Get reduced cartesian coordinates and flatten them
+        source_cartesian_coords = source_geo_def.get_cartesian_coords(nprocs=nprocs)
+        input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
+        input_coords = input_coords[valid_input_index]
+        """
+
+        vii = valid_input_index.compute().ravel()
+        source_lons_valid = source_lons.ravel()[vii]
+        source_lats_valid = source_lats.ravel()[vii]
+
+        input_coords = self.transform_lonlats(source_lons_valid,
+                                              source_lats_valid)
+
+        if input_coords.size == 0:
+            raise EmptyResult('No valid data points in input data')
+
+        # Build kd-tree on input
+
+        if kd_tree_name == 'pykdtree':
+            resample_kdtree = KDTree(input_coords.compute())
+        else:
+            resample_kdtree = sp.cKDTree(input_coords.compute())
+
+        return resample_kdtree
+
+    def _query_resample_kdtree(self, resample_kdtree, target_lons,
+                               target_lats, valid_output_index, reduce_data=True):
+        """Query kd-tree on slice of target coordinates"""
+        from dask.base import tokenize
+        from dask.array import Array
+
+        def query(target_lons, target_lats, valid_output_index, c_slice):
+            voi = valid_output_index[c_slice].compute()
+            shape = voi.shape
+            voir = voi.ravel()
+            target_lons_valid = target_lons[c_slice].ravel()[voir]
+            target_lats_valid = target_lats[c_slice].ravel()[voir]
+
+            coords = self.transform_lonlats(target_lons_valid,
+                                            target_lats_valid)
+            distance_array, index_array = np.stack(resample_kdtree.query(coords.compute(),
+                                                                         k=self.neighbours,
+                                                                         eps=self.epsilon,
+                                                                         distance_upper_bound=self.radius_of_influence))
+
+            res_ia = np.full(shape, fill_value=np.nan, dtype=np.float)
+            res_da = np.full(shape, fill_value=np.nan, dtype=np.float)
+            res_ia[voi] = index_array
+            res_da[voi] = distance_array
+            return np.stack([res_ia, res_da], axis=-1)
+
+        token = tokenize(1000)
+        name = 'query-' + token
+
+        dsk = {}
+        vstart = 0
+
+        for i, vck in enumerate(valid_output_index.chunks[0]):
+            hstart = 0
+            for j, hck in enumerate(valid_output_index.chunks[1]):
+                c_slice = (slice(vstart, vstart + vck),
+                           slice(hstart, hstart + hck))
+                dsk[(name, i, j, 0)] = (query, target_lons,
+                                        target_lats, valid_output_index, c_slice)
+                hstart += hck
+            vstart += vck
+
+        res = Array(dsk, name,
+                    shape=list(valid_output_index.shape) + [2],
+                    chunks=list(valid_output_index.chunks) + [2],
+                    dtype=target_lons.dtype)
+
+        index_array = res[:, :, 0].astype(np.uint)
+        distance_array = res[:, :, 1]
+        return index_array, distance_array
+
+    def get_neighbour_info(self):
+        """Returns neighbour info
+
+        Parameters
+        ----------
+        source_geo_def : object
+            Geometry definition of source
+        target_geo_def : object
+            Geometry definition of target
+        radius_of_influence : float
+            Cut off distance in meters
+        neighbours : int, optional
+            The number of neigbours to consider for each grid point
+        epsilon : float, optional
+            Allowed uncertainty in meters. Increasing uncertainty
+            reduces execution time
+        reduce_data : bool, optional
+            Perform initial coarse reduction of source dataset in order
+            to reduce execution time
+        nprocs : int, optional
+            Number of processor cores to be used
+        segments : int or None
+            Number of segments to use when resampling.
+            If set to None an estimate will be calculated
+
+        Returns
+        -------
+        (valid_input_index, valid_output_index,
+        index_array, distance_array) : tuple of numpy arrays
+            Neighbour resampling info
+        """
+
+        if self.source_geo_def.size < self.neighbours:
+            warnings.warn('Searching for %s neighbours in %s data points' %
+                          (self.neighbours, self.source_geo_def.size))
+
+        source_lonlats = self.source_geo_def.get_lonlats_dask()
+        source_lons = source_lonlats[:, :, 0]
+        source_lats = source_lonlats[:, :, 1]
+        valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
+                             (source_lats <= 90) & (source_lats >= -90))
+
+        # Create kd-tree
+        try:
+            resample_kdtree = self._create_resample_kdtree(source_lons,
+                                                           source_lats,
+                                                           valid_input_index)
+
+        except EmptyResult:
+            # Handle if all input data is reduced away
+            valid_output_index, index_array, distance_array = \
+                _create_empty_info(self.source_geo_def,
+                                   self.target_geo_def, self.neighbours)
+            return (valid_input_index, valid_output_index, index_array,
+                    distance_array)
+
+        target_lonlats = self.target_geo_def.get_lonlats_dask()
+        target_lons = target_lonlats[:, :, 0]
+        target_lats = target_lonlats[:, :, 1]
+        valid_output_index = ((target_lons >= -180) & (target_lons <= 180) &
+                              (target_lats <= 90) & (target_lats >= -90))
+
+        index_array, distance_array = self._query_resample_kdtree(resample_kdtree,
+                                                                  target_lons,
+                                                                  target_lats,
+                                                                  valid_output_index)
+
+        self.valid_input_index = valid_input_index
+        self.valid_output_index = valid_output_index
+        self.index_array = index_array
+        self.distance_array = distance_array
+
+        return valid_input_index, valid_output_index, index_array, distance_array
+
+    @profile
+    def get_sample_from_neighbour_info(self, data):
+        import ipdb
+        ipdb.set_trace()
+
+        flat_data = data.stack(flat_dim=['x', 'y'])
+        dims = list(data.dims)
+        if 'y' not in dims:
+            dims = ['y'] + dims
+
+        output_shape = []
+        chunks = []
+        for dim in dims:
+            if dim == 'y':
+                output_shape += [self.target_geo_def.shape[0]]
+                chunks += [1000]
+            elif dim == 'x':
+                output_shape += [self.target_geo_def.shape[1]]
+                chunks += [1000]
+            else:
+                output_shape += [data[dim].size]
+                chunks += [10]
+
+        new_data = flat_data.isel(flat_dim=self.valid_input_index)
+        new_shape = []
+        flat_idx = None
+        coords = {}
+        for idx, dim in enumerate(dims):
+            if dim == 'y':
+                coords['y'] = self.target_geo_def.proj_y_coords
+                if flat_idx is not None:
+                    new_shape[flat_idx] *= output_shape[idx]
+                else:
+                    flat_idx = idx
+                    new_shape.append(output_shape[idx])
+            elif dim == 'x':
+                coords['x'] = self.target_geo_def.proj_x_coords
+                if flat_idx is not None:
+                    new_shape[flat_idx] *= output_shape[idx]
+                else:
+                    flat_idx = idx
+                    new_shape.append(output_shape[idx])
+            else:
+                coords[dim] = data[dim]
+                new_shape.append(output_shape[idx])
+
+        stacked = np.full(new_shape, np.nan)
+
+        input_size = self.valid_input_index.sum()
+        index_mask = (self.index_array == input_size)
+        new_index_array = np.where(index_mask, 0, self.index_array)
+
+        stacked[:, self.valid_output_index] = new_data.data[
+            :, new_index_array.astype(int)]
+
+        output_arr = DataArray(da.from_array(stacked.reshape(output_shape),
+                                             chunks=chunks),
+                               dims=dims)
+        for key, val in coords.items():
+            output_arr[key] = val
+
+        return output_arr
 
 
 def _get_fill_mask_value(data_dtype):
