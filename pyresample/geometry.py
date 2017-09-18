@@ -780,6 +780,34 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
+    def get_proj_coords_dask(self, blocksize, dtype=None):
+        from dask.base import tokenize
+        from dask.array import Array
+        if dtype is None:
+            dtype = self.dtype
+
+        vchunks = range(0, self.y_size, blocksize)
+        hchunks = range(0, self.x_size, blocksize)
+
+        token = tokenize(blocksize)
+        name = 'get_proj_coords-' + token
+
+        dskx = {(name, i, j, 0): (self.get_proj_coords_array,
+                                  (slice(vcs, min(vcs + blocksize, self.y_size)),
+                                   slice(hcs, min(hcs + blocksize, self.x_size))),
+                                  False, dtype)
+                for i, vcs in enumerate(vchunks)
+                for j, hcs in enumerate(hchunks)
+                }
+
+        res = Array(dskx, name, shape=list(self.shape) + [2],
+                    chunks=(blocksize, blocksize, 2),
+                    dtype=dtype)
+        return res
+
+    def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
+        return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
+
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid
 
@@ -788,7 +816,7 @@ class AreaDefinition(BaseDefinition):
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
         cache : bool, optional
-            Store result the result. Requires data_slice to be None
+            Store the result. Requires data_slice to be None
 
         Returns
         -------
@@ -908,12 +936,14 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_x_coords(self):
-        warnings.warn("Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
+        warnings.warn(
+            "Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
         return self.projection_x_coords
 
     @property
     def proj_y_coords(self):
-        warnings.warn("Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
+        warnings.warn(
+            "Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
         return self.projection_y_coords
 
     @property
@@ -932,6 +962,40 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[1], corner_lats[1]),
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
+
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        from dask.base import tokenize
+        from dask.array import Array
+        import pyproj
+
+        dtype = dtype or self.dtype
+        proj_coords = self.get_proj_coords_dask(blocksize, dtype)
+        target_x, target_y = proj_coords[:, :, 0], proj_coords[:, :, 1]
+
+        target_proj = pyproj.Proj(**self.proj_dict)
+
+        def invproj(data1, data2):
+            return np.dstack(target_proj(data1.compute(), data2.compute(), inverse=True))
+
+        token = tokenize(blocksize)
+        name = 'get_lonlats-' + token
+
+        vchunks = range(0, self.y_size, blocksize)
+        hchunks = range(0, self.x_size, blocksize)
+
+        dsk = {(name, i, j, 0): (invproj,
+                                 target_x[slice(vcs, min(vcs + blocksize, self.y_size)),
+                                          slice(hcs, min(hcs + blocksize, self.x_size))],
+                                 target_y[slice(vcs, min(vcs + blocksize, self.y_size)),
+                                          slice(hcs, min(hcs + blocksize, self.x_size))])
+               for i, vcs in enumerate(vchunks)
+               for j, hcs in enumerate(hchunks)
+               }
+
+        res = Array(dsk, name, shape=list(self.shape) + [2],
+                    chunks=(blocksize, blocksize, 2),
+                    dtype=dtype)
+        return res
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
