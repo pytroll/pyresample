@@ -407,21 +407,24 @@ def proj4_str_to_dict(proj4_str):
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
 
 
-def proj4_radius_parameters(proj4_dict_or_str):
+def proj4_radius_parameters(proj4_dict):
     """Calculate 'a' and 'b' radius parameters.
+
+    Arguments:
+        proj4_dict (str or dict): PROJ.4 parameters
 
     Returns:
         a (float), b (float): equatorial and polar radius
     """
-    if isinstance(proj4_dict_or_str, str):
-        new_info = proj4_str_to_dict(proj4_dict_or_str)
+    if isinstance(proj4_dict, str):
+        new_info = proj4_str_to_dict(proj4_dict)
     else:
-        new_info = proj4_dict_or_str.copy()
+        new_info = proj4_dict.copy()
 
     # load information from PROJ.4 about the ellipsis if possible
-    if '+ellps' in new_info and '+a' not in new_info or '+b' not in new_info:
+    if '+a' not in new_info or '+b' not in new_info:
         import pyproj
-        ellps = pyproj.pj_ellps[new_info['+ellps']]
+        ellps = pyproj.pj_ellps[new_info.get('+ellps', 'WGS84')]
         new_info['+a'] = ellps['a']
         if 'b' not in ellps and 'rf' in ellps:
             new_info['+f'] = 1. / ellps['rf']

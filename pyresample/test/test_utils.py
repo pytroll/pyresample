@@ -137,6 +137,31 @@ class TestMisc(unittest.TestCase):
                            u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
                            1000, 1000, (-1000, -1000, 1000, 1000))
 
+    def test_proj4_radius_parameters_provided(self):
+        from pyresample import utils
+        a, b = utils.proj4_radius_parameters(
+            '+proj=stere +a=6378273 +b=6356889.44891',
+        )
+        np.testing.assert_almost_equal(a, 6378273)
+        np.testing.assert_almost_equal(b, 6356889.44891)
+
+    def test_proj4_radius_parameters_ellps(self):
+        from pyresample import utils
+        a, b = utils.proj4_radius_parameters(
+            '+proj=stere +ellps=WGS84',
+        )
+        np.testing.assert_almost_equal(a, 6378137.)
+        np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
+
+    def test_proj4_radius_parameters_default(self):
+        from pyresample import utils
+        a, b = utils.proj4_radius_parameters(
+            '+proj=lcc',
+        )
+        # WGS84
+        np.testing.assert_almost_equal(a, 6378137.)
+        np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
+
 
 def suite():
     """The test suite.
