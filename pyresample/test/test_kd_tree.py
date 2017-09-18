@@ -4,8 +4,9 @@ import os
 import sys
 
 import numpy
+
+from pyresample import data_reduce, geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
-from pyresample import kd_tree, utils, geometry, data_reduce
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -78,7 +79,7 @@ class Test(unittest.TestCase):
             self.assertTrue(
                 len(w) > 0, 'Failed to create neighbour warning')
             self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
-                'Failed to create correct neighbour warning')
+                            'Failed to create correct neighbour warning')
 
         expected_res = 2.20206560694
         expected_stddev = 0.707115076173
@@ -101,7 +102,7 @@ class Test(unittest.TestCase):
             self.assertTrue(
                 len(w) > 0, 'Failed to create neighbour warning')
             self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
-                'Failed to create correct neighbour warning')
+                            'Failed to create correct neighbour warning')
 
         self.assertAlmostEqual(res[0], 2.32193149, 5,
                                'Failed to calculate custom weighting with uncertainty')
@@ -705,7 +706,7 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         grid_def = geometry.GridDefinition(lons, lats)
         lons = numpy.asarray(lons, dtype='f4')
-        lats  = numpy.asarray(lats, dtype='f4')
+        lats = numpy.asarray(lats, dtype='f4')
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         valid_input_index, valid_output_index, index_array, distance_array = \
             kd_tree.get_neighbour_info(swath_def,
@@ -824,3 +825,6 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
 
     return mysuite
+
+if __name__ == '__main__':
+    unittest.main()
