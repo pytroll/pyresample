@@ -414,7 +414,7 @@ def proj4_radius_parameters(proj4_dict_or_str):
         a (float), b (float): equatorial and polar radius
     """
     if isinstance(proj4_dict_or_str, str):
-        new_info = proj4_dict_or_str(proj4_dict_or_str)
+        new_info = proj4_str_to_dict(proj4_dict_or_str)
     else:
         new_info = proj4_dict_or_str.copy()
 
