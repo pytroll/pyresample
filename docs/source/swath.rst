@@ -8,7 +8,7 @@ Resampling can be done using nearest neighbour method, Guassian weighting, weigh
 
 pyresample.image
 ----------------
-The ImageContainerNearest class can be used for nearest neighbour resampling of swaths as well as grids.
+The ImageContainerNearest and ImageContanerBilinear classes can be used for resampling of swaths as well as grids.  Below is an example using nearest neighbour resampling.
 
 .. doctest::
 
@@ -29,7 +29,7 @@ The ImageContainerNearest class can be used for nearest neighbour resampling of 
  >>> area_con = swath_con.resample(area_def)
  >>> result = area_con.image_data
 
-For other resampling types or splitting the process in two steps use the functions in **pyresample.kd_tree** described below. 
+For other resampling types or splitting the process in two steps use e.g. the functions in **pyresample.kd_tree** described below. 
 
 pyresample.kd_tree
 ------------------
