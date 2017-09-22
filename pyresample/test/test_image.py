@@ -266,7 +266,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 16779200.709407561
-        self.assertEqual(cross_sum, expected)
+        self.assertAlmostEqual(cross_sum, expected)
 
 
 def suite():
