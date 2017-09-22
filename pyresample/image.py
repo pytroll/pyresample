@@ -201,7 +201,7 @@ class ImageContainerQuick(ImageContainer):
 class ImageContainerNearest(ImageContainer):
 
     """Holds image with geometry definition.
-    Allows bilinear resampling to new geometry definition.
+    Allows nearest neighbour to new geometry definition.
 
     Parameters
     ----------
@@ -259,7 +259,8 @@ class ImageContainerNearest(ImageContainer):
         self.segments = segments
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using bilinear approach
+        """Resamples image to area definition using nearest neighbour
+        approach
 
         Parameters
         ----------
@@ -269,7 +270,7 @@ class ImageContainerNearest(ImageContainer):
         Returns
         -------
         image_container : object
-            ImageContainerBilinear object of resampled geometry
+            ImageContainerNearest object of resampled geometry
         """
 
         if self.image_data.ndim > 2 and self.ndim > 1:
@@ -301,7 +302,7 @@ class ImageContainerNearest(ImageContainer):
 class ImageContainerBilinear(ImageContainer):
 
     """Holds image with geometry definition.
-    Allows nearest neighbour resampling to new geometry definition.
+    Allows bilinear to new geometry definition.
 
     Parameters
     ----------
@@ -361,8 +362,7 @@ class ImageContainerBilinear(ImageContainer):
         self.neighbours = neighbours
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using nearest neighbour
-        approach
+        """Resamples image to area definition using bilinear approach
 
         Parameters
         ----------
@@ -372,7 +372,7 @@ class ImageContainerBilinear(ImageContainer):
         Returns
         -------
         image_container : object
-            ImageContainerNearest object of resampled geometry
+            ImageContainerBilinear object of resampled geometry
         """
 
         if self.image_data.ndim > 2 and self.ndim > 1:
