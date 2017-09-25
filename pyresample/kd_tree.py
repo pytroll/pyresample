@@ -25,11 +25,11 @@ import sys
 import types
 import warnings
 
-import dask.array as da
 import numpy as np
 from memory_profiler import profile
 from xarray import DataArray
 
+import dask.array as da
 from pyresample import _spatial_mp, data_reduce, geometry
 
 if sys.version < '3':
@@ -939,7 +939,8 @@ class XArrayResamplerNN(object):
         return resample_kdtree
 
     def _query_resample_kdtree(self, resample_kdtree, target_lons,
-                               target_lats, valid_output_index, reduce_data=True):
+                               target_lats, valid_output_index,
+                               reduce_data=True):
         """Query kd-tree on slice of target coordinates"""
         from dask.base import tokenize
         from dask.array import Array
@@ -953,10 +954,11 @@ class XArrayResamplerNN(object):
 
             coords = self.transform_lonlats(target_lons_valid,
                                             target_lats_valid)
-            distance_array, index_array = np.stack(resample_kdtree.query(coords.compute(),
-                                                                         k=self.neighbours,
-                                                                         eps=self.epsilon,
-                                                                         distance_upper_bound=self.radius_of_influence))
+            distance_array, index_array = np.stack(
+                resample_kdtree.query(coords.compute(),
+                                      k=self.neighbours,
+                                      eps=self.epsilon,
+                                      distance_upper_bound=self.radius_of_influence))
 
             res_ia = np.full(shape, fill_value=np.nan, dtype=np.float)
             res_da = np.full(shape, fill_value=np.nan, dtype=np.float)
@@ -976,7 +978,8 @@ class XArrayResamplerNN(object):
                 c_slice = (slice(vstart, vstart + vck),
                            slice(hstart, hstart + hck))
                 dsk[(name, i, j, 0)] = (query, target_lons,
-                                        target_lats, valid_output_index, c_slice)
+                                        target_lats, valid_output_index,
+                                        c_slice)
                 hstart += hck
             vstart += vck
 
@@ -1065,66 +1068,83 @@ class XArrayResamplerNN(object):
 
     @profile
     def get_sample_from_neighbour_info(self, data):
-        import ipdb
-        ipdb.set_trace()
 
-        flat_data = data.stack(flat_dim=['x', 'y'])
-        dims = list(data.dims)
-        if 'y' not in dims:
-            dims = ['y'] + dims
+        # flatten x and y in the source array
 
         output_shape = []
         chunks = []
-        for dim in dims:
+        source_dims = data.dims
+        for dim in source_dims:
             if dim == 'y':
-                output_shape += [self.target_geo_def.shape[0]]
+                output_shape += [self.target_geo_def.y_size]
                 chunks += [1000]
             elif dim == 'x':
-                output_shape += [self.target_geo_def.shape[1]]
+                output_shape += [self.target_geo_def.x_size]
                 chunks += [1000]
             else:
                 output_shape += [data[dim].size]
                 chunks += [10]
 
-        new_data = flat_data.isel(flat_dim=self.valid_input_index)
-        new_shape = []
-        flat_idx = None
-        coords = {}
-        for idx, dim in enumerate(dims):
-            if dim == 'y':
-                coords['y'] = self.target_geo_def.proj_y_coords
-                if flat_idx is not None:
-                    new_shape[flat_idx] *= output_shape[idx]
-                else:
-                    flat_idx = idx
-                    new_shape.append(output_shape[idx])
-            elif dim == 'x':
-                coords['x'] = self.target_geo_def.proj_x_coords
-                if flat_idx is not None:
-                    new_shape[flat_idx] *= output_shape[idx]
-                else:
-                    flat_idx = idx
-                    new_shape.append(output_shape[idx])
+        new_dims = []
+        xy_dims = []
+        source_shape = [1, 1]
+        chunks = [1, 1]
+        for i, dim in enumerate(data.dims):
+            if dim not in ['x', 'y']:
+                new_dims.append(dim)
+                source_shape[1] *= data.shape[i]
+                chunks[1] *= 10
             else:
-                coords[dim] = data[dim]
-                new_shape.append(output_shape[idx])
+                xy_dims.append(dim)
+                source_shape[0] *= data.shape[i]
+                chunks[0] *= 1000
 
-        stacked = np.full(new_shape, np.nan)
+        new_dims = xy_dims + new_dims
+
+        target_shape = [np.prod(self.target_geo_def.shape), source_shape[1]]
+        source_data = data.transpose(*new_dims).data.reshape(source_shape)
 
         input_size = self.valid_input_index.sum()
         index_mask = (self.index_array == input_size)
-        new_index_array = np.where(index_mask, 0, self.index_array)
+        new_index_array = da.where(
+            index_mask, 0, self.index_array).ravel().astype(int).compute()
+        valid_targets = self.valid_output_index.ravel()
 
-        stacked[:, self.valid_output_index] = new_data.data[
-            :, new_index_array.astype(int)]
+        target_lines = []
 
-        output_arr = DataArray(da.from_array(stacked.reshape(output_shape),
-                                             chunks=chunks),
-                               dims=dims)
-        for key, val in coords.items():
-            output_arr[key] = val
+        for line in range(target_shape[1]):
+            #target_data_line = target_data[:, line]
+            new_data = source_data[:, line][self.valid_input_index.ravel()]
+            # could this be a bug in dask ? we have to compute to avoid errors
+            result = new_data.compute()[new_index_array]
+            result[index_mask.ravel()] = np.nan
+            #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
+            target_data_line = np.full(target_shape[0], np.nan)
+            target_data_line[valid_targets] = result
+            target_lines.append(target_data_line)
 
-        return output_arr
+        target_data = np.vstack(target_lines)
+
+        new_shape = []
+        for dim in new_dims:
+            if dim == 'x':
+                new_shape.append(self.target_geo_def.x_size)
+            elif dim == 'y':
+                new_shape.append(self.target_geo_def.y_size)
+            else:
+                new_shape.append(data[dim].size)
+
+        output_arr = DataArray(da.from_array(target_data.reshape(new_shape), chunks=[1000] * len(new_shape)),
+                               dims=new_dims)
+        for dim in source_dims:
+            if dim == 'x':
+                output_arr['x'] = self.target_geo_def.proj_x_coords
+            elif dim == 'y':
+                output_arr['y'] = self.target_geo_def.proj_y_coords
+            else:
+                output_arr[dim] = data[dim]
+
+        return output_arr.transpose(*source_dims)
 
 
 def _get_fill_mask_value(data_dtype):
