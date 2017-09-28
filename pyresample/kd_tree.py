@@ -26,7 +26,6 @@ import types
 import warnings
 
 import numpy as np
-from memory_profiler import profile
 from xarray import DataArray
 
 import dask.array as da
@@ -1066,7 +1065,6 @@ class XArrayResamplerNN(object):
 
         return valid_input_index, valid_output_index, index_array, distance_array
 
-    @profile
     def get_sample_from_neighbour_info(self, data):
 
         # flatten x and y in the source array
@@ -1121,9 +1119,9 @@ class XArrayResamplerNN(object):
             #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
             target_data_line = np.full(target_shape[0], np.nan)
             target_data_line[valid_targets] = result
-            target_lines.append(target_data_line)
+            target_lines.append(target_data_line[:, np.newaxis])
 
-        target_data = np.vstack(target_lines)
+        target_data = np.hstack(target_lines)
 
         new_shape = []
         for dim in new_dims:
