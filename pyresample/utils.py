@@ -105,11 +105,13 @@ def _read_yaml_area_file_content(area_file_name):
     area_dict = {}
     for area_file_obj in area_file_name:
         if (isinstance(area_file_obj, (str, six.text_type)) and
-           os.path.isfile(area_file_obj)):
-            # filename
-            area_file_obj = open(area_file_obj)
-        tmp_dict = yaml.load(area_file_obj)
+                os.path.isfile(area_file_obj)):
+            with open(area_file_obj) as area_file_obj:
+                tmp_dict = yaml.load(area_file_obj)
+        else:
+            tmp_dict = yaml.load(area_file_obj)
         area_dict = recursive_dict_update(area_dict, tmp_dict)
+
     return area_dict
 
 
@@ -174,10 +176,10 @@ def _read_legacy_area_file_lines(area_file_name):
             continue
         elif isinstance(area_file_obj, (str, six.text_type)):
             # filename
-            area_file_obj = open(area_file_obj, 'r')
+            with open(area_file_obj, 'r') as area_file_obj:
 
-        for line in area_file_obj.readlines():
-            yield line
+                for line in area_file_obj.readlines():
+                    yield line
 
 
 def _parse_legacy_area_file(area_file_name, *regions):
@@ -281,11 +283,12 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     """
 
     proj_dict = _get_proj4_args(proj4_args)
-    return pr.geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size,
-                                      y_size, area_extent)
+    return pr.geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict,
+                                      x_size, y_size, area_extent)
 
 
-def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
+def generate_quick_linesample_arrays(source_area_def, target_area_def,
+                                     nprocs=1):
     """Generate linesample arrays for quick grid resampling
 
     Parameters
@@ -315,8 +318,10 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     return source_pixel_y, source_pixel_x
 
 
-def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_def,
-                                                 radius_of_influence, nprocs=1):
+def generate_nearest_neighbour_linesample_arrays(source_area_def,
+                                                 target_area_def,
+                                                 radius_of_influence,
+                                                 nprocs=1):
     """Generate linesample arrays for nearest neighbour grid resampling
 
     Parameters
