@@ -406,7 +406,7 @@ def proj4_str_to_dict(proj4_str):
 
     Note: Key only parameters will be assigned a value of `True`.
     """
-    pairs = (x.split('=', 1) for x in proj4_str.split(" "))
+    pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
 
 
@@ -423,22 +423,28 @@ def proj4_radius_parameters(proj4_dict):
         new_info = proj4_str_to_dict(proj4_dict)
     else:
         new_info = proj4_dict.copy()
-
+      
     # load information from PROJ.4 about the ellipsis if possible
-    if '+a' not in new_info or '+b' not in new_info:
-        import pyproj
-        ellps = pyproj.pj_ellps[new_info.get('+ellps', 'WGS84')]
-        new_info['+a'] = ellps['a']
-        if 'b' not in ellps and 'rf' in ellps:
-            new_info['+f'] = 1. / ellps['rf']
-        else:
-            new_info['+b'] = ellps['b']
+    
+    from pyproj import Geod
+    
+    if 'ellps' in new_info:     
+      geod = Geod(**new_info)           
+      new_info['a'] = geod.a
+      new_info['b'] = geod.b      
+    else:
+      if 'a' in new_info and 'b' in new_info:
+        pass
+      elif 'a' in new_info and 'f' in new_info:
+        new_info['b'] = new_info['a'] * (1 - new_info['f'])
+      elif 'b' in new_info and 'f' in new_info:
+        new_info['a'] = new_info['b'] / (1 - new_info['f'])
+      else:
+      	geod = Geod(**{'ellps':'WGS84'})
+        new_info['a'] = geod.a
+        new_info['b'] = geod.b
 
-    if '+a' in new_info and '+f' in new_info and '+b' not in new_info:
-        # add a 'b' attribute back in if they used 'f' instead
-        new_info['+b'] = new_info['+a'] * (1 - new_info['+f'])
-
-    return float(new_info['+a']), float(new_info['+b'])
+    return float(new_info['a']), float(new_info['b'])
 
 
 def _downcast_index_array(index_array, size):
