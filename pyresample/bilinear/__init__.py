@@ -389,8 +389,14 @@ def _mask_coordinates(lons, lats):
     lats = lats.ravel()
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
-    lons[idxs] = np.nan
-    lats[idxs] = np.nan
+    if hasattr(lons, 'mask'):
+        lons = np.ma.masked_where(idxs | lons.mask, lons)
+    else:
+        lons[idxs] = np.nan
+    if hasattr(lats, 'mask'):
+        lats = np.ma.masked_where(idxs | lats.mask, lats)
+    else:
+        lats[idxs] = np.nan
 
     return lons, lats
 
