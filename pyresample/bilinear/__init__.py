@@ -30,6 +30,7 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 
 import numpy as np
 from pyproj import Proj
+import warnings
 
 from pyresample import kd_tree
 
@@ -210,11 +211,13 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     #     source_geo_def = SwathDefinition(lons, lats)
 
     # Calculate neighbour information
-    (input_idxs, output_idxs, idx_ref, dists) = \
-        kd_tree.get_neighbour_info(source_geo_def, target_area_def,
-                                   radius, neighbours=neighbours,
-                                   nprocs=nprocs, reduce_data=reduce_data,
-                                   segments=segments, epsilon=epsilon)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        (input_idxs, output_idxs, idx_ref, dists) = \
+            kd_tree.get_neighbour_info(source_geo_def, target_area_def,
+                                       radius, neighbours=neighbours,
+                                       nprocs=nprocs, reduce_data=reduce_data,
+                                       segments=segments, epsilon=epsilon)
 
     del output_idxs, dists
 
