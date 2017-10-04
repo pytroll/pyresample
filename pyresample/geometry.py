@@ -984,8 +984,7 @@ class AreaDefinition(BaseDefinition):
 
         def invproj(data1, data2):
             return np.dstack(target_proj(data1.compute(), data2.compute(), inverse=True))
-
-        token = tokenize(blocksize)
+        token = tokenize(str(self), blocksize, dtype)
         name = 'get_lonlats-' + token
 
         vchunks = range(0, self.y_size, blocksize)
@@ -1193,6 +1192,20 @@ class StackedAreaDefinition(BaseDefinition):
         self.lats = np.vstack(llats)
 
         return self.lons, self.lats
+
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        """"Return lon and lat dask arrays of the area."""
+        import dask.array as da
+        llonslats = []
+        for definition in self.defs:
+            lonslats = definition.get_lonlats_dask(blocksize=blocksize,
+                                                   dtype=dtype)
+
+            llonslats.append(lonslats)
+
+        self.lonlats = da.concatenate(llonslats, axis=0)
+
+        return self.lonlats
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""
