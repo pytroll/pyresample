@@ -428,27 +428,24 @@ def proj4_radius_parameters(proj4_dict):
     
     from pyproj import Geod
     
-    
-    if 'ellps' in new_info:     
-        geod = Geod(**new_info)           
+    if 'ellps' in new_info:
+        geod = Geod(**new_info)
         new_info['a'] = geod.a
-        new_info['b'] = geod.b      
-    else:
-        
-        if 'rf' in new_info and not 'f' in new_info:
-            new_info['f'] = 1. / float (new_info['rf']) 
-	       
-        if 'a' in new_info and 'b' in new_info:
-            pass
-        elif 'a' in new_info and 'f' in new_info:
-            new_info['b'] = float (new_info['a']) * (1 - float (new_info['f']))
+        new_info['b'] = geod.b
+    elif 'a' not in new_info or 'b' not in new_info:
+
+        if 'rf' in new_info and 'f' not in new_info:
+            new_info['f'] = 1. / float(new_info['rf'])
+
+        if 'a' in new_info and 'f' in new_info:
+            new_info['b'] = float(new_info['a']) * (1 - float(new_info['f']))
         elif 'b' in new_info and 'f' in new_info:
-            new_info['a'] = float (new_info['b']) / (1 - float (new_info['f']))
+            new_info['a'] = float(new_info['b']) / (1 - float(new_info['f']))
         else:
-            geod = Geod(**{'ellps':'WGS84'})
+            geod = Geod(**{'ellps': 'WGS84'})
             new_info['a'] = geod.a
             new_info['b'] = geod.b
-
+	     
     return float(new_info['a']), float(new_info['b'])
 
 
