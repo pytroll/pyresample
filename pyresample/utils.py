@@ -137,14 +137,27 @@ def _parse_yaml_area_file(area_file_name, *regions):
                 area_name, area_file_name))
         description = params['description']
         projection = params['projection']
-        xsize = params['shape']['width']
-        ysize = params['shape']['height']
-        area_extent = (params['area_extent']['lower_left_xy'] +
-                       params['area_extent']['upper_right_xy'])
-        res.append(pr.geometry.AreaDefinition(area_name, description,
-                                              None, projection,
-                                              xsize, ysize,
-                                              area_extent))
+        optimize_projection = params.get('optimize_projection', False)
+        try:
+            xsize = params['shape']['width']
+            ysize = params['shape']['height']
+        except KeyError:
+            xsize, ysize = None, None
+        try:
+            area_extent = (params['area_extent']['lower_left_xy'] +
+                           params['area_extent']['upper_right_xy'])
+        except KeyError:
+            area_extent = None
+        area = pr.geometry.DynamicAreaDefinition(area_name, description,
+                                                 projection, xsize, ysize,
+                                                 area_extent,
+                                                 optimize_projection)
+        try:
+            area = area.freeze()
+        except (TypeError, AttributeError):
+            pass
+
+        res.append(area)
     return res
 
 
@@ -278,9 +291,9 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     nprocs : int, optional
         Number of processor cores to be used
 
@@ -288,11 +301,6 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
-
     lons, lats = target_area_def.get_lonlats(nprocs)
 
     source_pixel_y, source_pixel_x = pr.grid.get_linesample(lons, lats,
@@ -314,9 +322,9 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     Parameters
     -----------
     source_area_def : object
-        Source area definition as AreaDefinition object
+        Source area definition as geometry definition object
     target_area_def : object
-        Target area definition as AreaDefinition object
+        Target area definition as geometry definition object
     radius_of_influence : float
         Cut off distance in meters
     nprocs : int, optional
@@ -326,11 +334,6 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_de
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-
-    if not (isinstance(source_area_def, pr.geometry.AreaDefinition) and
-            isinstance(target_area_def, pr.geometry.AreaDefinition)):
-        raise TypeError('source_area_def and target_area_def must be of type '
-                        'geometry.AreaDefinition')
 
     valid_input_index, valid_output_index, index_array, distance_array = \
         pr.kd_tree.get_neighbour_info(source_area_def,
@@ -400,11 +403,42 @@ def _get_proj4_args(proj4_args):
 
 def proj4_str_to_dict(proj4_str):
     """Convert PROJ.4 compatible string definition to dict
-    
+
     Note: Key only parameters will be assigned a value of `True`.
     """
     pairs = (x.split('=', 1) for x in proj4_str.split(" "))
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
+
+
+def proj4_radius_parameters(proj4_dict):
+    """Calculate 'a' and 'b' radius parameters.
+
+    Arguments:
+        proj4_dict (str or dict): PROJ.4 parameters
+
+    Returns:
+        a (float), b (float): equatorial and polar radius
+    """
+    if isinstance(proj4_dict, str):
+        new_info = proj4_str_to_dict(proj4_dict)
+    else:
+        new_info = proj4_dict.copy()
+
+    # load information from PROJ.4 about the ellipsis if possible
+    if '+a' not in new_info or '+b' not in new_info:
+        import pyproj
+        ellps = pyproj.pj_ellps[new_info.get('+ellps', 'WGS84')]
+        new_info['+a'] = ellps['a']
+        if 'b' not in ellps and 'rf' in ellps:
+            new_info['+f'] = 1. / ellps['rf']
+        else:
+            new_info['+b'] = ellps['b']
+
+    if '+a' in new_info and '+f' in new_info and '+b' not in new_info:
+        # add a 'b' attribute back in if they used 'f' instead
+        new_info['+b'] = new_info['+a'] * (1 - new_info['+f'])
+
+    return float(new_info['+a']), float(new_info['+b'])
 
 
 def _downcast_index_array(index_array, size):

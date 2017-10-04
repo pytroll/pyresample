@@ -24,12 +24,19 @@ from __future__ import absolute_import
 import sys
 import types
 import warnings
+from logging import getLogger
 
 import numpy as np
-from xarray import DataArray
 
-import dask.array as da
 from pyresample import _spatial_mp, data_reduce, geometry
+
+logger = getLogger(__name__)
+
+try:
+    from xarray import DataArray
+    import dask.array as da
+except ImportError:
+    logger.info("XArray or dask unavailable, some functionality missing.")
 
 if sys.version < '3':
     range = xrange
@@ -716,7 +723,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         # Get nearest neighbour using array indexing
         index_mask = (index_array == input_size)
         new_index_array = np.where(index_mask, 0, index_array)
-        result = new_data[new_index_array]
+        result = new_data[new_index_array].copy()
         result[index_mask] = fill_value
     else:
         # Calculate result using weighting.
