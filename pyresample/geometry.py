@@ -455,6 +455,14 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        """Get the lon lats as a single dask array."""
+        import dask.array as da
+        lons, lats = self.get_lonlats()
+        lons = da.from_array(lons, chunks=blocksize * lons.ndim)
+        lats = da.from_array(lats, chunks=blocksize * lons.ndim)
+        return da.stack((lons, lats), axis=-1)
+
 
 class AreaDefinition(BaseDefinition):
 
