@@ -891,6 +891,30 @@ class XArrayResamplerNN(object):
     def __init__(self, source_geo_def, target_geo_def, radius_of_influence,
                  neighbours=8, epsilon=0, reduce_data=True,
                  nprocs=1, segments=None):
+        """
+        Parameters
+        ----------
+        source_geo_def : object
+            Geometry definition of source
+        target_geo_def : object
+            Geometry definition of target
+        radius_of_influence : float
+            Cut off distance in meters
+        neighbours : int, optional
+            The number of neigbours to consider for each grid point
+        epsilon : float, optional
+            Allowed uncertainty in meters. Increasing uncertainty
+            reduces execution time
+        reduce_data : bool, optional
+            Perform initial coarse reduction of source dataset in order
+            to reduce execution time
+        nprocs : int, optional
+            Number of processor cores to be used
+        segments : int or None
+            Number of segments to use when resampling.
+            If set to None an estimate will be calculated
+        """
+
         self.valid_input_index = None
         self.valid_output_index = None
         self.index_array = None
@@ -1000,28 +1024,6 @@ class XArrayResamplerNN(object):
 
     def get_neighbour_info(self):
         """Returns neighbour info
-
-        Parameters
-        ----------
-        source_geo_def : object
-            Geometry definition of source
-        target_geo_def : object
-            Geometry definition of target
-        radius_of_influence : float
-            Cut off distance in meters
-        neighbours : int, optional
-            The number of neigbours to consider for each grid point
-        epsilon : float, optional
-            Allowed uncertainty in meters. Increasing uncertainty
-            reduces execution time
-        reduce_data : bool, optional
-            Perform initial coarse reduction of source dataset in order
-            to reduce execution time
-        nprocs : int, optional
-            Number of processor cores to be used
-        segments : int or None
-            Number of segments to use when resampling.
-            If set to None an estimate will be calculated
 
         Returns
         -------
