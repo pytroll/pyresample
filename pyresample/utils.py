@@ -422,8 +422,8 @@ def proj4_dict_to_str(proj4_dict, sort=False):
         keys = sorted(keys)
     params = []
     for key in keys:
-        key = str(key) if key.startswith('+') else '+' + str(key)
         val = proj4_dict[key]
+        key = str(key) if key.startswith('+') else '+' + str(key)
         if str(val) in ['True', 'False']:
             # could be string or boolean object
             val = ''
