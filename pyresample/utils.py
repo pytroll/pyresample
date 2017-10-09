@@ -421,18 +421,18 @@ def proj4_dict_to_str(proj4_dict, sort=False):
     if sort:
         keys = sorted(keys)
     params = []
-    for k in keys:
-        k = str(k) if k.startswith('+') else '+' + str(k)
-        v = proj4_dict[k]
-        if str(v) in ['True', 'False']:
+    for key in keys:
+        key = str(key) if key.startswith('+') else '+' + str(key)
+        val = proj4_dict[key]
+        if str(val) in ['True', 'False']:
             # could be string or boolean object
-            v = ''
-        if v:
-            p = '{}={}'.format(k, v)
+            val = ''
+        if val:
+            param = '{}={}'.format(key, val)
         else:
             # example "+no_defs"
-            p = k
-        params.append(p)
+            param = key
+        params.append(param)
     return ' '.join(params)
 
 

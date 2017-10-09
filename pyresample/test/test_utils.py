@@ -227,9 +227,9 @@ class TestMisc(unittest.TestCase):
         proj_dict = utils.proj4_str_to_dict(proj_str)
         proj_str2 = utils.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4_str_to_dict(proj_str2)
-        for k, v in proj_dict2.items():
-            self.assertIn(k, proj_dict)
-            self.assertEqual(v, proj_dict[k])
+        for key, val in proj_dict2.items():
+            self.assertIn(key, proj_dict)
+            self.assertEqual(val, proj_dict[key])
 
 
 def suite():
