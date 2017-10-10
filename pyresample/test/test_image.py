@@ -18,7 +18,8 @@ def tmp(f):
 
 class Test(unittest.TestCase):
 
-    area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+    area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+                                       'areaD',
                                        {'a': '6378144.0',
                                         'b': '6356759.0',
                                         'lat_0': '50.00',
@@ -28,11 +29,12 @@ class Test(unittest.TestCase):
                                        800,
                                        800,
                                        [-1370912.72,
-                                           -909968.64000000001,
-                                           1029087.28,
-                                           1490031.3600000001])
+                                        -909968.64000000001,
+                                        1029087.28,
+                                        1490031.3600000001])
 
-    msg_area = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees',
+    msg_area = geometry.AreaDefinition('msg_full',
+                                       'Full globe MSG image 0 degrees',
                                        'msg_full',
                                        {'a': '6378169.0',
                                         'b': '6356584.0',
@@ -42,12 +44,12 @@ class Test(unittest.TestCase):
                                        3712,
                                        3712,
                                        [-5568742.4000000004,
-                                           -5568742.4000000004,
-                                           5568742.4000000004,
-                                           5568742.4000000004]
-                                       )
+                                        -5568742.4000000004,
+                                        5568742.4000000004,
+                                        5568742.4000000004])
 
-    msg_area_resize = geometry.AreaDefinition('msg_full', 'Full globe MSG image 0 degrees',
+    msg_area_resize = geometry.AreaDefinition('msg_full',
+                                              'Full globe MSG image 0 degrees',
                                               'msg_full',
                                               {'a': '6378169.0',
                                                'b': '6356584.0',
@@ -57,10 +59,9 @@ class Test(unittest.TestCase):
                                               928,
                                               928,
                                               [-5568742.4000000004,
-                                                  -5568742.4000000004,
-                                                  5568742.4000000004,
-                                                  5568742.4000000004]
-                                              )
+                                               -5568742.4000000004,
+                                               5568742.4000000004,
+                                               5568742.4000000004])
 
     @tmp
     def test_image(self):
@@ -103,7 +104,8 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__), 'test_files', 'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+                                               'test_files', 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(
             resampled_mask, expected), msg='Failed to resample masked array')
@@ -119,7 +121,9 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__), 'test_files', 'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+                                               'test_files',
+                                               'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(
             resampled_mask, expected), msg='Failed to resample masked array')
@@ -170,7 +174,8 @@ class Test(unittest.TestCase):
             lambda y, x: y * x * 10 ** -6, (3712, 3712)) * 2
         data = numpy.dstack((data1, data2))
         msg_con = image.ImageContainer(data, self.msg_area)
-        #area_con = msg_con.resample_area_nearest_neighbour(self.area_def, 50000)
+        # area_con = msg_con.resample_area_nearest_neighbour(self.area_def,
+        # 50000)
         row_indices, col_indices = \
             utils.generate_nearest_neighbour_linesample_arrays(self.msg_area,
                                                                self.area_def,
@@ -213,6 +218,47 @@ class Test(unittest.TestCase):
         expected = 3 * 15874591.0
         self.assertEqual(cross_sum, expected,
                          msg='ImageContainer swath segments resampling nearest failed')
+
+    def test_bilinear(self):
+        data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (928, 928))
+        msg_con = image.ImageContainerBilinear(data, self.msg_area_resize,
+                                               50000, segments=1,
+                                               neighbours=8)
+        area_con = msg_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum = res.sum()
+        expected = 24690.127073654239
+        self.assertAlmostEqual(cross_sum, expected)
+
+    def test_bilinear_multi(self):
+        data1 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (928, 928))
+        data2 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6,
+                                   (928, 928)) * 2
+        data = numpy.dstack((data1, data2))
+        msg_con = image.ImageContainerBilinear(data, self.msg_area_resize,
+                                               50000, segments=1,
+                                               neighbours=8)
+        area_con = msg_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum1 = res[:, :, 0].sum()
+        expected1 = 24690.127073654239
+        self.assertAlmostEqual(cross_sum1, expected1)
+        cross_sum2 = res[:, :, 1].sum()
+        expected2 = 24690.127073654239 * 2
+        self.assertAlmostEqual(cross_sum2, expected2)
+
+    def test_bilinear_swath(self):
+        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        swath_con = image.ImageContainerBilinear(data, swath_def, 500000,
+                                                 segments=1, neighbours=8)
+        area_con = swath_con.resample(self.area_def)
+        res = area_con.image_data
+        cross_sum = res.sum()
+        expected = 16762584.12441789
+        self.assertAlmostEqual(cross_sum, expected)
 
 
 def suite():

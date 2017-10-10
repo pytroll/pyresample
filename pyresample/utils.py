@@ -105,11 +105,13 @@ def _read_yaml_area_file_content(area_file_name):
     area_dict = {}
     for area_file_obj in area_file_name:
         if (isinstance(area_file_obj, (str, six.text_type)) and
-           os.path.isfile(area_file_obj)):
-            # filename
-            area_file_obj = open(area_file_obj)
-        tmp_dict = yaml.load(area_file_obj)
+                os.path.isfile(area_file_obj)):
+            with open(area_file_obj) as area_file_obj:
+                tmp_dict = yaml.load(area_file_obj)
+        else:
+            tmp_dict = yaml.load(area_file_obj)
         area_dict = recursive_dict_update(area_dict, tmp_dict)
+
     return area_dict
 
 
@@ -174,10 +176,10 @@ def _read_legacy_area_file_lines(area_file_name):
             continue
         elif isinstance(area_file_obj, (str, six.text_type)):
             # filename
-            area_file_obj = open(area_file_obj, 'r')
+            with open(area_file_obj, 'r') as area_file_obj:
 
-        for line in area_file_obj.readlines():
-            yield line
+                for line in area_file_obj.readlines():
+                    yield line
 
 
 def _parse_legacy_area_file(area_file_name, *regions):
@@ -281,11 +283,12 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     """
 
     proj_dict = _get_proj4_args(proj4_args)
-    return pr.geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size,
-                                      y_size, area_extent)
+    return pr.geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict,
+                                      x_size, y_size, area_extent)
 
 
-def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
+def generate_quick_linesample_arrays(source_area_def, target_area_def,
+                                     nprocs=1):
     """Generate linesample arrays for quick grid resampling
 
     Parameters
@@ -315,8 +318,10 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1)
     return source_pixel_y, source_pixel_x
 
 
-def generate_nearest_neighbour_linesample_arrays(source_area_def, target_area_def,
-                                                 radius_of_influence, nprocs=1):
+def generate_nearest_neighbour_linesample_arrays(source_area_def,
+                                                 target_area_def,
+                                                 radius_of_influence,
+                                                 nprocs=1):
     """Generate linesample arrays for nearest neighbour grid resampling
 
     Parameters
@@ -406,8 +411,29 @@ def proj4_str_to_dict(proj4_str):
 
     Note: Key only parameters will be assigned a value of `True`.
     """
-    pairs = (x.split('=', 1) for x in proj4_str.split(" "))
+    pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
+
+
+def proj4_dict_to_str(proj4_dict, sort=False):
+    """Convert a dictionary of PROJ.4 parameters to a valid PROJ.4 string"""
+    keys = proj4_dict.keys()
+    if sort:
+        keys = sorted(keys)
+    params = []
+    for key in keys:
+        val = proj4_dict[key]
+        key = str(key) if key.startswith('+') else '+' + str(key)
+        if str(val) in ['True', 'False']:
+            # could be string or boolean object
+            val = ''
+        if val:
+            param = '{}={}'.format(key, val)
+        else:
+            # example "+no_defs"
+            param = key
+        params.append(param)
+    return ' '.join(params)
 
 
 def proj4_radius_parameters(proj4_dict):
@@ -423,22 +449,30 @@ def proj4_radius_parameters(proj4_dict):
         new_info = proj4_str_to_dict(proj4_dict)
     else:
         new_info = proj4_dict.copy()
-
+      
     # load information from PROJ.4 about the ellipsis if possible
-    if '+a' not in new_info or '+b' not in new_info:
-        import pyproj
-        ellps = pyproj.pj_ellps[new_info.get('+ellps', 'WGS84')]
-        new_info['+a'] = ellps['a']
-        if 'b' not in ellps and 'rf' in ellps:
-            new_info['+f'] = 1. / ellps['rf']
+    
+    from pyproj import Geod
+    
+    if 'ellps' in new_info:
+        geod = Geod(**new_info)
+        new_info['a'] = geod.a
+        new_info['b'] = geod.b
+    elif 'a' not in new_info or 'b' not in new_info:
+
+        if 'rf' in new_info and 'f' not in new_info:
+            new_info['f'] = 1. / float(new_info['rf'])
+
+        if 'a' in new_info and 'f' in new_info:
+            new_info['b'] = float(new_info['a']) * (1 - float(new_info['f']))
+        elif 'b' in new_info and 'f' in new_info:
+            new_info['a'] = float(new_info['b']) / (1 - float(new_info['f']))
         else:
-            new_info['+b'] = ellps['b']
-
-    if '+a' in new_info and '+f' in new_info and '+b' not in new_info:
-        # add a 'b' attribute back in if they used 'f' instead
-        new_info['+b'] = new_info['+a'] * (1 - new_info['+f'])
-
-    return float(new_info['+a']), float(new_info['+b'])
+            geod = Geod(**{'ellps': 'WGS84'})
+            new_info['a'] = geod.a
+            new_info['b'] = geod.b
+	     
+    return float(new_info['a']), float(new_info['b'])
 
 
 def _downcast_index_array(index_array, size):

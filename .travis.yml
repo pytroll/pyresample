@@ -10,19 +10,20 @@ before_install:
 - sudo apt-get install libfreetype6-dev
 - sudo apt-get install libgeos-dev
 install:
-- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "matplotlib>=1.5.0"; fi
+# matplotlib 2.1.0 has a bug that causes plotting masked arrays to fail
+# https://github.com/matplotlib/matplotlib/issues/9280
+- if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "matplotlib>=1.5.0,!=2.1.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "2.7" ]]; then pip install "sphinx>=1.5.0"; fi
-- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "matplotlib>=1.5.0,!=2.1.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.4" ]]; then pip install "sphinx>=1.5.0"; fi
-- if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "matplotlib>=1.5.0,!=2.1.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.5" ]]; then pip install "sphinx>=1.5.0"; fi
-- if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then pip install "matplotlib>=1.5.0"; fi
+- if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then pip install "matplotlib>=1.5.0,!=2.1.0"; fi
 - if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then pip install "sphinx>=1.5.0"; fi
 - pip install -r requirements.txt
 - pip install -e ".[pykdtree,quicklook]"
 - pip install coveralls
 script:
-# Once doctests pass this should be uncommented to replace the other coverage run line
 - coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 after_success: coveralls
 notifications:

@@ -465,6 +465,14 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        """Get the lon lats as a single dask array."""
+        import dask.array as da
+        lons, lats = self.get_lonlats()
+        lons = da.from_array(lons, chunks=blocksize * lons.ndim)
+        lats = da.from_array(lats, chunks=blocksize * lons.ndim)
+        return da.stack((lons, lats), axis=-1)
+
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
         lines, cols = self.lons.shape
@@ -622,7 +630,7 @@ class DynamicAreaDefinition(object):
             domain = self.compute_domain(corners, resolution, size)
             self.area_extent, self.x_size, self.y_size = domain
 
-        return AreaDefinition(self.area_id, self.description, None,
+        return AreaDefinition(self.area_id, self.description, '',
                               self.proj_dict, self.x_size, self.y_size,
                               self.area_extent)
 
@@ -751,6 +759,10 @@ class AreaDefinition(BaseDefinition):
 
         self.dtype = dtype
 
+    @property
+    def proj_str(self):
+        return utils.proj4_dict_to_str(self.proj_dict, sort=True)
+
     def __str__(self):
         # We need a sorted dictionary for a unique hash of str(self)
         proj_dict = self.proj_dict
@@ -759,7 +771,7 @@ class AreaDefinition(BaseDefinition):
                                for k in sorted(proj_dict.keys())]) +
                     '}')
 
-        if self.proj_id is None:
+        if not self.proj_id:
             third_line = ""
         else:
             third_line = "Projection ID: {0}\n".format(self.proj_id)
@@ -951,6 +963,34 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
+    def get_proj_coords_dask(self, blocksize, dtype=None):
+        from dask.base import tokenize
+        from dask.array import Array
+        if dtype is None:
+            dtype = self.dtype
+
+        vchunks = range(0, self.y_size, blocksize)
+        hchunks = range(0, self.x_size, blocksize)
+
+        token = tokenize(blocksize)
+        name = 'get_proj_coords-' + token
+
+        dskx = {(name, i, j, 0): (self.get_proj_coords_array,
+                                  (slice(vcs, min(vcs + blocksize, self.y_size)),
+                                   slice(hcs, min(hcs + blocksize, self.x_size))),
+                                  False, dtype)
+                for i, vcs in enumerate(vchunks)
+                for j, hcs in enumerate(hchunks)
+                }
+
+        res = Array(dskx, name, shape=list(self.shape) + [2],
+                    chunks=(blocksize, blocksize, 2),
+                    dtype=dtype)
+        return res
+
+    def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
+        return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
+
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid
 
@@ -959,7 +999,7 @@ class AreaDefinition(BaseDefinition):
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
         cache : bool, optional
-            Store result the result. Requires data_slice to be None
+            Store the result. Requires data_slice to be None
 
         Returns
         -------
@@ -1041,17 +1081,9 @@ class AreaDefinition(BaseDefinition):
                 cols = 1
 
         # Calculate coordinates
-        target_x = np.fromfunction(lambda i, j: (j + col_start) *
-                                   self.pixel_size_x +
-                                   self.pixel_upper_left[0],
-                                   (rows,
-                                    cols), dtype=dtype)
-
-        target_y = np.fromfunction(lambda i, j:
-                                   self.pixel_upper_left[1] -
-                                   (i + row_start) * self.pixel_size_y,
-                                   (rows,
-                                    cols), dtype=dtype)
+        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x, target_y = np.meshgrid(target_x, target_y)
 
         if is_single_value:
             # Return single values
@@ -1079,12 +1111,14 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_x_coords(self):
-        warnings.warn("Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
+        warnings.warn(
+            "Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
         return self.projection_x_coords
 
     @property
     def proj_y_coords(self):
-        warnings.warn("Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
+        warnings.warn(
+            "Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
         return self.projection_y_coords
 
     @property
@@ -1103,6 +1137,39 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[1], corner_lats[1]),
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
+
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        from dask.base import tokenize
+        from dask.array import Array
+        import pyproj
+
+        dtype = dtype or self.dtype
+        proj_coords = self.get_proj_coords_dask(blocksize, dtype)
+        target_x, target_y = proj_coords[:, :, 0], proj_coords[:, :, 1]
+
+        target_proj = pyproj.Proj(**self.proj_dict)
+
+        def invproj(data1, data2):
+            return np.dstack(target_proj(data1.compute(), data2.compute(), inverse=True))
+        token = tokenize(str(self), blocksize, dtype)
+        name = 'get_lonlats-' + token
+
+        vchunks = range(0, self.y_size, blocksize)
+        hchunks = range(0, self.x_size, blocksize)
+
+        dsk = {(name, i, j, 0): (invproj,
+                                 target_x[slice(vcs, min(vcs + blocksize, self.y_size)),
+                                          slice(hcs, min(hcs + blocksize, self.x_size))],
+                                 target_y[slice(vcs, min(vcs + blocksize, self.y_size)),
+                                          slice(hcs, min(hcs + blocksize, self.x_size))])
+               for i, vcs in enumerate(vchunks)
+               for j, hcs in enumerate(hchunks)
+               }
+
+        res = Array(dsk, name, shape=list(self.shape) + [2],
+                    chunks=(blocksize, blocksize, 2),
+                    dtype=dtype)
+        return res
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
@@ -1292,6 +1359,20 @@ class StackedAreaDefinition(BaseDefinition):
         self.lats = np.vstack(llats)
 
         return self.lons, self.lats
+
+    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+        """"Return lon and lat dask arrays of the area."""
+        import dask.array as da
+        llonslats = []
+        for definition in self.defs:
+            lonslats = definition.get_lonlats_dask(blocksize=blocksize,
+                                                   dtype=dtype)
+
+            llonslats.append(lonslats)
+
+        self.lonlats = da.concatenate(llonslats, axis=0)
+
+        return self.lonlats
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""
