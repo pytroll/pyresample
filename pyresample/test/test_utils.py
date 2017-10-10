@@ -221,6 +221,14 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
+    def test_proj4_str_dict_conversion(self):
+        from pyresample import utils
+        proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
+        proj_dict = utils.proj4_str_to_dict(proj_str)
+        proj_str2 = utils.proj4_dict_to_str(proj_dict)
+        proj_dict2 = utils.proj4_str_to_dict(proj_str2)
+        self.assertDictEqual(proj_dict, proj_dict2)
+
 
 def suite():
     """The test suite.

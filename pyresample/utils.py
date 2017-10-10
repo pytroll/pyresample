@@ -415,6 +415,27 @@ def proj4_str_to_dict(proj4_str):
     return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
 
 
+def proj4_dict_to_str(proj4_dict, sort=False):
+    """Convert a dictionary of PROJ.4 parameters to a valid PROJ.4 string"""
+    keys = proj4_dict.keys()
+    if sort:
+        keys = sorted(keys)
+    params = []
+    for key in keys:
+        val = proj4_dict[key]
+        key = str(key) if key.startswith('+') else '+' + str(key)
+        if str(val) in ['True', 'False']:
+            # could be string or boolean object
+            val = ''
+        if val:
+            param = '{}={}'.format(key, val)
+        else:
+            # example "+no_defs"
+            param = key
+        params.append(param)
+    return ' '.join(params)
+
+
 def proj4_radius_parameters(proj4_dict):
     """Calculate 'a' and 'b' radius parameters.
 
