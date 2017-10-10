@@ -282,9 +282,9 @@ Function for resampling using bilinear interpolation for irregular source grids.
  ...                                      800, 800,
  ...                                      [-1370912.72, -909968.64,
  ...                                       1029087.28, 1490031.36])
- >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
- >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
- >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> data = np.fromfunction(lambda y, x: y*x, (500, 100))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x * 0.1, (500, 100))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100))
  >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> result = bilinear.resample_bilinear(data, source_def, target_def,
  ...                                     radius=50e3, neighbours=32,
@@ -304,7 +304,8 @@ Keyword arguments which are passed to **kd_tree**:
 * **radius**: radius around each target pixel in meters to search for
   neighbours in the source data
 * **neighbours**: number of closest locations to consider when
-  selecting the four data points around the target pixel
+  selecting the four data points around the target location.  Note that this 
+  value needs to be large enough to ensure "surrounding" the target!
 * **nprocs**: number of processors to use for finding the closest pixels
 * **fill_value**: fill invalid pixel with this value.  If
   **fill_value=None** is used, masked arrays will be returned
@@ -332,7 +333,9 @@ significantly.  This is also done internally by the
 **resample_bilinear** function, but separating these steps makes it
 possible to cache the coefficients if the same transformation is done
 over and over again.  This is very typical in operational
-geostationary satellite image processing.
+geostationary satellite image processing.  Note that the output shape is now 
+defined so that the result is reshaped to correct shape.  This reshaping 
+is done internally in **resample_bilinear**.
 
 .. doctest::
 
@@ -353,7 +356,8 @@ geostationary satellite image processing.
  >>> t_params, s_params, input_idxs, idx_ref = \
  ...     bilinear.get_bil_info(source_def, target_def, radius=50e3, nprocs=1)
  >>> res = bilinear.get_sample_from_bil_info(data.ravel(), t_params, s_params,
- ...                                         input_idxs, idx_ref)
+ ...                                         input_idxs, idx_ref,
+ ...                                         output_shape=target_def.shape)
 
 
 pyresample.ewa
