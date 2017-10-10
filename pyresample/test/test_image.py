@@ -220,39 +220,31 @@ class Test(unittest.TestCase):
                          msg='ImageContainer swath segments resampling nearest failed')
 
     def test_bilinear(self):
-        data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
-        msg_con = image.ImageContainerBilinear(data, self.msg_area, 50000,
-                                               segments=1)
+        data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (928, 928))
+        msg_con = image.ImageContainerBilinear(data, self.msg_area_resize,
+                                               50000, segments=1,
+                                               neighbours=8)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 399875.69587578019
+        expected = 24690.127073654239
         self.assertAlmostEqual(cross_sum, expected)
 
-    # def test_bilinear_resize(self):
-    #    data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
-    #    msg_con = image.ImageContainerBilinear(data, self.msg_area, 50000,
-    #                                           segments=1)
-    #    area_con = msg_con.resample(self.msg_area_resize)
-    #    res = area_con.image_data
-    #    cross_sum = res.sum()
-    #    expected = 2212023.0175830
-    #    self.assertAlmostEqual(cross_sum, expected)
-
     def test_bilinear_multi(self):
-        data1 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
-        data2 = numpy.fromfunction(
-            lambda y, x: y * x * 10 ** -6, (3712, 3712)) * 2
+        data1 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (928, 928))
+        data2 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6,
+                                   (928, 928)) * 2
         data = numpy.dstack((data1, data2))
-        msg_con = image.ImageContainerBilinear(data, self.msg_area, 50000,
-                                               segments=1)
+        msg_con = image.ImageContainerBilinear(data, self.msg_area_resize,
+                                               50000, segments=1,
+                                               neighbours=8)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum1 = res[:, :, 0].sum()
-        expected1 = 399875.69587578019
+        expected1 = 24690.127073654239
         self.assertAlmostEqual(cross_sum1, expected1)
         cross_sum2 = res[:, :, 1].sum()
-        expected2 = 399875.69587578019 * 2
+        expected2 = 24690.127073654239 * 2
         self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_bilinear_swath(self):
@@ -261,11 +253,11 @@ class Test(unittest.TestCase):
         lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         swath_con = image.ImageContainerBilinear(data, swath_def, 500000,
-                                                 segments=1)
+                                                 segments=1, neighbours=8)
         area_con = swath_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 16779200.709407561
+        expected = 16762584.12441789
         self.assertAlmostEqual(cross_sum, expected)
 
 
