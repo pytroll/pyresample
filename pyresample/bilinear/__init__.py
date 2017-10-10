@@ -30,6 +30,7 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 
 import numpy as np
 from pyproj import Proj
+import warnings
 
 from pyresample import kd_tree
 
@@ -210,11 +211,13 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     #     source_geo_def = SwathDefinition(lons, lats)
 
     # Calculate neighbour information
-    (input_idxs, output_idxs, idx_ref, dists) = \
-        kd_tree.get_neighbour_info(source_geo_def, target_area_def,
-                                   radius, neighbours=neighbours,
-                                   nprocs=nprocs, reduce_data=reduce_data,
-                                   segments=segments, epsilon=epsilon)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        (input_idxs, output_idxs, idx_ref, dists) = \
+            kd_tree.get_neighbour_info(source_geo_def, target_area_def,
+                                       radius, neighbours=neighbours,
+                                       nprocs=nprocs, reduce_data=reduce_data,
+                                       segments=segments, epsilon=epsilon)
 
     del output_idxs, dists
 
@@ -389,8 +392,14 @@ def _mask_coordinates(lons, lats):
     lats = lats.ravel()
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
-    lons[idxs] = np.nan
-    lats[idxs] = np.nan
+    if hasattr(lons, 'mask'):
+        lons = np.ma.masked_where(idxs | lons.mask, lons)
+    else:
+        lons[idxs] = np.nan
+    if hasattr(lats, 'mask'):
+        lats = np.ma.masked_where(idxs | lats.mask, lats)
+    else:
+        lats[idxs] = np.nan
 
     return lons, lats
 
