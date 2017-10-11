@@ -98,6 +98,12 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
     else:
         result[np.isnan(result)] = fill_value
 
+    # Reshape to target area shape
+    shp = target_area_def.shape
+    result = result.reshape((shp[0], shp[1], data.shape[1]))
+    # Remove extra dimensions
+    result = np.squeeze(result)
+
     return result
 
 
