@@ -78,11 +78,10 @@ class BaseDefinition(object):
 
         # check the latitutes
         if lats is not None:
-            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > +90.):
-                # throw exception
-                raise ValueError(
-                    'Some latitudes are outside the [-90.;+90] validity range')
-            else:
+            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > 90.):
+                    raise ValueError(
+                        'Some latitudes are outside the [-90.;+90] validity range')
+            elif not isinstance(lats, np.ndarray):
                 # assume we have to mask an xarray
                 lats = lats.where((lats < -90.) | (lats > 90.))
         self.lats = lats
@@ -94,11 +93,12 @@ class BaseDefinition(object):
                 warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
                               'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
                               'To avoid this warning next time, use routine utils.wrap_longitudes().')
-            # assume we have to mask an xarray
-            # wrap longitudes to [-180;+180[
-            self.lons = utils.wrap_longitudes(lons)
-        else:
-            self.lons = lons
+                # assume we have to mask an xarray
+                # wrap longitudes to [-180;+180[
+                lons = utils.wrap_longitudes(lons)
+            elif not isinstance(lons, np.ndarray):
+                lons = utils.wrap_longitudes(lons)
+        self.lons = lons
 
         self.ndim = None
         self.cartesian_coords = None
