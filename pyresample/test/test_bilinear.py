@@ -207,7 +207,7 @@ class Test(unittest.TestCase):
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
                                     self.target_def)
-        self.assertEqual(res.size, self.target_def.size)
+        self.assertEqual(res.shape, self.target_def.shape)
         # There should be only one pixel with value 1, all others are 0
         self.assertEqual(res.sum(), 1)
 
@@ -225,8 +225,8 @@ class Test(unittest.TestCase):
                                     self.swath_def,
                                     self.target_def)
         shp = res.shape
-        self.assertEqual(shp[0], self.target_def.size)
-        self.assertEqual(shp[1], 2)
+        self.assertEqual(shp[0:2], self.target_def.shape)
+        self.assertEqual(shp[-1], 2)
 
 
 def suite():
