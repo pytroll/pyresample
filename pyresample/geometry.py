@@ -32,6 +32,11 @@ from pyproj import Geod, Proj
 
 from pyresample import _spatial_mp, utils
 
+try:
+    from xarray import DataArray
+except ImportError:
+    DataArray = np.ndarray
+
 logger = getLogger(__name__)
 
 
@@ -63,27 +68,33 @@ class BaseDefinition(object):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
-            lons = np.asanyarray(lons)
-            lats = np.asanyarray(lats)
+            if not isinstance(lons, (np.ndarray, DataArray)):
+                lons = np.asanyarray(lons)
+                lats = np.asanyarray(lats)
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
 
         self.nprocs = nprocs
 
         # check the latitutes
-        if lats is not None and ((lats.min() < -90. or lats.max() > +90.)):
-            # throw exception
-            raise ValueError(
-                'Some latitudes are outside the [-90.;+90] validity range')
-        else:
-            self.lats = lats
+        if lats is not None:
+            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > +90.):
+                # throw exception
+                raise ValueError(
+                    'Some latitudes are outside the [-90.;+90] validity range')
+            else:
+                # assume we have to mask an xarray
+                lats = lats.where((lats < -90.) | (lats > 90.))
+        self.lats = lats
 
         # check the longitudes
-        if lons is not None and ((lons.min() < -180. or lons.max() >= +180.)):
-            # issue warning
-            warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
-                          'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
-                          'To avoid this warning next time, use routine utils.wrap_longitudes().')
+        if lons is not None:
+            if isinstance(lons, np.ndarray) and (lons.min() < -180. or lons.max() >= +180.):
+                # issue warning
+                warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
+                              'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
+                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
+            # assume we have to mask an xarray
             # wrap longitudes to [-180;+180[
             self.lons = utils.wrap_longitudes(lons)
         else:
@@ -357,8 +368,9 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
-        lons = np.asanyarray(lons)
-        lats = np.asanyarray(lats)
+        if not isinstance(lons, (np.ndarray, DataArray)):
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
@@ -457,8 +469,9 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
-        lons = np.asanyarray(lons)
-        lats = np.asanyarray(lats)
+        if not isinstance(lons, (np.ndarray, DataArray)):
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
