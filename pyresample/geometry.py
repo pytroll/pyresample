@@ -83,7 +83,7 @@ class BaseDefinition(object):
                         'Some latitudes are outside the [-90.;+90] validity range')
             elif not isinstance(lats, np.ndarray):
                 # assume we have to mask an xarray
-                lats = lats.where((lats < -90.) | (lats > 90.))
+                lats = lats.where((lats >= -90.) & (lats <= 90.))
         self.lats = lats
 
         # check the longitudes

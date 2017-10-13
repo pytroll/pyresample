@@ -1053,6 +1053,10 @@ class XArrayResamplerNN(object):
             valid_output_index, index_array, distance_array = \
                 _create_empty_info(self.source_geo_def,
                                    self.target_geo_def, self.neighbours)
+            self.valid_input_index = valid_input_index
+            self.valid_output_index = valid_output_index
+            self.index_array = index_array
+            self.distance_array = distance_array
             return (valid_input_index, valid_output_index, index_array,
                     distance_array)
 
