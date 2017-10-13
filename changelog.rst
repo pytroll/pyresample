@@ -2,6 +2,103 @@ Changelog
 =========
 
 
+v1.7.0 (2017-10-13)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.6.1 → 1.7.0. [Martin Raspaud]
+- Merge pull request #82 from pytroll/fix-resample-bilinear. [David
+  Hoese]
+
+  Fix output shape of resample_bilinear()
+- Reshape output to have correct shape for the output area and num of
+  chans. [Panu Lahtinen]
+- Update tests to check proper output shape for resample_bilinear()
+  [Panu Lahtinen]
+- Merge pull request #79 from pytroll/fix-bil-documentation. [David
+  Hoese]
+
+  Fix example data for BIL, clarify text and add missing output_shape p…
+- Merge branch 'fix-bil-documentation' of
+  https://github.com/mraspaud/pyresample into fix-bil-documentation.
+  [Panu Lahtinen]
+- Fix example data for BIL, clarify text and add missing output_shape
+  param. [Panu Lahtinen]
+- Fix example data for BIL, clarify text and add missing output_shape
+  param. [Panu Lahtinen]
+- Merge pull request #75 from pytroll/fix-bil-mask-deprecation. [David
+  Hoese]
+
+  Fix bil mask deprecation
+- Merge branch 'develop' into fix-bil-mask-deprecation. [David Hoese]
+- Merge pull request #81 from pytroll/fix-reduce-bil-memory-use. [David
+  Hoese]
+
+  Reduce the memory use for ImageContainerBilinear tests
+- Reduce area size for BIL, reduce neighbours and adjust expected
+  results. [Panu Lahtinen]
+- Add proj4_dict_to_str utility function (#78) [David Hoese]
+
+  * Add proj4_dict_to_str utility function
+
+  Includes fixes for dynamic area definitions proj_id and
+  small performance improvement for projection coordinate generation
+
+  * Use more descriptive variable names
+
+  * Fix proj4 dict conversion test
+
+  * Exclude buggy version of matplotlib in travis tests
+
+  * Change appveyor python 3.5 environments to python 3.6
+
+  Also removes slack notification webhook which is no longer the
+  recommended way to post to slack from appveyor.
+
+  * Fix proj4 dict to string against recent changes to str to dict funcs
+
+- Utils edits for retreiving projection semi-major / semi-minor axes
+  (#77) [goodsonr]
+
+  proj4 strings converted to dictionary now consistent with other code (no longer has leading '+')
+  new logic for reporting projection semi-major / semi-minor axes ('a', 'b') based on information in proj4
+
+- Merge pull request #71 from pytroll/feature-bilinear-image. [David
+  Hoese]
+
+  Add image container for bilinear interpolation
+- Fix test result assertation. [Panu Lahtinen]
+- Add tests for ImageContainerBilinear, rewrap long lines. [Panu
+  Lahtinen]
+- Fix docstrings. [Panu Lahtinen]
+- Mention also ImageContainerBilinear. [Panu Lahtinen]
+- Handle 3D input data with bilinear interpolation. [Panu Lahtinen]
+- Add ImageContainerBilinear, autopep8. [Panu Lahtinen]
+- Merge pull request #74 from pytroll/fix-close-area-file. [David Hoese]
+
+  Use context manager to open area definition files
+- Use context manager to open files, PEP8. [Panu Lahtinen]
+- Merge pull request #76 from pytroll/feature-xarray. [Martin Raspaud]
+
+  Support resampling of xarray.DataArrays
+- Move docstring to init for consistency. [Martin Raspaud]
+- Merge develop into feature_xarray. [Martin Raspaud]
+- Support get_lonlats_dask in StackedAreaDefinitions. [Martin Raspaud]
+- Add get_lonlats_dask for SwathDefinitions. [Martin Raspaud]
+- Fix resampling of multidimensional xarrays. [Martin Raspaud]
+- Support xarray and use dask for simple cases. [Martin Raspaud]
+- WIP: Resampler for xarrays using dask. [Martin Raspaud]
+- Fix formatting. [Martin Raspaud]
+- Optimize memory consumption. [Martin Raspaud]
+- Clean up doc formatting. [Martin Raspaud]
+- Add dask.Array returning get_lonlats and get_proj_coords. [Martin
+  Raspaud]
+- Remove Python 3.3 from travis tests, it's not supported anymore. [Panu
+  Lahtinen]
+- Supress UserWarning about possible extra neighbours within search
+  radius. [Panu Lahtinen]
+- Handle masked arrays properly for new Numpy versions. [Panu Lahtinen]
+
+
 v1.6.1 (2017-09-18)
 -------------------
 - update changelog. [Martin Raspaud]
