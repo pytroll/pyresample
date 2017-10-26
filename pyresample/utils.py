@@ -241,6 +241,10 @@ def _create_area(area_id, area_content):
 
     config['XSIZE'] = int(config['XSIZE'])
     config['YSIZE'] = int(config['YSIZE'])
+    if 'ROTATION' in config.keys():
+        config['ROTATION'] = float(config['ROTATION'])
+    else:
+        config['ROTATION'] = 0
     config['AREA_EXTENT'][0] = config['AREA_EXTENT'][0].replace('(', '')
     config['AREA_EXTENT'][3] = config['AREA_EXTENT'][3].replace(')', '')
 
@@ -252,11 +256,11 @@ def _create_area(area_id, area_content):
     return pr.geometry.AreaDefinition(config['REGION'], config['NAME'],
                                       config['PCS_ID'], config['PCS_DEF'],
                                       config['XSIZE'], config['YSIZE'],
-                                      config['AREA_EXTENT'])
+                                      config['ROTATION'], config['AREA_EXTENT'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
-                 area_extent):
+                 rotation, area_extent):
     """Construct AreaDefinition object from arguments
 
     Parameters
@@ -273,6 +277,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         Number of pixel in x dimension
     y_size : int
         Number of pixel in y dimension
+    rotation: float
+        Rotation in degrees to be applied after resampling (negative is cw)
     area_extent : list
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 

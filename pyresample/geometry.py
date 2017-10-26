@@ -653,6 +653,8 @@ class AreaDefinition(BaseDefinition):
         x dimension in number of pixels
     y_size : int
         y dimension in number of pixels
+    rotation: float
+        rotation in degrees to be applied after resampling (negative is cw)
     area_extent : list
         Area extent as a list (LL_x, LL_y, UR_x, UR_y)
     nprocs : int, optional
@@ -676,6 +678,8 @@ class AreaDefinition(BaseDefinition):
         x dimension in number of pixels
     y_size : int
         y dimension in number of pixels
+    rotation: float
+        rotation in degrees to be applied after resampling (negative is cw)
     shape : tuple
         Corresponding array shape as (rows, cols)
     size : int
@@ -710,7 +714,7 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
+    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size, rotation,
                  area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
@@ -723,6 +727,7 @@ class AreaDefinition(BaseDefinition):
         self.x_size = int(x_size)
         self.y_size = int(y_size)
         self.shape = (y_size, x_size)
+        self.rotation = float(rotation)
         if lons is not None:
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
@@ -810,6 +815,7 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
+        fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.name, area_id=self.area_id,
                                   proj_str=proj_str, x_size=self.x_size,
@@ -991,7 +997,7 @@ class AreaDefinition(BaseDefinition):
     def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
         return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
 
-    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
+    def get_proj_coords(self, data_slice=None, cache=False, dtype=None, target_area=False):
         """Get projection coordinates of grid
 
         Parameters
@@ -1006,6 +1012,13 @@ class AreaDefinition(BaseDefinition):
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
         """
+
+        def do_rotation(xspan, yspan, rot_deg=0):
+            rot_rad = np.radians(rot_deg)
+            rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
+                          [-np.sin(rot_rad), np.cos(rot_rad)]])
+            x, y = np.meshgrid(xspan, yspan)
+            return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
 
         def get_val(val, sub_val, max):
             # Get value with substitution and wrapping
@@ -1083,7 +1096,11 @@ class AreaDefinition(BaseDefinition):
         # Calculate coordinates
         target_x = np.arange(col_start, col_start + cols, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
         target_y = np.arange(row_start, row_start + rows, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
-        target_x, target_y = np.meshgrid(target_x, target_y)
+        if self.rotation != 0:
+            res = do_rotation(target_x, target_y, self.rotation)
+            target_x, target_y = res[0, :, :], res[1, :, :]        
+        else:
+            target_x, target_y = np.meshgrid(target_x, target_y)
 
         if is_single_value:
             # Return single values
