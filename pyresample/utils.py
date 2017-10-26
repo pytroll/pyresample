@@ -256,11 +256,11 @@ def _create_area(area_id, area_content):
     return pr.geometry.AreaDefinition(config['REGION'], config['NAME'],
                                       config['PCS_ID'], config['PCS_DEF'],
                                       config['XSIZE'], config['YSIZE'],
-                                      config['ROTATION'], config['AREA_EXTENT'])
+                                      config['AREA_EXTENT'], config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
-                 rotation, area_extent):
+                 area_extent, rotation):
     """Construct AreaDefinition object from arguments
 
     Parameters

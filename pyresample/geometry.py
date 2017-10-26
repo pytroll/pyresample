@@ -714,8 +714,8 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size, rotation,
-                 area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
+    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
+                 area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64, rotation):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
@@ -997,7 +997,7 @@ class AreaDefinition(BaseDefinition):
     def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
         return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
 
-    def get_proj_coords(self, data_slice=None, cache=False, dtype=None, target_area=False):
+    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid
 
         Parameters
