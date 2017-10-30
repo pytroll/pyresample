@@ -1007,7 +1007,7 @@ class AreaDefinition(BaseDefinition):
     def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
         return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
 
-    def get_proj_coords(self, data_slice=None, cache=False, dtype=None, target_area=False):
+    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid
 
         Parameters
