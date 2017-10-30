@@ -264,7 +264,7 @@ def _create_area(area_id, area_content):
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
-                 area_extent, rotation):
+                 area_extent, rotation=0):
     """Construct AreaDefinition object from arguments
 
     Parameters
