@@ -55,6 +55,8 @@ class ImageContainer(object):
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
+        if type(geo_def).__name__ == "DynamicAreaDefinition":
+            geo_def = geo_def.freeze()
         if not isinstance(image_data, (np.ndarray, np.ma.core.MaskedArray)):
             raise TypeError('image_data must be either an ndarray'
                             ' or a masked array')

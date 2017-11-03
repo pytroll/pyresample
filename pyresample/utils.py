@@ -150,10 +150,15 @@ def _parse_yaml_area_file(area_file_name, *regions):
                            params['area_extent']['upper_right_xy'])
         except KeyError:
             area_extent = None
+        try:
+            rotation = params['rotation']
+        except KeyError:
+            rotation = 0
         area = pr.geometry.DynamicAreaDefinition(area_name, description,
                                                  projection, xsize, ysize,
                                                  area_extent,
-                                                 optimize_projection)
+                                                 optimize_projection,
+                                                 rotation)
         try:
             area = area.freeze()
         except (TypeError, AttributeError):
@@ -241,6 +246,10 @@ def _create_area(area_id, area_content):
 
     config['XSIZE'] = int(config['XSIZE'])
     config['YSIZE'] = int(config['YSIZE'])
+    if 'ROTATION' in config.keys():
+        config['ROTATION'] = float(config['ROTATION'])
+    else:
+        config['ROTATION'] = 0
     config['AREA_EXTENT'][0] = config['AREA_EXTENT'][0].replace('(', '')
     config['AREA_EXTENT'][3] = config['AREA_EXTENT'][3].replace(')', '')
 
@@ -248,15 +257,14 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-
     return pr.geometry.AreaDefinition(config['REGION'], config['NAME'],
                                       config['PCS_ID'], config['PCS_DEF'],
                                       config['XSIZE'], config['YSIZE'],
-                                      config['AREA_EXTENT'])
+                                      config['AREA_EXTENT'], config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
-                 area_extent):
+                 area_extent, rotation=0):
     """Construct AreaDefinition object from arguments
 
     Parameters
@@ -273,6 +281,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         Number of pixel in x dimension
     y_size : int
         Number of pixel in y dimension
+    rotation: float
+        Rotation in degrees (negative is cw)
     area_extent : list
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 

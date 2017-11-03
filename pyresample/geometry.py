@@ -1,4 +1,4 @@
-# pyresample, Resampling of remote sensing image data in python
+
 #
 # Copyright (C) 2010-2016
 #
@@ -544,9 +544,9 @@ class DynamicAreaDefinition(object):
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
                  x_size=None, y_size=None, area_extent=None,
-                 optimize_projection=False):
+                 optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
-
+      
         area_id:
           The name of the area.
         description:
@@ -559,6 +559,8 @@ class DynamicAreaDefinition(object):
           The area extent of the area.
         optimize_projection:
           Whether the projection parameters have to be optimized.
+        rotation:
+          Rotation in degrees (negative is cw)
           """
         self.area_id = area_id
         self.description = description
@@ -567,6 +569,7 @@ class DynamicAreaDefinition(object):
         self.y_size = y_size
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
+        self.rotation = rotation
 
     def compute_domain(self, corners, resolution=None, size=None):
         """Compute size and area_extent from corners and [size or resolution]
@@ -597,7 +600,7 @@ class DynamicAreaDefinition(object):
 
     def freeze(self, lonslats=None,
                resolution=None, size=None,
-               proj_info=None):
+               proj_info=None, rotation=None):
         """Create an AreaDefintion from this area with help of some extra info.
 
         lonlats:
@@ -608,6 +611,8 @@ class DynamicAreaDefinition(object):
           the size of the resulting area.
         proj_info:
           complementing parameters to the projection info.
+        rotation:
+          rotation in degrees (negative is cw)
 
         Resolution and Size parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
@@ -632,7 +637,7 @@ class DynamicAreaDefinition(object):
 
         return AreaDefinition(self.area_id, self.description, '',
                               self.proj_dict, self.x_size, self.y_size,
-                              self.area_extent)
+                              self.area_extent, self.rotation)
 
 
 class AreaDefinition(BaseDefinition):
@@ -653,6 +658,8 @@ class AreaDefinition(BaseDefinition):
         x dimension in number of pixels
     y_size : int
         y dimension in number of pixels
+    rotation: float
+        rotation in degrees (negative is cw)
     area_extent : list
         Area extent as a list (LL_x, LL_y, UR_x, UR_y)
     nprocs : int, optional
@@ -661,6 +668,8 @@ class AreaDefinition(BaseDefinition):
         Grid lons
     lats : numpy array, optional
         Grid lats
+    rotation:
+        rotation in degrees (negative is cw)
 
     Attributes
     ----------
@@ -676,6 +685,8 @@ class AreaDefinition(BaseDefinition):
         x dimension in number of pixels
     y_size : int
         y dimension in number of pixels
+    rotation: float
+        rotation in degrees (negative is cw)
     shape : tuple
         Corresponding array shape as (rows, cols)
     size : int
@@ -710,8 +721,8 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent, nprocs=1, lons=None, lats=None, dtype=np.float64):
+    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size, 
+                 area_extent, rotation=None, nprocs=1, lons=None, lats=None, dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
@@ -723,6 +734,10 @@ class AreaDefinition(BaseDefinition):
         self.x_size = int(x_size)
         self.y_size = int(y_size)
         self.shape = (y_size, x_size)
+        try:
+            self.rotation = float(rotation)
+        except TypeError:
+            self.rotation = 0
         if lons is not None:
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
@@ -810,6 +825,7 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
+        fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.name, area_id=self.area_id,
                                   proj_str=proj_str, x_size=self.x_size,
@@ -1007,6 +1023,13 @@ class AreaDefinition(BaseDefinition):
             Grids of area x- and y-coordinates in projection units
         """
 
+        def do_rotation(xspan, yspan, rot_deg=0):
+            rot_rad = np.radians(rot_deg)
+            rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
+                          [-np.sin(rot_rad), np.cos(rot_rad)]])
+            x, y = np.meshgrid(xspan, yspan)
+            return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
+
         def get_val(val, sub_val, max):
             # Get value with substitution and wrapping
             if val is None:
@@ -1083,7 +1106,11 @@ class AreaDefinition(BaseDefinition):
         # Calculate coordinates
         target_x = np.arange(col_start, col_start + cols, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
         target_y = np.arange(row_start, row_start + rows, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
-        target_x, target_y = np.meshgrid(target_x, target_y)
+        if self.rotation != 0:
+            res = do_rotation(target_x, target_y, self.rotation)
+            target_x, target_y = res[0, :, :], res[1, :, :]        
+        else:
+            target_x, target_y = np.meshgrid(target_x, target_y)
 
         if is_single_value:
             # Return single values
