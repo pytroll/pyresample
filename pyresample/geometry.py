@@ -1,4 +1,4 @@
-
+# pyresample, Resampling of remote sensing image data in python
 #
 # Copyright (C) 2010-2016
 #
@@ -32,6 +32,11 @@ from pyproj import Geod, Proj
 
 from pyresample import _spatial_mp, utils
 
+try:
+    from xarray import DataArray
+except ImportError:
+    DataArray = np.ndarray
+
 logger = getLogger(__name__)
 
 
@@ -63,31 +68,37 @@ class BaseDefinition(object):
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
-            lons = np.asanyarray(lons)
-            lats = np.asanyarray(lats)
+            if not isinstance(lons, (np.ndarray, DataArray)):
+                lons = np.asanyarray(lons)
+                lats = np.asanyarray(lats)
             if lons.shape != lats.shape:
                 raise ValueError('lons and lats must have same shape')
 
         self.nprocs = nprocs
 
         # check the latitutes
-        if lats is not None and ((lats.min() < -90. or lats.max() > +90.)):
-            # throw exception
-            raise ValueError(
-                'Some latitudes are outside the [-90.;+90] validity range')
-        else:
-            self.lats = lats
+        if lats is not None:
+            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > 90.):
+                raise ValueError(
+                    'Some latitudes are outside the [-90.;+90] validity range')
+            elif not isinstance(lats, np.ndarray):
+                # assume we have to mask an xarray
+                lats = lats.where((lats >= -90.) & (lats <= 90.))
+        self.lats = lats
 
         # check the longitudes
-        if lons is not None and ((lons.min() < -180. or lons.max() >= +180.)):
-            # issue warning
-            warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
-                          'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
-                          'To avoid this warning next time, use routine utils.wrap_longitudes().')
-            # wrap longitudes to [-180;+180[
-            self.lons = utils.wrap_longitudes(lons)
-        else:
-            self.lons = lons
+        if lons is not None:
+            if isinstance(lons, np.ndarray) and (lons.min() < -180. or lons.max() >= +180.):
+                # issue warning
+                warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
+                              'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
+                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
+                # assume we have to mask an xarray
+                # wrap longitudes to [-180;+180[
+                lons = utils.wrap_longitudes(lons)
+            elif not isinstance(lons, np.ndarray):
+                lons = utils.wrap_longitudes(lons)
+        self.lons = lons
 
         self.ndim = None
         self.cartesian_coords = None
@@ -357,8 +368,9 @@ class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
-        lons = np.asanyarray(lons)
-        lats = np.asanyarray(lats)
+        if not isinstance(lons, (np.ndarray, DataArray)):
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
         super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
@@ -457,8 +469,9 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
-        lons = np.asanyarray(lons)
-        lats = np.asanyarray(lats)
+        if not isinstance(lons, (np.ndarray, DataArray)):
+            lons = np.asanyarray(lons)
+            lats = np.asanyarray(lats)
         super(SwathDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
@@ -469,9 +482,15 @@ class SwathDefinition(CoordinateDefinition):
         """Get the lon lats as a single dask array."""
         import dask.array as da
         lons, lats = self.get_lonlats()
-        lons = da.from_array(lons, chunks=blocksize * lons.ndim)
-        lats = da.from_array(lats, chunks=blocksize * lons.ndim)
-        return da.stack((lons, lats), axis=-1)
+
+        if isinstance(lons.data, da.Array):
+            return lons.data, lats.data
+        else:
+            lons = da.from_array(np.asanyarray(lons),
+                                 chunks=blocksize * lons.ndim)
+            lats = da.from_array(np.asanyarray(lats),
+                                 chunks=blocksize * lats.ndim)
+        return lons, lats
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
@@ -546,7 +565,7 @@ class DynamicAreaDefinition(object):
                  x_size=None, y_size=None, area_extent=None,
                  optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
-      
+
         area_id:
           The name of the area.
         description:
@@ -668,8 +687,6 @@ class AreaDefinition(BaseDefinition):
         Grid lons
     lats : numpy array, optional
         Grid lats
-    rotation:
-        rotation in degrees (negative is cw)
 
     Attributes
     ----------
@@ -721,7 +738,7 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size, 
+    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None, dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
@@ -1104,8 +1121,10 @@ class AreaDefinition(BaseDefinition):
                 cols = 1
 
         # Calculate coordinates
-        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * \
+            self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * - \
+            self.pixel_size_y + self.pixel_upper_left[1]
         if self.rotation != 0:
             res = do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]        
@@ -1196,7 +1215,7 @@ class AreaDefinition(BaseDefinition):
         res = Array(dsk, name, shape=list(self.shape) + [2],
                     chunks=(blocksize, blocksize, 2),
                     dtype=dtype)
-        return res
+        return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
@@ -1390,16 +1409,19 @@ class StackedAreaDefinition(BaseDefinition):
     def get_lonlats_dask(self, blocksize=1000, dtype=None):
         """"Return lon and lat dask arrays of the area."""
         import dask.array as da
-        llonslats = []
+        llons = []
+        llats = []
         for definition in self.defs:
-            lonslats = definition.get_lonlats_dask(blocksize=blocksize,
-                                                   dtype=dtype)
+            lons, lats = definition.get_lonlats_dask(blocksize=blocksize,
+                                                     dtype=dtype)
 
-            llonslats.append(lonslats)
+            llons.append(lons)
+            llats.append(lats)
 
-        self.lonlats = da.concatenate(llonslats, axis=0)
+        self.lons = da.concatenate(llons, axis=0)
+        self.lats = da.concatenate(llats, axis=0)
 
-        return self.lonlats
+        return self.lons, self.lats
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""

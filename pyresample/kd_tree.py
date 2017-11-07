@@ -960,7 +960,7 @@ class XArrayResamplerNN(object):
             raise EmptyResult('No valid data points in input data')
 
         # Build kd-tree on input
-
+        input_coords = input_coords.astype(np.float)
         if kd_tree_name == 'pykdtree':
             resample_kdtree = KDTree(input_coords.compute())
         else:
@@ -1036,9 +1036,7 @@ class XArrayResamplerNN(object):
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
 
-        source_lonlats = self.source_geo_def.get_lonlats_dask()
-        source_lons = source_lonlats[:, :, 0]
-        source_lats = source_lonlats[:, :, 1]
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
         valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
                              (source_lats <= 90) & (source_lats >= -90))
 
@@ -1053,12 +1051,14 @@ class XArrayResamplerNN(object):
             valid_output_index, index_array, distance_array = \
                 _create_empty_info(self.source_geo_def,
                                    self.target_geo_def, self.neighbours)
+            self.valid_input_index = valid_input_index
+            self.valid_output_index = valid_output_index
+            self.index_array = index_array
+            self.distance_array = distance_array
             return (valid_input_index, valid_output_index, index_array,
                     distance_array)
 
-        target_lonlats = self.target_geo_def.get_lonlats_dask()
-        target_lons = target_lonlats[:, :, 0]
-        target_lats = target_lonlats[:, :, 1]
+        target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_index = ((target_lons >= -180) & (target_lons <= 180) &
                               (target_lats <= 90) & (target_lats >= -90))
 
@@ -1074,7 +1074,7 @@ class XArrayResamplerNN(object):
 
         return valid_input_index, valid_output_index, index_array, distance_array
 
-    def get_sample_from_neighbour_info(self, data):
+    def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
 
         # flatten x and y in the source array
 
@@ -1124,9 +1124,9 @@ class XArrayResamplerNN(object):
             new_data = source_data[:, line][self.valid_input_index.ravel()]
             # could this be a bug in dask ? we have to compute to avoid errors
             result = new_data.compute()[new_index_array]
-            result[index_mask.ravel()] = np.nan
+            result[index_mask.ravel()] = fill_value
             #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
-            target_data_line = np.full(target_shape[0], np.nan)
+            target_data_line = np.full(target_shape[0], fill_value)
             target_data_line[valid_targets] = result
             target_lines.append(target_data_line[:, np.newaxis])
 

@@ -510,8 +510,7 @@ def wrap_longitudes(lons):
         Longitudes wrapped into [-180:+180[ validity range
 
     """
-    lons_wrap = (lons + 180) % (360) - 180
-    return lons_wrap.astype(lons.dtype)
+    return (lons + 180) % 360 - 180
 
 
 def recursive_dict_update(d, u):
