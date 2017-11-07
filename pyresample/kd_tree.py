@@ -960,7 +960,7 @@ class XArrayResamplerNN(object):
             raise EmptyResult('No valid data points in input data')
 
         # Build kd-tree on input
-
+        input_coords = input_coords.astype(np.float)
         if kd_tree_name == 'pykdtree':
             resample_kdtree = KDTree(input_coords.compute())
         else:
