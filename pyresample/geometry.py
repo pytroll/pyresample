@@ -79,8 +79,8 @@ class BaseDefinition(object):
         # check the latitutes
         if lats is not None:
             if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > 90.):
-                    raise ValueError(
-                        'Some latitudes are outside the [-90.;+90] validity range')
+                raise ValueError(
+                    'Some latitudes are outside the [-90.;+90] validity range')
             elif not isinstance(lats, np.ndarray):
                 # assume we have to mask an xarray
                 lats = lats.where((lats >= -90.) & (lats <= 90.))
@@ -482,9 +482,15 @@ class SwathDefinition(CoordinateDefinition):
         """Get the lon lats as a single dask array."""
         import dask.array as da
         lons, lats = self.get_lonlats()
-        lons = da.from_array(lons, chunks=blocksize * lons.ndim)
-        lats = da.from_array(lats, chunks=blocksize * lons.ndim)
-        return da.stack((lons, lats), axis=-1)
+
+        if isinstance(lons.data, da.Array):
+            return lons.data, lats.data
+        else:
+            lons = da.from_array(np.asanyarray(lons),
+                                 chunks=blocksize * lons.ndim)
+            lats = da.from_array(np.asanyarray(lats),
+                                 chunks=blocksize * lats.ndim)
+        return lons, lats
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
@@ -1094,8 +1100,10 @@ class AreaDefinition(BaseDefinition):
                 cols = 1
 
         # Calculate coordinates
-        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * \
+            self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * - \
+            self.pixel_size_y + self.pixel_upper_left[1]
         target_x, target_y = np.meshgrid(target_x, target_y)
 
         if is_single_value:
@@ -1182,7 +1190,7 @@ class AreaDefinition(BaseDefinition):
         res = Array(dsk, name, shape=list(self.shape) + [2],
                     chunks=(blocksize, blocksize, 2),
                     dtype=dtype)
-        return res
+        return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
         """Returns lon and lat arrays of area.
@@ -1376,16 +1384,19 @@ class StackedAreaDefinition(BaseDefinition):
     def get_lonlats_dask(self, blocksize=1000, dtype=None):
         """"Return lon and lat dask arrays of the area."""
         import dask.array as da
-        llonslats = []
+        llons = []
+        llats = []
         for definition in self.defs:
-            lonslats = definition.get_lonlats_dask(blocksize=blocksize,
-                                                   dtype=dtype)
+            lons, lats = definition.get_lonlats_dask(blocksize=blocksize,
+                                                     dtype=dtype)
 
-            llonslats.append(lonslats)
+            llons.append(lons)
+            llats.append(lats)
 
-        self.lonlats = da.concatenate(llonslats, axis=0)
+        self.lons = da.concatenate(llons, axis=0)
+        self.lats = da.concatenate(llats, axis=0)
 
-        return self.lonlats
+        return self.lons, self.lats
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""

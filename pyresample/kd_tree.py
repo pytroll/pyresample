@@ -1036,9 +1036,7 @@ class XArrayResamplerNN(object):
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
 
-        source_lonlats = self.source_geo_def.get_lonlats_dask()
-        source_lons = source_lonlats[:, :, 0]
-        source_lats = source_lonlats[:, :, 1]
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
         valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
                              (source_lats <= 90) & (source_lats >= -90))
 
@@ -1060,9 +1058,7 @@ class XArrayResamplerNN(object):
             return (valid_input_index, valid_output_index, index_array,
                     distance_array)
 
-        target_lonlats = self.target_geo_def.get_lonlats_dask()
-        target_lons = target_lonlats[:, :, 0]
-        target_lats = target_lonlats[:, :, 1]
+        target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_index = ((target_lons >= -180) & (target_lons <= 180) &
                               (target_lats <= 90) & (target_lats >= -90))
 
