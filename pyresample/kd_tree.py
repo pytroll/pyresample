@@ -1074,7 +1074,7 @@ class XArrayResamplerNN(object):
 
         return valid_input_index, valid_output_index, index_array, distance_array
 
-    def get_sample_from_neighbour_info(self, data):
+    def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
 
         # flatten x and y in the source array
 
@@ -1124,9 +1124,9 @@ class XArrayResamplerNN(object):
             new_data = source_data[:, line][self.valid_input_index.ravel()]
             # could this be a bug in dask ? we have to compute to avoid errors
             result = new_data.compute()[new_index_array]
-            result[index_mask.ravel()] = np.nan
+            result[index_mask.ravel()] = fill_value
             #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
-            target_data_line = np.full(target_shape[0], np.nan)
+            target_data_line = np.full(target_shape[0], fill_value)
             target_data_line[valid_targets] = result
             target_lines.append(target_data_line[:, np.newaxis])
 
