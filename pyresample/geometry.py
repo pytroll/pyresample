@@ -856,7 +856,7 @@ class AreaDefinition(BaseDefinition):
         """Test for equality"""
 
         try:
-            return ((self.proj_dict == other.proj_dict) and
+            return ((self.proj_str == other.proj_str) and
                     (self.shape == other.shape) and
                     (np.allclose(self.area_extent, other.area_extent)))
         except AttributeError:
@@ -866,6 +866,13 @@ class AreaDefinition(BaseDefinition):
         """Test for equality"""
 
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((
+            self.proj_str,
+            self.shape,
+            self.area_extent
+        ))
 
     def colrow2lonlat(self, cols, rows):
         """
