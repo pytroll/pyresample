@@ -25,6 +25,7 @@
 import warnings
 from collections import OrderedDict
 from logging import getLogger
+import hashlib
 
 import numpy as np
 import yaml
@@ -440,6 +441,19 @@ class GridDefinition(CoordinateDefinition):
         elif lons.ndim != 2:
             raise ValueError('2 dimensional lon lat grid expected')
 
+def get_array_hashable(arr):
+    """Compute a hashable form of the array `arr`.
+
+    Works with numpy arrays, dask.array.Array, and xarray.DataArray.
+    """
+
+    if isinstance(arr, DataArray): # look for precomputed value
+        return arr.attrs.get('hash', get_array_hashable(arr.data))
+    else:
+        try:
+            return hex(hash(arr)) # dask array
+        except TypeError:
+            return arr.view(np.uint8) # np array
 
 class SwathDefinition(CoordinateDefinition):
 
@@ -477,6 +491,22 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+
+        self.hash = None
+
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            hasher = hashlib.sha1()
+            hasher.update(get_array_hashable(self.lons))
+            hasher.update(get_array_hashable(self.lats))
+            try:
+                hasher.update(get_array_hashable(self.lons.mask))
+            except AttributeError:
+                pass
+            self.hash = int(hasher.hexdigest(), 16)
+
+        return self.hash
 
     def get_lonlats_dask(self, blocksize=1000, dtype=None):
         """Get the lon lats as a single dask array."""

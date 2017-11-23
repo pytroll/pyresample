@@ -165,6 +165,134 @@ class Test(unittest.TestCase):
                          "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
                          (lons2_ints.dtype, lons.dtype,))
 
+    def test_area_hash(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+
+        self.assertEqual(hash(area_def), -876362182871747575)
+
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'lat_0': '50.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+
+        self.assertEqual(hash(area_def), -876362182871747575)
+
+        area_def = geometry.AreaDefinition('New area', 'Europe', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'lat_0': '50.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+
+        self.assertEqual(hash(area_def), -876362182871747575)
+
+    def test_get_array_hashable(self):
+        arr = np.array([1.2, 1.3, 1.4, 1.5])
+
+        np.testing.assert_allclose(np.array([ 51,  51,  51,  51,  51,  51, 243,
+                                           63, 205, 204, 204, 204, 204,
+                                           204, 244,  63, 102, 102, 102, 102,
+                                           102, 102, 246,  63,   0,   0,
+                                           0,   0,   0,   0, 248,  63],
+                                           dtype=np.uint8),
+                                    geometry.get_array_hashable(arr))
+
+        try:
+            import xarray as xr
+        except ImportError:
+            pass
+        else:
+            xrarr = xr.DataArray(arr)
+            np.testing.assert_allclose(np.array([ 51,  51,  51,  51,  51,  51, 243,
+                                           63, 205, 204, 204, 204, 204,
+                                           204, 244,  63, 102, 102, 102, 102,
+                                           102, 102, 246,  63,   0,   0,
+                                           0,   0,   0,   0, 248,  63],
+                                           dtype=np.uint8),
+                                    geometry.get_array_hashable(arr))
+
+            xrarr.attrs['hash'] = 42
+            self.assertEqual(geometry.get_array_hashable(xrarr),
+                             xrarr.attrs['hash'])
+
+
+    def test_swath_hash(self):
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+
+        self.assertEqual(hash(swath_def), -5805778658775143981)
+
+        try:
+            import dask.array as da
+        except ImportError:
+            pass
+        else:
+            dalons = da.from_array(lons, chunks=1000)
+            dalats = da.from_array(lats, chunks=1000)
+            swath_def = geometry.SwathDefinition(dalons, dalats)
+
+            self.assertEqual(hash(swath_def), -5805778658775143981)
+
+        try:
+            import xarray as xr
+        except ImportError:
+            pass
+        else:
+            xrlons = xr.DataArray(lons)
+            xrlats = xr.DataArray(lats)
+            swath_def = geometry.SwathDefinition(xrlons, xrlats)
+
+            self.assertEqual(hash(swath_def), 3354207848351824279)
+
+        try:
+            import xarray as xr
+            import dask.array as da
+        except ImportError:
+            pass
+        else:
+            xrlons = xr.DataArray(da.from_array(lons, chunks=1000))
+            xrlats = xr.DataArray(da.from_array(lats, chunks=1000))
+            swath_def = geometry.SwathDefinition(xrlons, xrlats)
+            # dask array hash doesn't depend on the data
+            # self.assertEqual(hash(swath_def), -5805778658775143981)
+
+
+        lons = np.ma.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.ma.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+
+        self.assertEqual(hash(swath_def), -1806310008636835521)
+
+
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                            {'a': '6378144.0',
