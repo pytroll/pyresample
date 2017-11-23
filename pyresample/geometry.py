@@ -447,7 +447,7 @@ def get_array_hashable(arr):
     Works with numpy arrays, dask.array.Array, and xarray.DataArray.
     """
 
-    if isinstance(arr, DataArray): # look for precomputed value
+    if isinstance(arr, DataArray) and np.ndarray != DataArray: # look for precomputed value
         return arr.attrs.get('hash', get_array_hashable(arr.data))
     else:
         try:
