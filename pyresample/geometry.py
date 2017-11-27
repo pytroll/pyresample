@@ -501,7 +501,8 @@ class SwathDefinition(CoordinateDefinition):
             hasher.update(get_array_hashable(self.lons))
             hasher.update(get_array_hashable(self.lats))
             try:
-                hasher.update(get_array_hashable(self.lons.mask))
+                if self.lons.mask is not np.bool_(False):
+                    hasher.update(get_array_hashable(self.lons.mask))
             except AttributeError:
                 pass
             self.hash = int(hasher.hexdigest(), 16)
