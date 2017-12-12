@@ -447,7 +447,7 @@ def get_array_hashable(arr):
     Works with numpy arrays, dask.array.Array, and xarray.DataArray.
     """
 
-    if isinstance(arr, DataArray) and np.ndarray != DataArray: # look for precomputed value
+    if isinstance(arr, DataArray) and np.ndarray is not DataArray: # look for precomputed value
         return arr.attrs.get('hash', get_array_hashable(arr.data))
     else:
         try:
@@ -1165,7 +1165,7 @@ class AreaDefinition(BaseDefinition):
             self.pixel_size_y + self.pixel_upper_left[1]
         if self.rotation != 0:
             res = do_rotation(target_x, target_y, self.rotation)
-            target_x, target_y = res[0, :, :], res[1, :, :]        
+            target_x, target_y = res[0, :, :], res[1, :, :]
         else:
             target_x, target_y = np.meshgrid(target_x, target_y)
 
