@@ -25,6 +25,7 @@
 import warnings
 from collections import OrderedDict
 from logging import getLogger
+import hashlib
 
 import numpy as np
 import yaml
@@ -441,9 +442,23 @@ class GridDefinition(CoordinateDefinition):
             raise ValueError('2 dimensional lon lat grid expected')
 
 
-class SwathDefinition(CoordinateDefinition):
+def get_array_hashable(arr):
+    """Compute a hashable form of the array `arr`.
 
-    """Swath defined by lons and lats
+    Works with numpy arrays, dask.array.Array, and xarray.DataArray.
+    """
+    # look for precomputed value
+    if isinstance(arr, DataArray) and np.ndarray is not DataArray:
+        return arr.attrs.get('hash', get_array_hashable(arr.data))
+    else:
+        try:
+            return arr.name.encode('utf-8')  # dask array
+        except AttributeError:
+            return arr.view(np.uint8)  # np array
+
+
+class SwathDefinition(CoordinateDefinition):
+    """Swath defined by lons and lats.
 
     Parameters
     ----------
@@ -466,6 +481,7 @@ class SwathDefinition(CoordinateDefinition):
         Swath lats
     cartesian_coords : object
         Swath cartesian coordinates
+
     """
 
     def __init__(self, lons, lats, nprocs=1):
@@ -477,6 +493,23 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+
+        self.hash = None
+
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            hasher = hashlib.sha1()
+            hasher.update(get_array_hashable(self.lons))
+            hasher.update(get_array_hashable(self.lats))
+            try:
+                if self.lons.mask is not np.bool_(False):
+                    hasher.update(get_array_hashable(self.lons.mask))
+            except AttributeError:
+                pass
+            self.hash = int(hasher.hexdigest(), 16)
+
+        return self.hash
 
     def get_lonlats_dask(self, blocksize=1000, dtype=None):
         """Get the lon lats as a single dask array."""
@@ -557,9 +590,10 @@ class SwathDefinition(CoordinateDefinition):
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
-    The purpose of this class is to be able to adapt the area extent and size of
-    the area to a given set of longitudes and latitudes, such that e.g. polar
-    satellite granules can be resampled optimaly to a give projection."""
+    The purpose of this class is to be able to adapt the area extent and size
+    of the area to a given set of longitudes and latitudes, such that e.g.
+    polar satellite granules can be resampled optimaly to a give projection.
+    """
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
                  x_size=None, y_size=None, area_extent=None,
@@ -739,7 +773,8 @@ class AreaDefinition(BaseDefinition):
     """
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent, rotation=None, nprocs=1, lons=None, lats=None, dtype=np.float64):
+                 area_extent, rotation=None, nprocs=1, lons=None, lats=None,
+                 dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
@@ -781,8 +816,8 @@ class AreaDefinition(BaseDefinition):
              float(area_extent[3]) -
              float(self.pixel_size_y) / 2)
 
-        # Pixel_offset defines the distance to projection center from origen (UL)
-        # of image in units of pixels.
+        # Pixel_offset defines the distance to projection center from origen
+        # (UL) of image in units of pixels.
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
 
@@ -856,7 +891,7 @@ class AreaDefinition(BaseDefinition):
         """Test for equality"""
 
         try:
-            return ((self.proj_dict == other.proj_dict) and
+            return ((self.proj_str == other.proj_str) and
                     (self.shape == other.shape) and
                     (np.allclose(self.area_extent, other.area_extent)))
         except AttributeError:
@@ -866,6 +901,13 @@ class AreaDefinition(BaseDefinition):
         """Test for equality"""
 
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((
+            self.proj_str,
+            self.shape,
+            self.area_extent
+        ))
 
     def colrow2lonlat(self, cols, rows):
         """
@@ -1127,7 +1169,7 @@ class AreaDefinition(BaseDefinition):
             self.pixel_size_y + self.pixel_upper_left[1]
         if self.rotation != 0:
             res = do_rotation(target_x, target_y, self.rotation)
-            target_x, target_y = res[0, :, :], res[1, :, :]        
+            target_x, target_y = res[0, :, :], res[1, :, :]
         else:
             target_x, target_y = np.meshgrid(target_x, target_y)
 

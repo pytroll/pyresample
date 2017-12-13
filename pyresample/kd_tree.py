@@ -36,7 +36,8 @@ try:
     from xarray import DataArray
     import dask.array as da
 except ImportError:
-    logger.info("XArray or dask unavailable, some functionality missing.")
+    DataArray = None
+    da = None
 
 if sys.version < '3':
     range = xrange
@@ -914,6 +915,8 @@ class XArrayResamplerNN(object):
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
         """
+        if DataArray is None:
+            raise ImportError("Missing 'xarray' and 'dask' dependencies")
 
         self.valid_input_index = None
         self.valid_output_index = None
