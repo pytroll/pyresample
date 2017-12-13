@@ -441,23 +441,24 @@ class GridDefinition(CoordinateDefinition):
         elif lons.ndim != 2:
             raise ValueError('2 dimensional lon lat grid expected')
 
+
 def get_array_hashable(arr):
     """Compute a hashable form of the array `arr`.
 
     Works with numpy arrays, dask.array.Array, and xarray.DataArray.
     """
-
-    if isinstance(arr, DataArray) and np.ndarray is not DataArray: # look for precomputed value
+    # look for precomputed value
+    if isinstance(arr, DataArray) and np.ndarray is not DataArray:
         return arr.attrs.get('hash', get_array_hashable(arr.data))
     else:
         try:
-            return hex(hash(arr)) # dask array
-        except TypeError:
-            return arr.view(np.uint8) # np array
+            return arr.name.encode('utf-8')  # dask array
+        except AttributeError:
+            return arr.view(np.uint8)  # np array
+
 
 class SwathDefinition(CoordinateDefinition):
-
-    """Swath defined by lons and lats
+    """Swath defined by lons and lats.
 
     Parameters
     ----------
@@ -480,6 +481,7 @@ class SwathDefinition(CoordinateDefinition):
         Swath lats
     cartesian_coords : object
         Swath cartesian coordinates
+
     """
 
     def __init__(self, lons, lats, nprocs=1):
@@ -588,9 +590,10 @@ class SwathDefinition(CoordinateDefinition):
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
-    The purpose of this class is to be able to adapt the area extent and size of
-    the area to a given set of longitudes and latitudes, such that e.g. polar
-    satellite granules can be resampled optimaly to a give projection."""
+    The purpose of this class is to be able to adapt the area extent and size
+    of the area to a given set of longitudes and latitudes, such that e.g.
+    polar satellite granules can be resampled optimaly to a give projection.
+    """
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
                  x_size=None, y_size=None, area_extent=None,
@@ -770,7 +773,8 @@ class AreaDefinition(BaseDefinition):
     """
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
-                 area_extent, rotation=None, nprocs=1, lons=None, lats=None, dtype=np.float64):
+                 area_extent, rotation=None, nprocs=1, lons=None, lats=None,
+                 dtype=np.float64):
         if not isinstance(proj_dict, dict):
             raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
                             % type(proj_dict))
@@ -812,8 +816,8 @@ class AreaDefinition(BaseDefinition):
              float(area_extent[3]) -
              float(self.pixel_size_y) / 2)
 
-        # Pixel_offset defines the distance to projection center from origen (UL)
-        # of image in units of pixels.
+        # Pixel_offset defines the distance to projection center from origen
+        # (UL) of image in units of pixels.
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
 

@@ -254,7 +254,7 @@ class Test(unittest.TestCase):
         try:
             import dask.array as da
         except ImportError:
-            pass
+            print("Not testing with dask arrays")
         else:
             dalons = da.from_array(lons, chunks=1000)
             dalats = da.from_array(lats, chunks=1000)
@@ -265,7 +265,7 @@ class Test(unittest.TestCase):
         try:
             import xarray as xr
         except ImportError:
-            pass
+            print("Not testing with xarray")
         else:
             xrlons = xr.DataArray(lons)
             xrlats = xr.DataArray(lats)
@@ -277,7 +277,7 @@ class Test(unittest.TestCase):
             import xarray as xr
             import dask.array as da
         except ImportError:
-            pass
+            print("Not testing with xarrays and dask arrays")
         else:
             xrlons = xr.DataArray(da.from_array(lons, chunks=1000))
             xrlats = xr.DataArray(da.from_array(lats, chunks=1000))
