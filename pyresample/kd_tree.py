@@ -999,7 +999,8 @@ class XArrayResamplerNN(object):
             res_da[voi] = distance_array
             return np.stack([res_ia, res_da], axis=-1)
 
-        token = tokenize(1000)
+        token = tokenize(resample_kdtree, target_lons, target_lats,
+                         valid_output_index, reduce_data)
         name = 'query-' + token
 
         dsk = {}
@@ -1010,18 +1011,18 @@ class XArrayResamplerNN(object):
             for j, hck in enumerate(valid_output_index.chunks[1]):
                 c_slice = (slice(vstart, vstart + vck),
                            slice(hstart, hstart + hck))
-                dsk[(name, i, j, 0)] = (query, target_lons,
-                                        target_lats, valid_output_index,
-                                        c_slice)
+                dsk[(name, i, j, 0)] = (query, target_lons, target_lats,
+                                        valid_output_index, c_slice)
                 hstart += hck
             vstart += vck
 
-        res = Array(dsk, name,
-                    shape=list(valid_output_index.shape) + [2],
-                    chunks=list(valid_output_index.chunks) + [2],
-                    dtype=target_lons.dtype)
-
-        index_array = res[:, :, 0].astype(np.uint)
+        res = Array(
+            dsk,
+            name,
+            shape=list(valid_output_index.shape) + [2],
+            chunks=list(valid_output_index.chunks) + [2],
+            dtype=target_lons.dtype)
+        index_array = res[:, :, 0].astype(np.int)
         distance_array = res[:, :, 1]
         return index_array, distance_array
 
@@ -1033,6 +1034,7 @@ class XArrayResamplerNN(object):
         (valid_input_index, valid_output_index,
         index_array, distance_array) : tuple of numpy arrays
             Neighbour resampling info
+
         """
 
         if self.source_geo_def.size < self.neighbours:
@@ -1040,121 +1042,84 @@ class XArrayResamplerNN(object):
                           (self.neighbours, self.source_geo_def.size))
 
         source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
-        valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
-                             (source_lats <= 90) & (source_lats >= -90))
+        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
+                           (source_lats <= 90) & (source_lats >= -90))
 
         # Create kd-tree
         try:
-            resample_kdtree = self._create_resample_kdtree(source_lons,
-                                                           source_lats,
-                                                           valid_input_index)
+            resample_kdtree = self._create_resample_kdtree(
+                source_lons, source_lats, valid_input_idx)
 
         except EmptyResult:
             # Handle if all input data is reduced away
-            valid_output_index, index_array, distance_array = \
+            valid_output_idx, index_arr, distance_arr = \
                 _create_empty_info(self.source_geo_def,
                                    self.target_geo_def, self.neighbours)
-            self.valid_input_index = valid_input_index
-            self.valid_output_index = valid_output_index
-            self.index_array = index_array
-            self.distance_array = distance_array
-            return (valid_input_index, valid_output_index, index_array,
-                    distance_array)
+            self.valid_input_index = valid_input_idx
+            self.valid_output_index = valid_output_idx
+            self.index_array = index_arr
+            self.distance_array = distance_arr
+            return (valid_input_idx, valid_output_idx, index_arr, distance_arr)
 
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
-        valid_output_index = ((target_lons >= -180) & (target_lons <= 180) &
-                              (target_lats <= 90) & (target_lats >= -90))
+        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
+                            (target_lats <= 90) & (target_lats >= -90))
 
-        index_array, distance_array = self._query_resample_kdtree(resample_kdtree,
-                                                                  target_lons,
-                                                                  target_lats,
-                                                                  valid_output_index)
+        index_arr, distance_arr = self._query_resample_kdtree(
+            resample_kdtree, target_lons, target_lats, valid_output_idx)
+        # Fix invalid values
+        index_arr[index_arr < 0] = -1
+        index_arr[index_arr >= valid_input_idx.sum()] = -1
 
-        self.valid_input_index = valid_input_index
-        self.valid_output_index = valid_output_index
-        self.index_array = index_array
-        self.distance_array = distance_array
+        self.valid_input_index = valid_input_idx
+        self.valid_output_index = valid_output_idx
+        self.index_array = index_arr
+        self.distance_array = distance_arr
 
-        return valid_input_index, valid_output_index, index_array, distance_array
+        return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
+        # FIXME: can be this made into a dask construct ?
+        cols, lines = np.meshgrid(
+            np.arange(data['x'].size), np.arange(data['y'].size))
+        try:
+            self.valid_input_index = self.valid_input_index.compute()
+        except AttributeError:
+            pass
+        vii = self.valid_input_index.squeeze()
+        try:
+            self.index_array = self.index_array.compute()
+        except AttributeError:
+            pass
 
-        # flatten x and y in the source array
+        # ia contains reduced (valid) indices of the source array, and has the
+        # shape of the destination array
+        ia = self.index_array
+        rlines = lines[vii][ia]
+        rcols = cols[vii][ia]
 
-        output_shape = []
-        chunks = []
-        source_dims = data.dims
-        for dim in source_dims:
-            if dim == 'y':
-                output_shape += [self.target_geo_def.y_size]
-                chunks += [1000]
-            elif dim == 'x':
-                output_shape += [self.target_geo_def.x_size]
-                chunks += [1000]
-            else:
-                output_shape += [data[dim].size]
-                chunks += [10]
-
-        new_dims = []
-        xy_dims = []
-        source_shape = [1, 1]
-        chunks = [1, 1]
+        slices = []
+        mask_slices = []
+        mask_2d_added = False
         for i, dim in enumerate(data.dims):
-            if dim not in ['x', 'y']:
-                new_dims.append(dim)
-                source_shape[1] *= data.shape[i]
-                chunks[1] *= 10
+            if dim == 'y':
+                slices.append(rlines)
+                if not mask_2d_added:
+                    mask_slices.append(ia == -1)
+                    mask_2d_added = True
+            elif dim == 'x':
+                slices.append(rcols)
+                if not mask_2d_added:
+                    mask_slices.append(ia == -1)
+                    mask_2d_added = True
             else:
-                xy_dims.append(dim)
-                source_shape[0] *= data.shape[i]
-                chunks[0] *= 1000
+                slices.append(slice(None))
+                mask_slices.append(slice(None))
 
-        new_dims = xy_dims + new_dims
-
-        target_shape = [np.prod(self.target_geo_def.shape), source_shape[1]]
-        source_data = data.transpose(*new_dims).data.reshape(source_shape)
-
-        input_size = self.valid_input_index.sum()
-        index_mask = (self.index_array == input_size)
-        new_index_array = da.where(
-            index_mask, 0, self.index_array).ravel().astype(int).compute()
-        valid_targets = self.valid_output_index.ravel()
-
-        target_lines = []
-
-        for line in range(target_shape[1]):
-            #target_data_line = target_data[:, line]
-            new_data = source_data[:, line][self.valid_input_index.ravel()]
-            # could this be a bug in dask ? we have to compute to avoid errors
-            result = new_data.compute()[new_index_array]
-            result[index_mask.ravel()] = fill_value
-            #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
-            target_data_line = np.full(target_shape[0], fill_value)
-            target_data_line[valid_targets] = result
-            target_lines.append(target_data_line[:, np.newaxis])
-
-        target_data = np.hstack(target_lines)
-
-        new_shape = []
-        for dim in new_dims:
-            if dim == 'x':
-                new_shape.append(self.target_geo_def.x_size)
-            elif dim == 'y':
-                new_shape.append(self.target_geo_def.y_size)
-            else:
-                new_shape.append(data[dim].size)
-
-        output_arr = DataArray(da.from_array(target_data.reshape(new_shape), chunks=[1000] * len(new_shape)),
-                               dims=new_dims)
-        for dim in source_dims:
-            if dim == 'x':
-                output_arr['x'] = self.target_geo_def.proj_x_coords
-            elif dim == 'y':
-                output_arr['y'] = self.target_geo_def.proj_y_coords
-            else:
-                output_arr[dim] = data[dim]
-
-        return output_arr.transpose(*source_dims)
+        res = data.values[slices]
+        res[mask_slices] = fill_value
+        res = DataArray(da.from_array(res, chunks=1000), dims=data.dims)
+        return res
 
 
 def _get_fill_mask_value(data_dtype):
