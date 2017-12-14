@@ -726,7 +726,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         if is_multi_channel:
             weight_funcs = weight_funcs * 2
         else:
-            weight_funcs = (weight_funcs, ) * 2
+            weight_funcs = (weight_funcs,) * 2
 
     # Handle request for masking intead of using fill values
     use_masked_fill_value = False
