@@ -6,7 +6,7 @@
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Handles reprojection of geolocated data. Several types of resampling are
 supported"""
 
@@ -67,9 +66,15 @@ def which_kdtree():
     return kd_tree_name
 
 
-def resample_nearest(source_geo_def, data, target_geo_def,
-                     radius_of_influence, epsilon=0,
-                     fill_value=0, reduce_data=True, nprocs=1, segments=None):
+def resample_nearest(source_geo_def,
+                     data,
+                     target_geo_def,
+                     radius_of_influence,
+                     epsilon=0,
+                     fill_value=0,
+                     reduce_data=True,
+                     nprocs=1,
+                     segments=None):
     """Resamples data using kd-tree nearest neighbour approach
 
     Parameters
@@ -395,8 +400,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     return valid_input_index, valid_output_index, index_array, distance_array
 
 
-def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
-                           radius_of_influence, nprocs=1):
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence,
+                           nprocs=1):
     """Find indices of reduced inputput data"""
 
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
@@ -433,7 +441,7 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
                     source_lons, source_lats,
                     radius_of_influence)
 
-    if(isinstance(valid_input_index, np.ma.core.MaskedArray)):
+    if (isinstance(valid_input_index, np.ma.core.MaskedArray)):
         # Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
 
@@ -471,9 +479,11 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
     return valid_output_index
 
 
-def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=1):
+def _create_resample_kdtree(source_lons,
+                            source_lats,
+                            valid_input_index,
+                            nprocs=1):
     """Set up kd tree on input"""
-
     """
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise TypeError('source_geo_def must be of geometry type')
@@ -492,8 +502,8 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
     else:
         cartesian = _spatial_mp.Cartesian()
 
-    input_coords = cartesian.transform_lonlats(
-        source_lons_valid, source_lats_valid)
+    input_coords = cartesian.transform_lonlats(source_lons_valid,
+                                               source_lats_valid)
 
     if input_coords.size == 0:
         raise EmptyResult('No valid data points in input data')
@@ -502,17 +512,22 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
     if kd_tree_name == 'pykdtree':
         resample_kdtree = KDTree(input_coords)
     elif nprocs > 1:
-        resample_kdtree = _spatial_mp.cKDTree_MP(input_coords,
-                                                 nprocs=nprocs)
+        resample_kdtree = _spatial_mp.cKDTree_MP(input_coords, nprocs=nprocs)
     else:
         resample_kdtree = sp.cKDTree(input_coords)
 
     return resample_kdtree
 
 
-def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
-                           radius_of_influence, data_slice,
-                           neighbours=8, epsilon=0, reduce_data=True, nprocs=1):
+def _query_resample_kdtree(resample_kdtree,
+                           source_geo_def,
+                           target_geo_def,
+                           radius_of_influence,
+                           data_slice,
+                           neighbours=8,
+                           epsilon=0,
+                           reduce_data=True,
+                           nprocs=1):
     """Query kd-tree on slice of target coordinates"""
 
     # Check validity of input
@@ -546,8 +561,8 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
     target_lons_valid = target_lons.ravel()[valid_output_index]
     target_lats_valid = target_lats.ravel()[valid_output_index]
 
-    output_coords = cartesian.transform_lonlats(
-        target_lons_valid, target_lats_valid)
+    output_coords = cartesian.transform_lonlats(target_lons_valid,
+                                                target_lats_valid)
 
     # pykdtree requires query points have same data type as kdtree.
     try:
@@ -711,7 +726,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         if is_multi_channel:
             weight_funcs = weight_funcs * 2
         else:
-            weight_funcs = (weight_funcs,) * 2
+            weight_funcs = (weight_funcs, ) * 2
 
     # Handle request for masking intead of using fill values
     use_masked_fill_value = False
@@ -888,10 +903,15 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
 
 class XArrayResamplerNN(object):
-
-    def __init__(self, source_geo_def, target_geo_def, radius_of_influence,
-                 neighbours=8, epsilon=0, reduce_data=True,
-                 nprocs=1, segments=None):
+    def __init__(self,
+                 source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 neighbours=8,
+                 epsilon=0,
+                 reduce_data=True,
+                 nprocs=1,
+                 segments=None):
         """
         Parameters
         ----------
@@ -971,8 +991,11 @@ class XArrayResamplerNN(object):
 
         return resample_kdtree
 
-    def _query_resample_kdtree(self, resample_kdtree, target_lons,
-                               target_lats, valid_output_index,
+    def _query_resample_kdtree(self,
+                               resample_kdtree,
+                               target_lons,
+                               target_lats,
+                               valid_output_index,
                                reduce_data=True):
         """Query kd-tree on slice of target coordinates"""
         from dask.base import tokenize
