@@ -60,8 +60,7 @@ class EmptyResult(Exception):
 
 
 def which_kdtree():
-    """Returns the name of the kdtree used for resampling
-    """
+    """Return the name of the kdtree used for resampling."""
 
     return kd_tree_name
 
@@ -75,7 +74,7 @@ def resample_nearest(source_geo_def,
                      reduce_data=True,
                      nprocs=1,
                      segments=None):
-    """Resamples data using kd-tree nearest neighbour approach
+    """Resample data using kd-tree nearest neighbour approach.
 
     Parameters
     ----------
@@ -108,8 +107,8 @@ def resample_nearest(source_geo_def,
     -------
     data : numpy array
         Source data resampled to target geometry
-    """
 
+    """
     return _resample(source_geo_def, data, target_geo_def, 'nn',
                      radius_of_influence, neighbours=1,
                      epsilon=epsilon, fill_value=fill_value,
@@ -118,8 +117,9 @@ def resample_nearest(source_geo_def,
 
 def resample_gauss(source_geo_def, data, target_geo_def,
                    radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
-    """Resamples data using kd-tree gaussian weighting neighbour approach
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None,
+                   with_uncert=False):
+    """Resample data using kd-tree gaussian weighting neighbour approach.
 
     Parameters
     ----------
@@ -160,10 +160,13 @@ def resample_gauss(source_geo_def, data, target_geo_def,
     -------
     data : numpy array (default)
         Source data resampled to target geometry
-    data, stddev, counts : numpy array, numpy array, numpy array (if with_uncert == True)
+    data, stddev, counts : numpy array, numpy array, numpy array
+                          (if with_uncert == True)
         Source data resampled to target geometry.
-        Weighted standard devaition for all pixels having more than one source value
-        Counts of number of source values used in weighting per pixel
+        Weighted standard devaition for all pixels having more than one source
+        value.
+        Counts of number of source values used in weighting per pixel.
+
     """
 
     def gauss(sigma):
@@ -1050,7 +1053,7 @@ class XArrayResamplerNN(object):
         return index_array, distance_array
 
     def get_neighbour_info(self):
-        """Returns neighbour info
+        """Returns neighbour info.
 
         Returns
         -------
@@ -1101,23 +1104,75 @@ class XArrayResamplerNN(object):
 
         return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
-    def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
-        # FIXME: can be this made into a dask construct ?
-        cols, lines = np.meshgrid(
-            np.arange(data['x'].size), np.arange(data['y'].size))
+    def get_sample_from_neighbour_info(self, data, fill_value=np.nan,
+                                       chunksize=1000):
+        """Get the samples from previously computed neighbours info."""
+        from dask.base import tokenize
+        from dask.array import Array
+        target_shape = self.index_array.shape
+        vchunks = range(0, target_shape[0], chunksize)
+        hchunks = range(0, target_shape[1], chunksize)
+
+        token = tokenize(str(self), data, fill_value)
+        name = 'gsfni-' + token
+
+        def get_dim(i, j, dim):
+            if dim == 'x':
+                return j
+            elif dim == 'y':
+                return i
+            else:
+                return 0
+
+        dsk = {tuple([name] + [get_dim(i, j, dim) for dim in data.dims]):
+                  (self._get_sample_from_neighbour_info,
+                   data, fill_value,
+                   slice(vcs, min(vcs + chunksize, target_shape[0])),
+                   slice(hcs, min(hcs + chunksize, target_shape[1])))
+               for i, vcs in enumerate(vchunks)
+               for j, hcs in enumerate(hchunks)
+              }
+
         try:
             self.valid_input_index = self.valid_input_index.compute()
         except AttributeError:
             pass
+
+        final_shape = []
+        for dim in data.dims:
+            if dim == 'x':
+                final_shape.append(target_shape[1])
+            elif dim == 'y':
+                final_shape.append(target_shape[0])
+            else:
+                final_shape.append(data[dim].size)
+
+        res = Array(dsk, name, shape=final_shape,
+                    chunks=chunksize,
+                    dtype=data.dtype)
+        # TODO: Add coordinates
+        res = DataArray(res, dims=data.dims)
+        return res
+
+
+    def _get_sample_from_neighbour_info(self, data,
+                                        fill_value=np.nan,
+                                        vslice=slice(None),
+                                        hslice=slice(None)):
+        """Get the samples from previously computed neighbours info."""
+        # import ipdb
+        # ipdb.set_trace()
+        # FIXME: can be this made into a dask construct ?
+        cols, lines = np.meshgrid(
+            np.arange(data['x'].size), np.arange(data['y'].size))
         vii = self.valid_input_index.squeeze()
         try:
-            self.index_array = self.index_array.compute()
+            ia = self.index_array[vslice, hslice].compute()
         except AttributeError:
             pass
 
         # ia contains reduced (valid) indices of the source array, and has the
         # shape of the destination array
-        ia = self.index_array
         rlines = lines[vii][ia]
         rcols = cols[vii][ia]
 
@@ -1141,12 +1196,11 @@ class XArrayResamplerNN(object):
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=1000), dims=data.dims)
         return res
 
 
 def _get_fill_mask_value(data_dtype):
-    """Returns the maximum value of dtype"""
+    """Return the maximum value of dtype."""
 
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
@@ -1159,8 +1213,7 @@ def _get_fill_mask_value(data_dtype):
 
 
 def _remask_data(data, is_to_be_masked=True):
-    """Interprets half the array as mask for the other half"""
-
+    """Interprets half the array as mask for the other half."""
     channels = data.shape[-1]
     if is_to_be_masked:
         mask = data[..., (channels // 2):]
