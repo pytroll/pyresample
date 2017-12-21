@@ -236,7 +236,7 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
                 # First iteration
                 result = next_result
             else:
-                result = np.row_stack((result, next_result))
+                result = np.ma.row_stack((result, next_result))
 
         return result
     else:
