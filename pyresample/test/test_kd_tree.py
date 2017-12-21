@@ -16,26 +16,30 @@ else:
 
 class Test(unittest.TestCase):
 
-    area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                       {'a': '6378144.0',
-                                        'b': '6356759.0',
-                                        'lat_0': '50.00',
-                                        'lat_ts': '50.00',
-                                        'lon_0': '8.00',
-                                        'proj': 'stere'},
-                                       800,
-                                       800,
-                                       [-1370912.72,
-                                           -909968.64000000001,
-                                           1029087.28,
-                                           1490031.3600000001])
+    @classmethod
+    def setUpClass(cls):
+        cls.area_def = geometry.AreaDefinition('areaD',
+                                               'Europe (3km, HRV, VTC)',
+                                               'areaD',
+                                               {'a': '6378144.0',
+                                                'b': '6356759.0',
+                                                'lat_0': '50.00',
+                                                'lat_ts': '50.00',
+                                                'lon_0': '8.00',
+                                                'proj': 'stere'},
+                                               800,
+                                               800,
+                                               [-1370912.72,
+                                                   -909968.64000000001,
+                                                   1029087.28,
+                                                   1490031.3600000001])
 
-    tdata = numpy.array([1, 2, 3])
-    tlons = numpy.array([11.280789, 12.649354, 12.080402])
-    tlats = numpy.array([56.011037, 55.629675, 55.641535])
-    tswath = geometry.SwathDefinition(lons=tlons, lats=tlats)
-    tgrid = geometry.CoordinateDefinition(lons=numpy.array([12.562036]),
-                                          lats=numpy.array([55.715613]))
+        cls.tdata = numpy.array([1, 2, 3])
+        cls.tlons = numpy.array([11.280789, 12.649354, 12.080402])
+        cls.tlats = numpy.array([56.011037, 55.629675, 55.641535])
+        cls.tswath = geometry.SwathDefinition(lons=cls.tlons, lats=cls.tlats)
+        cls.tgrid = geometry.CoordinateDefinition(
+            lons=numpy.array([12.562036]), lats=numpy.array([55.715613]))
 
     def test_nearest_base(self):
         res = kd_tree.resample_nearest(self.tswath,
@@ -122,6 +126,25 @@ class Test(unittest.TestCase):
         expected = 15874591.0
         self.assertEqual(cross_sum, expected,
                          msg='Swath resampling nearest failed')
+
+    def test_nearest_masked_swath_target(self):
+        """Test that a masked array works as a target."""
+        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        mask = numpy.ones_like(lons, dtype=numpy.bool)
+        mask[::2, ::2] = False
+        swath_def = geometry.SwathDefinition(
+            lons=numpy.ma.masked_array(lons, mask=mask), # numpy.ones_like(lons, dtype=numpy.bool)),
+            lats=numpy.ma.masked_array(lats, mask=False)
+        )
+        res = kd_tree.resample_nearest(swath_def, data.ravel(),
+                                       swath_def, 50000, segments=3)
+        cross_sum = res.sum()
+        # expected = 12716  # if masks aren't respected
+        expected = 12000
+        self.assertEqual(cross_sum, expected,
+                         msg='Swath resampling masked nearest failed')
 
     def test_nearest_1d(self):
         data = numpy.fromfunction(lambda x, y: x * y, (800, 800))
