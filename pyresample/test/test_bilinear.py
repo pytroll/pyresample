@@ -9,52 +9,59 @@ from pyresample import geometry, utils, kd_tree
 
 class Test(unittest.TestCase):
 
-    pts_irregular = (np.array([[-1., 1.], ]),
-                     np.array([[1., 2.], ]),
-                     np.array([[-2., -1.], ]),
-                     np.array([[2., -4.], ]))
-    pts_vert_parallel = (np.array([[-1., 1.], ]),
-                         np.array([[1., 2.], ]),
-                         np.array([[-1., -1.], ]),
-                         np.array([[1., -2.], ]))
-    pts_both_parallel = (np.array([[-1., 1.], ]),
-                         np.array([[1., 1.], ]),
-                         np.array([[-1., -1.], ]),
-                         np.array([[1., -1.], ]))
+    @classmethod
+    def setUpClass(cls):
+        cls.pts_irregular = (np.array([[-1., 1.], ]),
+                             np.array([[1., 2.], ]),
+                             np.array([[-2., -1.], ]),
+                             np.array([[2., -4.], ]))
+        cls.pts_vert_parallel = (np.array([[-1., 1.], ]),
+                                 np.array([[1., 2.], ]),
+                                 np.array([[-1., -1.], ]),
+                                 np.array([[1., -2.], ]))
+        cls.pts_both_parallel = (np.array([[-1., 1.], ]),
+                                 np.array([[1., 1.], ]),
+                                 np.array([[-1., -1.], ]),
+                                 np.array([[1., -1.], ]))
 
-    # Area definition with four pixels
-    target_def = geometry.AreaDefinition('areaD',
-                                         'Europe (3km, HRV, VTC)',
-                                         'areaD',
-                                         {'a': '6378144.0',
-                                          'b': '6356759.0',
-                                          'lat_0': '50.00',
-                                          'lat_ts': '50.00',
-                                          'lon_0': '8.00',
-                                          'proj': 'stere'},
-                                         4, 4,
-                                         [-1370912.72,
-                                          -909968.64000000001,
-                                          1029087.28,
-                                          1490031.3600000001])
+        # Area definition with four pixels
+        target_def = geometry.AreaDefinition('areaD',
+                                             'Europe (3km, HRV, VTC)',
+                                             'areaD',
+                                             {'a': '6378144.0',
+                                              'b': '6356759.0',
+                                              'lat_0': '50.00',
+                                              'lat_ts': '50.00',
+                                              'lon_0': '8.00',
+                                              'proj': 'stere'},
+                                             4, 4,
+                                             [-1370912.72,
+                                              -909968.64000000001,
+                                              1029087.28,
+                                              1490031.3600000001])
 
-    # Input data around the target pixel at 0.63388324, 55.08234642,
-    in_shape = (100, 100)
-    data1 = np.ones((in_shape[0], in_shape[1]))
-    data2 = 2. * data1
-    lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
-                             np.linspace(50., 60., num=in_shape[1]))
-    swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        # Input data around the target pixel at 0.63388324, 55.08234642,
+        in_shape = (100, 100)
+        cls.data1 = np.ones((in_shape[0], in_shape[1]))
+        cls.data2 = 2. * cls.data1
+        lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
+                                 np.linspace(50., 60., num=in_shape[1]))
+        cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
-    radius = 50e3
-    neighbours = 32
-    input_idxs, output_idxs, idx_ref, dists = \
-        kd_tree.get_neighbour_info(swath_def, target_def,
-                                   radius, neighbours=neighbours,
-                                   nprocs=1)
-    input_size = input_idxs.sum()
-    index_mask = (idx_ref == input_size)
-    idx_ref = np.where(index_mask, 0, idx_ref)
+        radius = 50e3
+        cls.neighbours = 32
+        input_idxs, output_idxs, idx_ref, dists = \
+            kd_tree.get_neighbour_info(cls.swath_def, target_def,
+                                       radius, neighbours=cls.neighbours,
+                                       nprocs=1)
+        input_size = input_idxs.sum()
+        index_mask = (idx_ref == input_size)
+        idx_ref = np.where(index_mask, 0, idx_ref)
+
+        cls.input_idxs = input_idxs
+        cls.target_def = target_def
+        cls.idx_ref = idx_ref
+
 
     def test_calc_abc(self):
         # No np.nan inputs
