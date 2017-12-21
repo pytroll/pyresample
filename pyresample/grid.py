@@ -236,7 +236,11 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
                 # First iteration
                 result = next_result
             else:
-                result = np.row_stack((result, next_result))
+                if isinstance(next_result, np.ma.core.MaskedArray):
+                    stack = np.ma.row_stack
+                else:
+                    stack = np.row_stack
+                result = stack((result, next_result))
 
         return result
     else:
