@@ -467,6 +467,8 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
 
     # Combine reduced and legal values
     valid_output_index = (valid_output_index & valid_out)
+    if isinstance(valid_output_index, np.ma.MaskedArray):
+        valid_output_index = valid_output_index.filled(False)
 
     return valid_output_index
 
