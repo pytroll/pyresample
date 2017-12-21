@@ -2,6 +2,92 @@ Changelog
 =========
 
 
+v1.7.1 (2017-12-21)
+-------------------
+- update changelog. [davidh-ssec]
+- Bump version: 1.7.0 → 1.7.1. [davidh-ssec]
+- Merge pull request #88 from pytroll/bugfix-masked-target. [David
+  Hoese]
+
+  Fix kdtree when target lons/lats are masked arrays
+- Add test for masked valid_output_index fix. [davidh-ssec]
+- Move bilinear test setup to a special method. [davidh-ssec]
+- Fix kdtree when target lons/lats are masked arrays. [davidh-ssec]
+- Merge pull request #89 from Funkensieper/fix-masks-in-get-resampled-
+  image. [David Hoese]
+
+  Fix masks in grid.get_resampled_image
+- Add test for mask preservation. [Stephan Finkensieper]
+- Distinguish between ndarrays and masked arrays. [Stephan Finkensieper]
+- Fix masks in grid.get_resampled_image. [Stephan Finkensieper]
+
+  Use numpy.ma version of row_stack to prevent loosing the mask of
+  large images (rows > cut_off)
+
+- Add github templates. [Martin Raspaud]
+- Merge pull request #84 from pytroll/feature-add-hash. [Martin Raspaud]
+
+  Add hash method to AreaDefinition and SwathDefinition
+- Fix dask array not being hashable in py3.x. [Martin Raspaud]
+- Use identity checking instead of equality. [Martin Raspaud]
+- Do not has the mask if it's empty. [Martin Raspaud]
+- Bugfix geometry test. [Martin Raspaud]
+- Replace hash value checks with type checks. [Martin Raspaud]
+
+  The value can be different depending on the python version apparently.
+- Add dask and xarray for testing on travis. [Martin Raspaud]
+- Fix case of missing xarray dependency in the tests. [Martin Raspaud]
+- Add __hash__ for SwathDefinitions, along with some unittests. [Martin
+  Raspaud]
+- Add hash method to AreaDefinition. [davidh-ssec]
+
+  Removes annoying log message when xarray/dask is missing
+
+- Merge branch 'feature-xarray-improvements' into develop. [Martin
+  Raspaud]
+
+  Conflicts:
+  	pyresample/geometry.py
+
+- Type coords to np.float. [Martin Raspaud]
+- Add support for fill_value in nn search. [Martin Raspaud]
+- Change the get_lonlats_dask interface to return a tuple. [Martin
+  Raspaud]
+- Fix masking bad latitude values. [davidh-ssec]
+- Fix consistency with numpy arrays. [davidh-ssec]
+- Allow xarrays internally in geometry objects. [davidh-ssec]
+- Merge remote-tracking branch 'origin/develop' into develop. [davidh-
+  ssec]
+
+  # Conflicts:
+  #	.travis.yml
+
+- Fix proj4 dict to string against recent changes to str to dict funcs.
+  [davidh-ssec]
+- Change appveyor python 3.5 environments to python 3.6. [davidh-ssec]
+
+  Also removes slack notification webhook which is no longer the
+  recommended way to post to slack from appveyor.
+
+- Exclude buggy version of matplotlib in travis tests. [davidh-ssec]
+- Fix proj4 dict conversion test. [davidh-ssec]
+- Use more descriptive variable names. [davidh-ssec]
+- Add proj4_dict_to_str utility function. [davidh-ssec]
+
+  Includes fixes for dynamic area definitions proj_id and
+  small performance improvement for projection coordinate generation
+
+- Merge pull request #83 from loreclem/master. [Martin Raspaud]
+
+  Added ROTATION in an area definition
+- Bugfix in get_area_def. [lorenzo clementi]
+- Unit test for rotation. [lorenzo clementi]
+- Removed unused parameter. [lorenzo clementi]
+- Now working also with yaml. [lorenzo clementi]
+- Code improvements. [lorenzo clementi]
+- Added ROTATION in an area definition. [lorenzo clementi]
+
+
 v1.7.0 (2017-10-13)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -526,6 +612,7 @@ v1.2.2 (2016-06-21)
   Without this, the compilation of the ewa extension crashes.
 
 
+
 v1.2.1 (2016-06-21)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -681,9 +768,11 @@ v1.2.0 (2016-06-17)
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
+
 - Adapt to newest pykdtree version. [Martin Raspaud]
 
   The kdtree object's attribute `data_pts` has been renamed to `data`.
+
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
 
 
@@ -695,6 +784,7 @@ v1.1.6 (2016-02-25)
 
   A previous commit was looking for a 'data_pts' attribute in the kdtree
   object, which is available in pykdtree, but not scipy.
+
 - Merge pull request #32 from mitkin/master. [Martin Raspaud]
 
   [tests] Skip deprecation warnings in test_gauss_multi_uncert
@@ -706,6 +796,7 @@ v1.1.6 (2016-02-25)
   The latest matplotlib (1.5) doesn't support python 2.6 and 3.3. This patch
   chooses the right matplotlib version to install depending on the python
   version at hand.
+
 - Skip deprecation warnings. [Mikhail Itkin]
 
   Catch the rest of the warnings. Check if there is only one, and
@@ -747,6 +838,7 @@ Other
 - Bugfix to address a numpy DeprecationWarning. [Martin Raspaud]
 
   Numpy won't take non-integer indices soon, so make index an int.
+
 - Merge branch 'release-1.1.3' [Martin Raspaud]
 - Merge branch 'licence-lgpl' into pre-master. [Martin Raspaud]
 - Switch to lgplv3, and bump up version number. [Martin Raspaud]
@@ -968,7 +1060,7 @@ Other
 - Set svn:mime-type. [StorPipfugl]
 - Corrected doc errors. [StorPipfugl]
 - Removed dist dir. [StorPipfugl]
-- No commit message. [StorPipfugl]
+-  [StorPipfugl]
 - Updated documentation. New release. [StorPipfugl]
 - Started updating docstrings. [StorPipfugl]
 - Restructured API. [StorPipfugl]
@@ -981,9 +1073,8 @@ Other
 - Removed unneeded function. [StorPipfugl]
 - Mime types set. [StorPipfugl]
 - Mime types set. [StorPipfugl]
-- No commit message. [StorPipfugl]
+-  [StorPipfugl]
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 - moved to Google Code. [StorPipfugl]
-
 
 
