@@ -216,13 +216,24 @@ class Test(unittest.TestCase):
 
     def test_get_array_hashable(self):
         arr = np.array([1.2, 1.3, 1.4, 1.5])
+        if sys.byteorder == 'little':
+            # arr.view(np.uint8)
+            reference = np.array([ 51,  51,  51,  51,  51,  51, 243,
+                                   63, 205, 204, 204, 204, 204,
+                                   204, 244,  63, 102, 102, 102, 102,
+                                   102, 102, 246,  63,   0,   0,
+                                   0,   0,   0,   0, 248,  63],
+                                   dtype=np.uint8)
+        else:
+            # on le machines use arr.byteswap().view(np.uint8)
+            reference = np.array([ 63, 243,  51,  51,  51,  51,  51,
+                                   51,  63, 244, 204, 204, 204,
+                                   204, 204, 205,  63, 246, 102, 102,
+                                   102, 102, 102, 102,  63, 248,
+                                   0,   0,   0,   0,   0,   0],
+                                   dtype=np.uint8)
 
-        np.testing.assert_allclose(np.array([ 51,  51,  51,  51,  51,  51, 243,
-                                           63, 205, 204, 204, 204, 204,
-                                           204, 244,  63, 102, 102, 102, 102,
-                                           102, 102, 246,  63,   0,   0,
-                                           0,   0,   0,   0, 248,  63],
-                                           dtype=np.uint8),
+        np.testing.assert_allclose(reference,
                                     geometry.get_array_hashable(arr))
 
         try:
@@ -231,13 +242,8 @@ class Test(unittest.TestCase):
             pass
         else:
             xrarr = xr.DataArray(arr)
-            np.testing.assert_allclose(np.array([ 51,  51,  51,  51,  51,  51, 243,
-                                           63, 205, 204, 204, 204, 204,
-                                           204, 244,  63, 102, 102, 102, 102,
-                                           102, 102, 246,  63,   0,   0,
-                                           0,   0,   0,   0, 248,  63],
-                                           dtype=np.uint8),
-                                    geometry.get_array_hashable(arr))
+            np.testing.assert_allclose(reference,
+                                       geometry.get_array_hashable(arr))
 
             xrarr.attrs['hash'] = 42
             self.assertEqual(geometry.get_array_hashable(xrarr),
