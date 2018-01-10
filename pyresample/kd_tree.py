@@ -1095,24 +1095,38 @@ class XArrayResamplerNN(object):
         slices = []
         mask_slices = []
         mask_2d_added = False
+        coords = {}
+        try:
+            coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask(5000)
+        except AttributeError:
+            coord_x, coord_y = None, None
+
         for i, dim in enumerate(data.dims):
             if dim == 'y':
                 slices.append(rlines)
                 if not mask_2d_added:
                     mask_slices.append(ia == -1)
                     mask_2d_added = True
+                if coord_y is not None:
+                    coords[dim] = coord_y
             elif dim == 'x':
                 slices.append(rcols)
                 if not mask_2d_added:
                     mask_slices.append(ia == -1)
                     mask_2d_added = True
+                if coord_x is not None:
+                    coords[dim] = coord_x
             else:
                 slices.append(slice(None))
                 mask_slices.append(slice(None))
+                try:
+                    coords[dim] = data.coords[dim]
+                except KeyError:
+                    pass
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims)
+        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims, coords=coords)
         return res
 
 
