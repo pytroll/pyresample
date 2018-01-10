@@ -997,60 +997,32 @@ class XArrayResamplerNN(object):
                                target_lats,
                                valid_output_index,
                                reduce_data=True):
-        """Query kd-tree on slice of target coordinates"""
-        from dask.base import tokenize
-        from dask.array import Array
-
-        def query(target_lons, target_lats, valid_output_index, c_slice):
-            voi = valid_output_index[c_slice].compute()
+        """Query kd-tree on slice of target coordinates."""
+        def query_no_distance(target_lons, target_lats, valid_output_index):
+            voi = valid_output_index
             shape = voi.shape
             voir = voi.ravel()
-            target_lons_valid = target_lons[c_slice].ravel()[voir]
-            target_lats_valid = target_lats[c_slice].ravel()[voir]
+            target_lons_valid = target_lons.ravel()[voir]
+            target_lats_valid = target_lats.ravel()[voir]
 
             coords = self.transform_lonlats(target_lons_valid,
                                             target_lats_valid)
-            distance_array, index_array = np.stack(
-                resample_kdtree.query(coords.compute(),
-                                      k=self.neighbours,
-                                      eps=self.epsilon,
-                                      distance_upper_bound=self.radius_of_influence))
+            distance_array, index_array = resample_kdtree.query(
+                coords.compute(),
+                k=self.neighbours,
+                eps=self.epsilon,
+                distance_upper_bound=self.radius_of_influence)
 
-            res_ia = np.full(shape, fill_value=np.nan, dtype=np.float)
-            res_da = np.full(shape, fill_value=np.nan, dtype=np.float)
+            res_ia = np.full(shape, fill_value=-1, dtype=np.int)
             res_ia[voi] = index_array
-            res_da[voi] = distance_array
-            return np.stack([res_ia, res_da], axis=-1)
+            return res_ia
 
-        token = tokenize(resample_kdtree, target_lons, target_lats,
-                         valid_output_index, reduce_data)
-        name = 'query-' + token
-
-        dsk = {}
-        vstart = 0
-
-        for i, vck in enumerate(valid_output_index.chunks[0]):
-            hstart = 0
-            for j, hck in enumerate(valid_output_index.chunks[1]):
-                c_slice = (slice(vstart, vstart + vck),
-                           slice(hstart, hstart + hck))
-                dsk[(name, i, j, 0)] = (query, target_lons, target_lats,
-                                        valid_output_index, c_slice)
-                hstart += hck
-            vstart += vck
-
-        res = Array(
-            dsk,
-            name,
-            shape=list(valid_output_index.shape) + [2],
-            chunks=list(valid_output_index.chunks) + [2],
-            dtype=target_lons.dtype)
-        index_array = res[:, :, 0].astype(np.int)
-        distance_array = res[:, :, 1]
-        return index_array, distance_array
+        res = da.map_blocks(query_no_distance, target_lons, target_lats,
+                            valid_output_index, dtype=np.int)
+        return res, None
 
     def get_neighbour_info(self):
-        """Returns neighbour info
+        """Return neighbour info.
 
         Returns
         -------
@@ -1059,7 +1031,6 @@ class XArrayResamplerNN(object):
             Neighbour resampling info
 
         """
-
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
@@ -1141,13 +1112,12 @@ class XArrayResamplerNN(object):
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=1000), dims=data.dims)
+        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims)
         return res
 
 
 def _get_fill_mask_value(data_dtype):
     """Returns the maximum value of dtype"""
-
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
     elif issubclass(data_dtype.type, np.integer):
