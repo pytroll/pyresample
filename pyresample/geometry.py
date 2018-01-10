@@ -453,7 +453,7 @@ def get_array_hashable(arr):
         try:
             return arr.name.encode('utf-8')  # dask array
         except AttributeError:
-            return arr.view(np.uint8)  # np array
+            return np.asarray(arr).view(np.uint8)  # np array
 
 
 class SwathDefinition(CoordinateDefinition):
