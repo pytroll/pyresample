@@ -1037,7 +1037,7 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
-    def get_proj_vectors_dask(self, blocksize, dtype=None):
+    def get_proj_vectors_dask(self, blocksize=5000, dtype=None):
         import dask.array as da
         if dtype is None:
             dtype = self.dtype
@@ -1048,7 +1048,7 @@ class AreaDefinition(BaseDefinition):
             self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
-    def get_proj_coords_dask(self, blocksize, dtype=None):
+    def get_proj_coords_dask(self, blocksize=5000, dtype=None):
         # TODO: Add rotation
         import dask.array as da
         target_x, target_y = self.get_proj_vectors_dask(blocksize, dtype)
