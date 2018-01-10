@@ -511,7 +511,7 @@ class SwathDefinition(CoordinateDefinition):
 
         return self.hash
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+    def get_lonlats_dask(self, blocksize=5000, dtype=None):
         """Get the lon lats as a single dask array."""
         import dask.array as da
         lons, lats = self.get_lonlats()
@@ -1422,7 +1422,7 @@ class StackedAreaDefinition(BaseDefinition):
 
         return self.lons, self.lats
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+    def get_lonlats_dask(self, blocksize=5000, dtype=None):
         """"Return lon and lat dask arrays of the area."""
         import dask.array as da
         llons = []

@@ -1113,7 +1113,7 @@ class XArrayResamplerNN(object):
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=1000), dims=data.dims)
+        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims)
         return res
 
 
