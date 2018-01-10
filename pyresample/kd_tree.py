@@ -1022,7 +1022,7 @@ class XArrayResamplerNN(object):
         return res, None
 
     def get_neighbour_info(self):
-        """Returns neighbour info
+        """Return neighbour info.
 
         Returns
         -------
@@ -1031,7 +1031,6 @@ class XArrayResamplerNN(object):
             Neighbour resampling info
 
         """
-
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
@@ -1119,7 +1118,6 @@ class XArrayResamplerNN(object):
 
 def _get_fill_mask_value(data_dtype):
     """Returns the maximum value of dtype"""
-
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
     elif issubclass(data_dtype.type, np.integer):
