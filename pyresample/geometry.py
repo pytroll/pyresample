@@ -1038,33 +1038,22 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
-    def get_proj_coords_dask(self, blocksize, dtype=None):
-        from dask.base import tokenize
-        from dask.array import Array
+    def get_proj_vectors_dask(self, blocksize, dtype=None):
+        import dask.array as da
         if dtype is None:
             dtype = self.dtype
 
-        vchunks = range(0, self.y_size, blocksize)
-        hchunks = range(0, self.x_size, blocksize)
+        target_x = da.arange(self.x_size, chunks=blocksize, dtype=dtype) * \
+            self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = da.arange(self.y_size, chunks=blocksize, dtype=dtype) * - \
+            self.pixel_size_y + self.pixel_upper_left[1]
+        return target_x, target_y
 
-        token = tokenize(blocksize)
-        name = 'get_proj_coords-' + token
-
-        dskx = {(name, i, j, 0): (self.get_proj_coords_array,
-                                  (slice(vcs, min(vcs + blocksize, self.y_size)),
-                                   slice(hcs, min(hcs + blocksize, self.x_size))),
-                                  False, dtype)
-                for i, vcs in enumerate(vchunks)
-                for j, hcs in enumerate(hchunks)
-                }
-
-        res = Array(dskx, name, shape=list(self.shape) + [2],
-                    chunks=(blocksize, blocksize, 2),
-                    dtype=dtype)
-        return res
-
-    def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
-        return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
+    def get_proj_coords_dask(self, blocksize, dtype=None):
+        # TODO: Add rotation
+        import dask.array as da
+        target_x, target_y = self.get_proj_vectors_dask(blocksize, dtype)
+        return da.meshgrid(target_x, target_y)
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
         """Get projection coordinates of grid
@@ -1226,37 +1215,22 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
-        from dask.base import tokenize
-        from dask.array import Array
-        import pyproj
+    def get_lonlats_dask(self, blocksize=5000, dtype=None):
+        from dask.array import map_blocks
 
         dtype = dtype or self.dtype
-        proj_coords = self.get_proj_coords_dask(blocksize, dtype)
-        target_x, target_y = proj_coords[:, :, 0], proj_coords[:, :, 1]
+        target_x, target_y = self.get_proj_coords_dask(blocksize, dtype)
 
-        target_proj = pyproj.Proj(**self.proj_dict)
+        target_proj = Proj(**self.proj_dict)
 
         def invproj(data1, data2):
-            return np.dstack(target_proj(data1.compute(), data2.compute(), inverse=True))
-        token = tokenize(str(self), blocksize, dtype)
-        name = 'get_lonlats-' + token
+            return np.dstack(target_proj(data1, data2, inverse=True))
 
-        vchunks = range(0, self.y_size, blocksize)
-        hchunks = range(0, self.x_size, blocksize)
+        res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
+                                                              target_x.chunks[1],
+                                                              2),
+                         new_axis=[2])
 
-        dsk = {(name, i, j, 0): (invproj,
-                                 target_x[slice(vcs, min(vcs + blocksize, self.y_size)),
-                                          slice(hcs, min(hcs + blocksize, self.x_size))],
-                                 target_y[slice(vcs, min(vcs + blocksize, self.y_size)),
-                                          slice(hcs, min(hcs + blocksize, self.x_size))])
-               for i, vcs in enumerate(vchunks)
-               for j, hcs in enumerate(hchunks)
-               }
-
-        res = Array(dsk, name, shape=list(self.shape) + [2],
-                    chunks=(blocksize, blocksize, 2),
-                    dtype=dtype)
         return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
