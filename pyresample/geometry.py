@@ -89,7 +89,7 @@ class BaseDefinition(object):
 
         # check the longitudes
         if lons is not None:
-            if isinstance(lons, np.ndarray) and (lons.min() < -180. or lons.max() >= +180.):
+            if (lons.min() < -180. or lons.max() >= +180.):
                 # issue warning
                 warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
                               'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
@@ -97,8 +97,7 @@ class BaseDefinition(object):
                 # assume we have to mask an xarray
                 # wrap longitudes to [-180;+180[
                 lons = utils.wrap_longitudes(lons)
-            elif not isinstance(lons, np.ndarray):
-                lons = utils.wrap_longitudes(lons)
+
         self.lons = lons
 
         self.ndim = None
