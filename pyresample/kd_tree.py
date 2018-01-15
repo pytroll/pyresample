@@ -118,8 +118,9 @@ def resample_nearest(source_geo_def,
 
 def resample_gauss(source_geo_def, data, target_geo_def,
                    radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
-    """Resamples data using kd-tree gaussian weighting neighbour approach
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None,
+                   with_uncert=False):
+    """Resamples data using kd-tree gaussian weighting neighbour approach.
 
     Parameters
     ----------
@@ -164,8 +165,8 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         Source data resampled to target geometry.
         Weighted standard devaition for all pixels having more than one source value
         Counts of number of source values used in weighting per pixel
-    """
 
+    """
     def gauss(sigma):
         # Return gauss function object
         return lambda r: np.exp(-r ** 2 / float(sigma) ** 2)

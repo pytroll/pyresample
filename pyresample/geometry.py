@@ -1055,7 +1055,7 @@ class AreaDefinition(BaseDefinition):
         return da.meshgrid(target_x, target_y)
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
-        """Get projection coordinates of grid
+        """Get projection coordinates of grid.
 
         Parameters
         ----------
@@ -1068,12 +1068,12 @@ class AreaDefinition(BaseDefinition):
         -------
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
-        """
 
+        """
         def do_rotation(xspan, yspan, rot_deg=0):
             rot_rad = np.radians(rot_deg)
             rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
-                          [-np.sin(rot_rad), np.cos(rot_rad)]])
+                                [-np.sin(rot_rad), np.cos(rot_rad)]])
             x, y = np.meshgrid(xspan, yspan)
             return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
 
