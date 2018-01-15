@@ -6,7 +6,7 @@
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Handles reprojection of geolocated data. Several types of resampling are
 supported"""
 
@@ -67,9 +66,15 @@ def which_kdtree():
     return kd_tree_name
 
 
-def resample_nearest(source_geo_def, data, target_geo_def,
-                     radius_of_influence, epsilon=0,
-                     fill_value=0, reduce_data=True, nprocs=1, segments=None):
+def resample_nearest(source_geo_def,
+                     data,
+                     target_geo_def,
+                     radius_of_influence,
+                     epsilon=0,
+                     fill_value=0,
+                     reduce_data=True,
+                     nprocs=1,
+                     segments=None):
     """Resamples data using kd-tree nearest neighbour approach
 
     Parameters
@@ -113,8 +118,9 @@ def resample_nearest(source_geo_def, data, target_geo_def,
 
 def resample_gauss(source_geo_def, data, target_geo_def,
                    radius_of_influence, sigmas, neighbours=8, epsilon=0,
-                   fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
-    """Resamples data using kd-tree gaussian weighting neighbour approach
+                   fill_value=0, reduce_data=True, nprocs=1, segments=None,
+                   with_uncert=False):
+    """Resamples data using kd-tree gaussian weighting neighbour approach.
 
     Parameters
     ----------
@@ -159,8 +165,8 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         Source data resampled to target geometry.
         Weighted standard devaition for all pixels having more than one source value
         Counts of number of source values used in weighting per pixel
-    """
 
+    """
     def gauss(sigma):
         # Return gauss function object
         return lambda r: np.exp(-r ** 2 / float(sigma) ** 2)
@@ -395,8 +401,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     return valid_input_index, valid_output_index, index_array, distance_array
 
 
-def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
-                           radius_of_influence, nprocs=1):
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence,
+                           nprocs=1):
     """Find indices of reduced inputput data"""
 
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
@@ -433,7 +442,7 @@ def _get_valid_input_index(source_geo_def, target_geo_def, reduce_data,
                     source_lons, source_lats,
                     radius_of_influence)
 
-    if(isinstance(valid_input_index, np.ma.core.MaskedArray)):
+    if (isinstance(valid_input_index, np.ma.core.MaskedArray)):
         # Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
 
@@ -473,9 +482,11 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
     return valid_output_index
 
 
-def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=1):
+def _create_resample_kdtree(source_lons,
+                            source_lats,
+                            valid_input_index,
+                            nprocs=1):
     """Set up kd tree on input"""
-
     """
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise TypeError('source_geo_def must be of geometry type')
@@ -494,8 +505,8 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
     else:
         cartesian = _spatial_mp.Cartesian()
 
-    input_coords = cartesian.transform_lonlats(
-        source_lons_valid, source_lats_valid)
+    input_coords = cartesian.transform_lonlats(source_lons_valid,
+                                               source_lats_valid)
 
     if input_coords.size == 0:
         raise EmptyResult('No valid data points in input data')
@@ -504,17 +515,22 @@ def _create_resample_kdtree(source_lons, source_lats, valid_input_index, nprocs=
     if kd_tree_name == 'pykdtree':
         resample_kdtree = KDTree(input_coords)
     elif nprocs > 1:
-        resample_kdtree = _spatial_mp.cKDTree_MP(input_coords,
-                                                 nprocs=nprocs)
+        resample_kdtree = _spatial_mp.cKDTree_MP(input_coords, nprocs=nprocs)
     else:
         resample_kdtree = sp.cKDTree(input_coords)
 
     return resample_kdtree
 
 
-def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
-                           radius_of_influence, data_slice,
-                           neighbours=8, epsilon=0, reduce_data=True, nprocs=1):
+def _query_resample_kdtree(resample_kdtree,
+                           source_geo_def,
+                           target_geo_def,
+                           radius_of_influence,
+                           data_slice,
+                           neighbours=8,
+                           epsilon=0,
+                           reduce_data=True,
+                           nprocs=1):
     """Query kd-tree on slice of target coordinates"""
 
     # Check validity of input
@@ -548,8 +564,8 @@ def _query_resample_kdtree(resample_kdtree, source_geo_def, target_geo_def,
     target_lons_valid = target_lons.ravel()[valid_output_index]
     target_lats_valid = target_lats.ravel()[valid_output_index]
 
-    output_coords = cartesian.transform_lonlats(
-        target_lons_valid, target_lats_valid)
+    output_coords = cartesian.transform_lonlats(target_lons_valid,
+                                                target_lats_valid)
 
     # pykdtree requires query points have same data type as kdtree.
     try:
@@ -890,10 +906,15 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
 
 class XArrayResamplerNN(object):
-
-    def __init__(self, source_geo_def, target_geo_def, radius_of_influence,
-                 neighbours=8, epsilon=0, reduce_data=True,
-                 nprocs=1, segments=None):
+    def __init__(self,
+                 source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 neighbours=8,
+                 epsilon=0,
+                 reduce_data=True,
+                 nprocs=1,
+                 segments=None):
         """
         Parameters
         ----------
@@ -973,195 +994,147 @@ class XArrayResamplerNN(object):
 
         return resample_kdtree
 
-    def _query_resample_kdtree(self, resample_kdtree, target_lons,
-                               target_lats, valid_output_index,
+    def _query_resample_kdtree(self,
+                               resample_kdtree,
+                               target_lons,
+                               target_lats,
+                               valid_output_index,
                                reduce_data=True):
-        """Query kd-tree on slice of target coordinates"""
-        from dask.base import tokenize
-        from dask.array import Array
-
-        def query(target_lons, target_lats, valid_output_index, c_slice):
-            voi = valid_output_index[c_slice].compute()
+        """Query kd-tree on slice of target coordinates."""
+        def query_no_distance(target_lons, target_lats, valid_output_index):
+            voi = valid_output_index
             shape = voi.shape
             voir = voi.ravel()
-            target_lons_valid = target_lons[c_slice].ravel()[voir]
-            target_lats_valid = target_lats[c_slice].ravel()[voir]
+            target_lons_valid = target_lons.ravel()[voir]
+            target_lats_valid = target_lats.ravel()[voir]
 
             coords = self.transform_lonlats(target_lons_valid,
                                             target_lats_valid)
-            distance_array, index_array = np.stack(
-                resample_kdtree.query(coords.compute(),
-                                      k=self.neighbours,
-                                      eps=self.epsilon,
-                                      distance_upper_bound=self.radius_of_influence))
+            distance_array, index_array = resample_kdtree.query(
+                coords.compute(),
+                k=self.neighbours,
+                eps=self.epsilon,
+                distance_upper_bound=self.radius_of_influence)
 
-            res_ia = np.full(shape, fill_value=np.nan, dtype=np.float)
-            res_da = np.full(shape, fill_value=np.nan, dtype=np.float)
+            res_ia = np.full(shape, fill_value=-1, dtype=np.int)
             res_ia[voi] = index_array
-            res_da[voi] = distance_array
-            return np.stack([res_ia, res_da], axis=-1)
+            return res_ia
 
-        token = tokenize(1000)
-        name = 'query-' + token
-
-        dsk = {}
-        vstart = 0
-
-        for i, vck in enumerate(valid_output_index.chunks[0]):
-            hstart = 0
-            for j, hck in enumerate(valid_output_index.chunks[1]):
-                c_slice = (slice(vstart, vstart + vck),
-                           slice(hstart, hstart + hck))
-                dsk[(name, i, j, 0)] = (query, target_lons,
-                                        target_lats, valid_output_index,
-                                        c_slice)
-                hstart += hck
-            vstart += vck
-
-        res = Array(dsk, name,
-                    shape=list(valid_output_index.shape) + [2],
-                    chunks=list(valid_output_index.chunks) + [2],
-                    dtype=target_lons.dtype)
-
-        index_array = res[:, :, 0].astype(np.uint)
-        distance_array = res[:, :, 1]
-        return index_array, distance_array
+        res = da.map_blocks(query_no_distance, target_lons, target_lats,
+                            valid_output_index, dtype=np.int)
+        return res, None
 
     def get_neighbour_info(self):
-        """Returns neighbour info
+        """Return neighbour info.
 
         Returns
         -------
         (valid_input_index, valid_output_index,
         index_array, distance_array) : tuple of numpy arrays
             Neighbour resampling info
-        """
 
+        """
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
 
         source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
-        valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
-                             (source_lats <= 90) & (source_lats >= -90))
+        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
+                           (source_lats <= 90) & (source_lats >= -90))
 
         # Create kd-tree
         try:
-            resample_kdtree = self._create_resample_kdtree(source_lons,
-                                                           source_lats,
-                                                           valid_input_index)
+            resample_kdtree = self._create_resample_kdtree(
+                source_lons, source_lats, valid_input_idx)
 
         except EmptyResult:
             # Handle if all input data is reduced away
-            valid_output_index, index_array, distance_array = \
+            valid_output_idx, index_arr, distance_arr = \
                 _create_empty_info(self.source_geo_def,
                                    self.target_geo_def, self.neighbours)
-            self.valid_input_index = valid_input_index
-            self.valid_output_index = valid_output_index
-            self.index_array = index_array
-            self.distance_array = distance_array
-            return (valid_input_index, valid_output_index, index_array,
-                    distance_array)
+            self.valid_input_index = valid_input_idx
+            self.valid_output_index = valid_output_idx
+            self.index_array = index_arr
+            self.distance_array = distance_arr
+            return (valid_input_idx, valid_output_idx, index_arr, distance_arr)
 
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
-        valid_output_index = ((target_lons >= -180) & (target_lons <= 180) &
-                              (target_lats <= 90) & (target_lats >= -90))
+        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
+                            (target_lats <= 90) & (target_lats >= -90))
 
-        index_array, distance_array = self._query_resample_kdtree(resample_kdtree,
-                                                                  target_lons,
-                                                                  target_lats,
-                                                                  valid_output_index)
+        index_arr, distance_arr = self._query_resample_kdtree(
+            resample_kdtree, target_lons, target_lats, valid_output_idx)
+        # Fix invalid values
+        index_arr[index_arr < 0] = -1
+        index_arr[index_arr >= valid_input_idx.sum()] = -1
 
-        self.valid_input_index = valid_input_index
-        self.valid_output_index = valid_output_index
-        self.index_array = index_array
-        self.distance_array = distance_array
+        self.valid_input_index = valid_input_idx
+        self.valid_output_index = valid_output_idx
+        self.index_array = index_arr
+        self.distance_array = distance_arr
 
-        return valid_input_index, valid_output_index, index_array, distance_array
+        return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
+        # FIXME: can be this made into a dask construct ?
+        cols, lines = np.meshgrid(
+            np.arange(data['x'].size), np.arange(data['y'].size))
+        try:
+            self.valid_input_index = self.valid_input_index.compute()
+        except AttributeError:
+            pass
+        vii = self.valid_input_index.squeeze()
+        try:
+            self.index_array = self.index_array.compute()
+        except AttributeError:
+            pass
 
-        # flatten x and y in the source array
+        # ia contains reduced (valid) indices of the source array, and has the
+        # shape of the destination array
+        ia = self.index_array
+        rlines = lines[vii][ia]
+        rcols = cols[vii][ia]
 
-        output_shape = []
-        chunks = []
-        source_dims = data.dims
-        for dim in source_dims:
-            if dim == 'y':
-                output_shape += [self.target_geo_def.y_size]
-                chunks += [1000]
-            elif dim == 'x':
-                output_shape += [self.target_geo_def.x_size]
-                chunks += [1000]
-            else:
-                output_shape += [data[dim].size]
-                chunks += [10]
+        slices = []
+        mask_slices = []
+        mask_2d_added = False
+        coords = {}
+        try:
+            coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
+        except AttributeError:
+            coord_x, coord_y = None, None
 
-        new_dims = []
-        xy_dims = []
-        source_shape = [1, 1]
-        chunks = [1, 1]
         for i, dim in enumerate(data.dims):
-            if dim not in ['x', 'y']:
-                new_dims.append(dim)
-                source_shape[1] *= data.shape[i]
-                chunks[1] *= 10
+            if dim == 'y':
+                slices.append(rlines)
+                if not mask_2d_added:
+                    mask_slices.append(ia == -1)
+                    mask_2d_added = True
+                if coord_y is not None:
+                    coords[dim] = coord_y
+            elif dim == 'x':
+                slices.append(rcols)
+                if not mask_2d_added:
+                    mask_slices.append(ia == -1)
+                    mask_2d_added = True
+                if coord_x is not None:
+                    coords[dim] = coord_x
             else:
-                xy_dims.append(dim)
-                source_shape[0] *= data.shape[i]
-                chunks[0] *= 1000
+                slices.append(slice(None))
+                mask_slices.append(slice(None))
+                try:
+                    coords[dim] = data.coords[dim]
+                except KeyError:
+                    pass
 
-        new_dims = xy_dims + new_dims
-
-        target_shape = [np.prod(self.target_geo_def.shape), source_shape[1]]
-        source_data = data.transpose(*new_dims).data.reshape(source_shape)
-
-        input_size = self.valid_input_index.sum()
-        index_mask = (self.index_array == input_size)
-        new_index_array = da.where(
-            index_mask, 0, self.index_array).ravel().astype(int).compute()
-        valid_targets = self.valid_output_index.ravel()
-
-        target_lines = []
-
-        for line in range(target_shape[1]):
-            #target_data_line = target_data[:, line]
-            new_data = source_data[:, line][self.valid_input_index.ravel()]
-            # could this be a bug in dask ? we have to compute to avoid errors
-            result = new_data.compute()[new_index_array]
-            result[index_mask.ravel()] = fill_value
-            #target_data_line = da.full(target_shape[0], np.nan, chunks=1000000)
-            target_data_line = np.full(target_shape[0], fill_value)
-            target_data_line[valid_targets] = result
-            target_lines.append(target_data_line[:, np.newaxis])
-
-        target_data = np.hstack(target_lines)
-
-        new_shape = []
-        for dim in new_dims:
-            if dim == 'x':
-                new_shape.append(self.target_geo_def.x_size)
-            elif dim == 'y':
-                new_shape.append(self.target_geo_def.y_size)
-            else:
-                new_shape.append(data[dim].size)
-
-        output_arr = DataArray(da.from_array(target_data.reshape(new_shape), chunks=[1000] * len(new_shape)),
-                               dims=new_dims)
-        for dim in source_dims:
-            if dim == 'x':
-                output_arr['x'] = self.target_geo_def.proj_x_coords
-            elif dim == 'y':
-                output_arr['y'] = self.target_geo_def.proj_y_coords
-            else:
-                output_arr[dim] = data[dim]
-
-        return output_arr.transpose(*source_dims)
+        res = data.values[slices]
+        res[mask_slices] = fill_value
+        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims, coords=coords)
+        return res
 
 
 def _get_fill_mask_value(data_dtype):
     """Returns the maximum value of dtype"""
-
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
     elif issubclass(data_dtype.type, np.integer):

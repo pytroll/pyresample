@@ -459,11 +459,11 @@ def proj4_radius_parameters(proj4_dict):
         new_info = proj4_str_to_dict(proj4_dict)
     else:
         new_info = proj4_dict.copy()
-      
+
     # load information from PROJ.4 about the ellipsis if possible
-    
+
     from pyproj import Geod
-    
+
     if 'ellps' in new_info:
         geod = Geod(**new_info)
         new_info['a'] = geod.a
@@ -481,7 +481,7 @@ def proj4_radius_parameters(proj4_dict):
             geod = Geod(**{'ellps': 'WGS84'})
             new_info['a'] = geod.a
             new_info['b'] = geod.b
-	     
+
     return float(new_info['a']), float(new_info['b'])
 
 
