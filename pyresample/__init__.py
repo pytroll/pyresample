@@ -17,7 +17,7 @@
 
 import os
 
-CHUNK_SIZE = os.getenv('PYTROLL_CHUNKSIZE', 4096)
+CHUNK_SIZE = os.getenv('PYTROLL_CHUNK_SIZE', 4096)
 
 from pyresample.version import __version__
 # Backwards compatibility
