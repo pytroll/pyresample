@@ -12,7 +12,8 @@ Resampling can be done using nearest neighbour method, Guassian weighting, weigh
     and latitude coordinates to improve performance. Longitude arrays are
     expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
     This also applies to all geometry definitions that are provided longitude
-    and latitude arrays on initialization.
+    and latitude arrays on initialization. Use
+    `pyresample.utils.check_and_wrap` to preprocess your arrays.
 
 pyresample.image
 ----------------

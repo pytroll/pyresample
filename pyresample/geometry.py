@@ -67,9 +67,11 @@ class BaseDefinition(object):
 
     .. versionchanged:: 1.8.0
 
-        `BaseDefinition` no longer checks the validity of the provided longitude
-        and latitude coordinates to improve performance. Longitude arrays are
-        expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
+        `BaseDefinition` no longer checks the validity of the provided
+        longitude and latitude coordinates to improve performance. Longitude
+        arrays are expected to be between -180 and 180 degrees, latitude -90
+        to 90 degrees. Use `pyresample.utils.check_and_wrap` to preprocess
+        your arrays.
 
     """
 
@@ -118,26 +120,24 @@ class BaseDefinition(object):
         return not self.__eq__(other)
 
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
-        """Retrieves area_extent for a subdomain
-        rows    are counted from upper left to lower left
-        columns are counted from upper left to upper right
+        """Calculate extent for a subdomain of this area
 
-        :Parameters:
-        row_LR : int
-            row of the lower right pixel
-        col_LR : int
-            col of the lower right pixel
-        row_UL : int
-            row of the upper left pixel
-        col_UL : int
-            col of the upper left pixel
+        Rows are counted from upper left to lower left and columns are
+        counted from upper left to upper right.
 
-        :Returns:
-        area_extent : list
-            Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+        Args:
+            row_LR (int): row of the lower right pixel
+            col_LR (int): col of the lower right pixel
+            row_UL (int): row of the upper left pixel
+            col_UL (int): col of the upper left pixel
 
-        :Author:
-        Ulrich Hamann
+        Returns:
+            area_extent (tuple):
+                Area extent (LL_x, LL_y, UR_x, UR_y) of the subset
+
+        Author:
+            Ulrich Hamann
+
         """
 
         (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
@@ -147,7 +147,7 @@ class BaseDefinition(object):
         c = c + 0.5 * self.pixel_size_x
         d = d + 0.5 * self.pixel_size_y
 
-        return (a, b, c, d)
+        return a, b, c, d
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
@@ -952,37 +952,42 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_xy_from_proj_coords(xm_, ym_)
 
-    def get_xy_from_proj_coords(self, xm_, ym_):
-        """Retrieve closest x and y coordinates (column, row indices) for a
-        location specified with projection coordinates (xm_,ym_) in meters.
-        A ValueError is raised, if the return point is outside the area domain. If
-        xm_,ym_ is a tuple of sequences of projection coordinates, a tuple of
-        masked arrays are returned.
+    def get_xy_from_proj_coords(self, xm, ym):
+        """Find closest grid cell index for a specified projection coordinate.
 
-        :Input:
-        xm_ : point or sequence (list or array) of x-coordinates in m (map projection)
-        ym_ : point or sequence (list or array) of y-coordinates in m (map projection)
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
+        of masked arrays are returned.
 
-        :Returns:
-        (x, y) : tuple of integer points/arrays
+        Args:
+            xm (list or array): point or sequence of x-coordinates in
+                                 meters (map projection)
+            ym (list or array): point or sequence of y-coordinates in
+                                 meters (map projection)
+
+        Returns:
+            x, y : column and row grid cell indexes as 2 scalars or arrays
+
+        Raises:
+            ValueError: if the return point is outside the area domain
+
         """
 
-        if isinstance(xm_, list):
-            xm_ = np.array(xm_)
-        if isinstance(ym_, list):
-            ym_ = np.array(ym_)
+        if isinstance(xm, list):
+            xm = np.array(xm)
+        if isinstance(ym, list):
+            ym = np.array(ym)
 
-        if ((isinstance(xm_, np.ndarray) and
-             not isinstance(ym_, np.ndarray)) or
-            (not isinstance(xm_, np.ndarray) and
-             isinstance(ym_, np.ndarray))):
-            raise ValueError("Both projection coordinates xm_ and ym_ needs to be of " +
+        if ((isinstance(xm, np.ndarray) and
+             not isinstance(ym, np.ndarray)) or
+            (not isinstance(xm, np.ndarray) and
+             isinstance(ym, np.ndarray))):
+            raise ValueError("Both projection coordinates xm and ym needs to be of " +
                              "the same type and have the same dimensions!")
 
-        if isinstance(xm_, np.ndarray) and isinstance(ym_, np.ndarray):
-            if xm_.shape != ym_.shape:
+        if isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray):
+            if xm.shape != ym.shape:
                 raise ValueError(
-                    "projection coordinates xm_ and ym_ is not of the same shape!")
+                    "projection coordinates xm and ym is not of the same shape!")
 
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
@@ -992,8 +997,8 @@ class AreaDefinition(BaseDefinition):
         yscale = (self.area_extent[1] -
                   self.area_extent[3]) / float(self.y_size)
 
-        x__ = (xm_ - upl_x) / xscale
-        y__ = (ym_ - upl_y) / yscale
+        x__ = (xm - upl_x) / xscale
+        y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             mask = (((x__ < 0) | (x__ > self.x_size)) |

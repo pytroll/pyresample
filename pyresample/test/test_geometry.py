@@ -836,12 +836,12 @@ class TestSwathDefinition(unittest.TestCase):
 
         lons = np.array([[-45., 0., 45.],
                          [-90, 0., 90.],
-                         [-135., 180., 135.]]).T
+                         [-135., -180., 135.]]).T
 
         area = geometry.SwathDefinition(lons, lats)
         lons, lats = area.get_edge_lonlats()
 
-        np.testing.assert_allclose(lons, [-45., -90., -135., -135., 180., 135.,
+        np.testing.assert_allclose(lons, [-45., -90., -135., -135., -180., 135.,
                                           135., 90., 45., 45., 0., -45.])
         np.testing.assert_allclose(lats, [80., 80., 80., 80., 80., 80., 80.,
                                           80., 80., 80., 80., 80.])

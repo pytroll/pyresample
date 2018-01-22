@@ -960,11 +960,12 @@ class XArrayResamplerNN(object):
         y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
         z_coords = R * da.sin(da.deg2rad(lats))
 
-        return da.stack((x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
+        return da.stack(
+            (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input"""
-        source_lons, source_lats = self.source_geo_def.get_lonlats_dask(blocksize=2048)
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
                            (source_lats <= 90) & (source_lats >= -90))
 
@@ -976,7 +977,8 @@ class XArrayResamplerNN(object):
 
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
-        valid_input_idx, input_coords = da.compute(valid_input_idx, input_coords)
+        valid_input_idx, input_coords = da.compute(valid_input_idx,
+                                                   input_coords)
         if kd_tree_name == 'pykdtree':
             resample_kdtree = KDTree(input_coords)
         else:
@@ -1050,18 +1052,22 @@ class XArrayResamplerNN(object):
             self.distance_array = distance_arr
             return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
-        target_lons, target_lats = self.target_geo_def.get_lonlats_dask(blocksize=2048)
+        target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
         index_arr, distance_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_output_idx)
 
-        self.valid_output_index, self.index_array = da.compute(valid_output_idx, index_arr)
+        self.valid_output_index, self.index_array = \
+            da.compute(valid_output_idx, index_arr)
         self.valid_input_index = valid_input_idx
         self.distance_array = distance_arr
 
-        return self.valid_input_index, self.valid_output_index, self.index_array, self.distance_array
+        return (self.valid_input_index,
+                self.valid_output_index,
+                self.index_array,
+                self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
         # FIXME: can be this made into a dask construct ?

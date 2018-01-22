@@ -513,6 +513,34 @@ def wrap_longitudes(lons):
     return (lons + 180) % 360 - 180
 
 
+def check_and_wrap(lons, lats):
+    """Wrap longitude to [-180:+180[ and check latitude for validity.
+
+    Args:
+        lons (ndarray): Longitude degrees
+        lats (ndarray): Latitude degrees
+
+    Returns:
+        lons, lats: Longitude degrees in the range [-180:180[ and the original
+                    latitude array
+
+    Raises:
+        ValueError: If latitude array is not between -90 and 90
+
+    """
+    # check the latitutes
+    if lats.min() < -90. or lats.max() > 90.:
+        raise ValueError(
+            'Some latitudes are outside the [-90.:+90] validity range')
+
+    # check the longitudes
+    if lons.min() < -180. or lons.max() >= 180.:
+        # wrap longitudes to [-180;+180[
+        lons = wrap_longitudes(lons)
+
+    return lons, lats
+
+
 def recursive_dict_update(d, u):
     """Recursive dictionary update using
 
