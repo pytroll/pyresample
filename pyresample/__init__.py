@@ -15,18 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
+import os
 from pyresample.version import __version__
-from pyresample import geometry
-from pyresample import grid
-from pyresample import image
-from pyresample import kd_tree
-from pyresample import utils
-from pyresample import plot
 
 __all__ = ['grid', 'image', 'kd_tree',
-           'utils', 'plot', 'geo_filter', 'geometry']
+           'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
+
+CHUNK_SIZE = os.getenv('PYTROLL_CHUNKSIZE', 4096)
 
 
 def get_capabilities():

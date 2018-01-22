@@ -31,7 +31,7 @@ import numpy as np
 import yaml
 from pyproj import Geod, Proj
 
-from pyresample import _spatial_mp, utils
+from pyresample import _spatial_mp, utils, CHUNK_SIZE
 
 try:
     from xarray import DataArray
@@ -496,7 +496,7 @@ class SwathDefinition(CoordinateDefinition):
 
         return self.hash
 
-    def get_lonlats_dask(self, blocksize=5000, dtype=None):
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
         """Get the lon lats as a single dask array."""
         import dask.array as da
         lons, lats = self.get_lonlats()
@@ -505,9 +505,9 @@ class SwathDefinition(CoordinateDefinition):
             return lons.data, lats.data
         else:
             lons = da.from_array(np.asanyarray(lons),
-                                 chunks=blocksize * lons.ndim)
+                                 chunks=chunks)
             lats = da.from_array(np.asanyarray(lats),
-                                 chunks=blocksize * lats.ndim)
+                                 chunks=chunks)
         return lons, lats
 
     def _compute_omerc_parameters(self, ellipsoid):
@@ -1028,21 +1028,21 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
-    def get_proj_vectors_dask(self, blocksize=5000, dtype=None):
+    def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
         import dask.array as da
         if dtype is None:
             dtype = self.dtype
 
-        target_x = da.arange(self.x_size, chunks=blocksize, dtype=dtype) * \
+        target_x = da.arange(self.x_size, chunks=chunks, dtype=dtype) * \
             self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.y_size, chunks=blocksize, dtype=dtype) * - \
+        target_y = da.arange(self.y_size, chunks=chunks, dtype=dtype) * - \
             self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
-    def get_proj_coords_dask(self, blocksize=5000, dtype=None):
+    def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
         # TODO: Add rotation
         import dask.array as da
-        target_x, target_y = self.get_proj_vectors_dask(blocksize, dtype)
+        target_x, target_y = self.get_proj_vectors_dask(chunks, dtype)
         return da.meshgrid(target_x, target_y)
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
@@ -1205,11 +1205,11 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
 
-    def get_lonlats_dask(self, blocksize=5000, dtype=None):
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
         from dask.array import map_blocks
 
         dtype = dtype or self.dtype
-        target_x, target_y = self.get_proj_coords_dask(blocksize, dtype)
+        target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
         target_proj = Proj(**self.proj_dict)
 
@@ -1412,13 +1412,13 @@ class StackedAreaDefinition(BaseDefinition):
 
         return self.lons, self.lats
 
-    def get_lonlats_dask(self, blocksize=5000, dtype=None):
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
         """"Return lon and lat dask arrays of the area."""
         import dask.array as da
         llons = []
         llats = []
         for definition in self.defs:
-            lons, lats = definition.get_lonlats_dask(blocksize=blocksize,
+            lons, lats = definition.get_lonlats_dask(chunks=chunks,
                                                      dtype=dtype)
 
             llons.append(lons)

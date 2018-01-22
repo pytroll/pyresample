@@ -27,7 +27,7 @@ from logging import getLogger
 
 import numpy as np
 
-from pyresample import _spatial_mp, data_reduce, geometry
+from pyresample import _spatial_mp, data_reduce, geometry, CHUNK_SIZE
 
 logger = getLogger(__name__)
 
@@ -1123,7 +1123,7 @@ class XArrayResamplerNN(object):
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims, coords=coords)
+        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE), dims=data.dims, coords=coords)
         return res
 
 
