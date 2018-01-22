@@ -14,16 +14,17 @@ The function **plot.save_quicklook** saves the Basemap image directly to file.
 
 .. doctest::
 
- >>> import numpy as np	
- >>> import pyresample as pr
+ >>> import numpy as np
+ >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('areas.cfg', 'ease_sh')
- >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
- >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
- ...                                      radius_of_influence=20000, fill_value=None)
- >>> pr.plot.save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
+ >>> area_def = load_area('areas.cfg', 'ease_sh')
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> result = resample_nearest(swath_def, tb37v, area_def,
+ ...                           radius_of_influence=20000, fill_value=None)
+ >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_quick.png
@@ -49,14 +50,15 @@ Assuming the file **areas.cfg** has the following area definition:
 **Example usage:**
 
  >>> import numpy as np 
- >>> import pyresample as pr
+ >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('areas.cfg', 'pc_world')
- >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
- >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> pr.plot.save_quicklook('tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+ >>> area_def = load_area('areas.cfg', 'pc_world')
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
+ >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_pc.png
@@ -81,14 +83,15 @@ Assuming the file **areas.cfg** has the following area definition for an ortho p
 **Example usage:**
 
  >>> import numpy as np 
- >>> import pyresample as pr
+ >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('areas.cfg', 'ortho')
- >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
- >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> pr.plot.save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+ >>> area_def = load_area('areas.cfg', 'ortho')
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
+ >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
   .. image:: _static/images/tb37v_ortho.png
@@ -105,15 +108,16 @@ AreaDefintion using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
  >>> import numpy as np	
  >>> import matplotlib.pyplot as plt
- >>> import pyresample as pr
+ >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = pr.utils.load_area('areas.cfg', 'ease_sh')
- >>> swath_def = pr.geometry.SwathDefinition(lons, lats)
- >>> result = pr.kd_tree.resample_nearest(swath_def, tb37v, area_def,
- ...                                      radius_of_influence=20000, fill_value=None)
- >>> bmap = pr.plot.area_def2basemap(area_def)
+ >>> area_def = load_area('areas.cfg', 'ease_sh')
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> result = resample_nearest(swath_def, tb37v, area_def,
+ ...                           radius_of_influence=20000, fill_value=None)
+ >>> bmap = area_def2basemap(area_def)
  >>> bmng = bmap.bluemarble()
  >>> col = bmap.imshow(result, origin='upper')
  >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')

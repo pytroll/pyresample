@@ -17,6 +17,20 @@
 
 import os
 from pyresample.version import __version__
+# Backwards compatibility
+from pyresample import geometry
+from pyresample import grid
+from pyresample import image
+from pyresample import kd_tree
+from pyresample import utils
+from pyresample import plot
+# Easy access
+from pyresample.geometry import (SwathDefinition,
+                                 AreaDefinition,
+                                 DynamicAreaDefinition)
+from pyresample.utils import load_area
+from pyresample.kd_tree import XArrayResamplerNN
+from pyresample.plot import save_quicklook, area_def2basemap
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']

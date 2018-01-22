@@ -55,7 +55,7 @@ except ImportError:
         raise ImportError('Either pykdtree or scipy must be available')
 
 
-class EmptyResult(Exception):
+class EmptyResult(ValueError):
     pass
 
 

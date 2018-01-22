@@ -41,11 +41,11 @@ except ImportError:
 logger = getLogger(__name__)
 
 
-class DimensionError(Exception):
+class DimensionError(ValueError):
     pass
 
 
-class IncompatibleAreas(Exception):
+class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
 
 
