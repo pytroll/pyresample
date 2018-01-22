@@ -16,6 +16,9 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
+CHUNK_SIZE = os.getenv('PYTROLL_CHUNKSIZE', 4096)
+
 from pyresample.version import __version__
 # Backwards compatibility
 from pyresample import geometry
@@ -34,8 +37,6 @@ from pyresample.plot import save_quicklook, area_def2basemap
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
-
-CHUNK_SIZE = os.getenv('PYTROLL_CHUNKSIZE', 4096)
 
 
 def get_capabilities():
