@@ -6,6 +6,14 @@ Resampling of swath data
 Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath. 
 Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function.
 
+.. versionchanged:: 1.8.0
+
+    `SwathDefinition` no longer checks the validity of the provided longitude
+    and latitude coordinates to improve performance. Longitude arrays are
+    expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
+    This also applies to all geometry definitions that are provided longitude
+    and latitude arrays on initialization.
+
 pyresample.image
 ----------------
 The ImageContainerNearest and ImageContanerBilinear classes can be used for resampling of swaths as well as grids.  Below is an example using nearest neighbour resampling.

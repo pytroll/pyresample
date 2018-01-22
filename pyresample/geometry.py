@@ -63,7 +63,15 @@ class Boundary(object):
 
 class BaseDefinition(object):
 
-    """Base class for geometry definitions"""
+    """Base class for geometry definitions
+
+    .. versionchanged:: 1.8.0
+
+        `BaseDefinition` no longer checks the validity of the provided longitude
+        and latitude coordinates to improve performance. Longitude arrays are
+        expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
+
+    """
 
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
@@ -76,30 +84,8 @@ class BaseDefinition(object):
                 raise ValueError('lons and lats must have same shape')
 
         self.nprocs = nprocs
-
-        # check the latitutes
-        if lats is not None:
-            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > 90.):
-                raise ValueError(
-                    'Some latitudes are outside the [-90.;+90] validity range')
-            elif not isinstance(lats, np.ndarray):
-                # assume we have to mask an xarray
-                lats = lats.where((lats >= -90.) & (lats <= 90.))
         self.lats = lats
-
-        # check the longitudes
-        if lons is not None:
-            if (lons.min() < -180. or lons.max() >= +180.):
-                # issue warning
-                warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
-                              'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
-                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
-                # assume we have to mask an xarray
-                # wrap longitudes to [-180;+180[
-                lons = utils.wrap_longitudes(lons)
-
         self.lons = lons
-
         self.ndim = None
         self.cartesian_coords = None
 
