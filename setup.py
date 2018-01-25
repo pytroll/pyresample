@@ -30,7 +30,8 @@ requirements = ['setuptools>=3.2', 'pyproj', 'numpy', 'configobj',
                 'pykdtree>=1.1.1', 'pyyaml', 'six']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
-                  'quicklook': ['matplotlib', 'basemap', 'pillow']}
+                  'quicklook': ['matplotlib', 'basemap', 'pillow'],
+                  'dask': ['dask>=0.16.1']}
 
 test_requires = []
 if sys.version_info < (3, 3):

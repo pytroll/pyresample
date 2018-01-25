@@ -188,6 +188,24 @@ class TestMisc(unittest.TestCase):
         self.assertFalse(
             (wlons.min() < -180) or (wlons.max() >= 180) or (+180 in wlons))
 
+    def test_wrap_and_check(self):
+        from pyresample import utils
+
+        lons1 = np.arange(-135., +135, 50.)
+        lats = np.ones_like(lons1) * 70.
+        new_lons, new_lats = utils.check_and_wrap(lons1, lats)
+        self.assertIs(lats, new_lats)
+        self.assertTrue(np.isclose(lons1, new_lons).all())
+
+        lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
+        new_lons, new_lats = utils.check_and_wrap(lons2, lats)
+        self.assertIs(lats, new_lats)
+        # after wrapping lons2 should look like lons1
+        self.assertTrue(np.isclose(lons1, new_lons).all())
+
+        lats2 = lats + 25.
+        self.assertRaises(ValueError, utils.check_and_wrap, lons1, lats2)
+
     def test_unicode_proj4_string(self):
         """Test that unicode is accepted for area creation.
         """

@@ -30,10 +30,8 @@ import yaml
 from configobj import ConfigObj
 from collections import Mapping
 
-import pyresample as pr
 
-
-class AreaNotFound(Exception):
+class AreaNotFound(KeyError):
 
     """Exception raised when specified are is no found in file"""
     pass
@@ -126,6 +124,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
     the files, using the first file as the "base", replacing things after
     that.
     """
+    from pyresample.geometry import DynamicAreaDefinition
     area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
 
@@ -154,11 +153,11 @@ def _parse_yaml_area_file(area_file_name, *regions):
             rotation = params['rotation']
         except KeyError:
             rotation = 0
-        area = pr.geometry.DynamicAreaDefinition(area_name, description,
-                                                 projection, xsize, ysize,
-                                                 area_extent,
-                                                 optimize_projection,
-                                                 rotation)
+        area = DynamicAreaDefinition(area_name, description,
+                                     projection, xsize, ysize,
+                                     area_extent,
+                                     optimize_projection,
+                                     rotation)
         try:
             area = area.freeze()
         except (TypeError, AttributeError):
@@ -230,6 +229,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
 
 def _create_area(area_id, area_content):
     """Parse area configuration"""
+    from pyresample.geometry import AreaDefinition
 
     config_obj = area_content.replace('{', '').replace('};', '')
     config_obj = ConfigObj([line.replace(':', '=', 1)
@@ -257,10 +257,10 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return pr.geometry.AreaDefinition(config['REGION'], config['NAME'],
-                                      config['PCS_ID'], config['PCS_DEF'],
-                                      config['XSIZE'], config['YSIZE'],
-                                      config['AREA_EXTENT'], config['ROTATION'])
+    return AreaDefinition(config['REGION'], config['NAME'],
+                          config['PCS_ID'], config['PCS_DEF'],
+                          config['XSIZE'], config['YSIZE'],
+                          config['AREA_EXTENT'], config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
@@ -292,9 +292,10 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         AreaDefinition object
     """
 
+    from pyresample.geometry import AreaDefinition
     proj_dict = _get_proj4_args(proj4_args)
-    return pr.geometry.AreaDefinition(area_id, area_name, proj_id, proj_dict,
-                                      x_size, y_size, area_extent)
+    return AreaDefinition(area_id, area_name, proj_id, proj_dict,
+                          x_size, y_size, area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,
@@ -314,11 +315,12 @@ def generate_quick_linesample_arrays(source_area_def, target_area_def,
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
+    from pyresample.grid import get_linesample
     lons, lats = target_area_def.get_lonlats(nprocs)
 
-    source_pixel_y, source_pixel_x = pr.grid.get_linesample(lons, lats,
-                                                            source_area_def,
-                                                            nprocs=nprocs)
+    source_pixel_y, source_pixel_x = get_linesample(lons, lats,
+                                                    source_area_def,
+                                                    nprocs=nprocs)
 
     source_pixel_x = _downcast_index_array(source_pixel_x,
                                            source_area_def.shape[1])
@@ -350,12 +352,13 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def,
     (row_indices, col_indices) : tuple of numpy arrays
     """
 
+    from pyresample.kd_tree import get_neighbour_info
     valid_input_index, valid_output_index, index_array, distance_array = \
-        pr.kd_tree.get_neighbour_info(source_area_def,
-                                      target_area_def,
-                                      radius_of_influence,
-                                      neighbours=1,
-                                      nprocs=nprocs)
+        get_neighbour_info(source_area_def,
+                           target_area_def,
+                           radius_of_influence,
+                           neighbours=1,
+                           nprocs=nprocs)
     # Enumerate rows and cols
     rows = np.fromfunction(lambda i, j: i, source_area_def.shape,
                            dtype=np.int32).ravel()
@@ -511,6 +514,34 @@ def wrap_longitudes(lons):
 
     """
     return (lons + 180) % 360 - 180
+
+
+def check_and_wrap(lons, lats):
+    """Wrap longitude to [-180:+180[ and check latitude for validity.
+
+    Args:
+        lons (ndarray): Longitude degrees
+        lats (ndarray): Latitude degrees
+
+    Returns:
+        lons, lats: Longitude degrees in the range [-180:180[ and the original
+                    latitude array
+
+    Raises:
+        ValueError: If latitude array is not between -90 and 90
+
+    """
+    # check the latitutes
+    if lats.min() < -90. or lats.max() > 90.:
+        raise ValueError(
+            'Some latitudes are outside the [-90.:+90] validity range')
+
+    # check the longitudes
+    if lons.min() < -180. or lons.max() >= 180.:
+        # wrap longitudes to [-180;+180[
+        lons = wrap_longitudes(lons)
+
+    return lons, lats
 
 
 def recursive_dict_update(d, u):

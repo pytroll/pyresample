@@ -27,7 +27,7 @@ from logging import getLogger
 
 import numpy as np
 
-from pyresample import _spatial_mp, data_reduce, geometry
+from pyresample import _spatial_mp, data_reduce, geometry, CHUNK_SIZE
 
 logger = getLogger(__name__)
 
@@ -55,7 +55,7 @@ except ImportError:
         raise ImportError('Either pykdtree or scipy must be available')
 
 
-class EmptyResult(Exception):
+class EmptyResult(ValueError):
     pass
 
 
@@ -960,39 +960,31 @@ class XArrayResamplerNN(object):
         y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
         z_coords = R * da.sin(da.deg2rad(lats))
 
-        return da.stack((x_coords, y_coords, z_coords), axis=-1)
+        return da.stack(
+            (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
-    def _create_resample_kdtree(self, source_lons, source_lats, valid_input_index):
+    def _create_resample_kdtree(self):
         """Set up kd tree on input"""
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
+        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
+                           (source_lats <= 90) & (source_lats >= -90))
 
-        """
-        if not isinstance(source_geo_def, geometry.BaseDefinition):
-            raise TypeError('source_geo_def must be of geometry type')
-
-        #Get reduced cartesian coordinates and flatten them
-        source_cartesian_coords = source_geo_def.get_cartesian_coords(nprocs=nprocs)
-        input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
-        input_coords = input_coords[valid_input_index]
-        """
-
-        vii = valid_input_index.compute().ravel()
-        source_lons_valid = source_lons.ravel()[vii]
-        source_lats_valid = source_lats.ravel()[vii]
-
-        input_coords = self.transform_lonlats(source_lons_valid,
-                                              source_lats_valid)
-
-        if input_coords.size == 0:
-            raise EmptyResult('No valid data points in input data')
+        # FIXME: Is dask smart enough to only compute the pixels we end up
+        #        using even with this complicated indexing
+        input_coords = self.transform_lonlats(source_lons,
+                                              source_lats)
+        input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
+        valid_input_idx, input_coords = da.compute(valid_input_idx,
+                                                   input_coords)
         if kd_tree_name == 'pykdtree':
-            resample_kdtree = KDTree(input_coords.compute())
+            resample_kdtree = KDTree(input_coords)
         else:
-            resample_kdtree = sp.cKDTree(input_coords.compute())
+            resample_kdtree = sp.cKDTree(input_coords)
 
-        return resample_kdtree
+        return valid_input_idx, resample_kdtree
 
     def _query_resample_kdtree(self,
                                resample_kdtree,
@@ -1016,8 +1008,17 @@ class XArrayResamplerNN(object):
                 eps=self.epsilon,
                 distance_upper_bound=self.radius_of_influence)
 
+            # KDTree query returns out-of-bounds neighbors as `len(arr)`
+            # which is an invalid index, we mask those out so -1 represents
+            # invalid values
+            # voi is 2D, index_array is 1D
+            bad_mask = index_array >= resample_kdtree.n
+            voi[bad_mask.reshape(shape)] = False
             res_ia = np.full(shape, fill_value=-1, dtype=np.int)
-            res_ia[voi] = index_array
+            res_ia[voi] = index_array[~bad_mask]
+            # res_ia[voi >= resample_kdtree.n] = -1
+            # res_ia[voi] = index_array
+            # res_ia[voi >= resample_kdtree.n] = -1
             return res_ia
 
         res = da.map_blocks(query_no_distance, target_lons, target_lats,
@@ -1038,16 +1039,9 @@ class XArrayResamplerNN(object):
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self.neighbours, self.source_geo_def.size))
 
-        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
-        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
-                           (source_lats <= 90) & (source_lats >= -90))
-
         # Create kd-tree
-        try:
-            resample_kdtree = self._create_resample_kdtree(
-                source_lons, source_lats, valid_input_idx)
-
-        except EmptyResult:
+        valid_input_idx, resample_kdtree = self._create_resample_kdtree()
+        if resample_kdtree.n == 0:
             # Handle if all input data is reduced away
             valid_output_idx, index_arr, distance_arr = \
                 _create_empty_info(self.source_geo_def,
@@ -1056,7 +1050,7 @@ class XArrayResamplerNN(object):
             self.valid_output_index = valid_output_idx
             self.index_array = index_arr
             self.distance_array = distance_arr
-            return (valid_input_idx, valid_output_idx, index_arr, distance_arr)
+            return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
@@ -1064,16 +1058,16 @@ class XArrayResamplerNN(object):
 
         index_arr, distance_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_output_idx)
-        # Fix invalid values
-        index_arr[index_arr < 0] = -1
-        index_arr[index_arr >= valid_input_idx.sum()] = -1
 
+        self.valid_output_index, self.index_array = \
+            da.compute(valid_output_idx, index_arr)
         self.valid_input_index = valid_input_idx
-        self.valid_output_index = valid_output_idx
-        self.index_array = index_arr
         self.distance_array = distance_arr
 
-        return valid_input_idx, valid_output_idx, index_arr, distance_arr
+        return (self.valid_input_index,
+                self.valid_output_index,
+                self.index_array,
+                self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
         # FIXME: can be this made into a dask construct ?
@@ -1129,7 +1123,7 @@ class XArrayResamplerNN(object):
 
         res = data.values[slices]
         res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=5000), dims=data.dims, coords=coords)
+        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE), dims=data.dims, coords=coords)
         return res
 
 
