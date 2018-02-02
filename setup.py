@@ -26,11 +26,12 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
-requirements = ['setuptools>=3.2', 'pyproj', 'numpy', 'configobj',
+requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy', 'configobj',
                 'pykdtree>=1.1.1', 'pyyaml', 'six']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
-                  'quicklook': ['matplotlib', 'basemap', 'pillow']}
+                  'quicklook': ['matplotlib', 'basemap', 'pillow'],
+                  'dask': ['dask>=0.16.1']}
 
 test_requires = []
 if sys.version_info < (3, 3):

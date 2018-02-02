@@ -15,18 +15,28 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
+import os
+
+CHUNK_SIZE = os.getenv('PYTROLL_CHUNK_SIZE', 4096)
 
 from pyresample.version import __version__
+# Backwards compatibility
 from pyresample import geometry
 from pyresample import grid
 from pyresample import image
 from pyresample import kd_tree
 from pyresample import utils
 from pyresample import plot
+# Easy access
+from pyresample.geometry import (SwathDefinition,
+                                 AreaDefinition,
+                                 DynamicAreaDefinition)
+from pyresample.utils import load_area
+from pyresample.kd_tree import XArrayResamplerNN
+from pyresample.plot import save_quicklook, area_def2basemap
 
 __all__ = ['grid', 'image', 'kd_tree',
-           'utils', 'plot', 'geo_filter', 'geometry']
+           'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
 
 
 def get_capabilities():

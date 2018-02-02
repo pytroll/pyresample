@@ -91,43 +91,6 @@ class Test(unittest.TestCase):
         self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp,
                         msg='Calculation of cartesian coordinates failed')
 
-    def test_base_lat_invalid(self):
-
-        lons = np.arange(-135., +135, 20.)
-        lats = np.ones_like(lons) * 70.
-        lats[0] = -95
-        lats[1] = +95
-        self.assertRaises(
-            ValueError, geometry.BaseDefinition, lons=lons, lats=lats)
-
-    def test_base_lon_wrapping(self):
-
-        lons1 = np.arange(-135., +135, 50.)
-        lats = np.ones_like(lons1) * 70.
-
-        with catch_warnings() as w1:
-            base_def1 = geometry.BaseDefinition(lons1, lats)
-            self.assertFalse(
-                len(w1) != 0, 'Got warning <%s>, but was not expecting one' % w1)
-
-        lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
-        with catch_warnings() as w2:
-            base_def2 = geometry.BaseDefinition(lons2, lats)
-            self.assertFalse(
-                len(w2) != 1, 'Failed to trigger a warning on longitude wrapping')
-            self.assertFalse(('-180:+180' not in str(w2[0].message)),
-                             'Failed to trigger correct warning about longitude wrapping')
-
-        self.assertFalse(
-            base_def1 != base_def2, 'longitude wrapping to [-180:+180] did not work')
-
-        with catch_warnings() as w3:
-            base_def3 = geometry.BaseDefinition(None, None)
-            self.assertFalse(
-                len(w3) != 0, 'Got warning <%s>, but was not expecting one' % w3)
-
-        self.assert_raises(ValueError, base_def3.get_lonlats)
-
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
@@ -761,27 +724,6 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
                          msg='Caching of swath coordinates failed')
 
-    def test_swath_wrap(self):
-        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats1 = np.fromfunction(
-            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
-
-        lons1 += 180.
-        with catch_warnings() as w1:
-            swath_def = geometry.BaseDefinition(lons1, lats1)
-            self.assertFalse(
-                len(w1) != 1, 'Failed to trigger a warning on longitude wrapping')
-            self.assertFalse(('-180:+180' not in str(w1[0].message)),
-                             'Failed to trigger correct warning about longitude wrapping')
-
-        lons2, lats2 = swath_def.get_lonlats()
-
-        self.assertTrue(id(lons1) != id(lons2),
-                        msg='Caching of swath coordinates failed with longitude wrapping')
-
-        self.assertTrue(lons2.min() > -180 and lons2.max() < 180,
-                        'Wrapping of longitudes failed for SwathDefinition')
-
     def test_concat_1d(self):
         lons1 = np.array([1, 2, 3])
         lats1 = np.array([1, 2, 3])
@@ -900,7 +842,7 @@ class TestSwathDefinition(unittest.TestCase):
 
         lons = np.array([[-45., 0., 45.],
                          [-90, 0., 90.],
-                         [-135., 180., 135.]]).T
+                         [-135., -180., 135.]]).T
 
         area = geometry.SwathDefinition(lons, lats)
         lons, lats = area.get_edge_lonlats()

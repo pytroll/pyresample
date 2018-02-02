@@ -31,7 +31,7 @@ import numpy as np
 import yaml
 from pyproj import Geod, Proj
 
-from pyresample import _spatial_mp, utils
+from pyresample import _spatial_mp, utils, CHUNK_SIZE
 
 try:
     from xarray import DataArray
@@ -41,11 +41,11 @@ except ImportError:
 logger = getLogger(__name__)
 
 
-class DimensionError(Exception):
+class DimensionError(ValueError):
     pass
 
 
-class IncompatibleAreas(Exception):
+class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
 
 
@@ -63,7 +63,17 @@ class Boundary(object):
 
 class BaseDefinition(object):
 
-    """Base class for geometry definitions"""
+    """Base class for geometry definitions
+
+    .. versionchanged:: 1.8.0
+
+        `BaseDefinition` no longer checks the validity of the provided
+        longitude and latitude coordinates to improve performance. Longitude
+        arrays are expected to be between -180 and 180 degrees, latitude -90
+        to 90 degrees. Use `pyresample.utils.check_and_wrap` to preprocess
+        your arrays.
+
+    """
 
     def __init__(self, lons=None, lats=None, nprocs=1):
         if type(lons) != type(lats):
@@ -76,31 +86,8 @@ class BaseDefinition(object):
                 raise ValueError('lons and lats must have same shape')
 
         self.nprocs = nprocs
-
-        # check the latitutes
-        if lats is not None:
-            if isinstance(lats, np.ndarray) and (lats.min() < -90. or lats.max() > 90.):
-                raise ValueError(
-                    'Some latitudes are outside the [-90.;+90] validity range')
-            elif not isinstance(lats, np.ndarray):
-                # assume we have to mask an xarray
-                lats = lats.where((lats >= -90.) & (lats <= 90.))
         self.lats = lats
-
-        # check the longitudes
-        if lons is not None:
-            if isinstance(lons, np.ndarray) and (lons.min() < -180. or lons.max() >= +180.):
-                # issue warning
-                warnings.warn('All geometry objects expect longitudes in the [-180:+180[ range. ' +
-                              'We will now automatically wrap your longitudes into [-180:+180[, and continue. ' +
-                              'To avoid this warning next time, use routine utils.wrap_longitudes().')
-                # assume we have to mask an xarray
-                # wrap longitudes to [-180;+180[
-                lons = utils.wrap_longitudes(lons)
-            elif not isinstance(lons, np.ndarray):
-                lons = utils.wrap_longitudes(lons)
         self.lons = lons
-
         self.ndim = None
         self.cartesian_coords = None
 
@@ -133,26 +120,24 @@ class BaseDefinition(object):
         return not self.__eq__(other)
 
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
-        """Retrieves area_extent for a subdomain
-        rows    are counted from upper left to lower left
-        columns are counted from upper left to upper right
+        """Calculate extent for a subdomain of this area
 
-        :Parameters:
-        row_LR : int
-            row of the lower right pixel
-        col_LR : int
-            col of the lower right pixel
-        row_UL : int
-            row of the upper left pixel
-        col_UL : int
-            col of the upper left pixel
+        Rows are counted from upper left to lower left and columns are
+        counted from upper left to upper right.
 
-        :Returns:
-        area_extent : list
-            Area extent as a list (LL_x, LL_y, UR_x, UR_y) of the subset
+        Args:
+            row_LR (int): row of the lower right pixel
+            col_LR (int): col of the lower right pixel
+            row_UL (int): row of the upper left pixel
+            col_UL (int): col of the upper left pixel
 
-        :Author:
-        Ulrich Hamann
+        Returns:
+            area_extent (tuple):
+                Area extent (LL_x, LL_y, UR_x, UR_y) of the subset
+
+        Author:
+            Ulrich Hamann
+
         """
 
         (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
@@ -162,7 +147,7 @@ class BaseDefinition(object):
         c = c + 0.5 * self.pixel_size_x
         d = d + 0.5 * self.pixel_size_y
 
-        return (a, b, c, d)
+        return a, b, c, d
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel
@@ -454,7 +439,7 @@ def get_array_hashable(arr):
         try:
             return arr.name.encode('utf-8')  # dask array
         except AttributeError:
-            return arr.view(np.uint8)  # np array
+            return np.asarray(arr).view(np.uint8)  # np array
 
 
 class SwathDefinition(CoordinateDefinition):
@@ -511,7 +496,7 @@ class SwathDefinition(CoordinateDefinition):
 
         return self.hash
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
         """Get the lon lats as a single dask array."""
         import dask.array as da
         lons, lats = self.get_lonlats()
@@ -520,9 +505,9 @@ class SwathDefinition(CoordinateDefinition):
             return lons.data, lats.data
         else:
             lons = da.from_array(np.asanyarray(lons),
-                                 chunks=blocksize * lons.ndim)
+                                 chunks=chunks)
             lats = da.from_array(np.asanyarray(lats),
-                                 chunks=blocksize * lats.ndim)
+                                 chunks=chunks)
         return lons, lats
 
     def _compute_omerc_parameters(self, ellipsoid):
@@ -967,37 +952,42 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_xy_from_proj_coords(xm_, ym_)
 
-    def get_xy_from_proj_coords(self, xm_, ym_):
-        """Retrieve closest x and y coordinates (column, row indices) for a
-        location specified with projection coordinates (xm_,ym_) in meters.
-        A ValueError is raised, if the return point is outside the area domain. If
-        xm_,ym_ is a tuple of sequences of projection coordinates, a tuple of
-        masked arrays are returned.
+    def get_xy_from_proj_coords(self, xm, ym):
+        """Find closest grid cell index for a specified projection coordinate.
 
-        :Input:
-        xm_ : point or sequence (list or array) of x-coordinates in m (map projection)
-        ym_ : point or sequence (list or array) of y-coordinates in m (map projection)
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
+        of masked arrays are returned.
 
-        :Returns:
-        (x, y) : tuple of integer points/arrays
+        Args:
+            xm (list or array): point or sequence of x-coordinates in
+                                 meters (map projection)
+            ym (list or array): point or sequence of y-coordinates in
+                                 meters (map projection)
+
+        Returns:
+            x, y : column and row grid cell indexes as 2 scalars or arrays
+
+        Raises:
+            ValueError: if the return point is outside the area domain
+
         """
 
-        if isinstance(xm_, list):
-            xm_ = np.array(xm_)
-        if isinstance(ym_, list):
-            ym_ = np.array(ym_)
+        if isinstance(xm, list):
+            xm = np.array(xm)
+        if isinstance(ym, list):
+            ym = np.array(ym)
 
-        if ((isinstance(xm_, np.ndarray) and
-             not isinstance(ym_, np.ndarray)) or
-            (not isinstance(xm_, np.ndarray) and
-             isinstance(ym_, np.ndarray))):
-            raise ValueError("Both projection coordinates xm_ and ym_ needs to be of " +
+        if ((isinstance(xm, np.ndarray) and
+             not isinstance(ym, np.ndarray)) or
+            (not isinstance(xm, np.ndarray) and
+             isinstance(ym, np.ndarray))):
+            raise ValueError("Both projection coordinates xm and ym needs to be of " +
                              "the same type and have the same dimensions!")
 
-        if isinstance(xm_, np.ndarray) and isinstance(ym_, np.ndarray):
-            if xm_.shape != ym_.shape:
+        if isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray):
+            if xm.shape != ym.shape:
                 raise ValueError(
-                    "projection coordinates xm_ and ym_ is not of the same shape!")
+                    "projection coordinates xm and ym is not of the same shape!")
 
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
@@ -1007,8 +997,8 @@ class AreaDefinition(BaseDefinition):
         yscale = (self.area_extent[1] -
                   self.area_extent[3]) / float(self.y_size)
 
-        x__ = (xm_ - upl_x) / xscale
-        y__ = (ym_ - upl_y) / yscale
+        x__ = (xm - upl_x) / xscale
+        y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             mask = (((x__ < 0) | (x__ > self.x_size)) |
@@ -1038,36 +1028,25 @@ class AreaDefinition(BaseDefinition):
 
         return self.get_lonlats(nprocs=None, data_slice=(row, col))
 
-    def get_proj_coords_dask(self, blocksize, dtype=None):
-        from dask.base import tokenize
-        from dask.array import Array
+    def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
+        import dask.array as da
         if dtype is None:
             dtype = self.dtype
 
-        vchunks = range(0, self.y_size, blocksize)
-        hchunks = range(0, self.x_size, blocksize)
+        target_x = da.arange(self.x_size, chunks=chunks, dtype=dtype) * \
+            self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = da.arange(self.y_size, chunks=chunks, dtype=dtype) * - \
+            self.pixel_size_y + self.pixel_upper_left[1]
+        return target_x, target_y
 
-        token = tokenize(blocksize)
-        name = 'get_proj_coords-' + token
-
-        dskx = {(name, i, j, 0): (self.get_proj_coords_array,
-                                  (slice(vcs, min(vcs + blocksize, self.y_size)),
-                                   slice(hcs, min(hcs + blocksize, self.x_size))),
-                                  False, dtype)
-                for i, vcs in enumerate(vchunks)
-                for j, hcs in enumerate(hchunks)
-                }
-
-        res = Array(dskx, name, shape=list(self.shape) + [2],
-                    chunks=(blocksize, blocksize, 2),
-                    dtype=dtype)
-        return res
-
-    def get_proj_coords_array(self, data_slice=None, cache=False, dtype=None):
-        return np.dstack(self.get_proj_coords(data_slice, cache, dtype))
+    def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
+        # TODO: Add rotation
+        import dask.array as da
+        target_x, target_y = self.get_proj_vectors_dask(chunks, dtype)
+        return da.meshgrid(target_x, target_y)
 
     def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
-        """Get projection coordinates of grid
+        """Get projection coordinates of grid.
 
         Parameters
         ----------
@@ -1080,12 +1059,12 @@ class AreaDefinition(BaseDefinition):
         -------
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
-        """
 
+        """
         def do_rotation(xspan, yspan, rot_deg=0):
             rot_rad = np.radians(rot_deg)
             rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
-                          [-np.sin(rot_rad), np.cos(rot_rad)]])
+                                [-np.sin(rot_rad), np.cos(rot_rad)]])
             x, y = np.meshgrid(xspan, yspan)
             return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
 
@@ -1226,37 +1205,22 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
-        from dask.base import tokenize
-        from dask.array import Array
-        import pyproj
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
+        from dask.array import map_blocks
 
         dtype = dtype or self.dtype
-        proj_coords = self.get_proj_coords_dask(blocksize, dtype)
-        target_x, target_y = proj_coords[:, :, 0], proj_coords[:, :, 1]
+        target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
-        target_proj = pyproj.Proj(**self.proj_dict)
+        target_proj = Proj(**self.proj_dict)
 
         def invproj(data1, data2):
-            return np.dstack(target_proj(data1.compute(), data2.compute(), inverse=True))
-        token = tokenize(str(self), blocksize, dtype)
-        name = 'get_lonlats-' + token
+            return np.dstack(target_proj(data1, data2, inverse=True))
 
-        vchunks = range(0, self.y_size, blocksize)
-        hchunks = range(0, self.x_size, blocksize)
+        res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
+                                                              target_x.chunks[1],
+                                                              2),
+                         new_axis=[2])
 
-        dsk = {(name, i, j, 0): (invproj,
-                                 target_x[slice(vcs, min(vcs + blocksize, self.y_size)),
-                                          slice(hcs, min(hcs + blocksize, self.x_size))],
-                                 target_y[slice(vcs, min(vcs + blocksize, self.y_size)),
-                                          slice(hcs, min(hcs + blocksize, self.x_size))])
-               for i, vcs in enumerate(vchunks)
-               for j, hcs in enumerate(hchunks)
-               }
-
-        res = Array(dsk, name, shape=list(self.shape) + [2],
-                    chunks=(blocksize, blocksize, 2),
-                    dtype=dtype)
         return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
@@ -1448,13 +1412,13 @@ class StackedAreaDefinition(BaseDefinition):
 
         return self.lons, self.lats
 
-    def get_lonlats_dask(self, blocksize=1000, dtype=None):
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
         """"Return lon and lat dask arrays of the area."""
         import dask.array as da
         llons = []
         llats = []
         for definition in self.defs:
-            lons, lats = definition.get_lonlats_dask(blocksize=blocksize,
+            lons, lats = definition.get_lonlats_dask(chunks=chunks,
                                                      dtype=dtype)
 
             llons.append(lons)
