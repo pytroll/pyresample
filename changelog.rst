@@ -2,6 +2,86 @@ Changelog
 =========
 
 
+v1.8.0 (2018-02-02)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.7.1 → 1.8.0. [Martin Raspaud]
+- Merge branch 'develop' into new_release. [Martin Raspaud]
+- Merge pull request #95 from pytroll/bugfix-pyproj-version. [Martin
+  Raspaud]
+
+  Provide the minimum version of pyproj needed
+- Provide the minimum version of pyproj needed. [Martin Raspaud]
+- Merge pull request #94 from pytroll/optimize-xarray. [Martin Raspaud]
+
+  Optimize xarray
+- Add test for new wrap_and_check function. [davidh-ssec]
+- Rename chunk size environment variable to PYTROLL_CHUNK_SIZE. [davidh-
+  ssec]
+- Fix circular import between geometry and init's CHUNK_SIZE. [davidh-
+  ssec]
+- Revert import removal in init and add easy access imports. [davidh-
+  ssec]
+
+  Includes attempt to remove circular dependency between utils and
+  geometry module.
+
+- Use central CHUNK_SIZE constant for dask based operations. [davidh-
+  ssec]
+- Add `check_and_wrap` utility function and fix various docstring
+  issues. [davidh-ssec]
+- Remove tests for removed features. [davidh-ssec]
+- Remove longitude/latitude validity checks in BaseDefinition. [davidh-
+  ssec]
+
+  This was causing issues with dask based inputs and was a performance
+  penalty for all use cases even when the arrays were valid. Removing
+  this check should not affect 99% of users.
+
+- Combine dask operations to improve resampling performance. [davidh-
+  ssec]
+
+  Still a lot that could be done probably.
+
+- Fix dask minimum version number for meshgrid support. [davidh-ssec]
+- Add dask extra to setup.py to specify minimum dask version. [davidh-
+  ssec]
+
+  pyresample uses dask meshgrid which came in version 1.9
+
+- Merge pull request #86 from pytroll/feature-multiple-dims. [Martin
+  Raspaud]
+
+  [WIP] Feature multiple dims
+- Remove explicit chunksize. [Martin Raspaud]
+- Clean up with pep8. [Martin Raspaud]
+- Take care of coordinates when resampling. [Martin Raspaud]
+- Define default blocksizes for dask arrays. [Martin Raspaud]
+- Merge branch 'feature-optimize-dask' into feature-multiple-dims.
+  [Martin Raspaud]
+- Style cleanup. [Martin Raspaud]
+- Fix get_hashable_array for variations of np arrays. [Martin Raspaud]
+- Print warning when wrapping is needed independently of type. [Martin
+  Raspaud]
+- Change default blocksize to 5000. [Martin Raspaud]
+- Make use of dask's map_blocks. [Martin Raspaud]
+
+  Instead of writing our own array definitions
+- Revert "Make resampling lazy" [Martin Raspaud]
+
+  This reverts commit 5a4f9c342f9c8262c06c28986163fc682242ce75.
+
+- Make resampling lazy. [Martin Raspaud]
+- Revert yapf change. [Martin Raspaud]
+- Clean up code (pycodestyle, pydocstyle) [Martin Raspaud]
+- Make XR resampling work with more dimensions. [Martin Raspaud]
+- Merge pull request #91 from avalentino/issues/gh-090. [David Hoese]
+
+  Fix test_get_array_hashable on big-endian machines (closes #90)
+- Fix test_get_array_hashable on big-endian machines. [Antonio
+  Valentino]
+
+
 v1.7.1 (2017-12-21)
 -------------------
 - update changelog. [davidh-ssec]
@@ -612,7 +692,6 @@ v1.2.2 (2016-06-21)
   Without this, the compilation of the ewa extension crashes.
 
 
-
 v1.2.1 (2016-06-21)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -768,11 +847,9 @@ v1.2.0 (2016-06-17)
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
-
 - Adapt to newest pykdtree version. [Martin Raspaud]
 
   The kdtree object's attribute `data_pts` has been renamed to `data`.
-
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
 
 
@@ -784,7 +861,6 @@ v1.1.6 (2016-02-25)
 
   A previous commit was looking for a 'data_pts' attribute in the kdtree
   object, which is available in pykdtree, but not scipy.
-
 - Merge pull request #32 from mitkin/master. [Martin Raspaud]
 
   [tests] Skip deprecation warnings in test_gauss_multi_uncert
@@ -796,7 +872,6 @@ v1.1.6 (2016-02-25)
   The latest matplotlib (1.5) doesn't support python 2.6 and 3.3. This patch
   chooses the right matplotlib version to install depending on the python
   version at hand.
-
 - Skip deprecation warnings. [Mikhail Itkin]
 
   Catch the rest of the warnings. Check if there is only one, and
@@ -838,7 +913,6 @@ Other
 - Bugfix to address a numpy DeprecationWarning. [Martin Raspaud]
 
   Numpy won't take non-integer indices soon, so make index an int.
-
 - Merge branch 'release-1.1.3' [Martin Raspaud]
 - Merge branch 'licence-lgpl' into pre-master. [Martin Raspaud]
 - Switch to lgplv3, and bump up version number. [Martin Raspaud]
@@ -1060,7 +1134,7 @@ Other
 - Set svn:mime-type. [StorPipfugl]
 - Corrected doc errors. [StorPipfugl]
 - Removed dist dir. [StorPipfugl]
--  [StorPipfugl]
+- No commit message. [StorPipfugl]
 - Updated documentation. New release. [StorPipfugl]
 - Started updating docstrings. [StorPipfugl]
 - Restructured API. [StorPipfugl]
@@ -1073,8 +1147,9 @@ Other
 - Removed unneeded function. [StorPipfugl]
 - Mime types set. [StorPipfugl]
 - Mime types set. [StorPipfugl]
--  [StorPipfugl]
+- No commit message. [StorPipfugl]
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 - moved to Google Code. [StorPipfugl]
+
 
 
