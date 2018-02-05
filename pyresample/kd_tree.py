@@ -1012,13 +1012,10 @@ class XArrayResamplerNN(object):
             # which is an invalid index, we mask those out so -1 represents
             # invalid values
             # voi is 2D, index_array is 1D
-            bad_mask = index_array >= resample_kdtree.n
-            voi[bad_mask.reshape(shape)] = False
+            good_pixels = index_array < resample_kdtree.n
+            voi[voi] = good_pixels
             res_ia = np.full(shape, fill_value=-1, dtype=np.int)
-            res_ia[voi] = index_array[~bad_mask]
-            # res_ia[voi >= resample_kdtree.n] = -1
-            # res_ia[voi] = index_array
-            # res_ia[voi >= resample_kdtree.n] = -1
+            res_ia[voi] = index_array[good_pixels]
             return res_ia
 
         res = da.map_blocks(query_no_distance, target_lons, target_lats,
