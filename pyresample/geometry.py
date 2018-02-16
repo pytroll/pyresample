@@ -552,7 +552,9 @@ class SwathDefinition(CoordinateDefinition):
         if projection == 'omerc':
             return self._compute_omerc_parameters(ellipsoid)
         else:
-            return self._compute_generic_parameters(projection, ellipsoid)
+            new_proj = self._compute_generic_parameters(projection, ellipsoid)
+            new_proj.update(proj_dict)
+            return new_proj
 
     def compute_optimal_bb_area(self, proj_dict=None):
         """Compute the "best" bounding box area for this swath with `proj_dict`.
