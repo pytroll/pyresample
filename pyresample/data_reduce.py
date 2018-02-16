@@ -289,14 +289,14 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
 
     # From the winding number theorem follows:
     # angle_sum possiblilities:
-    # 360: area covers north pole
-    #-360: area covers south pole
+    # -360: area covers north pole
+    # 360: area covers south pole
     #   0: area covers no poles
     # else: area covers both poles
-    if round(angle_sum) == 360:
+    if round(angle_sum) == -360:
         # Covers NP
         valid_index = (lats >= lat_min_buffered)
-    elif round(angle_sum) == -360:
+    elif round(angle_sum) == 360:
         # Covers SP
         valid_index = (lats <= lat_max_buffered)
     elif round(angle_sum) == 0:

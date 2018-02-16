@@ -5,7 +5,7 @@ import sys
 
 import numpy
 
-from pyresample import data_reduce, geometry, kd_tree, utils
+from pyresample import geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
 
 if sys.version_info < (2, 7):
@@ -135,7 +135,7 @@ class Test(unittest.TestCase):
         mask = numpy.ones_like(lons, dtype=numpy.bool)
         mask[::2, ::2] = False
         swath_def = geometry.SwathDefinition(
-            lons=numpy.ma.masked_array(lons, mask=mask), # numpy.ones_like(lons, dtype=numpy.bool)),
+            lons=numpy.ma.masked_array(lons, mask=mask),
             lats=numpy.ma.masked_array(lats, mask=False)
         )
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
@@ -501,80 +501,6 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected,
                                msg='Swath multi channel custom resampling failed')
 
-    def test_reduce(self):
-        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
-        lons = numpy.fromfunction(
-            lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
-        lats = numpy.fromfunction(
-            lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        grid_lons, grid_lats = self.area_def.get_lonlats()
-        lons, lats, data = data_reduce.swath_from_lonlat_grid(grid_lons, grid_lats,
-                                                              lons, lats, data,
-                                                              7000)
-        cross_sum = data.sum()
-        expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
-
-    def test_reduce_boundary(self):
-        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
-        lons = numpy.fromfunction(
-            lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
-        lats = numpy.fromfunction(
-            lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        boundary_lonlats = self.area_def.get_boundary_lonlats()
-        lons, lats, data = data_reduce.swath_from_lonlat_boundaries(boundary_lonlats[0],
-                                                                    boundary_lonlats[
-                                                                        1],
-                                                                    lons, lats, data,
-                                                                    7000)
-        cross_sum = data.sum()
-        expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
-
-    def test_cartesian_reduce(self):
-        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
-        lons = numpy.fromfunction(
-            lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
-        lats = numpy.fromfunction(
-            lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        #grid = utils.generate_cartesian_grid(self.area_def)
-        grid = self.area_def.get_cartesian_coords()
-        lons, lats, data = data_reduce.swath_from_cartesian_grid(grid, lons, lats, data,
-                                                                 7000)
-        cross_sum = data.sum()
-        expected = 20514375.0
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='Cartesian reduce data failed')
-
-    def test_area_con_reduce(self):
-        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
-        lons = numpy.fromfunction(
-            lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
-        lats = numpy.fromfunction(
-            lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        grid_lons, grid_lats = self.area_def.get_lonlats()
-        valid_index = data_reduce.get_valid_index_from_lonlat_grid(grid_lons, grid_lats,
-                                                                   lons, lats, 7000)
-        data = data[valid_index]
-        cross_sum = data.sum()
-        expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
-
-    def test_area_con_cartesian_reduce(self):
-        data = numpy.fromfunction(lambda y, x: (y + x), (1000, 1000))
-        lons = numpy.fromfunction(
-            lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
-        lats = numpy.fromfunction(
-            lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        cart_grid = self.area_def.get_cartesian_coords()
-        valid_index = data_reduce.get_valid_index_from_cartesian_grid(cart_grid,
-                                                                      lons, lats, 7000)
-        data = data[valid_index]
-        cross_sum = data.sum()
-        expected = 20514375.0
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='Cartesian reduce data failed')
-
     def test_masked_nearest(self):
         data = numpy.ones((50, 10))
         data[:, 5:] = 2
@@ -848,6 +774,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
 
     return mysuite
+
 
 if __name__ == '__main__':
     unittest.main()
