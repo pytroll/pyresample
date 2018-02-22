@@ -186,7 +186,8 @@ class BaseDefinition(object):
         side2 = self.get_lonlats(data_slice=(slice(None), -1))
         side3 = self.get_lonlats(data_slice=(-1, slice(None)))
         side4 = self.get_lonlats(data_slice=(slice(None), 0))
-        return Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]), Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1])
+        return (Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]),
+                Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1]))
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition
@@ -528,6 +529,14 @@ class SwathDefinition(CoordinateDefinition):
                 'lat_0': float(lat0),  'lonc': float(lonc),
                 'no_rot': True, 'ellps': ellipsoid}
 
+    def _compute_generic_parameters(self, projection, ellipsoid):
+        """Compute the projection bb parameters for most projections."""
+        lines, cols = self.lons.shape
+        lat_0 = self.lats[int(lines / 2), int(cols / 2)]
+        lon_0 = self.lons[int(lines / 2), int(cols / 2)]
+        return {'proj': projection, 'ellps': ellipsoid,
+                'lat_0': lat_0, 'lon_0': lon_0}
+
     def get_edge_lonlats(self):
         """Get the concatenated boundary of the current swath."""
         lons, lats = self.get_boundary_lonlats()
@@ -543,7 +552,9 @@ class SwathDefinition(CoordinateDefinition):
         if projection == 'omerc':
             return self._compute_omerc_parameters(ellipsoid)
         else:
-            raise NotImplementedError('Only omerc supported for now.')
+            new_proj = self._compute_generic_parameters(projection, ellipsoid)
+            new_proj.update(proj_dict)
+            return new_proj
 
     def compute_optimal_bb_area(self, proj_dict=None):
         """Compute the "best" bounding box area for this swath with `proj_dict`.
