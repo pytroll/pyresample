@@ -845,6 +845,17 @@ class AreaDefinition(BaseDefinition):
                                            proj_str, self.x_size, self.y_size,
                                            self.area_extent)
 
+    __repr__ = __str__
+
+    def to_cartopy_crs(self):
+        from pyresample._cartopy import from_proj
+        bounds = (self.area_extent[0],
+                  self.area_extent[2],
+                  self.area_extent[1],
+                  self.area_extent[3])
+        crs = from_proj(self.proj_str, bounds=bounds)
+        return crs
+
     def create_areas_def(self):
         to_dump = OrderedDict()
         res = OrderedDict()
@@ -880,8 +891,6 @@ class AreaDefinition(BaseDefinition):
                                   y_size=self.y_size,
                                   area_extent=self.area_extent)
         return area_def_str
-
-    __repr__ = __str__
 
     def __eq__(self, other):
         """Test for equality"""
