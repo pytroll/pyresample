@@ -2,6 +2,41 @@ Changelog
 =========
 
 
+v1.8.1 (2018-02-22)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.8.0 → 1.8.1. [Martin Raspaud]
+- Merge pull request #101 from floriankrb/master. [Martin Raspaud]
+
+  Update README to include correct versions of python tested
+- Update README.md. [Florian]
+- Update README.md. [Florian]
+- Merge pull request #99 from pytroll/feature-dynamic-projs. [Martin
+  Raspaud]
+
+  Add support for dynamic resampling for most projections
+- Do not overwrite provided lon_0 and lat_0. [Martin Raspaud]
+- Add support for dynamic resampling for most projections. [Martin
+  Raspaud]
+- Merge pull request #98 from pytroll/bugfix-data-reduce. [Martin
+  Raspaud]
+
+  Revert "Fix data reduction when poles are within area"
+- Add test for data reduction over the poles. [Martin Raspaud]
+- Make pep8 happy. [Martin Raspaud]
+- Revert "Fix data reduction when poles are within area" [Martin
+  Raspaud]
+
+  This reverts commit 1c9ac493aea549a354f384059e9aa6ad41558fd8.
+
+- Merge pull request #96 from pytroll/bugfix-partially-invalid-source-
+  data. [David Hoese]
+
+  Fix xarray resampling for partially invalid source datasets
+- Fix xarray resampling for partially invalid source datasets. [Martin
+  Raspaud]
+
+
 v1.8.0 (2018-02-02)
 -------------------
 - update changelog. [Martin Raspaud]
