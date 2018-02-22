@@ -166,14 +166,21 @@ def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
     import matplotlib.pyplot as plt
-    bmap = area_def2basemap(area_def, resolution=coast_res)
-    bmap.drawcoastlines()
-    if num_meridians > 0:
-        bmap.drawmeridians(np.arange(-180, 180, num_meridians))
-    if num_parallels > 0:
-        bmap.drawparallels(np.arange(-90, 90, num_parallels))
+    crs = area_def.to_cartopy_crs()
+    ax = plt.axes(projection=crs)
+    ax.coastlines(resolution=coast_res)
+    ax.set_global()
+
+    xlocs = None
+    ylocs = None
+    if num_meridians:
+        xlocs = np.arange(-180, 180, num_meridians)
+    if num_parallels:
+        ylocs = np.arange(-90, 90, num_parallels)
+    ax.gridlines(xlocs=xlocs, ylocs=ylocs)
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
-        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
+        col = plt.imshow(data, transform=crs, extent=crs.bounds,
+                         origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
         plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
     return plt
 
