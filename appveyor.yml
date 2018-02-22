@@ -64,7 +64,7 @@ install:
   # target Python version and architecture
   - "conda update --yes conda"
   - "conda config --add channels conda-forge"
-  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap-data-hires sphinx pyproj scipy pykdtree"
+  - "conda create -q --yes -n test python=%PYTHON_VERSION% cartopy sphinx pyproj scipy pykdtree"
   - "activate test"
   - "pip install coveralls"
   - "pip install mock"
