@@ -8,9 +8,10 @@ Pyresample supports basic integration with Cartopy
 
 Displaying data quickly
 -----------------------
-Pyresample has some convenience functions for displaying data from a single channel. 
-The function **plot.show_quicklook** shows a Basemap image of a dataset for a specified AreaDefinition.
-The function **plot.save_quicklook** saves the Basemap image directly to file.
+Pyresample has some convenience functions for displaying data from a single
+channel. The function **plot.show_quicklook** shows a Cartopy generated image
+of a dataset for a specified AreaDefinition. The function
+**plot.save_quicklook** saves the Cartopy image directly to file.
 
 **Example usage:**
 
@@ -68,8 +69,11 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data the res
 
 The Globe projections
 +++++++++++++++++++++
-From v0.7.12 pyresample can use the geos, ortho and nsper projections with Basemap.
-Assuming the file **areas.cfg** has the following area definition for an ortho projection area:
+
+From v0.7.12 pyresample can use the geos, ortho and nsper projections with
+Basemap. Starting with v1.9.0 quicklooks are now generated with Cartopy which
+should also work with these projections. Assuming the file **areas.cfg** has
+the following area definition for an ortho projection area:
 
 .. code-block:: bash
 
