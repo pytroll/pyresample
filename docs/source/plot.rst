@@ -117,7 +117,7 @@ Cartopy CRS object.
 
  >>> import numpy as np
  >>> import matplotlib.pyplot as plt
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
  >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
