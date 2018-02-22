@@ -1,8 +1,10 @@
 .. _plot:
 
-Plotting with pyresample and Basemap
+Plotting with pyresample and Cartopy
 ====================================
-Pyresample supports basic integration with Basemap (http://matplotlib.sourceforge.net/basemap).
+
+Pyresample supports basic integration with Cartopy
+(http://scitools.org.uk/cartopy/).
 
 Displaying data quickly
 -----------------------
@@ -97,10 +99,52 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data the res
   .. image:: _static/images/tb37v_ortho.png
 
 
+Getting a Cartopy CRS
+---------------------
+
+To make more advanced plots than the preconfigured quicklooks Cartopy can be
+used to work with mapped data alongside matplotlib. The below code is based
+on
+`this <http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html>`_
+Cartopy example. Pyresample allows any `AreaDefinition` to be converted to a
+Cartopy CRS as long as Cartopy can represent the projection. Once an
+AreaDefinition is converted to a CRS object it can be used like any other
+Cartopy CRS object.
+
+ >>> import numpy as np
+ >>> import matplotlib.pyplot as plt
+ >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
+ >>> lons = np.zeros(1000)
+ >>> lats = np.arange(-80, -90, -0.01)
+ >>> i04_data = np.arange(1000)
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> area_def = swath_def.compute_optimal_bb_area({'proj': 'lcc', 'lon_0': -95., 'lat_0': 25., 'lat_1': 25., 'lat_2': 25.})
+ >>> result = resample_nearest(swath_def, i04_data, area_def,
+ ...                           radius_of_influence=20000, fill_value=None)
+ >>> crs = area_def.to_cartopy_crs()
+ >>> ax = plt.axes(projection=crs)
+ >>> ax.coastlines()
+ >>> ax.set_global()
+ >>> plt.imshow(data, transform=crs, extent=crs.bounds, origin='upper')
+ >>> plt.colorbar()
+ >>> plt.savefig('viirs_i04_cartopy.png')
+
+Assuming **lons**, **lats**, and **i04_data** are initialized with real data
+the result might look something like this:
+
+  .. image:: _static/images/viirs_i04_cartopy.png
+
 Getting a Basemap object
 ------------------------
+
+.. warning::
+
+    Basemap is no longer maintained. Cartopy (see above) should be used
+    instead.
+
 In order to make more advanced plots than the preconfigured quicklooks a Basemap object can be generated from an
-AreaDefintion using the **plot.area_def2basemap(area_def, **kwargs)** function.
+AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
 **Example usage:**
 
@@ -129,17 +173,3 @@ Any keyword arguments (not concerning the projection) passed to **plot.area_def2
 directly to the Basemap initialization.
 
 For more information on how to plot with Basemap please refer to the Basemap and matplotlib documentation.
-
-Limitations
------------
-The pyresample use of Basemap is basically a conversion from a pyresample AreaDefintion to a Basemap object
-which allows for correct plotting of a resampled dataset using the **basemap.imshow** function.
-
-Currently only the following set of Proj.4 arguments can be interpreted in the conversion: 
-{'proj', 'a', 'b', 'ellps', 'lon_0', 'lat_0', 'lon_1', 'lat_1', 'lon_2', 'lat_2', 'lat_ts'}
-
-Any other Proj.4 parameters will be ignored. 
-If the ellipsoid is not defined in terms of 'ellps', 'a' or ('a', 'b') it will default to WGS84.
-
-The xsize and ysize in an AreaDefinition will only be used during resampling when the image data for use in
-**basemap.imshow** is created. The actual size and shape of the final plot is handled by matplotlib.
