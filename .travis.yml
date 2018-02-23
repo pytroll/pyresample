@@ -1,14 +1,12 @@
 language: python
 python:
 - '2.7'
-- '3.4'
-- '3.5'
 - '3.6'
 before_install:
 - sudo add-apt-repository ppa:ubuntugis/ppa -y
 - sudo apt-get update -qq
 - sudo apt-get install libfreetype6-dev
-- sudo apt-get install libgeos-dev
+- sudo apt-get install libgeos-dev libproj-dev
 install:
 # matplotlib 2.1.0 has a bug that causes plotting masked arrays to fail
 # https://github.com/matplotlib/matplotlib/issues/9280
