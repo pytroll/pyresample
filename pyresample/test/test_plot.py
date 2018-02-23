@@ -9,6 +9,11 @@ try:
 except ImportError:
     pass  # Postpone fail to individual tests
 
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+    Basemap = None
+
 
 def tmp(f):
     f.tmp = True
@@ -39,6 +44,7 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(b, 6356752.3142451793,
                                msg='Failed to get semi-minor axis of ellipsis')
 
+    @unittest.skipIf(Basemap is None, "basemap is not available")
     def test_area_def2basemap(self):
         from pyresample import plot, utils
         area_def = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
