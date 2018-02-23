@@ -24,6 +24,8 @@ install:
 - pip install toolz
 - pip install dask
 - pip install xarray
+# cython needed due to cartopy "bug" <0.16
+- pip install cython
 - pip install -e ".[pykdtree,quicklook]"
 - pip install coveralls
 script:

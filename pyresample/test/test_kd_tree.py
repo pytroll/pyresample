@@ -379,7 +379,6 @@ class Test(unittest.TestCase):
                                msg='Swath multi channel resampling gauss failed on data')
         for i, e_stddev in enumerate(expected_stddev):
             cross_sum_stddev = stddev[:, :, i].sum()
-            print(cross_sum_stddev, e_stddev)
             self.assertAlmostEqual(cross_sum_stddev, e_stddev,
                                    msg='Swath multi channel resampling gauss failed on stddev (channel {})'.format(i))
         self.assertAlmostEqual(cross_sum_counts, expected_counts,
