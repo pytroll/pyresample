@@ -341,8 +341,10 @@ class Test(unittest.TestCase):
 
         for i, e_stddev in enumerate(expected_stddev):
             cross_sum_stddev = stddev[:, :, i].sum()
-            self.assertAlmostEqual(cross_sum_stddev, e_stddev)
-        self.assertAlmostEqual(cross_sum_counts, expected_counts)
+            self.assertAlmostEqual(cross_sum_stddev, e_stddev,
+                                   msg='Swath multi channel resampling gauss failed on stddev (channel {})'.format(i))
+        self.assertAlmostEqual(cross_sum_counts, expected_counts,
+                               msg='Swath multi channel resampling gauss failed on counts')
 
     def test_gauss_multi_mp(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
