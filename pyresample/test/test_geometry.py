@@ -77,6 +77,27 @@ class Test(unittest.TestCase):
         self.assertTrue((cart_coords.sum() - exp) < 1e-7 * exp,
                         msg='Calculation of cartesian coordinates failed')
 
+    def test_cartopy_crs(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                            -909968.64000000001,
+                                            1029087.28,
+                                            1490031.3600000001])
+        crs = area_def.to_cartopy_crs()
+        self.assertEqual(crs.bounds,
+                         (area_def.area_extent[0],
+                          area_def.area_extent[2],
+                          area_def.area_extent[1],
+                          area_def.area_extent[3]))
+
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
