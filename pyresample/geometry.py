@@ -939,6 +939,50 @@ class AreaDefinition(BaseDefinition):
         # small pixel size means big shape
         return 1. / self.pixel_size_x
 
+    def __lt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() < other._comparable()
+
+    def __le__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() <= other._comparable()
+
+    def __gt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() > other._comparable()
+
+    def __ge__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() >= other._comparable()
+
     def __hash__(self):
         return hash((
             self.proj_str,
