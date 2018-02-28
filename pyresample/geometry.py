@@ -119,6 +119,41 @@ class BaseDefinition(object):
 
         return not self.__eq__(other)
 
+    def _comparable(self):
+        return self.shape
+
+    def __lt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+
+        return self._comparable() < other._comparable()
+
+    def __le__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+
+        return self._comparable() <= other._comparable()
+
+    def __gt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+
+        return self._comparable() > other._comparable()
+
+    def __ge__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+
+        return self._comparable() >= other._comparable()
+
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
         """Calculate extent for a subdomain of this area
 
@@ -898,6 +933,56 @@ class AreaDefinition(BaseDefinition):
 
         return not self.__eq__(other)
 
+    def _comparable(self):
+        """Used by comparison methods for sorting"""
+        # BaseDefinition uses shape, pixel size is the inverse
+        # small pixel size means big shape
+        return 1. / self.pixel_size_x
+
+    def __lt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() < other._comparable()
+
+    def __le__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() <= other._comparable()
+
+    def __gt__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() > other._comparable()
+
+    def __ge__(self, other):
+        """Which area is higher resolution (larger size)."""
+        if not isinstance(other, self.__class__):
+            raise TypeError("{0} can only be compared with {0}".format(
+                self.__class__))
+        if self.proj4_string != other.proj4_string:
+            raise ValueError("Can't compare AreaDefinitions with different "
+                             "projections.")
+
+        return self._comparable() >= other._comparable()
+
     def __hash__(self):
         return hash((
             self.proj_str,
@@ -1044,9 +1129,16 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        target_x = da.arange(self.x_size, chunks=chunks, dtype=dtype) * \
+        if not isinstance(chunks, int):
+            y_chunks = chunks[0]
+            x_chunks = chunks[1]
+        else:
+            y_chunks = chunks
+            x_chunks = chunks
+
+        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * \
             self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.y_size, chunks=chunks, dtype=dtype) * - \
+        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
             self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
@@ -1225,6 +1317,7 @@ class AreaDefinition(BaseDefinition):
         target_proj = Proj(**self.proj_dict)
 
         def invproj(data1, data2):
+            # XXX: does pyproj copy arrays? What can we do so it doesn't?
             return np.dstack(target_proj(data1, data2, inverse=True))
 
         res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
