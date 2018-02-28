@@ -1091,6 +1091,7 @@ class XArrayResamplerNN(object):
         mask_2d_added = False
         coords = {}
         try:
+            # FIXME: Use same chunk size as input data
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
         except AttributeError:
             coord_x, coord_y = None, None
