@@ -1044,9 +1044,16 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        target_x = da.arange(self.x_size, chunks=chunks, dtype=dtype) * \
+        if not isinstance(chunks, int):
+            y_chunks = chunks[0]
+            x_chunks = chunks[1]
+        else:
+            y_chunks = chunks
+            x_chunks = chunks
+
+        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * \
             self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.y_size, chunks=chunks, dtype=dtype) * - \
+        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
             self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
@@ -1225,6 +1232,7 @@ class AreaDefinition(BaseDefinition):
         target_proj = Proj(**self.proj_dict)
 
         def invproj(data1, data2):
+            # XXX: does pyproj copy arrays? What can we do so it doesn't?
             return np.dstack(target_proj(data1, data2, inverse=True))
 
         res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
