@@ -935,7 +935,9 @@ class AreaDefinition(BaseDefinition):
 
     def _comparable(self):
         """Used by comparison methods for sorting"""
-        return self.pixel_size_x
+        # BaseDefinition uses shape, pixel size is the inverse
+        # small pixel size means big shape
+        return 1. / self.pixel_size_x
 
     def __hash__(self):
         return hash((
@@ -1271,6 +1273,7 @@ class AreaDefinition(BaseDefinition):
         target_proj = Proj(**self.proj_dict)
 
         def invproj(data1, data2):
+            # XXX: does pyproj copy arrays? What can we do so it doesn't?
             return np.dstack(target_proj(data1, data2, inverse=True))
 
         res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
