@@ -1235,9 +1235,8 @@ class AreaDefinition(BaseDefinition):
             # XXX: does pyproj copy arrays? What can we do so it doesn't?
             return np.dstack(target_proj(data1, data2, inverse=True))
 
-        res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
-                                                              target_x.chunks[1],
-                                                              2),
+        res = map_blocks(invproj, target_x, target_y,
+                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                          new_axis=[2])
 
         return res[:, :, 0], res[:, :, 1]
