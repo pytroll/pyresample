@@ -212,7 +212,6 @@ class Test(unittest.TestCase):
             self.assertEqual(geometry.get_array_hashable(xrarr),
                              xrarr.attrs['hash'])
 
-
     def test_swath_hash(self):
         lons = np.array([1.2, 1.3, 1.4, 1.5])
         lats = np.array([65.9, 65.86, 65.82, 65.78])
@@ -254,13 +253,11 @@ class Test(unittest.TestCase):
 
             self.assertIsInstance(hash(swath_def), int)
 
-
         lons = np.ma.array([1.2, 1.3, 1.4, 1.5])
         lats = np.ma.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
 
         self.assertIsInstance(hash(swath_def), int)
-
 
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -323,6 +320,72 @@ class Test(unittest.TestCase):
                                            )
         self.assertFalse(
             area_def == msg_area, 'area_defs are not expected to be equal')
+
+    def test_area_comparisons(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                            -909968.64000000001,
+                                            1029087.28,
+                                            1490031.3600000001])
+
+        test_area = geometry.AreaDefinition('test', 'test',
+                                            'test',
+                                            {'a': '6378144.0',
+                                             'b': '6356759.0',
+                                             'lat_0': '50.00',
+                                             'lat_ts': '50.00',
+                                             'lon_0': '8.00',
+                                             'proj': 'stere'},
+                                            3712,
+                                            3712,
+                                            [-1370912.72,
+                                             -909968.64000000001,
+                                             1029087.28,
+                                             1490031.3600000001])
+        self.assertTrue(area_def < test_area)
+        self.assertTrue(area_def <= test_area)
+        self.assertFalse(area_def > test_area)
+        self.assertFalse(area_def >= test_area)
+
+    def test_area_comparisons_bad_proj(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                            -909968.64000000001,
+                                            1029087.28,
+                                            1490031.3600000001])
+
+        test_area = geometry.AreaDefinition('test', 'test',
+                                            'test',
+                                            {'a': '6378144.0',
+                                             'lat_0': '50.00',
+                                             'lon_0': '8.00',
+                                             'proj': 'stere'},
+                                            3712,
+                                            3712,
+                                            [-1370912.72,
+                                             -909968.64000000001,
+                                             1029087.28,
+                                             1490031.3600000001])
+        self.assertRaises(ValueError, area_def.__lt__, test_area)
+        self.assertRaises(ValueError, area_def.__le__, test_area)
+        self.assertRaises(ValueError, area_def.__gt__, test_area)
+        self.assertRaises(ValueError, area_def.__ge__, test_area)
 
     def test_swath_equal_area(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -399,6 +462,18 @@ class Test(unittest.TestCase):
 
         self.assertFalse(
             area_def == swath_def, "swath_def and area_def should be different")
+
+    def test_swath_comparisons(self):
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def1 = geometry.SwathDefinition(lons, lats)
+        lons = np.repeat(lons, 2)
+        lats = np.repeat(lats, 2)
+        swath_def2 = geometry.SwathDefinition(lons, lats)
+        self.assertTrue(swath_def1 < swath_def2)
+        self.assertTrue(swath_def1 <= swath_def2)
+        self.assertFalse(swath_def1 > swath_def2)
+        self.assertFalse(swath_def1 >= swath_def2)
 
     def test_grid_filter_valid(self):
         lons = np.array([-170, -30, 30, 170])
