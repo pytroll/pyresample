@@ -2,6 +2,17 @@ Changelog
 =========
 
 
+v1.8.2 (2018-03-01)
+-------------------
+- update changelog. [davidh-ssec]
+- Bump version: 1.8.1 → 1.8.2. [davidh-ssec]
+- Merge pull request #104 from pytroll/bugfix-chunk-size. [David Hoese]
+
+  Allow chunk size in dask methods to be 2D
+- Fix line too long. [davidh-ssec]
+- Fix chunk size 'get_proj_vectors_dask' so it can be 2D. [davidh-ssec]
+
+
 v1.8.1 (2018-02-22)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -727,6 +738,7 @@ v1.2.2 (2016-06-21)
   Without this, the compilation of the ewa extension crashes.
 
 
+
 v1.2.1 (2016-06-21)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -882,9 +894,11 @@ v1.2.0 (2016-06-17)
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
+
 - Adapt to newest pykdtree version. [Martin Raspaud]
 
   The kdtree object's attribute `data_pts` has been renamed to `data`.
+
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
 
 
@@ -896,6 +910,7 @@ v1.1.6 (2016-02-25)
 
   A previous commit was looking for a 'data_pts' attribute in the kdtree
   object, which is available in pykdtree, but not scipy.
+
 - Merge pull request #32 from mitkin/master. [Martin Raspaud]
 
   [tests] Skip deprecation warnings in test_gauss_multi_uncert
@@ -907,6 +922,7 @@ v1.1.6 (2016-02-25)
   The latest matplotlib (1.5) doesn't support python 2.6 and 3.3. This patch
   chooses the right matplotlib version to install depending on the python
   version at hand.
+
 - Skip deprecation warnings. [Mikhail Itkin]
 
   Catch the rest of the warnings. Check if there is only one, and
@@ -948,6 +964,7 @@ Other
 - Bugfix to address a numpy DeprecationWarning. [Martin Raspaud]
 
   Numpy won't take non-integer indices soon, so make index an int.
+
 - Merge branch 'release-1.1.3' [Martin Raspaud]
 - Merge branch 'licence-lgpl' into pre-master. [Martin Raspaud]
 - Switch to lgplv3, and bump up version number. [Martin Raspaud]
@@ -1169,7 +1186,7 @@ Other
 - Set svn:mime-type. [StorPipfugl]
 - Corrected doc errors. [StorPipfugl]
 - Removed dist dir. [StorPipfugl]
-- No commit message. [StorPipfugl]
+-  [StorPipfugl]
 - Updated documentation. New release. [StorPipfugl]
 - Started updating docstrings. [StorPipfugl]
 - Restructured API. [StorPipfugl]
@@ -1182,9 +1199,8 @@ Other
 - Removed unneeded function. [StorPipfugl]
 - Mime types set. [StorPipfugl]
 - Mime types set. [StorPipfugl]
-- No commit message. [StorPipfugl]
+-  [StorPipfugl]
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 - moved to Google Code. [StorPipfugl]
-
 
 
