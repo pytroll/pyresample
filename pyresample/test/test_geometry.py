@@ -52,20 +52,6 @@ class Test(unittest.TestCase):
                                                1029087.28,
                                                1490031.3600000001])
         lons, lats = area_def.get_lonlats()
-        area_def2 = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                            {'a': '6378144.0',
-                                             'b': '6356759.0',
-                                             'lat_0': '50.00',
-                                             'lat_ts': '50.00',
-                                             'lon_0': '8.00',
-                                             'proj': 'stere'},
-                                            800,
-                                            800,
-                                            [-1370912.72,
-                                                -909968.64000000001,
-                                                1029087.28,
-                                                1490031.3600000001],
-                                            lons=lons, lats=lats)
         lon, lat = area_def.get_lonlat(400, 400)
         self.assertAlmostEqual(lon, 5.5028467120975835,
                                msg='lon retrieval from precomputated grid failed')
@@ -111,7 +97,7 @@ class Test(unittest.TestCase):
 
         # Test dtype is preserved with automatic longitude wrapping
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
-        with catch_warnings() as w:
+        with catch_warnings():
             basedef = geometry.BaseDefinition(lons2, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -120,7 +106,7 @@ class Test(unittest.TestCase):
                          (lons2.dtype, lons.dtype,))
 
         lons2_ints = lons2.astype('int')
-        with catch_warnings() as w:
+        with catch_warnings():
             basedef = geometry.BaseDefinition(lons2_ints, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -181,23 +167,23 @@ class Test(unittest.TestCase):
         arr = np.array([1.2, 1.3, 1.4, 1.5])
         if sys.byteorder == 'little':
             # arr.view(np.uint8)
-            reference = np.array([ 51,  51,  51,  51,  51,  51, 243,
-                                   63, 205, 204, 204, 204, 204,
-                                   204, 244,  63, 102, 102, 102, 102,
-                                   102, 102, 246,  63,   0,   0,
-                                   0,   0,   0,   0, 248,  63],
-                                   dtype=np.uint8)
+            reference = np.array([51,  51,  51,  51,  51,  51, 243,
+                                  63, 205, 204, 204, 204, 204,
+                                  204, 244,  63, 102, 102, 102, 102,
+                                  102, 102, 246,  63,   0,   0,
+                                  0,   0,   0,   0, 248,  63],
+                                 dtype=np.uint8)
         else:
             # on le machines use arr.byteswap().view(np.uint8)
-            reference = np.array([ 63, 243,  51,  51,  51,  51,  51,
-                                   51,  63, 244, 204, 204, 204,
-                                   204, 204, 205,  63, 246, 102, 102,
-                                   102, 102, 102, 102,  63, 248,
-                                   0,   0,   0,   0,   0,   0],
-                                   dtype=np.uint8)
+            reference = np.array([63, 243,  51,  51,  51,  51,  51,
+                                  51,  63, 244, 204, 204, 204,
+                                  204, 204, 205,  63, 246, 102, 102,
+                                  102, 102, 102, 102,  63, 248,
+                                  0,   0,   0,   0,   0,   0],
+                                 dtype=np.uint8)
 
         np.testing.assert_allclose(reference,
-                                    geometry.get_array_hashable(arr))
+                                   geometry.get_array_hashable(arr))
 
         try:
             import xarray as xr
@@ -211,7 +197,6 @@ class Test(unittest.TestCase):
             xrarr.attrs['hash'] = 42
             self.assertEqual(geometry.get_array_hashable(xrarr),
                              xrarr.attrs['hash'])
-
 
     def test_swath_hash(self):
         lons = np.array([1.2, 1.3, 1.4, 1.5])
@@ -254,13 +239,11 @@ class Test(unittest.TestCase):
 
             self.assertIsInstance(hash(swath_def), int)
 
-
         lons = np.ma.array([1.2, 1.3, 1.4, 1.5])
         lats = np.ma.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
 
         self.assertIsInstance(hash(swath_def), int)
-
 
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -1027,7 +1010,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area2.y_size = random.randrange(6425)
         area2.x_size = x_size
 
-        res = concatenate_area_defs(area1, area2)
+        concatenate_area_defs(area1, area2)
         area_extent = [1, 2, 3, 6]
         y_size = area1.y_size + area2.y_size
         adef.assert_called_once_with(area1.area_id, area1.name, area1.proj_id,
