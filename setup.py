@@ -5,7 +5,7 @@
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -17,7 +17,7 @@
 
 import imp
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
-import multiprocessing
+import multiprocessing  # noqa: F401
 import os
 import sys
 
@@ -48,7 +48,9 @@ else:
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
               extra_compile_args=extra_compile_args),
-    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx", "pyresample/ewa/_fornav_templates.cpp"], language="c++", extra_compile_args=extra_compile_args,
+    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx",
+                                                 "pyresample/ewa/_fornav_templates.cpp"],
+              language="c++", extra_compile_args=extra_compile_args,
               depends=["pyresample/ewa/_fornav_templates.h"])
 ]
 
