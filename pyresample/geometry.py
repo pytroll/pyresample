@@ -118,7 +118,7 @@ class BaseDefinition(object):
         try:
             from dask.array import allclose
         except ImportError:
-            from numpy.ma import allclose
+            from numpy import allclose
         try:
             return (allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True) and
                     allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True))
