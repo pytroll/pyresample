@@ -93,7 +93,8 @@ class BaseDefinition(object):
 
     def __eq__(self, other):
         """Test for approximate equality"""
-
+        if self is other:
+            return True
         if other.lons is None or other.lats is None:
             other_lons, other_lats = other.get_lonlats()
         else:
@@ -106,11 +107,21 @@ class BaseDefinition(object):
             self_lons = self.lons
             self_lats = self.lats
 
+        if self_lons is other_lons and self_lats is other_lats:
+            return True
+        if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
+            self_lons = self_lons.data
+            self_lats = self_lats.data
+        if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
+            other_lons = other_lons.data
+            other_lats = other_lats.data
         try:
-            return (np.allclose(self_lons, other_lons, atol=1e-6,
-                                rtol=5e-9) and
-                    np.allclose(self_lats, other_lats, atol=1e-6,
-                                rtol=5e-9))
+            from dask.array import allclose
+        except ImportError:
+            from numpy import allclose
+        try:
+            return (allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True) and
+                    allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True))
         except (AttributeError, ValueError):
             return False
 
