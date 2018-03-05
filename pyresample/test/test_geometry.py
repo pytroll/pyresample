@@ -767,8 +767,61 @@ class TestSwathDefinition(unittest.TestCase):
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
         swath_def2 = geometry.SwathDefinition(lons, lats)
+        # Identical lons and lats
         self.assertFalse(
             swath_def != swath_def2, 'swath_defs are not equal as expected')
+        # Identical objects
+        self.assertFalse(
+            swath_def != swath_def, 'swath_defs are not equal as expected')
+
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        lons2 = np.array([1.2, 1.3, 1.4, 1.5])
+        lats2 = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        lons = np.array([1.2, 1.3, 1.4, np.nan])
+        lats = np.array([65.9, 65.86, 65.82, np.nan])
+        lons2 = np.array([1.2, 1.3, 1.4, np.nan])
+        lats2 = np.array([65.9, 65.86, 65.82, np.nan])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values, with nans
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        try:
+            import dask.array as da
+            lons = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+            lats = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+            lons2 = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+            lats2 = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+            swath_def = geometry.SwathDefinition(lons, lats)
+            swath_def2 = geometry.SwathDefinition(lons2, lats2)
+            # different arrays, same values, with nans
+            self.assertFalse(
+                swath_def != swath_def2, 'swath_defs are not equal as expected')
+        except ImportError:
+            pass
+
+        try:
+            import xarray as xr
+            lons = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+            lats = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+            lons2 = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+            lats2 = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+            swath_def = geometry.SwathDefinition(lons, lats)
+            swath_def2 = geometry.SwathDefinition(lons2, lats2)
+            # different arrays, same values, with nans
+            self.assertFalse(
+                swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        except ImportError:
+            pass
 
     def test_swath_not_equal(self):
         """Test swath inequality."""
