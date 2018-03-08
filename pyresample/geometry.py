@@ -700,6 +700,13 @@ class DynamicAreaDefinition(object):
                               self.area_extent, self.rotation)
 
 
+def invproj(data_x, data_y, proj_dict):
+    """Perform inverse projection."""
+    # XXX: does pyproj copy arrays? What can we do so it doesn't?
+    target_proj = Proj(**proj_dict)
+    return np.dstack(target_proj(data_x, data_y, inverse=True))
+
+
 class AreaDefinition(BaseDefinition):
 
     """Holds definition of an area.
@@ -1240,15 +1247,9 @@ class AreaDefinition(BaseDefinition):
         dtype = dtype or self.dtype
         target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
-        target_proj = Proj(**self.proj_dict)
-
-        def invproj(data1, data2):
-            # XXX: does pyproj copy arrays? What can we do so it doesn't?
-            return np.dstack(target_proj(data1, data2, inverse=True))
-
         res = map_blocks(invproj, target_x, target_y,
                          chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                         new_axis=[2])
+                         new_axis=[2], proj_dict=self.proj_dict)
 
         return res[:, :, 0], res[:, :, 1]
 
