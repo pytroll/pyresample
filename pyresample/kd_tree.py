@@ -1009,7 +1009,7 @@ class XArrayResamplerNN():
             resample_kdtree = KDTree(input_coords)
         else:
             resample_kdtree = sp.cKDTree(input_coords)
-        del input_coords, source_lons, source_lats
+
         return valid_input_idx, resample_kdtree
 
     def _query_resample_kdtree(self,
@@ -1042,12 +1042,15 @@ class XArrayResamplerNN():
 
         # Create kd-tree
         valid_input_idx, resample_kdtree = self._create_resample_kdtree()
+        # This is a numpy array
+        self.valid_input_index = valid_input_idx
+
         if resample_kdtree.n == 0:
             # Handle if all input data is reduced away
             valid_output_idx, index_arr, distance_arr = \
                 _create_empty_info(self.source_geo_def,
                                    self.target_geo_def, self.neighbours)
-            self.valid_input_index = valid_input_idx
+
             self.valid_output_index = valid_output_idx
             self.index_array = index_arr
             self.distance_array = distance_arr
@@ -1060,9 +1063,7 @@ class XArrayResamplerNN():
         index_arr, distance_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_output_idx)
 
-        self.valid_output_index, self.index_array = \
-            da.compute(valid_output_idx, index_arr)
-        self.valid_input_index = valid_input_idx
+        self.valid_output_index, self.index_array = valid_output_idx, index_arr
         self.distance_array = distance_arr
 
         return (self.valid_input_index,
