@@ -690,7 +690,10 @@ class DynamicAreaDefinition(object):
             except (TypeError, ValueError):
                 lons, lats = lonslats.get_lonlats()
             xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
-            corners = [np.min(xarr), np.min(yarr), np.max(xarr), np.max(yarr)]
+            xarr[xarr > 9e29] = np.nan
+            yarr[yarr > 9e29] = np.nan
+            corners = [np.nanmin(xarr), np.nanmin(yarr),
+                       np.nanmax(xarr), np.nanmax(yarr)]
 
             domain = self.compute_domain(corners, resolution, size)
             self.area_extent, self.x_size, self.y_size = domain
