@@ -2,6 +2,37 @@ Changelog
 =========
 
 
+v1.8.3 (2018-03-19)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.8.2 → 1.8.3. [Martin Raspaud]
+- Merge branch 'develop' into new_release. [Martin Raspaud]
+- Merge pull request #107 from pytroll/bugfix-memory-leak. [Martin
+  Raspaud]
+
+  [WIP] Remove closures to allow memory to be freed
+- Prevend dynamic areas to choke on NaNs. [Martin Raspaud]
+- Make CHUNK_SIZE int if taken from environment. [Martin Raspaud]
+- Reorganize indices assignments. [Martin Raspaud]
+- Remove closures to allow memory to be freed. [Martin Raspaud]
+- Merge pull request #106 from pytroll/bugfix-area-equality. [David
+  Hoese]
+
+  Fix area equality to support np.nan, xarray and dask
+- Add dask and xarray to appveyor. [Martin Raspaud]
+- Use numpy's allclose for swathdef equality. [Martin Raspaud]
+- Require a newer numpy for nan equality. [Martin Raspaud]
+- Style cleanup. [Martin Raspaud]
+- Add tests for swath equality. [Martin Raspaud]
+- Style cleanup. [Martin Raspaud]
+- Fix area equality to support xarray and dask. [Martin Raspaud]
+- Merge pull request #108 from pytroll/add-stickler-config. [Martin
+  Raspaud]
+
+  Adding .stickler.yml configuration file
+- Adding .stickler.yml. [stickler-ci]
+
+
 v1.8.2 (2018-03-01)
 -------------------
 - update changelog. [davidh-ssec]
@@ -738,7 +769,6 @@ v1.2.2 (2016-06-21)
   Without this, the compilation of the ewa extension crashes.
 
 
-
 v1.2.1 (2016-06-21)
 -------------------
 - update changelog. [Martin Raspaud]
@@ -894,11 +924,9 @@ v1.2.0 (2016-06-17)
 - Make kd_tree test work on older numpy version. [Martin Raspaud]
 
   VisibleDeprecationWarning is not available in numpy <1.9.
-
 - Adapt to newest pykdtree version. [Martin Raspaud]
 
   The kdtree object's attribute `data_pts` has been renamed to `data`.
-
 - Run tests on python 3.5 in travis also. [Martin Raspaud]
 
 
@@ -910,7 +938,6 @@ v1.1.6 (2016-02-25)
 
   A previous commit was looking for a 'data_pts' attribute in the kdtree
   object, which is available in pykdtree, but not scipy.
-
 - Merge pull request #32 from mitkin/master. [Martin Raspaud]
 
   [tests] Skip deprecation warnings in test_gauss_multi_uncert
@@ -922,7 +949,6 @@ v1.1.6 (2016-02-25)
   The latest matplotlib (1.5) doesn't support python 2.6 and 3.3. This patch
   chooses the right matplotlib version to install depending on the python
   version at hand.
-
 - Skip deprecation warnings. [Mikhail Itkin]
 
   Catch the rest of the warnings. Check if there is only one, and
@@ -964,7 +990,6 @@ Other
 - Bugfix to address a numpy DeprecationWarning. [Martin Raspaud]
 
   Numpy won't take non-integer indices soon, so make index an int.
-
 - Merge branch 'release-1.1.3' [Martin Raspaud]
 - Merge branch 'licence-lgpl' into pre-master. [Martin Raspaud]
 - Switch to lgplv3, and bump up version number. [Martin Raspaud]
@@ -1186,7 +1211,7 @@ Other
 - Set svn:mime-type. [StorPipfugl]
 - Corrected doc errors. [StorPipfugl]
 - Removed dist dir. [StorPipfugl]
--  [StorPipfugl]
+- No commit message. [StorPipfugl]
 - Updated documentation. New release. [StorPipfugl]
 - Started updating docstrings. [StorPipfugl]
 - Restructured API. [StorPipfugl]
@@ -1199,8 +1224,9 @@ Other
 - Removed unneeded function. [StorPipfugl]
 - Mime types set. [StorPipfugl]
 - Mime types set. [StorPipfugl]
--  [StorPipfugl]
+- No commit message. [StorPipfugl]
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 - moved to Google Code. [StorPipfugl]
+
 
 
