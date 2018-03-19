@@ -93,7 +93,8 @@ class BaseDefinition(object):
 
     def __eq__(self, other):
         """Test for approximate equality"""
-
+        if self is other:
+            return True
         if other.lons is None or other.lats is None:
             other_lons, other_lats = other.get_lonlats()
         else:
@@ -106,11 +107,21 @@ class BaseDefinition(object):
             self_lons = self.lons
             self_lats = self.lats
 
+        if self_lons is other_lons and self_lats is other_lats:
+            return True
+        if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
+            self_lons = self_lons.data
+            self_lats = self_lats.data
+        if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
+            other_lons = other_lons.data
+            other_lats = other_lats.data
         try:
-            return (np.allclose(self_lons, other_lons, atol=1e-6,
-                                rtol=5e-9) and
-                    np.allclose(self_lats, other_lats, atol=1e-6,
-                                rtol=5e-9))
+            from dask.array import allclose
+        except ImportError:
+            from numpy import allclose
+        try:
+            return (allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True) and
+                    allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True))
         except (AttributeError, ValueError):
             return False
 
@@ -679,7 +690,10 @@ class DynamicAreaDefinition(object):
             except (TypeError, ValueError):
                 lons, lats = lonslats.get_lonlats()
             xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
-            corners = [np.min(xarr), np.min(yarr), np.max(xarr), np.max(yarr)]
+            xarr[xarr > 9e29] = np.nan
+            yarr[yarr > 9e29] = np.nan
+            corners = [np.nanmin(xarr), np.nanmin(yarr),
+                       np.nanmax(xarr), np.nanmax(yarr)]
 
             domain = self.compute_domain(corners, resolution, size)
             self.area_extent, self.x_size, self.y_size = domain
@@ -687,6 +701,13 @@ class DynamicAreaDefinition(object):
         return AreaDefinition(self.area_id, self.description, '',
                               self.proj_dict, self.x_size, self.y_size,
                               self.area_extent, self.rotation)
+
+
+def invproj(data_x, data_y, proj_dict):
+    """Perform inverse projection."""
+    # XXX: does pyproj copy arrays? What can we do so it doesn't?
+    target_proj = Proj(**proj_dict)
+    return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
 class AreaDefinition(BaseDefinition):
@@ -1229,15 +1250,9 @@ class AreaDefinition(BaseDefinition):
         dtype = dtype or self.dtype
         target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
-        target_proj = Proj(**self.proj_dict)
-
-        def invproj(data1, data2):
-            # XXX: does pyproj copy arrays? What can we do so it doesn't?
-            return np.dstack(target_proj(data1, data2, inverse=True))
-
         res = map_blocks(invproj, target_x, target_y,
                          chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                         new_axis=[2])
+                         new_axis=[2], proj_dict=self.proj_dict)
 
         return res[:, :, 0], res[:, :, 1]
 
