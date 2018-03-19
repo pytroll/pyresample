@@ -17,23 +17,22 @@
 
 import os
 
-CHUNK_SIZE = os.getenv('PYTROLL_CHUNK_SIZE', 4096)
+CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
 
-from pyresample.version import __version__
 # Backwards compatibility
-from pyresample import geometry
-from pyresample import grid
-from pyresample import image
-from pyresample import kd_tree
-from pyresample import utils
-from pyresample import plot
+from pyresample import geometry  # noqa
+from pyresample import grid  # noqa
+from pyresample import image  # noqa
+from pyresample import kd_tree  # noqa
+from pyresample import utils  # noqa
+from pyresample import plot  # noqa
 # Easy access
-from pyresample.geometry import (SwathDefinition,
-                                 AreaDefinition,
-                                 DynamicAreaDefinition)
-from pyresample.utils import load_area
-from pyresample.kd_tree import XArrayResamplerNN
-from pyresample.plot import save_quicklook, area_def2basemap
+from pyresample.geometry import (SwathDefinition,  # noqa
+                                 AreaDefinition,  # noqa
+                                 DynamicAreaDefinition)  # noqa
+from pyresample.utils import load_area  # noqa
+from pyresample.kd_tree import XArrayResamplerNN  # noqa
+from pyresample.plot import save_quicklook, area_def2basemap  # noqa
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
@@ -43,13 +42,13 @@ def get_capabilities():
     cap = {}
 
     try:
-        from pykdtree.kdtree import KDTree
+        from pykdtree.kdtree import KDTree  # noqa
         cap['pykdtree'] = True
     except ImportError:
         cap['pykdtree'] = False
 
     try:
-        import numexpr
+        import numexpr  # noqa
         cap['numexpr'] = True
     except ImportError:
         cap['numexpr'] = False
