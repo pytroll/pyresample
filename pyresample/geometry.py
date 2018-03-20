@@ -531,15 +531,19 @@ class SwathDefinition(CoordinateDefinition):
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
                             'lat_1': lat1, 'lon_1': lon1,
-                            'lat_2': lat2, 'lon_2': lon2}
+                            'lat_2': lat2, 'lon_2': lon2, 'no_rot': True}
+
+        # return proj_dict2points
+        # We need to compute alpha-based omerc for geotiff support
 
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
-        az1, az2, dist = Geod(**proj_dict2points).inv(lon1, lat1, lon2, lat2)
-        if abs(lat1) > abs(lat2):
-            azimuth = az2
-        else:
-            azimuth = az1
-        del az1, az2, dist
+        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
+        azimuth = az1
+        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
+        azimuth += az1
+        azimuth /= 2
+        azimuth = 180 + azimuth
+
         return {'proj': 'omerc', 'alpha': float(azimuth),
                 'lat_0': float(lat0),  'lonc': float(lonc),
                 'no_rot': True, 'ellps': ellipsoid}
