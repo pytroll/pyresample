@@ -534,9 +534,13 @@ class SwathDefinition(CoordinateDefinition):
                             'lat_2': lat2, 'lon_2': lon2}
 
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
-        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
-        del az2, dist
-        return {'proj': 'omerc', 'alpha': float(az1),
+        az1, az2, dist = Geod(**proj_dict2points).inv(lon1, lat1, lon2, lat2)
+        if abs(lat1) > abs(lat2):
+            azimuth = az2
+        else:
+            azimuth = az1
+        del az1, az2, dist
+        return {'proj': 'omerc', 'alpha': float(azimuth),
                 'lat_0': float(lat0),  'lonc': float(lonc),
                 'no_rot': True, 'ellps': ellipsoid}
 
