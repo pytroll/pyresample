@@ -539,14 +539,24 @@ class SwathDefinition(CoordinateDefinition):
         az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
         azimuth = az1
         az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
-        azimuth += az1
-        azimuth /= 2
+        if abs(az1 - azimuth) > 1:
+            if abs(az2 - azimuth) > 1:
+                logger.warning("Can't find appropriate azimuth.")
+            else:
+                azimuth += az2
+                azimuth /= 2
+        else:
+            azimuth += az1
+            azimuth /= 2
+
         if abs(azimuth) > 90:
             azimuth = 180 + azimuth
 
-        return {'proj': 'omerc', 'alpha': float(azimuth),
-                'lat_0': float(lat0),  'lonc': float(lonc),
-                'no_rot': True, 'ellps': ellipsoid}
+        prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
+                      'lat_0': float(lat0),  'lonc': float(lonc),
+                      'no_rot': True, 'ellps': ellipsoid}
+
+        return prj_params
 
     def _compute_generic_parameters(self, projection, ellipsoid):
         """Compute the projection bb parameters for most projections."""
