@@ -844,9 +844,9 @@ class TestSwathDefinition(unittest.TestCase):
                          [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
 
         area = geometry.SwathDefinition(lons, lats)
-        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
+                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
 
@@ -902,13 +902,13 @@ class TestSwathDefinition(unittest.TestCase):
 
         res = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'})
 
-        np.testing.assert_allclose(res.area_extent, (2286629.731529,
-                                                     -2359693.817959,
-                                                     11729881.856072,
-                                                     2437001.523925))
-        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+        np.testing.assert_allclose(res.area_extent, [2253027.149539,
+                                                     -2348379.728104,
+                                                     11687636.846985,
+                                                     2432121.058435])
+        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
+                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
 
@@ -1095,25 +1095,6 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
-        # area = geometry.DynamicAreaDefinition('test_area', 'A test area',
-        #                                       {'proj': 'omerc'},
-        #                                       optimize_projection=False)
-        # lons = [[10, 12.1, 14.2, 16.3],
-        #         [10, 12, 14, 16],
-        #         [10, 11.9, 13.8, 15.7]]
-        # lats = [[66, 67, 68, 69.],
-        #         [58, 59, 60, 61],
-        #         [50, 51, 52, 53]]
-        # sdef = geometry.SwathDefinition(lons, lats)
-        # result = area.freeze(sdef,
-        #                      resolution=1000)
-        # self.assertTupleEqual(result.area_extent, (5578795.1654752363,
-        #                                            -270848.61872542271,
-        #                                            7694893.3964453982,
-        #                                            126974.877141819))
-        # self.assertEqual(result.x_size, 2116)
-        # self.assertEqual(result.y_size, 398)
-
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               {'proj': 'omerc'},
                                               optimize_projection=True)
@@ -1126,10 +1107,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-        np.testing.assert_allclose(result.area_extent, (5050520.6077326955,
-                                                        -336485.86803662963,
-                                                        8223167.9541879389,
-                                                        192612.12645302597))
+        np.testing.assert_allclose(result.area_extent, [5016583.682258,
+                                                        -336277.698941,
+                                                        8184964.697984,
+                                                        192456.651909])
         self.assertEqual(result.x_size, 3)
         self.assertEqual(result.y_size, 4)
 
