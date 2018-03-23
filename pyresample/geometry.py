@@ -531,14 +531,32 @@ class SwathDefinition(CoordinateDefinition):
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
                             'lat_1': lat1, 'lon_1': lon1,
-                            'lat_2': lat2, 'lon_2': lon2}
+                            'lat_2': lat2, 'lon_2': lon2, 'no_rot': True}
 
+        # return proj_dict2points
+        # We need to compute alpha-based omerc for geotiff support
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
+        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
+        azimuth = az1
         az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
-        del az2, dist
-        return {'proj': 'omerc', 'alpha': float(az1),
-                'lat_0': float(lat0),  'lonc': float(lonc),
-                'no_rot': True, 'ellps': ellipsoid}
+        if abs(az1 - azimuth) > 1:
+            if abs(az2 - azimuth) > 1:
+                logger.warning("Can't find appropriate azimuth.")
+            else:
+                azimuth += az2
+                azimuth /= 2
+        else:
+            azimuth += az1
+            azimuth /= 2
+
+        if abs(azimuth) > 90:
+            azimuth = 180 + azimuth
+
+        prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
+                      'lat_0': float(lat0),  'lonc': float(lonc),
+                      'no_rot': True, 'ellps': ellipsoid}
+
+        return prj_params
 
     def _compute_generic_parameters(self, projection, ellipsoid):
         """Compute the projection bb parameters for most projections."""
