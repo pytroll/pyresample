@@ -135,8 +135,10 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
     # Reduce data
     new_data = data[input_idxs]
-    data_min = np.nanmin(new_data)
-    data_max = np.nanmax(new_data)
+    # Add a small "machine epsilon" so that tiny variations are not discarded
+    epsilon = 1e-6
+    data_min = np.nanmin(new_data) - epsilon
+    data_max = np.nanmax(new_data) + epsilon
 
     new_data = new_data[idx_arr]
 
