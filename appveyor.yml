@@ -1,32 +1,37 @@
 environment:
   global:
-    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
-    # /E:ON and /V:ON options are not enabled in the batch script intepreter
-    # See: http://stackoverflow.com/a/13751649/163740
-    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_compiler.cmd"
-  # Don't build pykdtree with openmp because it isn't supported in appveyor's compilers
+    PYTHON: "C:\\conda"
+    MINICONDA_VERSION: "latest"
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\ci-helpers\\appveyor\\windows_sdk.cmd"
+    # Don't build pykdtree with openmp because it isn't supported in appveyor's compilers
     USE_OMP: "0"
+    CONDA_DEPENDENCIES: "xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib pyyaml pyproj coveralls configobj coverage"
+    CONDA_CHANNELS: "conda-forge"
 
   matrix:
     - PYTHON: "C:\\Python27_32"
       PYTHON_VERSION: "2.7.8"
       PYTHON_ARCH: "32"
       MINICONDA_VERSION: "2"
+      NUMPY_VERSION: "stable"
 
     - PYTHON: "C:\\Python27_64"
       PYTHON_VERSION: "2.7.8"
       PYTHON_ARCH: "64"
       MINICONDA_VERSION: "2"
+      NUMPY_VERSION: "stable"
 
     - PYTHON: "C:\\Python36_32"
       PYTHON_VERSION: "3.6"
       PYTHON_ARCH: "32"
       MINICONDA_VERSION: "3"
+      NUMPY_VERSION: "stable"
 
     - PYTHON: "C:\\Python36_64"
       PYTHON_VERSION: "3.6"
       PYTHON_ARCH: "64"
       MINICONDA_VERSION: "3"
+      NUMPY_VERSION: "stable"
 
 install:
   - "git submodule update --init --recursive"
