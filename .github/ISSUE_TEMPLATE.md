@@ -15,4 +15,4 @@ expected output is a better solution.]
 
 #### Versions of Python, package at hand and relevant dependencies
 
-Thank you for reporting an issue !
+<!-- Thank you for reporting an issue ! -->
