@@ -16,7 +16,5 @@ Plotting capablity using Basemap. As of v0.8.0 [pykdtree](https://github.com/sto
 Pyresample is tested with Python 2.7 and 3.6, but should additionally work
 on Python 3.4+.
 
-Note: For numpy >= 1.6.2 use pyresample >= 0.7.13  
-
 [Documentation](https://pyresample.readthedocs.org/en/latest/)
 Look at [pytroll.org](http://pytroll.org/) for more information.
