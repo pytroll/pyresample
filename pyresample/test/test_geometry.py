@@ -78,7 +78,8 @@ class Test(unittest.TestCase):
                         msg='Calculation of cartesian coordinates failed')
 
     def test_cartopy_crs(self):
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+                                           'areaD',
                                            {'a': '6378144.0',
                                             'b': '6356759.0',
                                             'lat_0': '50.00',
