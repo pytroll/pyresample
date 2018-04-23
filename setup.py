@@ -30,7 +30,7 @@ requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy>=1.10.0', 'configob
                 'pykdtree>=1.1.1', 'pyyaml', 'six']
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
-                  'quicklook': ['matplotlib', 'basemap', 'pillow'],
+                  'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'dask': ['dask>=0.16.1']}
 
 test_requires = []
