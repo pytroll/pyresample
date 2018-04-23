@@ -52,20 +52,6 @@ class Test(unittest.TestCase):
                                                1029087.28,
                                                1490031.3600000001])
         lons, lats = area_def.get_lonlats()
-        area_def2 = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                            {'a': '6378144.0',
-                                             'b': '6356759.0',
-                                             'lat_0': '50.00',
-                                             'lat_ts': '50.00',
-                                             'lon_0': '8.00',
-                                             'proj': 'stere'},
-                                            800,
-                                            800,
-                                            [-1370912.72,
-                                                -909968.64000000001,
-                                                1029087.28,
-                                                1490031.3600000001],
-                                            lons=lons, lats=lats)
         lon, lat = area_def.get_lonlat(400, 400)
         self.assertAlmostEqual(lon, 5.5028467120975835,
                                msg='lon retrieval from precomputated grid failed')
@@ -132,7 +118,7 @@ class Test(unittest.TestCase):
 
         # Test dtype is preserved with automatic longitude wrapping
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
-        with catch_warnings() as w:
+        with catch_warnings():
             basedef = geometry.BaseDefinition(lons2, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -141,7 +127,7 @@ class Test(unittest.TestCase):
                          (lons2.dtype, lons.dtype,))
 
         lons2_ints = lons2.astype('int')
-        with catch_warnings() as w:
+        with catch_warnings():
             basedef = geometry.BaseDefinition(lons2_ints, lats)
 
         lons, _ = basedef.get_lonlats()
@@ -202,23 +188,23 @@ class Test(unittest.TestCase):
         arr = np.array([1.2, 1.3, 1.4, 1.5])
         if sys.byteorder == 'little':
             # arr.view(np.uint8)
-            reference = np.array([ 51,  51,  51,  51,  51,  51, 243,
-                                   63, 205, 204, 204, 204, 204,
-                                   204, 244,  63, 102, 102, 102, 102,
-                                   102, 102, 246,  63,   0,   0,
-                                   0,   0,   0,   0, 248,  63],
-                                   dtype=np.uint8)
+            reference = np.array([51,  51,  51,  51,  51,  51, 243,
+                                  63, 205, 204, 204, 204, 204,
+                                  204, 244,  63, 102, 102, 102, 102,
+                                  102, 102, 246,  63,   0,   0,
+                                  0,   0,   0,   0, 248,  63],
+                                 dtype=np.uint8)
         else:
             # on le machines use arr.byteswap().view(np.uint8)
-            reference = np.array([ 63, 243,  51,  51,  51,  51,  51,
-                                   51,  63, 244, 204, 204, 204,
-                                   204, 204, 205,  63, 246, 102, 102,
-                                   102, 102, 102, 102,  63, 248,
-                                   0,   0,   0,   0,   0,   0],
-                                   dtype=np.uint8)
+            reference = np.array([63, 243,  51,  51,  51,  51,  51,
+                                  51,  63, 244, 204, 204, 204,
+                                  204, 204, 205,  63, 246, 102, 102,
+                                  102, 102, 102, 102,  63, 248,
+                                  0,   0,   0,   0,   0,   0],
+                                 dtype=np.uint8)
 
         np.testing.assert_allclose(reference,
-                                    geometry.get_array_hashable(arr))
+                                   geometry.get_array_hashable(arr))
 
         try:
             import xarray as xr
@@ -232,7 +218,6 @@ class Test(unittest.TestCase):
             xrarr.attrs['hash'] = 42
             self.assertEqual(geometry.get_array_hashable(xrarr),
                              xrarr.attrs['hash'])
-
 
     def test_swath_hash(self):
         lons = np.array([1.2, 1.3, 1.4, 1.5])
@@ -275,13 +260,11 @@ class Test(unittest.TestCase):
 
             self.assertIsInstance(hash(swath_def), int)
 
-
         lons = np.ma.array([1.2, 1.3, 1.4, 1.5])
         lats = np.ma.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
 
         self.assertIsInstance(hash(swath_def), int)
-
 
     def test_area_equal(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -805,8 +788,61 @@ class TestSwathDefinition(unittest.TestCase):
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = geometry.SwathDefinition(lons, lats)
         swath_def2 = geometry.SwathDefinition(lons, lats)
+        # Identical lons and lats
         self.assertFalse(
             swath_def != swath_def2, 'swath_defs are not equal as expected')
+        # Identical objects
+        self.assertFalse(
+            swath_def != swath_def, 'swath_defs are not equal as expected')
+
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        lons2 = np.array([1.2, 1.3, 1.4, 1.5])
+        lats2 = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        lons = np.array([1.2, 1.3, 1.4, np.nan])
+        lats = np.array([65.9, 65.86, 65.82, np.nan])
+        lons2 = np.array([1.2, 1.3, 1.4, np.nan])
+        lats2 = np.array([65.9, 65.86, 65.82, np.nan])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values, with nans
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        try:
+            import dask.array as da
+            lons = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+            lats = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+            lons2 = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+            lats2 = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+            swath_def = geometry.SwathDefinition(lons, lats)
+            swath_def2 = geometry.SwathDefinition(lons2, lats2)
+            # different arrays, same values, with nans
+            self.assertFalse(
+                swath_def != swath_def2, 'swath_defs are not equal as expected')
+        except ImportError:
+            pass
+
+        try:
+            import xarray as xr
+            lons = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+            lats = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+            lons2 = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+            lats2 = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+            swath_def = geometry.SwathDefinition(lons, lats)
+            swath_def2 = geometry.SwathDefinition(lons2, lats2)
+            # different arrays, same values, with nans
+            self.assertFalse(
+                swath_def != swath_def2, 'swath_defs are not equal as expected')
+
+        except ImportError:
+            pass
 
     def test_swath_not_equal(self):
         """Test swath inequality."""
@@ -829,9 +865,9 @@ class TestSwathDefinition(unittest.TestCase):
                          [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
 
         area = geometry.SwathDefinition(lons, lats)
-        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
+                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
 
@@ -887,13 +923,13 @@ class TestSwathDefinition(unittest.TestCase):
 
         res = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'})
 
-        np.testing.assert_allclose(res.area_extent, (2286629.731529,
-                                                     -2359693.817959,
-                                                     11729881.856072,
-                                                     2437001.523925))
-        proj_dict = {'no_rot': True, 'lonc': 5.340645620216994,
+        np.testing.assert_allclose(res.area_extent, [2253027.149539,
+                                                     -2348379.728104,
+                                                     11687636.846985,
+                                                     2432121.058435])
+        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 19.022450179020247, 'lat_0': 60.7420043944989}
+                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
 
@@ -1048,7 +1084,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area2.y_size = random.randrange(6425)
         area2.x_size = x_size
 
-        res = concatenate_area_defs(area1, area2)
+        concatenate_area_defs(area1, area2)
         area_extent = [1, 2, 3, 6]
         y_size = area1.y_size + area2.y_size
         adef.assert_called_once_with(area1.area_id, area1.name, area1.proj_id,
@@ -1080,25 +1116,6 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
-        # area = geometry.DynamicAreaDefinition('test_area', 'A test area',
-        #                                       {'proj': 'omerc'},
-        #                                       optimize_projection=False)
-        # lons = [[10, 12.1, 14.2, 16.3],
-        #         [10, 12, 14, 16],
-        #         [10, 11.9, 13.8, 15.7]]
-        # lats = [[66, 67, 68, 69.],
-        #         [58, 59, 60, 61],
-        #         [50, 51, 52, 53]]
-        # sdef = geometry.SwathDefinition(lons, lats)
-        # result = area.freeze(sdef,
-        #                      resolution=1000)
-        # self.assertTupleEqual(result.area_extent, (5578795.1654752363,
-        #                                            -270848.61872542271,
-        #                                            7694893.3964453982,
-        #                                            126974.877141819))
-        # self.assertEqual(result.x_size, 2116)
-        # self.assertEqual(result.y_size, 398)
-
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               {'proj': 'omerc'},
                                               optimize_projection=True)
@@ -1111,10 +1128,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-        np.testing.assert_allclose(result.area_extent, (5050520.6077326955,
-                                                        -336485.86803662963,
-                                                        8223167.9541879389,
-                                                        192612.12645302597))
+        np.testing.assert_allclose(result.area_extent, [5016583.682258,
+                                                        -336277.698941,
+                                                        8184964.697984,
+                                                        192456.651909])
         self.assertEqual(result.x_size, 3)
         self.assertEqual(result.y_size, 4)
 

@@ -2,6 +2,48 @@ Changelog
 =========
 
 
+v1.8.3 (2018-03-19)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.8.2 → 1.8.3. [Martin Raspaud]
+- Merge branch 'develop' into new_release. [Martin Raspaud]
+- Merge pull request #107 from pytroll/bugfix-memory-leak. [Martin
+  Raspaud]
+
+  [WIP] Remove closures to allow memory to be freed
+- Prevend dynamic areas to choke on NaNs. [Martin Raspaud]
+- Make CHUNK_SIZE int if taken from environment. [Martin Raspaud]
+- Reorganize indices assignments. [Martin Raspaud]
+- Remove closures to allow memory to be freed. [Martin Raspaud]
+- Merge pull request #106 from pytroll/bugfix-area-equality. [David
+  Hoese]
+
+  Fix area equality to support np.nan, xarray and dask
+- Add dask and xarray to appveyor. [Martin Raspaud]
+- Use numpy's allclose for swathdef equality. [Martin Raspaud]
+- Require a newer numpy for nan equality. [Martin Raspaud]
+- Style cleanup. [Martin Raspaud]
+- Add tests for swath equality. [Martin Raspaud]
+- Style cleanup. [Martin Raspaud]
+- Fix area equality to support xarray and dask. [Martin Raspaud]
+- Merge pull request #108 from pytroll/add-stickler-config. [Martin
+  Raspaud]
+
+  Adding .stickler.yml configuration file
+- Adding .stickler.yml. [stickler-ci]
+
+
+v1.8.2 (2018-03-01)
+-------------------
+- update changelog. [davidh-ssec]
+- Bump version: 1.8.1 → 1.8.2. [davidh-ssec]
+- Merge pull request #104 from pytroll/bugfix-chunk-size. [David Hoese]
+
+  Allow chunk size in dask methods to be 2D
+- Fix line too long. [davidh-ssec]
+- Fix chunk size 'get_proj_vectors_dask' so it can be 2D. [davidh-ssec]
+
+
 v1.8.1 (2018-02-22)
 -------------------
 - update changelog. [Martin Raspaud]
