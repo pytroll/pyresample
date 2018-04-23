@@ -17,8 +17,8 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
 
@@ -1277,9 +1277,20 @@ class AreaDefinition(BaseDefinition):
         dtype = dtype or self.dtype
         target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
+<<<<<<< 304ddf9fb5ef19ddef436dd90e340ec11e3cbbcc
         res = map_blocks(invproj, target_x, target_y,
                          chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                          new_axis=[2], proj_dict=self.proj_dict)
+=======
+        target_proj = Proj(**self.proj_dict)
+
+        def invproj(data1, data2):
+            return np.dstack(target_proj(data1, data2, inverse=True))
+
+        res = map_blocks(invproj, target_x, target_y,
+                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
+                         new_axis=[2])
+>>>>>>> Fix flake8 issues
 
         return res[:, :, 0], res[:, :, 1]
 

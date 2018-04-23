@@ -244,7 +244,10 @@ def resample_custom(source_geo_def, data, target_geo_def,
         Counts of number of source values used in weighting per pixel
     """
 
-    try:
+    if not isinstance(weight_funcs, (list, tuple)):
+        if not isinstance(weight_funcs, types.FunctionType):
+            raise TypeError('weight_func must be function object')
+    else:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
                 raise TypeError('weight_func must be function object')
