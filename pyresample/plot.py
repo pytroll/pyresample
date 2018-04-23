@@ -191,7 +191,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     }
 
     try:
-        from pyresample._cartopy import from_proj
+        from pyresample import _cartopy  # noqa
     except ImportError:
         if coast_res.endswith('m'):
             _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}

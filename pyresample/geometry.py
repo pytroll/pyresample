@@ -17,8 +17,8 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes for geometry operations"""
 
@@ -1236,9 +1236,8 @@ class AreaDefinition(BaseDefinition):
         def invproj(data1, data2):
             return np.dstack(target_proj(data1, data2, inverse=True))
 
-        res = map_blocks(invproj, target_x, target_y, chunks=(target_x.chunks[0],
-                                                              target_x.chunks[1],
-                                                              2),
+        res = map_blocks(invproj, target_x, target_y,
+                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                          new_axis=[2])
 
         return res[:, :, 0], res[:, :, 1]

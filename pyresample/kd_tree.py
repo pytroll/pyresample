@@ -39,7 +39,7 @@ except ImportError:
     da = None
 
 if sys.version < '3':
-    range = xrange
+    range = xrange  # noqa
 else:
     long = int
 
@@ -177,7 +177,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         sigmas.__iter__()
         sigma_list = sigmas
         is_multi_channel = True
-    except:
+    except AttributeError:
         sigma_list = [sigmas]
 
     for sigma in sigma_list:
@@ -246,13 +246,13 @@ def resample_custom(source_geo_def, data, target_geo_def,
         Counts of number of source values used in weighting per pixel
     """
 
-    try:
+    if not isinstance(weight_funcs, (list, tuple)):
+        if not isinstance(weight_funcs, types.FunctionType):
+            raise TypeError('weight_func must be function object')
+    else:
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
                 raise TypeError('weight_func must be function object')
-    except:
-        if not isinstance(weight_funcs, types.FunctionType):
-            raise TypeError('weight_func must be function object')
 
     return _resample(source_geo_def, data, target_geo_def, 'custom',
                      radius_of_influence, neighbours=neighbours,
@@ -685,7 +685,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
                         'valid_input_index and data')
 
     valid_types = ('nn', 'custom')
-    if not resample_type in valid_types:
+    if resample_type not in valid_types:
         raise TypeError('Invalid resampling type: %s' % resample_type)
 
     if resample_type == 'custom' and weight_funcs is None:
