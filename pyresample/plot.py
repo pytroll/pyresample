@@ -158,11 +158,48 @@ def area_def2basemap(area_def, **kwargs):
     return Basemap(**basemap_args)
 
 
+def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
+                           label='Variable (units)', num_meridians=45,
+                           num_parallels=10, coast_res='110m', cmap='jet'):
+    if area_def.shape != data.shape:
+        raise ValueError('area_def shape %s does not match data shape %s' %
+                         (list(area_def.shape), list(data.shape)))
+    import matplotlib.pyplot as plt
+    bmap = area_def2basemap(area_def, resolution=coast_res)
+    bmap.drawcoastlines()
+    if num_meridians > 0:
+        bmap.drawmeridians(np.arange(-180, 180, num_meridians))
+    if num_parallels > 0:
+        bmap.drawparallels(np.arange(-90, 90, num_parallels))
+    if not (np.ma.isMaskedArray(data) and data.mask.all()):
+        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
+        plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
+    return plt
+
+
 def _get_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', cmap='jet'):
     """Get default Basemap matplotlib plot
     """
+    bmap_to_cartopy_res = {
+        'c': '110m',
+        'l': '110m',
+        'i': '50m',
+        'h': '10m',
+        'f': '10m'
+    }
+
+    try:
+        from pyresample._cartopy import from_proj
+    except ImportError:
+        if coast_res.endswith('m'):
+            _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}
+            coast_res = _rev_map[coast_res]
+        return _basemap_get_quicklook(
+            area_def, data, vmin, vmax, label, num_meridians,
+            num_parallels, coast_res=coast_res, cmap=cmap)
+
     if coast_res and coast_res not in ['110m', '50m', '10m']:
         import warnings
         warnings.warn("'coast_res' should be either '110m', '50m', '10m'.")
@@ -199,7 +236,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
 
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c', cmap='jet'):
+                   num_parallels=10, coast_res='110m', cmap='jet'):
     """Display default quicklook plot
 
     Parameters
@@ -236,7 +273,7 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
 
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c', backend='AGG',
+                   num_parallels=10, coast_res='110m', backend='AGG',
                    cmap='jet'):
     """Display default quicklook plot
 

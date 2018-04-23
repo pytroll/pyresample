@@ -15,11 +15,6 @@ except ImportError:
     Basemap = None
 
 
-def tmp(f):
-    f.tmp = True
-    return f
-
-
 class Test(unittest.TestCase):
 
     filename = os.path.abspath(os.path.join(os.path.dirname(__file__),
