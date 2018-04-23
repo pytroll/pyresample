@@ -9,7 +9,7 @@ env:
         - NUMPY_VERSION=stable
         - MAIN_CMD='python setup.py'
         - CONDA_DEPENDENCIES='Cython jinja2'
-        - CONDA_ALL_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib pyyaml pyproj coveralls configobj'
+        - CONDA_ALL_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib pyyaml pyproj coveralls configobj coverage'
         - SETUP_XVFB=False
         - EVENT_TYPE='push pull_request'
         - SETUP_CMD='test'
