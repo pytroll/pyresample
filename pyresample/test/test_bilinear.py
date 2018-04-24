@@ -45,8 +45,8 @@ class Test(unittest.TestCase):
         cls.data1 = np.ones((in_shape[0], in_shape[1]))
         cls.data2 = 2. * cls.data1
         cls.data3 = cls.data1 + 9.5
-        lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
-                                 np.linspace(50., 60., num=in_shape[1]))
+        lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
+                                 np.linspace(45., 75., num=in_shape[1]))
         cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
         radius = 50e3
@@ -184,12 +184,20 @@ class Test(unittest.TestCase):
                                                          self.target_def)
         # Only 6th index should have valid values
         for i in range(len(t__)):
+            # Just check the exact value for one pixel
             if i == 5:
-                self.assertAlmostEqual(t__[i], 0.684850870155, 5)
-                self.assertAlmostEqual(s__[i], 0.775433912393, 5)
-            else:
+                self.assertAlmostEqual(t__[i], 0.730659147133, 5)
+                self.assertAlmostEqual(s__[i], 0.310314173004, 5)
+            # These pixels are outside the area
+            elif i in [12, 13, 14, 15]:
                 self.assertTrue(np.isnan(t__[i]))
                 self.assertTrue(np.isnan(s__[i]))
+            # All the others should have values between 0.0 and 1.0
+            else:
+                self.assertTrue(t__[i] >= 0.0)
+                self.assertTrue(s__[i] >= 0.0)
+                self.assertTrue(t__[i] <= 1.0)
+                self.assertTrue(s__[i] <= 1.0)
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
@@ -223,16 +231,16 @@ class Test(unittest.TestCase):
                                     self.swath_def,
                                     self.target_def)
         self.assertEqual(res.shape, self.target_def.shape)
-        # There should be only one pixel with value 1, all others are 0
-        self.assertEqual(res.sum(), 1)
+        # There are pixels with value 1, all others are 0
+        self.assertEqual(res.sum(), 8)
 
         # Single array with masked output
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
                                     self.target_def, fill_value=None)
         self.assertTrue(hasattr(res, 'mask'))
-        # There should be only one valid pixel
-        self.assertEqual(self.target_def.size - res.mask.sum(), 1)
+        # There should be 8 valid pixels
+        self.assertEqual(self.target_def.size - res.mask.sum(), 8)
 
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
