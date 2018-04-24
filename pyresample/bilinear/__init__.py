@@ -240,7 +240,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     # Get output x/y coordinates
     out_x, out_y = _get_output_xy(target_area_def, proj)
 
-    # Get input x/ycoordinates
+    # Get input x/y coordinates
     in_x, in_y = _get_input_xy(source_geo_def, proj, input_idxs, idx_ref)
 
     # Get the four closest corner points around each output location
@@ -414,8 +414,11 @@ def _mask_coordinates(lons, lats):
 
 def _get_corner(stride, valid, in_x, in_y, idx_ref):
     """Get closest set of coordinates from the *valid* locations"""
+    # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
+    # Check which of these were actually valid
     invalid = np.invert(np.max(valid, axis=1))
+
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]
     x__[invalid] = np.nan
