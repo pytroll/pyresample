@@ -210,7 +210,6 @@ class Test(unittest.TestCase):
                                                          reduce_data=True)
         _check_ts(t__, s__)
 
-
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_def,
