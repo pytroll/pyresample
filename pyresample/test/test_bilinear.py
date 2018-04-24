@@ -182,6 +182,7 @@ class Test(unittest.TestCase):
     def test_get_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_def)
+
         # Only 6th index should have valid values
         for i in range(len(t__)):
             # Just check the exact value for one pixel
@@ -222,8 +223,8 @@ class Test(unittest.TestCase):
         res = bil.get_sample_from_bil_info(self.data3.ravel(), t__, s__,
                                            input_idxs, idx_arr,
                                            output_shape=self.target_def.shape)
-        # Eight pixels are outside of the data
-        self.assertEqual(np.isnan(res).sum(), 8)
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum(), 4)
 
     def test_resample_bilinear(self):
         # Single array
@@ -231,8 +232,8 @@ class Test(unittest.TestCase):
                                     self.swath_def,
                                     self.target_def)
         self.assertEqual(res.shape, self.target_def.shape)
-        # There are pixels with value 1, all others are 0
-        self.assertEqual(res.sum(), 8)
+        # There are 12 pixels with value 1, all others are 0
+        self.assertEqual(res.sum(), 12)
 
         # Single array with masked output
         res = bil.resample_bilinear(self.data1,
@@ -240,7 +241,7 @@ class Test(unittest.TestCase):
                                     self.target_def, fill_value=None)
         self.assertTrue(hasattr(res, 'mask'))
         # There should be 8 valid pixels
-        self.assertEqual(self.target_def.size - res.mask.sum(), 8)
+        self.assertEqual(self.target_def.size - res.mask.sum(), 12)
 
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
