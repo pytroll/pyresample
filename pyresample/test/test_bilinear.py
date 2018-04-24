@@ -44,6 +44,7 @@ class Test(unittest.TestCase):
         in_shape = (100, 100)
         cls.data1 = np.ones((in_shape[0], in_shape[1]))
         cls.data2 = 2. * cls.data1
+        cls.data3 = cls.data1 + 9.5
         lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
                                  np.linspace(50., 60., num=in_shape[1]))
         cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
@@ -208,6 +209,13 @@ class Test(unittest.TestCase):
         res = res.shape
         self.assertEqual(res[0], self.target_def.shape[0])
         self.assertEqual(res[1], self.target_def.shape[1])
+
+        # Test rounding that is happening for certain values
+        res = bil.get_sample_from_bil_info(self.data3.ravel(), t__, s__,
+                                           input_idxs, idx_arr,
+                                           output_shape=self.target_def.shape)
+        # Eight pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum(), 8)
 
     def test_resample_bilinear(self):
         # Single array
