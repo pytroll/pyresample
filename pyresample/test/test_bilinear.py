@@ -63,7 +63,6 @@ class Test(unittest.TestCase):
         cls.target_def = target_def
         cls.idx_ref = idx_ref
 
-
     def test_calc_abc(self):
         # No np.nan inputs
         pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
@@ -209,7 +208,6 @@ class Test(unittest.TestCase):
                                                          nprocs=1,
                                                          reduce_data=True)
         _check_ts(t__, s__)
-
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
