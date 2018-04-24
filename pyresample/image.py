@@ -352,7 +352,7 @@ class ImageContainerBilinear(ImageContainer):
     """
 
     def __init__(self, image_data, geo_def, radius_of_influence, epsilon=0,
-                 fill_value=0, reduce_data=True, nprocs=1, segments=None,
+                 fill_value=0, reduce_data=False, nprocs=1, segments=None,
                  neighbours=32):
         super(ImageContainerBilinear, self).__init__(image_data, geo_def,
                                                      fill_value=fill_value,
