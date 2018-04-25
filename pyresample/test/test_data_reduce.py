@@ -59,7 +59,7 @@ class Test(unittest.TestCase):
                                                   lons, lats, data,
                                                   7000)
         cross_sum = data.sum()
-        expected = 20514375.0
+        expected = 20685125.0
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_reduce_boundary(self):
@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
                                                         boundary_lonlats[1],
                                                         lons, lats, data, 7000)
         cross_sum = data.sum()
-        expected = 20514375.0
+        expected = 20685125.0
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_cartesian_reduce(self):
@@ -86,7 +86,7 @@ class Test(unittest.TestCase):
         lons, lats, data = swath_from_cartesian_grid(grid, lons, lats, data,
                                                      7000)
         cross_sum = data.sum()
-        expected = 20514375.0
+        expected = 20685125.0
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_area_con_reduce(self):
@@ -100,7 +100,7 @@ class Test(unittest.TestCase):
                                                        lons, lats, 7000)
         data = data[valid_index]
         cross_sum = data.sum()
-        expected = 20514375.0
+        expected = 20685125.0
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_area_con_cartesian_reduce(self):
@@ -114,7 +114,7 @@ class Test(unittest.TestCase):
                                                           lons, lats, 7000)
         data = data[valid_index]
         cross_sum = data.sum()
-        expected = 20514375.0
+        expected = 20685125.0
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_reduce_north_pole(self):
