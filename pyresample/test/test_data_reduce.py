@@ -60,7 +60,7 @@ class Test(unittest.TestCase):
                                                   7000)
         cross_sum = data.sum()
         expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_reduce_boundary(self):
         data = np.fromfunction(lambda y, x: (y + x), (1000, 1000))
@@ -74,7 +74,7 @@ class Test(unittest.TestCase):
                                                         lons, lats, data, 7000)
         cross_sum = data.sum()
         expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_cartesian_reduce(self):
         data = np.fromfunction(lambda y, x: (y + x), (1000, 1000))
@@ -87,8 +87,7 @@ class Test(unittest.TestCase):
                                                      7000)
         cross_sum = data.sum()
         expected = 20514375.0
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='Cartesian reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_area_con_reduce(self):
         data = np.fromfunction(lambda y, x: (y + x), (1000, 1000))
@@ -102,7 +101,7 @@ class Test(unittest.TestCase):
         data = data[valid_index]
         cross_sum = data.sum()
         expected = 20514375.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_area_con_cartesian_reduce(self):
         data = np.fromfunction(lambda y, x: (y + x), (1000, 1000))
@@ -116,8 +115,7 @@ class Test(unittest.TestCase):
         data = data[valid_index]
         cross_sum = data.sum()
         expected = 20514375.0
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='Cartesian reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_reduce_north_pole(self):
         """Test reducing around the poles."""
@@ -155,7 +153,7 @@ class Test(unittest.TestCase):
 
         cross_sum = data.sum()
         expected = 999000000.0
-        self.assertAlmostEqual(cross_sum, expected, msg='Reduce data failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
 
 def suite():
