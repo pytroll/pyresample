@@ -180,27 +180,36 @@ class Test(unittest.TestCase):
                 self.assertTrue(np.isfinite(pt_[5, j]))
 
     def test_get_bil_info(self):
+        def _check_ts(t__, s__):
+            for i in range(len(t__)):
+                # Just check the exact value for one pixel
+                if i == 5:
+                    self.assertAlmostEqual(t__[i], 0.730659147133, 5)
+                    self.assertAlmostEqual(s__[i], 0.310314173004, 5)
+                # These pixels are outside the area
+                elif i in [12, 13, 14, 15]:
+                    self.assertTrue(np.isnan(t__[i]))
+                    self.assertTrue(np.isnan(s__[i]))
+                # All the others should have values between 0.0 and 1.0
+                else:
+                    self.assertTrue(t__[i] >= 0.0)
+                    self.assertTrue(s__[i] >= 0.0)
+                    self.assertTrue(t__[i] <= 1.0)
+                    self.assertTrue(s__[i] <= 1.0)
+
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_def,
                                                          50e5, neighbours=32,
-                                                         nprocs=1)
+                                                         nprocs=1,
+                                                         reduce_data=False)
+        _check_ts(t__, s__)
+        t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
+                                                         self.target_def,
+                                                         50e5, neighbours=32,
+                                                         nprocs=1,
+                                                         reduce_data=True)
+        _check_ts(t__, s__)
 
-        # Only 6th index should have valid values
-        for i in range(len(t__)):
-            # Just check the exact value for one pixel
-            if i == 5:
-                self.assertAlmostEqual(t__[i], 0.730659147133, 5)
-                self.assertAlmostEqual(s__[i], 0.310314173004, 5)
-            # These pixels are outside the area
-            elif i in [12, 13, 14, 15]:
-                self.assertTrue(np.isnan(t__[i]))
-                self.assertTrue(np.isnan(s__[i]))
-            # All the others should have values between 0.0 and 1.0
-            else:
-                self.assertTrue(t__[i] >= 0.0)
-                self.assertTrue(s__[i] >= 0.0)
-                self.assertTrue(t__[i] <= 1.0)
-                self.assertTrue(s__[i] <= 1.0)
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
