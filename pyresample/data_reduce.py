@@ -273,7 +273,6 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     lat_min = min(lats_side1.min(), lats_side2.min(), lats_side3.min(),
                   lats_side4.min())
     lat_min_buffered = lat_min - np.degrees(float(radius_of_influence) / R)
-
     lat_max = max(lats_side1.max(), lats_side2.max(), lats_side3.max(),
                   lats_side4.max())
     lat_max_buffered = lat_max + np.degrees(float(radius_of_influence) / R)
