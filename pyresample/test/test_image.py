@@ -71,8 +71,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 399936.39392500359
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='ImageContainer resampling quick failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     @tmp
     def test_image_segments(self):
@@ -82,16 +81,14 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 399936.39392500359
-        self.assertAlmostEqual(
-            cross_sum, expected, msg='ImageContainer resampling quick segments failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_return_type(self):
         data = numpy.ones((3712, 3712)).astype('int')
         msg_con = image.ImageContainerQuick(data, self.msg_area, segments=1)
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
-        self.assertTrue(
-            data.dtype is res.dtype, msg='Failed to maintain input data type')
+        self.assertTrue(data.dtype is res.dtype)
 
     @mask
     def test_masked_image(self):
@@ -107,8 +104,7 @@ class Test(unittest.TestCase):
         expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
                                                'test_files', 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
-        self.assertTrue(numpy.array_equal(
-            resampled_mask, expected), msg='Failed to resample masked array')
+        self.assertTrue(numpy.array_equal(resampled_mask, expected))
 
     @mask
     def test_masked_image_fill(self):
@@ -125,8 +121,7 @@ class Test(unittest.TestCase):
                                                'test_files',
                                                'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
-        self.assertTrue(numpy.array_equal(
-            resampled_mask, expected), msg='Failed to resample masked array')
+        self.assertTrue(numpy.array_equal(resampled_mask, expected))
 
     def test_nearest_neighbour(self):
         data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
@@ -136,8 +131,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 399936.783062
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='ImageContainer resampling nearest neighbour failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_nearest_resize(self):
         data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
@@ -147,8 +141,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 2212023.0175830
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='ImageContainer resampling nearest neighbour failed')
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_nearest_neighbour_multi(self):
         data1 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
@@ -161,12 +154,11 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum1 = res[:, :, 0].sum()
         expected1 = 399936.783062
-        self.assertAlmostEqual(cross_sum1, expected1,
-                               msg='ImageContainer resampling nearest neighbour multi failed')
+        self.assertAlmostEqual(cross_sum1, expected1)
+
         cross_sum2 = res[:, :, 1].sum()
         expected2 = 399936.783062 * 2
-        self.assertAlmostEqual(cross_sum2, expected2,
-                               msg='ImageContainer resampling nearest neighbour multi failed')
+        self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_nearest_neighbour_multi_preproc(self):
         data1 = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
@@ -183,12 +175,11 @@ class Test(unittest.TestCase):
         res = msg_con.get_array_from_linesample(row_indices, col_indices)
         cross_sum1 = res[:, :, 0].sum()
         expected1 = 399936.783062
-        self.assertAlmostEqual(cross_sum1, expected1,
-                               msg='ImageContainer resampling nearest neighbour multi preproc failed')
+        self.assertAlmostEqual(cross_sum1, expected1)
+
         cross_sum2 = res[:, :, 1].sum()
         expected2 = 399936.783062 * 2
-        self.assertAlmostEqual(cross_sum2, expected2,
-                               msg='ImageContainer resampling nearest neighbour multi preproc failed')
+        self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_nearest_swath(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -201,8 +192,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='ImageContainer swath resampling nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_swath_segments(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -216,8 +206,7 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         cross_sum = res.sum()
         expected = 3 * 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='ImageContainer swath segments resampling nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_bilinear(self):
         data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (928, 928))
