@@ -48,10 +48,12 @@ class DimensionError(ValueError):
 
 
 class IncompatibleAreas(ValueError):
+
     """Error when the areas to combine are not compatible."""
 
 
 class BaseDefinition(object):
+
     """Base class for geometry definitions.
 
     .. versionchanged:: 1.8.0
@@ -374,6 +376,7 @@ class BaseDefinition(object):
 
 
 class CoordinateDefinition(BaseDefinition):
+
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
@@ -466,6 +469,7 @@ def get_array_hashable(arr):
 
 
 class SwathDefinition(CoordinateDefinition):
+
     """Swath defined by lons and lats.
 
     Parameters
@@ -623,6 +627,7 @@ class SwathDefinition(CoordinateDefinition):
 
 
 class DynamicAreaDefinition(object):
+
     """An AreaDefintion containing just a subset of the needed parameters.
 
     The purpose of this class is to be able to adapt the area extent and size
@@ -1253,20 +1258,9 @@ class AreaDefinition(BaseDefinition):
         dtype = dtype or self.dtype
         target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
 
-<<<<<<< 304ddf9fb5ef19ddef436dd90e340ec11e3cbbcc
         res = map_blocks(invproj, target_x, target_y,
                          chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                          new_axis=[2], proj_dict=self.proj_dict)
-=======
-        target_proj = Proj(**self.proj_dict)
-
-        def invproj(data1, data2):
-            return np.dstack(target_proj(data1, data2, inverse=True))
-
-        res = map_blocks(invproj, target_x, target_y,
-                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                         new_axis=[2])
->>>>>>> Fix flake8 issues
 
         return res[:, :, 0], res[:, :, 1]
 
@@ -1488,6 +1482,7 @@ def concatenate_area_defs(area1, area2, axis=0):
 
 
 class StackedAreaDefinition(BaseDefinition):
+
     """Definition based on muliple vertically stacked AreaDefinitions."""
 
     def __init__(self, *definitions, **kwargs):
