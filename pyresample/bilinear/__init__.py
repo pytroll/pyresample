@@ -37,7 +37,7 @@ from pyresample import kd_tree
 
 def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
                       neighbours=32, nprocs=1, fill_value=0,
-                      reduce_data=False, segments=None, epsilon=0):
+                      reduce_data=True, segments=None, epsilon=0):
     """Resample using bilinear interpolation.
 
     data : numpy array
@@ -172,7 +172,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
 
 def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
-                 nprocs=1, masked=False, reduce_data=False, segments=None,
+                 nprocs=1, masked=False, reduce_data=True, segments=None,
                  epsilon=0):
     """Calculate information needed for bilinear resampling.
 
