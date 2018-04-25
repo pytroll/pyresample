@@ -227,7 +227,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 24690.127073654239
+        expected = 24712.589910252744
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_bilinear_multi(self):
@@ -241,10 +241,10 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum1 = res[:, :, 0].sum()
-        expected1 = 24690.127073654239
+        expected1 = 24712.589910252744
         self.assertAlmostEqual(cross_sum1, expected1)
         cross_sum2 = res[:, :, 1].sum()
-        expected2 = 24690.127073654239 * 2
+        expected2 = 24712.589910252744 * 2
         self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_bilinear_swath(self):
@@ -257,7 +257,7 @@ class Test(unittest.TestCase):
         area_con = swath_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 16762584.12441789
+        expected = 16852120.789503865
         self.assertAlmostEqual(cross_sum, expected)
 
 
