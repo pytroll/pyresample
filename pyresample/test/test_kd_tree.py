@@ -327,8 +327,7 @@ class Test(unittest.TestCase):
                                                              25000, 15000, 10000],
                                                          segments=1, with_uncert=True)
             self.assertTrue(len(w) >= 1)
-            self.assertTrue(
-                any(['Possible more' in str(x.message) for x in w]))
+            self.assertTrue(any(['Possible more' in str(x.message) for x in w]))
         cross_sum = res.sum()
         cross_sum_counts = counts.sum()
         expected = 1461.8429990248171
@@ -341,10 +340,8 @@ class Test(unittest.TestCase):
 
         for i, e_stddev in enumerate(expected_stddev):
             cross_sum_stddev = stddev[:, :, i].sum()
-            self.assertAlmostEqual(cross_sum_stddev, e_stddev,
-                                   msg='Swath multi channel resampling gauss failed on stddev (channel {})'.format(i))
-        self.assertAlmostEqual(cross_sum_counts, expected_counts,
-                               msg='Swath multi channel resampling gauss failed on counts')
+            self.assertAlmostEqual(cross_sum_stddev, e_stddev)
+        self.assertAlmostEqual(cross_sum_counts, expected_counts)
 
     def test_gauss_multi_mp(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
