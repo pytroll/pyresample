@@ -130,7 +130,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 399936.783062
+        expected = 399936.70287099993
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_nearest_resize(self):
@@ -153,11 +153,11 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         cross_sum1 = res[:, :, 0].sum()
-        expected1 = 399936.783062
+        expected1 = 399936.70287099993
         self.assertAlmostEqual(cross_sum1, expected1)
 
         cross_sum2 = res[:, :, 1].sum()
-        expected2 = 399936.783062 * 2
+        expected2 = 399936.70287099993 * 2
         self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_nearest_neighbour_multi_preproc(self):
@@ -174,11 +174,11 @@ class Test(unittest.TestCase):
                                                                50000)
         res = msg_con.get_array_from_linesample(row_indices, col_indices)
         cross_sum1 = res[:, :, 0].sum()
-        expected1 = 399936.783062
+        expected1 = 399936.70287099993
         self.assertAlmostEqual(cross_sum1, expected1)
 
         cross_sum2 = res[:, :, 1].sum()
-        expected2 = 399936.783062 * 2
+        expected2 = 399936.70287099993 * 2
         self.assertAlmostEqual(cross_sum2, expected2)
 
     def test_nearest_swath(self):
