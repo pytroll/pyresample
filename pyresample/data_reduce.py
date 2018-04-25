@@ -274,7 +274,6 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                   lats_side4.min())
     lat_min_buffered = lat_min - np.degrees(float(radius_of_influence) / R)
 
-
     lat_max = max(lats_side1.max(), lats_side2.max(), lats_side3.max(),
                   lats_side4.max())
     lat_max_buffered = lat_max + np.degrees(float(radius_of_influence) / R)
@@ -283,11 +282,11 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     max_angle_s4 = max(abs(lats_side4.max()), abs(lats_side4.min()))
     lon_min_buffered = (lons_side4.min() -
                         np.degrees(float(radius_of_influence) /
-                        (np.sin(np.radians(max_angle_s4)) * R)))
+                                   (np.sin(np.radians(max_angle_s4)) * R)))
 
     lon_max_buffered = (lons_side2.max() +
                         np.degrees(float(radius_of_influence) /
-                        (np.sin(np.radians(max_angle_s2)) * R)))
+                                   (np.sin(np.radians(max_angle_s2)) * R)))
 
     # From the winding number theorem follows:
     # angle_sum possiblilities:
