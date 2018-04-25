@@ -27,6 +27,7 @@ from pyresample.data_reduce import (get_valid_index_from_cartesian_grid,
 
 
 class Test(unittest.TestCase):
+
     """Unit testing the data_reduce module."""
 
     @classmethod
