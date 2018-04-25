@@ -282,7 +282,9 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     max_angle_s4 = max(abs(lats_side4.max()), abs(lats_side4.min()))
     lon_min_buffered = (lons_side4.min() -
                         np.degrees(float(radius_of_influence) /
-    lon_max_buffered=(lons_side2.max() +
+                                   (np.sin(np.radians(max_angle_s4)) * R)))
+
+    lon_max_buffered = (lons_side2.max() +
                         np.degrees(float(radius_of_influence) /
                                    (np.sin(np.radians(max_angle_s2)) * R)))
 
@@ -294,27 +296,27 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     # else: area covers both poles
     if round(angle_sum) == -360:
         # Covers NP
-        valid_index=(lats >= lat_min_buffered)
+        valid_index = (lats >= lat_min_buffered)
     elif round(angle_sum) == 360:
         # Covers SP
-        valid_index=(lats <= lat_max_buffered)
+        valid_index = (lats <= lat_max_buffered)
     elif round(angle_sum) == 0:
         # Covers no poles
-        valid_lats=(lats >= lat_min_buffered) * (lats <= lat_max_buffered)
+        valid_lats = (lats >= lat_min_buffered) * (lats <= lat_max_buffered)
 
         if lons_side2.min() > lons_side4.max():
             # No date line crossing
-            valid_lons=(lons >= lon_min_buffered) * \
+            valid_lons = (lons >= lon_min_buffered) * \
                 (lons <= lon_max_buffered)
         else:
             # Date line crossing
-            seg1=(lons >= lon_min_buffered) * (lons <= 180)
-            seg2=(lons <= lon_max_buffered) * (lons >= -180)
-            valid_lons=seg1 + seg2
+            seg1 = (lons >= lon_min_buffered) * (lons <= 180)
+            seg2 = (lons <= lon_max_buffered) * (lons >= -180)
+            valid_lons = seg1 + seg2
 
-        valid_index=valid_lats * valid_lons
+        valid_index = valid_lats * valid_lons
     else:
         # Covers both poles don't reduce
-        valid_index=np.ones(lons.size, dtype=np.bool)
+        valid_index = np.ones(lons.size, dtype=np.bool)
 
     return valid_index
