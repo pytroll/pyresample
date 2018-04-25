@@ -327,8 +327,7 @@ class Test(unittest.TestCase):
                                                              25000, 15000, 10000],
                                                          segments=1, with_uncert=True)
             self.assertTrue(len(w) >= 1)
-            self.assertTrue(
-                any(['Possible more' in str(x.message) for x in w]))
+            self.assertTrue(any(['Possible more' in str(x.message) for x in w]))
         cross_sum = res.sum()
         cross_sum_counts = counts.sum()
         expected = 1461.8429990248171
