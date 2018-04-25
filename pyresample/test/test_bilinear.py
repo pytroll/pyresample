@@ -197,14 +197,10 @@ class Test(unittest.TestCase):
                 self.assertTrue(np.isnan(s__[i]))
             # All the others should have values between 0.0 and 1.0
             else:
-                try:
-                    self.assertTrue(t__[i] >= 0.0)
-                    self.assertTrue(s__[i] >= 0.0)
-                    self.assertTrue(t__[i] <= 1.0)
-                    self.assertTrue(s__[i] <= 1.0)
-                except AssertionError:
-                    print i, t__[i], s__[i]
-                    raise AssertionError
+                self.assertTrue(t__[i] >= 0.0)
+                self.assertTrue(s__[i] >= 0.0)
+                self.assertTrue(t__[i] <= 1.0)
+                self.assertTrue(s__[i] <= 1.0)
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
