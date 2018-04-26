@@ -250,7 +250,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     # Calculate vertical and horizontal fractional distances t and s
     t__, s__ = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
-    # Remove mask and put np.nan at the masked locations instead
+    # Mask NaN values
     if masked:
         mask = np.isnan(t__) | np.isnan(s__)
         t__ = np.ma.masked_where(mask, t__)
