@@ -2,6 +2,62 @@ Changelog
 =========
 
 
+v1.9.0 (2018-04-27)
+-------------------
+- update changelog. [Martin Raspaud]
+- Bump version: 1.8.3 → 1.9.0. [Martin Raspaud]
+- Merge pull request #114 from pytroll/feature-hash-update. [Martin
+  Raspaud]
+
+  Implement Deterministic hashing
+- Fix __hash__ inheritance block in python 3. [Martin Raspaud]
+- Add the hash attribute to all definitions. [Martin Raspaud]
+- Add the update_hash method, centralize __hash__ [Martin Raspaud]
+- Merge pull request #102 from pytroll/feature-cartopy-convert. [David
+  Hoese]
+
+  Add cartopy conversion method to AreaDefinition
+- Add license and copyright to plot and test_plot. [davidh-ssec]
+- Update appveyor badge to point to new project. [davidh-ssec]
+- Fix line too long. [davidh-ssec]
+- Merge branch 'develop' into feature-cartopy-convert. [davidh-ssec]
+
+  # Conflicts:
+  #	appveyor.yml
+  #	pyresample/__init__.py
+  #	pyresample/geometry.py
+  #	pyresample/kd_tree.py
+
+- Merge pull request #109 from pytroll/feature-better-omerc-azimuth.
+  [Martin Raspaud]
+
+  Make azimuth angle for omerc dynamic areas more robust
+- Fix tests for new omerc parameters computation. [Martin Raspaud]
+- Take care of azimuth flipping in omerc parameter computation. [Martin
+  Raspaud]
+- Take care of small omerc azimuth angles. [Martin Raspaud]
+- Use no_rot for better 2-point omerc fitting. [Martin Raspaud]
+- Make azimuth angle for omerc dynamic areas more robust. [Martin
+  Raspaud]
+- Add basemap to travis for doctests. [davidh-ssec]
+- Remove appveyor unused scripts. [davidh-ssec]
+- Fix conda dependencies on travis and switch to ci-helpers for
+  appveyor. [davidh-ssec]
+- Add missing coverage dependency to travis CI. [davidh-ssec]
+- Use conda for travis tests. [davidh-ssec]
+- Update github templates. [davidh-ssec]
+- Fix flake8 issues. [davidh-ssec]
+- Add basemap quicklook generation back in as a fallback. [davidh-ssec]
+- Install proj libraries binaries for cartopy. [davidh-ssec]
+- Remove python 3.4 and 3.5 from CI tests. [davidh-ssec]
+- Add simple cartopy conversion test. [davidh-ssec]
+- Skip basemap tests if basemap isn't available. [davidh-ssec]
+- Switch quicklook to use cartopy instead of basemap. [davidh-ssec]
+- Replace quicklook functionality with cartopy. [davidh-ssec]
+- Update documentation to include cartopy example. [davidh-ssec]
+- Add cartopy conversion method to AreaDefinition. [davidh-ssec]
+
+
 v1.8.3 (2018-03-19)
 -------------------
 - update changelog. [Martin Raspaud]
