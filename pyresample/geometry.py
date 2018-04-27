@@ -90,6 +90,13 @@ class BaseDefinition(object):
         self.lons = lons
         self.ndim = None
         self.cartesian_coords = None
+        self.hash = None
+
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            self.hash = int(self.update_hash().hexdigest(), 16)
+        return self.hash
 
     def __eq__(self, other):
         """Test for approximate equality"""
@@ -491,22 +498,23 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
-        self.hash = None
-
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
-            hasher = hashlib.sha1()
-            hasher.update(get_array_hashable(self.lons))
-            hasher.update(get_array_hashable(self.lats))
-            try:
-                if self.lons.mask is not np.bool_(False):
-                    hasher.update(get_array_hashable(self.lons.mask))
-            except AttributeError:
-                pass
-            self.hash = int(hasher.hexdigest(), 16)
-
+            self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
+
+    def update_hash(self, the_hash=None):
+        if the_hash is None:
+            the_hash = hashlib.sha1()
+        the_hash.update(get_array_hashable(self.lons))
+        the_hash.update(get_array_hashable(self.lats))
+        try:
+            if self.lons.mask is not np.bool_(False):
+                the_hash.update(get_array_hashable(self.lons.mask))
+        except AttributeError:
+            pass
+        return the_hash
 
     def get_lonlats_dask(self, chunks=CHUNK_SIZE):
         """Get the lon lats as a single dask array."""
@@ -861,6 +869,12 @@ class AreaDefinition(BaseDefinition):
 
         self.dtype = dtype
 
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            self.hash = int(self.update_hash().hexdigest(), 16)
+        return self.hash
+
     @property
     def proj_str(self):
         return utils.proj4_dict_to_str(self.proj_dict, sort=True)
@@ -946,12 +960,14 @@ class AreaDefinition(BaseDefinition):
 
         return not self.__eq__(other)
 
-    def __hash__(self):
-        return hash((
-            self.proj_str,
-            self.shape,
-            self.area_extent
-        ))
+    def update_hash(self, the_hash=None):
+        """Update a hash, or return a new one if needed."""
+        if the_hash is None:
+            the_hash = hashlib.sha1()
+        the_hash.update(self.proj_str.encode('utf-8'))
+        the_hash.update(np.array(self.shape))
+        the_hash.update(np.array(self.area_extent))
+        return the_hash
 
     def colrow2lonlat(self, cols, rows):
         """
