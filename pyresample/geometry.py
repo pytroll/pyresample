@@ -90,6 +90,7 @@ class BaseDefinition(object):
         self.lons = lons
         self.ndim = None
         self.cartesian_coords = None
+        self.hash = None
 
     def __hash__(self):
         """Compute the hash of this object."""
@@ -496,8 +497,6 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
-
-        self.hash = None
 
     def update_hash(self, the_hash=None):
         if the_hash is None:
