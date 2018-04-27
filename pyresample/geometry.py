@@ -498,6 +498,12 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            self.hash = int(self.update_hash().hexdigest(), 16)
+        return self.hash
+
     def update_hash(self, the_hash=None):
         if the_hash is None:
             the_hash = hashlib.sha1()
@@ -862,6 +868,12 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    def __hash__(self):
+        """Compute the hash of this object."""
+        if self.hash is None:
+            self.hash = int(self.update_hash().hexdigest(), 16)
+        return self.hash
 
     @property
     def proj_str(self):
