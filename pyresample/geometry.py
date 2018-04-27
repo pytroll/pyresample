@@ -99,12 +99,6 @@ class BaseDefinition(object):
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def __hash__(self):
-        """Compute the hash of this object."""
-        if self.hash is None:
-            self.hash = int(self.update_hash().hexdigest(), 16)
-        return self.hash
-
     def __eq__(self, other):
         """Test for approximate equality"""
         if self is other:
