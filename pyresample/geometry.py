@@ -1483,6 +1483,7 @@ def _lonlat_from_geos_angle(x, y, geos_area):
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside *geos_area*.
+
     Args:
       nb_points: Number of points on the polygon
     """
@@ -1521,7 +1522,7 @@ def combine_area_extents_vertical(area1, area2):
 
 
 def concatenate_area_defs(area1, area2, axis=0):
-    """Append *area2* to *area1* and return the results"""
+    """Append *area2* to *area1* and return the results."""
     different_items = (set(area1.proj_dict.items()) ^
                        set(area2.proj_dict.items()))
     if axis == 0:
