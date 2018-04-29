@@ -1154,6 +1154,124 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         self.assertEqual(y_size, 5)
 
 
+class TestCrop(unittest.TestCase):
+    """Test the area helpers."""
+
+    def test_lonlat_from_geos(self):
+        """Get lonlats from geos."""
+        geos_area = MagicMock()
+        lon_0 = 0
+        h = 35785831.00
+        geos_area.proj_dict = {'a': 6378169.00,
+                               'b': 6356583.80,
+                               'h': h,
+                               'lon_0': lon_0}
+
+        expected = np.array((lon_0, 0))
+
+        import pyproj
+        proj = pyproj.Proj(proj='geos', **geos_area.proj_dict)
+
+        expected = proj(0, 0, inverse=True)
+
+        np.testing.assert_allclose(expected,
+                                   geometry._lonlat_from_geos_angle(0, 0, geos_area))
+
+        expected = proj(0, 1000000, inverse=True)
+
+        np.testing.assert_allclose(expected,
+                                   geometry._lonlat_from_geos_angle(0,
+                                                                    1000000 / h,
+                                                                    geos_area))
+
+        expected = proj(1000000, 0, inverse=True)
+
+        np.testing.assert_allclose(expected,
+                                   geometry._lonlat_from_geos_angle(1000000 / h,
+                                                                    0,
+                                                                    geos_area))
+
+        expected = proj(2000000, -2000000, inverse=True)
+
+        np.testing.assert_allclose(expected,
+                                   geometry._lonlat_from_geos_angle(2000000 / h,
+                                                                    -2000000 / h,
+                                                                    geos_area))
+
+    def test_get_geostationary_bbox(self):
+        """Get the geostationary bbox."""
+
+        geos_area = MagicMock()
+        lon_0 = 0
+        geos_area.proj_dict = {'a': 6378169.00,
+                               'b': 6356583.80,
+                               'h': 35785831.00,
+                               'lon_0': lon_0}
+        geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
+
+        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
+        elon = np.array([-74.802824, -73.667708, -69.879687, -60.758081,
+                         -32.224989, 32.224989, 60.758081, 69.879687,
+                         73.667708, 74.802824, 74.802824, 73.667708,
+                         69.879687, 60.758081, 32.224989, -32.224989,
+                         -60.758081, -69.879687, -73.667708, -74.802824])
+
+        elat = -np.array([-6.81982903e-15, -1.93889346e+01, -3.84764764e+01,
+                          -5.67707359e+01, -7.18862588e+01, -7.18862588e+01,
+                          -5.67707359e+01, -3.84764764e+01, -1.93889346e+01,
+                          0.00000000e+00, 6.81982903e-15, 1.93889346e+01,
+                          3.84764764e+01, 5.67707359e+01, 7.18862588e+01,
+                          7.18862588e+01, 5.67707359e+01, 3.84764764e+01,
+                          1.93889346e+01, -0.00000000e+00])
+
+        np.testing.assert_allclose(lon, elon + lon_0)
+        np.testing.assert_allclose(lat, elat)
+
+    def test_get_geostationary_angle_extent(self):
+        """Get max geostationary angles."""
+        geos_area = MagicMock()
+        geos_area.proj_dict = {'a': 6378169.00,
+                               'b': 6356583.80,
+                               'h': 35785831.00}
+
+        expected = (0.15185342867090912, 0.15133555510297725)
+
+        np.testing.assert_allclose(expected,
+                                   geometry.get_geostationary_angle_extent(geos_area))
+
+        geos_area.proj_dict = {'a': 1000.0,
+                               'b': 1000.0,
+                               'h': np.sqrt(2) * 1000.0 - 1000.0}
+
+        expected = (np.deg2rad(45), np.deg2rad(45))
+
+        np.testing.assert_allclose(expected,
+                                   geometry.get_geostationary_angle_extent(geos_area))
+
+    def test_sub_area(self):
+        """Sub area slicing."""
+        area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                       {'a': '6378144.0',
+                                        'b': '6356759.0',
+                                        'lat_0': '50.00',
+                                        'lat_ts': '50.00',
+                                        'lon_0': '8.00',
+                                        'proj': 'stere'},
+                                       800,
+                                       800,
+                                       [-1370912.72,
+                                        -909968.64000000001,
+                                        1029087.28,
+                                        1490031.3600000001])
+
+        res = area[slice(20, 720), slice(100, 500)]
+
+        self.assertTrue(np.allclose((-1070912.72, -669968.6399999999,
+                                     129087.28000000003, 1430031.36),
+                                    res.area_extent))
+        self.assertEqual(res.shape, (700, 400))
+
+
 def suite():
     """The test suite.
     """
@@ -1163,6 +1281,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
 
     return mysuite
 
