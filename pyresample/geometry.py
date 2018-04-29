@@ -829,6 +829,7 @@ class AreaDefinition(BaseDefinition):
         self.x_size = int(x_size)
         self.y_size = int(y_size)
         self.shape = (y_size, x_size)
+        self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
         except TypeError:
@@ -1418,11 +1419,14 @@ class AreaDefinition(BaseDefinition):
                            (self.pixel_upper_left[1] -
                             (yslice.start - 0.5) * self.pixel_size_y))
 
-        return AreaDefinition(self.area_id, self.name,
-                              self.proj_id, self.proj_dict,
-                              xslice.stop - xslice.start,
-                              yslice.stop - yslice.start,
-                              new_area_extent)
+        new_area = AreaDefinition(self.area_id, self.name,
+                                  self.proj_id, self.proj_dict,
+                                  xslice.stop - xslice.start,
+                                  yslice.stop - yslice.start,
+                                  new_area_extent)
+        new_area.crop_offset = (self.crop_offset[0] + yslice.start,
+                                self.crop_offset[1] + xslice.start)
+        return new_area
 
 
 def get_geostationary_angle_extent(geos_area):
