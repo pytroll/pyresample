@@ -1336,6 +1336,7 @@ class AreaDefinition(BaseDefinition):
 
     def get_area_slices(self, area_to_cover):
         """Compute the slice to read based on an `area_to_cover`."""
+
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
