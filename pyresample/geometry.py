@@ -1393,7 +1393,7 @@ class AreaDefinition(BaseDefinition):
         # Intersection only required for two different projections
         if area_to_cover.proj_dict['proj'] == self.proj_dict['proj']:
             logger.debug('Projections for data and slice areas are'
-                         ' identical: {}'.format(area_to_cover.proj_dict['proj']))
+                         ' identical: %s', area_to_cover.proj_dict['proj'])
             # Get xy coordinates
             llx, lly, urx, ury = area_to_cover.area_extent
             x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
@@ -1415,7 +1415,7 @@ class AreaDefinition(BaseDefinition):
 
     def crop_around(self, other_area):
         """Crop this area around *other_area*."""
-        xslice, yslice = self.get_area_slices(self, other_area)
+        xslice, yslice = self.get_area_slices(other_area)
         return self[yslice, xslice]
 
     def __getitem__(self, key):
@@ -1442,7 +1442,6 @@ class AreaDefinition(BaseDefinition):
 
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
-    # TODO: take into account sweep_axis_angle parameter
 
     # get some projection parameters
     req = geos_area.proj_dict['a'] / 1000
@@ -1481,8 +1480,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
-    pr = Proj(**geos_area.proj_dict)
-    return pr(x, y, inverse=True)
+    return Proj(**geos_area.proj_dict)(x, y, inverse=True)
 
 
 def combine_area_extents_vertical(area1, area2):
