@@ -1449,27 +1449,6 @@ def get_geostationary_angle_extent(geos_area):
     return xmax, ymax
 
 
-def _lonlat_from_geos_angle(x, y, geos_area):
-    """Get lons and lats from x, y in projection coordinates."""
-    h = (geos_area.proj_dict['h'] + geos_area.proj_dict['a']) / 1000
-    b__ = (geos_area.proj_dict['a'] / geos_area.proj_dict['b']) ** 2
-
-    sd = np.sqrt((h * np.cos(x) * np.cos(y)) ** 2 -
-                 (np.cos(y)**2 + b__ * np.sin(y)**2) *
-                 (h**2 - (geos_area.proj_dict['a'] / 1000)**2))
-
-    sn = (h * np.cos(x) * np.cos(y) - sd) / (np.cos(y)**2 + b__ * np.sin(y)**2)
-    s1 = h - sn * np.cos(x) * np.cos(y)
-    s2 = sn * np.sin(x) * np.cos(y)
-    s3 = -sn * np.sin(y)
-    sxy = np.sqrt(s1**2 + s2**2)
-
-    lons = np.rad2deg(np.arctan2(s2, s1)) + geos_area.proj_dict.get('lon_0', 0)
-    lats = np.rad2deg(-np.arctan2(b__ * s3, sxy))
-
-    return lons, lats
-
-
 def get_geostationary_bounding_box(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside *geos_area*.
 
@@ -1483,14 +1462,16 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.001)
     y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.001)
 
-    # clip the projection coordinates to fit the area extent of geos_area
-    ll_x, ll_y, ur_x, ur_y = (np.array(geos_area.area_extent) /
-                              geos_area.proj_dict['h'])
+    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
+
+    x *= geos_area.proj_dict['h']
+    y *= geos_area.proj_dict['h']
 
     x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
-    return _lonlat_from_geos_angle(x, y, geos_area)
+    pr = Proj(**geos_area.proj_dict)
+    return pr(x, y, inverse=True)
 
 
 def combine_area_extents_vertical(area1, area2):

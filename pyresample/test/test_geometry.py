@@ -1157,47 +1157,6 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 class TestCrop(unittest.TestCase):
     """Test the area helpers."""
 
-    def test_lonlat_from_geos(self):
-        """Get lonlats from geos."""
-        geos_area = MagicMock()
-        lon_0 = 0
-        h = 35785831.00
-        geos_area.proj_dict = {'a': 6378169.00,
-                               'b': 6356583.80,
-                               'h': h,
-                               'lon_0': lon_0}
-
-        expected = np.array((lon_0, 0))
-
-        import pyproj
-        proj = pyproj.Proj(proj='geos', **geos_area.proj_dict)
-
-        expected = proj(0, 0, inverse=True)
-
-        np.testing.assert_allclose(expected,
-                                   geometry._lonlat_from_geos_angle(0, 0, geos_area))
-
-        expected = proj(0, 1000000, inverse=True)
-
-        np.testing.assert_allclose(expected,
-                                   geometry._lonlat_from_geos_angle(0,
-                                                                    1000000 / h,
-                                                                    geos_area))
-
-        expected = proj(1000000, 0, inverse=True)
-
-        np.testing.assert_allclose(expected,
-                                   geometry._lonlat_from_geos_angle(1000000 / h,
-                                                                    0,
-                                                                    geos_area))
-
-        expected = proj(2000000, -2000000, inverse=True)
-
-        np.testing.assert_allclose(expected,
-                                   geometry._lonlat_from_geos_angle(2000000 / h,
-                                                                    -2000000 / h,
-                                                                    geos_area))
-
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
 
@@ -1206,7 +1165,8 @@ class TestCrop(unittest.TestCase):
         geos_area.proj_dict = {'a': 6378169.00,
                                'b': 6356583.80,
                                'h': 35785831.00,
-                               'lon_0': lon_0}
+                               'lon_0': lon_0,
+                               'proj': 'geos'}
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
