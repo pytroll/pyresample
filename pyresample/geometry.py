@@ -1382,7 +1382,7 @@ class AreaDefinition(BaseDefinition):
         return '+' + ' +'.join([t[0] + '=' + str(t[1]) for t in items])
 
     def get_area_slices(self, area_to_cover):
-        """Compute the slice to read from an *area* based on an *area_to_cover*."""
+        """Compute the slice to read based on an `area_to_cover`."""
 
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
@@ -1414,7 +1414,7 @@ class AreaDefinition(BaseDefinition):
         return slice(min(x), max(x) + 1), slice(min(y), max(y) + 1)
 
     def crop_around(self, other_area):
-        """Crop this area around *other_area*."""
+        """Crop this area around `other_area`."""
         xslice, yslice = self.get_area_slices(other_area)
         return self[yslice, xslice]
 
@@ -1460,7 +1460,7 @@ def get_geostationary_angle_extent(geos_area):
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
-    """Get the bbox in lon/lats of the valid pixels inside *geos_area*.
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
       nb_points: Number of points on the polygon
