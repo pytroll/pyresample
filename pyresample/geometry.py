@@ -829,6 +829,7 @@ class AreaDefinition(BaseDefinition):
         self.x_size = int(x_size)
         self.y_size = int(y_size)
         self.shape = (y_size, x_size)
+        self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
         except TypeError:
@@ -1369,6 +1370,107 @@ class AreaDefinition(BaseDefinition):
         items = self.proj_dict.items()
         return '+' + ' +'.join([t[0] + '=' + str(t[1]) for t in items])
 
+    def get_area_slices(self, area_to_cover):
+        """Compute the slice to read based on an `area_to_cover`."""
+
+        if not isinstance(area_to_cover, AreaDefinition):
+            raise NotImplementedError('Only AreaDefinitions can be used')
+
+        if self.proj_dict['proj'] != 'geos':
+            raise NotImplementedError('Only geos supported')
+
+        # Intersection only required for two different projections
+        if area_to_cover.proj_dict['proj'] == self.proj_dict['proj']:
+            logger.debug('Projections for data and slice areas are'
+                         ' identical: %s', area_to_cover.proj_dict['proj'])
+            # Get xy coordinates
+            llx, lly, urx, ury = area_to_cover.area_extent
+            x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
+
+            return slice(x[0], x[1] + 1), slice(y[1], y[0] + 1)
+
+        from trollsched.boundary import AreaDefBoundary, Boundary
+
+        data_boundary = Boundary(*get_geostationary_bounding_box(self))
+
+        area_boundary = AreaDefBoundary(area_to_cover, 100)
+        intersection = data_boundary.contour_poly.intersection(
+            area_boundary.contour_poly)
+
+        x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
+                                       np.rad2deg(intersection.lat))
+
+        return slice(min(x), max(x) + 1), slice(min(y), max(y) + 1)
+
+    def crop_around(self, other_area):
+        """Crop this area around `other_area`."""
+        xslice, yslice = self.get_area_slices(other_area)
+        return self[yslice, xslice]
+
+    def __getitem__(self, key):
+        """Apply slices to the area_extent and size of the area."""
+        yslice, xslice = key
+        new_area_extent = ((self.pixel_upper_left[0] +
+                            (xslice.start - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] -
+                            (yslice.stop - 0.5) * self.pixel_size_y),
+                           (self.pixel_upper_left[0] +
+                            (xslice.stop - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] -
+                            (yslice.start - 0.5) * self.pixel_size_y))
+
+        new_area = AreaDefinition(self.area_id, self.name,
+                                  self.proj_id, self.proj_dict,
+                                  xslice.stop - xslice.start,
+                                  yslice.stop - yslice.start,
+                                  new_area_extent)
+        new_area.crop_offset = (self.crop_offset[0] + yslice.start,
+                                self.crop_offset[1] + xslice.start)
+        return new_area
+
+
+def get_geostationary_angle_extent(geos_area):
+    """Get the max earth (vs space) viewing angles in x and y."""
+
+    # get some projection parameters
+    req = geos_area.proj_dict['a'] / 1000
+    rp = geos_area.proj_dict['b'] / 1000
+    h = geos_area.proj_dict['h'] / 1000 + req
+
+    # compute some constants
+    aeq = 1 - req**2 / (h ** 2)
+    ap_ = 1 - rp**2 / (h ** 2)
+
+    # generate points around the north hemisphere in satellite projection
+    # make it a bit smaller so that we stay inside the valid area
+    xmax = np.arccos(np.sqrt(aeq))
+    ymax = np.arccos(np.sqrt(ap_))
+    return xmax, ymax
+
+
+def get_geostationary_bounding_box(geos_area, nb_points=50):
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    xmax, ymax = get_geostationary_angle_extent(geos_area)
+
+    # generate points around the north hemisphere in satellite projection
+    # make it a bit smaller so that we stay inside the valid area
+    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.001)
+    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.001)
+
+    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
+
+    x *= geos_area.proj_dict['h']
+    y *= geos_area.proj_dict['h']
+
+    x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
+    y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
+
+    return Proj(**geos_area.proj_dict)(x, y, inverse=True)
+
 
 def combine_area_extents_vertical(area1, area2):
     """Combine the area extents of areas 1 and 2."""
@@ -1388,7 +1490,7 @@ def combine_area_extents_vertical(area1, area2):
 
 
 def concatenate_area_defs(area1, area2, axis=0):
-    """Append *area2* to *area1* and return the results"""
+    """Append *area2* to *area1* and return the results."""
     different_items = (set(area1.proj_dict.items()) ^
                        set(area2.proj_dict.items()))
     if axis == 0:
