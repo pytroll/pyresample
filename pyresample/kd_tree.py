@@ -27,7 +27,7 @@ from logging import getLogger
 
 import numpy as np
 
-from pyresample import _spatial_mp, data_reduce, geometry, CHUNK_SIZE
+from pyresample import _spatial_mp, data_reduce, geometry
 
 logger = getLogger(__name__)
 
@@ -1072,66 +1072,62 @@ class XArrayResamplerNN():
                 self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
-        # FIXME: can be this made into a dask construct ?
-        cols, lines = np.meshgrid(
-            np.arange(data['x'].size), np.arange(data['y'].size))
-        try:
-            self.valid_input_index = self.valid_input_index.compute()
-        except AttributeError:
-            pass
-        vii = self.valid_input_index.squeeze()
+
         try:
             self.index_array = self.index_array.compute()
         except AttributeError:
             pass
 
-        # ia contains reduced (valid) indices of the source array, and has the
-        # shape of the destination array
-        ia = self.index_array
-        rlines = lines[vii][ia]
-        rcols = cols[vii][ia]
-
-        slices = []
-        mask_slices = []
-        mask_2d_added = False
+        flat_src_shape = []
+        dst_shape = []
+        dst_2d_shape = self.index_array.shape
+        vii_slices = []
+        ia_slices = []
+        where_slices = []
+        flat_done = False
         coords = {}
+        ia = self.index_array
+
         try:
-            # FIXME: Use same chunk size as input data
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
         except AttributeError:
             coord_x, coord_y = None, None
 
         for i, dim in enumerate(data.dims):
-            if dim == 'y':
-                slices.append(rlines)
-                if not mask_2d_added:
-                    mask_slices.append(ia == -1)
-                    mask_2d_added = True
-                if coord_y is not None:
-                    coords[dim] = coord_y
-            elif dim == 'x':
-                slices.append(rcols)
-                if not mask_2d_added:
-                    mask_slices.append(ia == -1)
-                    mask_2d_added = True
-                if coord_x is not None:
-                    coords[dim] = coord_x
+            if dim in ['y', 'x']:
+                if not flat_done:
+                    flat_src_shape.append(-1)
+                    vii_slices.append(self.valid_input_index.ravel())
+                    ia_slices.append(ia.ravel())
+                    flat_done = True
+                dst_shape.append(dst_2d_shape[0])
+                where_slices.append(slice(None))
+                dst_2d_shape = dst_2d_shape[1:]
+                if dim == 'x':
+                    coords['x'] = coord_x
+                else:
+                    coords['y'] = coord_y
             else:
-                slices.append(slice(None))
-                mask_slices.append(slice(None))
-                try:
-                    coords[dim] = data.coords[dim]
-                except KeyError:
-                    pass
+                flat_src_shape.append(data.sizes[dim])
+                vii_slices.append(slice(None))
+                ia_slices.append(slice(None))
+                where_slices.append(np.newaxis)
+                dst_shape.append(data.sizes[dim])
+                coords[dim] = data.coords[dim]
 
-        res = data.values[slices]
-        res[mask_slices] = fill_value
-        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE), dims=data.dims, coords=coords)
+        new_data = data.data.reshape(*flat_src_shape)[tuple(vii_slices)]
+        res = new_data[tuple(ia_slices)].reshape(dst_shape)
+
+        res = DataArray(res, dims=data.dims, coords=coords)
+        if fill_value is None:
+            fill_value = np.nan
+        res = res.where(ia[tuple(where_slices)] != -1, fill_value)
+
         return res
 
 
 def _get_fill_mask_value(data_dtype):
-    """Returns the maximum value of dtype"""
+    """Return the maximum value of dtype."""
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
     elif issubclass(data_dtype.type, np.integer):
