@@ -1103,10 +1103,7 @@ class XArrayResamplerNN():
                 dst_shape.append(dst_2d_shape[0])
                 where_slices.append(slice(None))
                 dst_2d_shape = dst_2d_shape[1:]
-                if dim == 'x':
-                    coords['x'] = coord_x
-                else:
-                    coords['y'] = coord_y
+                coords[dim] = coord_x if dim == 'x' else coord_y
             else:
                 flat_src_shape.append(data.sizes[dim])
                 vii_slices.append(slice(None))
