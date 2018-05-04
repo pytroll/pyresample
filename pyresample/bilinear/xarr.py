@@ -578,6 +578,7 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
     t__ = da.where(idxs, np.nan, t__)
 
     s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
+
     idxs = (s__ < 0.) | (s__ > 1.)
     s__ = da.where(idxs, np.nan, s__)
 
