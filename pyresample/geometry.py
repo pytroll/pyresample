@@ -1391,7 +1391,12 @@ class AreaDefinition(BaseDefinition):
             llx, lly, urx, ury = area_to_cover.area_extent
             x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
 
-            return slice(x[0], x[1] + 1), slice(y[1], y[0] + 1)
+            xstart = 0 if x[0] is np.ma.masked else x[0]
+            ystart = 0 if y[1] is np.ma.masked else y[1]
+            xstop = self.x_size if x[1] is np.ma.masked else x[1] + 1
+            ystop = self.y_size if y[0] is np.ma.masked else y[0] + 1
+
+            return slice(xstart, xstop), slice(ystart, ystop)
 
         from trollsched.boundary import AreaDefBoundary, Boundary
 
