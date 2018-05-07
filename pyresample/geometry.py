@@ -368,6 +368,10 @@ class BaseDefinition(object):
         inter_area = get_polygon_area(self.intersection(other))
         return inter_area / other_area
 
+    def get_area_slices(self, area_to_cover):
+        """Compute the slice to read based on an `area_to_cover`."""
+        raise NotImplementedError
+
 
 class CoordinateDefinition(BaseDefinition):
     """Base class for geometry definitions defined by lons and lats only"""
