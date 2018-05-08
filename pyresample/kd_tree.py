@@ -175,7 +175,7 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         sigmas.__iter__()
         sigma_list = sigmas
         is_multi_channel = True
-    except:  # noqa: E722
+    except AttributeError:
         sigma_list = [sigmas]
 
     for sigma in sigma_list:
@@ -251,9 +251,6 @@ def resample_custom(source_geo_def, data, target_geo_def,
         for weight_func in weight_funcs:
             if not isinstance(weight_func, types.FunctionType):
                 raise TypeError('weight_func must be function object')
-    except:  # noqa: E722
-        if not isinstance(weight_funcs, types.FunctionType):
-            raise TypeError('weight_func must be function object')
 
     return _resample(source_geo_def, data, target_geo_def, 'custom',
                      radius_of_influence, neighbours=neighbours,

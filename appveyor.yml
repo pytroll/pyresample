@@ -30,36 +30,10 @@ environment:
       NUMPY_VERSION: "stable"
 
 install:
-  - "git submodule update --init --recursive"
-  - ECHO "Filesystem root:"
-  - ps: "ls \"C:/\""
-
-  - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
-  # install miniconda with the powershell script install.ps1
-  - "powershell ./appveyor/install.ps1"
-
-  # Prepend newly installed Python to the PATH of this build (this cannot be
-  # done from inside the powershell script as it would require to restart
-  # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-
-  # Check that we have the expected version and architecture for Python
-  - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
-
-  # Install the build dependencies of the project. If some dependencies contain
-  # compiled extensions and are not provided as pre-built wheel packages,
-  # pip will build them from source using the MSVC compiler matching the
-  # target Python version and architecture
-  - "conda update --yes conda"
-  - "conda config --add channels conda-forge"
-  - "conda create -q --yes -n test python=%PYTHON_VERSION% basemap-data-hires sphinx pyproj scipy pykdtree dask xarray"
-  - "activate test"
-  - "pip install coveralls"
-  - "pip install mock"
-  - "where python"
+    - "git clone --depth 1 git://github.com/astropy/ci-helpers.git"
+    - "powershell ci-helpers/appveyor/install-miniconda.ps1"
+    - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+    - "activate test"
 
 build: false  # Not a C# project, build stuff at the test step instead.
 

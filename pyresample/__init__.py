@@ -19,10 +19,8 @@ import os
 
 CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
 
-<<<<<<< 304ddf9fb5ef19ddef436dd90e340ec11e3cbbcc
-=======
 from pyresample.version import __version__  # noqa
->>>>>>> Fix flake8 issues
+
 # Backwards compatibility
 from pyresample import geometry  # noqa
 from pyresample import grid  # noqa
