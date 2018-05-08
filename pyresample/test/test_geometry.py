@@ -703,6 +703,61 @@ class Test(unittest.TestCase):
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
 
+    def test_get_area_slices(self):
+        """Check area slicing."""
+        from pyresample import utils
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261)
+        proj_dict = {'a': 6378169.5, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = utils.get_area_def(area_id,
+                                           area_name,
+                                           proj_id,
+                                           proj_dict,
+                                           x_size, y_size,
+                                           area_extent)
+
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(0, 3712))
+        self.assertEqual(slice_y, slice(0, 3712))
+
+        area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                                {'a': 6378144.0,
+                                                 'b': 6356759.0,
+                                                 'lat_0': 50.00,
+                                                 'lat_ts': 50.00,
+                                                 'lon_0': 8.00,
+                                                 'proj': 'stere'},
+                                                10,
+                                                10,
+                                                [-1370912.72,
+                                                 -909968.64,
+                                                 1029087.28,
+                                                 1490031.36])
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(1610, 2343))
+        self.assertEqual(slice_y, slice(158, 515, None))
+
 
 def assert_np_dict_allclose(dict1, dict2):
 
