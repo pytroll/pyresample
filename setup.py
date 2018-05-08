@@ -33,7 +33,7 @@ extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'dask': ['dask>=0.16.1']}
 
-test_requires = []
+test_requires = ['pytroll-schedule']
 if sys.version_info < (3, 3):
     test_requires.append('mock')
 if sys.version_info < (2, 6):
