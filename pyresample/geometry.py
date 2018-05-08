@@ -1376,7 +1376,6 @@ class AreaDefinition(BaseDefinition):
 
     def get_area_slices(self, area_to_cover):
         """Compute the slice to read based on an `area_to_cover`."""
-
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
@@ -1467,8 +1466,8 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.001)
-    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.001)
+    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
