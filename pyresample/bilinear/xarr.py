@@ -239,10 +239,7 @@ class XArrayResamplerBilinear(object):
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input"""
-        # source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
-        # valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
-        #                    (source_lats <= 90) & (source_lats >= -90))
-
+        # Get input information
         valid_input_index, source_lons, source_lats = \
             _get_valid_input_index_dask(self.source_geo_def,
                                         self.target_geo_def,
@@ -372,6 +369,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
     # Find four closest pixels around the target location
 
+    # FIXME: how to daskify?
     # Tile output coordinates to same shape as neighbour info
     # Replacing with da.transpose and da.tile doesn't work
     out_x_tile = np.transpose(np.tile(out_x, (neighbours, 1)))
@@ -384,22 +382,18 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     stride = np.arange(x_diff.shape[0])
 
     # Upper left source pixel
-    # with np.warnings.catch_warnings():
     valid = (x_diff > 0) & (y_diff < 0)
     x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
 
     # Upper right source pixel
-    # with np.warnings.catch_warnings():
     valid = (x_diff < 0) & (y_diff < 0)
     x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
 
     # Lower left source pixel
-    # with np.warnings.catch_warnings():
     valid = (x_diff > 0) & (y_diff > 0)
     x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
 
     # Lower right source pixel
-    # with np.warnings.catch_warnings():
     valid = (x_diff < 0) & (y_diff > 0)
     x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
 
@@ -463,7 +457,6 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
-    # with np.warnings.catch_warnings():
     idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
     t__ = da.where(idxs, np.nan, t__)
     s__ = da.where(idxs, np.nan, s__)
@@ -527,11 +520,9 @@ def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
     x_2 = (-b__ - da.sqrt(discriminant)) / (2 * a__)
 
     # Find valid solutions, ie. 0 <= t <= 1
-    # with np.warnings.catch_warnings():
     idxs = (x_1 < min_val) | (x_1 > max_val)
     x__ = da.where(idxs, x_2, x_1)
 
-    # with np.warnings.catch_warnings():
     idxs = (x__ < min_val) | (x__ > max_val)
     x__ = da.where(idxs, np.nan, x__)
 
@@ -548,7 +539,6 @@ def _solve_another_fractional_distance_dask(f__, y_1, y_2, y_3, y_4, out_y):
            (y_3 + y_43 * f__ - y_1 - y_21 * f__))
 
     # Limit values to interval [0, 1]
-    # with np.warnings.catch_warnings():
     idxs = (g__ < 0) | (g__ > 1)
     g__ = da.where(idxs, np.nan, g__)
 
@@ -584,13 +574,10 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
 
     t__ = (x_21 * (out_y - pt_1[:, 1]) - y_21 * (out_x - pt_1[:, 0])) / \
           (x_21 * y_31 - y_21 * x_31)
-    # with np.warnings.catch_warnings():
     idxs = (t__ < 0.) | (t__ > 1.)
     t__ = da.where(idxs, np.nan, t__)
 
     s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
-
-    # with np.warnings.catch_warnings():
     idxs = (s__ < 0.) | (s__ > 1.)
     s__ = da.where(idxs, np.nan, s__)
 
