@@ -1383,7 +1383,7 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only geos supported')
 
         # Intersection only required for two different projections
-        if area_to_cover.proj_dict['proj'] == self.proj_dict['proj']:
+        if area_to_cover.proj_dict.get('proj') == self.proj_dict['proj']:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s', area_to_cover.proj_dict['proj'])
             # Get xy coordinates
