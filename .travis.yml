@@ -18,6 +18,7 @@ install:
     - source ci-helpers/travis/setup_conda.sh
 script:
     - coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
-after_success: coveralls
+after_success:
+- if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; codecov; fi
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt
