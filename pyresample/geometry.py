@@ -29,9 +29,10 @@ import hashlib
 
 import numpy as np
 import yaml
-from pyproj import Geod, Proj
+from pyproj import Geod
 
-from pyresample import _spatial_mp, utils, CHUNK_SIZE
+from pyresample import utils, CHUNK_SIZE
+from pyresample._spatial_mp import Proj, Proj_MP, Cartesian, Cartesian_MP
 
 try:
     from xarray import DataArray
@@ -237,9 +238,9 @@ class BaseDefinition(object):
             lons, lats = self.get_lonlats(nprocs=nprocs, data_slice=data_slice)
 
             if nprocs > 1:
-                cartesian = _spatial_mp.Cartesian_MP(nprocs)
+                cartesian = Cartesian_MP(nprocs)
             else:
-                cartesian = _spatial_mp.Cartesian()
+                cartesian = Cartesian()
 
             cartesian_coords = cartesian.transform_lonlats(np.ravel(lons),
                                                            np.ravel(lats))
@@ -850,7 +851,7 @@ class AreaDefinition(BaseDefinition):
         self.area_extent = tuple(area_extent)
 
         # Calculate area_extent in lon lat
-        proj = _spatial_mp.Proj(**proj_dict)
+        proj = Proj(**proj_dict)
         corner_lons, corner_lats = proj((area_extent[0], area_extent[2]),
                                         (area_extent[1], area_extent[3]),
                                         inverse=True)
@@ -981,7 +982,7 @@ class AreaDefinition(BaseDefinition):
         To be used with scarse data points instead of slices
         (see get_lonlats).
         """
-        p = _spatial_mp.Proj(self.proj4_string)
+        p = Proj(self.proj4_string)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
@@ -1027,7 +1028,7 @@ class AreaDefinition(BaseDefinition):
             if lon.shape != lat.shape:
                 raise ValueError("lon and lat is not of the same shape!")
 
-        pobj = _spatial_mp.Proj(self.proj4_string)
+        pobj = Proj(self.proj4_string)
         xm_, ym_ = pobj(lon, lat)
 
         return self.get_xy_from_proj_coords(xm_, ym_)
@@ -1280,7 +1281,7 @@ class AreaDefinition(BaseDefinition):
         """Returns the lon,lat of the outer edges of the corner points
         """
         from pyresample.spherical_geometry import Coordinate
-        proj = _spatial_mp.Proj(**self.proj_dict)
+        proj = Proj(**self.proj_dict)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
                                          self.area_extent[2], self.area_extent[0]),
@@ -1333,9 +1334,9 @@ class AreaDefinition(BaseDefinition):
 
             # Proj.4 definition of target area projection
             if nprocs > 1:
-                target_proj = _spatial_mp.Proj_MP(**self.proj_dict)
+                target_proj = Proj_MP(**self.proj_dict)
             else:
-                target_proj = _spatial_mp.Proj(**self.proj_dict)
+                target_proj = Proj(**self.proj_dict)
 
             # Get coordinates of local area as ndarrays
             target_x, target_y = self.get_proj_coords(
