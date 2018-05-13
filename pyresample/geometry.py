@@ -184,11 +184,13 @@ class BaseDefinition(object):
         elif data_slice is None:
             return self.lons, self.lats
         else:
-            return self.lons[data_slice], self.lats[data_slice]
+            try:
+                return np.asscalar(self.lons[data_slice]), np.asscalar(self.lats[data_slice])
+            except ValueError:
+                return self.lons[data_slice], self.lats[data_slice]
 
     def get_boundary_lonlats(self):
-        """Returns Boundary objects"""
-
+        """Return Boundary objects."""
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
         s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
         s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
@@ -1105,7 +1107,8 @@ class AreaDefinition(BaseDefinition):
         (lon, lat) : tuple of floats
         """
 
-        return self.get_lonlats(nprocs=None, data_slice=(row, col))
+        lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
+        return np.asscalar(lon), np.asscalar(lat)
 
     def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
         import dask.array as da
@@ -1317,8 +1320,12 @@ class AreaDefinition(BaseDefinition):
                 lons = self.lons
                 lats = self.lats
             else:
-                lons = self.lons[data_slice]
-                lats = self.lats[data_slice]
+                try:
+                    lons = np.asscalar(self.lons[data_slice])
+                    lats = np.asscalar(self.lats[data_slice])
+                except ValueError:
+                    lons = self.lons[data_slice]
+                    lats = self.lats[data_slice]
 
         return lons, lats
 
