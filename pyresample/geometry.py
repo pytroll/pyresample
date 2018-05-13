@@ -184,10 +184,7 @@ class BaseDefinition(object):
         elif data_slice is None:
             return self.lons, self.lats
         else:
-            try:
-                return np.asscalar(self.lons[data_slice]), np.asscalar(self.lats[data_slice])
-            except ValueError:
-                return self.lons[data_slice], self.lats[data_slice]
+            return self.lons[data_slice], self.lats[data_slice]
 
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
@@ -1320,12 +1317,8 @@ class AreaDefinition(BaseDefinition):
                 lons = self.lons
                 lats = self.lats
             else:
-                try:
-                    lons = np.asscalar(self.lons[data_slice])
-                    lats = np.asscalar(self.lats[data_slice])
-                except ValueError:
-                    lons = self.lons[data_slice]
-                    lats = self.lats[data_slice]
+                lons = self.lons[data_slice]
+                lats = self.lats[data_slice]
 
         return lons, lats
 
