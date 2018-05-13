@@ -623,6 +623,46 @@ class Test(unittest.TestCase):
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
+    def test_get_proj_coords(self):
+        from pyresample import utils
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 10
+        y_size = 10
+        area_extent = [1000000, 0, 1050000, 50000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '60',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        xcoord, ycoord = area_def.get_proj_coords()
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1007500., 1012500.,
+                                              1017500., 1022500., 1027500.,
+                                              1032500., 1037500., 1042500.,
+                                              1047500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 42500., 37500., 32500.,
+                                              27500., 22500., 17500., 12500.,
+                                              7500.,  2500.])))
+
+        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
+                                                              slice(None, None, 2)))
+
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1012500., 1022500.,
+                                              1032500., 1042500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 37500., 27500., 17500.,
+                                              7500.])))
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat"""
         from pyresample import utils

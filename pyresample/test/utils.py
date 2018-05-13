@@ -48,7 +48,7 @@ def treat_deprecations_as_exceptions():
         # We don't want to deal with six.MovedModules, only "real"
         # modules.
         if (isinstance(module, types.ModuleType) and
-            hasattr(module, '__warningregistry__')):
+                hasattr(module, '__warningregistry__')):
             del module.__warningregistry__
 
     if not _deprecations_as_exceptions:
@@ -65,12 +65,12 @@ def treat_deprecations_as_exceptions():
     # before we turn the warnings into exceptions, we're golden.
     try:
         # A deprecated stdlib module used by py.test
-        import compiler  # pylint: disable=W0611
+        import compiler  # noqa
     except ImportError:
         pass
 
     try:
-        import scipy  # pylint: disable=W0611
+        import scipy  # noqa
     except ImportError:
         pass
 
@@ -102,6 +102,12 @@ def treat_deprecations_as_exceptions():
             "ignore",
             r"The value of convert_charrefs will become True in 3\.5\. "
             r"You are encouraged to set the value explicitly\.",
+            DeprecationWarning)
+        # Filter out pyresample's deprecation warnings.
+        warnings.filterwarnings(
+            "ignore",
+            r"This module will be removed in pyresample 2\.0\, please use the"
+            r"\`pyresample.spherical\` module functions and classe instead\.",
             DeprecationWarning)
 
     if sys.version_info[:2] >= (3, 5):
@@ -172,4 +178,3 @@ def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32)
     lat_array = np.repeat(lat_col, shape[1], axis=1)
     lat_array += twist_array
     return lat_array
-

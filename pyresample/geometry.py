@@ -33,6 +33,7 @@ from pyproj import Geod
 
 from pyresample import utils, CHUNK_SIZE
 from pyresample._spatial_mp import Proj, Proj_MP, Cartesian, Cartesian_MP
+from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 
 try:
     from xarray import DataArray
@@ -50,21 +51,8 @@ class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
 
 
-class Boundary(object):
-
-    """Container for geometry boundary.
-    Labelling starts in upper left corner and proceeds clockwise"""
-
-    def __init__(self, side1, side2, side3, side4):
-        self.side1 = side1
-        self.side2 = side2
-        self.side3 = side3
-        self.side4 = side4
-
-
 class BaseDefinition(object):
-
-    """Base class for geometry definitions
+    """Base class for geometry definitions.
 
     .. versionchanged:: 1.8.0
 
@@ -201,12 +189,24 @@ class BaseDefinition(object):
     def get_boundary_lonlats(self):
         """Returns Boundary objects"""
 
-        side1 = self.get_lonlats(data_slice=(0, slice(None)))
-        side2 = self.get_lonlats(data_slice=(slice(None), -1))
-        side3 = self.get_lonlats(data_slice=(-1, slice(None)))
-        side4 = self.get_lonlats(data_slice=(slice(None), 0))
-        return (Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]),
-                Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1]))
+        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
+        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
+        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
+        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
+        return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
+                SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
+
+    def get_bbox_lonlats(self):
+        """Returns the bounding box lons and lats"""
+
+        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
+        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
+        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
+        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
+        return zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
+                     (s2_lon.squeeze(), s2_lat.squeeze()),
+                     (s3_lon.squeeze(), s3_lat.squeeze()),
+                     (s4_lon.squeeze(), s4_lat.squeeze())])
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition
@@ -581,11 +581,9 @@ class SwathDefinition(CoordinateDefinition):
 
     def get_edge_lonlats(self):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_boundary_lonlats()
-        blons = np.ma.concatenate([lons.side1, lons.side2,
-                                   lons.side3, lons.side4])
-        blats = np.ma.concatenate([lats.side1, lats.side2,
-                                   lats.side3, lats.side4])
+        lons, lats = self.get_bbox_lonlats()
+        blons = np.ma.concatenate(lons)
+        blats = np.ma.concatenate(lats)
         return blons, blats
 
     def compute_bb_proj_params(self, proj_dict):
@@ -1180,60 +1178,16 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        # create coordinates of local area as ndarrays
+        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
         if data_slice is None or data_slice == slice(None):
-            # Full slice
-            rows = self.y_size
-            cols = self.x_size
-            row_start = 0
-            col_start = 0
+            pass
+        elif isinstance(data_slice, slice):
+            target_y = target_y[data_slice]
         else:
-            if isinstance(data_slice, slice):
-                # Row slice
-                row_start = get_val(data_slice.start, 0, self.y_size)
-                col_start = 0
-                rows = get_val(
-                    data_slice.stop, self.y_size, self.y_size) - row_start
-                cols = self.x_size
-            elif isinstance(data_slice[0], slice) and isinstance(data_slice[1], slice):
-                # Block slice
-                row_start = get_val(data_slice[0].start, 0, self.y_size)
-                col_start = get_val(data_slice[1].start, 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
-            elif isinstance(data_slice[0], slice):
-                # Select from col
-                is_1d_select = True
-                row_start = get_val(data_slice[0].start, 0, self.y_size)
-                col_start = get_val(data_slice[1], 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
-                cols = 1
-            elif isinstance(data_slice[1], slice):
-                # Select from row
-                is_1d_select = True
-                row_start = get_val(data_slice[0], 0, self.y_size)
-                col_start = get_val(data_slice[1].start, 0, self.x_size)
-                rows = 1
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
-            else:
-                # Single element select
-                is_single_value = True
+            target_y = target_y[data_slice[0]]
+            target_x = target_x[data_slice[1]]
 
-                row_start = get_val(data_slice[0], 0, self.y_size)
-                col_start = get_val(data_slice[1], 0, self.x_size)
-
-                rows = 1
-                cols = 1
-
-        # Calculate coordinates
-        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * \
-            self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * - \
-            self.pixel_size_y + self.pixel_upper_left[1]
         if self.rotation != 0:
             res = do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
@@ -1258,11 +1212,11 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def projection_x_coords(self):
-        return self.get_proj_coords(data_slice=(0, slice(None)))[0]
+        return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
 
     @property
     def projection_y_coords(self):
-        return self.get_proj_coords(data_slice=(slice(None), 0))[1]
+        return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
 
     @property
     def proj_x_coords(self):
@@ -1278,7 +1232,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def outer_boundary_corners(self):
-        """Returns the lon,lat of the outer edges of the corner points
+        """Return the lon,lat of the outer edges of the corner points
         """
         from pyresample.spherical_geometry import Coordinate
         proj = Proj(**self.proj_dict)
@@ -1306,7 +1260,7 @@ class AreaDefinition(BaseDefinition):
         return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
-        """Returns lon and lat arrays of area.
+        """Return lon and lat arrays of area.
 
         Parameters
         ----------
@@ -1398,14 +1352,14 @@ class AreaDefinition(BaseDefinition):
 
             return slice(xstart, xstop), slice(ystart, ystop)
 
-        from trollsched.boundary import AreaDefBoundary, Boundary
-
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
 
         area_boundary = AreaDefBoundary(area_to_cover, 100)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
-
+        if intersection is None:
+            logger.debug('Cannot determine appropriate slicing.')
+            raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 

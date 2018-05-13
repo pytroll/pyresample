@@ -23,6 +23,10 @@ import math
 import numpy as np
 import warnings
 
+warnings.warn("This module will be removed in pyresample 2.0, please use the "
+              "`pyresample.spherical` module functions and classe instead.",
+              DeprecationWarning)
+
 try:
     range = xrange
 except NameError:
@@ -45,10 +49,6 @@ class Coordinate(object):
 
     def __init__(self, lon=None, lat=None,
                  x__=None, y__=None, z__=None, R__=1):
-
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         self.R__ = R__
         if lat is not None and lon is not None:
             if not(-180 <= lon <= 180 and -90 <= lat <= 90):
@@ -98,10 +98,6 @@ class Coordinate(object):
         """Compute the cross product, and convert to cartesian coordinates
         (assuming radius 1).
         """
-
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -121,9 +117,6 @@ class Coordinate(object):
     def distance(self, point):
         """Vincenty formula.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         dlambda = self.lon - point.lon
         num = ((math.cos(point.lat) * math.sin(dlambda)) ** 2 +
                (math.cos(self.lat) * math.sin(point.lat) -
@@ -175,17 +168,11 @@ class Arc(object):
     end = None
 
     def __init__(self, start, end):
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         self.start, self.end = start, end
 
     def center_angle(self):
         """Angle of an arc at the center of the sphere.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         val = (math.cos(self.start.lat - self.end.lat) +
                math.cos(self.start.lon - self.end.lon) - 1)
 
@@ -218,9 +205,6 @@ class Arc(object):
             snapping when calculating polygon areas as it might lead to
             negative area values.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
         if self.start == other_arc.start:
             a__ = self.start
             b__ = self.end
@@ -269,10 +253,6 @@ class Arc(object):
         """Gives the two intersections of the greats circles defined by the
        current arc and *other_arc*.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
-
         if self.end.lon - self.start.lon > math.pi:
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
@@ -297,10 +277,6 @@ class Arc(object):
         """Says if two arcs defined by the current arc and the *other_arc*
         intersect. An arc is defined as the shortest tracks between two points.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
-
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
@@ -308,10 +284,6 @@ class Arc(object):
         *other_arc* intersect. An arc is defined as the shortest tracks between
         two points.
         """
-        warnings.warn("This will be removed in pyresample 2.0, please use the"
-                      "`pyresample.spherical` module functions and classe instead.",
-                      DeprecationWarning)
-
         for i in self.intersections(other_arc):
             a__ = self.start
             b__ = self.end
@@ -330,9 +302,6 @@ class Arc(object):
 def modpi(val):
     """Puts *val* between -pi and pi.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     return (val + math.pi) % (2 * math.pi) - math.pi
 
 
@@ -341,9 +310,6 @@ def get_polygon_area(corners):
     """
     # We assume the earth is spherical !!!
     # Should be the radius of the earth at the observed position
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     R = 1
 
     c1_ = corners[0]
@@ -364,10 +330,6 @@ def get_intersections(b__, boundaries):
     """Get the intersections of *b__* with *boundaries*.
     Returns both the intersection coordinates and the concerned boundaries.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
-
     intersections = []
     bounds = []
     for other_b in boundaries:
@@ -381,9 +343,6 @@ def get_intersections(b__, boundaries):
 def get_first_intersection(b__, boundaries):
     """Get the first intersection on *b__* with *boundaries*.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     intersections, bounds = get_intersections(b__, boundaries)
     del bounds
     dists = np.array([b__.start.distance(p__) for p__ in intersections])
@@ -397,9 +356,6 @@ def get_next_intersection(p__, b__, boundaries):
     """Get the next intersection from the intersection of arcs *p__* and *b__*
     along segment *b__* with *boundaries*.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     new_b = Arc(p__, b__.end)
     intersections, bounds = get_intersections(new_b, boundaries)
     dists = np.array([b__.start.distance(p2) for p2 in intersections])
@@ -415,9 +371,6 @@ def point_inside(point, corners):
     """Is a point inside the 4 corners ? This uses great circle arcs as area
     boundaries.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     arc1 = Arc(corners[0], corners[1])
     arc2 = Arc(corners[1], corners[2])
     arc3 = Arc(corners[2], corners[3])
@@ -441,9 +394,6 @@ def point_inside(point, corners):
 def intersection_polygon(area_corners, segment_corners):
     """Get the intersection polygon between two areas.
     """
-    warnings.warn("This will be removed in pyresample 2.0, please use the"
-                  "`pyresample.spherical` module functions and classe instead.",
-                  DeprecationWarning)
     area_boundaries = [Arc(area_corners[0], area_corners[1]),
                        Arc(area_corners[1], area_corners[2]),
                        Arc(area_corners[2], area_corners[3]),
