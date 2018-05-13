@@ -225,7 +225,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(135),
                                np.deg2rad(89)))
 
-        self.assertEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926)
+        self.assertAlmostEqual(np.rad2deg(arc1.angle(arc2)), -44.996385007218926)
 
         arc1 = Arc(SCoordinate(np.deg2rad(112.5),
                                np.deg2rad(89.234600944314138)),
@@ -234,19 +234,19 @@ class TestArc(unittest.TestCase):
                                np.deg2rad(89.234600944314138)),
                    SCoordinate(np.deg2rad(45), np.deg2rad(89)))
 
-        self.assertEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)
+        self.assertAlmostEqual(np.rad2deg(arc1.angle(arc2)), 44.996385007218883)
 
         arc1 = Arc(SCoordinate(0, 0), SCoordinate(1, 0))
-        self.assertEqual(arc1.angle(arc1), 0)
+        self.assertAlmostEqual(arc1.angle(arc1), 0)
 
         arc2 = Arc(SCoordinate(1, 0), SCoordinate(0, 0))
-        self.assertEqual(arc1.angle(arc2), 0)
+        self.assertAlmostEqual(arc1.angle(arc2), 0)
 
         arc2 = Arc(SCoordinate(0, 0), SCoordinate(-1, 0))
-        self.assertEqual(arc1.angle(arc2), np.pi)
+        self.assertAlmostEqual(arc1.angle(arc2), np.pi)
 
         arc2 = Arc(SCoordinate(2, 0), SCoordinate(1, 0))
-        self.assertEqual(arc1.angle(arc2), np.pi)
+        self.assertAlmostEqual(arc1.angle(arc2), np.pi)
 
         arc2 = Arc(SCoordinate(2, 0), SCoordinate(3, 0))
         self.assertRaises(ValueError, arc1.angle, arc2)
