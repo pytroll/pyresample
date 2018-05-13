@@ -8,7 +8,7 @@ env:
         - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
         - NUMPY_VERSION=stable
         - MAIN_CMD='python setup.py'
-        - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib basemap pyyaml pyproj coveralls configobj coverage'
+        - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib basemap pyyaml pyproj coveralls configobj coverage codecov'
         - SETUP_XVFB=False
         - EVENT_TYPE='push pull_request'
         - SETUP_CMD='test'
@@ -18,6 +18,7 @@ install:
     - source ci-helpers/travis/setup_conda.sh
 script:
     - coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
-after_success: coveralls
+after_success:
+- if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; codecov; fi
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt

@@ -21,6 +21,11 @@ from __future__ import absolute_import
 
 import math
 import numpy as np
+import warnings
+
+warnings.warn("This module will be removed in pyresample 2.0, please use the "
+              "`pyresample.spherical` module functions and classe instead.",
+              DeprecationWarning)
 
 try:
     range = xrange
@@ -44,7 +49,6 @@ class Coordinate(object):
 
     def __init__(self, lon=None, lat=None,
                  x__=None, y__=None, z__=None, R__=1):
-
         self.R__ = R__
         if lat is not None and lon is not None:
             if not(-180 <= lon <= 180 and -90 <= lat <= 90):
@@ -94,7 +98,6 @@ class Coordinate(object):
         """Compute the cross product, and convert to cartesian coordinates
         (assuming radius 1).
         """
-
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -247,10 +250,9 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the 
+        """Gives the two intersections of the greats circles defined by the
        current arc and *other_arc*.
         """
-
         if self.end.lon - self.start.lon > math.pi:
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
@@ -275,7 +277,6 @@ class Arc(object):
         """Says if two arcs defined by the current arc and the *other_arc*
         intersect. An arc is defined as the shortest tracks between two points.
         """
-
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
@@ -283,7 +284,6 @@ class Arc(object):
         *other_arc* intersect. An arc is defined as the shortest tracks between
         two points.
         """
-
         for i in self.intersections(other_arc):
             a__ = self.start
             b__ = self.end
@@ -330,7 +330,6 @@ def get_intersections(b__, boundaries):
     """Get the intersections of *b__* with *boundaries*.
     Returns both the intersection coordinates and the concerned boundaries.
     """
-
     intersections = []
     bounds = []
     for other_b in boundaries:

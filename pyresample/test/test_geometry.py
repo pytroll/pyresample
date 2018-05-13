@@ -623,6 +623,46 @@ class Test(unittest.TestCase):
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
+    def test_get_proj_coords(self):
+        from pyresample import utils
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 10
+        y_size = 10
+        area_extent = [1000000, 0, 1050000, 50000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '60',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        xcoord, ycoord = area_def.get_proj_coords()
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1007500., 1012500.,
+                                              1017500., 1022500., 1027500.,
+                                              1032500., 1037500., 1042500.,
+                                              1047500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 42500., 37500., 32500.,
+                                              27500., 22500., 17500., 12500.,
+                                              7500.,  2500.])))
+
+        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
+                                                              slice(None, None, 2)))
+
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1012500., 1022500.,
+                                              1032500., 1042500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 37500., 27500., 17500.,
+                                              7500.])))
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat"""
         from pyresample import utils
@@ -702,6 +742,61 @@ class Test(unittest.TestCase):
         y_expects = np.array([1, 0])
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
+
+    def test_get_area_slices(self):
+        """Check area slicing."""
+        from pyresample import utils
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261)
+        proj_dict = {'a': 6378169.5, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = utils.get_area_def(area_id,
+                                           area_name,
+                                           proj_id,
+                                           proj_dict,
+                                           x_size, y_size,
+                                           area_extent)
+
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(0, 3712))
+        self.assertEqual(slice_y, slice(0, 3712))
+
+        area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                                {'a': 6378144.0,
+                                                 'b': 6356759.0,
+                                                 'lat_0': 50.00,
+                                                 'lat_ts': 50.00,
+                                                 'lon_0': 8.00,
+                                                 'proj': 'stere'},
+                                                10,
+                                                10,
+                                                [-1370912.72,
+                                                 -909968.64,
+                                                 1029087.28,
+                                                 1490031.36])
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(1610, 2343))
+        self.assertEqual(slice_y, slice(158, 515, None))
 
 
 def assert_np_dict_allclose(dict1, dict2):
@@ -1170,22 +1265,32 @@ class TestCrop(unittest.TestCase):
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
-        elon = np.array([-74.802824, -73.667708, -69.879687, -60.758081,
-                         -32.224989, 32.224989, 60.758081, 69.879687,
-                         73.667708, 74.802824, 74.802824, 73.667708,
-                         69.879687, 60.758081, 32.224989, -32.224989,
-                         -60.758081, -69.879687, -73.667708, -74.802824])
+        # This musk be equal to lon.
+        elon = np.array([-79.23372832, -77.9694809, -74.55229623, -67.32816598,
+                         -41.45591465, 41.45591465, 67.32816598, 74.55229623,
+                         77.9694809, 79.23372832, 79.23372832, 77.9694809,
+                         74.55229623, 67.32816598, 41.45591465, -41.45591465,
+                         -67.32816598, -74.55229623, -77.9694809, -79.23372832])
+        elat = np.array([6.94302533e-15, 1.97333299e+01, 3.92114217e+01, 5.82244715e+01,
+                         7.52409201e+01, 7.52409201e+01, 5.82244715e+01, 3.92114217e+01,
+                         1.97333299e+01, -0.00000000e+00, -6.94302533e-15, -1.97333299e+01,
+                         -3.92114217e+01, -5.82244715e+01, -7.52409201e+01, -7.52409201e+01,
+                         -5.82244715e+01, -3.92114217e+01, -1.97333299e+01, 0.0])
 
-        elat = -np.array([-6.81982903e-15, -1.93889346e+01, -3.84764764e+01,
-                          -5.67707359e+01, -7.18862588e+01, -7.18862588e+01,
-                          -5.67707359e+01, -3.84764764e+01, -1.93889346e+01,
-                          0.00000000e+00, 6.81982903e-15, 1.93889346e+01,
-                          3.84764764e+01, 5.67707359e+01, 7.18862588e+01,
-                          7.18862588e+01, 5.67707359e+01, 3.84764764e+01,
-                          1.93889346e+01, -0.00000000e+00])
-
-        np.testing.assert_allclose(lon, elon + lon_0)
+        np.testing.assert_allclose(lon, elon)
         np.testing.assert_allclose(lat, elat)
+
+        geos_area = MagicMock()
+        lon_0 = 10
+        geos_area.proj_dict = {'a': 6378169.00,
+                               'b': 6356583.80,
+                               'h': 35785831.00,
+                               'lon_0': lon_0,
+                               'proj': 'geos'}
+        geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
+
+        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
+        np.testing.assert_allclose(lon, elon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
