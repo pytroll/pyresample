@@ -29,9 +29,11 @@ import hashlib
 
 import numpy as np
 import yaml
-from pyproj import Geod, Proj
+from pyproj import Geod
 
-from pyresample import _spatial_mp, utils, CHUNK_SIZE
+from pyresample import utils, CHUNK_SIZE
+from pyresample._spatial_mp import Proj, Proj_MP, Cartesian, Cartesian_MP
+from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 
 try:
     from xarray import DataArray
@@ -46,25 +48,11 @@ class DimensionError(ValueError):
 
 
 class IncompatibleAreas(ValueError):
-
     """Error when the areas to combine are not compatible."""
 
 
-class Boundary(object):
-
-    """Container for geometry boundary.
-    Labelling starts in upper left corner and proceeds clockwise"""
-
-    def __init__(self, side1, side2, side3, side4):
-        self.side1 = side1
-        self.side2 = side2
-        self.side3 = side3
-        self.side4 = side4
-
-
 class BaseDefinition(object):
-
-    """Base class for geometry definitions
+    """Base class for geometry definitions.
 
     .. versionchanged:: 1.8.0
 
@@ -199,14 +187,25 @@ class BaseDefinition(object):
             return self.lons[data_slice], self.lats[data_slice]
 
     def get_boundary_lonlats(self):
-        """Returns Boundary objects"""
+        """Return Boundary objects."""
+        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
+        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
+        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
+        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
+        return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
+                SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-        side1 = self.get_lonlats(data_slice=(0, slice(None)))
-        side2 = self.get_lonlats(data_slice=(slice(None), -1))
-        side3 = self.get_lonlats(data_slice=(-1, slice(None)))
-        side4 = self.get_lonlats(data_slice=(slice(None), 0))
-        return (Boundary(side1[0], side2[0], side3[0][::-1], side4[0][::-1]),
-                Boundary(side1[1], side2[1], side3[1][::-1], side4[1][::-1]))
+    def get_bbox_lonlats(self):
+        """Returns the bounding box lons and lats"""
+
+        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
+        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
+        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
+        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
+        return zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
+                     (s2_lon.squeeze(), s2_lat.squeeze()),
+                     (s3_lon.squeeze(), s3_lat.squeeze()),
+                     (s4_lon.squeeze(), s4_lat.squeeze())])
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition
@@ -238,9 +237,9 @@ class BaseDefinition(object):
             lons, lats = self.get_lonlats(nprocs=nprocs, data_slice=data_slice)
 
             if nprocs > 1:
-                cartesian = _spatial_mp.Cartesian_MP(nprocs)
+                cartesian = Cartesian_MP(nprocs)
             else:
-                cartesian = _spatial_mp.Cartesian()
+                cartesian = Cartesian()
 
             cartesian_coords = cartesian.transform_lonlats(np.ravel(lons),
                                                            np.ravel(lats))
@@ -369,9 +368,12 @@ class BaseDefinition(object):
         inter_area = get_polygon_area(self.intersection(other))
         return inter_area / other_area
 
+    def get_area_slices(self, area_to_cover):
+        """Compute the slice to read based on an `area_to_cover`."""
+        raise NotImplementedError
+
 
 class CoordinateDefinition(BaseDefinition):
-
     """Base class for geometry definitions defined by lons and lats only"""
 
     def __init__(self, lons, lats, nprocs=1):
@@ -464,7 +466,6 @@ def get_array_hashable(arr):
 
 
 class SwathDefinition(CoordinateDefinition):
-
     """Swath defined by lons and lats.
 
     Parameters
@@ -579,11 +580,9 @@ class SwathDefinition(CoordinateDefinition):
 
     def get_edge_lonlats(self):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_boundary_lonlats()
-        blons = np.ma.concatenate([lons.side1, lons.side2,
-                                   lons.side3, lons.side4])
-        blats = np.ma.concatenate([lats.side1, lats.side2,
-                                   lats.side3, lats.side4])
+        lons, lats = self.get_bbox_lonlats()
+        blons = np.ma.concatenate(lons)
+        blats = np.ma.concatenate(lats)
         return blons, blats
 
     def compute_bb_proj_params(self, proj_dict):
@@ -624,7 +623,6 @@ class SwathDefinition(CoordinateDefinition):
 
 
 class DynamicAreaDefinition(object):
-
     """An AreaDefintion containing just a subset of the needed parameters.
 
     The purpose of this class is to be able to adapt the area extent and size
@@ -850,7 +848,7 @@ class AreaDefinition(BaseDefinition):
         self.area_extent = tuple(area_extent)
 
         # Calculate area_extent in lon lat
-        proj = _spatial_mp.Proj(**proj_dict)
+        proj = Proj(**proj_dict)
         corner_lons, corner_lats = proj((area_extent[0], area_extent[2]),
                                         (area_extent[1], area_extent[3]),
                                         inverse=True)
@@ -981,7 +979,7 @@ class AreaDefinition(BaseDefinition):
         To be used with scarse data points instead of slices
         (see get_lonlats).
         """
-        p = _spatial_mp.Proj(self.proj4_string)
+        p = Proj(self.proj4_string)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
@@ -1027,7 +1025,7 @@ class AreaDefinition(BaseDefinition):
             if lon.shape != lat.shape:
                 raise ValueError("lon and lat is not of the same shape!")
 
-        pobj = _spatial_mp.Proj(self.proj4_string)
+        pobj = Proj(self.proj4_string)
         xm_, ym_ = pobj(lon, lat)
 
         return self.get_xy_from_proj_coords(xm_, ym_)
@@ -1106,7 +1104,8 @@ class AreaDefinition(BaseDefinition):
         (lon, lat) : tuple of floats
         """
 
-        return self.get_lonlats(nprocs=None, data_slice=(row, col))
+        lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
+        return np.asscalar(lon), np.asscalar(lat)
 
     def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
         import dask.array as da
@@ -1179,60 +1178,16 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        # create coordinates of local area as ndarrays
+        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
         if data_slice is None or data_slice == slice(None):
-            # Full slice
-            rows = self.y_size
-            cols = self.x_size
-            row_start = 0
-            col_start = 0
+            pass
+        elif isinstance(data_slice, slice):
+            target_y = target_y[data_slice]
         else:
-            if isinstance(data_slice, slice):
-                # Row slice
-                row_start = get_val(data_slice.start, 0, self.y_size)
-                col_start = 0
-                rows = get_val(
-                    data_slice.stop, self.y_size, self.y_size) - row_start
-                cols = self.x_size
-            elif isinstance(data_slice[0], slice) and isinstance(data_slice[1], slice):
-                # Block slice
-                row_start = get_val(data_slice[0].start, 0, self.y_size)
-                col_start = get_val(data_slice[1].start, 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
-            elif isinstance(data_slice[0], slice):
-                # Select from col
-                is_1d_select = True
-                row_start = get_val(data_slice[0].start, 0, self.y_size)
-                col_start = get_val(data_slice[1], 0, self.x_size)
-                rows = get_val(
-                    data_slice[0].stop, self.y_size, self.y_size) - row_start
-                cols = 1
-            elif isinstance(data_slice[1], slice):
-                # Select from row
-                is_1d_select = True
-                row_start = get_val(data_slice[0], 0, self.y_size)
-                col_start = get_val(data_slice[1].start, 0, self.x_size)
-                rows = 1
-                cols = get_val(
-                    data_slice[1].stop, self.x_size, self.x_size) - col_start
-            else:
-                # Single element select
-                is_single_value = True
+            target_y = target_y[data_slice[0]]
+            target_x = target_x[data_slice[1]]
 
-                row_start = get_val(data_slice[0], 0, self.y_size)
-                col_start = get_val(data_slice[1], 0, self.x_size)
-
-                rows = 1
-                cols = 1
-
-        # Calculate coordinates
-        target_x = np.arange(col_start, col_start + cols, dtype=dtype) * \
-            self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(row_start, row_start + rows, dtype=dtype) * - \
-            self.pixel_size_y + self.pixel_upper_left[1]
         if self.rotation != 0:
             res = do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
@@ -1257,11 +1212,11 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def projection_x_coords(self):
-        return self.get_proj_coords(data_slice=(0, slice(None)))[0]
+        return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
 
     @property
     def projection_y_coords(self):
-        return self.get_proj_coords(data_slice=(slice(None), 0))[1]
+        return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
 
     @property
     def proj_x_coords(self):
@@ -1277,10 +1232,10 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def outer_boundary_corners(self):
-        """Returns the lon,lat of the outer edges of the corner points
+        """Return the lon,lat of the outer edges of the corner points
         """
         from pyresample.spherical_geometry import Coordinate
-        proj = _spatial_mp.Proj(**self.proj_dict)
+        proj = Proj(**self.proj_dict)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
                                          self.area_extent[2], self.area_extent[0]),
@@ -1305,7 +1260,7 @@ class AreaDefinition(BaseDefinition):
         return res[:, :, 0], res[:, :, 1]
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
-        """Returns lon and lat arrays of area.
+        """Return lon and lat arrays of area.
 
         Parameters
         ----------
@@ -1333,9 +1288,9 @@ class AreaDefinition(BaseDefinition):
 
             # Proj.4 definition of target area projection
             if nprocs > 1:
-                target_proj = _spatial_mp.Proj_MP(**self.proj_dict)
+                target_proj = Proj_MP(**self.proj_dict)
             else:
-                target_proj = _spatial_mp.Proj(**self.proj_dict)
+                target_proj = Proj(**self.proj_dict)
 
             # Get coordinates of local area as ndarrays
             target_x, target_y = self.get_proj_coords(
@@ -1376,7 +1331,6 @@ class AreaDefinition(BaseDefinition):
 
     def get_area_slices(self, area_to_cover):
         """Compute the slice to read based on an `area_to_cover`."""
-
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
@@ -1384,23 +1338,28 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only geos supported')
 
         # Intersection only required for two different projections
-        if area_to_cover.proj_dict['proj'] == self.proj_dict['proj']:
+        if area_to_cover.proj_dict.get('proj') == self.proj_dict['proj']:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s', area_to_cover.proj_dict['proj'])
             # Get xy coordinates
             llx, lly, urx, ury = area_to_cover.area_extent
             x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
 
-            return slice(x[0], x[1] + 1), slice(y[1], y[0] + 1)
+            xstart = 0 if x[0] is np.ma.masked else x[0]
+            ystart = 0 if y[1] is np.ma.masked else y[1]
+            xstop = self.x_size if x[1] is np.ma.masked else x[1] + 1
+            ystop = self.y_size if y[0] is np.ma.masked else y[0] + 1
 
-        from trollsched.boundary import AreaDefBoundary, Boundary
+            return slice(xstart, xstop), slice(ystart, ystop)
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
 
         area_boundary = AreaDefBoundary(area_to_cover, 100)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
-
+        if intersection is None:
+            logger.debug('Cannot determine appropriate slicing.')
+            raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 
@@ -1462,8 +1421,8 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.001)
-    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.001)
+    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
@@ -1518,7 +1477,6 @@ def concatenate_area_defs(area1, area2, axis=0):
 
 
 class StackedAreaDefinition(BaseDefinition):
-
     """Definition based on muliple vertically stacked AreaDefinitions."""
 
     def __init__(self, *definitions, **kwargs):
