@@ -202,6 +202,7 @@ class Test(unittest.TestCase):
                                                          nprocs=1,
                                                          reduce_data=False)
         _check_ts(t__, s__)
+
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_def,
                                                          50e5, neighbours=32,
