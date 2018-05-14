@@ -212,10 +212,16 @@ class XArrayResamplerBilinear(object):
         res = data.values[slices]
         res[mask_slices] = fill_value
 
-        p_1 = res[:, :, 0]
-        p_2 = res[:, :, 1]
-        p_3 = res[:, :, 2]
-        p_4 = res[:, :, 3]
+        try:
+            p_1 = res[:, :, 0]
+            p_2 = res[:, :, 1]
+            p_3 = res[:, :, 2]
+            p_4 = res[:, :, 3]
+        except IndexError:
+            p_1 = res[:, 0]
+            p_2 = res[:, 1]
+            p_3 = res[:, 2]
+            p_4 = res[:, 3]
 
         s__, t__ = self.bilinear_s, self.bilinear_t
 
@@ -231,7 +237,10 @@ class XArrayResamplerBilinear(object):
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
         shp = self.target_geo_def.shape
-        res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
+        if data.ndim == 3:
+            res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
+        else:
+            res = da.reshape(res, (shp[0], shp[1]))
         res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
                         dims=data.dims, coords=coords)
 
