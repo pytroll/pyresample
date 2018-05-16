@@ -1582,6 +1582,11 @@ class StackedAreaDefinition(BaseDefinition):
         """Returns projection definition as Proj.4 string"""
         return self.defs[0].proj4_string
 
+    def update_hash(self, the_hash=None):
+        for areadef in self.defs:
+            the_hash = areadef.update_hash(the_hash)
+        return the_hash
+
 
 def _get_slice(segments, shape):
     """Generator for segmenting a 1D or 2D array"""
