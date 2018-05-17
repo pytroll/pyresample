@@ -60,6 +60,7 @@ def _globe_from_proj4(proj4_terms):
 
 # copy of class in cartopy (before it was released)
 class _PROJ4Projection(ccrs.Projection):
+
     def __init__(self, proj4_terms, globe=None, bounds=None):
         terms = proj4_str_to_dict(proj4_terms)
         globe = _globe_from_proj4(terms) if globe is None else globe

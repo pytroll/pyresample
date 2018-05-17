@@ -46,9 +46,9 @@ class Test(unittest.TestCase):
     fvalue = -10000000000.0
     valid_fov = (lons != fvalue) * (lats != fvalue) * (tb37v != fvalue)
     lons = lons[valid_fov]
-    lats = lats[valid_fov] 
+    lats = lats[valid_fov]
     tb37v = tb37v[valid_fov]
- 
+
     def test_ellps2axis(self):
         from pyresample import plot
         a, b = plot.ellps2axis('WGS84')

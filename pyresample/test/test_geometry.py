@@ -810,6 +810,7 @@ def assert_np_dict_allclose(dict1, dict2):
 
 
 class TestSwathDefinition(unittest.TestCase):
+
     """Test the SwathDefinition."""
 
     def test_swath(self):
@@ -1031,6 +1032,7 @@ class TestSwathDefinition(unittest.TestCase):
 
 
 class TestStackedAreaDefinition(unittest.TestCase):
+
     """Test the StackedAreaDefition."""
 
     def test_append(self):
@@ -1189,6 +1191,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):
+
     """Test the DynamicAreaDefinition class."""
 
     def test_freeze(self):
@@ -1250,6 +1253,7 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 
 
 class TestCrop(unittest.TestCase):
+
     """Test the area helpers."""
 
     def test_get_geostationary_bbox(self):

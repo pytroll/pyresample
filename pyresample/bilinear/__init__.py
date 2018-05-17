@@ -135,8 +135,10 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
     # Reduce data
     new_data = data[input_idxs]
-    data_min = np.nanmin(new_data)
-    data_max = np.nanmax(new_data)
+    # Add a small "machine epsilon" so that tiny variations are not discarded
+    epsilon = 1e-6
+    data_min = np.nanmin(new_data) - epsilon
+    data_max = np.nanmax(new_data) + epsilon
 
     new_data = new_data[idx_arr]
 
@@ -238,7 +240,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     # Get output x/y coordinates
     out_x, out_y = _get_output_xy(target_area_def, proj)
 
-    # Get input x/ycoordinates
+    # Get input x/y coordinates
     in_x, in_y = _get_input_xy(source_geo_def, proj, input_idxs, idx_ref)
 
     # Get the four closest corner points around each output location
@@ -248,7 +250,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     # Calculate vertical and horizontal fractional distances t and s
     t__, s__ = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
-    # Remove mask and put np.nan at the masked locations instead
+    # Mask NaN values
     if masked:
         mask = np.isnan(t__) | np.isnan(s__)
         t__ = np.ma.masked_where(mask, t__)
@@ -412,8 +414,11 @@ def _mask_coordinates(lons, lats):
 
 def _get_corner(stride, valid, in_x, in_y, idx_ref):
     """Get closest set of coordinates from the *valid* locations"""
+    # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
+    # Check which of these were actually valid
     invalid = np.invert(np.max(valid, axis=1))
+
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]
     x__[invalid] = np.nan

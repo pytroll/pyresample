@@ -2,7 +2,6 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/a34o4utf8dqjsob1/branch/master?svg=true)](https://ci.appveyor.com/project/pytroll/pyresample/branch/master)
 [![codebeat badge](https://codebeat.co/badges/2b9f14bc-758c-4fe1-967d-85b11e934983)](https://codebeat.co/projects/github-com-pytroll-pyresample-master)
 
-
 Python package for geospatial resampling
 ----------------------------------------
 

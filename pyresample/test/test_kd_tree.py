@@ -45,19 +45,16 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(self.tswath,
                                        self.tdata.ravel(), self.tgrid,
                                        100000, reduce_data=False, segments=1)
-        self.assertTrue(res[0] == 2, 'Failed to calculate nearest neighbour')
+        self.assertTrue(res[0] == 2)
 
     def test_gauss_base(self):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(self.tswath,
                                          self.tdata.ravel(), self.tgrid,
                                          50000, 25000, reduce_data=False, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour warning')
-            self.assertFalse(('Searching' not in str(
-                w[0].message)), 'Failed to create correct neighbour warning')
-        self.assertAlmostEqual(res[0], 2.2020729, 5,
-                               'Failed to calculate gaussian weighting')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Searching' not in str(w[0].message)))
+        self.assertAlmostEqual(res[0], 2.2020729, 5)
 
     def test_custom_base(self):
         def wf(dist):
@@ -67,12 +64,9 @@ class Test(unittest.TestCase):
             res = kd_tree.resample_custom(self.tswath,
                                           self.tdata.ravel(), self.tgrid,
                                           50000, wf, reduce_data=False, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour warning')
-            self.assertFalse(('Searching' not in str(
-                w[0].message)), 'Failed to create correct neighbour warning')
-        self.assertAlmostEqual(res[0], 2.4356757, 5,
-                               'Failed to calculate custom weighting')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Searching' not in str(w[0].message)))
+        self.assertAlmostEqual(res[0], 2.4356757, 5)
 
     def test_gauss_uncert(self):
         sigma = utils.fwhm2sigma(41627.730557884883)
@@ -80,20 +74,15 @@ class Test(unittest.TestCase):
             res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata,
                                                         self.tgrid, 100000, sigma,
                                                         with_uncert=True)
-            self.assertTrue(
-                len(w) > 0, 'Failed to create neighbour warning')
-            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
-                            'Failed to create correct neighbour warning')
+            self.assertTrue(len(w) > 0)
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)))
 
         expected_res = 2.20206560694
         expected_stddev = 0.707115076173
         expected_count = 3
-        self.assertAlmostEqual(res[0], expected_res, 5,
-                               'Failed to calculate gaussian weighting with uncertainty')
-        self.assertAlmostEqual(stddev[0], expected_stddev, 5,
-                               'Failed to calculate uncertainty for gaussian weighting')
-        self.assertEqual(
-            count[0], expected_count, 'Wrong data point count for gaussian weighting with uncertainty')
+        self.assertAlmostEqual(res[0], expected_res, 5)
+        self.assertAlmostEqual(stddev[0], expected_stddev, 5)
+        self.assertEqual(count[0], expected_count)
 
     def test_custom_uncert(self):
         def wf(dist):
@@ -103,17 +92,12 @@ class Test(unittest.TestCase):
             res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                                           self.tdata, self.tgrid,
                                                           100000, wf, with_uncert=True)
-            self.assertTrue(
-                len(w) > 0, 'Failed to create neighbour warning')
-            self.assertTrue((any('Searching' in str(_w.message) for _w in w)),
-                            'Failed to create correct neighbour warning')
+            self.assertTrue(len(w) > 0)
+            self.assertTrue((any('Searching' in str(_w.message) for _w in w)))
 
-        self.assertAlmostEqual(res[0], 2.32193149, 5,
-                               'Failed to calculate custom weighting with uncertainty')
-        self.assertAlmostEqual(stddev[0], 0.81817972, 5,
-                               'Failed to calculate custom for gaussian weighting')
-        self.assertEqual(
-            counts[0], 3, 'Wrong data point count for custom weighting with uncertainty')
+        self.assertAlmostEqual(res[0], 2.32193149, 5)
+        self.assertAlmostEqual(stddev[0], 0.81817972, 5)
+        self.assertEqual(counts[0], 3)
 
     def test_nearest(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -124,8 +108,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
         expected = 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_masked_swath_target(self):
         """Test that a masked array works as a target."""
@@ -143,8 +126,7 @@ class Test(unittest.TestCase):
         cross_sum = res.sum()
         # expected = 12716  # if masks aren't respected
         expected = 12000
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling masked nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_1d(self):
         data = numpy.fromfunction(lambda x, y: x * y, (800, 800))
@@ -155,10 +137,8 @@ class Test(unittest.TestCase):
                                        swath_def, 50000, segments=1)
         cross_sum = res.sum()
         expected = 35821299.0
-        self.assertEqual(res.shape, (500,),
-                         msg='Swath resampling nearest 1d failed')
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling nearest 1d failed')
+        self.assertEqual(res.shape, (500,))
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_empty(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -169,8 +149,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
         expected = 0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling nearest empty failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_empty_multi(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -194,8 +173,7 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(swath_def, data_multi,
                                        self.area_def, 50000, segments=1,
                                        fill_value=None)
-        self.assertEqual(res.shape, (800, 800, 3),
-                         msg='Swath resampling nearest empty multi masked failed')
+        self.assertEqual(res.shape, (800, 800, 3))
 
     def test_nearest_empty_masked(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -207,8 +185,7 @@ class Test(unittest.TestCase):
                                        fill_value=None)
         cross_sum = res.mask.sum()
         expected = res.size
-        self.assertTrue(cross_sum == expected,
-                        msg='Swath resampling nearest empty masked failed')
+        self.assertTrue(cross_sum == expected)
 
     def test_nearest_segments(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -219,8 +196,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, segments=2)
         cross_sum = res.sum()
         expected = 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling nearest segments failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_remap(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -233,8 +209,7 @@ class Test(unittest.TestCase):
                                          swath_def, 5000, segments=1)
         cross_sum = remap.sum()
         expected = 22275.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Grid remapping nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_mp(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -245,8 +220,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, nprocs=2, segments=1)
         cross_sum = res.sum()
         expected = 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling mp nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_multi(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -259,8 +233,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
         expected = 3 * 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath multi channel resampling nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_nearest_multi_unraveled(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -272,8 +245,7 @@ class Test(unittest.TestCase):
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
         expected = 3 * 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath multi channel resampling nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_gauss_sparse(self):
         data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
@@ -284,8 +256,7 @@ class Test(unittest.TestCase):
                                      self.area_def, 50000, 25000, fill_value=-1, segments=1)
         cross_sum = res.sum()
         expected = 15387753.9852
-        self.assertAlmostEqual(cross_sum, expected, places=3,
-                               msg='Swath gauss sparse nearest failed')
+        self.assertAlmostEqual(cross_sum, expected, places=3)
 
     def test_gauss(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
@@ -297,14 +268,11 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, 25000, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
         cross_sum = res.sum()
-        expected = 4872.81050892
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath resampling gauss failed')
+        expected = 4872.8100353517921
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_fwhm(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
@@ -316,14 +284,11 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
         cross_sum = res.sum()
-        expected = 4872.81050892
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath resampling gauss failed')
+        expected = 4872.8100353517921
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
@@ -337,14 +302,11 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [25000, 15000, 10000], segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
         cross_sum = res.sum()
-        expected = 1461.84313918
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel resampling gauss failed')
+        expected = 1461.8429990248171
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_uncert(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
@@ -364,25 +326,23 @@ class Test(unittest.TestCase):
                                                          self.area_def, 50000, [
                                                              25000, 15000, 10000],
                                                          segments=1, with_uncert=True)
+            self.assertTrue(len(w) >= 1)
             self.assertTrue(
-                len(w) >= 1, 'Failed to create neighbour radius warning')
-            self.assertTrue(any(['Possible more' in str(
-                x.message) for x in w]), 'Failed to create correct neighbour radius warning')
+                any(['Possible more' in str(x.message) for x in w]))
         cross_sum = res.sum()
         cross_sum_counts = counts.sum()
-        expected = 1461.84313918
-        expected_stddev = [0.446193170875, 0.443606880035, 0.438586349519]
+        expected = 1461.8429990248171
+        expected_stddev = [0.44621800779801657, 0.44363137712896705,
+                           0.43861019464274459]
         expected_counts = 4934802.0
         self.assertTrue(res.shape == stddev.shape and stddev.shape ==
                         counts.shape and counts.shape == (800, 800, 3))
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel resampling gauss failed on data')
+        self.assertAlmostEqual(cross_sum, expected)
+
         for i, e_stddev in enumerate(expected_stddev):
             cross_sum_stddev = stddev[:, :, i].sum()
-            self.assertAlmostEqual(cross_sum_stddev, e_stddev,
-                                   msg='Swath multi channel resampling gauss failed on stddev (channel {})'.format(i))
-        self.assertAlmostEqual(cross_sum_counts, expected_counts,
-                               msg='Swath multi channel resampling gauss failed on counts')
+            self.assertAlmostEqual(cross_sum_stddev, e_stddev)
+        self.assertAlmostEqual(cross_sum_counts, expected_counts)
 
     def test_gauss_multi_mp(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
@@ -398,14 +358,11 @@ class Test(unittest.TestCase):
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
                                          nprocs=2, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
         cross_sum = res.sum()
-        expected = 1461.84313918
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel resampling gauss failed')
+        expected = 1461.8429990248171
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_mp_segments(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
@@ -421,14 +378,11 @@ class Test(unittest.TestCase):
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
                                          nprocs=2, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse('Possible more' not in str(w[0].message))
         cross_sum = res.sum()
-        expected = 1461.84313918
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel segments resampling gauss failed')
+        expected = 1461.8429990248171
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_mp_segments_empty(self):
         data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
@@ -444,9 +398,7 @@ class Test(unittest.TestCase):
                                          25000, 15000, 10000],
                                      nprocs=2, segments=1)
         cross_sum = res.sum()
-        self.assertTrue(cross_sum == 0,
-                        msg=('Swath multi channel segments empty '
-                             'resampling gauss failed'))
+        self.assertTrue(cross_sum == 0)
 
     def test_custom(self):
         def wf(dist):
@@ -461,14 +413,11 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_custom(swath_def, data.ravel(),
                                           self.area_def, 50000, wf, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
         cross_sum = res.sum()
-        expected = 4872.81050729
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath custom resampling failed')
+        expected = 4872.8100347930776
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_custom_multi(self):
         def wf1(dist):
@@ -491,14 +440,11 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_custom(swath_def, data_multi,
                                           self.area_def, 50000, [wf1, wf2, wf3], segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse('Possible more' not in str(w[0].message))
         cross_sum = res.sum()
-        expected = 1461.842980746
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel custom resampling failed')
+        expected = 1461.8428378742638
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_masked_nearest(self):
         data = numpy.ones((50, 10))
@@ -519,10 +465,8 @@ class Test(unittest.TestCase):
                                                     'test_files',
                                                     'mask_test_nearest_data.dat'),
                                        sep=' ').reshape((800, 800))
-        self.assertTrue(numpy.array_equal(expected_mask, res.mask),
-                        msg='Resampling of swath mask failed')
-        self.assertTrue(numpy.array_equal(expected_data, res.data),
-                        msg='Resampling of swath masked data failed')
+        self.assertTrue(numpy.array_equal(expected_mask, res.mask))
+        self.assertTrue(numpy.array_equal(expected_data, res.data))
 
     def test_masked_nearest_1d(self):
         data = numpy.ones((800, 800))
@@ -535,8 +479,7 @@ class Test(unittest.TestCase):
         masked_data = numpy.ma.array(data, mask=mask)
         res = kd_tree.resample_nearest(self.area_def, masked_data.ravel(),
                                        swath_def, 50000, segments=1)
-        self.assertEqual(res.mask.sum(), 108,
-                         msg='Swath resampling masked nearest 1d failed')
+        self.assertEqual(res.mask.sum(), 112)
 
     def test_masked_gauss(self):
         data = numpy.ones((50, 10))
@@ -560,10 +503,8 @@ class Test(unittest.TestCase):
         expected = expected_data.sum()
         cross_sum = res.data.sum()
 
-        self.assertTrue(numpy.array_equal(expected_mask, res.mask),
-                        msg='Gauss resampling of swath mask failed')
-        self.assertAlmostEqual(cross_sum, expected, places=3,
-                               msg='Gauss resampling of swath masked data failed')
+        self.assertTrue(numpy.array_equal(expected_mask, res.mask))
+        self.assertAlmostEqual(cross_sum, expected, places=3)
 
     def test_masked_fill_float(self):
         data = numpy.ones((50, 10))
@@ -577,8 +518,7 @@ class Test(unittest.TestCase):
                                                          'mask_test_fill_value.dat'),
                                             sep=' ').reshape((800, 800))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
-                        msg='Failed to create fill mask on float data')
+        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_fill_int(self):
         data = numpy.ones((50, 10)).astype('int')
@@ -592,8 +532,7 @@ class Test(unittest.TestCase):
                                                          'mask_test_fill_value.dat'),
                                             sep=' ').reshape((800, 800))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
-                        msg='Failed to create fill mask on integer data')
+        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_full(self):
         data = numpy.ones((50, 10))
@@ -614,8 +553,7 @@ class Test(unittest.TestCase):
                                             sep=' ').reshape((800, 800))
         fill_mask = res.mask
 
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
-                        msg='Failed to create fill mask on masked data')
+        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_full_multi(self):
         data = numpy.ones((50, 10))
@@ -644,10 +582,8 @@ class Test(unittest.TestCase):
         fill_mask = res.mask
         cross_sum = res.sum()
         expected = 357140.0
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Failed to resample masked data')
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
-                        msg='Failed to create fill mask on masked data')
+        self.assertAlmostEqual(cross_sum, expected)
+        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
 
     def test_dtype(self):
         lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
@@ -675,8 +611,7 @@ class Test(unittest.TestCase):
                                                      index_array)
         cross_sum = res.sum()
         expected = 15874591.0
-        self.assertEqual(cross_sum, expected,
-                         msg='Swath resampling from neighbour info nearest failed')
+        self.assertEqual(cross_sum, expected)
 
     def test_custom_multi_from_sample(self):
         def wf1(dist):
@@ -702,10 +637,8 @@ class Test(unittest.TestCase):
                 kd_tree.get_neighbour_info(swath_def,
                                            self.area_def,
                                            50000, segments=1)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
-            self.assertFalse(('Possible more' not in str(
-                w[0].message)), 'Failed to create correct neighbour radius warning')
+            self.assertFalse(len(w) != 1)
+            self.assertFalse(('Possible more' not in str(w[0].message)))
 
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800),
                                                      data_multi,
@@ -715,9 +648,8 @@ class Test(unittest.TestCase):
 
         cross_sum = res.sum()
 
-        expected = 1461.842980746
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel custom resampling from neighbour info failed 1')
+        expected = 1461.8428378742638
+        self.assertAlmostEqual(cross_sum, expected)
         res = kd_tree.get_sample_from_neighbour_info('custom', (800, 800),
                                                      data_multi,
                                                      valid_input_index, valid_output_index,
@@ -726,9 +658,8 @@ class Test(unittest.TestCase):
 
         # Look for error where input data has been manipulated
         cross_sum = res.sum()
-        expected = 1461.842980746
-        self.assertAlmostEqual(cross_sum, expected,
-                               msg='Swath multi channel custom resampling from neighbour info failed 2')
+        expected = 1461.8428378742638
+        self.assertAlmostEqual(cross_sum, expected)
 
     def test_masked_multi_from_sample(self):
         data = numpy.ones((50, 10))
@@ -761,8 +692,7 @@ class Test(unittest.TestCase):
                                                          'mask_test_full_fill_multi.dat'),
                                             sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask),
-                        msg='Failed to create fill mask on masked data')
+        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
 
 
 def suite():

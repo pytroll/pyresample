@@ -44,8 +44,9 @@ class Test(unittest.TestCase):
         in_shape = (100, 100)
         cls.data1 = np.ones((in_shape[0], in_shape[1]))
         cls.data2 = 2. * cls.data1
-        lons, lats = np.meshgrid(np.linspace(-5., 5., num=in_shape[0]),
-                                 np.linspace(50., 60., num=in_shape[1]))
+        cls.data3 = cls.data1 + 9.5
+        lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
+                                 np.linspace(45., 75., num=in_shape[1]))
         cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
         radius = 50e3
@@ -61,7 +62,6 @@ class Test(unittest.TestCase):
         cls.input_idxs = input_idxs
         cls.target_def = target_def
         cls.idx_ref = idx_ref
-
 
     def test_calc_abc(self):
         # No np.nan inputs
@@ -179,20 +179,42 @@ class Test(unittest.TestCase):
                 self.assertTrue(np.isfinite(pt_[5, j]))
 
     def test_get_bil_info(self):
+        def _check_ts(t__, s__):
+            for i in range(len(t__)):
+                # Just check the exact value for one pixel
+                if i == 5:
+                    self.assertAlmostEqual(t__[i], 0.730659147133, 5)
+                    self.assertAlmostEqual(s__[i], 0.310314173004, 5)
+                # These pixels are outside the area
+                elif i in [12, 13, 14, 15]:
+                    self.assertTrue(np.isnan(t__[i]))
+                    self.assertTrue(np.isnan(s__[i]))
+                # All the others should have values between 0.0 and 1.0
+                else:
+                    self.assertTrue(t__[i] >= 0.0)
+                    self.assertTrue(s__[i] >= 0.0)
+                    self.assertTrue(t__[i] <= 1.0)
+                    self.assertTrue(s__[i] <= 1.0)
+
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_def)
-        # Only 6th index should have valid values
-        for i in range(len(t__)):
-            if i == 5:
-                self.assertAlmostEqual(t__[i], 0.684850870155, 5)
-                self.assertAlmostEqual(s__[i], 0.775433912393, 5)
-            else:
-                self.assertTrue(np.isnan(t__[i]))
-                self.assertTrue(np.isnan(s__[i]))
+                                                         self.target_def,
+                                                         50e5, neighbours=32,
+                                                         nprocs=1,
+                                                         reduce_data=False)
+        _check_ts(t__, s__)
+
+        t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
+                                                         self.target_def,
+                                                         50e5, neighbours=32,
+                                                         nprocs=1,
+                                                         reduce_data=True)
+        _check_ts(t__, s__)
 
     def test_get_sample_from_bil_info(self):
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_def)
+                                                         self.target_def,
+                                                         50e5, neighbours=32,
+                                                         nprocs=1)
         # Sample from data1
         res = bil.get_sample_from_bil_info(self.data1.ravel(), t__, s__,
                                            input_idxs, idx_arr)
@@ -209,22 +231,34 @@ class Test(unittest.TestCase):
         self.assertEqual(res[0], self.target_def.shape[0])
         self.assertEqual(res[1], self.target_def.shape[1])
 
+        # Test rounding that is happening for certain values
+        res = bil.get_sample_from_bil_info(self.data3.ravel(), t__, s__,
+                                           input_idxs, idx_arr,
+                                           output_shape=self.target_def.shape)
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum(), 4)
+
     def test_resample_bilinear(self):
         # Single array
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
-                                    self.target_def)
+                                    self.target_def,
+                                    50e5, neighbours=32,
+                                    nprocs=1)
         self.assertEqual(res.shape, self.target_def.shape)
-        # There should be only one pixel with value 1, all others are 0
-        self.assertEqual(res.sum(), 1)
+        # There are 12 pixels with value 1, all others are zero
+        self.assertEqual(res.sum(), 12)
+        self.assertEqual((res == 0).sum(), 4)
 
         # Single array with masked output
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
-                                    self.target_def, fill_value=None)
+                                    self.target_def,
+                                    50e5, neighbours=32,
+                                    nprocs=1, fill_value=None)
         self.assertTrue(hasattr(res, 'mask'))
-        # There should be only one valid pixel
-        self.assertEqual(self.target_def.size - res.mask.sum(), 1)
+        # There should be 12 valid pixels
+        self.assertEqual(self.target_def.size - res.mask.sum(), 12)
 
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
