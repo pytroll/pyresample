@@ -430,21 +430,16 @@ def proj4_str_to_dict(proj4_str):
 
 def proj4_dict_to_str(proj4_dict, sort=False):
     """Convert a dictionary of PROJ.4 parameters to a valid PROJ.4 string"""
-    keys = proj4_dict.keys()
+    items = proj4_dict.items()
     if sort:
-        keys = sorted(keys)
+        items = sorted(items)
     params = []
-    for key in keys:
-        val = proj4_dict[key]
+    for key, val in items:
         key = str(key) if key.startswith('+') else '+' + str(key)
-        if str(val) in ['True', 'False']:
-            # could be string or boolean object
-            val = ''
-        if val:
-            param = '{}={}'.format(key, val)
-        else:
-            # example "+no_defs"
+        if key in ['+no_defs', '+no_off', '+no_rot']:
             param = key
+        else:
+            param = '{}={}'.format(key, val)
         params.append(param)
     return ' '.join(params)
 

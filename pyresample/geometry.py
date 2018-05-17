@@ -1324,10 +1324,8 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj4_string(self):
-        """Returns projection definition as Proj.4 string"""
-
-        items = self.proj_dict.items()
-        return '+' + ' +'.join([(t[0] + '=' + str(t[1])) if t[1] else t[0] for t in items])
+        """Return projection definition as Proj.4 string."""
+        return utils.proj4_dict_to_str(self.proj_dict)
 
     def get_area_slices(self, area_to_cover):
         """Compute the slice to read based on an `area_to_cover`."""
