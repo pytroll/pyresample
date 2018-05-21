@@ -113,6 +113,7 @@ if __name__ == "__main__":
           author_email='t.lavergne@met.no',
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
+          python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
           setup_requires=['numpy'],
           install_requires=requirements,
           extras_require=extras_require,
