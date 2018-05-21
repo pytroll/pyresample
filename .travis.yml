@@ -1,24 +1,46 @@
 language: python
-python:
-- '2.7'
-- '3.6'
 env:
-    global:
-        # Set defaults to avoid repeating in most cases
-        - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
-        - NUMPY_VERSION=stable
-        - MAIN_CMD='python setup.py'
-        - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib basemap pyyaml pyproj coveralls configobj coverage codecov'
-        - SETUP_XVFB=False
-        - EVENT_TYPE='push pull_request'
-        - SETUP_CMD='test'
-        - CONDA_CHANNELS='conda-forge'
+  global:
+  - PYTHON_VERSION=$PYTHON_VERSION
+  - NUMPY_VERSION=stable
+  - MAIN_CMD='python setup.py'
+  - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib
+    basemap pyyaml pyproj coveralls configobj coverage codecov'
+  - SETUP_XVFB=False
+  - EVENT_TYPE='push pull_request'
+  - SETUP_CMD='test'
+  - CONDA_CHANNELS='conda-forge'
+matrix:
+  include:
+  - env: PYTHON_VERSION=2.7
+    os: linux
+  - env: PYTHON_VERSION=2.7
+    os: osx
+    language: generic
+  - env: PYTHON_VERSION=3.6
+    os: linux
+  - env: PYTHON_VERSION=3.6
+    os: osx
+    language: generic
 install:
-    - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-    - source ci-helpers/travis/setup_conda.sh
+- git clone --depth 1 git://github.com/astropy/ci-helpers.git
+- source ci-helpers/travis/setup_conda.sh
 script:
-    - coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
+- coverage run --source=pyresample setup.py test && cd docs && mkdir doctest && sphinx-build
+  -E -n -b doctest ./source ./doctest && cd ..
 after_success:
 - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; codecov; fi
+deploy:
+  matrix:
+  - provider: pypi
+    user: dhoese
+    password:
+      secure: cnWXKNEvy9ggNw11czp1aUtBsuwM0V3x8tNyvo7zR1Wl8ktarTU6jTvD7PKpAyFT05rRSgi2K+jrHqsu4Xbo1rJNBsvqlHee7wCihfZOXOkwXJM6yjaQsf6e1TwA+JR4Sw/G1VLzzWufUTnKjEKSTvAka+GSo02MzyO6y5FXzc0=
+    distributions: sdist bdist_wheel
+    on:
+      tags: true
+      repo: pytroll/pyresample
+  password:
+    secure: efysRf+1NddbJF6lnDYMHRm+qKXROWOTzcP7A+GJ/BGlkpZHQjf5gmE50C+9yHYigRLdVFX/x0aymiNMD1TFiZgA6a05ko+oFqGdEWV1ix/H1c4goTcIwdR0QVxd6MDmZiyyvmfOBWlKBGKv8ojtXbF+y1fxv+ly1AEeVvn1mqY=
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt
