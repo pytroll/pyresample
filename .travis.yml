@@ -31,17 +31,14 @@ script:
 after_success:
 - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; codecov; fi
 deploy:
-  matrix:
   - provider: pypi
     user: dhoese
     password:
-      secure: cnWXKNEvy9ggNw11czp1aUtBsuwM0V3x8tNyvo7zR1Wl8ktarTU6jTvD7PKpAyFT05rRSgi2K+jrHqsu4Xbo1rJNBsvqlHee7wCihfZOXOkwXJM6yjaQsf6e1TwA+JR4Sw/G1VLzzWufUTnKjEKSTvAka+GSo02MzyO6y5FXzc0=
+      secure: efysRf+1NddbJF6lnDYMHRm+qKXROWOTzcP7A+GJ/BGlkpZHQjf5gmE50C+9yHYigRLdVFX/x0aymiNMD1TFiZgA6a05ko+oFqGdEWV1ix/H1c4goTcIwdR0QVxd6MDmZiyyvmfOBWlKBGKv8ojtXbF+y1fxv+ly1AEeVvn1mqY=
     distributions: sdist
     skip_existing: true
     on:
       tags: true
       repo: pytroll/pyresample
-  password:
-    secure: efysRf+1NddbJF6lnDYMHRm+qKXROWOTzcP7A+GJ/BGlkpZHQjf5gmE50C+9yHYigRLdVFX/x0aymiNMD1TFiZgA6a05ko+oFqGdEWV1ix/H1c4goTcIwdR0QVxd6MDmZiyyvmfOBWlKBGKv8ojtXbF+y1fxv+ly1AEeVvn1mqY=
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt
