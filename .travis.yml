@@ -36,7 +36,7 @@ deploy:
     user: dhoese
     password:
       secure: cnWXKNEvy9ggNw11czp1aUtBsuwM0V3x8tNyvo7zR1Wl8ktarTU6jTvD7PKpAyFT05rRSgi2K+jrHqsu4Xbo1rJNBsvqlHee7wCihfZOXOkwXJM6yjaQsf6e1TwA+JR4Sw/G1VLzzWufUTnKjEKSTvAka+GSo02MzyO6y5FXzc0=
-    distributions: sdist bdist_wheel
+    distributions: sdist
     skip_existing: true
     on:
       tags: true
