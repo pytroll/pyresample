@@ -1333,7 +1333,7 @@ class AreaDefinition(BaseDefinition):
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
-        if self.proj_dict['proj'] != 'geos':
+        if self.proj_dict.get('proj') != 'geos':
             raise NotImplementedError('Only geos supported')
 
         # Intersection only required for two different projections
