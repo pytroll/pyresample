@@ -798,6 +798,25 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
+    def test_proj4_string(self):
+        from collections import OrderedDict
+        proj_dict = OrderedDict()
+        proj_dict['proj'] = 'stere'
+        proj_dict['a'] = 6378144.0
+        proj_dict['b'] = 6356759.0
+        proj_dict['lat_0'] = 50.00
+        proj_dict['lat_ts'] = 50.00
+        proj_dict['lon_0'] = 8.00
+        area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                       proj_dict, 10, 10,
+                                       [-1370912.72, -909968.64, 1029087.28,
+                                        1490031.36])
+        self.assertEquals(area.proj4_string,
+                          '+proj=stere +a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0')
+        proj_dict['no_rot'] = ''
+        self.assertEquals(area.proj4_string,
+                          '+proj=stere +a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot')
+
 
 def assert_np_dict_allclose(dict1, dict2):
 
