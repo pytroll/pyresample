@@ -962,9 +962,9 @@ class TestSwathDefinition(unittest.TestCase):
                          [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
 
         area = geometry.SwathDefinition(lons, lats)
-        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
-                     'ellps': 'WGS84', 'proj': 'omerc',
-                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
+        proj_dict = {'lonc': -11.391744043133668, 'ellps': 'WGS84',
+                     'proj': 'omerc', 'alpha': 9.185764390923012,
+                     'gamma': 0, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
 
@@ -1020,11 +1020,9 @@ class TestSwathDefinition(unittest.TestCase):
 
         res = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'})
 
-        np.testing.assert_allclose(res.area_extent, [2253027.149539,
-                                                     -2348379.728104,
-                                                     11687636.846985,
-                                                     2432121.058435])
-        proj_dict = {'no_rot': True, 'lonc': -11.391744043133668,
+        np.testing.assert_allclose(res.area_extent, [-2348379.728104, 2284625.526467,
+                                                     2432121.058435, 11719235.223912])
+        proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
@@ -1227,12 +1225,11 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         sdef = geometry.SwathDefinition(lons, lats)
         result = area.freeze(sdef,
                              resolution=1000)
-        np.testing.assert_allclose(result.area_extent, [5016583.682258,
-                                                        -336277.698941,
-                                                        8184964.697984,
-                                                        192456.651909])
-        self.assertEqual(result.x_size, 3)
-        self.assertEqual(result.y_size, 4)
+        np.testing.assert_allclose(result.area_extent,
+                                   [-336277.698941, 5047207.008079,
+                                    192456.651909, 8215588.023806])
+        self.assertEqual(result.x_size, 4)
+        self.assertEqual(result.y_size, 3)
 
     def test_compute_domain(self):
         """Test computing size and area extent."""
