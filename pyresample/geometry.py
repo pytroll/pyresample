@@ -543,7 +543,9 @@ class SwathDefinition(CoordinateDefinition):
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
                             'lat_1': lat1, 'lon_1': lon1,
-                            'lat_2': lat2, 'lon_2': lon2, 'no_rot': True}
+                            'lat_2': lat2, 'lon_2': lon2,
+                            'no_rot': True
+                            }
 
         # return proj_dict2points
         # We need to compute alpha-based omerc for geotiff support
@@ -560,13 +562,13 @@ class SwathDefinition(CoordinateDefinition):
         else:
             azimuth += az1
             azimuth /= 2
-
         if abs(azimuth) > 90:
             azimuth = 180 + azimuth
 
         prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
                       'lat_0': float(lat0),  'lonc': float(lonc),
-                      'no_rot': True, 'ellps': ellipsoid}
+                      'gamma': 0,
+                      'ellps': ellipsoid}
 
         return prj_params
 
@@ -613,9 +615,6 @@ class SwathDefinition(CoordinateDefinition):
         y_size = int(lines * 1.1)
 
         proj_dict = self.compute_bb_proj_params(proj_dict)
-
-        if projection == 'omerc':
-            x_size, y_size = y_size, x_size
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
         lons, lats = self.get_edge_lonlats()
