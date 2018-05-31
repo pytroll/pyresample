@@ -1352,8 +1352,11 @@ class AreaDefinition(BaseDefinition):
             return slice(xstart, xstop), slice(ystart, ystop)
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
+        if area_to_cover.proj_dict['proj'] == 'geos':
+            area_boundary = Boundary(*get_geostationary_bounding_box(area_to_cover))
+        else:
+            area_boundary = AreaDefBoundary(area_to_cover, 100)
 
-        area_boundary = AreaDefBoundary(area_to_cover, 100)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
         if intersection is None:
@@ -1429,8 +1432,8 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.0001)
+    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2))) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2))) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
