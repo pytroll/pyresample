@@ -1353,7 +1353,8 @@ class AreaDefinition(BaseDefinition):
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
         if area_to_cover.proj_dict['proj'] == 'geos':
-            area_boundary = Boundary(*get_geostationary_bounding_box(area_to_cover))
+            area_boundary = Boundary(
+                *get_geostationary_bounding_box(area_to_cover))
         else:
             area_boundary = AreaDefBoundary(area_to_cover, 100)
 
@@ -1365,7 +1366,8 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 
-        return slice(np.ma.min(x), np.ma.max(x) + 1), slice(np.ma.min(y), np.ma.max(y) + 1)
+        return (slice(np.ma.min(x), np.ma.max(x) + 1),
+                slice(np.ma.min(y), np.ma.max(y) + 1))
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
