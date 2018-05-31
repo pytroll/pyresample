@@ -1360,7 +1360,7 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 
-        return slice(min(x), max(x) + 1), slice(min(y), max(y) + 1)
+        return slice(np.ma.min(x), np.ma.max(x) + 1), slice(np.ma.min(y), np.ma.max(y) + 1)
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -1368,21 +1368,30 @@ class AreaDefinition(BaseDefinition):
         return self[yslice, xslice]
 
     def __getitem__(self, key):
-        """Apply slices to the area_extent and size of the area."""
+        """Apply slices to the area_extent and size of the area.
+
+        .. note::
+
+            Slices are treated like normal numpy slices, meaning the start
+            index is inclusive and the stop index is exclusive. This differs
+            from pandas/xarray which treat a slice's stop as inclusive when
+            passed to 'isel'.
+
+        """
         yslice, xslice = key
         new_area_extent = ((self.pixel_upper_left[0] +
                             (xslice.start - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] -
-                            (yslice.stop - 0.5) * self.pixel_size_y),
+                            (yslice.stop - 1 - 0.5) * self.pixel_size_y),
                            (self.pixel_upper_left[0] +
-                            (xslice.stop - 0.5) * self.pixel_size_x),
+                            (xslice.stop - 1 - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] -
                             (yslice.start - 0.5) * self.pixel_size_y))
 
         new_area = AreaDefinition(self.area_id, self.name,
                                   self.proj_id, self.proj_dict,
-                                  xslice.stop - xslice.start,
-                                  yslice.stop - yslice.start,
+                                  xslice.stop - xslice.start - 1,
+                                  yslice.stop - yslice.start - 1,
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
