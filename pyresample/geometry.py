@@ -978,7 +978,7 @@ class AreaDefinition(BaseDefinition):
         To be used with scarse data points instead of slices
         (see get_lonlats).
         """
-        p = Proj(self.proj4_string)
+        p = Proj(self.proj_str)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
@@ -1024,7 +1024,7 @@ class AreaDefinition(BaseDefinition):
             if lon.shape != lat.shape:
                 raise ValueError("lon and lat is not of the same shape!")
 
-        pobj = Proj(self.proj4_string)
+        pobj = Proj(self.proj_str)
         xm_, ym_ = pobj(lon, lat)
 
         return self.get_xy_from_proj_coords(xm_, ym_)
@@ -1078,15 +1078,15 @@ class AreaDefinition(BaseDefinition):
         y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ > self.x_size)) |
-                    ((y__ < 0) | (y__ > self.y_size)))
+            mask = (((x__ < 0) | (x__ >= self.x_size)) |
+                    ((y__ < 0) | (y__ >= self.y_size)))
             return (np.ma.masked_array(x__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False),
                     np.ma.masked_array(y__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False))
         else:
-            if ((x__ < 0 or x__ > self.x_size) or
-                    (y__ < 0 or y__ > self.y_size)):
+            if ((x__ < 0 or x__ >= self.x_size) or
+                    (y__ < 0 or y__ >= self.y_size)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
 
@@ -1324,6 +1324,8 @@ class AreaDefinition(BaseDefinition):
     @property
     def proj4_string(self):
         """Return projection definition as Proj.4 string."""
+        warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
+                      "instead.", DeprecationWarning)
         return utils.proj4_dict_to_str(self.proj_dict)
 
     def get_area_slices(self, area_to_cover):
@@ -1335,7 +1337,7 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only geos supported')
 
         # Intersection only required for two different projections
-        if area_to_cover.proj_dict.get('proj') == self.proj_dict['proj']:
+        if area_to_cover.proj_str == self.proj_str:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s', area_to_cover.proj_dict['proj'])
             # Get xy coordinates
@@ -1382,16 +1384,16 @@ class AreaDefinition(BaseDefinition):
         new_area_extent = ((self.pixel_upper_left[0] +
                             (xslice.start - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] -
-                            (yslice.stop - 1 - 0.5) * self.pixel_size_y),
+                            (yslice.stop - 0.5) * self.pixel_size_y),
                            (self.pixel_upper_left[0] +
-                            (xslice.stop - 1 - 0.5) * self.pixel_size_x),
+                            (xslice.stop - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] -
                             (yslice.start - 0.5) * self.pixel_size_y))
 
         new_area = AreaDefinition(self.area_id, self.name,
                                   self.proj_id, self.proj_dict,
-                                  xslice.stop - xslice.start - 1,
-                                  yslice.stop - yslice.start - 1,
+                                  xslice.stop - xslice.start,
+                                  yslice.stop - yslice.start,
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
@@ -1586,7 +1588,14 @@ class StackedAreaDefinition(BaseDefinition):
     @property
     def proj4_string(self):
         """Returns projection definition as Proj.4 string"""
-        return self.defs[0].proj4_string
+        warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
+                      "instead.", DeprecationWarning)
+        return self.defs[0].proj_str
+
+    @property
+    def proj_str(self):
+        """Returns projection definition as Proj.4 string"""
+        return self.defs[0].proj_str
 
     def update_hash(self, the_hash=None):
         for areadef in self.defs:
