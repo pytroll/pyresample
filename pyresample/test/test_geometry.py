@@ -743,8 +743,8 @@ class Test(unittest.TestCase):
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
 
-    def test_get_area_slices(self):
-        """Check area slicing."""
+    def test_get_area_slices_same_proj(self):
+        """Check area slicing with equal projections."""
         from pyresample import utils
         area_id = 'cover'
         area_name = 'Area to cover'
@@ -811,10 +811,10 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEquals(area.proj4_string,
+        self.assertEquals(area.proj_str,
                           '+proj=stere +a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0')
         proj_dict['no_rot'] = ''
-        self.assertEquals(area.proj4_string,
+        self.assertEquals(area.proj_str,
                           '+proj=stere +a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot')
 
 

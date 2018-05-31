@@ -235,7 +235,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     idx_ref = np.where(index_mask, 0, idx_ref)
 
     # Get output projection as pyproj object
-    proj = Proj(target_area_def.proj4_string)
+    proj = Proj(target_area_def.proj_str)
 
     # Get output x/y coordinates
     out_x, out_y = _get_output_xy(target_area_def, proj)

@@ -126,7 +126,7 @@ class XArrayResamplerBilinear(object):
         index_array = da.where(index_mask, 0, index_array)
 
         # Get output projection as pyproj object
-        proj = Proj(self.target_geo_def.proj4_string)
+        proj = Proj(self.target_geo_def.proj_str)
 
         # Get output x/y coordinates
         out_x, out_y = _get_output_xy_dask(self.target_geo_def, proj)

@@ -154,19 +154,19 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_get_output_xy(self):
-        proj = Proj(self.target_def.proj4_string)
+        proj = Proj(self.target_def.proj_str)
         out_x, out_y = bil._get_output_xy(self.target_def, proj)
         self.assertTrue(out_x.all())
         self.assertTrue(out_y.all())
 
     def test_get_input_xy(self):
-        proj = Proj(self.target_def.proj4_string)
+        proj = Proj(self.target_def.proj_str)
         in_x, in_y = bil._get_output_xy(self.swath_def, proj)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_bounding_corners(self):
-        proj = Proj(self.target_def.proj4_string)
+        proj = Proj(self.target_def.proj_str)
         out_x, out_y = bil._get_output_xy(self.target_def, proj)
         in_x, in_y = bil._get_input_xy(self.swath_def, proj,
                                        self.input_idxs, self.idx_ref)
