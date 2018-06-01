@@ -1375,16 +1375,7 @@ class AreaDefinition(BaseDefinition):
         return self[yslice, xslice]
 
     def __getitem__(self, key):
-        """Apply slices to the area_extent and size of the area.
-
-        .. note::
-
-            Slices are treated like normal numpy slices, meaning the start
-            index is inclusive and the stop index is exclusive. This differs
-            from pandas/xarray which treat a slice's stop as inclusive when
-            passed to 'isel'.
-
-        """
+        """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
         new_area_extent = ((self.pixel_upper_left[0] +
                             (xslice.start - 0.5) * self.pixel_size_x),
