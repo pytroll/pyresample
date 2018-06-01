@@ -81,6 +81,15 @@ class BaseDefinition(object):
         self.cartesian_coords = None
         self.hash = None
 
+    def __getitem__(self, key):
+        """Slice a 2D geographic definition."""
+        y_slice, x_slice = key
+        return self.__class__(
+            lons=self.lons[y_slice, x_slice],
+            lats=self.lats[y_slice, x_slice],
+            nprocs=self.nprocs
+        )
+
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
