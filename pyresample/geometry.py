@@ -81,6 +81,15 @@ class BaseDefinition(object):
         self.cartesian_coords = None
         self.hash = None
 
+    def __getitem__(self, key):
+        """Slice a 2D geographic definition."""
+        y_slice, x_slice = key
+        return self.__class__(
+            lons=self.lons[y_slice, x_slice],
+            lats=self.lats[y_slice, x_slice],
+            nprocs=self.nprocs
+        )
+
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
@@ -978,7 +987,7 @@ class AreaDefinition(BaseDefinition):
         To be used with scarse data points instead of slices
         (see get_lonlats).
         """
-        p = Proj(self.proj4_string)
+        p = Proj(self.proj_str)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
@@ -1024,7 +1033,7 @@ class AreaDefinition(BaseDefinition):
             if lon.shape != lat.shape:
                 raise ValueError("lon and lat is not of the same shape!")
 
-        pobj = Proj(self.proj4_string)
+        pobj = Proj(self.proj_str)
         xm_, ym_ = pobj(lon, lat)
 
         return self.get_xy_from_proj_coords(xm_, ym_)
@@ -1078,15 +1087,15 @@ class AreaDefinition(BaseDefinition):
         y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ > self.x_size)) |
-                    ((y__ < 0) | (y__ > self.y_size)))
+            mask = (((x__ < 0) | (x__ >= self.x_size)) |
+                    ((y__ < 0) | (y__ >= self.y_size)))
             return (np.ma.masked_array(x__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False),
                     np.ma.masked_array(y__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False))
         else:
-            if ((x__ < 0 or x__ > self.x_size) or
-                    (y__ < 0 or y__ > self.y_size)):
+            if ((x__ < 0 or x__ >= self.x_size) or
+                    (y__ < 0 or y__ >= self.y_size)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
 
@@ -1324,6 +1333,8 @@ class AreaDefinition(BaseDefinition):
     @property
     def proj4_string(self):
         """Return projection definition as Proj.4 string."""
+        warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
+                      "instead.", DeprecationWarning)
         return utils.proj4_dict_to_str(self.proj_dict)
 
     def get_area_slices(self, area_to_cover):
@@ -1335,7 +1346,7 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only geos supported')
 
         # Intersection only required for two different projections
-        if area_to_cover.proj_dict.get('proj') == self.proj_dict['proj']:
+        if area_to_cover.proj_str == self.proj_str:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s', area_to_cover.proj_dict['proj'])
             # Get xy coordinates
@@ -1350,8 +1361,12 @@ class AreaDefinition(BaseDefinition):
             return slice(xstart, xstop), slice(ystart, ystop)
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
+        if area_to_cover.proj_dict['proj'] == 'geos':
+            area_boundary = Boundary(
+                *get_geostationary_bounding_box(area_to_cover))
+        else:
+            area_boundary = AreaDefBoundary(area_to_cover, 100)
 
-        area_boundary = AreaDefBoundary(area_to_cover, 100)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
         if intersection is None:
@@ -1360,7 +1375,8 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 
-        return slice(min(x), max(x) + 1), slice(min(y), max(y) + 1)
+        return (slice(np.ma.min(x), np.ma.max(x) + 1),
+                slice(np.ma.min(y), np.ma.max(y) + 1))
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -1418,8 +1434,8 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, nb_points / 2)) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, nb_points / 2)) * (ymax - 0.0001)
+    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2))) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2))) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
@@ -1577,7 +1593,14 @@ class StackedAreaDefinition(BaseDefinition):
     @property
     def proj4_string(self):
         """Returns projection definition as Proj.4 string"""
-        return self.defs[0].proj4_string
+        warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
+                      "instead.", DeprecationWarning)
+        return self.defs[0].proj_str
+
+    @property
+    def proj_str(self):
+        """Returns projection definition as Proj.4 string"""
+        return self.defs[0].proj_str
 
     def update_hash(self, the_hash=None):
         for areadef in self.defs:

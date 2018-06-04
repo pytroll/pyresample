@@ -301,7 +301,7 @@ Function for resampling using bilinear interpolation for irregular source grids.
  ...                                     reduce_data=True, segments=None,
  ...                                     epsilon=0)
 
-The **target_area** needs to be an area definition with **proj4_string**
+The **target_area** needs to be an area definition with **proj_str**
 attribute.
 
 ..

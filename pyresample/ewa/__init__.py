@@ -115,7 +115,7 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
         lats = lats.astype(np.float64)
 
     # Break the input area up in to the expected parameters for ll2cr
-    p = area_def.proj4_string
+    p = area_def.proj_str
     cw = area_def.pixel_size_x
     # cell height must be negative for this to work as expected
     ch = -abs(area_def.pixel_size_y)
