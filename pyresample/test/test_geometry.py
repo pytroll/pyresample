@@ -806,6 +806,41 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
+    def test_get_area_slices_nongeos(self):
+        """Check area slicing for non-geos projections."""
+        from pyresample import utils
+
+        # The area of our source data
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
+                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        # An area that is a subset of the original one
+        area_to_cover = utils.get_area_def(
+            'cover_subset',
+            'Area to cover',
+            'test',
+            proj_dict,
+            1000, 1000,
+            area_extent=(area_extent[0] + 10000,
+                         area_extent[1] + 10000,
+                         area_extent[2] - 10000,
+                         area_extent[3] - 10000))
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(3, 3709, None), slice_x)
+        self.assertEqual(slice(3, 3709, None), slice_y)
+
     def test_proj_str(self):
         from collections import OrderedDict
         proj_dict = OrderedDict()
