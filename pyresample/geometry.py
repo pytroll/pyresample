@@ -1357,7 +1357,9 @@ class AreaDefinition(BaseDefinition):
             return slice(xstart, xstop), slice(ystart, ystop)
 
         if self.proj_dict.get('proj') != 'geos':
-            raise NotImplementedError('Only geos supported')
+            raise NotImplementedError("Source projection must be 'geos' if "
+                                      "source/target projections are not "
+                                      "equal.")
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
         if area_to_cover.proj_dict['proj'] == 'geos':
