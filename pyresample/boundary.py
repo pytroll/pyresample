@@ -106,7 +106,7 @@ class AreaDefBoundary(AreaBoundary):
     def __init__(self, area, frequency=1):
         lons, lats = area.get_bbox_lonlats()
         AreaBoundary.__init__(self,
-                              *zip(*(lons, lats)))
+                              *zip(lons, lats))
 
         if frequency != 1:
             self.decimate(frequency)

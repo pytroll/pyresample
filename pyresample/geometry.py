@@ -556,7 +556,6 @@ class SwathDefinition(CoordinateDefinition):
                             'no_rot': True
                             }
 
-        # return proj_dict2points
         # We need to compute alpha-based omerc for geotiff support
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
         az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
@@ -1342,9 +1341,6 @@ class AreaDefinition(BaseDefinition):
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
-        if self.proj_dict.get('proj') != 'geos':
-            raise NotImplementedError('Only geos supported')
-
         # Intersection only required for two different projections
         if area_to_cover.proj_str == self.proj_str:
             logger.debug('Projections for data and slice areas are'
@@ -1359,6 +1355,11 @@ class AreaDefinition(BaseDefinition):
             ystop = self.y_size if y[0] is np.ma.masked else y[0] + 1
 
             return slice(xstart, xstop), slice(ystart, ystop)
+
+        if self.proj_dict.get('proj') != 'geos':
+            raise NotImplementedError("Source projection must be 'geos' if "
+                                      "source/target projections are not "
+                                      "equal.")
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
         if area_to_cover.proj_dict['proj'] == 'geos':
