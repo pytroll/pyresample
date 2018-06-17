@@ -26,7 +26,7 @@ import warnings
 from logging import getLogger
 
 import numpy as np
-
+from pykdtree.kdtree import KDTree
 from pyresample import _spatial_mp, data_reduce, geometry
 
 logger = getLogger(__name__)
@@ -41,27 +41,9 @@ except ImportError:
 if sys.version >= '3':
     long = int
 
-kd_tree_name = None
-try:
-    from pykdtree.kdtree import KDTree
-    kd_tree_name = 'pykdtree'
-except ImportError:
-    try:
-        import scipy.spatial as sp
-        kd_tree_name = 'scipy.spatial'
-    except ImportError:
-        raise ImportError('Either pykdtree or scipy must be available')
-
 
 class EmptyResult(ValueError):
     pass
-
-
-def which_kdtree():
-    """Returns the name of the kdtree used for resampling
-    """
-
-    return kd_tree_name
 
 
 def resample_nearest(source_geo_def,
@@ -510,12 +492,10 @@ def _create_resample_kdtree(source_lons,
         raise EmptyResult('No valid data points in input data')
 
     # Build kd-tree on input
-    if kd_tree_name == 'pykdtree':
-        resample_kdtree = KDTree(input_coords)
-    elif nprocs > 1:
+    if nprocs > 1:
         resample_kdtree = _spatial_mp.cKDTree_MP(input_coords, nprocs=nprocs)
     else:
-        resample_kdtree = sp.cKDTree(input_coords)
+        resample_kdtree = KDTree(input_coords)
 
     return resample_kdtree
 
@@ -914,12 +894,14 @@ def lonlat2xyz(lons, lats):
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
-def query_no_distance(target_lons, target_lats,
-                      valid_output_index, kdtree, neighbours, epsilon, radius):
+def query_no_distance(target_lons, target_lats, valid_output_index, kdtree,
+                      neighbours, epsilon, radius, mask):
     """Query the kdtree. No distances are returned."""
     voi = valid_output_index
     shape = voi.shape
     voir = voi.ravel()
+    if mask is not None:
+        mask = mask.ravel()
     target_lons_valid = target_lons.ravel()[voir]
     target_lats_valid = target_lats.ravel()[voir]
 
@@ -928,7 +910,8 @@ def query_no_distance(target_lons, target_lats,
         coords.compute(),
         k=neighbours,
         eps=epsilon,
-        distance_upper_bound=radius)
+        distance_upper_bound=radius,
+        mask=mask)
 
     # KDTree query returns out-of-bounds neighbors as `len(arr)`
     # which is an invalid index, we mask those out so -1 represents
@@ -941,7 +924,7 @@ def query_no_distance(target_lons, target_lats,
     return res_ia
 
 
-class XArrayResamplerNN():
+class XArrayResamplerNN(object):
     def __init__(self,
                  source_geo_def,
                  target_geo_def,
@@ -1005,11 +988,7 @@ class XArrayResamplerNN():
         input_coords = input_coords.astype(np.float)
         valid_input_idx, input_coords = da.compute(valid_input_idx,
                                                    input_coords)
-        if kd_tree_name == 'pykdtree':
-            resample_kdtree = KDTree(input_coords)
-        else:
-            resample_kdtree = sp.cKDTree(input_coords)
-
+        resample_kdtree = KDTree(input_coords)
         return valid_input_idx, resample_kdtree
 
     def _query_resample_kdtree(self,
@@ -1017,16 +996,16 @@ class XArrayResamplerNN():
                                tlons,
                                tlats,
                                valid_oi,
-                               reduce_data=True):
+                               mask):
         """Query kd-tree on slice of target coordinates."""
 
         res = da.map_blocks(query_no_distance, tlons, tlats,
                             valid_oi, dtype=np.int, kdtree=resample_kdtree,
                             neighbours=self.neighbours, epsilon=self.epsilon,
-                            radius=self.radius_of_influence)
+                            radius=self.radius_of_influence, mask=mask)
         return res, None
 
-    def get_neighbour_info(self):
+    def get_neighbour_info(self, mask=None):
         """Return neighbour info.
 
         Returns
@@ -1056,12 +1035,16 @@ class XArrayResamplerNN():
             self.distance_array = distance_arr
             return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
+        # target_lons, target_lats = self.target_geo_def.get_lonlats_dask(chunks=self.target_geo_def.shape)
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
+        print("mask and vii: ", mask.shape, valid_input_idx.shape)
         index_arr, distance_arr = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx)
+            resample_kdtree, target_lons, target_lats, valid_output_idx,
+            # None)
+            mask.data.ravel()[valid_input_idx.ravel()])
 
         self.valid_output_index, self.index_array = valid_output_idx, index_arr
         self.distance_array = distance_arr

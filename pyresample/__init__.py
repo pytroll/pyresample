@@ -38,21 +38,3 @@ from pyresample.plot import save_quicklook, area_def2basemap  # noqa
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
-
-
-def get_capabilities():
-    cap = {}
-
-    try:
-        from pykdtree.kdtree import KDTree  # noqa
-        cap['pykdtree'] = True
-    except ImportError:
-        cap['pykdtree'] = False
-
-    try:
-        import numexpr  # noqa
-        cap['numexpr'] = True
-    except ImportError:
-        cap['numexpr'] = False
-
-    return cap
