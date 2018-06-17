@@ -1035,12 +1035,10 @@ class XArrayResamplerNN(object):
             self.distance_array = distance_arr
             return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
-        # target_lons, target_lats = self.target_geo_def.get_lonlats_dask(chunks=self.target_geo_def.shape)
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
-        print("mask and vii: ", mask.shape, valid_input_idx.shape)
         index_arr, distance_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_output_idx,
             # None)
