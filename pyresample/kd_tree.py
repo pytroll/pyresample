@@ -932,7 +932,6 @@ class XArrayResamplerNN(object):
                  neighbours=8,
                  epsilon=0,
                  reduce_data=True,
-                 nprocs=1,
                  segments=None):
         """
         Parameters
@@ -951,8 +950,6 @@ class XArrayResamplerNN(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-        nprocs : int, optional
-            Number of processor cores to be used
         segments : int or None
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
@@ -967,7 +964,6 @@ class XArrayResamplerNN(object):
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
-        self.nprocs = nprocs
         self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
