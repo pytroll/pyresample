@@ -1039,10 +1039,10 @@ class XArrayResamplerNN(object):
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
+        if mask is not None:
+            mask = mask.data.ravel()[valid_input_idx.ravel()]
         index_arr, distance_arr = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx,
-            # None)
-            mask.data.ravel()[valid_input_idx.ravel()])
+            resample_kdtree, target_lons, target_lats, valid_output_idx, mask)
 
         self.valid_output_index, self.index_array = valid_output_idx, index_arr
         self.distance_array = distance_arr
