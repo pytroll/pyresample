@@ -28,15 +28,18 @@ from logging import getLogger
 import numpy as np
 from pykdtree.kdtree import KDTree
 from pyresample import _spatial_mp, data_reduce, geometry
+from pyresample import CHUNK_SIZE
 
 logger = getLogger(__name__)
 
 try:
     from xarray import DataArray
     import dask.array as da
+    import dask
 except ImportError:
     DataArray = None
     da = None
+    dask = None
 
 if sys.version >= '3':
     long = int
@@ -931,7 +934,6 @@ class XArrayResamplerNN(object):
                  radius_of_influence,
                  neighbours=8,
                  epsilon=0,
-                 reduce_data=True,
                  segments=None):
         """
         Parameters
@@ -947,9 +949,6 @@ class XArrayResamplerNN(object):
         epsilon : float, optional
             Allowed uncertainty in meters. Increasing uncertainty
             reduces execution time
-        reduce_data : bool, optional
-            Perform initial coarse reduction of source dataset in order
-            to reduce execution time
         segments : int or None
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
@@ -963,15 +962,15 @@ class XArrayResamplerNN(object):
         self.distance_array = None
         self.neighbours = neighbours
         self.epsilon = epsilon
-        self.reduce_data = reduce_data
         self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
         self.radius_of_influence = radius_of_influence
 
-    def _create_resample_kdtree(self):
+    def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
         """Set up kd tree on input"""
-        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask(
+            chunks=chunks)
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
                            (source_lats <= 90) & (source_lats >= -90))
 
@@ -982,10 +981,11 @@ class XArrayResamplerNN(object):
 
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
-        valid_input_idx, input_coords = da.compute(valid_input_idx,
-                                                   input_coords)
-        resample_kdtree = KDTree(input_coords)
-        return valid_input_idx, resample_kdtree
+        # valid_input_idx, input_coords = da.compute(valid_input_idx,
+        #                                            input_coords)
+        delayed_kdtree = dask.delayed(KDTree)(input_coords)
+        # resample_kdtree = KDTree(input_coords)
+        return valid_input_idx, delayed_kdtree
 
     def _query_resample_kdtree(self,
                                resample_kdtree,
@@ -1016,20 +1016,22 @@ class XArrayResamplerNN(object):
                           (self.neighbours, self.source_geo_def.size))
 
         # Create kd-tree
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree()
+        chunks = mask.chunks if mask is not None else CHUNK_SIZE
+        valid_input_idx, resample_kdtree = self._create_resample_kdtree(
+            chunks=chunks)
         # This is a numpy array
         self.valid_input_index = valid_input_idx
 
-        if resample_kdtree.n == 0:
-            # Handle if all input data is reduced away
-            valid_output_idx, index_arr, distance_arr = \
-                _create_empty_info(self.source_geo_def,
-                                   self.target_geo_def, self.neighbours)
-
-            self.valid_output_index = valid_output_idx
-            self.index_array = index_arr
-            self.distance_array = distance_arr
-            return valid_input_idx, valid_output_idx, index_arr, distance_arr
+        # if resample_kdtree.n == 0:
+        #     # Handle if all input data is reduced away
+        #     valid_output_idx, index_arr, distance_arr = \
+        #         _create_empty_info(self.source_geo_def,
+        #                            self.target_geo_def, self.neighbours)
+        #
+        #     self.valid_output_index = valid_output_idx
+        #     self.index_array = index_arr
+        #     self.distance_array = distance_arr
+        #     return valid_input_idx, valid_output_idx, index_arr, distance_arr
 
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
@@ -1049,11 +1051,10 @@ class XArrayResamplerNN(object):
                 self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
-
-        try:
-            self.index_array = self.index_array.compute()
-        except AttributeError:
-            pass
+        # try:
+        #     self.index_array = self.index_array.compute()
+        # except AttributeError:
+        #     pass
 
         flat_src_shape = []
         dst_shape = []
@@ -1070,12 +1071,13 @@ class XArrayResamplerNN(object):
         except AttributeError:
             coord_x, coord_y = None, None
 
+        # TODO: Actually use the below logic and handle more than 2 dimensions
         for i, dim in enumerate(data.dims):
             if dim in ['y', 'x']:
                 if not flat_done:
                     flat_src_shape.append(-1)
                     vii_slices.append(self.valid_input_index.ravel())
-                    ia_slices.append(ia.ravel())
+                    ia_slices.append(ia)
                     flat_done = True
                 dst_shape.append(dst_2d_shape[0])
                 where_slices.append(slice(None))
@@ -1089,13 +1091,25 @@ class XArrayResamplerNN(object):
                 dst_shape.append(data.sizes[dim])
                 coords[dim] = data.coords[dim]
 
-        new_data = data.data.reshape(*flat_src_shape)[tuple(vii_slices)]
-        res = new_data[tuple(ia_slices)].reshape(dst_shape)
+        # new_data = data.data.reshape(*flat_src_shape)[tuple(vii_slices)]
+        # res = new_data[tuple(ia_slices)].reshape(dst_shape)
 
+        def _new_data_index(ia, vii, data_to_index):
+            data_to_index = data_to_index.reshape(
+                (data_to_index.shape[0] * data_to_index.shape[1],)
+            )[vii.ravel()]
+            data_to_index = data_to_index[ia]
+            data_to_index[ia == -1] = np.nan
+            return data_to_index
+        new_data = data.data.rechunk(data.shape)
+        # FUTURE: if/when dask can handle index arrays that are dask arrays
+        #         then we can avoid all of this complicated map_blocks stuff
+        vii = da.from_array(self.valid_input_index, new_data.shape)
+        res = da.map_blocks(_new_data_index, ia, vii, new_data,
+                            dtype=new_data.dtype, chunks=ia.chunks)
         res = DataArray(res, dims=data.dims, coords=coords)
-        if fill_value is None:
-            fill_value = np.nan
-        res = res.where(ia[tuple(where_slices)] != -1, fill_value)
+        if fill_value is not None and not np.isnan(fill_value):
+            res = res.where(res.notnull(), fill_value)
 
         return res
 
