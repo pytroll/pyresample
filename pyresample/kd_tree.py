@@ -1051,66 +1051,92 @@ class XArrayResamplerNN(object):
                 self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
-        # try:
-        #     self.index_array = self.index_array.compute()
-        # except AttributeError:
-        #     pass
-
-        flat_src_shape = []
-        dst_shape = []
-        dst_2d_shape = self.index_array.shape
-        vii_slices = []
-        ia_slices = []
-        where_slices = []
-        flat_done = False
-        coords = {}
         ia = self.index_array
+        vii = self.valid_input_index
+
+        if isinstance(self.source_geo_def, geometry.SwathDefinition):
+            # could be 1D or 2D
+            src_geo_dims = self.source_geo_def.lons.dims
+        else:
+            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
+            src_geo_dims = ('y', 'x')
+        dst_geo_dims = ('y', 'x')
+        coords = {c: data.coords[c] for c in data.coords
+                  if c not in dst_geo_dims}
+
+        # verify that source dims are the same between geo and data
+        first_dim_idx = data.dims.index(src_geo_dims[0])
+        num_dims = len(src_geo_dims)
+        data_geo_dims = data.dims[first_dim_idx:first_dim_idx + num_dims]
+        assert (data_geo_dims == src_geo_dims), \
+            "Data dimensions do not match source area dimensions"
 
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
+            coords['y'] = coord_y
+            coords['x'] = coord_x
         except AttributeError:
-            coord_x, coord_y = None, None
+            logger.debug("No geo coordinates created")
 
-        # TODO: Actually use the below logic and handle more than 2 dimensions
+        # shape of the source data after we flatten the geo dimensions
+        flat_src_shape = []
+        # slice objects to index in to the source data
+        vii_slices = []
+        ia_slices = []
+        # whether we have seen the geo dims in our analysis
+        geo_handled = False
+        # dimension indexes for da.atop
+        src_adims = []
+        flat_adim = []
+        # map source dimension name to dimension number for da.atop
+        src_dim_to_ind = {}
+        # destination array dimension indexes for da.atop
+        dst_dims = []
         for i, dim in enumerate(data.dims):
-            if dim in ['y', 'x']:
-                if not flat_done:
-                    flat_src_shape.append(-1)
-                    vii_slices.append(self.valid_input_index.ravel())
-                    ia_slices.append(ia)
-                    flat_done = True
-                dst_shape.append(dst_2d_shape[0])
-                where_slices.append(slice(None))
-                dst_2d_shape = dst_2d_shape[1:]
-                coords[dim] = coord_x if dim == 'x' else coord_y
-            else:
+            src_dim_to_ind[dim] = i
+            if dim in src_geo_dims and not geo_handled:
+                flat_src_shape.append(-1)
+                vii_slices.append(None)  # mark for replacement
+                ia_slices.append(None)  # mark for replacement
+                flat_adim.append(i)
+                src_adims.append(i)
+                dst_dims.extend(dst_geo_dims)
+                geo_handled = True
+            elif dim not in src_geo_dims:
                 flat_src_shape.append(data.sizes[dim])
                 vii_slices.append(slice(None))
                 ia_slices.append(slice(None))
-                where_slices.append(np.newaxis)
-                dst_shape.append(data.sizes[dim])
-                coords[dim] = data.coords[dim]
+                src_adims.append(i)
+                dst_dims.append(dim)
+        # map destination dimension names to atop dimension indexes
+        dst_dim_to_ind = src_dim_to_ind.copy()
+        dst_dim_to_ind['y'] = i + 1
+        dst_dim_to_ind['x'] = i + 2
 
-        # new_data = data.data.reshape(*flat_src_shape)[tuple(vii_slices)]
-        # res = new_data[tuple(ia_slices)].reshape(dst_shape)
+        def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None, fill_value=np.nan):
+            vii_slices = tuple(x if x is not None else vii.ravel()
+                               for x in vii_slices)
+            mask_slices = tuple(x if x is not None else (index_arr == -1)
+                                for x in ia_slices)
+            ia_slices = tuple(x if x is not None else index_arr for x in ia_slices)
+            res = data_arr[vii_slices][ia_slices]
+            res[mask_slices] = fill_value
+            return res
 
-        def _new_data_index(ia, vii, data_to_index):
-            data_to_index = data_to_index.reshape(
-                (data_to_index.shape[0] * data_to_index.shape[1],)
-            )[vii.ravel()]
-            data_to_index = data_to_index[ia]
-            data_to_index[ia == -1] = np.nan
-            return data_to_index
-        new_data = data.data.rechunk(data.shape)
+        new_data = data.data.reshape(flat_src_shape)
+        vii = vii.ravel()
+        dst_adims = [dst_dim_to_ind[dim] for dim in dst_dims]
+        ia_adims = [dst_dim_to_ind[dim] for dim in dst_geo_dims]
         # FUTURE: if/when dask can handle index arrays that are dask arrays
-        #         then we can avoid all of this complicated map_blocks stuff
-        vii = da.from_array(self.valid_input_index, new_data.shape)
-        res = da.map_blocks(_new_data_index, ia, vii, new_data,
-                            dtype=new_data.dtype, chunks=ia.chunks)
-        res = DataArray(res, dims=data.dims, coords=coords)
-        if fill_value is not None and not np.isnan(fill_value):
-            res = res.where(res.notnull(), fill_value)
-
+        #         then we can avoid all of this complicated atop stuff
+        res = da.atop(_my_index, dst_adims,
+                      ia, ia_adims,
+                      vii, flat_adim,
+                      new_data, src_adims,
+                      vii_slices=vii_slices, ia_slices=ia_slices,
+                      fill_value=fill_value,
+                      dtype=new_data.dtype, concatenate=True)
+        res = DataArray(res, dims=dst_dims, coords=coords)
         return res
 
 
