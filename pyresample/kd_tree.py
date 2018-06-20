@@ -1051,6 +1051,37 @@ class XArrayResamplerNN(object):
                 self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
+        """Get the pixels matching the target area.
+
+        This method should work for any dimensionality of the provided data
+        array as long as the geolocation dimensions match in size and name in
+        ``data.dims``. Where source area definition are `AreaDefinition`
+        objects the corresponding dimensions in the data should be
+        ``('y', 'x')``.
+
+        This method also attempts to preserve chunk sizes of dask arrays,
+        but does require loading/sharing the fully computed source data before
+        it can actually compute the values to write to the destination array.
+        This can result in large memory usage for large source data arrays,
+        but is a necessary evil until fancier indexing is supported by dask
+        and/or pykdtree.
+
+        Args:
+            data (dask.array.Array): Source data pixels to sample
+            fill_value (float): Output fill value when no source data is
+                                near the target pixel. If the input data
+                                is a integer array then the minimum value
+                                for that integer type is used. Otherwise,
+                                NaN is used and can be detected in the result
+                                with ``res.isnull()``.
+
+        """
+        if fill_value is not None and np.isnan(fill_value) and \
+                np.issubdtype(data.dtype, np.integer):
+            fill_value = np.iinfo(data.dtype).min
+            logger.warning("Fill value incompatible with integer data "
+                           "using {:d} instead.".format(fill_value))
+
         ia = self.index_array
         vii = self.valid_input_index
 
@@ -1061,15 +1092,14 @@ class XArrayResamplerNN(object):
             # assume AreaDefinitions and everything else are 2D with 'y', 'x'
             src_geo_dims = ('y', 'x')
         dst_geo_dims = ('y', 'x')
-        coords = {c: data.coords[c] for c in data.coords
-                  if c not in dst_geo_dims}
-
         # verify that source dims are the same between geo and data
         first_dim_idx = data.dims.index(src_geo_dims[0])
         num_dims = len(src_geo_dims)
         data_geo_dims = data.dims[first_dim_idx:first_dim_idx + num_dims]
         assert (data_geo_dims == src_geo_dims), \
             "Data dimensions do not match source area dimensions"
+        coords = {c: data.coords[c] for c in data.coords
+                  if c not in src_geo_dims + dst_geo_dims}
 
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
