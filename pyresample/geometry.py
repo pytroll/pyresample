@@ -195,6 +195,21 @@ class BaseDefinition(object):
         else:
             return self.lons[data_slice], self.lats[data_slice]
 
+    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
+        """Get the lon lats as a single dask array."""
+        import dask.array as da
+        lons, lats = self.get_lonlats()
+
+        if isinstance(lons.data, da.Array):
+            return lons.data, lats.data
+        else:
+            lons = da.from_array(np.asanyarray(lons),
+                                 chunks=chunks)
+            lats = da.from_array(np.asanyarray(lats),
+                                 chunks=chunks)
+        return lons, lats
+
+
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
@@ -528,20 +543,6 @@ class SwathDefinition(CoordinateDefinition):
         except AttributeError:
             pass
         return the_hash
-
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
-        """Get the lon lats as a single dask array."""
-        import dask.array as da
-        lons, lats = self.get_lonlats()
-
-        if isinstance(lons.data, da.Array):
-            return lons.data, lats.data
-        else:
-            lons = da.from_array(np.asanyarray(lons),
-                                 chunks=chunks)
-            lats = da.from_array(np.asanyarray(lats),
-                                 chunks=chunks)
-        return lons, lats
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""

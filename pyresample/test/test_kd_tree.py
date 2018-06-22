@@ -3,7 +3,7 @@ from __future__ import with_statement
 import os
 import sys
 
-import numpy
+import numpy as np
 
 from pyresample import geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
@@ -34,12 +34,12 @@ class Test(unittest.TestCase):
                                                    1029087.28,
                                                    1490031.3600000001])
 
-        cls.tdata = numpy.array([1, 2, 3])
-        cls.tlons = numpy.array([11.280789, 12.649354, 12.080402])
-        cls.tlats = numpy.array([56.011037, 55.629675, 55.641535])
+        cls.tdata = np.array([1, 2, 3])
+        cls.tlons = np.array([11.280789, 12.649354, 12.080402])
+        cls.tlats = np.array([56.011037, 55.629675, 55.641535])
         cls.tswath = geometry.SwathDefinition(lons=cls.tlons, lats=cls.tlats)
         cls.tgrid = geometry.CoordinateDefinition(
-            lons=numpy.array([12.562036]), lats=numpy.array([55.715613]))
+            lons=np.array([12.562036]), lats=np.array([55.715613]))
 
     def test_nearest_base(self):
         res = kd_tree.resample_nearest(self.tswath,
@@ -100,9 +100,9 @@ class Test(unittest.TestCase):
         self.assertEqual(counts[0], 3)
 
     def test_nearest(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=1)
@@ -112,14 +112,14 @@ class Test(unittest.TestCase):
 
     def test_nearest_masked_swath_target(self):
         """Test that a masked array works as a target."""
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
-        mask = numpy.ones_like(lons, dtype=numpy.bool)
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+        mask = np.ones_like(lons, dtype=np.bool)
         mask[::2, ::2] = False
         swath_def = geometry.SwathDefinition(
-            lons=numpy.ma.masked_array(lons, mask=mask),
-            lats=numpy.ma.masked_array(lats, mask=False)
+            lons=np.ma.masked_array(lons, mask=mask),
+            lats=np.ma.masked_array(lats, mask=False)
         )
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        swath_def, 50000, segments=3)
@@ -129,9 +129,9 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_1d(self):
-        data = numpy.fromfunction(lambda x, y: x * y, (800, 800))
-        lons = numpy.fromfunction(lambda x: 3 + x / 100., (500,))
-        lats = numpy.fromfunction(lambda x: 75 - x / 10., (500,))
+        data = np.fromfunction(lambda x, y: x * y, (800, 800))
+        lons = np.fromfunction(lambda x: 3 + x / 100., (500,))
+        lats = np.fromfunction(lambda x: 75 - x / 10., (500,))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(self.area_def, data.ravel(),
                                        swath_def, 50000, segments=1)
@@ -141,9 +141,9 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_empty(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=1)
@@ -152,11 +152,11 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_empty_multi(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data_multi,
                                        self.area_def, 50000, segments=1)
@@ -164,11 +164,11 @@ class Test(unittest.TestCase):
                          msg='Swath resampling nearest empty multi failed')
 
     def test_nearest_empty_multi_masked(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data_multi,
                                        self.area_def, 50000, segments=1,
@@ -176,9 +176,9 @@ class Test(unittest.TestCase):
         self.assertEqual(res.shape, (800, 800, 3))
 
     def test_nearest_empty_masked(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 165 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 165 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=1,
@@ -188,9 +188,9 @@ class Test(unittest.TestCase):
         self.assertTrue(cross_sum == expected)
 
     def test_nearest_segments(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=2)
@@ -199,9 +199,9 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_remap(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=1)
@@ -212,9 +212,9 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_mp(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, nprocs=2, segments=1)
@@ -223,12 +223,12 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_multi(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         res = kd_tree.resample_nearest(swath_def, data_multi,
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
@@ -236,11 +236,11 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_multi_unraveled(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.dstack((data, data, data))
+        data_multi = np.dstack((data, data, data))
         res = kd_tree.resample_nearest(swath_def, data_multi,
                                        self.area_def, 50000, segments=1)
         cross_sum = res.sum()
@@ -248,9 +248,9 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_gauss_sparse(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                      self.area_def, 50000, 25000, fill_value=-1, segments=1)
@@ -259,10 +259,10 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected, places=3)
 
     def test_gauss(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         with catch_warnings() as w:
@@ -275,10 +275,10 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_fwhm(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         with catch_warnings() as w:
@@ -291,14 +291,14 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [25000, 15000, 10000], segments=1)
@@ -309,14 +309,14 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_uncert(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         with catch_warnings() as w:
             # The assertion below checks if there is only one warning raised
             # and whether it contains a specific message from pyresample
@@ -345,14 +345,14 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum_counts, expected_counts)
 
     def test_gauss_multi_mp(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
@@ -365,14 +365,14 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_mp_segments(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
@@ -385,14 +385,14 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_gauss_multi_mp_segments_empty(self):
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 165 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         res = kd_tree.resample_gauss(swath_def, data_multi,
                                      self.area_def, 50000, [
                                          25000, 15000, 10000],
@@ -404,10 +404,10 @@ class Test(unittest.TestCase):
         def wf(dist):
             return 1 - dist / 100000.0
 
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -5, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         with catch_warnings() as w:
@@ -427,16 +427,16 @@ class Test(unittest.TestCase):
             return 1
 
         def wf3(dist):
-            return numpy.cos(dist) ** 2
+            return np.cos(dist) ** 2
 
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
         with catch_warnings() as w:
             res = kd_tree.resample_custom(swath_def, data_multi,
                                           self.area_def, 50000, [wf1, wf2, wf3], segments=1)
@@ -447,150 +447,150 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_masked_nearest(self):
-        data = numpy.ones((50, 10))
+        data = np.ones((50, 10))
         data[:, 5:] = 2
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        mask = numpy.ones((50, 10))
+        mask = np.ones((50, 10))
         mask[:, :5] = 0
-        masked_data = numpy.ma.array(data, mask=mask)
+        masked_data = np.ma.array(data, mask=mask)
         res = kd_tree.resample_nearest(swath_def, masked_data.ravel(),
                                        self.area_def, 50000, segments=1)
-        expected_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                     'test_files',
                                                     'mask_test_nearest_mask.dat'),
-                                       sep=' ').reshape((800, 800))
-        expected_data = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+                                    sep=' ').reshape((800, 800))
+        expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                     'test_files',
                                                     'mask_test_nearest_data.dat'),
-                                       sep=' ').reshape((800, 800))
-        self.assertTrue(numpy.array_equal(expected_mask, res.mask))
-        self.assertTrue(numpy.array_equal(expected_data, res.data))
+                                    sep=' ').reshape((800, 800))
+        self.assertTrue(np.array_equal(expected_mask, res.mask))
+        self.assertTrue(np.array_equal(expected_data, res.data))
 
     def test_masked_nearest_1d(self):
-        data = numpy.ones((800, 800))
+        data = np.ones((800, 800))
         data[:400, :] = 2
-        lons = numpy.fromfunction(lambda x: 3 + x / 100., (500,))
-        lats = numpy.fromfunction(lambda x: 75 - x / 10., (500,))
+        lons = np.fromfunction(lambda x: 3 + x / 100., (500,))
+        lats = np.fromfunction(lambda x: 75 - x / 10., (500,))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        mask = numpy.ones((800, 800))
+        mask = np.ones((800, 800))
         mask[400:, :] = 0
-        masked_data = numpy.ma.array(data, mask=mask)
+        masked_data = np.ma.array(data, mask=mask)
         res = kd_tree.resample_nearest(self.area_def, masked_data.ravel(),
                                        swath_def, 50000, segments=1)
         self.assertEqual(res.mask.sum(), 112)
 
     def test_masked_gauss(self):
-        data = numpy.ones((50, 10))
+        data = np.ones((50, 10))
         data[:, 5:] = 2
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        mask = numpy.ones((50, 10))
+        mask = np.ones((50, 10))
         mask[:, :5] = 0
-        masked_data = numpy.ma.array(data, mask=mask)
+        masked_data = np.ma.array(data, mask=mask)
         res = kd_tree.resample_gauss(swath_def, masked_data.ravel(),
                                      self.area_def, 50000, 25000, segments=1)
-        expected_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                     'test_files',
                                                     'mask_test_mask.dat'),
-                                       sep=' ').reshape((800, 800))
-        expected_data = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+                                    sep=' ').reshape((800, 800))
+        expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                     'test_files',
                                                     'mask_test_data.dat'),
-                                       sep=' ').reshape((800, 800))
+                                    sep=' ').reshape((800, 800))
         expected = expected_data.sum()
         cross_sum = res.data.sum()
 
-        self.assertTrue(numpy.array_equal(expected_mask, res.mask))
+        self.assertTrue(np.array_equal(expected_mask, res.mask))
         self.assertAlmostEqual(cross_sum, expected, places=3)
 
     def test_masked_fill_float(self):
-        data = numpy.ones((50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.ones((50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
-        expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                          'test_files',
                                                          'mask_test_fill_value.dat'),
-                                            sep=' ').reshape((800, 800))
+                                         sep=' ').reshape((800, 800))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
+        self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_fill_int(self):
-        data = numpy.ones((50, 10)).astype('int')
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.ones((50, 10)).astype('int')
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
-        expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                          'test_files',
                                                          'mask_test_fill_value.dat'),
-                                            sep=' ').reshape((800, 800))
+                                         sep=' ').reshape((800, 800))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
+        self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_full(self):
-        data = numpy.ones((50, 10))
+        data = np.ones((50, 10))
         data[:, 5:] = 2
-        mask = numpy.ones((50, 10))
+        mask = np.ones((50, 10))
         mask[:, :5] = 0
-        masked_data = numpy.ma.array(data, mask=mask)
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        masked_data = np.ma.array(data, mask=mask)
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def,
                                        masked_data.ravel(
                                        ), self.area_def, 50000,
                                        fill_value=None, segments=1)
-        expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                          'test_files',
                                                          'mask_test_full_fill.dat'),
-                                            sep=' ').reshape((800, 800))
+                                         sep=' ').reshape((800, 800))
         fill_mask = res.mask
 
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
+        self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
 
     def test_masked_full_multi(self):
-        data = numpy.ones((50, 10))
+        data = np.ones((50, 10))
         data[:, 5:] = 2
-        mask1 = numpy.ones((50, 10))
+        mask1 = np.ones((50, 10))
         mask1[:, :5] = 0
-        mask2 = numpy.ones((50, 10))
+        mask2 = np.ones((50, 10))
         mask2[:, 5:] = 0
-        mask3 = numpy.ones((50, 10))
+        mask3 = np.ones((50, 10))
         mask3[:25, :] = 0
-        data_multi = numpy.column_stack(
+        data_multi = np.column_stack(
             (data.ravel(), data.ravel(), data.ravel()))
-        mask_multi = numpy.column_stack(
+        mask_multi = np.column_stack(
             (mask1.ravel(), mask2.ravel(), mask3.ravel()))
-        masked_data = numpy.ma.array(data_multi, mask=mask_multi)
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        masked_data = np.ma.array(data_multi, mask=mask_multi)
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def,
                                        masked_data, self.area_def, 50000,
                                        fill_value=None, segments=1)
-        expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                          'test_files',
                                                          'mask_test_full_fill_multi.dat'),
-                                            sep=' ').reshape((800, 800, 3))
+                                         sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
         cross_sum = res.sum()
         expected = 357140.0
         self.assertAlmostEqual(cross_sum, expected)
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
+        self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
 
     def test_dtype(self):
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         grid_def = geometry.GridDefinition(lons, lats)
-        lons = numpy.asarray(lons, dtype='f4')
-        lats = numpy.asarray(lats, dtype='f4')
+        lons = np.asarray(lons, dtype='f4')
+        lats = np.asarray(lats, dtype='f4')
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         valid_input_index, valid_output_index, index_array, distance_array = \
             kd_tree.get_neighbour_info(swath_def,
@@ -598,9 +598,9 @@ class Test(unittest.TestCase):
                                        50000, neighbours=1, segments=1)
 
     def test_nearest_from_sample(self):
-        data = numpy.fromfunction(lambda y, x: y * x, (50, 10))
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        data = np.fromfunction(lambda y, x: y * x, (50, 10))
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         valid_input_index, valid_output_index, index_array, distance_array = \
             kd_tree.get_neighbour_info(swath_def,
@@ -621,16 +621,16 @@ class Test(unittest.TestCase):
             return 1
 
         def wf3(dist):
-            return numpy.cos(dist) ** 2
+            return np.cos(dist) ** 2
 
-        data = numpy.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
-        lons = numpy.fromfunction(
+        data = np.fromfunction(lambda y, x: (y + x) * 10 ** -6, (5000, 100))
+        lons = np.fromfunction(
             lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
-        lats = numpy.fromfunction(
+        lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        data_multi = numpy.column_stack((data.ravel(), data.ravel(),
-                                         data.ravel()))
+        data_multi = np.column_stack((data.ravel(), data.ravel(),
+                                      data.ravel()))
 
         with catch_warnings() as w:
             valid_input_index, valid_output_index, index_array, distance_array = \
@@ -662,21 +662,21 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_masked_multi_from_sample(self):
-        data = numpy.ones((50, 10))
+        data = np.ones((50, 10))
         data[:, 5:] = 2
-        mask1 = numpy.ones((50, 10))
+        mask1 = np.ones((50, 10))
         mask1[:, :5] = 0
-        mask2 = numpy.ones((50, 10))
+        mask2 = np.ones((50, 10))
         mask2[:, 5:] = 0
-        mask3 = numpy.ones((50, 10))
+        mask3 = np.ones((50, 10))
         mask3[:25, :] = 0
-        data_multi = numpy.column_stack(
+        data_multi = np.column_stack(
             (data.ravel(), data.ravel(), data.ravel()))
-        mask_multi = numpy.column_stack(
+        mask_multi = np.column_stack(
             (mask1.ravel(), mask2.ravel(), mask3.ravel()))
-        masked_data = numpy.ma.array(data_multi, mask=mask_multi)
-        lons = numpy.fromfunction(lambda y, x: 3 + x, (50, 10))
-        lats = numpy.fromfunction(lambda y, x: 75 - y, (50, 10))
+        masked_data = np.ma.array(data_multi, mask=mask_multi)
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         valid_input_index, valid_output_index, index_array, distance_array = \
             kd_tree.get_neighbour_info(swath_def,
@@ -687,20 +687,186 @@ class Test(unittest.TestCase):
                                                      valid_input_index,
                                                      valid_output_index, index_array,
                                                      fill_value=None)
-        expected_fill_mask = numpy.fromfile(os.path.join(os.path.dirname(__file__),
+        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
                                                          'test_files',
                                                          'mask_test_full_fill_multi.dat'),
-                                            sep=' ').reshape((800, 800, 3))
+                                         sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
-        self.assertTrue(numpy.array_equal(fill_mask, expected_fill_mask))
+        self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
+
+
+class TestXArrayResamplerNN(unittest.TestCase):
+    """Test the XArrayResamplerNN class."""
+
+    @classmethod
+    def setUpClass(cls):
+        import xarray as xr
+        import dask.array as da
+        cls.area_def = geometry.AreaDefinition('areaD',
+                                               'Europe (3km, HRV, VTC)',
+                                               'areaD',
+                                               {'a': '6378144.0',
+                                                'b': '6356759.0',
+                                                'lat_0': '50.00',
+                                                'lat_ts': '50.00',
+                                                'lon_0': '8.00',
+                                                'proj': 'stere'},
+                                               800,
+                                               800,
+                                               [-1370912.72,
+                                                -909968.64000000001,
+                                                1029087.28,
+                                                1490031.3600000001])
+
+        dfa = da.from_array  # shortcut
+        cls.chunks = chunks = 5
+        cls.tgrid = geometry.CoordinateDefinition(
+            lons=dfa(np.array([
+                [11.5, 12.562036, 12.9],
+                [11.5, 12.562036, 12.9],
+                [11.5, 12.562036, 12.9],
+                [11.5, 12.562036, 12.9],
+            ]), chunks=chunks),
+            lats=dfa(np.array([
+                [55.715613, 55.715613, 55.715613],
+                [55.715613, 55.715613, 55.715613],
+                [55.715613, np.nan, 55.715613],
+                [55.715613, 55.715613, 55.715613],
+            ]), chunks=chunks))
+
+        cls.tdata_1d = xr.DataArray(
+            dfa(np.array([1., 2., 3.]), chunks=chunks), dims=('my_dim1',))
+        cls.tlons_1d = xr.DataArray(
+            dfa(np.array([11.280789, 12.649354, 12.080402]), chunks=chunks),
+            dims=('my_dim1',))
+        cls.tlats_1d = xr.DataArray(
+            dfa(np.array([56.011037, 55.629675, 55.641535]), chunks=chunks),
+            dims=('my_dim1',))
+        cls.tswath_1d = geometry.SwathDefinition(lons=cls.tlons_1d,
+                                                 lats=cls.tlats_1d)
+
+        cls.data_2d = xr.DataArray(
+            da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10)),
+                          chunks=5),
+            dims=('my_dim_y', 'my_dim_x'))
+        cls.lons_2d = xr.DataArray(
+            da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10)),
+                          chunks=5),
+            dims=('my_dim_y', 'my_dim_x'))
+        cls.lats_2d = xr.DataArray(
+            da.from_array(np.fromfunction(lambda y, x: 75 - y, (50, 10)),
+                          chunks=5),
+            dims=('my_dim_y', 'my_dim_x'))
+        cls.swath_def_2d = geometry.SwathDefinition(lons=cls.lons_2d,
+                                                    lats=cls.lats_2d)
+        cls.src_area_2d = geometry.AreaDefinition(
+            'areaD_src', 'Europe (3km, HRV, VTC)', 'areaD',
+            {'a': '6378144.0', 'b': '6356759.0', 'lat_0': '52.00',
+             'lat_ts': '52.00', 'lon_0': '5.00', 'proj': 'stere'}, 50, 10,
+            [-1370912.72, -909968.64000000001, 1029087.28,
+             1490031.3600000001])
+
+    def test_nearest_swath_1d_mask_to_grid_1n(self):
+        """Test 1D swath definition to 2D grid definition; 1 neighbor."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+                                      radius_of_influence=100000,
+                                      neighbours=1)
+        data = self.tdata_1d
+        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        res = resampler.get_sample_from_neighbour_info(data)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        actual = res.values
+        expected = np.array([
+            [1., 2., 2.],
+            [1., 2., 2.],
+            [1., np.nan, 2.],
+            [1., 2., 2.],
+        ])
+        np.testing.assert_allclose(actual, expected)
+
+    def test_nearest_swath_2d_mask_to_area_1n(self):
+        """Test 2D swath definition to 2D area definition; 1 neighbor."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        swath_def = self.swath_def_2d
+        data = self.data_2d
+        resampler = XArrayResamplerNN(swath_def, self.area_def,
+                                      radius_of_influence=50000,
+                                      neighbours=1)
+        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        res = resampler.get_sample_from_neighbour_info(data)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        res = res.values
+        cross_sum = np.nansum(res)
+        expected = 15874591.0
+        self.assertEqual(cross_sum, expected)
+
+    def test_nearest_area_2d_to_area_1n(self):
+        """Test 2D area definition to 2D area definition; 1 neighbor."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        data = self.data_2d
+        resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+                                      radius_of_influence=50000,
+                                      neighbours=1)
+        ninfo = resampler.get_neighbour_info()
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        self.assertRaises(AssertionError,
+                          resampler.get_sample_from_neighbour_info, data)
+
+        # rename data dimensions to match the expected area dimensions
+        data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
+        res = resampler.get_sample_from_neighbour_info(data)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        res = res.values
+        cross_sum = np.nansum(res)
+        expected = 27706753.0
+        self.assertEqual(cross_sum, expected)
+
+    @unittest.skipIf(True, "Multiple neighbors not supported yet")
+    def test_nearest_swath_1d_mask_to_grid_8n(self):
+        """Test 1D swath definition to 2D grid definition; 8 neighbors."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+                                      radius_of_influence=100000,
+                                      neighbours=8)
+        data = self.tdata_1d
+        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        res = resampler.get_sample_from_neighbour_info(data)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        actual = res.values
+        # expected = TODO
+        # np.testing.assert_allclose(actual, expected)
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestXArrayResamplerNN))
 
     return mysuite
 
