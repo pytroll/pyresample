@@ -209,7 +209,6 @@ class BaseDefinition(object):
                                  chunks=chunks)
         return lons, lats
 
-
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
