@@ -856,7 +856,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
-        actual = res.values
+        # actual = res.values
         # expected = TODO
         # np.testing.assert_allclose(actual, expected)
 
