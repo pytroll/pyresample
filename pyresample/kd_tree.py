@@ -1086,7 +1086,7 @@ class XArrayResamplerNN(object):
         """
         if fill_value is not None and np.isnan(fill_value) and \
                 np.issubdtype(data.dtype, np.integer):
-            fill_value = np.iinfo(data.dtype).min
+            fill_value = _get_fill_mask_value(data.dtype)
             logger.warning("Fill value incompatible with integer data "
                            "using {:d} instead.".format(fill_value))
 
@@ -1115,8 +1115,11 @@ class XArrayResamplerNN(object):
         assert (data.dims[first_dim_idx:first_dim_idx + num_dims] ==
                 data_geo_dims), "Data's geolocation dimensions are not " \
                                 "consecutive."
-        coords = {c: data.coords[c] for c in data.coords
-                  if c not in src_geo_dims + dst_geo_dims}
+        # coords = {c: data.coords[c] for c in data.coords
+        #           if c not in src_geo_dims + dst_geo_dims}
+        # FIXME: Can't include coordinates whose dimensions depend on the geo
+        #        dims either
+        coords = {}
 
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
@@ -1193,7 +1196,11 @@ class XArrayResamplerNN(object):
                       vii_slices=vii_slices, ia_slices=ia_slices,
                       fill_value=fill_value,
                       dtype=new_data.dtype, concatenate=True)
-        res = DataArray(res, dims=dst_dims, coords=coords)
+        res = DataArray(res, dims=dst_dims, coords=coords, attrs=data.attrs.copy())
+        res.attrs['_FillValue'] = fill_value
+        # if fill_value isn't NaN then we have to tell xarray what null is
+        if not np.isnan(fill_value):
+            res = res.where(res != fill_value)
         return res
 
 
