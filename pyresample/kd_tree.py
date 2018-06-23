@@ -1196,7 +1196,8 @@ class XArrayResamplerNN(object):
                       vii_slices=vii_slices, ia_slices=ia_slices,
                       fill_value=fill_value,
                       dtype=new_data.dtype, concatenate=True)
-        res = DataArray(res, dims=dst_dims, coords=coords, attrs=data.attrs.copy())
+        res = DataArray(res, dims=dst_dims, coords=coords,
+                        attrs=data.attrs.copy())
         res.attrs['_FillValue'] = fill_value
         # if fill_value isn't NaN then we have to tell xarray what null is
         if not np.isnan(fill_value):
