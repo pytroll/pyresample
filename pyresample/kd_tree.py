@@ -26,42 +26,27 @@ import warnings
 from logging import getLogger
 
 import numpy as np
-
+from pykdtree.kdtree import KDTree
 from pyresample import _spatial_mp, data_reduce, geometry
+from pyresample import CHUNK_SIZE
 
 logger = getLogger(__name__)
 
 try:
     from xarray import DataArray
     import dask.array as da
+    import dask
 except ImportError:
     DataArray = None
     da = None
+    dask = None
 
 if sys.version >= '3':
     long = int
 
-kd_tree_name = None
-try:
-    from pykdtree.kdtree import KDTree
-    kd_tree_name = 'pykdtree'
-except ImportError:
-    try:
-        import scipy.spatial as sp
-        kd_tree_name = 'scipy.spatial'
-    except ImportError:
-        raise ImportError('Either pykdtree or scipy must be available')
-
 
 class EmptyResult(ValueError):
     pass
-
-
-def which_kdtree():
-    """Returns the name of the kdtree used for resampling
-    """
-
-    return kd_tree_name
 
 
 def resample_nearest(source_geo_def,
@@ -510,12 +495,10 @@ def _create_resample_kdtree(source_lons,
         raise EmptyResult('No valid data points in input data')
 
     # Build kd-tree on input
-    if kd_tree_name == 'pykdtree':
-        resample_kdtree = KDTree(input_coords)
-    elif nprocs > 1:
+    if nprocs > 1:
         resample_kdtree = _spatial_mp.cKDTree_MP(input_coords, nprocs=nprocs)
     else:
-        resample_kdtree = sp.cKDTree(input_coords)
+        resample_kdtree = KDTree(input_coords)
 
     return resample_kdtree
 
@@ -914,12 +897,21 @@ def lonlat2xyz(lons, lats):
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
-def query_no_distance(target_lons, target_lats,
-                      valid_output_index, kdtree, neighbours, epsilon, radius):
-    """Query the kdtree. No distances are returned."""
+def query_no_distance(target_lons, target_lats, valid_output_index,
+                      mask=None, valid_input_index=None,
+                      neighbours=None, epsilon=None, radius=None,
+                      kdtree=None):
+    """Query the kdtree. No distances are returned.
+
+    NOTE: Dask array arguments must always come before other keyword arguments
+          for `da.atop` arguments to work.
+
+    """
     voi = valid_output_index
-    shape = voi.shape
+    shape = voi.shape + (neighbours,)
     voir = voi.ravel()
+    if mask is not None:
+        mask = mask.ravel()[valid_input_index.ravel()]
     target_lons_valid = target_lons.ravel()[voir]
     target_lats_valid = target_lats.ravel()[voir]
 
@@ -928,30 +920,36 @@ def query_no_distance(target_lons, target_lats,
         coords.compute(),
         k=neighbours,
         eps=epsilon,
-        distance_upper_bound=radius)
+        distance_upper_bound=radius,
+        mask=mask)
+
+    if index_array.ndim == 1:
+        index_array = index_array[:, None]
 
     # KDTree query returns out-of-bounds neighbors as `len(arr)`
     # which is an invalid index, we mask those out so -1 represents
     # invalid values
-    # voi is 2D, index_array is 1D
+    # voi is 2D (trows, tcols)
+    # index_array is 2D (valid output pixels, neighbors)
+    # there are as many Trues in voi as rows in index_array
     good_pixels = index_array < kdtree.n
-    voi[voi] = good_pixels
-    res_ia = np.full(shape, fill_value=-1, dtype=np.int)
-    res_ia[voi] = index_array[good_pixels]
+    res_ia = np.empty(shape, dtype=np.int)
+    mask = np.zeros(shape, dtype=np.bool)
+    mask[voi, :] = good_pixels
+    res_ia[mask] = index_array[good_pixels]
+    res_ia[~mask] = -1
     return res_ia
 
 
-class XArrayResamplerNN():
+class XArrayResamplerNN(object):
     def __init__(self,
                  source_geo_def,
                  target_geo_def,
                  radius_of_influence,
-                 neighbours=8,
-                 epsilon=0,
-                 reduce_data=True,
-                 nprocs=1,
-                 segments=None):
+                 neighbours=1,
+                 epsilon=0):
         """
+
         Parameters
         ----------
         source_geo_def : object
@@ -961,18 +959,12 @@ class XArrayResamplerNN():
         radius_of_influence : float
             Cut off distance in meters
         neighbours : int, optional
-            The number of neigbours to consider for each grid point
+            The number of neigbours to consider for each grid point.
+            Default 1. Currently 1 is the only supported number.
         epsilon : float, optional
             Allowed uncertainty in meters. Increasing uncertainty
             reduces execution time
-        reduce_data : bool, optional
-            Perform initial coarse reduction of source dataset in order
-            to reduce execution time
-        nprocs : int, optional
-            Number of processor cores to be used
-        segments : int or None
-            Number of segments to use when resampling.
-            If set to None an estimate will be calculated
+
         """
         if DataArray is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
@@ -981,52 +973,52 @@ class XArrayResamplerNN():
         self.valid_output_index = None
         self.index_array = None
         self.distance_array = None
+        self.delayed_kdtree = None
         self.neighbours = neighbours
         self.epsilon = epsilon
-        self.reduce_data = reduce_data
-        self.nprocs = nprocs
-        self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
         self.radius_of_influence = radius_of_influence
+        assert (self.target_geo_def.ndim == 2), \
+            "Target area definition must be 2 dimensions"
 
-    def _create_resample_kdtree(self):
+    def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
         """Set up kd tree on input"""
-        source_lons, source_lats = self.source_geo_def.get_lonlats_dask()
+        source_lons, source_lats = self.source_geo_def.get_lonlats_dask(
+            chunks=chunks)
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
                            (source_lats <= 90) & (source_lats >= -90))
-
-        # FIXME: Is dask smart enough to only compute the pixels we end up
-        #        using even with this complicated indexing
         input_coords = lonlat2xyz(source_lons, source_lats)
         input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
-        valid_input_idx, input_coords = da.compute(valid_input_idx,
-                                                   input_coords)
-        if kd_tree_name == 'pykdtree':
-            resample_kdtree = KDTree(input_coords)
-        else:
-            resample_kdtree = sp.cKDTree(input_coords)
+        delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
+        return valid_input_idx, delayed_kdtree
 
-        return valid_input_idx, resample_kdtree
-
-    def _query_resample_kdtree(self,
-                               resample_kdtree,
-                               tlons,
-                               tlats,
-                               valid_oi,
-                               reduce_data=True):
+    def query_resample_kdtree(self,
+                              resample_kdtree,
+                              tlons,
+                              tlats,
+                              valid_oi,
+                              mask):
         """Query kd-tree on slice of target coordinates."""
-
-        res = da.map_blocks(query_no_distance, tlons, tlats,
-                            valid_oi, dtype=np.int, kdtree=resample_kdtree,
-                            neighbours=self.neighbours, epsilon=self.epsilon,
-                            radius=self.radius_of_influence)
+        if mask is None:
+            args = tuple()
+        else:
+            ndims = self.source_geo_def.ndim
+            dims = 'mn'[:ndims]
+            args = (mask, dims, self.valid_input_index, dims)
+        # res.shape = rows, cols, neighbors
+        # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
+        res = da.atop(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
+                      valid_oi, 'ji', *args, kdtree=resample_kdtree,
+                      neighbours=self.neighbours, epsilon=self.epsilon,
+                      radius=self.radius_of_influence, dtype=np.int,
+                      new_axes={'k': self.neighbours}, concatenate=True)
         return res, None
 
-    def get_neighbour_info(self):
+    def get_neighbour_info(self, mask=None):
         """Return neighbour info.
 
         Returns
@@ -1041,27 +1033,22 @@ class XArrayResamplerNN():
                           (self.neighbours, self.source_geo_def.size))
 
         # Create kd-tree
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree()
-        # This is a numpy array
+        chunks = mask.chunks if mask is not None else CHUNK_SIZE
+        valid_input_idx, resample_kdtree = self._create_resample_kdtree(
+            chunks=chunks)
         self.valid_input_index = valid_input_idx
-
-        if resample_kdtree.n == 0:
-            # Handle if all input data is reduced away
-            valid_output_idx, index_arr, distance_arr = \
-                _create_empty_info(self.source_geo_def,
-                                   self.target_geo_def, self.neighbours)
-
-            self.valid_output_index = valid_output_idx
-            self.index_array = index_arr
-            self.distance_array = distance_arr
-            return valid_input_idx, valid_output_idx, index_arr, distance_arr
+        self.delayed_kdtree = resample_kdtree
 
         target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
-        index_arr, distance_arr = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx)
+        if mask is not None:
+            assert (mask.shape == self.source_geo_def.shape), \
+                "'mask' must be the same shape as the source geo definition"
+            mask = mask.data
+        index_arr, distance_arr = self.query_resample_kdtree(
+            resample_kdtree, target_lons, target_lats, valid_output_idx, mask)
 
         self.valid_output_index, self.index_array = valid_output_idx, index_arr
         self.distance_array = distance_arr
@@ -1072,54 +1059,149 @@ class XArrayResamplerNN():
                 self.distance_array)
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
+        """Get the pixels matching the target area.
 
-        try:
-            self.index_array = self.index_array.compute()
-        except AttributeError:
-            pass
+        This method should work for any dimensionality of the provided data
+        array as long as the geolocation dimensions match in size and name in
+        ``data.dims``. Where source area definition are `AreaDefinition`
+        objects the corresponding dimensions in the data should be
+        ``('y', 'x')``.
 
-        flat_src_shape = []
-        dst_shape = []
-        dst_2d_shape = self.index_array.shape
-        vii_slices = []
-        ia_slices = []
-        where_slices = []
-        flat_done = False
+        This method also attempts to preserve chunk sizes of dask arrays,
+        but does require loading/sharing the fully computed source data before
+        it can actually compute the values to write to the destination array.
+        This can result in large memory usage for large source data arrays,
+        but is a necessary evil until fancier indexing is supported by dask
+        and/or pykdtree.
+
+        Args:
+            data (dask.array.Array): Source data pixels to sample
+            fill_value (float): Output fill value when no source data is
+                                near the target pixel. If the input data
+                                is a integer array then the minimum value
+                                for that integer type is used. Otherwise,
+                                NaN is used and can be detected in the result
+                                with ``res.isnull()``.
+
+        """
+        if fill_value is not None and np.isnan(fill_value) and \
+                np.issubdtype(data.dtype, np.integer):
+            fill_value = _get_fill_mask_value(data.dtype)
+            logger.warning("Fill value incompatible with integer data "
+                           "using {:d} instead.".format(fill_value))
+
+        # Convert back to 1 neighbor
+        if self.neighbours > 1:
+            raise NotImplementedError("Nearest neighbor resampling can not "
+                                      "handle more than 1 neighbor yet.")
+        # Convert from multiple neighbor shape to 1 neighbor
+        ia = self.index_array[:, :, 0]
+        vii = self.valid_input_index
+
+        if isinstance(self.source_geo_def, geometry.SwathDefinition):
+            # could be 1D or 2D
+            src_geo_dims = self.source_geo_def.lons.dims
+        else:
+            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
+            src_geo_dims = ('y', 'x')
+        dst_geo_dims = ('y', 'x')
+        # verify that source dims are the same between geo and data
+        data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
+        assert (data_geo_dims == src_geo_dims), \
+            "Data dimensions do not match source area dimensions"
+        # verify that the dims are next to each other
+        first_dim_idx = data.dims.index(src_geo_dims[0])
+        num_dims = len(src_geo_dims)
+        assert (data.dims[first_dim_idx:first_dim_idx + num_dims] ==
+                data_geo_dims), "Data's geolocation dimensions are not " \
+                                "consecutive."
+        # coords = {c: data.coords[c] for c in data.coords
+        #           if c not in src_geo_dims + dst_geo_dims}
+        # FIXME: Can't include coordinates whose dimensions depend on the geo
+        #        dims either
         coords = {}
-        ia = self.index_array
 
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
+            coords['y'] = coord_y
+            coords['x'] = coord_x
         except AttributeError:
-            coord_x, coord_y = None, None
+            logger.debug("No geo coordinates created")
 
+        # shape of the source data after we flatten the geo dimensions
+        flat_src_shape = []
+        # slice objects to index in to the source data
+        vii_slices = []
+        ia_slices = []
+        # whether we have seen the geo dims in our analysis
+        geo_handled = False
+        # dimension indexes for da.atop
+        src_adims = []
+        flat_adim = []
+        # map source dimension name to dimension number for da.atop
+        src_dim_to_ind = {}
+        # destination array dimension indexes for da.atop
+        dst_dims = []
         for i, dim in enumerate(data.dims):
-            if dim in ['y', 'x']:
-                if not flat_done:
-                    flat_src_shape.append(-1)
-                    vii_slices.append(self.valid_input_index.ravel())
-                    ia_slices.append(ia.ravel())
-                    flat_done = True
-                dst_shape.append(dst_2d_shape[0])
-                where_slices.append(slice(None))
-                dst_2d_shape = dst_2d_shape[1:]
-                coords[dim] = coord_x if dim == 'x' else coord_y
-            else:
+            src_dim_to_ind[dim] = i
+            if dim in src_geo_dims and not geo_handled:
+                flat_src_shape.append(-1)
+                vii_slices.append(None)  # mark for replacement
+                ia_slices.append(None)  # mark for replacement
+                flat_adim.append(i)
+                src_adims.append(i)
+                dst_dims.extend(dst_geo_dims)
+                geo_handled = True
+            elif dim not in src_geo_dims:
                 flat_src_shape.append(data.sizes[dim])
                 vii_slices.append(slice(None))
                 ia_slices.append(slice(None))
-                where_slices.append(np.newaxis)
-                dst_shape.append(data.sizes[dim])
-                coords[dim] = data.coords[dim]
+                src_adims.append(i)
+                dst_dims.append(dim)
+        # map destination dimension names to atop dimension indexes
+        dst_dim_to_ind = src_dim_to_ind.copy()
+        dst_dim_to_ind['y'] = i + 1
+        dst_dim_to_ind['x'] = i + 2
+        # FUTURE: when we allow more than one neighbor
+        # neighbors_dim = i + 3
 
-        new_data = data.data.reshape(*flat_src_shape)[tuple(vii_slices)]
-        res = new_data[tuple(ia_slices)].reshape(dst_shape)
+        def _my_index(index_arr, vii, data_arr, vii_slices=None,
+                      ia_slices=None, fill_value=np.nan):
+            vii_slices = tuple(
+                x if x is not None else vii.ravel() for x in vii_slices)
+            mask_slices = tuple(
+                x if x is not None else (index_arr == -1) for x in ia_slices)
+            ia_slices = tuple(
+                x if x is not None else index_arr for x in ia_slices)
+            res = data_arr[vii_slices][ia_slices]
+            res[mask_slices] = fill_value
+            return res
 
-        res = DataArray(res, dims=data.dims, coords=coords)
-        if fill_value is None:
-            fill_value = np.nan
-        res = res.where(ia[tuple(where_slices)] != -1, fill_value)
-
+        new_data = data.data.reshape(flat_src_shape)
+        vii = vii.ravel()
+        dst_adims = [dst_dim_to_ind[dim] for dim in dst_dims]
+        ia_adims = [dst_dim_to_ind[dim] for dim in dst_geo_dims]
+        # FUTURE: when we allow more than one neighbor add neighbors dimension
+        # dst_adims.append(neighbors_dim)
+        # ia_adims.append(neighbors_dim)
+        # FUTURE: when we allow more than one neighbor we need to add
+        #         the new axis to atop:
+        #         `new_axes={neighbor_dim: self.neighbors}`
+        # FUTURE: if/when dask can handle index arrays that are dask arrays
+        #         then we can avoid all of this complicated atop stuff
+        res = da.atop(_my_index, dst_adims,
+                      ia, ia_adims,
+                      vii, flat_adim,
+                      new_data, src_adims,
+                      vii_slices=vii_slices, ia_slices=ia_slices,
+                      fill_value=fill_value,
+                      dtype=new_data.dtype, concatenate=True)
+        res = DataArray(res, dims=dst_dims, coords=coords,
+                        attrs=data.attrs.copy())
+        res.attrs['_FillValue'] = fill_value
+        # if fill_value isn't NaN then we have to tell xarray what null is
+        if not np.isnan(fill_value):
+            res = res.where(res != fill_value)
         return res
 
 

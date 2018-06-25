@@ -65,14 +65,5 @@ Using numexpr
 
 As of pyresample v1.0.0 numexpr_ will be used for minor bottleneck optimization if available
 
-Show active plugins
-*******************
-The active drop-in plugins can be show using:
-
- >>> import pyresample as pr
- >>> pr.get_capabilities()
-
 .. _pykdtree: https://github.com/storpipfugl/pykdtree
 .. _numexpr: https://code.google.com/p/numexpr/
- 
- 
