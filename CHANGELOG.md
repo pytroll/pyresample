@@ -1,4 +1,15 @@
 ###############################################################################
+## Version 1.10.0 (2018/06/25)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 128](https://github.com/pytroll/pyresample/pull/128) - Add option to provide KDTree's 'mask' argument when querying
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.9.3 (2018/06/08)
 
 ### Issues Closed
@@ -15,11 +26,10 @@ In this release 3 issues were closed.
 * [PR 125](https://github.com/pytroll/pyresample/pull/125) - Fix area slices not working for non-geos projections
 * [PR 119](https://github.com/pytroll/pyresample/pull/119) - Add hashing to StackedAreaDefinitions
 
-In this release 1 pull requests were closed.
+In this release 1 pull request was closed.
 
 
 ## Version 1.9.2 (2018/05/13)
-
 
 ### Pull Requests Merged
 
@@ -35,7 +45,6 @@ In this release 2 pull requests were closed.
 
 
 ## Version 1.9.1 (2018/05/03)
-
 
 ### Pull Requests Merged
 
