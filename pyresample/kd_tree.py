@@ -993,7 +993,7 @@ class XArrayResamplerNN(object):
 
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
-        delayed_kdtree = dask.delayed(KDTree)(input_coords)
+        delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
         return valid_input_idx, delayed_kdtree
 
     def query_resample_kdtree(self,
