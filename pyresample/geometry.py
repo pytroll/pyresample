@@ -1362,7 +1362,7 @@ class AreaDefinition(BaseDefinition):
                                       "equal.")
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
-        if area_to_cover.proj_dict['proj'] == 'geos':
+        if area_to_cover.proj_dict.get('proj') == 'geos':
             area_boundary = Boundary(
                 *get_geostationary_bounding_box(area_to_cover))
         else:

@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import os
 import sys
+import six
 
 import numpy as np
 
@@ -458,12 +459,12 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(swath_def, masked_data.ravel(),
                                        self.area_def, 50000, segments=1)
         expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                    'test_files',
-                                                    'mask_test_nearest_mask.dat'),
+                                                 'test_files',
+                                                 'mask_test_nearest_mask.dat'),
                                     sep=' ').reshape((800, 800))
         expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                    'test_files',
-                                                    'mask_test_nearest_data.dat'),
+                                                 'test_files',
+                                                 'mask_test_nearest_data.dat'),
                                     sep=' ').reshape((800, 800))
         self.assertTrue(np.array_equal(expected_mask, res.mask))
         self.assertTrue(np.array_equal(expected_data, res.data))
@@ -493,12 +494,12 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_gauss(swath_def, masked_data.ravel(),
                                      self.area_def, 50000, 25000, segments=1)
         expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                    'test_files',
-                                                    'mask_test_mask.dat'),
+                                                 'test_files',
+                                                 'mask_test_mask.dat'),
                                     sep=' ').reshape((800, 800))
         expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                    'test_files',
-                                                    'mask_test_data.dat'),
+                                                 'test_files',
+                                                 'mask_test_data.dat'),
                                     sep=' ').reshape((800, 800))
         expected = expected_data.sum()
         cross_sum = res.data.sum()
@@ -514,8 +515,8 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
         expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                         'test_files',
-                                                         'mask_test_fill_value.dat'),
+                                                      'test_files',
+                                                      'mask_test_fill_value.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -528,8 +529,8 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
         expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                         'test_files',
-                                                         'mask_test_fill_value.dat'),
+                                                      'test_files',
+                                                      'mask_test_fill_value.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -548,8 +549,8 @@ class Test(unittest.TestCase):
                                        ), self.area_def, 50000,
                                        fill_value=None, segments=1)
         expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                         'test_files',
-                                                         'mask_test_full_fill.dat'),
+                                                      'test_files',
+                                                      'mask_test_full_fill.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
 
@@ -576,8 +577,8 @@ class Test(unittest.TestCase):
                                        masked_data, self.area_def, 50000,
                                        fill_value=None, segments=1)
         expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                         'test_files',
-                                                         'mask_test_full_fill_multi.dat'),
+                                                      'test_files',
+                                                      'mask_test_full_fill_multi.dat'),
                                          sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
         cross_sum = res.sum()
@@ -688,8 +689,8 @@ class Test(unittest.TestCase):
                                                      valid_output_index, index_array,
                                                      fill_value=None)
         expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                         'test_files',
-                                                         'mask_test_full_fill_multi.dat'),
+                                                      'test_files',
+                                                      'mask_test_full_fill_multi.dat'),
                                          sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -749,6 +750,11 @@ class TestXArrayResamplerNN(unittest.TestCase):
             da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10)),
                           chunks=5),
             dims=('my_dim_y', 'my_dim_x'))
+        cls.data_3d = xr.DataArray(
+            da.from_array(np.fromfunction(lambda y, x, b: y * x * b, (50, 10, 3)),
+                          chunks=5),
+            dims=('my_dim_y', 'my_dim_x', 'bands'),
+            coords={'bands': ['r', 'g', 'b']})
         cls.lons_2d = xr.DataArray(
             da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10)),
                           chunks=5),
@@ -837,6 +843,33 @@ class TestXArrayResamplerNN(unittest.TestCase):
         res = res.values
         cross_sum = np.nansum(res)
         expected = 27706753.0
+        self.assertEqual(cross_sum, expected)
+
+    def test_nearest_area_2d_to_area_1n_3d_data(self):
+        """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        data = self.data_3d
+        resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+                                      radius_of_influence=50000,
+                                      neighbours=1)
+        ninfo = resampler.get_neighbour_info()
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        self.assertRaises(AssertionError,
+                          resampler.get_sample_from_neighbour_info, data)
+
+        # rename data dimensions to match the expected area dimensions
+        data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
+        res = resampler.get_sample_from_neighbour_info(data)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        six.assertCountEqual(self, res.coords['bands'], ['r', 'g', 'b'])
+        res = res.values
+        cross_sum = np.nansum(res)
+        expected = 83120259.0
         self.assertEqual(cross_sum, expected)
 
     @unittest.skipIf(True, "Multiple neighbors not supported yet")

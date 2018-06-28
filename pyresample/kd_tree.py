@@ -1115,12 +1115,14 @@ class XArrayResamplerNN(object):
         assert (data.dims[first_dim_idx:first_dim_idx + num_dims] ==
                 data_geo_dims), "Data's geolocation dimensions are not " \
                                 "consecutive."
-        # coords = {c: data.coords[c] for c in data.coords
-        #           if c not in src_geo_dims + dst_geo_dims}
+
         # FIXME: Can't include coordinates whose dimensions depend on the geo
         #        dims either
-        coords = {}
+        def contain_coords(var, coord_list):
+            return bool(set(coord_list).intersection(set(var.dims)))
 
+        coords = {c: c_var for c, c_var in data.coords.items()
+                  if not contain_coords(c_var, src_geo_dims + dst_geo_dims)}
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
             coords['y'] = coord_y
