@@ -1119,7 +1119,7 @@ class XArrayResamplerNN(object):
         # FIXME: Can't include coordinates whose dimensions depend on the geo
         #        dims either
         def contain_coords(var, coord_list):
-            return bool(set(coord_list).intersection(set(var.coords.keys())))
+            return bool(set(coord_list).intersection(set(var.dims)))
 
         coords = {c: c_var for c, c_var in data.coords.items()
                   if not contain_coords(c_var, src_geo_dims + dst_geo_dims)}
