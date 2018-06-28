@@ -788,7 +788,6 @@ class Test(unittest.TestCase):
         self.assertEqual(slice(46, 3667, None), slice_x)
         self.assertEqual(slice(52, 3663, None), slice_y)
 
-
         area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                                 {'a': 6378144.0,
                                                  'b': 6356759.0,
@@ -805,6 +804,19 @@ class Test(unittest.TestCase):
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
+
+        # totally different area
+        area_to_cover = geometry.AreaDefinition('epsg4326', 'Global equal latitude/longitude grid for global sphere',
+                                                'epsg4326',
+                                                {"init": 'EPSG:4326',
+                                                 'units': 'degrees'},
+                                                8192,
+                                                4096,
+                                                [-180.0, -90.0, 180.0, 90.0])
+
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(46, 3667, None))
+        self.assertEqual(slice_y, slice(52, 3663, None))
 
     def test_get_area_slices_nongeos(self):
         """Check area slicing for non-geos projections."""
