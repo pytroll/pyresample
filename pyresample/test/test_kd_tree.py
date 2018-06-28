@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import os
 import sys
+import six
 
 import numpy as np
 
@@ -865,7 +866,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
-        self.assertItemsEqual(res.coords['bands'], ['r', 'g', 'b'])
+        six.assertCountEqual(self, res.coords['bands'], ['r', 'g', 'b'])
         res = res.values
         cross_sum = np.nansum(res)
         expected = 83120259.0
