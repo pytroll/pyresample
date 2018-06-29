@@ -1344,7 +1344,8 @@ class AreaDefinition(BaseDefinition):
         # Intersection only required for two different projections
         if area_to_cover.proj_str == self.proj_str:
             logger.debug('Projections for data and slice areas are'
-                         ' identical: %s', area_to_cover.proj_dict['proj'])
+                         ' identical: %s',
+                         area_to_cover.proj_dict.get('proj', area_to_cover.proj_dict.get('init')))
             # Get xy coordinates
             llx, lly, urx, ury = area_to_cover.area_extent
             x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
