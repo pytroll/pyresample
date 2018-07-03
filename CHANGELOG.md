@@ -1,4 +1,19 @@
+
+
 ###############################################################################
+## Version 1.10.1 (2018/07/03)
+
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 130](https://github.com/pytroll/pyresample/pull/130) - Fix log message not to rely on the proj key
+* [PR 129](https://github.com/pytroll/pyresample/pull/129) - Ignore proj dicts with no  key for slicing
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.10.0 (2018/06/25)
 
 ### Pull Requests Merged
