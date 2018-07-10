@@ -63,7 +63,7 @@ class ImageContainer(object):
         elif ((image_data.ndim > geo_def.ndim + 1) or
               (image_data.ndim < geo_def.ndim)):
             raise ValueError(('Unexpected number of dimensions for '
-                              'image_data: ') % image_data.ndim)
+                              'image_data: %s') % image_data.ndim)
         for i, size in enumerate(geo_def.shape):
             if image_data.shape[i] != size:
                 raise ValueError(('Size mismatch for image_data. Expected '
