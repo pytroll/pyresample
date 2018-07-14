@@ -71,7 +71,7 @@ class Scheduler(object):
                 yield slice(s0, s1)
             else:
                 self._lock.release()
-                raise StopIteration
+                return
 
 
 def shmem_as_ndarray(raw_array):
