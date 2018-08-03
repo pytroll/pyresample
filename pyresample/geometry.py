@@ -824,6 +824,172 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
+    @classmethod
+    def dynamic_area_definition(cls, area_id, name, proj4=None, proj_id=None, cols_rows=None,
+                              top_left_origin=None, center=None, area_extent=None, rotation=None, pixel_size=None,
+                              nprocs=1, lons=None, lats=None, radius=None, units='meters',
+                              dtype=np.float64):
+        from pyproj import Proj
+
+        # Easier way to check if a list of objects are None.
+        def values_not_none(*args):
+            for arg in args:
+                if arg is None:
+                    return False
+            return True
+
+        # Converts units to projection coordinates from Earth's lat/lon. The inverse does the opposite
+        def convert_units(inverse=False):
+            # Function that does that math.
+            try:
+                p = Proj(proj_dict)
+            except RuntimeError:
+                raise ValueError("proj4's 'proj' element is invalid")
+            var_list = []
+            list_likes = [center, radius, top_left_origin, pixel_size]
+            # Break area_extent down into both of its (x, y) coordinates.
+            if area_extent is not None:
+                list_likes.append(list(area_extent[:2]))
+                list_likes.append(list(area_extent[2:]))
+            for var in list_likes:
+                if var is not None:
+                    new_units = units
+                    if hasattr(var, 'units'):
+                        new_units = var.units
+                    # Return either degrees or meters depending on if the inverse is true or not.
+                    if 'deg' in new_units or 'rad' in new_units:
+                        if not inverse:
+                            try:
+                                var = list(p(*var, radians='rad' in new_units, errcheck=True))
+                            except RuntimeError:
+                                raise ValueError('{0} is not within [-180, 180] degrees or [-pi, pi] radians'.format(var))
+                    elif 'meter' in new_units:
+                        if inverse:
+                            try:
+                                var = list(p(*var, inverse=True, radians='rad' in new_units, errcheck=True))
+                            except RuntimeError:
+                                raise ValueError('{0} goes beyond the maximum meters: (a^2 + b^2)^.5 '.format(var) +
+                                                 'should be less than 12742456 meters, but got ' +
+                                                 '{0} meters'.format((var[0] ** 2 + var[1] ** 2) ** .5))
+                    else:
+                        raise ValueError('Units must be in degrees or meters. Given units were: {}'.format(new_units))
+                var_list.append(var)
+            return var_list
+
+        # Checks that every piece of data that should be list-like (converts tuples to lists), makes sure shapes are
+        # accurate, and checks to make sure the values are numbers.
+        def verify_lists():
+            var_list = []
+            var_dict = {'center': center, 'radius': radius, 'top_left_origin': top_left_origin,
+                        'area_extent': area_extent, 'pixel_size': pixel_size, 'cols_rows': cols_rows}
+            # Make list-like data into lists. If not list-like, throw a TypeError, unless it is None.
+            for var in var_dict:
+                if var_dict[var] is not None:
+                    try:
+                        var_dict[var] = list(var_dict[var])
+                    except TypeError:
+                        raise TypeError('{} is not list-like'.format(var))
+                    # Confirm correct shape
+                    if var == 'area_extent':
+                        if np.shape(var_dict[var]) != (4,):
+                            raise ValueError(
+                                '{0} should have shape (4,), but instead has shape {1}'.format(var,
+                                                                                             np.shape(var_dict[var])))
+                    else:
+                        if np.shape(var_dict[var]) != (2,):
+                            raise ValueError(
+                                '{0} should have shape (2,), but instead has shape {1}'.format(var,
+                                                                                             np.shape(var_dict[var])))
+                    # Confirm all values are numbers
+                    if not all(isinstance(num, (float, int)) for num in var_dict[var]):
+                        raise ValueError('{0} is not composed purely of numbers'.format(var))
+                var_list.append(var_dict[var])
+            return var_list
+
+        # Get a proj4_dict from either a proj4_dict or a proj4_string.
+        if isinstance(proj4, str):
+            proj_dict = utils.proj4_str_to_dict(proj4)
+        elif isinstance(proj4, dict):
+            proj_dict = proj4
+        elif not proj4:
+            raise ValueError('The "proj4=" argument is needed. Please enter a proj4 string or a proj4 dict')
+        else:
+            raise ValueError('"proj4=" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
+        try:
+            if proj_dict['proj']:
+                pass
+        except KeyError:
+            raise ValueError('proj4 needs a proj element')
+
+        # Make sure list-like objects are list-like, have the right shape, and are numbers
+        center, radius, top_left_origin, area_extent, pixel_size, cols_rows = verify_lists()
+
+        # p = Proj(proj_dict)
+        # center = p(*center, inverse=True, radians='rad' in units)
+        # radius = p(*radius, inverse=True, radians='rad' in units)
+        # top_left_origin = p(*top_left_origin, inverse=True, radians='rad' in units)
+        # area_extent = p(*area_extent[:2], inverse=True, radians='rad' in units) + p(*area_extent[2:], inverse=True, radians='rad' in units)
+        # pixel_size = p(*pixel_size, inverse=True, radians='rad' in units)
+
+        # Converts from lat/lon to projection coordinates (x,y). Does nothing if already in projection coordinates.
+        if area_extent is None:
+            center, radius, top_left_origin, pixel_size = convert_units()
+        else:
+            center, radius, top_left_origin, pixel_size, area_extent_ll, area_extent_ur = convert_units()
+            area_extent = area_extent_ll + area_extent_ur
+
+        # 4 ways to get an AreaDefinition:
+        # Extents.
+        if values_not_none(area_extent, cols_rows):
+            print('Extents')
+            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent, rotation=rotation,
+                       nprocs=nprocs, lons=lons, lats=lats, dtype=dtype)
+        else:
+            print('Not Extents')
+        # Geotiff.
+        if values_not_none(top_left_origin, cols_rows, pixel_size):
+            print('Geotiff')
+            area_extent = (top_left_origin[0] - pixel_size[0] / 2, top_left_origin[1] +
+                           pixel_size[1] / 2 - pixel_size[0] * cols_rows[1],
+                           top_left_origin[0] - pixel_size[0] / 2 + cols_rows[0] * pixel_size[0],
+                           top_left_origin[1] + pixel_size[1] / 2)
+            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
+        else:
+            print('Not Geotiff')
+        #  Circle.
+        if values_not_none(center, radius) and (cols_rows is not None or pixel_size is not None):
+            print('Circle')
+            if cols_rows[0] is None:
+                cols_rows[0] = (2 * radius[0]) / pixel_size[0]
+            if cols_rows[1] is None:
+                cols_rows[1] = (2 * radius[1]) / pixel_size[1]
+            area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1]]
+            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
+        else:
+            print('Not Circle')
+        # Area of interest.
+        if values_not_none(center, pixel_size, cols_rows):
+            print('Area of interest')
+            area_extent = (center[0] - pixel_size[0] * cols_rows[0] / 2, center[1] - pixel_size[1] * cols_rows[1] / 2,
+                           center[0] + pixel_size[0] * cols_rows[0] / 2, center[1] + pixel_size[1] * cols_rows[1] / 2)
+            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
+        else:
+            print('Not Area of interest')
+
+        combos = [['area_extent', 'cols_rows'], ['top_left_origin', 'cols_rows', 'pixel_size'],
+                  ['center', 'radius', 'cols_rows'], ['center', 'radius', 'pixel_size'],
+                  ['center', 'cols_rows', 'pixel_size']]
+        for combo in combos:
+            for var in combo:
+                if eval(var) is not None:
+                    combo.remove(var)
+
+        print('Data still equired to make an AreaDefinition: ')
+        for combo in combos:
+            print(', '.join(combo))
+        raise ValueError()
+
+
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
@@ -896,7 +1062,6 @@ class AreaDefinition(BaseDefinition):
                     ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k]))
                                for k in sorted(proj_dict.keys())]) +
                     '}')
-
         if not self.proj_id:
             third_line = ""
         else:
@@ -947,7 +1112,7 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
-        fmt += "\tROTATION:\t{rotation}\n"
+        # fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.name, area_id=self.area_id,
                                   proj_str=proj_str, x_size=self.x_size,
