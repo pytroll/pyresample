@@ -1459,7 +1459,7 @@ class TestCrop(unittest.TestCase):
         proj4_list = [None, {'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                       '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id_list = [None, 'ease_sh']
-        cols_rows_list = [None, {'a': 1}.items, (425, 425)]
+        shape_list = [None, {'a': 1}.items, (425, 425)]
         top_left_origin_list = [None, (-5314315.3, 5314315.3)]
         center_list = [None, [0, 0]]
         area_extent_list = [None, (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)]
@@ -1477,7 +1477,7 @@ class TestCrop(unittest.TestCase):
         def make_area(*args):
             return geometry.AreaDefinition.from_params(area_id, name, proj4=args[0],
                                                                    proj_id=args[1],
-                                                                   cols_rows=args[2],
+                                                                   shape=args[2],
                                                                    top_left_origin=args[3],
                                                                    center=args[4],
                                                                    area_extent=args[5],
@@ -1489,7 +1489,7 @@ class TestCrop(unittest.TestCase):
         for units in units_list:
             for proj_id in proj_id_list:
                 for proj4 in proj4_list:
-                    for cols_rows in cols_rows_list:
+                    for shape in shape_list:
                         for top_left_origin in top_left_origin_list:
                             for center in center_list:
                                 for area_extent in area_extent_list:
@@ -1499,7 +1499,7 @@ class TestCrop(unittest.TestCase):
                                                 if area_extent is None:
                                                     # center, radius, top_left_origin, pixel_size
                                                     essentials = convert_units()
-                                                    area = make_area(proj4, proj_id, cols_rows, essentials[2],
+                                                    area = make_area(proj4, proj_id, shape, essentials[2],
                                                                      essentials[0],
                                                                      None, pixel_size,
                                                                      essentials[1], units)
@@ -1507,7 +1507,7 @@ class TestCrop(unittest.TestCase):
                                                     # center, radius, top_left_origin, pixel_size, area_extent_ll,
                                                     # area_extent_ur
                                                     essentials = convert_units()
-                                                    area = make_area(proj4, proj_id, cols_rows, essentials[2],
+                                                    area = make_area(proj4, proj_id, shape, essentials[2],
                                                                      essentials[0],
                                                                      essentials[4] + essentials[5], pixel_size,
                                                                      essentials[1], units)

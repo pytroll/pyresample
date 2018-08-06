@@ -822,9 +822,8 @@ class AreaDefinition(BaseDefinition):
     """
 
     @classmethod
-    def from_params(cls, area_id, name, proj4=None, proj_id=None, cols_rows=None, top_left_origin=None,
-                                center=None, area_extent=None, rotation=None, pixel_size=None, nprocs=1, lons=None,
-                                lats=None, radius=None, units='meters', dtype=np.float64):
+    def from_params(cls, name, proj4=None, shape=None, top_left_origin=None, center=None,
+                    area_extent=None, rotation=None, pixel_size=None, units='meters', radius = None, **kwargs):
         from pyproj import Proj
 
         # Easier way to check if a list of objects are None.
@@ -886,7 +885,7 @@ class AreaDefinition(BaseDefinition):
         def verify_lists():
             var_list = []
             var_dict = {'center': center, 'radius': radius, 'top_left_origin': top_left_origin,
-                        'area_extent': area_extent, 'pixel_size': pixel_size, 'cols_rows': cols_rows}
+                        'area_extent': area_extent, 'pixel_size': pixel_size, 'shape': shape}
             # Make list-like data into numpy arrays (or leave as xarrays). If not list-like,
             # throw a TypeError unless it is None.
             for var in var_dict:
@@ -919,6 +918,9 @@ class AreaDefinition(BaseDefinition):
                 var_list.append(var_dict[var])
             return var_list
 
+        area_id = kwargs.pop('area_id', name)
+        proj_id = kwargs.pop('proj_id', name)
+
         logger.debug('Running from_params')
         # Get a proj4_dict from either a proj4_dict or a proj4_string.
         logger.debug('Getting a proj_dict in from_params creation')
@@ -939,7 +941,7 @@ class AreaDefinition(BaseDefinition):
 
         # Make sure list-like objects are list-like, have the right shape, and are numbers
         logger.debug('Verifying correct list format in from_params creation')
-        center, radius, top_left_origin, area_extent, pixel_size, cols_rows = verify_lists()
+        center, radius, top_left_origin, area_extent, pixel_size, shape = verify_lists()
 
         # Converts from lat/lon to projection coordinates (x,y). Does nothing if already in projection coordinates.
         logger.debug('Converting units to meters in from_params creation')
@@ -949,43 +951,57 @@ class AreaDefinition(BaseDefinition):
             center, radius, top_left_origin, pixel_size, area_extent_ll, area_extent_ur = convert_units()
             area_extent = np.concatenate((area_extent_ll, area_extent_ur), axis=0)
 
-        # 4 ways to get an AreaDefinition:
-        # Extents.
-        if values_not_none(area_extent, cols_rows):
-            logger.debug('Extents case being used for AreaDefinition')
-            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent, rotation=rotation,
-                       nprocs=nprocs, lons=lons, lats=lats, dtype=dtype)
+        # # 4 ways to get an AreaDefinition:
+        # # Extents.
+        # if values_not_none(area_extent, shape):
+        #     logger.debug('Extents case being used for AreaDefinition')
+        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
+        # # Geotiff.
+        # elif values_not_none(top_left_origin, shape, pixel_size):
+        #     logger.debug('Geotiff case being used for AreaDefinition')
+        #     area_extent = (top_left_origin[0] - pixel_size[0] / 2,
+        #                    top_left_origin[1] + pixel_size[1] / 2 - pixel_size[1] * shape[1],
+        #                    top_left_origin[0] - pixel_size[0] / 2 + shape[0] * pixel_size[0],
+        #                    top_left_origin[1] + pixel_size[1] / 2)
+        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
+        # #  Circle.
+        # elif values_not_none(center, radius) and (shape is not None or pixel_size is not None):
+        #     logger.debug('Circle case being used for AreaDefinition')
+        #     if shape is None:
+        #         shape = [2 * radius[0] / pixel_size[0], 2 * radius[1] / pixel_size[1]]
+        #     area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1]]
+        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
+        # # Area of interest.
+        # elif values_not_none(center, pixel_size, shape):
+        #     logger.debug('Area of interest being used for AreaDefinition')
+        #     area_extent = (center[0] - pixel_size[0] * shape[0] / 2, center[1] - pixel_size[1] * shape[1] / 2,
+        #                    center[0] + pixel_size[0] * shape[0] / 2, center[1] + pixel_size[1] * shape[1] / 2)
+        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
 
-        # Geotiff.
-        if values_not_none(top_left_origin, cols_rows, pixel_size):
-            logger.debug('Geotiff case being used for AreaDefinition')
-            area_extent = (top_left_origin[0] - pixel_size[0] / 2, top_left_origin[1] + pixel_size[1] / 2 - pixel_size[
-                1] * cols_rows[1],
-                           top_left_origin[0] - pixel_size[0] / 2 + cols_rows[0] * pixel_size[0],
-                           top_left_origin[1] + pixel_size[1] / 2)
-            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
+        if values_not_none(pixel_size, shape):
+            radius = [pixel_size[0] * shape[0] / 2, pixel_size[1] * shape[1] / 2]
+        if values_not_none(top_left_origin, pixel_size):
+            area_extent = (top_left_origin[0] - pixel_size[0] / 2,
+                           top_left_origin[1] + pixel_size[1] / 2 - pixel_size[1] * shape[1],
+                           top_left_origin[0] - pixel_size[0] / 2 + shape[0] * pixel_size[0],
+                           top_left_origin[1] +  pixel_size[1] / 2)
+        if values_not_none(center, radius):
+            area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
+                           center[1] + radius[1]]
+        if values_not_none(radius, pixel_size):
+            shape = [2 * radius[0] / pixel_size[0], 2 * radius[1] / pixel_size[1]]
+        try:
+            return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
+        except TypeError:
+            pass
 
-        #  Circle.
-        if values_not_none(center, radius) and (cols_rows is not None or pixel_size is not None):
-            logger.debug('Circle case being used for AreaDefinition')
-            if cols_rows is None:
-                cols_rows = [2 * radius[0] / pixel_size[0], 2 * radius[1] / pixel_size[1]]
-            area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1]]
-            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
-
-        # Area of interest.
-        if values_not_none(center, pixel_size, cols_rows):
-            logger.debug('Area of interest being used for AreaDefinition')
-            area_extent = (center[0] - pixel_size[0] * cols_rows[0] / 2, center[1] - pixel_size[1] * cols_rows[1] / 2,
-                           center[0] + pixel_size[0] * cols_rows[0] / 2, center[1] + pixel_size[1] * cols_rows[1] / 2)
-            return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
 
         # If no AreaDefinition could be made, tell user what info they need to add
         logger.debug('Not enough data provided to create AreaDefinition')
-        combo_dict = {'Option 1: ': ['area_extent', 'cols_rows'],
-                      'Option 2: ': ['top_left_origin', 'cols_rows', 'pixel_size'],
-                      'Option 3: ': ['center', 'radius', 'cols_rows'], 'Option 4: ': ['center', 'radius', 'pixel_size'],
-                      'Option 5: ': ['center', 'cols_rows', 'pixel_size']}
+        combo_dict = {'Option 1: ': ['area_extent', 'shape'],
+                      'Option 2: ': ['top_left_origin', 'shape', 'pixel_size'],
+                      'Option 3: ': ['center', 'radius', 'shape'], 'Option 4: ': ['center', 'radius', 'pixel_size'],
+                      'Option 5: ': ['center', 'shape', 'pixel_size']}
         error_string = 'Not enough data provided to create AreaDefinition'
         error_string += '\nData still required to make an AreaDefinition:'
         for key, value in combo_dict.items():
@@ -996,6 +1012,25 @@ class AreaDefinition(BaseDefinition):
                     combo_dict[key].remove(variable)
             error_string += '\n' + key + ', '.join(combo_dict[key])
         raise ValueError(error_string)
+
+    @classmethod
+    def from_extent(cls, name, proj4, area_extent, shape, **kwargs):
+        return cls.from_params(name, proj4=proj4, area_extent=area_extent, shape=shape,
+                               **kwargs)
+
+    @classmethod
+    def from_circle(cls, name, proj4, center, radius, pixel_size=None, shape=None, **kwargs):
+        return cls.from_params(name, proj4=proj4, center=center, radius=radius, shape=shape,
+                               pixel_size=pixel_size, **kwargs)
+
+    @classmethod
+    def from_area_of_interest(cls, name, proj4, center, pixel_size, shape, **kwargs):
+        return cls.from_params(name, proj4=proj4, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
+
+    @classmethod
+    def from_geotiff(cls, name, proj4, top_left_origin, pixel_size, shape, **kwargs):
+        return cls.from_params(name, proj4=proj4, top_left_origin=top_left_origin, pixel_size=pixel_size,
+                               shape=shape, **kwargs)
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
