@@ -294,8 +294,10 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
 
     from pyresample.geometry import AreaDefinition
     proj_dict = _get_proj4_args(proj4_args)
-    return AreaDefinition(area_id, area_name, proj_id, proj_dict,
-                          x_size, y_size, area_extent)
+    # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
+    #                       x_size, y_size, area_extent)
+    return AreaDefinition.from_params(area_id, area_name, proj4=proj_dict, proj_id=proj_id,
+                                                  cols_rows=(x_size, y_size), area_extent=area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,

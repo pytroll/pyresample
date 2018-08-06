@@ -839,8 +839,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         output_raw_shape = ((output_size, new_data.shape[1]))
     else:  # One channel
         output_raw_shape = output_size
-
-    full_result = np.ones(output_raw_shape) * fill_value
+    full_result = np.ones(int(output_raw_shape)) * fill_value
     full_result[valid_output_index] = result
     result = full_result
 
@@ -863,6 +862,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         stddev = np.ma.array(stddev, mask=np.isnan(stddev))
 
     # Reshape resampled data to correct shape
+    output_shape = tuple(int(num) for num in output_shape)
     result = result.reshape(output_shape)
 
     # Remap mask channels to create masked output

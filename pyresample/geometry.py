@@ -22,17 +22,17 @@
 
 """Classes for geometry operations"""
 
+import hashlib
 import warnings
 from collections import OrderedDict
 from logging import getLogger
-import hashlib
 
 import numpy as np
 import yaml
 from pyproj import Geod
 
-from pyresample import utils, CHUNK_SIZE
-from pyresample._spatial_mp import Proj, Proj_MP, Cartesian, Cartesian_MP
+from pyresample import CHUNK_SIZE, utils
+from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 
 try:
@@ -441,7 +441,6 @@ class CoordinateDefinition(BaseDefinition):
 
 
 class GridDefinition(CoordinateDefinition):
-
     """Grid defined by lons and lats
 
     Parameters
@@ -573,8 +572,7 @@ class SwathDefinition(CoordinateDefinition):
         if abs(azimuth) > 90:
             azimuth = 180 + azimuth
 
-        prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
-                      'lat_0': float(lat0),  'lonc': float(lonc),
+        prj_params = {'proj': 'omerc', 'alpha': float(azimuth), 'lat_0': float(lat0), 'lonc': float(lonc),
                       'gamma': 0,
                       'ellps': ellipsoid}
 
@@ -746,7 +744,6 @@ def invproj(data_x, data_y, proj_dict):
 
 
 class AreaDefinition(BaseDefinition):
-
     """Holds definition of an area.
 
     Parameters
@@ -825,10 +822,9 @@ class AreaDefinition(BaseDefinition):
     """
 
     @classmethod
-    def dynamic_area_definition(cls, area_id, name, proj4=None, proj_id=None, cols_rows=None,
-                              top_left_origin=None, center=None, area_extent=None, rotation=None, pixel_size=None,
-                              nprocs=1, lons=None, lats=None, radius=None, units='meters',
-                              dtype=np.float64):
+    def from_params(cls, area_id, name, proj4=None, proj_id=None, cols_rows=None, top_left_origin=None,
+                                center=None, area_extent=None, rotation=None, pixel_size=None, nprocs=1, lons=None,
+                                lats=None, radius=None, units='meters', dtype=np.float64):
         from pyproj import Proj
 
         # Easier way to check if a list of objects are None.
@@ -840,33 +836,42 @@ class AreaDefinition(BaseDefinition):
 
         # Converts units to projection coordinates from Earth's lat/lon. The inverse does the opposite
         def convert_units(inverse=False):
-            # Function that does that math.
+            # Function that does the math.
             try:
                 p = Proj(proj_dict)
             except RuntimeError:
                 raise ValueError("proj4's 'proj' element is invalid")
             var_list = []
             list_likes = [center, radius, top_left_origin, pixel_size]
-            # Break area_extent down into both of its (x, y) coordinates.
+            # Break area_extent down into both of its (x, y) coordinates: Proj only takes 2 arguments.
             if area_extent is not None:
-                list_likes.append(list(area_extent[:2]))
-                list_likes.append(list(area_extent[2:]))
+                if hasattr(area_extent, 'units'):
+                    list_likes.append(
+                        DataArray(np.array(area_extent[:2]).astype(np.float64), attrs={'units': area_extent.units}))
+                    list_likes.append(
+                        DataArray(np.array(area_extent[2:]).astype(np.float64), attrs={'units': area_extent.units}))
+                else:
+                    list_likes.append(np.array(area_extent[:2]).astype(np.float64))
+                    list_likes.append(np.array(area_extent[2:]).astype(np.float64))
             for var in list_likes:
                 if var is not None:
                     new_units = units
                     if hasattr(var, 'units'):
                         new_units = var.units
+                        var = var.data
                     # Return either degrees or meters depending on if the inverse is true or not.
-                    if 'deg' in new_units or 'rad' in new_units:
+                    if new_units and ('deg' in new_units or 'rad' in new_units):
                         if not inverse:
                             try:
                                 var = list(p(*var, radians='rad' in new_units, errcheck=True))
                             except RuntimeError:
-                                raise ValueError('{0} is not within [-180, 180] degrees or [-pi, pi] radians'.format(var))
-                    elif 'meter' in new_units:
+                                raise ValueError(
+                                    '{0} {1} is not within [-180, 180] degrees or [-pi, pi] radians'.format(var,
+                                                                                                            new_units))
+                    elif new_units and 'meter' in new_units:
                         if inverse:
                             try:
-                                var = list(p(*var, inverse=True, radians='rad' in new_units, errcheck=True))
+                                var = list(p(*var, inverse=True, radians=False, errcheck=True))
                             except RuntimeError:
                                 raise ValueError('{0} goes beyond the maximum meters: (a^2 + b^2)^.5 '.format(var) +
                                                  'should be less than 12742456 meters, but got ' +
@@ -876,37 +881,47 @@ class AreaDefinition(BaseDefinition):
                 var_list.append(var)
             return var_list
 
-        # Checks that every piece of data that should be list-like (converts tuples to lists), makes sure shapes are
-        # accurate, and checks to make sure the values are numbers.
+        # Checks that every piece of data that should be list-like (converts lists/tuples to xarrays), makes sure
+        # shapes are accurate, and checks to make sure the values are numbers.
         def verify_lists():
             var_list = []
             var_dict = {'center': center, 'radius': radius, 'top_left_origin': top_left_origin,
                         'area_extent': area_extent, 'pixel_size': pixel_size, 'cols_rows': cols_rows}
-            # Make list-like data into lists. If not list-like, throw a TypeError, unless it is None.
+            # Make list-like data into numpy arrays (or leave as xarrays). If not list-like,
+            # throw a TypeError unless it is None.
             for var in var_dict:
                 if var_dict[var] is not None:
+                    isxarray = False
+                    if hasattr(var_dict[var], 'units'):
+                        new_units = var_dict[var].units
+                        isxarray = True
                     try:
-                        var_dict[var] = list(var_dict[var])
+                        var_dict[var] = np.array(var_dict[var]).astype(np.float64)
+                    # Confirm variable is list-like.
                     except TypeError:
-                        raise TypeError('{} is not list-like'.format(var))
+                        raise ValueError('{0} is not list-like'.format(var))
+                    # Confirm all values are numbers.
+                    except ValueError:
+                        raise ValueError('{0} is not composed purely of numbers'.format(var))
                     # Confirm correct shape
                     if var == 'area_extent':
                         if np.shape(var_dict[var]) != (4,):
                             raise ValueError(
                                 '{0} should have shape (4,), but instead has shape {1}'.format(var,
-                                                                                             np.shape(var_dict[var])))
+                                                                                               np.shape(var_dict[var])))
                     else:
                         if np.shape(var_dict[var]) != (2,):
                             raise ValueError(
                                 '{0} should have shape (2,), but instead has shape {1}'.format(var,
-                                                                                             np.shape(var_dict[var])))
-                    # Confirm all values are numbers
-                    if not all(isinstance(num, (float, int)) for num in var_dict[var]):
-                        raise ValueError('{0} is not composed purely of numbers'.format(var))
+                                                                                               np.shape(var_dict[var])))
+                    if isxarray:
+                        var_dict[var] = DataArray(var_dict[var], attrs={'units': new_units})
                 var_list.append(var_dict[var])
             return var_list
 
+        logger.debug('Running from_params')
         # Get a proj4_dict from either a proj4_dict or a proj4_string.
+        logger.debug('Getting a proj_dict in from_params creation')
         if isinstance(proj4, str):
             proj_dict = utils.proj4_str_to_dict(proj4)
         elif isinstance(proj4, dict):
@@ -914,7 +929,8 @@ class AreaDefinition(BaseDefinition):
         elif not proj4:
             raise ValueError('The "proj4=" argument is needed. Please enter a proj4 string or a proj4 dict')
         else:
-            raise ValueError('"proj4=" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
+            raise ValueError(
+                '"proj4=" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
         try:
             if proj_dict['proj']:
                 pass
@@ -922,73 +938,64 @@ class AreaDefinition(BaseDefinition):
             raise ValueError('proj4 needs a proj element')
 
         # Make sure list-like objects are list-like, have the right shape, and are numbers
+        logger.debug('Verifying correct list format in from_params creation')
         center, radius, top_left_origin, area_extent, pixel_size, cols_rows = verify_lists()
 
-        # p = Proj(proj_dict)
-        # center = p(*center, inverse=True, radians='rad' in units)
-        # radius = p(*radius, inverse=True, radians='rad' in units)
-        # top_left_origin = p(*top_left_origin, inverse=True, radians='rad' in units)
-        # area_extent = p(*area_extent[:2], inverse=True, radians='rad' in units) + p(*area_extent[2:], inverse=True, radians='rad' in units)
-        # pixel_size = p(*pixel_size, inverse=True, radians='rad' in units)
-
         # Converts from lat/lon to projection coordinates (x,y). Does nothing if already in projection coordinates.
+        logger.debug('Converting units to meters in from_params creation')
         if area_extent is None:
             center, radius, top_left_origin, pixel_size = convert_units()
         else:
             center, radius, top_left_origin, pixel_size, area_extent_ll, area_extent_ur = convert_units()
-            area_extent = area_extent_ll + area_extent_ur
+            area_extent = np.concatenate((area_extent_ll, area_extent_ur), axis=0)
 
         # 4 ways to get an AreaDefinition:
         # Extents.
         if values_not_none(area_extent, cols_rows):
-            print('Extents')
+            logger.debug('Extents case being used for AreaDefinition')
             return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent, rotation=rotation,
                        nprocs=nprocs, lons=lons, lats=lats, dtype=dtype)
-        else:
-            print('Not Extents')
+
         # Geotiff.
         if values_not_none(top_left_origin, cols_rows, pixel_size):
-            print('Geotiff')
-            area_extent = (top_left_origin[0] - pixel_size[0] / 2, top_left_origin[1] +
-                           pixel_size[1] / 2 - pixel_size[0] * cols_rows[1],
+            logger.debug('Geotiff case being used for AreaDefinition')
+            area_extent = (top_left_origin[0] - pixel_size[0] / 2, top_left_origin[1] + pixel_size[1] / 2 - pixel_size[
+                1] * cols_rows[1],
                            top_left_origin[0] - pixel_size[0] / 2 + cols_rows[0] * pixel_size[0],
                            top_left_origin[1] + pixel_size[1] / 2)
             return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
-        else:
-            print('Not Geotiff')
+
         #  Circle.
         if values_not_none(center, radius) and (cols_rows is not None or pixel_size is not None):
-            print('Circle')
-            if cols_rows[0] is None:
-                cols_rows[0] = (2 * radius[0]) / pixel_size[0]
-            if cols_rows[1] is None:
-                cols_rows[1] = (2 * radius[1]) / pixel_size[1]
+            logger.debug('Circle case being used for AreaDefinition')
+            if cols_rows is None:
+                cols_rows = [2 * radius[0] / pixel_size[0], 2 * radius[1] / pixel_size[1]]
             area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1]]
             return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
-        else:
-            print('Not Circle')
+
         # Area of interest.
         if values_not_none(center, pixel_size, cols_rows):
-            print('Area of interest')
+            logger.debug('Area of interest being used for AreaDefinition')
             area_extent = (center[0] - pixel_size[0] * cols_rows[0] / 2, center[1] - pixel_size[1] * cols_rows[1] / 2,
                            center[0] + pixel_size[0] * cols_rows[0] / 2, center[1] + pixel_size[1] * cols_rows[1] / 2)
             return cls(area_id, name, proj_id, proj_dict, cols_rows[0], cols_rows[1], area_extent)
-        else:
-            print('Not Area of interest')
 
-        combos = [['area_extent', 'cols_rows'], ['top_left_origin', 'cols_rows', 'pixel_size'],
-                  ['center', 'radius', 'cols_rows'], ['center', 'radius', 'pixel_size'],
-                  ['center', 'cols_rows', 'pixel_size']]
-        for combo in combos:
-            for var in combo:
-                if eval(var) is not None:
-                    combo.remove(var)
-
-        print('Data still equired to make an AreaDefinition: ')
-        for combo in combos:
-            print(', '.join(combo))
-        raise ValueError()
-
+        # If no AreaDefinition could be made, tell user what info they need to add
+        logger.debug('Not enough data provided to create AreaDefinition')
+        combo_dict = {'Option 1: ': ['area_extent', 'cols_rows'],
+                      'Option 2: ': ['top_left_origin', 'cols_rows', 'pixel_size'],
+                      'Option 3: ': ['center', 'radius', 'cols_rows'], 'Option 4: ': ['center', 'radius', 'pixel_size'],
+                      'Option 5: ': ['center', 'cols_rows', 'pixel_size']}
+        error_string = 'Not enough data provided to create AreaDefinition'
+        error_string += '\nData still required to make an AreaDefinition:'
+        for key, value in combo_dict.items():
+            # Make a new instance of value as to not corrupt itteration upon removal of items.
+            combo_dict[key] = value[:]
+            for variable in value:
+                if eval(variable) is not None:
+                    combo_dict[key].remove(variable)
+            error_string += '\n' + key + ', '.join(combo_dict[key])
+        raise ValueError(error_string)
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
@@ -1187,9 +1194,7 @@ class AreaDefinition(BaseDefinition):
             lat = np.array(lat)
 
         if ((isinstance(lon, np.ndarray) and
-             not isinstance(lat, np.ndarray)) or
-            (not isinstance(lon, np.ndarray) and
-             isinstance(lat, np.ndarray))):
+             not isinstance(lat, np.ndarray)) or (not isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray))):
             raise ValueError("Both lon and lat needs to be of " +
                              "the same type and have the same dimensions!")
 
@@ -1228,9 +1233,7 @@ class AreaDefinition(BaseDefinition):
             ym = np.array(ym)
 
         if ((isinstance(xm, np.ndarray) and
-             not isinstance(ym, np.ndarray)) or
-            (not isinstance(xm, np.ndarray) and
-             isinstance(ym, np.ndarray))):
+             not isinstance(ym, np.ndarray)) or (not isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray))):
             raise ValueError("Both projection coordinates xm and ym needs to be of " +
                              "the same type and have the same dimensions!")
 
@@ -1291,8 +1294,7 @@ class AreaDefinition(BaseDefinition):
             y_chunks = chunks
             x_chunks = chunks
 
-        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * \
-            self.pixel_size_x + self.pixel_upper_left[0]
+        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
         target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
             self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
@@ -1319,9 +1321,10 @@ class AreaDefinition(BaseDefinition):
             Grids of area x- and y-coordinates in projection units
 
         """
+
         def do_rotation(xspan, yspan, rot_deg=0):
             rot_rad = np.radians(rot_deg)
-            rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
+            rot_mat = np.array([[np.cos(rot_rad), np.sin(rot_rad)],
                                 [-np.sin(rot_rad), np.cos(rot_rad)]])
             x, y = np.meshgrid(xspan, yspan)
             return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
@@ -1480,8 +1483,8 @@ class AreaDefinition(BaseDefinition):
                 self.lats = lats
 
             # Free memory
-            del(target_x)
-            del(target_y)
+            del (target_x)
+            del (target_y)
         else:
             # Data is cached
             if data_slice is None:
@@ -1581,8 +1584,8 @@ def get_geostationary_angle_extent(geos_area):
     h = geos_area.proj_dict['h'] / 1000 + req
 
     # compute some constants
-    aeq = 1 - req**2 / (h ** 2)
-    ap_ = 1 - rp**2 / (h ** 2)
+    aeq = 1 - req ** 2 / (h ** 2)
+    ap_ = 1 - rp ** 2 / (h ** 2)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area

@@ -1,15 +1,15 @@
 from __future__ import with_statement
 
-import numpy as np
-import unittest
 import math
+import unittest
 
-from pyresample.spherical_geometry import Coordinate, Arc
+import numpy as np
+
 from pyresample import geometry
+from pyresample.spherical_geometry import Coordinate, Arc
 
 
 class TestOverlap(unittest.TestCase):
-
     """Testing overlapping functions in pyresample.
     """
 
@@ -156,7 +156,6 @@ class TestOverlap(unittest.TestCase):
 
 
 class TestSphereGeometry(unittest.TestCase):
-
     """Testing sphere geometry from this module.
     """
 
