@@ -33,8 +33,6 @@ import shapely.geometry as sgeom
 try:
     from cartopy.crs import from_proj
 except ImportError:
-    warnings.warn("'cartopy' >= 0.17 required for better 'from_proj' "
-                  "functionality.")
     from_proj = None
 
 logger = getLogger(__name__)
