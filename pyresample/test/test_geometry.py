@@ -1475,7 +1475,7 @@ class TestCrop(unittest.TestCase):
         # DataArray(np.array((45.0, -89.68119398976847)).astype(np.float64), attrs={'units': 'degrees'})
 
         def make_area(*args):
-            return geometry.AreaDefinition.from_params(area_id, name, proj4=args[0],
+            return geometry.AreaDefinition.from_params(name, area_id=area_id, proj4=args[0],
                                                                    proj_id=args[1],
                                                                    shape=args[2],
                                                                    top_left_origin=args[3],
@@ -1512,17 +1512,19 @@ class TestCrop(unittest.TestCase):
                                                                      essentials[4] + essentials[5], pixel_size,
                                                                      essentials[1], units)
                                                 list_of_areas.append(area)
-                                                self.assertTrue(np.allclose(area.area_extent, (
-                                                    -5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)))
-                                                self.assertEqual(area.proj_id, proj_id)
-                                                self.assertEqual(area.name, name)
-                                                self.assertEqual(area.proj_dict, proj4_list[1])
-                                                self.assertTrue(np.allclose((area.pixel_size_x, area.pixel_size_y),
-                                                                            [25067.525, 25067.525]))
-                                                self.assertEqual(area.area_id, area_id)
+                                                if not isinstance(area, geometry.DynamicAreaDefinition):
+                                                    self.assertTrue(np.allclose(area.area_extent, (
+                                                        -5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)))
+                                                    self.assertEqual(area.proj_id, proj_id)
+                                                    self.assertEqual(area.name, name)
+                                                    self.assertEqual(area.proj_dict, proj4_list[1])
+                                                    self.assertTrue(np.allclose((area.pixel_size_x, area.pixel_size_y),
+                                                                                [25067.525, 25067.525]))
+                                                    self.assertEqual(area.area_id, area_id)
+                                                    self.assertTrue(np.allclose(area.shape, shape_list[2]))
                                             except ValueError:
                                                 pass
-        self.assertEqual(len(list_of_areas), 336)
+        self.assertEqual(len(list_of_areas), 784)
 
 
 def suite():

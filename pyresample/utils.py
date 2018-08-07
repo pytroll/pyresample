@@ -124,7 +124,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
     the files, using the first file as the "base", replacing things after
     that.
     """
-    from pyresample.geometry import DynamicAreaDefinition
+    from pyresample.geometry import AreaDefinition
     area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
 
@@ -140,10 +140,9 @@ def _parse_yaml_area_file(area_file_name, *regions):
         projection = params['projection']
         optimize_projection = params.get('optimize_projection', False)
         try:
-            xsize = params['shape']['width']
-            ysize = params['shape']['height']
+            shape = [params['shape']['width'], params['shape']['height']]
         except KeyError:
-            xsize, ysize = None, None
+            shape = None
         try:
             area_extent = (params['area_extent']['lower_left_xy'] +
                            params['area_extent']['upper_right_xy'])
@@ -153,15 +152,18 @@ def _parse_yaml_area_file(area_file_name, *regions):
             rotation = params['rotation']
         except KeyError:
             rotation = 0
-        area = DynamicAreaDefinition(area_name, description,
-                                     projection, xsize, ysize,
-                                     area_extent,
-                                     optimize_projection,
-                                     rotation)
-        try:
-            area = area.freeze()
-        except (TypeError, AttributeError):
-            pass
+        # area = DynamicAreaDefinition(area_name, description,
+        #                              projection, xsize, ysize,
+        #                              area_extent,
+        #                              optimize_projection,
+        #                              rotation)
+        area = AreaDefinition.from_params(description, proj4=projection, area_extent=area_extent, shape=shape,
+                                          area_id=area_name, optimize_projection=optimize_projection,
+                                          rotation=rotation)
+        # try:
+        #     area = area.freeze()
+        # except (TypeError, AttributeError):
+        #     pass
 
         res.append(area)
     return res
