@@ -821,9 +821,16 @@ class AreaDefinition(BaseDefinition):
     """
 
     @classmethod
-    def from_params(cls, name, proj4=None, shape=None, top_left_origin=None, center=None,
+    def from_params(cls, name, proj4=None, shape=None, top_left_extent=None, center=None,
                     area_extent=None, pixel_size=None, units='meters', radius=None, **kwargs):
         from pyproj import Proj
+
+        # Makes sure data given does not conflict with itself.
+        def validate_variables(var, new_var, var_name, var_list):
+            if var is not None and not np.allclose(var, new_var):
+                raise ValueError('{0} given does not match {0} found from {1}'.format(var_name, ', '.join(var_list)) +
+                                 ':\n{0}\nvs\n{1}'.format(var, new_var, var_name, var_list))
+            return new_var
 
         # Easier way to check if a list of objects are None.
         def values_not_none(*args):
@@ -840,7 +847,7 @@ class AreaDefinition(BaseDefinition):
             except RuntimeError:
                 raise ValueError("proj4's 'proj' element is invalid")
             var_list = []
-            list_likes = [center, radius, top_left_origin, pixel_size]
+            list_likes = [center, radius, top_left_extent, pixel_size]
             # Break area_extent down into both of its (x, y) coordinates: Proj only takes 2 arguments.
             if area_extent is not None:
                 if hasattr(area_extent, 'units'):
@@ -856,6 +863,7 @@ class AreaDefinition(BaseDefinition):
                     new_units = units
                     if hasattr(var, 'units'):
                         new_units = var.units
+                    if isinstance(var, DataArray):
                         var = var.data
                     # Return either degrees or meters depending on if the inverse is true or not.
                     if new_units and ('deg' in new_units or 'rad' in new_units):
@@ -883,21 +891,20 @@ class AreaDefinition(BaseDefinition):
         # shapes are accurate, and checks to make sure the values are numbers.
         def verify_lists():
             var_list = []
-            var_dict = {'center': center, 'radius': radius, 'top_left_origin': top_left_origin,
+            var_dict = {'center': center, 'radius': radius, 'top_left_extent': top_left_extent,
                         'area_extent': area_extent, 'pixel_size': pixel_size, 'shape': shape}
             # Make list-like data into numpy arrays (or leave as xarrays). If not list-like,
             # throw a TypeError unless it is None.
             for var in var_dict:
                 if var_dict[var] is not None:
-                    isxarray = False
-                    if hasattr(var_dict[var], 'units'):
-                        new_units = var_dict[var].units
-                        isxarray = True
                     try:
                         # Confirm variable is list-like and all values are numbers. Numpy makes this easy.
-                        var_dict[var] = np.array(var_dict[var]).astype(np.float64)
+                        if isinstance(var_dict[var], DataArray):
+                            var_dict[var] = DataArray([np.float64(num) for num in var_dict[var].data.tolist()],
+                                                      attrs=var_dict[var].attrs)
+                        else:
+                            var_dict[var] = [np.float64(num) for num in var_dict[var]]
                         # Convert back to list to prevent if numpy.array(): from causing an error.
-                        var_dict[var] = var_dict[var].tolist()
                     except TypeError:
                         raise ValueError('{0} is not list-like'.format(var))
                     except ValueError:
@@ -913,16 +920,85 @@ class AreaDefinition(BaseDefinition):
                             raise ValueError(
                                 '{0} should have shape (2,), but instead has shape {1}'.format(var,
                                                                                                np.shape(var_dict[var])))
-                    if isxarray:
-                        var_dict[var] = DataArray(var_dict[var], attrs={'units': new_units})
                 var_list.append(var_dict[var])
             return var_list
 
+        # Finds shape and area_extent based on data provided:
+        def extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent):
+            # Inputs unaffected by data below: When area extent is calcuated, it's either with
+            # shape (giving you an area definition) or with center/radius, (which this produces). Yet output
+            # (center/radius) is essential for data below.
+            if area_extent is not None:
+                # Function 1
+                new_radius = [(area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2]
+                radius = validate_variables(radius, new_radius, 'radius', ['area_extent'])
+                # Function 2
+                new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
+                center = validate_variables(center, new_center, 'center', ['area_extent'])
+
+            # Output (pixel_size) used to find shape below.
+            if values_not_none(center, radius, top_left_extent):
+                # Function 3
+                new_pixel_size = [2 * (top_left_extent[0] - center[0] + radius[0]),
+                                  2 * (center[1] + radius[1] - top_left_extent[1])]
+                pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['radius', 'top_left_extent',
+                                                                                           'center'])
+            # Inputs unaffected by data below: If shape is given you don't need to find shape, and area_extent is not
+            # used as a condition (hence finding it doesn't help). Yet output (shape) is essential for data below.
+            if values_not_none(top_left_extent, center, pixel_size):
+                # Function 4-A
+                new_shape = [int(round(2 * abs(top_left_extent[1] - center[1]) / pixel_size[1] + 1)),
+                             int(round(2 * abs(top_left_extent[0] - center[0]) / pixel_size[0] + 1))]
+                shape = validate_variables(shape, new_shape, 'shape', ['top_left_extent', 'center', 'pixel_size'])
+            if values_not_none(radius, pixel_size):
+                # Function 5-A
+                new_shape = [int(round(2 * radius[0] / pixel_size[0])), int(round(round(2 * radius[1] / pixel_size[1])))]
+                shape = validate_variables(shape, new_shape, 'shape', ['radius', 'pixel_size'])
+
+            # Inputs unaffected by data below: area_extent is not an input, and when shape is calculated it is with
+            # area_extent (giving you an area defintion). Yet output (pixel_size/radius) are essential for data below.
+            if shape is not None:
+                if values_not_none(top_left_extent, center):
+                    # Function 4-B
+                    new_pixel_size = [2 * abs(top_left_extent[0] - center[0]) / (shape[1] - 1),
+                                      2 * abs(top_left_extent[1] - center[1]) / (shape[0] - 1)]
+                    pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['shape', 'top_left_extent',
+                                                                                               'center'])
+                if values_not_none(radius):
+                    # Function 5-B
+                    new_pixel_size = [2 * radius[0] / shape[1], 2 * radius[1] / shape[0]]
+                    pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['shape', 'radius'])
+                if values_not_none(pixel_size):
+                    # Function 5-C
+                    new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
+                    radius = validate_variables(radius, new_radius, 'radius', ['shape', 'pixel_size'])
+                # Outputs not used as inputs since if you have shape and area_extent you can find an area definition
+                if values_not_none(top_left_extent, pixel_size):
+                    # Function 6-A
+                    new_area_extent = (top_left_extent[0] - pixel_size[0] / 2,
+                                       top_left_extent[1] + pixel_size[1] / 2 - pixel_size[1] * shape[0],
+                                       top_left_extent[0] - pixel_size[0] / 2 + shape[1] * pixel_size[0],
+                                       top_left_extent[1] + pixel_size[1] / 2)
+                    area_extent = validate_variables(area_extent, new_area_extent, 'area_extent',
+                                                     ['top_left_extent', 'pixel_size', 'shape'])
+
+            # Finds area_extent without using shape as an input. Hence it's output (area_extent) does not affect above
+            # inputs, but above outputs affect its input (center/radius)
+            if values_not_none(center, radius):
+                # Function 7
+                new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
+                                   center[1] + radius[1]]
+                area_extent = validate_variables(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
+            # Outputs not used as inputs since if you have area_extent and find shape you can find an area definition
+            if values_not_none(top_left_extent, pixel_size, area_extent):
+                # Function 6-B
+                new_shape = [int(round((top_left_extent[1] - area_extent[1]) / pixel_size[1] + .5)),
+                             int(round((area_extent[2] - top_left_extent[0]) / pixel_size[0] + .5))]
+                shape = validate_variables(shape, new_shape, 'shape', ['top_left_extent', 'pixel_size', 'area_extent'])
+            return area_extent, shape
+
         area_id = kwargs.pop('area_id', name)
-        if area_id:
-            proj_id = kwargs.pop('proj_id', area_id)
-        else:
-            proj_id = kwargs.pop('proj_id', name)
+        proj_id = kwargs.pop('proj_id', name)
         optimize_projection = kwargs.pop('optimize_projection', False)
         resolution = kwargs.pop('resolution', None)
 
@@ -946,110 +1022,24 @@ class AreaDefinition(BaseDefinition):
 
         # Make sure list-like objects are list-like, have the right shape, and are numbers
         logger.debug('Verifying correct list format in from_params creation')
-        center, radius, top_left_origin, area_extent, pixel_size, shape = verify_lists()
+        center, radius, top_left_extent, area_extent, pixel_size, shape = verify_lists()
 
         # Converts from lat/lon to projection coordinates (x,y). Does nothing if already in projection coordinates.
         logger.debug('Converting units to meters in from_params creation')
         if area_extent is None:
-            center, radius, top_left_origin, pixel_size = convert_units()
+            center, radius, top_left_extent, pixel_size = convert_units()
         else:
-            center, radius, top_left_origin, pixel_size, area_extent_ll, area_extent_ur = convert_units()
-            area_extent = np.concatenate((area_extent_ll, area_extent_ur), axis=0).tolist()
+            center, radius, top_left_extent, pixel_size, area_extent_ll, area_extent_ur = convert_units()
+            area_extent = area_extent_ll + area_extent_ur
 
-        # # 4 ways to get an AreaDefinition:
-        # # Extents.
-        # if values_not_none(area_extent, shape):
-        #     logger.debug('Extents case being used for AreaDefinition')
-        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
-        # # Geotiff.
-        # elif values_not_none(top_left_origin, shape, pixel_size):
-        #     logger.debug('Geotiff case being used for AreaDefinition')
-        #     area_extent = (top_left_origin[0] - pixel_size[0] / 2,
-        #                    top_left_origin[1] + pixel_size[1] / 2 - pixel_size[1] * shape[1],
-        #                    top_left_origin[0] - pixel_size[0] / 2 + shape[0] * pixel_size[0],
-        #                    top_left_origin[1] + pixel_size[1] / 2)
-        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
-        # #  Circle.
-        # elif values_not_none(center, radius) and (shape is not None or pixel_size is not None):
-        #     logger.debug('Circle case being used for AreaDefinition')
-        #     if shape is None:
-        #         shape = [2 * radius[0] / pixel_size[0], 2 * radius[1] / pixel_size[1]]
-        #     area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1]]
-        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
-        # # Area of interest.
-        # elif values_not_none(center, pixel_size, shape):
-        #     logger.debug('Area of interest being used for AreaDefinition')
-        #     area_extent = (center[0] - pixel_size[0] * shape[0] / 2, center[1] - pixel_size[1] * shape[1] / 2,
-        #                    center[0] + pixel_size[0] * shape[0] / 2, center[1] + pixel_size[1] * shape[1] / 2)
-        #     return cls(area_id, name, proj_id, proj_dict, shape[0], shape[1], area_extent, **kwargs)
+        # Fills in missing information to attempt to create an area definition.
+        area_extent, shape = extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent)
 
-        # F. Y VALS = SHAP[0], X VALS = SHAPE[1]: [ROW, COL]
-        if values_not_none(top_left_origin, center, shape):
-            new_pixel_size = [2 * abs(top_left_origin[0] - center[0]) / (shape[1] - 1),
-                              2 * abs(top_left_origin[1] - center[1]) / (shape[0] - 1)]
-            if pixel_size is not None and not np.allclose(pixel_size, new_pixel_size):
-                raise ValueError(
-                    'pixel_size given does not match pixel_size found from top_left_origin, center and ' +
-                    'shape:\n{0}\nvs\n{1}'.format(pixel_size, new_pixel_size))
-            pixel_size = new_pixel_size
-        # F-1
-        elif values_not_none(top_left_origin, center, pixel_size):
-            print(abs(top_left_origin[1]))
-            print(center[1])
-            print(pixel_size[1])
-            new_shape = [2 * abs(top_left_origin[1] - center[1]) / pixel_size[1] + 1,
-                         2 * abs(top_left_origin[0] - center[0]) / pixel_size[0] + 1]
-            if shape is not None and not np.allclose(shape, new_shape):
-                raise ValueError(
-                    'shape given does not match shape found from top_left_origin, center and ' +
-                    'pixel_size:\n{0}\nvs\n{1}'.format(shape, new_shape))
-            print(new_shape)
-            shape = new_shape
-
-        # F
-        if values_not_none(pixel_size, shape):
-            new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
-            if radius is not None and not np.allclose(radius, new_radius):
-                raise ValueError(
-                    'radius given does not match radius found from pixel_size and ' + 'shape:\n{0}\nvs\n{1}'.format(
-                        radius, new_radius))
-            radius = new_radius
-        # F-1
-        elif values_not_none(radius, pixel_size):
-            new_shape = [2 * radius[0] / pixel_size[0], round(2 * radius[1] / pixel_size[1])]
-            if shape is not None and not np.allclose(shape, new_shape):
-                raise ValueError(
-                    'shape given does not match shape found from radius and ' + 'pixel_size:\n{0}\nvs\n{1}'.format(
-                        shape, new_shape))
-            shape = new_shape
-
-        # F
-        if values_not_none(top_left_origin, pixel_size, shape):
-            new_area_extent = (
-            top_left_origin[0] - pixel_size[0] / 2, top_left_origin[1] + pixel_size[1] / 2 - pixel_size[1] * shape[0],
-            top_left_origin[0] - pixel_size[0] / 2 + shape[1] * pixel_size[0], top_left_origin[1] + pixel_size[1] / 2)
-            if area_extent is not None and not np.allclose(area_extent, new_area_extent):
-                raise ValueError(
-                    'area_extent given does not match area_extent found from top_left_origin, pixel_size, and ' +
-                    'shape:\n{0}\nvs\n{1}'.format(area_extent, new_area_extent))
-            area_extent = new_area_extent
-        # F-1
-        elif values_not_none(top_left_origin, pixel_size, area_extent):
-            pass
-        # print((top_left_origin[1] + pixel_size[1] / 2 - area_extent[1]) / pixel_size[1])
-        # F
-        if values_not_none(center, radius):
-            new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
-                               center[1] + radius[1]]
-            if area_extent is not None and not np.allclose(area_extent, new_area_extent):
-                raise ValueError(
-                    'area_extent given does not match area_extent found from center and ' +
-                    'radius:\n{0}\nvs\n{1}'.format(area_extent, new_area_extent))
-            area_extent = new_area_extent
-
+        # Used for area definition to prevent indexing None.
         if shape is not None:
             x_size = round(shape[1])
             y_size = round(shape[0])
+            resolution = None
         else:
             x_size = None
             y_size = None
@@ -1065,18 +1055,9 @@ class AreaDefinition(BaseDefinition):
             lonslats=[lons, lats]
         else:
             lonslats = None
-
-        # target_x = np.arange(x_size) * pixel_size_x + top_left_origin_x
-        # target_y = np.arange(y_size) * -pixel_size_y + top_left_origin_y
+        # target_x = np.arange(x_size) * pixel_size_x + top_left_extent_x
+        # target_y = np.arange(y_size) * -pixel_size_y + top_left_extent_y
         # lons, lats = target_proj(target_x, target_y, inverse=True)
-
-        # area_id=None, description=None, proj_dict=None, x_size=None, y_size=None, area_extent=None,
-        # optimize_projection=False, rotation=None
-        #self, lonslats=None, resolution=None, size=None, proj_info=None, rotation=None
-        # return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
-        #                              y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
-        #                              rotation=rotation).freeze(lonslats=lonslats, resolution=resolution, size=shape,
-        #                                                        proj_info=proj_dict, rotation=rotation)
         area = DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
                                      y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
                                      rotation=rotation)
@@ -1090,7 +1071,7 @@ class AreaDefinition(BaseDefinition):
         # If no AreaDefinition could be made, tell user what info they need to add
         logger.debug('Not enough data provided to create AreaDefinition')
         combo_dict = {'Option 1: ': ['area_extent', 'shape'],
-                      'Option 2: ': ['top_left_origin', 'shape', 'pixel_size'],
+                      'Option 2: ': ['top_left_extent', 'shape', 'pixel_size'],
                       'Option 3: ': ['center', 'radius', 'shape'], 'Option 4: ': ['center', 'radius', 'pixel_size'],
                       'Option 5: ': ['center', 'shape', 'pixel_size']}
         error_string = 'Not enough data provided to create AreaDefinition'
@@ -1119,8 +1100,8 @@ class AreaDefinition(BaseDefinition):
         return cls.from_params(name, proj4=proj4, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, name, proj4, top_left_origin, pixel_size, shape, **kwargs):
-        return cls.from_params(name, proj4=proj4, top_left_origin=top_left_origin, pixel_size=pixel_size,
+    def from_geotiff(cls, name, proj4, top_left_extent, pixel_size, shape, **kwargs):
+        return cls.from_params(name, proj4=proj4, top_left_extent=top_left_extent, pixel_size=pixel_size,
                                shape=shape, **kwargs)
 
     def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,

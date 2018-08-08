@@ -1423,7 +1423,6 @@ class TestCrop(unittest.TestCase):
         self.assertEqual(res.shape, (700, 400))
 
     def test_dynamic_area_definition(self):
-        import logging
         import numpy as np
         from pyproj import Proj
         from xarray import DataArray
@@ -1434,7 +1433,7 @@ class TestCrop(unittest.TestCase):
             # Function that does the math.
             p = Proj(proj4_list[1])
             var_list = []
-            list_likes = [center, radius, top_left_origin, pixel_size]
+            list_likes = [center, radius, top_left_extent, pixel_size]
             # Break area_extent down into both of its (x, y) coordinates: Proj only takes 2 arguments.
             if area_extent is not None:
                 list_likes.append(list(area_extent[:2]))
@@ -1459,8 +1458,8 @@ class TestCrop(unittest.TestCase):
         proj4_list = [None, {'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                       '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id_list = [None, 'ease_sh']
-        shape_list = [None, {'a': 1}.items, (425, 425)]
-        top_left_origin_list = [None, (-5314315.3, 5314315.3)]
+        shape_list = [None, (425, 425), {'a': 1}.items]
+        top_left_extent_list = [None, (-5314315.3, 5314315.3)]
         center_list = [None, [0, 0]]
         area_extent_list = [None, (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)]
         rotation = None
@@ -1478,7 +1477,7 @@ class TestCrop(unittest.TestCase):
             return geometry.AreaDefinition.from_params(name, area_id=area_id, proj4=args[0],
                                                                    proj_id=args[1],
                                                                    shape=args[2],
-                                                                   top_left_origin=args[3],
+                                                                   top_left_extent=args[3],
                                                                    center=args[4],
                                                                    area_extent=args[5],
                                                                    rotation=rotation, pixel_size=args[6],
@@ -1490,21 +1489,21 @@ class TestCrop(unittest.TestCase):
             for proj_id in proj_id_list:
                 for proj4 in proj4_list:
                     for shape in shape_list:
-                        for top_left_origin in top_left_origin_list:
+                        for top_left_extent in top_left_extent_list:
                             for center in center_list:
                                 for area_extent in area_extent_list:
                                     for pixel_size in pixel_size_list:
                                         for radius in radius_list:
                                             try:
                                                 if area_extent is None:
-                                                    # center, radius, top_left_origin, pixel_size
+                                                    # center, radius, top_left_extent, pixel_size
                                                     essentials = convert_units()
                                                     area = make_area(proj4, proj_id, shape, essentials[2],
                                                                      essentials[0],
                                                                      None, pixel_size,
                                                                      essentials[1], units)
                                                 else:
-                                                    # center, radius, top_left_origin, pixel_size, area_extent_ll,
+                                                    # center, radius, top_left_extent, pixel_size, area_extent_ll,
                                                     # area_extent_ur
                                                     essentials = convert_units()
                                                     area = make_area(proj4, proj_id, shape, essentials[2],
@@ -1513,17 +1512,60 @@ class TestCrop(unittest.TestCase):
                                                                      essentials[1], units)
                                                 list_of_areas.append(area)
                                                 if not isinstance(area, geometry.DynamicAreaDefinition):
-                                                    self.assertTrue(np.allclose(area.area_extent, (
-                                                        -5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)))
+                                                    self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
                                                     self.assertEqual(area.proj_id, proj_id)
                                                     self.assertEqual(area.name, name)
                                                     self.assertEqual(area.proj_dict, proj4_list[1])
                                                     self.assertTrue(np.allclose((area.pixel_size_x, area.pixel_size_y),
                                                                                 [25067.525, 25067.525]))
                                                     self.assertEqual(area.area_id, area_id)
-                                                    self.assertTrue(np.allclose(area.shape, shape_list[2]))
+                                                    self.assertTrue(np.allclose(area.shape, shape_list[1]))
                                             except ValueError:
                                                 pass
+        # Func 3
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], center=center_list[1],
+                                                   radius=radius_list[1],  top_left_extent=top_left_extent_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+        # Func Function 4-A
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], top_left_extent=(-5320582.18125,
+                                                                                               5314315.3),
+                                                   center=(0, 0), pixel_size=[12533.7625, 25067.525])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 850))
+        # Function 5-A
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], pixel_size=pixel_size_list[1],
+                                                   radius=radius_list[1],  area_extent=area_extent_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+        # Function 4-B
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+                                                   center=center_list[1],  top_left_extent=top_left_extent_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+        # Function 5-B
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+                                                   radius=radius_list[1],  top_left_extent=top_left_extent_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+        # Function 5-C
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+                                                   center=center_list[1], pixel_size=pixel_size_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+        # Function 6-A
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], pixel_size=pixel_size_list[1],
+                                                   center=center_list[1],  shape=shape_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
+
         self.assertEqual(len(list_of_areas), 784)
 
 
