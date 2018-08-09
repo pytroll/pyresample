@@ -1414,9 +1414,7 @@ class TestCrop(unittest.TestCase):
                                         -909968.64000000001,
                                         1029087.28,
                                         1490031.3600000001])
-
         res = area[slice(20, 720), slice(100, 500)]
-
         self.assertTrue(np.allclose((-1070912.72, -669968.6399999999,
                                      129087.28000000003, 1430031.36),
                                     res.area_extent))
@@ -1436,14 +1434,21 @@ class TestCrop(unittest.TestCase):
             list_likes = [center, radius, top_left_extent, pixel_size]
             # Break area_extent down into both of its (x, y) coordinates: Proj only takes 2 arguments.
             if area_extent is not None:
-                list_likes.append(list(area_extent[:2]))
-                list_likes.append(list(area_extent[2:]))
+                if hasattr(area_extent, 'units'):
+                    list_likes.append(
+                        DataArray(area_extent[:2], attrs={'units': area_extent.units}))
+                    list_likes.append(
+                        DataArray(area_extent[2:], attrs={'units': area_extent.units}))
+                else:
+                    list_likes.append(area_extent[:2])
+                    list_likes.append(area_extent[2:])
             for var in list_likes:
                 if var is not None:
                     new_units = units
-                    if hasattr(var, 'units'):
-                        new_units = var.units
-                        var = var.data
+                    if isinstance(var, DataArray):
+                        if hasattr(var, 'units'):
+                            new_units = var.units
+                        var = var.data.tolist()
                     # Return degrees.
                     if new_units and 'rad' in new_units:
                         var = list(p(*var, inverse=True, radians=True, errcheck=True))
@@ -1458,8 +1463,8 @@ class TestCrop(unittest.TestCase):
         proj4_list = [None, {'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                       '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id_list = [None, 'ease_sh']
-        shape_list = [None, (425, 425), {'a': 1}.items]
-        top_left_extent_list = [None, (-5314315.3, 5314315.3)]
+        shape_list = [None, (425, 425), 'a']
+        top_left_extent_list = [None, (-5326849.0625, 5326849.0625)]
         center_list = [None, [0, 0]]
         area_extent_list = [None, (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)]
         rotation = None
@@ -1522,15 +1527,8 @@ class TestCrop(unittest.TestCase):
                                                     self.assertTrue(np.allclose(area.shape, shape_list[1]))
                                             except ValueError:
                                                 pass
-        # Func 3
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], center=center_list[1],
-                                                   radius=radius_list[1],  top_left_extent=top_left_extent_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
         # Func Function 4-A
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], top_left_extent=(-5320582.18125,
-                                                                                               5314315.3),
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], top_left_extent=top_left_extent_list[1],
                                                    center=(0, 0), pixel_size=[12533.7625, 25067.525])
         self.assertTrue(isinstance(area, geometry.AreaDefinition))
         self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))

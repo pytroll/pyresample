@@ -829,7 +829,7 @@ class AreaDefinition(BaseDefinition):
         def validate_variables(var, new_var, var_name, var_list):
             if var is not None and not np.allclose(var, new_var):
                 raise ValueError('{0} given does not match {0} found from {1}'.format(var_name, ', '.join(var_list)) +
-                                 ':\n{0}\nvs\n{1}'.format(var, new_var, var_name, var_list))
+                                 ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name, var_list))
             return new_var
 
         # Easier way to check if a list of objects are None.
@@ -861,10 +861,10 @@ class AreaDefinition(BaseDefinition):
             for var in list_likes:
                 if var is not None:
                     new_units = units
-                    if hasattr(var, 'units'):
-                        new_units = var.units
                     if isinstance(var, DataArray):
-                        var = var.data
+                        if hasattr(var, 'units'):
+                            new_units = var.units
+                        var = var.data.tolist()
                     # Return either degrees or meters depending on if the inverse is true or not.
                     if new_units and ('deg' in new_units or 'rad' in new_units):
                         if not inverse:
@@ -935,52 +935,29 @@ class AreaDefinition(BaseDefinition):
                 # Function 2
                 new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
                 center = validate_variables(center, new_center, 'center', ['area_extent'])
+                new_top_left_extent = [area_extent[0], area_extent[3]]
+                top_left_extent = validate_variables(top_left_extent, new_top_left_extent, 'top_left_extent',
+                                                     ['area_extent'])
+            elif values_not_none(top_left_extent, center):
+                new_radius = [center[0] - top_left_extent[0], top_left_extent[1] - center[1]]
+                radius = validate_variables(radius, new_radius, 'radius', ['top_left_extent', 'center'])
 
-            # Output (pixel_size) used to find shape below.
-            if values_not_none(center, radius, top_left_extent):
-                # Function 3
-                new_pixel_size = [2 * (top_left_extent[0] - center[0] + radius[0]),
-                                  2 * (center[1] + radius[1] - top_left_extent[1])]
-                pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['radius', 'top_left_extent',
-                                                                                           'center'])
-            # Inputs unaffected by data below: If shape is given you don't need to find shape, and area_extent is not
-            # used as a condition (hence finding it doesn't help). Yet output (shape) is essential for data below.
-            if values_not_none(top_left_extent, center, pixel_size):
-                # Function 4-A
-                new_shape = [int(round(2 * abs(top_left_extent[1] - center[1]) / pixel_size[1] + 1)),
-                             int(round(2 * abs(top_left_extent[0] - center[0]) / pixel_size[0] + 1))]
-                shape = validate_variables(shape, new_shape, 'shape', ['top_left_extent', 'center', 'pixel_size'])
             if values_not_none(radius, pixel_size):
                 # Function 5-A
-                new_shape = [int(round(2 * radius[0] / pixel_size[0])), int(round(round(2 * radius[1] / pixel_size[1])))]
+                new_shape = [int(round(2 * radius[1] / pixel_size[1])), int(round(2 * radius[0] / pixel_size[0]))]
                 shape = validate_variables(shape, new_shape, 'shape', ['radius', 'pixel_size'])
 
             # Inputs unaffected by data below: area_extent is not an input, and when shape is calculated it is with
             # area_extent (giving you an area defintion). Yet output (pixel_size/radius) are essential for data below.
             if shape is not None:
-                if values_not_none(top_left_extent, center):
-                    # Function 4-B
-                    new_pixel_size = [2 * abs(top_left_extent[0] - center[0]) / (shape[1] - 1),
-                                      2 * abs(top_left_extent[1] - center[1]) / (shape[0] - 1)]
-                    pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['shape', 'top_left_extent',
-                                                                                               'center'])
                 if values_not_none(radius):
                     # Function 5-B
                     new_pixel_size = [2 * radius[0] / shape[1], 2 * radius[1] / shape[0]]
                     pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['shape', 'radius'])
-                if values_not_none(pixel_size):
+                elif values_not_none(pixel_size):
                     # Function 5-C
                     new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
                     radius = validate_variables(radius, new_radius, 'radius', ['shape', 'pixel_size'])
-                # Outputs not used as inputs since if you have shape and area_extent you can find an area definition
-                if values_not_none(top_left_extent, pixel_size):
-                    # Function 6-A
-                    new_area_extent = (top_left_extent[0] - pixel_size[0] / 2,
-                                       top_left_extent[1] + pixel_size[1] / 2 - pixel_size[1] * shape[0],
-                                       top_left_extent[0] - pixel_size[0] / 2 + shape[1] * pixel_size[0],
-                                       top_left_extent[1] + pixel_size[1] / 2)
-                    area_extent = validate_variables(area_extent, new_area_extent, 'area_extent',
-                                                     ['top_left_extent', 'pixel_size', 'shape'])
 
             # Finds area_extent without using shape as an input. Hence it's output (area_extent) does not affect above
             # inputs, but above outputs affect its input (center/radius)
@@ -989,11 +966,20 @@ class AreaDefinition(BaseDefinition):
                 new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
                                    center[1] + radius[1]]
                 area_extent = validate_variables(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
+            # TODO
+            if values_not_none(top_left_extent, radius):
+                # Function 6-A?
+                new_area_extent = (top_left_extent[0],
+                                   top_left_extent[1] - 2 * radius[1],
+                                   top_left_extent[0] + 2 * radius[0],
+                                   top_left_extent[1])
+                area_extent = validate_variables(area_extent, new_area_extent, 'area_extent',
+                                                 ['top_left_extent', 'radius'])
             # Outputs not used as inputs since if you have area_extent and find shape you can find an area definition
             if values_not_none(top_left_extent, pixel_size, area_extent):
                 # Function 6-B
-                new_shape = [int(round((top_left_extent[1] - area_extent[1]) / pixel_size[1] + .5)),
-                             int(round((area_extent[2] - top_left_extent[0]) / pixel_size[0] + .5))]
+                new_shape = [int(round((top_left_extent[1] - area_extent[1]) / pixel_size[1])),
+                             int(round((area_extent[2] - top_left_extent[0]) / pixel_size[0]))]
                 shape = validate_variables(shape, new_shape, 'shape', ['top_left_extent', 'pixel_size', 'area_extent'])
             return area_extent, shape
 
@@ -1143,11 +1129,7 @@ class AreaDefinition(BaseDefinition):
                                corner_lons[1], corner_lats[1])
 
         # Calculate projection coordinates of center of upper left pixel
-        self.pixel_upper_left = \
-            (float(area_extent[0]) +
-             float(self.pixel_size_x) / 2,
-             float(area_extent[3]) -
-             float(self.pixel_size_y) / 2)
+        self.pixel_upper_left = (float(area_extent[0]), float(area_extent[3]))
 
         # Pixel_offset defines the distance to projection center from origen
         # (UL) of image in units of pixels.
@@ -1401,9 +1383,10 @@ class AreaDefinition(BaseDefinition):
             y_chunks = chunks
             x_chunks = chunks
 
-        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x +\
+                   self.pixel_upper_left[0] + self.pixel_size_x / 2
         target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
-            self.pixel_size_y + self.pixel_upper_left[1]
+            self.pixel_size_y + self.pixel_upper_left[1] - self.pixel_size_y / 2
         return target_x, target_y
 
     def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
@@ -1460,8 +1443,10 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x +\
+                   self.pixel_upper_left[0] + self.pixel_size_x / 2
+        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y +\
+                   self.pixel_upper_left[1] - self.pixel_size_y / 2
         if data_slice is None or data_slice == slice(None):
             pass
         elif isinstance(data_slice, slice):
@@ -1663,13 +1648,13 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
-        new_area_extent = ((self.pixel_upper_left[0] +
+        new_area_extent = ((self.pixel_upper_left[0] + self.pixel_size_x / 2 +
                             (xslice.start - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] -
+                           (self.pixel_upper_left[1] - self.pixel_size_y / 2 -
                             (yslice.stop - 0.5) * self.pixel_size_y),
-                           (self.pixel_upper_left[0] +
+                           (self.pixel_upper_left[0] + self.pixel_size_x / 2 +
                             (xslice.stop - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] -
+                           (self.pixel_upper_left[1] - self.pixel_size_y / 2 -
                             (yslice.start - 0.5) * self.pixel_size_y))
 
         new_area = AreaDefinition(self.area_id, self.name,
