@@ -260,10 +260,13 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return AreaDefinition(config['REGION'], config['NAME'],
-                          config['PCS_ID'], config['PCS_DEF'],
-                          config['XSIZE'], config['YSIZE'],
-                          config['AREA_EXTENT'], config['ROTATION'])
+    area = AreaDefinition.from_params(config['NAME'], area_id=config['REGION'], proj_id=config['PCS_ID'],
+                                      proj4=config['PCS_DEF'], shape=[config['YSIZE'], config['XSIZE']],
+                                      area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
+    return area
+    # return AreaDefinition.from_params(config['NAME'], area_id=config['REGION'], proj_id=config['PCS_ID'],
+    #                                   proj4=config['PCS_DEF'], shape=[config['YSIZE'], config['XSIZE']],
+    #                                   area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
@@ -297,10 +300,10 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
 
     from pyresample.geometry import AreaDefinition
     proj_dict = _get_proj4_args(proj4_args)
-    return AreaDefinition(area_id, area_name, proj_id, proj_dict,
-                          x_size, y_size, area_extent)
-    # return AreaDefinition.from_params(area_name, area_id=area_id, proj4=proj_dict, proj_id=proj_id,
-    #                                               cols_rows=(y_size, x_size), area_extent=area_extent)
+    # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
+    #                       x_size, y_size, area_extent)
+    return AreaDefinition.from_params(area_name, area_id=area_id, proj4=proj_dict, proj_id=proj_id,
+                                      shape=(y_size, x_size), area_extent=area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,
