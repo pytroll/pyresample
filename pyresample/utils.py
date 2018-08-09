@@ -126,6 +126,16 @@ def _parse_yaml_area_file(area_file_name, *regions):
     """
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
+
+    def get_params(var, arg_list, output=None):
+        list_of_params = []
+        for arg in arg_list:
+            try:
+                list_of_params.append(params[var][arg])
+            except KeyError:
+                return output
+        return list_of_params
+
     area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
 
@@ -139,33 +149,39 @@ def _parse_yaml_area_file(area_file_name, *regions):
                 area_name, area_file_name))
         description = params['description']
         projection = params['projection']
-        optimize_projection = params.get('optimize_projection', False)
-        try:
-            shape = [params['shape']['width'], params['shape']['height']]
-        except KeyError:
-            shape = None
-        try:
-            area_extent = (params['area_extent']['lower_left_xy'] +
-                           params['area_extent']['upper_right_xy'])
-        except KeyError:
-            area_extent = None
-        try:
-            rotation = params['rotation']
-        except KeyError:
-            rotation = 0
+        units = params.get('units', 'meters')
+        kwargs = params.get('kwargs', {})
+
+        proj_id = kwargs.get('proj_id', None)
+        area_id = kwargs.get('area_id', area_name)
+        resolution = kwargs.get('resolution', None)
+        optimize_projection = kwargs.get('optimize_projection', False)
+        rotation = kwargs.get('rotation', 0)
+        lons = kwargs.get('lons', None)
+        lats = kwargs.get('lats', None)
+
+
+        shape = get_params('shape', ['height', 'width'])
+        top_left_extent = get_params('top_left_extent', ['x', 'y'])
+        center = get_params('center', ['x', 'y'])
+        # Flatten 2D array to 1D array
+        area_extent = sum(get_params('area_extent', ['lower_left_xy', 'upper_right_xy']), [])
+        pixel_size = get_params('pixel_size', ['x', 'y'])
+        radius = get_params('radius', ['x', 'y'])
         # area = DynamicAreaDefinition(area_name, description,
         #                              projection, shape[1], shape[0],
         #                              area_extent,
         #                              optimize_projection,
         #                              rotation)
-        area = AreaDefinition.from_params(description, proj4=projection, area_extent=area_extent, proj_id=None,
-                                          shape=shape, area_id=area_name, optimize_projection=optimize_projection,
-                                          rotation=rotation)
         # try:
         #     area = area.freeze()
         # except (TypeError, AttributeError):
         #     pass
-
+        area = AreaDefinition.from_params(description, proj4=projection, shape=shape, 
+                                          top_left_extent=top_left_extent, center=center,
+                                          area_extent=area_extent, pixel_size=pixel_size, units=units, radius=radius,
+                                          proj_id=proj_id, area_id=area_id, optimize_projection=optimize_projection,
+                                          rotation=rotation, resolution=resolution)
         res.append(area)
     return res
 

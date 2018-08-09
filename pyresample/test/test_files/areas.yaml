@@ -1,5 +1,7 @@
 ease_sh:
   description: Antarctic EASE grid
+  area_id: 'ease_sh'
+  proj_id: 'ease_sh'
   projection:
     a: 6371228.0
     units: m
@@ -9,10 +11,24 @@ ease_sh:
   shape:
     height: 425
     width: 425
+  top_left_extent:
+    x: -5326849.0625
+    y: 5326849.0625
+  center:
+    x: 0
+    y: 0
   area_extent:
     lower_left_xy: [-5326849.0625, -5326849.0625]
     upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
+  pixel_size:
+    x: 25067.525
+    y: 25067.525
+  units: 'meters'
+  radius:
+    x: 5326849.0625
+    y: 5326849.0625
+
 ease_nh:
   description: Arctic EASE grid
   projection:

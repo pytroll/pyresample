@@ -19,9 +19,9 @@ lats = area_def.get_lonlats()[1]
 print('---')
 # area = geometry.AreaDefinition.from_geotiff(description, '+lat_0=-90 +a=6371228.0 +units=m +lon_0=0 +proj=laea',
 #                                                      top_left_extent, pixel_size, shape)
-area = geometry.AreaDefinition.from_params(description, proj4=proj_dict, radius=radius, top_left_extent=top_left_extent)
+area = geometry.AreaDefinition.from_params(description, proj4=proj_dict, lons=lons, lats=lats)
 # shape, top_left_extent, pixel_size
 print(area)
-# print(*utils.load_area('/Users/wroberts/Documents/pyresample/pyresample/test/test_files/areas.yaml'))
+# print(*utils.load_area('/Users/wroberts/Desktop/pyresample_extent/pyresample/test/test_files/areas.yaml'))
 # print(area_def.create_areas_def_legacy())
 # proj_str='+lat_0=-90 +a=6371228.0 +units=m +lon_0=0 +proj=laea'

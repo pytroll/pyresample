@@ -726,7 +726,7 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-
+            # add try catch
             domain = self.compute_domain(corners, resolution, size)
             self.area_extent, self.x_size, self.y_size = domain
 
@@ -798,8 +798,8 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    pixel_upper_left : list
-        Coordinates (x, y) of center of upper left pixel in projection units
+    top_left_extent : list
+        Coordinates (x, y) of extent of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
         left pixel in units of pixels.
@@ -875,10 +875,10 @@ class AreaDefinition(BaseDefinition):
                                 raise ValueError(
                                     '{0} {1} is not within [-180, 180] degrees or [-pi, pi] radians'.format(var,
                                                                                                             new_units))
-                    elif new_units and 'meter' in new_units:
+                    elif new_units and 'm' in new_units:
                         if inverse:
                             try:
-                                var = list(p(*var, inverse=True, radians=False, errcheck=True))
+                                var = list(p(*var, inverse=True, errcheck=True))
                             except RuntimeError:
                                 raise ValueError('{0} goes beyond the maximum meters: (a^2 + b^2)^.5 '.format(var) +
                                                  'should be less than 12742456 meters, but got ' +
@@ -901,7 +901,11 @@ class AreaDefinition(BaseDefinition):
                     try:
                         # Confirm variable is list-like and all values are numbers. Numpy makes this easy.
                         if isinstance(var_dict[var], DataArray):
-                            var_dict[var] = DataArray([np.float64(num) for num in var_dict[var].data.tolist()],
+                            # Shape does not have units and thus should be a list.
+                            if var == 'shape':
+                                var_dict[var] = [np.float64(num) for num in var_dict[var].data.tolist()]
+                            else:
+                                var_dict[var] = DataArray([np.float64(num) for num in var_dict[var].data.tolist()],
                                                       attrs=var_dict[var].attrs)
                         else:
                             var_dict[var] = [np.float64(num) for num in var_dict[var]]
@@ -926,15 +930,9 @@ class AreaDefinition(BaseDefinition):
 
         # Finds shape and area_extent based on data provided:
         def extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent):
-            test_dict = {'area_extent': area_extent, 'shape': shape, 'center': center, 'radius': radius,
-                    'pixel_size': pixel_size, 'top_left_extent': top_left_extent}
-            test_list = []
-            for key, value in test_dict.items():
-                if value is None:
-                    test_list.append(key)
             # Inputs unaffected by data below: When area extent is calcuated, it's either with
-            # shape (giving you an area definition) or with center/radius, (which this produces). Yet output
-            # (center/radius) is essential for data below.
+            # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
+            # Yet output (center/radius/top_left_extent) is essential for data below.
             if area_extent is not None:
                 # Function 1-A
                 new_radius = [(area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2]
@@ -951,13 +949,13 @@ class AreaDefinition(BaseDefinition):
                 radius = validate_variables(radius, new_radius, 'radius', ['top_left_extent', 'center'])
 
             if values_not_none(radius, pixel_size):
-                # Function 3-A
+                # Function 2-A
                 new_shape = [2 * radius[1] / pixel_size[1], 2 * radius[0] / pixel_size[0]]
                 shape = validate_variables(shape, new_shape, 'shape', ['radius', 'pixel_size'])
             # Inputs unaffected by data below: area_extent is not an input, and when shape is calculated it is with
             # area_extent (giving you an area defintion). Yet output (pixel_size/radius) are essential for data below.
             elif values_not_none(pixel_size, shape):
-                # Function 3-B
+                # Function 2-B
                 new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
                 radius = validate_variables(radius, new_radius, 'radius', ['shape', 'pixel_size'])
 
@@ -973,18 +971,10 @@ class AreaDefinition(BaseDefinition):
             # radius and area_extent, which is redundant.
             elif values_not_none(top_left_extent, radius):
                 # Function 1-D
-                new_area_extent = (top_left_extent[0],
-                                   top_left_extent[1] - 2 * radius[1],
-                                   top_left_extent[0] + 2 * radius[0],
-                                   top_left_extent[1])
+                new_area_extent = (top_left_extent[0], top_left_extent[1] - 2 * radius[1],
+                                   top_left_extent[0] + 2 * radius[0], top_left_extent[1])
                 area_extent = validate_variables(area_extent, new_area_extent, 'area_extent',
                                                  ['top_left_extent', 'radius'])
-            if values_not_none(area_extent, radius) and 'top_left_extent' in test_list:
-                test_list.remove('top_left_extent')
-            if values_not_none(shape, radius) and 'pixel_size' in test_list:
-                test_list.remove('pixel_size')
-
-            print(test_list)
             return area_extent, shape
 
         area_id = kwargs.pop('area_id', name)
@@ -1054,37 +1044,19 @@ class AreaDefinition(BaseDefinition):
                                      y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
                                      rotation=rotation)
         try:
-            return area.freeze(lonslats=lonslats, resolution=resolution, size=shape, proj_info=proj_dict,
-                               rotation=rotation)
+            return area.freeze(lonslats=lonslats, resolution=resolution, size=shape, rotation=rotation)
         except (TypeError, AttributeError):
             pass
-
-        # If no AreaDefinition could be made, tell user what info they need to add
-        logger.debug('Not enough data provided to create AreaDefinition')
-        combo_dict = {'Option 1: ': ['area_extent', 'shape'],
-                      'Option 2: ': ['top_left_extent', 'shape', 'pixel_size'],
-                      'Option 3: ': ['center', 'radius', 'shape'], 'Option 4: ': ['center', 'radius', 'pixel_size'],
-                      'Option 5: ': ['center', 'shape', 'pixel_size']}
-        error_string = 'Not enough data provided to create AreaDefinition'
-        error_string += '\nData still required to make an AreaDefinition:'
-        for key, value in combo_dict.items():
-            # Make a new instance of value as to not corrupt itteration upon removal of items.
-            combo_dict[key] = value[:]
-            for variable in value:
-                if eval(variable) is not None:
-                    combo_dict[key].remove(variable)
-            error_string += '\n' + key + ', '.join(combo_dict[key])
-        raise ValueError(error_string)
+        raise ValueError('Not information provided to create an area definition')
 
     @classmethod
     def from_extent(cls, name, proj4, area_extent, shape, **kwargs):
-        return cls.from_params(name, proj4=proj4, area_extent=area_extent, shape=shape,
-                               **kwargs)
+        return cls.from_params(name, proj4=proj4, area_extent=area_extent, shape=shape, **kwargs)
 
     @classmethod
     def from_circle(cls, name, proj4, center, radius, pixel_size=None, shape=None, **kwargs):
-        return cls.from_params(name, proj4=proj4, center=center, radius=radius, shape=shape,
-                               pixel_size=pixel_size, **kwargs)
+        return cls.from_params(name, proj4=proj4, center=center, radius=radius, shape=shape, pixel_size=pixel_size,
+                               **kwargs)
 
     @classmethod
     def from_area_of_interest(cls, name, proj4, center, pixel_size, shape, **kwargs):
@@ -1133,10 +1105,10 @@ class AreaDefinition(BaseDefinition):
         self.area_extent_ll = (corner_lons[0], corner_lats[0],
                                corner_lons[1], corner_lats[1])
 
-        # Calculate projection coordinates of center of upper left pixel
-        self.pixel_upper_left = (float(area_extent[0]), float(area_extent[3]))
+        # Calculate projection coordinates of extent of upper left pixel
+        self.top_left_extent = (float(area_extent[0]), float(area_extent[3]))
 
-        # Pixel_offset defines the distance to projection center from origen
+        # Pixel_offset defines the distance to projection center from origin
         # (UL) of image in units of pixels.
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
@@ -1389,9 +1361,9 @@ class AreaDefinition(BaseDefinition):
             x_chunks = chunks
 
         target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x +\
-                   self.pixel_upper_left[0] + self.pixel_size_x / 2
+                   self.top_left_extent[0] + self.pixel_size_x / 2
         target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
-            self.pixel_size_y + self.pixel_upper_left[1] - self.pixel_size_y / 2
+            self.pixel_size_y + self.top_left_extent[1] - self.pixel_size_y / 2
         return target_x, target_y
 
     def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
@@ -1449,9 +1421,9 @@ class AreaDefinition(BaseDefinition):
             dtype = self.dtype
 
         target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x +\
-                   self.pixel_upper_left[0] + self.pixel_size_x / 2
+                   self.top_left_extent[0] + self.pixel_size_x / 2
         target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y +\
-                   self.pixel_upper_left[1] - self.pixel_size_y / 2
+                   self.top_left_extent[1] - self.pixel_size_y / 2
         if data_slice is None or data_slice == slice(None):
             pass
         elif isinstance(data_slice, slice):
@@ -1653,13 +1625,13 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
-        new_area_extent = ((self.pixel_upper_left[0] + self.pixel_size_x / 2 +
+        new_area_extent = ((self.top_left_extent[0] + self.pixel_size_x / 2 +
                             (xslice.start - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] - self.pixel_size_y / 2 -
+                           (self.top_left_extent[1] - self.pixel_size_y / 2 -
                             (yslice.stop - 0.5) * self.pixel_size_y),
-                           (self.pixel_upper_left[0] + self.pixel_size_x / 2 +
+                           (self.top_left_extent[0] + self.pixel_size_x / 2 +
                             (xslice.stop - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] - self.pixel_size_y / 2 -
+                           (self.top_left_extent[1] - self.pixel_size_y / 2 -
                             (yslice.start - 0.5) * self.pixel_size_y))
 
         new_area = AreaDefinition(self.area_id, self.name,
