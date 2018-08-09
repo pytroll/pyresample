@@ -1563,6 +1563,12 @@ class TestCrop(unittest.TestCase):
         self.assertTrue(isinstance(area, geometry.AreaDefinition))
         self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
         self.assertEqual(area.shape, (425, 425))
+        # Function 6-B
+        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1],
+                                                   pixel_size=pixel_size_list[1],  area_extent=area_extent_list[1])
+        self.assertTrue(isinstance(area, geometry.AreaDefinition))
+        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
+        self.assertEqual(area.shape, (425, 425))
 
         self.assertEqual(len(list_of_areas), 784)
 

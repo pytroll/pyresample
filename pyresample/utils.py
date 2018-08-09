@@ -125,6 +125,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
     that.
     """
     from pyresample.geometry import AreaDefinition
+    from pyresample.geometry import DynamicAreaDefinition
     area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
 
@@ -153,12 +154,12 @@ def _parse_yaml_area_file(area_file_name, *regions):
         except KeyError:
             rotation = 0
         # area = DynamicAreaDefinition(area_name, description,
-        #                              projection, xsize, ysize,
+        #                              projection, shape[1], shape[0],
         #                              area_extent,
         #                              optimize_projection,
         #                              rotation)
-        area = AreaDefinition.from_params(description, proj4=projection, area_extent=area_extent, shape=shape,
-                                          area_id=area_name, optimize_projection=optimize_projection,
+        area = AreaDefinition.from_params(description, proj4=projection, area_extent=area_extent, proj_id=None,
+                                          shape=shape, area_id=area_name, optimize_projection=optimize_projection,
                                           rotation=rotation)
         # try:
         #     area = area.freeze()
@@ -296,10 +297,10 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
 
     from pyresample.geometry import AreaDefinition
     proj_dict = _get_proj4_args(proj4_args)
-    # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
-    #                       x_size, y_size, area_extent)
-    return AreaDefinition.from_params(area_id, area_name, proj4=proj_dict, proj_id=proj_id,
-                                                  cols_rows=(x_size, y_size), area_extent=area_extent)
+    return AreaDefinition(area_id, area_name, proj_id, proj_dict,
+                          x_size, y_size, area_extent)
+    # return AreaDefinition.from_params(area_name, area_id=area_id, proj4=proj_dict, proj_id=proj_id,
+    #                                               cols_rows=(y_size, x_size), area_extent=area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,

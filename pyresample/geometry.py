@@ -932,55 +932,46 @@ class AreaDefinition(BaseDefinition):
                 # Function 1
                 new_radius = [(area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2]
                 radius = validate_variables(radius, new_radius, 'radius', ['area_extent'])
-                # Function 2
                 new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
                 center = validate_variables(center, new_center, 'center', ['area_extent'])
                 new_top_left_extent = [area_extent[0], area_extent[3]]
                 top_left_extent = validate_variables(top_left_extent, new_top_left_extent, 'top_left_extent',
                                                      ['area_extent'])
+            # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
             elif values_not_none(top_left_extent, center):
+                # Function 2-A
                 new_radius = [center[0] - top_left_extent[0], top_left_extent[1] - center[1]]
                 radius = validate_variables(radius, new_radius, 'radius', ['top_left_extent', 'center'])
 
             if values_not_none(radius, pixel_size):
-                # Function 5-A
+                # Function 3-A
                 new_shape = [int(round(2 * radius[1] / pixel_size[1])), int(round(2 * radius[0] / pixel_size[0]))]
                 shape = validate_variables(shape, new_shape, 'shape', ['radius', 'pixel_size'])
-
             # Inputs unaffected by data below: area_extent is not an input, and when shape is calculated it is with
             # area_extent (giving you an area defintion). Yet output (pixel_size/radius) are essential for data below.
-            if shape is not None:
-                if values_not_none(radius):
-                    # Function 5-B
-                    new_pixel_size = [2 * radius[0] / shape[1], 2 * radius[1] / shape[0]]
-                    pixel_size = validate_variables(pixel_size, new_pixel_size, 'pixel_size', ['shape', 'radius'])
-                elif values_not_none(pixel_size):
-                    # Function 5-C
-                    new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
-                    radius = validate_variables(radius, new_radius, 'radius', ['shape', 'pixel_size'])
+            elif values_not_none(pixel_size, shape):
+                # Function 3-B
+                new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
+                radius = validate_variables(radius, new_radius, 'radius', ['shape', 'pixel_size'])
 
             # Finds area_extent without using shape as an input. Hence it's output (area_extent) does not affect above
             # inputs, but above outputs affect its input (center/radius)
             if values_not_none(center, radius):
-                # Function 7
+                # Function 2-B
                 new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
                                    center[1] + radius[1]]
                 area_extent = validate_variables(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
-            # TODO
-            if values_not_none(top_left_extent, radius):
-                # Function 6-A?
+            # Input determined from above functions, but output does not affect above functions: area_extent can be
+            # used to find center (since radius/top_left_extent are already needed as inputs) which is used to find
+            # radius and area_extent, which is redundant.
+            elif values_not_none(top_left_extent, radius):
+                # Function 2-C
                 new_area_extent = (top_left_extent[0],
                                    top_left_extent[1] - 2 * radius[1],
                                    top_left_extent[0] + 2 * radius[0],
                                    top_left_extent[1])
                 area_extent = validate_variables(area_extent, new_area_extent, 'area_extent',
                                                  ['top_left_extent', 'radius'])
-            # Outputs not used as inputs since if you have area_extent and find shape you can find an area definition
-            if values_not_none(top_left_extent, pixel_size, area_extent):
-                # Function 6-B
-                new_shape = [int(round((top_left_extent[1] - area_extent[1]) / pixel_size[1])),
-                             int(round((area_extent[2] - top_left_extent[0]) / pixel_size[0]))]
-                shape = validate_variables(shape, new_shape, 'shape', ['top_left_extent', 'pixel_size', 'area_extent'])
             return area_extent, shape
 
         area_id = kwargs.pop('area_id', name)
