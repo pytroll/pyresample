@@ -125,15 +125,19 @@ def _parse_yaml_area_file(area_file_name, *regions):
     that.
     """
     from pyresample.geometry import AreaDefinition
-    from pyresample.geometry import DynamicAreaDefinition
+    from xarray import DataArray
+    # from pyresample.geometry import DynamicAreaDefinition
 
-    def get_params(var, arg_list, output=None):
+    def get_list_params(var, arg_list, output=None):
         list_of_params = []
         for arg in arg_list:
             try:
                 list_of_params.append(params[var][arg])
             except KeyError:
                 return output
+        units = params[var].get('units', False)
+        if units:
+            list_of_params = DataArray(list_of_params, attrs={'units': units})
         return list_of_params
 
     area_dict = _read_yaml_area_file_content(area_file_name)
@@ -150,38 +154,33 @@ def _parse_yaml_area_file(area_file_name, *regions):
         description = params['description']
         projection = params['projection']
         units = params.get('units', 'meters')
-        kwargs = params.get('kwargs', {})
-
-        proj_id = kwargs.get('proj_id', None)
-        area_id = kwargs.get('area_id', area_name)
-        resolution = kwargs.get('resolution', None)
-        optimize_projection = kwargs.get('optimize_projection', False)
-        rotation = kwargs.get('rotation', 0)
-        lons = kwargs.get('lons', None)
-        lats = kwargs.get('lats', None)
-
-
-        shape = get_params('shape', ['height', 'width'])
-        top_left_extent = get_params('top_left_extent', ['x', 'y'])
-        center = get_params('center', ['x', 'y'])
-        # Flatten 2D array to 1D array
-        area_extent = sum(get_params('area_extent', ['lower_left_xy', 'upper_right_xy']), [])
-        pixel_size = get_params('pixel_size', ['x', 'y'])
-        radius = get_params('radius', ['x', 'y'])
-        # area = DynamicAreaDefinition(area_name, description,
-        #                              projection, shape[1], shape[0],
-        #                              area_extent,
-        #                              optimize_projection,
-        #                              rotation)
-        # try:
-        #     area = area.freeze()
-        # except (TypeError, AttributeError):
-        #     pass
-        area = AreaDefinition.from_params(description, proj4=projection, shape=shape, 
+        # lists
+        shape = get_list_params('shape', ['height', 'width'])
+        top_left_extent = get_list_params('top_left_extent', ['x', 'y'])
+        center = get_list_params('center', ['x', 'y'])
+        area_extent = get_list_params('area_extent', ['lower_left_xy', 'upper_right_xy'])
+        # # Change from 3D array to 1D array before converting to xarray (mainly for area_extent).
+        if isinstance(area_extent, DataArray):
+            area_extent = DataArray(sum(area_extent.data.tolist(), []), attrs=area_extent.attrs)
+        elif area_extent is not None:
+            area_extent = sum(area_extent, [])
+        pixel_size = get_list_params('pixel_size', ['x', 'y'])
+        radius = get_list_params('radius', ['x', 'y'])
+        #kwargs
+        proj_id = params.get('proj_id', None)
+        area_id = params.get('area_id', area_name)
+        optimize_projection = params.get('optimize_projection', False)
+        rotation = params.get('rotation', 0)
+        lons = params.get('lons', None)
+        lats = params.get('lats', None)
+        nprocs = params.get('nprocs', 1)
+        dtype = params.get('dtype', np.float64)
+        area = AreaDefinition.from_params(description, projection, shape=shape,
                                           top_left_extent=top_left_extent, center=center,
                                           area_extent=area_extent, pixel_size=pixel_size, units=units, radius=radius,
                                           proj_id=proj_id, area_id=area_id, optimize_projection=optimize_projection,
-                                          rotation=rotation, resolution=resolution)
+                                          rotation=rotation, lons=lons, lats=lats,
+                                          nprocs=nprocs, dtype=dtype)
         res.append(area)
     return res
 
@@ -276,13 +275,9 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    area = AreaDefinition.from_params(config['NAME'], area_id=config['REGION'], proj_id=config['PCS_ID'],
-                                      proj4=config['PCS_DEF'], shape=[config['YSIZE'], config['XSIZE']],
+    return AreaDefinition.from_params(config['NAME'], config['PCS_DEF'], area_id=config['REGION'],
+                                      proj_id=config['PCS_ID'], shape=[config['YSIZE'], config['XSIZE']],
                                       area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
-    return area
-    # return AreaDefinition.from_params(config['NAME'], area_id=config['REGION'], proj_id=config['PCS_ID'],
-    #                                   proj4=config['PCS_DEF'], shape=[config['YSIZE'], config['XSIZE']],
-    #                                   area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
@@ -318,7 +313,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     proj_dict = _get_proj4_args(proj4_args)
     # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
     #                       x_size, y_size, area_extent)
-    return AreaDefinition.from_params(area_name, area_id=area_id, proj4=proj_dict, proj_id=proj_id,
+    return AreaDefinition.from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
                                       shape=(y_size, x_size), area_extent=area_extent)
 
 

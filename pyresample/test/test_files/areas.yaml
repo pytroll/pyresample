@@ -1,7 +1,112 @@
-ease_sh:
-  description: Antarctic EASE grid
+test_meters:
+  description: test_meters
   area_id: 'ease_sh'
   proj_id: 'ease_sh'
+  units: 'meters'
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+  shape:
+    height: 425
+    width: 425
+    units: m
+  top_left_extent:
+    x: -5326849.0625
+    y: 5326849.0625
+    units: m
+  center:
+    x: 0
+    y: 0
+    units: m
+  pixel_size:
+    x: 25067.525
+    y: 25067.525
+    units: m
+  radius:
+    x: 5326849.0625
+    y: 5326849.0625
+    units: m
+
+test_radians:
+  description: test_radians
+  area_id: 'ease_sh'
+  proj_id: 'ease_sh'
+  units: 'meters'
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  area_extent:
+    lower_left_xy: [-2.356194490192345, -0.30571189166434753]
+    upper_right_xy: [0.7853981633974483, -0.30571189166434753]
+    units: radians
+  shape:
+    height: 425
+    width: 425
+    units: radians
+  top_left_extent:
+    x: -0.7853981633974483
+    y: -0.30571189166434753
+    units: radians
+  center:
+    x: 0
+    y: -1.5707963267948966
+    units: radians
+  pixel_size:
+    x: 0.7853981633974483
+    y: -1.5652321122412096
+    units: radians
+  radius:
+    x: 0.7853981633974483
+    y: -0.30571189166434753
+    units: radians
+
+test_degrees:
+  description: test_degrees
+  area_id: 'ease_sh'
+  proj_id: 'ease_sh'
+  units: 'meters'
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  area_extent:
+    lower_left_xy: [-135.0, -17.516001139327766]
+    upper_right_xy: [45.0, -17.516001139327766]
+    units: degrees
+  shape:
+    height: 425
+    width: 425
+  top_left_extent:
+    x: -45.0
+    y: -17.516001139327766
+    units: degrees
+  center:
+    x: 0
+    y: -90
+    units: degrees
+  pixel_size:
+    x: 45
+    y: -89.681194
+    units: degrees
+  radius:
+    x: 45.0
+    y: -17.516001139327766
+    units: degrees
+
+ease_sh:
+  description: Antarctic EASE grid
   projection:
     a: 6371228.0
     units: m
@@ -11,23 +116,10 @@ ease_sh:
   shape:
     height: 425
     width: 425
-  top_left_extent:
-    x: -5326849.0625
-    y: 5326849.0625
-  center:
-    x: 0
-    y: 0
   area_extent:
     lower_left_xy: [-5326849.0625, -5326849.0625]
     upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
-  pixel_size:
-    x: 25067.525
-    y: 25067.525
-  units: 'meters'
-  radius:
-    x: 5326849.0625
-    y: 5326849.0625
 
 ease_nh:
   description: Arctic EASE grid

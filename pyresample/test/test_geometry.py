@@ -1479,7 +1479,7 @@ class TestCrop(unittest.TestCase):
         # DataArray(np.array((45.0, -89.68119398976847)).astype(np.float64), attrs={'units': 'degrees'})
 
         def make_area(*args):
-            return geometry.AreaDefinition.from_params(name, area_id=area_id, proj4=args[0],
+            return geometry.AreaDefinition.from_params(name, args[0], area_id=area_id,
                                                                    proj_id=args[1],
                                                                    shape=args[2],
                                                                    top_left_extent=args[3],
@@ -1515,6 +1515,12 @@ class TestCrop(unittest.TestCase):
                                                                      essentials[0],
                                                                      essentials[4] + essentials[5], pixel_size,
                                                                      essentials[1], units)
+                                                    if 'deg' in units:
+                                                        print('top_left_extent: ', essentials[2])
+                                                        print('center: ', essentials[0])
+                                                        print('area_extent: ', essentials[4] + essentials[5])
+                                                        print('pixel_size: ', pixel_size)
+                                                        print('radius: ', essentials[1])
                                                 list_of_areas.append(area)
                                                 if not isinstance(area, geometry.DynamicAreaDefinition):
                                                     self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
@@ -1527,48 +1533,55 @@ class TestCrop(unittest.TestCase):
                                                     self.assertTrue(np.allclose(area.shape, shape_list[1]))
                                             except ValueError:
                                                 pass
+        def correct_definition(area_def, area_extent=None, shape=None):
+            self.assertTrue(isinstance(area_def, geometry.AreaDefinition))
+            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
+            self.assertEqual(area_def.shape, shape)
+
         # Func Function 4-A
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], top_left_extent=top_left_extent_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], top_left_extent=top_left_extent_list[1],
                                                    center=(0, 0), pixel_size=[12533.7625, 25067.525])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 850))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 850))
         # Function 5-A
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], pixel_size=pixel_size_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], pixel_size=pixel_size_list[1],
                                                    radius=radius_list[1],  area_extent=area_extent_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
         # Function 4-B
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], shape=shape_list[1],
                                                    center=center_list[1],  top_left_extent=top_left_extent_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
         # Function 5-B
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], shape=shape_list[1],
                                                    radius=radius_list[1],  top_left_extent=top_left_extent_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
         # Function 5-C
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], shape=shape_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], shape=shape_list[1],
                                                    center=center_list[1], pixel_size=pixel_size_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
         # Function 6-A
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1], pixel_size=pixel_size_list[1],
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], pixel_size=pixel_size_list[1],
                                                    center=center_list[1],  shape=shape_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
         # Function 6-B
-        area = geometry.AreaDefinition.from_params(name, proj4=proj4_list[1],
-                                                   pixel_size=pixel_size_list[1],  area_extent=area_extent_list[1])
-        self.assertTrue(isinstance(area, geometry.AreaDefinition))
-        self.assertTrue(np.allclose(area.area_extent, area_extent_list[1]))
-        self.assertEqual(area.shape, (425, 425))
+        area = geometry.AreaDefinition.from_params(name, proj4_list[1], pixel_size=pixel_size_list[1],
+                                                   area_extent=area_extent_list[1])
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
+
+        area = geometry.AreaDefinition.from_extent(name, proj4_list[1], area_extent_list[1], shape_list[1])
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
+
+        area = geometry.AreaDefinition.from_circle(name, proj4_list[1], center_list[1], radius_list[1],
+                                                   pixel_size_list[1])
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
+
+        area = geometry.AreaDefinition.from_area_of_interest(name, proj4_list[1], center_list[1], pixel_size_list[1],
+                                                             shape_list[1])
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
+
+        area = geometry.AreaDefinition.from_geotiff(name, proj4_list[1], top_left_extent_list[1], pixel_size_list[1],
+                                                             shape_list[1])
+        correct_definition(area, area_extent=area_extent_list[1], shape=(425, 425))
+
         # 456 with no Dynamic. 784 with Dynamic.
         self.assertEqual(len(list_of_areas), 456)
 
