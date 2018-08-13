@@ -128,13 +128,13 @@ def _parse_yaml_area_file(area_file_name, *regions):
     from xarray import DataArray
     # from pyresample.geometry import DynamicAreaDefinition
 
-    def get_list_params(var, arg_list, output=None):
+    def get_list_params(var, arg_list, default=None):
         list_of_params = []
         for arg in arg_list:
             try:
                 list_of_params.append(params[var][arg])
             except KeyError:
-                return output
+                return default
         units = params[var].get('units', False)
         if units:
             list_of_params = DataArray(list_of_params, attrs={'units': units})
@@ -159,7 +159,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         top_left_extent = get_list_params('top_left_extent', ['x', 'y'])
         center = get_list_params('center', ['x', 'y'])
         area_extent = get_list_params('area_extent', ['lower_left_xy', 'upper_right_xy'])
-        # # Change from 3D array to 1D array before converting to xarray (mainly for area_extent).
+        # Change to 1D array.
         if isinstance(area_extent, DataArray):
             area_extent = DataArray(sum(area_extent.data.tolist(), []), attrs=area_extent.attrs)
         elif area_extent is not None:
@@ -175,6 +175,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         lats = params.get('lats', None)
         nprocs = params.get('nprocs', 1)
         dtype = params.get('dtype', np.float64)
+
         area = AreaDefinition.from_params(description, projection, shape=shape,
                                           top_left_extent=top_left_extent, center=center,
                                           area_extent=area_extent, pixel_size=pixel_size, units=units, radius=radius,

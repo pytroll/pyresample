@@ -14,8 +14,8 @@ test_meters:
     upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
   shape:
-    height: 425
     width: 425
+    height: 850
     units: m
   top_left_extent:
     x: -5326849.0625
@@ -26,7 +26,7 @@ test_meters:
     y: 0
     units: m
   pixel_size:
-    x: 25067.525
+    x: 12533.7625
     y: 25067.525
     units: m
   radius:
@@ -50,8 +50,8 @@ test_radians:
     upper_right_xy: [0.7853981633974483, -0.30571189166434753]
     units: radians
   shape:
-    height: 425
     width: 425
+    height: 850
     units: radians
   top_left_extent:
     x: -0.7853981633974483
@@ -86,8 +86,8 @@ test_degrees:
     upper_right_xy: [45.0, -17.516001139327766]
     units: degrees
   shape:
-    height: 425
     width: 425
+    height: 850
   top_left_extent:
     x: -45.0
     y: -17.516001139327766

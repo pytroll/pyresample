@@ -875,6 +875,7 @@ class AreaDefinition(BaseDefinition):
     @classmethod
     def from_params(cls, name, proj4, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
                     units='meters', radius=None, **kwargs):
+        """Takes data the user knows and tries to make an area definition from what can be found."""
         from pyproj import Proj
 
         area_id = kwargs.pop('area_id', name)
@@ -888,21 +889,22 @@ class AreaDefinition(BaseDefinition):
             proj_dict = proj4
         else:
             raise ValueError(
-                '"proj4=" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
-        try:
-            p = Proj(proj_dict)
-        except RuntimeError as e:
-            raise type(e)(str(e) + "\nproj4's 'proj' element is missing or invalid")
+                '"proj4" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
+        p = Proj(proj_dict)
 
-        if area_extent is None:
-            area_extent_ll = None
-            area_extent_ur = None
-        elif hasattr(area_extent, 'units'):
-            area_extent_ll = DataArray(area_extent.data.tolist()[:2], attrs={'units': area_extent.units})
-            area_extent_ur = DataArray(area_extent.data.tolist()[2:], attrs={'units': area_extent.units})
-        else:
-            area_extent_ll = area_extent[:2]
-            area_extent_ur = area_extent[2:]
+        # Split area_extent into its two xy lists to handle like other data.
+        try:
+            if area_extent is None:
+                area_extent_ll = None
+                area_extent_ur = None
+            elif hasattr(area_extent, 'units'):
+                area_extent_ll = DataArray(area_extent.data.tolist()[:2], attrs={'units': area_extent.units})
+                area_extent_ur = DataArray(area_extent.data.tolist()[2:], attrs={'units': area_extent.units})
+            else:
+                area_extent_ll = area_extent[:2]
+                area_extent_ur = area_extent[2:]
+        except TypeError:
+            raise ValueError('area_extent must be a 4 element list')
 
         # Make sure list-like objects are list-like, have the right shape, and are numbers
         center, radius, top_left_extent, area_extent_ll, area_extent_ur, pixel_size, shape = [cls._verify_list(var) for
@@ -915,12 +917,13 @@ class AreaDefinition(BaseDefinition):
         if isinstance(shape, DataArray):
             shape = shape.data.tolist()
 
-        # Converts from lat/lon to projection coordinates (x,y). Does nothing if already in projection coordinates.
+        # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
         center, radius, top_left_extent, pixel_size, area_extent_ll, area_extent_ur = [cls._convert_units(var, units, p)
                                                                                        for var in
                                                                                        [center, radius, top_left_extent,
                                                                                         pixel_size, area_extent_ll,
                                                                                         area_extent_ur]]
+        # Combine area_extent's two xy lists back together.
         if area_extent is not None:
             area_extent = area_extent_ll + area_extent_ur
 
@@ -933,17 +936,20 @@ class AreaDefinition(BaseDefinition):
         x_size = None
         y_size = None
         if shape is not None:
+            # Make sure shape is an integer
             if not np.allclose(round(shape[0]), shape[0]) or not np.allclose(round(shape[1]), shape[1]):
                 raise ValueError('Shape found or provided must be an integer: {0}'.format(shape))
             x_size = int(round(shape[1]))
             y_size = int(round(shape[0]))
+
+        # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
+        # DynamicAreaDefinition. If not enough information was provided, raise an error.
         if None not in (area_extent, shape):
             return cls(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
         elif area_extent is not None or shape is not None:
-            rotation = kwargs.get('rotation', None)
             return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
                                      y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
-                                     rotation=rotation)
+                                     rotation=kwargs.get('rotation', None))
         raise ValueError('Not enough information provided to create an area definition')
 
     @classmethod
@@ -973,7 +979,7 @@ class AreaDefinition(BaseDefinition):
 
     @classmethod
     def _convert_units(cls, var, units, p, inverse=False):
-        """Converts units to projection coordinates from Earth's lat/lon. The inverse does the opposite."""
+        """Converts units from lon/lat to projection coordinates. The inverse does the opposite."""
         if var is None:
             return None
         if hasattr(var, 'units'):
@@ -983,25 +989,20 @@ class AreaDefinition(BaseDefinition):
         if not (units and ('deg' in units or 'rad' in units or 'm' in units)):
             raise ValueError('Units must be in degrees, radians, or meters. Given units were: {}'.format(units))
         # Return either degrees or meters depending on if the inverse is true or not.
+        # Don't convert if inverse is True: Already in degrees/radians.
         if ('deg' in units or 'rad' in units) and not inverse:
-            # Don't convert if inverse is True: Already in degrees/radians.
-            try:
-                var = p(*var, inverse=inverse, radians='rad' in units, errcheck=True)
-            except RuntimeError as e:
-                raise type(e)(str(e) + '\n{0} {1} is not within [-180, 180] degrees or [-pi, pi] radians'.format(var, units))
+            # Converts list-like from degrees/radians to meters. Lists must be within
+            # [-180, 180] degrees or [-pi, pi] radians.
+            var = p(*var, inverse=inverse, radians='rad' in units, errcheck=True)
+        # Don't convert if inverse is False: Already in meters.
         elif inverse:
-            # Don't convert if inverse is False: Already in meters.
-            try:
-                var = p(*var, inverse=inverse, errcheck=True)
-            except RuntimeError as e:
-                raise type(e)(str(e) + '\n{0} goes beyond the maximum meters: (a^2 + b^2)^.5 '.format(
-                    var) + 'should be less than 12742456 meters, but got ' + '{0} meters'.format(
-                    (var[0] ** 2 + var[1] ** 2) ** .5))
+            # Converts list-like from meters to degrees. (list[0]^2 + list[1]^2)^.5 must be within 12742456 meters.
+            var = p(*var, inverse=inverse, errcheck=True)
         return var
 
     @classmethod
     def _extrapolate_information(cls, area_extent, shape, center, radius, pixel_size, top_left_extent):
-        """Finds shape and area_extent based on data provided"""
+        """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
         # Inputs unaffected by data below: When area extent is calcuated, it's either with
         # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
         # Yet output (center/radius/top_left_extent) is essential for data below.
@@ -1054,8 +1055,7 @@ class AreaDefinition(BaseDefinition):
     def _verify_list(cls, var):
         """ Checks that every piece of data that should be list-like (converts lists/tuples to xarrays) is list-like,
             makes sure shapes are accurate, and checks to make sure the values are numbers."""
-        # Make list-like data into numpy arrays (or leave as xarrays). If not list-like,
-        # throw a TypeError unless it is None.
+        # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
         if var is None:
             return None
         try:
@@ -1064,21 +1064,23 @@ class AreaDefinition(BaseDefinition):
             # Confirm variable is list-like and all values are numbers.
             if isinstance(var, DataArray):
                 var = DataArray([np.float64(num) for num in var.data.tolist()], attrs=var.attrs)
+                # Make sure list is 1D
                 for val in var.data.tolist():
                     if not isinstance(val, float):
                         raise ValueError('List is not 1-dimensional')
             else:
-                var = [np.float64(num) for num in var]
+                var = tuple(np.float64(num) for num in var)
+                # Make sure list is 1D
                 for val in var:
                     if not isinstance(val, float):
                         raise ValueError('List is not 1-dimensional')
-        except TypeError as e:
-            raise type(e)(str(e) + '\nList is not list-like:\n{0}'.format(var))
-        except ValueError as e:
-            raise type(e)(str(e) + '\nList is not composed purely of numbers:\n{0}'.format(var))
+        except TypeError:
+            raise ValueError('List is not list-like:\n{0}'.format(var))
+        except ValueError:
+            raise ValueError('List is not composed purely of numbers:\n{0}'.format(var))
         # Confirm correct shape
         if len(var) != 2:
-            raise ValueError('\nList should have length 2, but instead has length {1}:\n{0}'.format(var, len(var)))
+            raise ValueError('List should have length 2, but instead has length {0}:\n{1}'.format(len(var), var))
         return var
 
     def __hash__(self):
