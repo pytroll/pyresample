@@ -1427,8 +1427,8 @@ class TestCrop(unittest.TestCase):
         from pyresample.geometry import DynamicAreaDefinition
         import numpy as np
 
-        def verify_area(area_def, area_extent=(-5326849.0625,-5326849.0625,5326849.0625,5326849.0625),
-                              shape=(425, 850)):
+        def verify_area(area_def, area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+                        shape=(425, 850)):
             """Makes sure that the area definitions created are correct."""
             self.assertTrue(isinstance(area_def, AreaDefinition))
             self.assertTrue(np.allclose(area_def.area_extent, area_extent))
@@ -1442,7 +1442,7 @@ class TestCrop(unittest.TestCase):
         shape = (425, 850)
         top_left_extent = (-5326849.0625, 5326849.0625)
         center_list = [[0, 0], 'a', (1, 2, 3)]
-        area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         pixel_size = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
         units_list = ['meters', 'degrees', 'radians']
@@ -1459,7 +1459,7 @@ class TestCrop(unittest.TestCase):
                         # Meters.
                         essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
                                       (12533.7625, 25067.525), (-5326849.0625, -5326849.0625, 5326849.0625,
-                                                               5326849.0625)]
+                                                                5326849.0625)]
                     elif 'deg' in units:
                         # Degrees.
                         essentials = [(0.0, -90.0), (45.0, -17.516001139327766), (-45.0, -17.516001139327766),
@@ -1477,18 +1477,18 @@ class TestCrop(unittest.TestCase):
                         center = essentials[0]
                     try:
                         area_list.append(AreaDefinition.from_params(name, proj4, proj_id=proj_id,
-                                                                   top_left_extent=essentials[2], center=center,
-                                                                   area_extent=essentials[4], pixel_size=essentials[3],
-                                                                   radius=essentials[1], area_id=area_id, units=units))
+                                                                    top_left_extent=essentials[2], center=center,
+                                                                    area_extent=essentials[4], pixel_size=essentials[3],
+                                                                    radius=essentials[1], area_id=area_id, units=units))
                     except ValueError:
                         pass
         self.assertEqual(len(area_list), 6)
 
         # Tests that specifying units through xarrays works.
         area_list.append(AreaDefinition.from_params(name, proj4_list[1], shape=shape,
-                                          area_extent=DataArray((-135.0, -17.516001139327766,
-                                                                 45.0, -17.516001139327766),
-                                                                attrs={'units': 'degrees'})))
+                                                    area_extent=DataArray((-135.0, -17.516001139327766,
+                                                                           45.0, -17.516001139327766),
+                                                                          attrs={'units': 'degrees'})))
         # Tests function 1-A and 2-A.
         area_list.append(AreaDefinition.from_params(name, proj4_list[1], pixel_size=pixel_size,
                                                     area_extent=area_extent))

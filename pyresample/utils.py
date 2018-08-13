@@ -166,7 +166,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
             area_extent = sum(area_extent, [])
         pixel_size = get_list_params('pixel_size', ['x', 'y'])
         radius = get_list_params('radius', ['x', 'y'])
-        #kwargs
+        # kwargs
         proj_id = params.get('proj_id', None)
         area_id = params.get('area_id', area_name)
         optimize_projection = params.get('optimize_projection', False)

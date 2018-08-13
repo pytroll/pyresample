@@ -948,8 +948,8 @@ class AreaDefinition(BaseDefinition):
             return cls(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
         elif area_extent is not None or shape is not None:
             return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
-                                     y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
-                                     rotation=kwargs.get('rotation', None))
+                                         y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
+                                         rotation=kwargs.get('rotation', None))
         raise ValueError('Not enough information provided to create an area definition')
 
     @classmethod
@@ -974,7 +974,7 @@ class AreaDefinition(BaseDefinition):
         """Makes sure data given does not conflict with itself."""
         if var is not None and not np.allclose(var, new_var):
             raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(var_name,
-                ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name, input_list))
+                                                                                                    ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name, input_list))
         return new_var
 
     @classmethod
@@ -1014,7 +1014,7 @@ class AreaDefinition(BaseDefinition):
             center = cls._validate_variable(center, new_center, 'center', ['area_extent'])
             new_top_left_extent = [area_extent[0], area_extent[3]]
             top_left_extent = cls._validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent',
-                                                 ['area_extent'])
+                                                     ['area_extent'])
         # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
         elif None not in (top_left_extent, center):
             # Function 1-B
@@ -1045,10 +1045,10 @@ class AreaDefinition(BaseDefinition):
         elif None not in (top_left_extent, radius):
             # Function 1-D
             new_area_extent = (
-            top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
-            top_left_extent[1])
+                top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
+                top_left_extent[1])
             area_extent = cls._validate_variable(area_extent, new_area_extent, 'area_extent',
-                                                  ['top_left_extent', 'radius'])
+                                                 ['top_left_extent', 'radius'])
         return area_extent, shape
 
     @classmethod
@@ -1326,7 +1326,7 @@ class AreaDefinition(BaseDefinition):
             x_chunks = chunks
 
         target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x +\
-                   self.top_left_extent[0] + self.pixel_size_x / 2
+            self.top_left_extent[0] + self.pixel_size_x / 2
         target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
             self.pixel_size_y + self.top_left_extent[1] - self.pixel_size_y / 2
         return target_x, target_y
@@ -1386,9 +1386,9 @@ class AreaDefinition(BaseDefinition):
             dtype = self.dtype
 
         target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x +\
-                   self.top_left_extent[0] + self.pixel_size_x / 2
+            self.top_left_extent[0] + self.pixel_size_x / 2
         target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y +\
-                   self.top_left_extent[1] - self.pixel_size_y / 2
+            self.top_left_extent[1] - self.pixel_size_y / 2
         if data_slice is None or data_slice == slice(None):
             pass
         elif isinstance(data_slice, slice):
