@@ -1338,9 +1338,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
         # Tests that specifying units through xarrays works.
         area_list.append(area(name, proj4_list[1], shape=shape,
-                                                    area_extent=DataArray((-135.0, -17.516001139327766,
-                                                                           45.0, -17.516001139327766),
-                                                                          attrs={'units': 'degrees'})))
+                              area_extent=DataArray((-135.0, -17.516001139327766,
+                                                     45.0, -17.516001139327766),
+                                                    attrs={'units': 'degrees'})))
         # Tests area functions 1-A and 2-A.
         area_list.append(area(name, proj4_list[1], pixel_size=pixel_size, area_extent=area_extent))
         # Tests area function 1-B.
