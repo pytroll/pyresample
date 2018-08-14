@@ -948,8 +948,8 @@ class AreaDefinition(BaseDefinition):
             return cls(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
         elif area_extent is not None or shape is not None:
             return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
-                                         y_size=y_size, area_extent=area_extent, optimize_projection=optimize_projection,
-                                         rotation=kwargs.get('rotation', None))
+                                         y_size=y_size, area_extent=area_extent, rotation=kwargs.get('rotation', None),
+                                         optimize_projection=optimize_projection)
         raise ValueError('Not enough information provided to create an area definition')
 
     @classmethod
@@ -973,8 +973,9 @@ class AreaDefinition(BaseDefinition):
     def _validate_variable(cls, var, new_var, var_name, input_list):
         """Makes sure data given does not conflict with itself."""
         if var is not None and not np.allclose(var, new_var):
-            raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(var_name,
-                                                                                                    ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name, input_list))
+            raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
+                var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
+                                                                                          input_list))
         return new_var
 
     @classmethod
