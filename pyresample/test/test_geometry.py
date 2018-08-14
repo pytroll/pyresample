@@ -23,7 +23,7 @@ else:
     import unittest
 
 
-# class Test(unittest.TestCase):
+class Test(unittest.TestCase):
 
     """Unit testing the geometry and geo_filter modules"""
 
@@ -1272,6 +1272,97 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      area1.proj_dict, area1.x_size, y_size,
                                      area_extent)
 
+    def test_from_params(self):
+        """Test from_params and the four sub-methods that call it in AreaDefinition."""
+        from xarray import DataArray
+        from pyresample.geometry import AreaDefinition
+        from pyresample.geometry import DynamicAreaDefinition
+
+        def verify_area(area_def, area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+                        shape=(425, 850)):
+            """Makes sure that the area definitions created are correct."""
+            self.assertTrue(isinstance(area_def, AreaDefinition))
+            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
+            self.assertEqual(area_def.shape, shape)
+
+        area_id = 'ease_sh'
+        name = 'Antarctic EASE grid'
+        proj4_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
+                      '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
+        proj_id = 'ease_sh'
+        shape = (425, 850)
+        top_left_extent = (-5326849.0625, 5326849.0625)
+        center_list = [[0, 0], 'a', (1, 2, 3)]
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+        pixel_size = (12533.7625, 25067.525)
+        radius = [5326849.0625, 5326849.0625]
+        units_list = ['meters', 'degrees', 'radians']
+        # reducing the length of AreaDefinition.from_params makes lines much shorter.
+        area = AreaDefinition.from_params
+
+        # Tests: that incorrect lists do not create an area definition, that both proj4 strings and dicts are accepted,
+        # and that degrees, meters, and radians all create the same area definition.
+        # area_list used to check that areas are all correct at the end.
+        area_list = []
+        for proj4 in proj4_list:
+            for units in units_list:
+                for center in center_list:
+                    # essentials = center, radius, top_left_extent, pixel_size, area_extent.
+                    if 'm' in units:
+                        # Meters.
+                        essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
+                                      (12533.7625, 25067.525), (-5326849.0625, -5326849.0625, 5326849.0625,
+                                                                5326849.0625)]
+                    elif 'deg' in units:
+                        # Degrees.
+                        essentials = [(0.0, -90.0), (45.0, -17.516001139327766), (-45.0, -17.516001139327766),
+                                      (26.56505117707799, -89.74796184090499), (-135.0, -17.516001139327766, 45.0,
+                                                                                -17.516001139327766)]
+                    else:
+                        # Radians.
+                        essentials = [(0.0, -1.5707963267948966), (0.7853981633974483, -0.30571189166434753),
+                                      (-0.7853981633974483, -0.30571189166434753),
+                                      (0.4636476090008061, -1.5663974310780233),
+                                      (-2.356194490192345, -0.30571189166434753, 0.7853981633974483,
+                                       -0.30571189166434753)]
+                    # If center is valid, use it.
+                    if len(center) == 2:
+                        center = essentials[0]
+                    try:
+                        area_list.append(area(name, proj4, proj_id=proj_id, top_left_extent=essentials[2],
+                                              center=center, area_extent=essentials[4], pixel_size=essentials[3],
+                                              radius=essentials[1], area_id=area_id, units=units))
+                    except ValueError:
+                        pass
+        self.assertEqual(len(area_list), 6)
+
+        # Tests that specifying units through xarrays works.
+        area_list.append(area(name, proj4_list[1], shape=shape,
+                                                    area_extent=DataArray((-135.0, -17.516001139327766,
+                                                                           45.0, -17.516001139327766),
+                                                                          attrs={'units': 'degrees'})))
+        # Tests area functions 1-A and 2-A.
+        area_list.append(area(name, proj4_list[1], pixel_size=pixel_size, area_extent=area_extent))
+        # Tests area function 1-B.
+        area_list.append(area(name, proj4_list[1], shape=shape, center=center_list[0], top_left_extent=top_left_extent))
+        # Tests area function 1-C.
+        area_list.append(area(name, proj4_list[1], shape=shape, center=center_list[0], radius=radius))
+        # Tests area function 1-D.
+        area_list.append(area(name, proj4_list[1], shape=shape, radius=radius, top_left_extent=top_left_extent))
+        # Tests all 4 user cases.
+        area_list.append(AreaDefinition.from_extent(name, proj4_list[1], area_extent, shape))
+        area_list.append(AreaDefinition.from_circle(name, proj4_list[1], center_list[0], radius, pixel_size))
+        area_list.append(AreaDefinition.from_area_of_interest(name, proj4_list[1], center_list[0], pixel_size, shape))
+        area_list.append(AreaDefinition.from_geotiff(name, proj4_list[1], top_left_extent, pixel_size, shape))
+
+        # Checks every area definition made
+        for area_def in area_list:
+            verify_area(area_def)
+
+        # Makes sure if shape or area_extentis found/given, a DynamicAreaDefinition is made.
+        self.assertTrue(isinstance(area(name, proj4_list[1], shape=shape), DynamicAreaDefinition))
+        self.assertTrue(isinstance(area(name, proj4_list[1], area_extent=area_extent), DynamicAreaDefinition))
+
 
 class TestDynamicAreaDefinition(unittest.TestCase):
 
@@ -1419,102 +1510,6 @@ class TestCrop(unittest.TestCase):
                                      129087.28000000003, 1430031.36),
                                     res.area_extent))
         self.assertEqual(res.shape, (700, 400))
-
-    def test_dynamic_area_definition(self):
-        """Find an area definition from given data."""
-        from xarray import DataArray
-        from pyresample.geometry import AreaDefinition
-        from pyresample.geometry import DynamicAreaDefinition
-        import numpy as np
-
-        def verify_area(area_def, area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
-                        shape=(425, 850)):
-            """Makes sure that the area definitions created are correct."""
-            self.assertTrue(isinstance(area_def, AreaDefinition))
-            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
-            self.assertEqual(area_def.shape, shape)
-
-        area_id = 'ease_sh'
-        name = 'Antarctic EASE grid'
-        proj4_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
-                      '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
-        proj_id = 'ease_sh'
-        shape = (425, 850)
-        top_left_extent = (-5326849.0625, 5326849.0625)
-        center_list = [[0, 0], 'a', (1, 2, 3)]
-        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-        pixel_size = (12533.7625, 25067.525)
-        radius = [5326849.0625, 5326849.0625]
-        units_list = ['meters', 'degrees', 'radians']
-
-        # Tests: that incorrect lists do not create an area definition, that both proj4 strings and dicts are accepted,
-        # and that degrees, meters, and radians all create the same area definition.
-        # area_list used to check that areas are all correct at the end.
-        area_list = []
-        for proj4 in proj4_list:
-            for units in units_list:
-                for center in center_list:
-                    # essentials = center, radius, top_left_extent, pixel_size, area_extent.
-                    if 'm' in units:
-                        # Meters.
-                        essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
-                                      (12533.7625, 25067.525), (-5326849.0625, -5326849.0625, 5326849.0625,
-                                                                5326849.0625)]
-                    elif 'deg' in units:
-                        # Degrees.
-                        essentials = [(0.0, -90.0), (45.0, -17.516001139327766), (-45.0, -17.516001139327766),
-                                      (26.56505117707799, -89.74796184090499), (-135.0, -17.516001139327766, 45.0,
-                                                                                -17.516001139327766)]
-                    else:
-                        # Radians.
-                        essentials = [(0.0, -1.5707963267948966), (0.7853981633974483, -0.30571189166434753),
-                                      (-0.7853981633974483, -0.30571189166434753),
-                                      (0.4636476090008061, -1.5663974310780233),
-                                      (-2.356194490192345, -0.30571189166434753, 0.7853981633974483,
-                                       -0.30571189166434753)]
-                    # If center is valid, use it.
-                    if len(center) == 2:
-                        center = essentials[0]
-                    try:
-                        area_list.append(AreaDefinition.from_params(name, proj4, proj_id=proj_id,
-                                                                    top_left_extent=essentials[2], center=center,
-                                                                    area_extent=essentials[4], pixel_size=essentials[3],
-                                                                    radius=essentials[1], area_id=area_id, units=units))
-                    except ValueError:
-                        pass
-        self.assertEqual(len(area_list), 6)
-
-        # Tests that specifying units through xarrays works.
-        area_list.append(AreaDefinition.from_params(name, proj4_list[1], shape=shape,
-                                                    area_extent=DataArray((-135.0, -17.516001139327766,
-                                                                           45.0, -17.516001139327766),
-                                                                          attrs={'units': 'degrees'})))
-        # Tests function 1-A and 2-A.
-        area_list.append(AreaDefinition.from_params(name, proj4_list[1], pixel_size=pixel_size,
-                                                    area_extent=area_extent))
-        # Tests function 1-B.
-        area_list.append(AreaDefinition.from_params(name, proj4_list[1], shape=shape, center=center_list[0],
-                                                    top_left_extent=top_left_extent))
-        # Tests function 1-C.
-        area_list.append(AreaDefinition.from_params(name, proj4_list[1], shape=shape, center=center_list[0],
-                                                    radius=radius))
-        # Tests function 1-D.
-        area_list.append(AreaDefinition.from_params(name, proj4_list[1], shape=shape, radius=radius,
-                                                    top_left_extent=top_left_extent))
-        # Tests all 4 user cases.
-        area_list.append(AreaDefinition.from_extent(name, proj4_list[1], area_extent, shape))
-        area_list.append(AreaDefinition.from_circle(name, proj4_list[1], center_list[0], radius, pixel_size))
-        area_list.append(AreaDefinition.from_area_of_interest(name, proj4_list[1], center_list[0], pixel_size, shape))
-        area_list.append(AreaDefinition.from_geotiff(name, proj4_list[1], top_left_extent, pixel_size, shape))
-
-        # Checks every area definition made
-        for area in area_list:
-            verify_area(area)
-
-        # Makes sure if shape or area_extentis found/given, a DynamicAreaDefinition is made.
-        self.assertTrue(isinstance(AreaDefinition.from_params(name, proj4_list[1], shape=shape), DynamicAreaDefinition))
-        self.assertTrue(isinstance(AreaDefinition.from_params(name, proj4_list[1], area_extent=area_extent),
-                                   DynamicAreaDefinition))
 
 
 def suite():

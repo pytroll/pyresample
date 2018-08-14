@@ -1021,28 +1021,23 @@ class AreaDefinition(BaseDefinition):
             # Function 1-B
             new_radius = [center[0] - top_left_extent[0], top_left_extent[1] - center[1]]
             radius = cls._validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
-
+        # Inputs unaffected by data below: area_extent is not an input. However, utput is used below.
         if None not in (radius, pixel_size):
             # Function 2-A
             new_shape = [2 * radius[1] / pixel_size[1], 2 * radius[0] / pixel_size[0]]
             shape = cls._validate_variable(shape, new_shape, 'shape', ['radius', 'pixel_size'])
-        # Inputs unaffected by data below: area_extent is not an input, and when shape is calculated it is with
-        # area_extent (giving you an area defintion). Yet output (pixel_size/radius) are essential for data below.
         elif None not in (pixel_size, shape):
             # Function 2-B
             new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
             radius = cls._validate_variable(radius, new_radius, 'radius', ['shape', 'pixel_size'])
 
-        # Finds area_extent without using shape as an input. Hence it's output (area_extent) does not affect above
-        # inputs, but above outputs affect its input (center/radius)
+        # Input determined from above functions, but output does not affect above functions: area_extent can be
+        # used to find center/top_left_extent which are used to find each other, which is redundant.
         if None not in (center, radius):
             # Function 1-C
             new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
                                center[1] + radius[1]]
             area_extent = cls._validate_variable(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
-        # Input determined from above functions, but output does not affect above functions: area_extent can be
-        # used to find center (since radius/top_left_extent are already needed as inputs) which is used to find
-        # radius and area_extent, which is redundant.
         elif None not in (top_left_extent, radius):
             # Function 1-D
             new_area_extent = (
@@ -1060,18 +1055,19 @@ class AreaDefinition(BaseDefinition):
         if var is None:
             return None
         try:
+            # Change xarrays without 'units' attribute to tuples: saves time and complexity.
             if isinstance(var, DataArray) and not hasattr(var, 'units'):
                 var = var.data.tolist()
             # Confirm variable is list-like and all values are numbers.
             if isinstance(var, DataArray):
                 var = DataArray([np.float64(num) for num in var.data.tolist()], attrs=var.attrs)
-                # Make sure list is 1D
+                # Make sure xarray is 1D
                 for val in var.data.tolist():
                     if not isinstance(val, float):
                         raise ValueError('List is not 1-dimensional')
             else:
                 var = tuple(np.float64(num) for num in var)
-                # Make sure list is 1D
+                # Make sure tuple is 1D
                 for val in var:
                     if not isinstance(val, float):
                         raise ValueError('List is not 1-dimensional')
