@@ -873,212 +873,22 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @classmethod
-    def from_params(cls, name, proj4, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
-                    units='meters', radius=None, **kwargs):
-        """Takes data the user knows and tries to make an area definition from what can be found."""
-        from pyproj import Proj
-
-        area_id = kwargs.pop('area_id', name)
-        proj_id = kwargs.pop('proj_id', name)
-        optimize_projection = kwargs.pop('optimize_projection', False)
-
-        # Get a proj4_dict from either a proj4_dict or a proj4_string.
-        if isinstance(proj4, str):
-            proj_dict = utils.proj4_str_to_dict(proj4)
-        elif isinstance(proj4, dict):
-            proj_dict = proj4
-        else:
-            raise ValueError(
-                '"proj4" must be a proj4 dict or a proj4 string. Type entered: {}'.format(proj4.__class__))
-        p = Proj(proj_dict)
-
-        # Split area_extent into its two xy lists to handle like other data.
-        try:
-            if area_extent is None:
-                area_extent_ll = None
-                area_extent_ur = None
-            elif hasattr(area_extent, 'units'):
-                area_extent_ll = DataArray(area_extent.data.tolist()[:2], attrs={'units': area_extent.units})
-                area_extent_ur = DataArray(area_extent.data.tolist()[2:], attrs={'units': area_extent.units})
-            else:
-                area_extent_ll = area_extent[:2]
-                area_extent_ur = area_extent[2:]
-        except TypeError:
-            raise ValueError('area_extent must be a 4 element list')
-
-        # Make sure list-like objects are list-like, have the right shape, and are numbers
-        center, radius, top_left_extent, area_extent_ll, area_extent_ur, pixel_size, shape = [cls._verify_list(var) for
-                                                                                              var in [center, radius,
-                                                                                                      top_left_extent,
-                                                                                                      area_extent_ll,
-                                                                                                      area_extent_ur,
-                                                                                                      pixel_size,
-                                                                                                      shape]]
-        if isinstance(shape, DataArray):
-            shape = shape.data.tolist()
-
-        # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-        center, radius, top_left_extent, pixel_size, area_extent_ll, area_extent_ur = [cls._convert_units(var, units, p)
-                                                                                       for var in
-                                                                                       [center, radius, top_left_extent,
-                                                                                        pixel_size, area_extent_ll,
-                                                                                        area_extent_ur]]
-        # Combine area_extent's two xy lists back together.
-        if area_extent is not None:
-            area_extent = area_extent_ll + area_extent_ur
-
-        # Fills in missing information to attempt to create an area definition.
-        if None in (area_extent, shape):
-            area_extent, shape = cls._extrapolate_information(area_extent, shape, center, radius, pixel_size,
-                                                              top_left_extent)
-
-        # Used for area definition to prevent indexing None.
-        x_size = None
-        y_size = None
-        if shape is not None:
-            # Make sure shape is an integer
-            if not np.allclose(round(shape[0]), shape[0]) or not np.allclose(round(shape[1]), shape[1]):
-                raise ValueError('Shape found or provided must be an integer: {0}'.format(shape))
-            x_size = int(round(shape[1]))
-            y_size = int(round(shape[0]))
-
-        # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
-        # DynamicAreaDefinition. If not enough information was provided, raise an error.
-        if None not in (area_extent, shape):
-            return cls(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
-        elif area_extent is not None or shape is not None:
-            return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
-                                         y_size=y_size, area_extent=area_extent, rotation=kwargs.get('rotation', None),
-                                         optimize_projection=optimize_projection)
-        raise ValueError('Not enough information provided to create an area definition')
-
-    @classmethod
     def from_extent(cls, name, proj4, area_extent, shape, **kwargs):
-        return cls.from_params(name, proj4, area_extent=area_extent, shape=shape, **kwargs)
+        return utils.from_params(name, proj4, area_extent=area_extent, shape=shape, **kwargs)
 
     @classmethod
     def from_circle(cls, name, proj4, center, radius, pixel_size=None, shape=None, **kwargs):
-        return cls.from_params(name, proj4, center=center, radius=radius, shape=shape, pixel_size=pixel_size, **kwargs)
+        return utils.from_params(name, proj4, center=center, radius=radius, shape=shape, pixel_size=pixel_size,
+                                 **kwargs)
 
     @classmethod
     def from_area_of_interest(cls, name, proj4, center, pixel_size, shape, **kwargs):
-        return cls.from_params(name, proj4, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
+        return utils.from_params(name, proj4, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
 
     @classmethod
     def from_geotiff(cls, name, proj4, top_left_extent, pixel_size, shape, **kwargs):
-        return cls.from_params(name, proj4, top_left_extent=top_left_extent, pixel_size=pixel_size, shape=shape,
+        return utils.from_params(name, proj4, top_left_extent=top_left_extent, pixel_size=pixel_size, shape=shape,
                                **kwargs)
-
-    @classmethod
-    def _validate_variable(cls, var, new_var, var_name, input_list):
-        """Makes sure data given does not conflict with itself."""
-        if var is not None and not np.allclose(var, new_var):
-            raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
-                var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
-                                                                                          input_list))
-        return new_var
-
-    @classmethod
-    def _convert_units(cls, var, units, p, inverse=False):
-        """Converts units from lon/lat to projection coordinates. The inverse does the opposite."""
-        if var is None:
-            return None
-        if hasattr(var, 'units'):
-            units = var.units
-        if isinstance(var, DataArray):
-            var = var.data.tolist()
-        if not (units and ('deg' in units or 'rad' in units or 'm' in units)):
-            raise ValueError('Units must be in degrees, radians, or meters. Given units were: {}'.format(units))
-        # Return either degrees or meters depending on if the inverse is true or not.
-        # Don't convert if inverse is True: Already in degrees/radians.
-        if ('deg' in units or 'rad' in units) and not inverse:
-            # Converts list-like from degrees/radians to meters. Lists must be within
-            # [-180, 180] degrees or [-pi, pi] radians.
-            var = p(*var, inverse=inverse, radians='rad' in units, errcheck=True)
-        # Don't convert if inverse is False: Already in meters.
-        elif inverse:
-            # Converts list-like from meters to degrees. (list[0]^2 + list[1]^2)^.5 must be within 12742456 meters.
-            var = p(*var, inverse=inverse, errcheck=True)
-        return var
-
-    @classmethod
-    def _extrapolate_information(cls, area_extent, shape, center, radius, pixel_size, top_left_extent):
-        """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
-        # Inputs unaffected by data below: When area extent is calcuated, it's either with
-        # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
-        # Yet output (center/radius/top_left_extent) is essential for data below.
-        if area_extent is not None:
-            # Function 1-A
-            new_radius = [(area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2]
-            radius = cls._validate_variable(radius, new_radius, 'radius', ['area_extent'])
-            new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
-            center = cls._validate_variable(center, new_center, 'center', ['area_extent'])
-            new_top_left_extent = [area_extent[0], area_extent[3]]
-            top_left_extent = cls._validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent',
-                                                     ['area_extent'])
-        # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
-        elif None not in (top_left_extent, center):
-            # Function 1-B
-            new_radius = [center[0] - top_left_extent[0], top_left_extent[1] - center[1]]
-            radius = cls._validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
-        # Inputs unaffected by data below: area_extent is not an input. However, utput is used below.
-        if None not in (radius, pixel_size):
-            # Function 2-A
-            new_shape = [2 * radius[1] / pixel_size[1], 2 * radius[0] / pixel_size[0]]
-            shape = cls._validate_variable(shape, new_shape, 'shape', ['radius', 'pixel_size'])
-        elif None not in (pixel_size, shape):
-            # Function 2-B
-            new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
-            radius = cls._validate_variable(radius, new_radius, 'radius', ['shape', 'pixel_size'])
-
-        # Input determined from above functions, but output does not affect above functions: area_extent can be
-        # used to find center/top_left_extent which are used to find each other, which is redundant.
-        if None not in (center, radius):
-            # Function 1-C
-            new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
-                               center[1] + radius[1]]
-            area_extent = cls._validate_variable(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
-        elif None not in (top_left_extent, radius):
-            # Function 1-D
-            new_area_extent = (
-                top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
-                top_left_extent[1])
-            area_extent = cls._validate_variable(area_extent, new_area_extent, 'area_extent',
-                                                 ['top_left_extent', 'radius'])
-        return area_extent, shape
-
-    @classmethod
-    def _verify_list(cls, var):
-        """ Checks that every piece of data that should be list-like (converts lists/tuples to xarrays) is list-like,
-            makes sure shapes are accurate, and checks to make sure the values are numbers."""
-        # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
-        if var is None:
-            return None
-        try:
-            # Change xarrays without 'units' attribute to tuples: saves time and complexity.
-            if isinstance(var, DataArray) and not hasattr(var, 'units'):
-                var = var.data.tolist()
-            # Confirm variable is list-like and all values are numbers.
-            if isinstance(var, DataArray):
-                var = DataArray([np.float64(num) for num in var.data.tolist()], attrs=var.attrs)
-                # Make sure xarray is 1D
-                for val in var.data.tolist():
-                    if not isinstance(val, float):
-                        raise ValueError('List is not 1-dimensional')
-            else:
-                var = tuple(np.float64(num) for num in var)
-                # Make sure tuple is 1D
-                for val in var:
-                    if not isinstance(val, float):
-                        raise ValueError('List is not 1-dimensional')
-        except TypeError:
-            raise ValueError('List is not list-like:\n{0}'.format(var))
-        except ValueError:
-            raise ValueError('List is not composed purely of numbers:\n{0}'.format(var))
-        # Confirm correct shape
-        if len(var) != 2:
-            raise ValueError('List should have length 2, but instead has length {0}:\n{1}'.format(len(var), var))
-        return var
 
     def __hash__(self):
         """Compute the hash of this object."""

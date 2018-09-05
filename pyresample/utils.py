@@ -29,6 +29,7 @@ import six
 import yaml
 from configobj import ConfigObj
 from collections import Mapping
+from xarray import DataArray
 
 
 class AreaNotFound(KeyError):
@@ -124,66 +125,63 @@ def _parse_yaml_area_file(area_file_name, *regions):
     the files, using the first file as the "base", replacing things after
     that.
     """
-    from pyresample.geometry import AreaDefinition
-    from xarray import DataArray
-    # from pyresample.geometry import DynamicAreaDefinition
-
-    def get_list_params(var, arg_list, default=None):
-        list_of_params = []
-        for arg in arg_list:
-            try:
-                list_of_params.append(params[var][arg])
-            except KeyError:
-                return default
-        units = params[var].get('units', False)
-        if units:
-            list_of_params = DataArray(list_of_params, attrs={'units': units})
-        return list_of_params
-
     area_dict = _read_yaml_area_file_content(area_file_name)
     area_list = regions or area_dict.keys()
-
     res = []
-
     for area_name in area_list:
         try:
             params = area_dict[area_name]
         except KeyError:
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
                 area_name, area_file_name))
-        description = params['description']
-        projection = params['projection']
-        units = params.get('units', 'meters')
-        # lists
-        shape = get_list_params('shape', ['height', 'width'])
-        top_left_extent = get_list_params('top_left_extent', ['x', 'y'])
-        center = get_list_params('center', ['x', 'y'])
-        area_extent = get_list_params('area_extent', ['lower_left_xy', 'upper_right_xy'])
-        # Change to 1D array.
-        if isinstance(area_extent, DataArray):
-            area_extent = DataArray(sum(area_extent.data.tolist(), []), attrs=area_extent.attrs)
-        elif area_extent is not None:
-            area_extent = sum(area_extent, [])
-        pixel_size = get_list_params('pixel_size', ['x', 'y'])
-        radius = get_list_params('radius', ['x', 'y'])
-        # kwargs
-        proj_id = params.get('proj_id', None)
-        area_id = params.get('area_id', area_name)
-        optimize_projection = params.get('optimize_projection', False)
-        rotation = params.get('rotation', 0)
-        lons = params.get('lons', None)
-        lats = params.get('lats', None)
-        nprocs = params.get('nprocs', 1)
-        dtype = params.get('dtype', np.float64)
-
-        area = AreaDefinition.from_params(description, projection, shape=shape,
-                                          top_left_extent=top_left_extent, center=center,
-                                          area_extent=area_extent, pixel_size=pixel_size, units=units, radius=radius,
-                                          proj_id=proj_id, area_id=area_id, optimize_projection=optimize_projection,
-                                          rotation=rotation, lons=lons, lats=lats,
-                                          nprocs=nprocs, dtype=dtype)
-        res.append(area)
+        description = params.pop('description', None)
+        projection = params.pop('projection', None)
+        params['area_id'] = params.get('area_id', area_name)
+        params['shape'] = _get_list(params, 'shape', ['height', 'width', 'size'])
+        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y', 'size'])
+        params['center'] = _get_list(params, 'center', ['x', 'y', 'size'])
+        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'extents'])
+        params['pixel_size'] = _get_list(params, 'pixel_size', ['x', 'y', 'size'])
+        params['radius'] =  _get_list(params, 'radius', ['x', 'y', 'size'])
+        res.append(from_params(description, projection, **params))
     return res
+
+
+def _get_list(params, var, arg_list, default=None):
+    """Reads a list-like param variable."""
+    # Check if variable is in yaml.
+    list_of_values = []
+    try:
+        variable = params[var]
+    except KeyError:
+        return default
+    # Single number format.
+    if isinstance(variable, int) or isinstance(variable, float):
+        if var == 'area_extent':
+            return variable
+        return variable, variable
+    # Non-dicts (lists will work).
+    if not isinstance(variable, dict):
+        return variable
+    # Iterate through dict.
+    for arg in arg_list:
+        try:
+            values = variable[arg]
+            # Append values of list if the arg can be list-like.
+            if arg in ('lower_left_xy', 'upper_right_xy', 'size', 'extents') and isinstance(values, list):
+                list_of_values.extend(values)
+            else:
+                list_of_values.append(values)
+                # Single number format.
+                if arg in ('lower_left_xy', 'upper_right_xy', 'size'):
+                    list_of_values.append(values)
+        except (TypeError, AttributeError, ValueError, KeyError):
+            pass
+    # If units are present, convert to xarray.
+    units = variable.get('units')
+    if units is not None:
+        return DataArray(list_of_values, attrs={'units': units})
+    return tuple(list_of_values)
 
 
 def _read_legacy_area_file_lines(area_file_name):
@@ -248,8 +246,6 @@ def _parse_legacy_area_file(area_file_name, *regions):
 
 def _create_area(area_id, area_content):
     """Parse area configuration"""
-    from pyresample.geometry import AreaDefinition
-
     config_obj = area_content.replace('{', '').replace('};', '')
     config_obj = ConfigObj([line.replace(':', '=', 1)
                             for line in config_obj.splitlines()])
@@ -276,8 +272,8 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return AreaDefinition.from_params(config['NAME'], config['PCS_DEF'], area_id=config['REGION'],
-                                      proj_id=config['PCS_ID'], shape=[config['YSIZE'], config['XSIZE']],
+    return from_params(config['NAME'], config['PCS_DEF'], area_id=config['REGION'],
+                                      proj_id=config['PCS_ID'], shape=(config['YSIZE'], config['XSIZE']),
                                       area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
 
@@ -314,7 +310,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     proj_dict = _get_proj4_args(proj4_args)
     # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
     #                       x_size, y_size, area_extent)
-    return AreaDefinition.from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
+    return from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
                                       shape=(y_size, x_size), area_extent=area_extent)
 
 
@@ -574,3 +570,199 @@ def recursive_dict_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
+                radius=None, units=None, **kwargs):
+    """Takes data the user knows and tries to make an area definition from what can be found."""
+    area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
+
+    for key, value in {'name': name, 'area_id': area_id, 'proj_id': proj_id}.items():
+        if not isinstance(value, str) and (value is not None or key != 'proj_id'):
+            raise ValueError('{0} must be a string. Type entered: {1}'.format(key, type(value)))
+
+    # Get a proj4_dict from either a proj4_dict or a proj4_string.
+    proj_dict, p = _get_proj_data(proj4)
+
+    # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
+    if units is None:
+        units = proj_dict.get('units', 'meters')
+
+    # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
+    center, radius, top_left_extent, pixel_size, area_extent, shape =\
+        [_verify_list(name, var, length) for name, var, length in
+         zip(*[['center', 'radius', 'top_left_extent', 'pixel_size', 'area_extent', 'shape'],
+               [center, radius, top_left_extent, pixel_size, area_extent, shape], [2, 2, 2, 2, 4, 2]])]
+
+    # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
+    center, radius, top_left_extent, pixel_size, area_extent = _get_units(center, radius, top_left_extent, pixel_size,
+                                                                          area_extent, units, p)
+
+    # Fills in missing information to attempt to create an area definition.
+    if None in (area_extent, shape):
+        area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent)
+
+    return _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs)
+
+
+def _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs):
+    """Handles the actual creation of an area definition for from_params."""
+    from pyresample.geometry import AreaDefinition
+    from pyresample.geometry import DynamicAreaDefinition
+
+    # Used for area definition to prevent indexing None.
+    x_size, y_size = None, None
+    if shape is not None:
+        x_size, y_size = int(round(shape[1])), int(round(shape[0]))
+        # Make sure shape is an integer.
+        if not np.allclose([y_size, x_size], shape):
+            raise ValueError('Shape found or provided must be an integer: {0}'.format(shape))
+    # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
+    # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
+    if None not in (area_extent, shape):
+        return AreaDefinition(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
+    elif area_extent is not None or shape is not None:
+        return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
+                                     y_size=y_size, area_extent=area_extent, rotation=kwargs.get('rotation'),
+                                     optimize_projection=kwargs.get('optimize_projection', False))
+    raise ValueError('Not enough information provided to create an area definition')
+
+
+def _get_proj_data(proj4):
+    """Takes a proj4_dict or proj4_string and returns a proj4_dict."""
+    from pyproj import Proj
+
+    if isinstance(proj4, str):
+        proj_dict = proj4_str_to_dict(proj4)
+    elif isinstance(proj4, dict):
+        proj_dict = proj4
+    else:
+        raise ValueError('"proj4" must be a proj4 dict or a proj4 string. Type entered: {0}'.format(proj4.__class__))
+    return proj_dict, Proj(proj_dict)
+
+
+def _get_units(center, radius, top_left_extent, pixel_size, area_extent, units, p):
+    """handles area_extent being a set of two points and calls _convert_units."""
+    # Splits area_extent into two lists so that its units can be converted
+    if area_extent is None:
+        area_extent_ll = None
+        area_extent_ur = None
+    else:
+        area_extent_ll = area_extent[:2]
+        area_extent_ur = area_extent[2:]
+
+    center, radius, top_left_extent, pixel_size, area_extent_ll, area_extent_ur =\
+        [_convert_units(var, name, units, p) for var, name in zip(*[[center, radius, top_left_extent, pixel_size,
+                                                                     area_extent_ll, area_extent_ur],
+                                                                    ['center', 'radius', 'top_left_extent',
+                                                                     'pixel_size', 'area_extent', 'area_extent']])]
+    # Recombine area_extent.
+    if area_extent is not None:
+        area_extent = area_extent_ll + area_extent_ur
+    return center, radius, top_left_extent, pixel_size, area_extent
+
+
+def _validate_variable(var, new_var, var_name, input_list):
+    """Makes sure data given does not conflict with itself."""
+    if var is not None and not np.allclose(var, new_var):
+        raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
+            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
+                                                                                      input_list))
+    return new_var
+
+
+def _convert_units(var, name, units, p, inverse=False):
+    """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite."""
+    if var is None:
+        return None
+    if hasattr(var, 'units'):
+        units = var.units
+    if p.is_latlong() and 'm' in units:
+        raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
+    if isinstance(var, DataArray):
+        var = tuple(var.data.tolist())
+    if not (units and ('\xB0' in units or 'deg' in units or 'rad' in units or 'm' in units)):
+        raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
+                                                                                                            units))
+    # Return either degrees or meters depending on if the inverse is true or not.
+    # Don't convert if inverse is True: Already in degrees/radians.
+    if ('\xB0' in units or 'deg' in units or 'rad' in units) and not inverse:
+        # Converts list-like from degrees/radians to meters. Lists must be within
+        # [-180, 180] degrees or [-pi, pi] radians.
+        var = p(*var, inverse=inverse, radians='rad' in units, errcheck=True)
+    # Don't convert if inverse is False: Already in meters.
+    elif inverse:
+        # Converts list-like from meters to degrees. (list[0]^2 + list[1]^2)^.5 must be within 12742456 meters.
+        var = p(*var, inverse=inverse, errcheck=True)
+    return var
+
+
+def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent):
+    """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
+    # Input unaffected by data below: When area extent is calcuated, it's either with
+    # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
+    # Yet output (center/radius/top_left_extent) is essential for data below.
+    if area_extent is not None:
+        # Function 1-A
+        new_radius = [(area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2]
+        radius = _validate_variable(radius, new_radius, 'radius', ['area_extent'])
+        new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
+        center = _validate_variable(center, new_center, 'center', ['area_extent'])
+        new_top_left_extent = [area_extent[0], area_extent[3]]
+        top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent',
+                                                 ['area_extent'])
+    # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
+    elif None not in (top_left_extent, center):
+        # Function 1-B
+        new_radius = [center[0] - top_left_extent[0], top_left_extent[1] - center[1]]
+        radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
+    # Inputs unaffected by data below: area_extent is not an input. However, utput is used below.
+    if None not in (radius, pixel_size):
+        # Function 2-A
+        new_shape = [2 * radius[1] / pixel_size[1], 2 * radius[0] / pixel_size[0]]
+        shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'pixel_size'])
+    elif None not in (pixel_size, shape):
+        # Function 2-B
+        new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
+        radius = _validate_variable(radius, new_radius, 'radius', ['shape', 'pixel_size'])
+
+    # Input determined from above functions, but output does not affect above functions: area_extent can be
+    # used to find center/top_left_extent which are used to find each other, which is redundant.
+    if None not in (center, radius):
+        # Function 1-C
+        new_area_extent = [center[0] - radius[0], center[1] - radius[1], center[0] + radius[0],
+                           center[1] + radius[1]]
+        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent', ['center', 'radius'])
+    elif None not in (top_left_extent, radius):
+        # Function 1-D
+        new_area_extent = (
+            top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
+            top_left_extent[1])
+        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent',
+                                             ['top_left_extent', 'radius'])
+    return area_extent, shape
+
+
+def _verify_list(name, var, length):
+    """ Checks that every piece of data that should be list-like (converts lists/tuples to xarrays) is list-like,
+        makes sure shapes are accurate, and checks to make sure their values are numbers."""
+    # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
+    if var is None:
+        return None
+    # Verify that list is made of numbers and list-like.
+    try:
+        if hasattr(var, 'units') and name != 'shape':
+            var = DataArray([float(num) for num in var.data.tolist()], attrs=var.attrs)
+        elif isinstance(var, DataArray) and name != 'shape':
+            var = tuple(float(num) for num in var.data.tolist())
+        else:
+            var = tuple(float(num) for num in var)
+    except TypeError:
+        raise ValueError('{0} is not list-like:\n{1}'.format(name, var))
+    except ValueError:
+        raise ValueError('{0} is not composed purely of numbers:\n{1}'.format(name, var))
+    # Confirm correct shape
+    if len(var) != length:
+        raise ValueError('{0} should have length {1}, but instead has length {2}:\n{3}'.format(name, length,
+                                                                                               len(var), var))
+    return var
