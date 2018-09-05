@@ -142,7 +142,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params['center'] = _get_list(params, 'center', ['x', 'y', 'size'])
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'extents'])
         params['pixel_size'] = _get_list(params, 'pixel_size', ['x', 'y', 'size'])
-        params['radius'] =  _get_list(params, 'radius', ['x', 'y', 'size'])
+        params['radius'] = _get_list(params, 'radius', ['x', 'y', 'size'])
         res.append(from_params(description, projection, **params))
     return res
 
@@ -273,8 +273,8 @@ def _create_area(area_id, area_content):
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
     return from_params(config['NAME'], config['PCS_DEF'], area_id=config['REGION'],
-                                      proj_id=config['PCS_ID'], shape=(config['YSIZE'], config['XSIZE']),
-                                      area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
+                       proj_id=config['PCS_ID'], shape=(config['YSIZE'], config['XSIZE']),
+                       area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
@@ -311,7 +311,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
     #                       x_size, y_size, area_extent)
     return from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
-                                      shape=(y_size, x_size), area_extent=area_extent)
+                       shape=(y_size, x_size), area_extent=area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,
@@ -710,7 +710,7 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
         center = _validate_variable(center, new_center, 'center', ['area_extent'])
         new_top_left_extent = [area_extent[0], area_extent[3]]
         top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent',
-                                                 ['area_extent'])
+                                             ['area_extent'])
     # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
@@ -739,7 +739,7 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
             top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
             top_left_extent[1])
         area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent',
-                                             ['top_left_extent', 'radius'])
+                                         ['top_left_extent', 'radius'])
     return area_extent, shape
 
 

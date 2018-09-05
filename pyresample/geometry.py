@@ -888,7 +888,7 @@ class AreaDefinition(BaseDefinition):
     @classmethod
     def from_geotiff(cls, name, proj4, top_left_extent, pixel_size, shape, **kwargs):
         return utils.from_params(name, proj4, top_left_extent=top_left_extent, pixel_size=pixel_size, shape=shape,
-                               **kwargs)
+                                 **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""
