@@ -202,7 +202,7 @@ class Test(unittest.TestCase):
 
     def test_proj4_string(self):
         proj4_string = self.area_def.proj_str
-        expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00'
+        expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere +lat_0=50.0'
         self.assertEqual(
             frozenset(proj4_string.split()), frozenset(expected_string.split()))
 
