@@ -22,20 +22,22 @@ class TestLegacyAreaParser(unittest.TestCase):
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEquals(ease_nh.__str__(), nh_str)
+        self.assertIsInstance(ease_nh.proj_dict['lat_0'], float)
 
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
 Projection ID: ease_sh
-Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEquals(ease_sh.__str__(), sh_str)
+        self.assertIsInstance(ease_sh.proj_dict['lat_0'], float)
 
     def test_load_area(self):
         from pyresample import utils
@@ -45,7 +47,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
@@ -246,6 +248,8 @@ class TestMisc(unittest.TestCase):
         proj_str2 = utils.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4_str_to_dict(proj_str2)
         self.assertDictEqual(proj_dict, proj_dict2)
+        self.assertIsInstance(proj_dict['lon_0'], float)
+        self.assertIsInstance(proj_dict2['lon_0'], float)
 
 
 def suite():
