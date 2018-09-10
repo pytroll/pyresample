@@ -577,9 +577,13 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
     """Takes data the user knows and tries to make an area definition from what can be found."""
     area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
 
+    try:
+        str_type = (str, unicode)
+    except NameError:
+        str_type = str
     for key, value in {'name': name, 'area_id': area_id, 'proj_id': proj_id}.items():
         # Raise ValueError if not string. If key is proj_id, it may be None since it's being depreciated.
-        if not isinstance(value, (str, unicode)) and (value is not None or key != 'proj_id'):
+        if not isinstance(value, str_type) and (value is not None or key != 'proj_id'):
             raise ValueError('{0} must be a string. Type entered: {1}'.format(key, type(value)))
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
