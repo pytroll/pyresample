@@ -156,7 +156,7 @@ def _get_list(params, var, arg_list, default=None):
     except KeyError:
         return default
     # Single number format.
-    if isinstance(variable, int) or isinstance(variable, float):
+    if isinstance(variable, (float, int)):
         if var == 'area_extent':
             return variable
         return variable, variable
@@ -578,7 +578,8 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
     area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
 
     for key, value in {'name': name, 'area_id': area_id, 'proj_id': proj_id}.items():
-        if not isinstance(value, str) and (value is not None or key != 'proj_id'):
+        # Raise ValueError if not string. If key is proj_id, it may be None since it's being depreciated.
+        if not isinstance(value, (str, unicode)) and (value is not None or key != 'proj_id'):
             raise ValueError('{0} must be a string. Type entered: {1}'.format(key, type(value)))
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
@@ -590,7 +591,7 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
 
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
     center, radius, top_left_extent, pixel_size, area_extent, shape =\
-        [_verify_list(name, var, length) for name, var, length in
+        [_verify_list(var_name, var, length) for var_name, var, length in
          zip(*[['center', 'radius', 'top_left_extent', 'pixel_size', 'area_extent', 'shape'],
                [center, radius, top_left_extent, pixel_size, area_extent, shape], [2, 2, 2, 2, 4, 2]])]
 
@@ -672,7 +673,9 @@ def _validate_variable(var, new_var, var_name, input_list):
 
 
 def _convert_units(var, name, units, p, inverse=False):
-    """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite."""
+    """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite.
+    Uses UTF-8 for degree symbol.
+    """
     if var is None:
         return None
     if hasattr(var, 'units'):
@@ -681,17 +684,17 @@ def _convert_units(var, name, units, p, inverse=False):
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     if isinstance(var, DataArray):
         var = tuple(var.data.tolist())
-    if not (units and ('\xB0' in units or 'deg' in units or 'rad' in units or 'm' in units)):
+    if not (units and (u'\xb0' in units or 'deg' in units or 'rad' in units or 'm' in units)):
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
     # Return either degrees or meters depending on if the inverse is true or not.
-    # Don't convert if inverse is True: Already in degrees/radians.
-    if ('\xB0' in units or 'deg' in units or 'rad' in units) and not inverse:
+    # Don't convert if inverse is True: Want degrees/radians.
+    if (u'\xb0' in units or 'deg' in units or 'rad' in units) and not inverse:
         # Converts list-like from degrees/radians to meters. Lists must be within
         # [-180, 180] degrees or [-pi, pi] radians.
         var = p(*var, inverse=inverse, radians='rad' in units, errcheck=True)
-    # Don't convert if inverse is False: Already in meters.
-    elif inverse:
+    # Don't convert if inverse is False: Want meters.
+    elif inverse and 'm' in units:
         # Converts list-like from meters to degrees. (list[0]^2 + list[1]^2)^.5 must be within 12742456 meters.
         var = p(*var, inverse=inverse, errcheck=True)
     return var
@@ -709,8 +712,7 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
         new_center = [(area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2]
         center = _validate_variable(center, new_center, 'center', ['area_extent'])
         new_top_left_extent = [area_extent[0], area_extent[3]]
-        top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent',
-                                             ['area_extent'])
+        top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent', ['area_extent'])
     # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
@@ -725,7 +727,6 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
         # Function 2-B
         new_radius = [pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2]
         radius = _validate_variable(radius, new_radius, 'radius', ['shape', 'pixel_size'])
-
     # Input determined from above functions, but output does not affect above functions: area_extent can be
     # used to find center/top_left_extent which are used to find each other, which is redundant.
     if None not in (center, radius):
@@ -738,8 +739,7 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
         new_area_extent = (
             top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
             top_left_extent[1])
-        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent',
-                                         ['top_left_extent', 'radius'])
+        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent', ['top_left_extent', 'radius'])
     return area_extent, shape
 
 
