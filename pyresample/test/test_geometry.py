@@ -1291,7 +1291,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         proj4_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                       '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id = 'ease_sh'
-        shape = (425, 850)
+        shape = DataArray((425, 850), attrs={'units': 'degrees'})
         top_left_extent = (-5326849.0625, 5326849.0625)
         center_list = [[0, 0], 'a', (1, 2, 3)]
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)

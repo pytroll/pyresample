@@ -134,8 +134,10 @@ def _parse_yaml_area_file(area_file_name, *regions):
         except KeyError:
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
                 area_name, area_file_name))
-        description = params.pop('description', None)
-        projection = params.pop('projection', None)
+        # Required arguments.
+        params['name'] = params.pop('description')
+        params['proj4'] = params.pop('projection')
+        # Optional arguments.
         params['area_id'] = params.get('area_id', area_name)
         params['shape'] = _get_list(params, 'shape', ['height', 'width', 'size'])
         params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y', 'size'])
@@ -143,7 +145,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'extents'])
         params['pixel_size'] = _get_list(params, 'pixel_size', ['x', 'y', 'size'])
         params['radius'] = _get_list(params, 'radius', ['x', 'y', 'size'])
-        res.append(from_params(description, projection, **params))
+        res.append(from_params(**params))
     return res
 
 
@@ -156,9 +158,7 @@ def _get_list(params, var, arg_list, default=None):
     except KeyError:
         return default
     # Single number format.
-    if isinstance(variable, (float, int)):
-        if var == 'area_extent':
-            return variable
+    if isinstance(variable, (float, int)) and var != 'area_extent':
         return variable, variable
     # Non-dicts (lists will work).
     if not isinstance(variable, dict):
@@ -175,7 +175,7 @@ def _get_list(params, var, arg_list, default=None):
                 # Single number format.
                 if arg in ('lower_left_xy', 'upper_right_xy', 'size'):
                     list_of_values.append(values)
-        except (TypeError, AttributeError, ValueError, KeyError):
+        except KeyError:
             pass
     # If units are present, convert to xarray.
     units = variable.get('units')
@@ -577,15 +577,6 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
     """Takes data the user knows and tries to make an area definition from what can be found."""
     area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
 
-    try:
-        str_type = (str, unicode)
-    except NameError:
-        str_type = str
-    for key, value in {'name': name, 'area_id': area_id, 'proj_id': proj_id}.items():
-        # Raise ValueError if not string. If key is proj_id, it may be None since it's being depreciated.
-        if not isinstance(value, str_type) and (value is not None or key != 'proj_id'):
-            raise ValueError('{0} must be a string. Type entered: {1}'.format(key, type(value)))
-
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict, p = _get_proj_data(proj4)
 
@@ -600,8 +591,8 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
                [center, radius, top_left_extent, pixel_size, area_extent, shape], [2, 2, 2, 2, 4, 2]])]
 
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-    center, radius, top_left_extent, pixel_size, area_extent = _get_units(center, radius, top_left_extent, pixel_size,
-                                                                          area_extent, units, p)
+    center, radius, top_left_extent, pixel_size, area_extent = _get_converted_lists(center, radius, top_left_extent,
+                                                                                    pixel_size, area_extent, units, p)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
@@ -634,7 +625,7 @@ def _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs):
 
 
 def _get_proj_data(proj4):
-    """Takes a proj4_dict or proj4_string and returns a proj4_dict."""
+    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function."""
     from pyproj import Proj
 
     if isinstance(proj4, str):
@@ -646,7 +637,7 @@ def _get_proj_data(proj4):
     return proj_dict, Proj(proj_dict)
 
 
-def _get_units(center, radius, top_left_extent, pixel_size, area_extent, units, p):
+def _get_converted_lists(center, radius, top_left_extent, pixel_size, area_extent, units, p):
     """handles area_extent being a set of two points and calls _convert_units."""
     # Splits area_extent into two lists so that its units can be converted
     if area_extent is None:
@@ -757,7 +748,7 @@ def _verify_list(name, var, length):
     try:
         if hasattr(var, 'units') and name != 'shape':
             var = DataArray([float(num) for num in var.data.tolist()], attrs=var.attrs)
-        elif isinstance(var, DataArray) and name != 'shape':
+        elif isinstance(var, DataArray):
             var = tuple(float(num) for num in var.data.tolist())
         else:
             var = tuple(float(num) for num in var)

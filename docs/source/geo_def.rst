@@ -45,7 +45,7 @@ Creating an area definition:
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
-  >>> x_size = 425
+ >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
  >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0',
@@ -63,9 +63,10 @@ Creating an area definition:
 
 pyresample.utils
 ****************
+
 The utils module of pyresample has convenience functions for constructing
 area defintions. The function **get_area_def** can construct an area definition
-based on area extent and a proj4-string or a list of proj4 arguments.
+based on area extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
 
@@ -88,10 +89,45 @@ based on area extent and a proj4-string or a list of proj4 arguments.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+The following arguments can be put in a yaml or passed to the function **from_params** in
+order to make an area definition.
+
+.. note::
+
+  Not all of the arguments are needed; the functions will attempt to figure out the information
+  required (area_extent and shape) to make an area definition from the information you provide.
+
+required:
+
+* **description**: Description
+* **projection**: Proj4 parameters as a dict or string
+optional:
+* **area_id**: ID of area
+* **proj_id**: ID of projection (being deprecated)
+* **units**: Default projection units (meters/radians/degrees). If units are not specified,
+they will default to the proj4's units and then to meters if they are still not provided.
+* **shape**: (y_size, x_size). Note: if x_size = y_size, then only x_size or y_size needs to be passed
+* **area_extent**: (x_ll, y_ll, x_ur, y_ur). lower_left_xy and upper_right_xy can be specified as (x_ll, y_ll) and
+(x_ur, y_ur) respectively. Note: if x_ll = y_ll or x_ur = y_ur, then only x_ll/y_ll or x_ur/y_ur needs to be
+passed respectively.
+* **top_left_extent**: (x_ul, y_ul). Note: if x_ul = y_ul, then only x_ul or y_ul needs to be passed
+* **center**: (center_x, center_y). Note: if center_x = center_y, then only center_x or center_y needs to be passed
+* **pixel_size**: size of each pixel in projection units
+* **radius**: length from center of projection to edge of projection in projection units
 
 The **load_area** function can be used to parse area definitions from a
-configuration file. Assuming the file **areas.yaml** exists with the following
-content
+configuration file. **load_area** calls **from_params** and hence uses the same arguments
+
+The file **areas.yaml** must exist with the following content.
+Things to keep in mind:
+* Size can be a value corresponding directly to the variable, thus units may not be specified in this case.
+* Only size, lower_left_xy, and upper_right_xy can be expressed as a list.
+* If each element of a two element list is the same, you may list the element by itself. Ex: [0, 0] == 0.
+* Units accept anything with 'm', 'deg', '°', or 'rad'. Units are optional: They may be left off. The order
+ of default is: units expressed with each variable, units declared for the entire area definition, units used in
+ projection data, then meters. Shape is not affected by units.
+* You can only use size XOR x/y (x/y := lower_left_xy/upper_right_xy for area_extent := height/width for shape).
+* area_id defaults to the area definition name.
 
 .. code-block:: yaml
 
@@ -108,24 +144,40 @@ content
      width: 425
    area_extent:
      lower_left_xy: [-5326849.0625, -5326849.0625]
-     upper_right_xy: [5326849.0625, 5326849.0625]
+     upper_right_xy: 5326849.0625
+   top_left_extent: [-5326849.0625, 5326849.0625]
+   center:
+     size: 0
      units: m
+   pixel_size:
+     x: 12533.7625
+     y: 25067.525
+     units: m
+   radius: 5326849.0625
  ease_nh:
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
    description: Arctic EASE grid
    projection:
      a: 6371228.0
      units: m
      lon_0: 0
      proj: laea
-     lat_0: 90
-   shape:
-     height: 425
-     width: 425
+     lat_0: -90
+   shape: [425, 425]
    area_extent:
-     lower_left_xy: [-5326849.0625, -5326849.0625]
-     upper_right_xy: [5326849.0625, 5326849.0625]
+     size: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
      units: m
-
+   top_left_extent:
+     x: -5326849.0625
+     y: 5326849.0625
+     units: m
+   center: 0
+   pixel_size:
+     size: [12533.7625, 25067.525]
+     units: m
+   radius: [5326849.0625, 5326849.0625]
 
 An area definition dict can be read using
 
@@ -140,8 +192,6 @@ An area definition dict can be read using
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-Note: In the configuration file, the section name maps to **area_id**.
 
 .. note::
 
