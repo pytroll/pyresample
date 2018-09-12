@@ -103,14 +103,12 @@ Required (positional) arguments:
 
 * **name**: Description
 * **projection**: projection parameters as a proj4_dict or proj4_string
+
 Optional (keyword) arguments:
 
-* **area_id**: ID of area
-* **proj_id**: ID of projection (being deprecated)
-* **units**: Default projection units (meters/radians/degrees). If units are not specified,
-  they will default to the proj4's units and then to meters if they are still not provided.
+* **area_id**, **proj_id**, and **area_extent**: same as AreaDefinition
+* **units**: Default projection units (meters/radians/degrees)
 * **shape**: (height, width). Note: if height = width, then only height or width needs to be passed.
-* **area_extent**: (x_ll, y_ll, x_ur, y_ur)
 * **top_left_extent**: (x_ul, y_ul)
 * **center**: (center_x, center_y)
 * **pixel_size**: (x_size, y_size). Note: if x_size = y_size, then only x_size or y_size needs to be passed.
@@ -118,35 +116,57 @@ Optional (keyword) arguments:
 
 where
 
-* **x_ll**, **y_ll**, **x_ur**, **y_ur**: same as AreaDefinition
 * **x_ul**: projection x coordinate of upper left corner of upper left pixel
 * **y_ul**: projection y coordinate of upper left corner of upper left pixel
 * **center_x**: projection x coordinate of center of projection
 * **center_y**: projection y coordinate of center of projection
-* **height**: number of pixels in y direction (number of rows)
-* **width**: number of pixels in x direction (number of columns)
+* **height**: number of pixels in y direction (number of grid rows)
+* **width**: number of pixels in x direction (number of grid columns)
 * **x_size**: size of pixels in the x direction using projection units
 * **y_size**: size of pixels in the y direction using projection units
 * **x_length**: length from center to left/right outer edge using projection units
 * **y_length**: length from center to top/bottom outer edge using projection units
+* **units** accepts anything with 'm', 'rad', 'deg' or the degree symbol. The order of default is: units expressed
+  with each variable, units passed to **units**, units used in **projection**, then meters. **shape** is not affected
+  by units. To add units to a specific variable, you can make an xarray.DataArray with a variable and then use
+  {'units': unit_of_choice} as its attrs attribute.
 
+.. doctest::
+
+ >>> from pyresample import utils
+ >>> from xarray import DataArray
+ >>> area_id = 'ease_sh'
+ >>> name = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ >>> area_extent = DataArray((-135.0, -17.516001139327766, 45.0, -17.516001139327766), attrs={'units': 'degrees'})
+ >>> pixel_size = 25067.525
+ >>> center = [0, 0]
+ >>> area_def = utils.from_params(name, proj_dict, area_extent=area_extent, center=center, pixel_size=pixel_size,
+ ...                              area_id=area_id, proj_id=proj_id)
+ >>> print(area_def)
+ Area ID: ease_sh
+ Description: Antarctic EASE grid
+ Projection ID: ease_sh
+ Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 The **load_area** function can be used to parse area definitions from a
-configuration file. **load_area** calls **from_params** and hence uses the same arguments as it does.
+configuration file. **load_area** calls **from_params** and hence uses the same arguments.
 
 The file **areas.yaml** must exist with the following content.
 Things to keep in mind:
 
-* You may add a key to a variable with the same name as the variable. This only makes sense if you are adding units.
-* Only **size**, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
+* You may add a key to a variable with the same name as the variable which has the exact same parameters
+  as the variable itself. This only makes sense if you are adding units.
+* Only a variable/variable-key, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
 * If each element of **shape**, **pixel_size**, or **radius** is the same, you may list the element by itself.
-  Example: [0, 0] == 0.
-* **units** accepts anything with 'm', 'deg', '°', or 'rad'. Units are optional: They may be left off. The order
-  of default is: units expressed with each variable, units declared for the entire area definition, units used in
-  **projection**, then meters. Shape is not affected by units.
-* A variable key will override other data included besides units. Example using **shape**: If shape: [425, 425],
+  Example: [0, 0] = 0.
+* A variable-key will override other data included besides **units**. An example using **shape**: If shape: [425, 425],
   height: 850, and width: 850 are provided, **shape** will be [425, 425].
-* area_id defaults to the name used to specify the area definition (in this case ease_sh or ease_nh).
+* **area_id** defaults to the name used to specify the area definition (in this case ease_sh or ease_nh).
 
 .. code-block:: yaml
 
@@ -185,9 +205,7 @@ Things to keep in mind:
      proj: laea
      lat_0: -90
    shape: 425
-   area_extent:
-     area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
-     units: m
+   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
    top_left_extent:
      x_ul: -5326849.0625
      y_ul: 5326849.0625
