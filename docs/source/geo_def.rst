@@ -90,50 +90,68 @@ based on area extent and a proj4-string/dict or a list of proj4 arguments.
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 The following arguments can be put in a yaml or passed to the function **from_params** in
-order to make an area definition.
+order to make an area definition. If shape and area_extent are found, an AreaDefinition is made. If only shape or
+area_extent can be found, a DynamicAreaDefinition will be made. If neither shape nor area_extent can be found, an
+error will occur.
 
 .. note::
 
-  Not all of the arguments are needed; the functions will attempt to figure out the information
+  Not all of the arguments are needed; the function will attempt to figure out the information
   required (area_extent and shape) to make an area definition from the information you provide.
 
-required:
+Required (positional) arguments:
 
-* **description**: Description
-* **projection**: Proj4 parameters as a dict or string
-optional:
+* **name**: Description
+* **projection**: projection parameters as a proj4_dict or proj4_string
+Optional (keyword) arguments:
 
 * **area_id**: ID of area
 * **proj_id**: ID of projection (being deprecated)
 * **units**: Default projection units (meters/radians/degrees). If units are not specified,
   they will default to the proj4's units and then to meters if they are still not provided.
-* **shape**: (y_size, x_size). Note: if x_size = y_size, then only x_size or y_size needs to be passed
+* **shape**: (height, width). Note: if height = width, then only height or width needs to be passed.
 * **area_extent**: (x_ll, y_ll, x_ur, y_ur)
-* **top_left_extent**: (x_ul, y_ul). Note: if x_ul = y_ul, then only x_ul or y_ul needs to be passed
-* **center**: (center_x, center_y). Note: if center_x = center_y, then only center_x or center_y needs to be passed
-* **pixel_size**: size of each pixel in projection units
-* **radius**: length from center of projection to edge of projection in projection units
+* **top_left_extent**: (x_ul, y_ul)
+* **center**: (center_x, center_y)
+* **pixel_size**: (x_size, y_size). Note: if x_size = y_size, then only x_size or y_size needs to be passed.
+* **radius**: (x_length, y_length). Note: if x_length = y_length, then only x_length or y_length needs to be passed.
+
+where
+
+* **x_ll**, **y_ll**, **x_ur**, **y_ur**: same as AreaDefinition
+* **x_ul**: projection x coordinate of upper left corner of upper left pixel
+* **y_ul**: projection y coordinate of upper left corner of upper left pixel
+* **center_x**: projection x coordinate of center of projection
+* **center_y**: projection y coordinate of center of projection
+* **height**: number of pixels in y direction (number of rows)
+* **width**: number of pixels in x direction (number of columns)
+* **x_size**: size of pixels in the x direction using projection units
+* **y_size**: size of pixels in the y direction using projection units
+* **x_length**: length from center to left/right outer edge using projection units
+* **y_length**: length from center to top/bottom outer edge using projection units
+
 
 The **load_area** function can be used to parse area definitions from a
-configuration file. **load_area** calls **from_params** and hence uses the same arguments
+configuration file. **load_area** calls **from_params** and hence uses the same arguments as it does.
 
 The file **areas.yaml** must exist with the following content.
 Things to keep in mind:
 
-* Size can be a value corresponding directly to the variable, thus units may not be specified in this case.
-* Only size, lower_left_xy, and upper_right_xy can be expressed as a list.
-* If each element of shape, pixel_size, or radius is the same, you may list the element by itself. Ex: [0, 0] == 0.
-* Units accept anything with 'm', 'deg', '°', or 'rad'. Units are optional: They may be left off. The order
+* You may add a key to a variable with the same name as the variable. This only makes sense if you are adding units.
+* Only **size**, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
+* If each element of **shape**, **pixel_size**, or **radius** is the same, you may list the element by itself.
+  Example: [0, 0] == 0.
+* **units** accepts anything with 'm', 'deg', '°', or 'rad'. Units are optional: They may be left off. The order
   of default is: units expressed with each variable, units declared for the entire area definition, units used in
-  projection data, then meters. Shape is not affected by units.
-* You can only use size or x/y (x/y := lower_left_xy/upper_right_xy for area_extent := height/width for shape). If both
-  are provided, size will override x/y.
-* area_id defaults to the area definition name.
+  **projection**, then meters. Shape is not affected by units.
+* A variable key will override other data included besides units. Example using **shape**: If shape: [425, 425],
+  height: 850, and width: 850 are provided, **shape** will be [425, 425].
+* area_id defaults to the name used to specify the area definition (in this case ease_sh or ease_nh).
 
 .. code-block:: yaml
 
  ease_sh:
-   description: Antarctic EASE grid
+   name: Antarctic EASE grid
    projection:
      a: 6371228.0
      units: m
@@ -148,38 +166,42 @@ Things to keep in mind:
      upper_right_xy: [5326849.0625, 5326849.0625]
    top_left_extent: [-5326849.0625, 5326849.0625]
    center:
-     size: [0, 0]
+     center: [0, 0]
      units: m
    pixel_size:
-     x: 12533.7625
-     y: 25067.525
+     x_size: 25067.525
+     y_size: 25067.525
      units: m
    radius: 5326849.0625
  ease_nh:
    area_id: ease_sh
    proj_id: ease_sh
    units: meters
-   description: Arctic EASE grid
+   name: Arctic EASE grid
    projection:
      a: 6371228.0
      units: m
      lon_0: 0
      proj: laea
      lat_0: -90
-   shape:
-     size: 425
-   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+   shape: 425
+   area_extent:
+     area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+     units: m
    top_left_extent:
-     x: -5326849.0625
-     y: 5326849.0625
+     x_ul: -5326849.0625
+     y_ul: 5326849.0625
      units: m
    center:
-     x: 0
-     y: 0
-   pixel_size: 25067.525
+     center_x: 0
+     center_y: 0
+     units: m
+   pixel_size:
+     pixel_size: 25067.525
+     units: m
    radius:
-     x: 5326849.0625
-     y: 5326849.0625
+     x_length: 5326849.0625
+     y_length: 5326849.0625
 
 An area definition dict can be read using
 

@@ -135,16 +135,16 @@ def _parse_yaml_area_file(area_file_name, *regions):
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
                 area_name, area_file_name))
         # Required arguments.
-        params['name'] = params.pop('description')
-        params['proj4'] = params.pop('projection')
+        params['name'] = params.pop('name')
+        params['projection'] = params.pop('projection')
         # Optional arguments. Note: for size to override other arguments (i.e. x or y), it must be passed last.
         params['area_id'] = params.get('area_id', area_name)
-        params['shape'] = _get_list(params, 'shape', ['height', 'width', 'size'])
-        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y', 'size'])
-        params['center'] = _get_list(params, 'center', ['x', 'y', 'size'])
-        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'size'])
-        params['pixel_size'] = _get_list(params, 'pixel_size', ['x', 'y', 'size'])
-        params['radius'] = _get_list(params, 'radius', ['x', 'y', 'size'])
+        params['shape'] = _get_list(params, 'shape', ['height', 'width'])
+        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x_ul', 'y_ul'])
+        params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
+        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
+        params['pixel_size'] = _get_list(params, 'pixel_size', ['x_size', 'y_size'])
+        params['radius'] = _get_list(params, 'radius', ['x_length', 'y_length'])
         res.append(from_params(**params))
     return res
 
@@ -159,11 +159,13 @@ def _get_list(params, var, arg_list, default=None):
     if not isinstance(variable, dict):
         return variable
     list_of_values = []
+    # Add var as a key incase users want to express the entire variable with units.
+    arg_list.append(var)
     # Iterate through dict.
     for arg in arg_list:
         try:
             values = variable[arg]
-            if arg == 'size':
+            if arg == var:
                 list_of_values = values
             elif arg in ('lower_left_xy', 'upper_right_xy') and isinstance(values, list):
                 list_of_values.extend(values)
@@ -566,13 +568,13 @@ def recursive_dict_update(d, u):
     return d
 
 
-def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
+def from_params(name, projection, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
                 radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found."""
     area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
-    proj_dict, p = _get_proj_data(proj4)
+    proj_dict, p = _get_proj_data(projection)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
@@ -617,16 +619,17 @@ def _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs):
     raise ValueError('Not enough information provided to create an area definition')
 
 
-def _get_proj_data(proj4):
+def _get_proj_data(projection):
     """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function."""
     from pyproj import Proj
 
-    if isinstance(proj4, str):
-        proj_dict = proj4_str_to_dict(proj4)
-    elif isinstance(proj4, dict):
-        proj_dict = proj4
+    if isinstance(projection, str):
+        proj_dict = proj4_str_to_dict(projection)
+    elif isinstance(projection, dict):
+        proj_dict = projection
     else:
-        raise ValueError('"proj4" must be a proj4 dict or a proj4 string. Type entered: {0}'.format(proj4.__class__))
+        raise ValueError('"projection" must be a proj4_dict or a proj4_string.' +
+                         'Type entered: {0}'.format(projection.__class__))
     return proj_dict, Proj(proj_dict)
 
 
