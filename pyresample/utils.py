@@ -137,12 +137,12 @@ def _parse_yaml_area_file(area_file_name, *regions):
         # Required arguments.
         params['name'] = params.pop('description')
         params['proj4'] = params.pop('projection')
-        # Optional arguments.
+        # Optional arguments. Note: for size to override other arguments (i.e. x or y), it must be passed last.
         params['area_id'] = params.get('area_id', area_name)
         params['shape'] = _get_list(params, 'shape', ['height', 'width', 'size'])
         params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y', 'size'])
         params['center'] = _get_list(params, 'center', ['x', 'y', 'size'])
-        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'extents'])
+        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy', 'size'])
         params['pixel_size'] = _get_list(params, 'pixel_size', ['x', 'y', 'size'])
         params['radius'] = _get_list(params, 'radius', ['x', 'y', 'size'])
         res.append(from_params(**params))
@@ -152,36 +152,30 @@ def _parse_yaml_area_file(area_file_name, *regions):
 def _get_list(params, var, arg_list, default=None):
     """Reads a list-like param variable."""
     # Check if variable is in yaml.
-    list_of_values = []
     try:
         variable = params[var]
     except KeyError:
         return default
-    # Single number format.
-    if isinstance(variable, (float, int)) and var != 'area_extent':
-        return variable, variable
-    # Non-dicts (lists will work).
     if not isinstance(variable, dict):
         return variable
+    list_of_values = []
     # Iterate through dict.
     for arg in arg_list:
         try:
             values = variable[arg]
-            # Append values of list if the arg can be list-like.
-            if arg in ('lower_left_xy', 'upper_right_xy', 'size', 'extents') and isinstance(values, list):
+            if arg == 'size':
+                list_of_values = values
+            elif arg in ('lower_left_xy', 'upper_right_xy') and isinstance(values, list):
                 list_of_values.extend(values)
             else:
                 list_of_values.append(values)
-                # Single number format.
-                if arg in ('lower_left_xy', 'upper_right_xy', 'size'):
-                    list_of_values.append(values)
         except KeyError:
             pass
     # If units are present, convert to xarray.
     units = variable.get('units')
     if units is not None:
         return DataArray(list_of_values, attrs={'units': units})
-    return tuple(list_of_values)
+    return list_of_values
 
 
 def _read_legacy_area_file_lines(area_file_name):
@@ -583,7 +577,6 @@ def from_params(name, proj4, shape=None, top_left_extent=None, center=None, area
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
         units = proj_dict.get('units', 'meters')
-
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
     center, radius, top_left_extent, pixel_size, area_extent, shape =\
         [_verify_list(var_name, var, length) for var_name, var, length in
@@ -738,6 +731,17 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
     return area_extent, shape
 
 
+def _format_list(var, name):
+    """Used to let shape, pixel_size, and radius to be single numbers if their elements are equal."""
+    if isinstance(var, (list, tuple)):
+        var = tuple(float(num) for num in var)
+    # Single number format.
+    elif len(np.ravel(var)) == 1 and name in ('shape', 'pixel_size', 'radius'):
+        var = [float(var)]
+        var.extend(var)
+    return tuple(var)
+
+
 def _verify_list(name, var, length):
     """ Checks that every piece of data that should be list-like (converts lists/tuples to xarrays) is list-like,
         makes sure shapes are accurate, and checks to make sure their values are numbers."""
@@ -747,11 +751,12 @@ def _verify_list(name, var, length):
     # Verify that list is made of numbers and list-like.
     try:
         if hasattr(var, 'units') and name != 'shape':
-            var = DataArray([float(num) for num in var.data.tolist()], attrs=var.attrs)
+            # For len(var) to work, DataArray must contain a list, not a tuple
+            var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
         elif isinstance(var, DataArray):
-            var = tuple(float(num) for num in var.data.tolist())
+            var = _format_list(var.data.tolist(), name)
         else:
-            var = tuple(float(num) for num in var)
+            var = _format_list(var, name)
     except TypeError:
         raise ValueError('{0} is not list-like:\n{1}'.format(name, var))
     except ValueError:

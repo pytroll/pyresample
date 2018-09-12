@@ -10,8 +10,8 @@ test_meters:
     proj: laea
     lat_0: -90
   area_extent:
-    lower_left_xy: -5326849.0625
-    upper_right_xy: 5326849.0625
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
   shape:
     width: 850
@@ -21,12 +21,11 @@ test_meters:
     y: 5326849.0625
     units: m
   center:
-    size: 0
+    size: [0, 0]
     units: m
   pixel_size: [12533.7625, 25067.525]
   radius:
-    x: 5326849.0625
-    y: 5326849.0625
+    size: 5326849.0625
     units: m
 
 test_radians:
@@ -41,7 +40,7 @@ test_radians:
     proj: laea
     lat_0: -90
   area_extent:
-    extents: [-2.356194490192345, -0.30571189166434753, 0.7853981633974483, -0.30571189166434753]
+    size: [-2.356194490192345, -0.30571189166434753, 0.7853981633974483, -0.30571189166434753]
     units: radians
   shape: [425, 850]
   top_left_extent:
