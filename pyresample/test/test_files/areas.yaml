@@ -1,5 +1,5 @@
 test_meters:
-  name: test_meters
+  description: test_meters
   area_id: ease_sh
   proj_id: ease_sh
   units: meters
@@ -29,7 +29,7 @@ test_meters:
     units: m
 
 test_radians:
-  name: test_radians
+  description: test_radians
   area_id: 'ease_sh'
   proj_id: 'ease_sh'
   units: 'meters'
@@ -61,7 +61,7 @@ test_radians:
     units: radians
 
 test_degrees:
-  name: test_degrees
+  description: test_degrees
   area_id: 'ease_sh'
   proj_id: 'ease_sh'
   units: 'meters'
@@ -96,7 +96,7 @@ test_degrees:
     units: degrees
 
 ease_sh:
-  name: Antarctic EASE grid
+  description: Antarctic EASE grid
   projection:
     a: 6371228.0
     units: m
@@ -112,7 +112,7 @@ ease_sh:
     units: m
 
 ease_nh:
-  name: Arctic EASE grid
+  description: Arctic EASE grid
   projection:
     a: 6371228.0
     units: m

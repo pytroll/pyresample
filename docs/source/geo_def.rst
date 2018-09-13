@@ -89,19 +89,11 @@ based on area extent and a proj4-string/dict or a list of proj4 arguments.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The following arguments can be put in a yaml or passed to the function **from_params** in
-order to make an area definition. If shape and area_extent are found, an AreaDefinition is made. If only shape or
-area_extent can be found, a DynamicAreaDefinition will be made. If neither shape nor area_extent can be found, an
-error will occur.
-
-.. note::
-
-  Not all of the arguments are needed; the function will attempt to figure out the information
-  required (area_extent and shape) to make an area definition from the information you provide.
+The function **from_params** attempts to find shape and area_extent with the given data below:
 
 Required (positional) arguments:
 
-* **name**: Description
+* **description**: Description
 * **projection**: projection parameters as a proj4_dict or proj4_string
 
 Optional (keyword) arguments:
@@ -122,27 +114,33 @@ where
 * **center_y**: projection y coordinate of center of projection
 * **height**: number of pixels in y direction (number of grid rows)
 * **width**: number of pixels in x direction (number of grid columns)
-* **x_size**: size of pixels in the x direction using projection units
-* **y_size**: size of pixels in the y direction using projection units
-* **x_length**: length from center to left/right outer edge using projection units
-* **y_length**: length from center to top/bottom outer edge using projection units
-* **units** accepts anything with 'm', 'rad', 'deg' or the degree symbol. The order of default is: units expressed
+* **x_size**: projection size of pixels in the x direction
+* **y_size**: projection size of pixels in the y direction
+* **x_length**: projection length from center to left/right outer edge
+* **y_length**: projection length from center to top/bottom outer edge
+* **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is: units expressed
   with each variable, units passed to **units**, units used in **projection**, then meters. **shape** is not affected
   by units. To add units to a specific variable, you can make an xarray.DataArray with a variable and then use
   {'units': unit_of_choice} as its attrs attribute.
+
+**from_params** returns the following outcomes:
+
+1. If shape and area_extent are found, an AreaDefinition is returned
+2. If only shape or area_extent can be found, a DynamicAreaDefinition is returned
+3. If neither shape nor area_extent can be found, an error will occur
 
 .. doctest::
 
  >>> from pyresample import utils
  >>> from xarray import DataArray
  >>> area_id = 'ease_sh'
- >>> name = 'Antarctic EASE grid'
+ >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
  >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
  >>> area_extent = DataArray((-135.0, -17.516001139327766, 45.0, -17.516001139327766), attrs={'units': 'degrees'})
  >>> pixel_size = 25067.525
  >>> center = [0, 0]
- >>> area_def = utils.from_params(name, proj_dict, area_extent=area_extent, center=center, pixel_size=pixel_size,
+ >>> area_def = utils.from_params(description, proj_dict, area_extent=area_extent, center=center, pixel_size=pixel_size,
  ...                              area_id=area_id, proj_id=proj_id)
  >>> print(area_def)
  Area ID: ease_sh
@@ -153,25 +151,26 @@ where
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The **load_area** function can be used to parse area definitions from a
-configuration file. **load_area** calls **from_params** and hence uses the same arguments.
+The **load_area** function can be used to parse area definitions from a configuration file by giving it the area file
+name and regions you wish to load. **load_area** takes advantage of **from_params** and hence uses the same arguments.
 
-The file **areas.yaml** must exist with the following content.
-Things to keep in mind:
+When composing a yaml file, things to keep in mind are:
 
-* You may add a key to a variable with the same name as the variable which has the exact same parameters
-  as the variable itself. This only makes sense if you are adding units.
-* Only a variable/variable-key, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
-* If each element of **shape**, **pixel_size**, or **radius** is the same, you may list the element by itself.
-  Example: [0, 0] = 0.
-* A variable-key will override other data included besides **units**. An example using **shape**: If shape: [425, 425],
-  height: 850, and width: 850 are provided, **shape** will be [425, 425].
+* If the elements of **shape**, **pixel_size**, or **radius** respectively are the same, you may define the
+  variable by the element alone. Example: [0, 0] = 0.
 * **area_id** defaults to the name used to specify the area definition (in this case ease_sh or ease_nh).
+* You may add a key to a variable with the same name as the variable itself. This variable-key has the
+  exact same parameters as the variable it is named after. Note: This only makes sense if you are adding units.
+* Only a variable/variable-key, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
+* A variable-key will override other data included aside from **units**. An example using **shape**:
+  If shape: [425, 425], height: 850, and width: 850 are provided, **shape** will be [425, 425].
+
+Assuming the file **areas.yaml** exists with the following content
 
 .. code-block:: yaml
 
  ease_sh:
-   name: Antarctic EASE grid
+   description: Antarctic EASE grid
    projection:
      a: 6371228.0
      units: m
@@ -197,7 +196,7 @@ Things to keep in mind:
    area_id: ease_sh
    proj_id: ease_sh
    units: meters
-   name: Arctic EASE grid
+   description: Arctic EASE grid
    projection:
      a: 6371228.0
      units: m

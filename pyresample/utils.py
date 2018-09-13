@@ -134,11 +134,8 @@ def _parse_yaml_area_file(area_file_name, *regions):
         except KeyError:
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
                 area_name, area_file_name))
-        # Required arguments.
-        params['name'] = params.pop('name')
-        params['projection'] = params.pop('projection')
-        # Optional arguments. Note: for size to override other arguments (i.e. x or y), it must be passed last.
-        params['area_id'] = params.get('area_id', area_name)
+        # Optional arguments.
+        params.setdefault('area_id', area_name)
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
         params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x_ul', 'y_ul'])
         params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
@@ -159,7 +156,7 @@ def _get_list(params, var, arg_list, default=None):
     if not isinstance(variable, dict):
         return variable
     list_of_values = []
-    # Add var as a key incase users want to express the entire variable with units.
+    # Add var as a key in case users want to express the entire variable with units.
     arg_list.append(var)
     # Iterate through dict.
     for arg in arg_list:
@@ -568,10 +565,11 @@ def recursive_dict_update(d, u):
     return d
 
 
-def from_params(name, projection, shape=None, top_left_extent=None, center=None, area_extent=None, pixel_size=None,
+def from_params(description, projection, shape=None, top_left_extent=None, center=None, area_extent=None,
+                pixel_size=None,
                 radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found."""
-    area_id, proj_id = kwargs.pop('area_id', name), kwargs.pop('proj_id', None)
+    area_id, proj_id = kwargs.pop('area_id', description), kwargs.pop('proj_id', None)
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict, p = _get_proj_data(projection)
@@ -593,10 +591,10 @@ def from_params(name, projection, shape=None, top_left_extent=None, center=None,
     if None in (area_extent, shape):
         area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent)
 
-    return _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs)
+    return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
 
-def _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs):
+def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs):
     """Handles the actual creation of an area definition for from_params."""
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
@@ -611,9 +609,9 @@ def _make_area(area_id, name, proj_id, proj_dict, shape, area_extent, **kwargs):
     # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
     if None not in (area_extent, shape):
-        return AreaDefinition(area_id, name, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
+        return AreaDefinition(area_id, description, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
     elif area_extent is not None or shape is not None:
-        return DynamicAreaDefinition(area_id=area_id, description=name, proj_dict=proj_dict, x_size=x_size,
+        return DynamicAreaDefinition(area_id=area_id, description=description, proj_dict=proj_dict, x_size=x_size,
                                      y_size=y_size, area_extent=area_extent, rotation=kwargs.get('rotation'),
                                      optimize_projection=kwargs.get('optimize_projection', False))
     raise ValueError('Not enough information provided to create an area definition')
