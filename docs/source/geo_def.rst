@@ -48,15 +48,15 @@ Creating an area definition:
  >>> x_size = 425
  >>> y_size = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0',
- ...              'proj': 'laea', 'lat_0': '-90'}
+ >>> proj_dict = {'a': 6371228.0, 'units': 'm', 'lon_0': 0.0,
+ ...              'proj': 'laea', 'lat_0': -90.0}
  >>> area_def = geometry.AreaDefinition(area_id, description, proj_id,
  ... 									proj_dict, x_size, y_size, area_extent)
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -84,7 +84,7 @@ based on area extent and a proj4-string/dict or a list of proj4 arguments.
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -229,7 +229,7 @@ An area definition dict can be read using
  >>> print(area)
  Area ID: ease_nh
  Description: Arctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -250,7 +250,7 @@ Several area definitions can be read at once using the region names in an argume
  >>> print(sh_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -293,7 +293,7 @@ An area definition dict can be read using
  Area ID: ease_nh
  Description: Arctic EASE grid
  Projection ID: ease_nh
- Projection: {'a': '6371228.0', 'lat_0': '90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -310,7 +310,7 @@ Several area definitions can be read at once using the region names in an argume
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)

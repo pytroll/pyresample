@@ -848,7 +848,7 @@ class AreaDefinition(BaseDefinition):
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(x_size)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
-        self.proj_dict = proj_dict
+        self.proj_dict = utils.convert_proj_floats(proj_dict.items())
         self.area_extent = tuple(area_extent)
 
         # Calculate area_extent in lon lat

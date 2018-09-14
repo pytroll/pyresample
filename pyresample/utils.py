@@ -417,6 +417,22 @@ def fwhm2sigma(fwhm):
     return fwhm / (2 * np.sqrt(np.log(2)))
 
 
+def convert_proj_floats(proj_pairs):
+    """Convert PROJ.4 parameters to floats if possible."""
+    proj_dict = {}
+    for x in proj_pairs:
+        if len(x) == 1 or x[1] is True:
+            proj_dict[x[0]] = True
+            continue
+
+        try:
+            proj_dict[x[0]] = float(x[1])
+        except ValueError:
+            proj_dict[x[0]] = x[1]
+
+    return proj_dict
+
+
 def _get_proj4_args(proj4_args):
     """Create dict from proj4 args
     """
@@ -425,7 +441,7 @@ def _get_proj4_args(proj4_args):
         proj_config = ConfigObj(str(proj4_args).replace('+', '').split())
     else:
         proj_config = ConfigObj(proj4_args)
-    return proj_config.dict()
+    return convert_proj_floats(proj_config.dict().items())
 
 
 def proj4_str_to_dict(proj4_str):
@@ -434,7 +450,7 @@ def proj4_str_to_dict(proj4_str):
     Note: Key only parameters will be assigned a value of `True`.
     """
     pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
-    return dict((x[0], (x[1] if len(x) == 2 else True)) for x in pairs)
+    return convert_proj_floats(pairs)
 
 
 def proj4_dict_to_str(proj4_dict, sort=False):
