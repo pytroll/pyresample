@@ -911,12 +911,11 @@ class AreaDefinition(BaseDefinition):
             third_line = ""
         else:
             third_line = "Projection ID: {0}\n".format(self.proj_id)
-
         return ('Area ID: {0}\nDescription: {1}\n{2}'
                 'Projection: {3}\nNumber of columns: {4}\nNumber of rows: {5}\n'
                 'Area extent: {6}').format(self.area_id, self.name, third_line,
                                            proj_str, self.x_size, self.y_size,
-                                           self.area_extent)
+                                           tuple(round(x, 4) for x in self.area_extent))
 
     __repr__ = __str__
 
