@@ -146,7 +146,7 @@ where
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90', 'lon_0': '0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -162,7 +162,7 @@ When composing a yaml file, things to keep in mind are:
 * You may add a key to a variable with the same name as the variable itself. This variable-key has the
   exact same parameters as the variable it is named after. Note: This only makes sense if you are adding units.
 * Only a variable/variable-key, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
-* A variable-key will override other data included aside from **units**. An example using **shape**:
+* A variable-key will override other data included except for **units**. An example using **shape**:
   If shape: [425, 425], height: 850, and width: 850 are provided, **shape** will be [425, 425].
 
 Assuming the file **areas.yaml** exists with the following content
