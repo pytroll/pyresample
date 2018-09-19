@@ -1356,7 +1356,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_list.append(area(name, proj4_list[1], shape=shape, radius=radius, top_left_extent=top_left_extent))
         # Tests all 4 user cases.
         area_list.append(AreaDefinition.from_extent(name, proj4_list[1], area_extent, shape))
-        area_list.append(AreaDefinition.from_circle(name, proj4_list[1], center_list[0], radius, pixel_size))
+        area_list.append(AreaDefinition.from_circle(name, proj4_list[1], center_list[0], radius, pixel_size=pixel_size))
         area_list.append(AreaDefinition.from_area_of_interest(name, proj4_list[1], center_list[0], pixel_size, shape))
         area_list.append(AreaDefinition.from_geotiff(name, proj4_list[1], top_left_extent, pixel_size, shape))
 

@@ -51,8 +51,8 @@ def load_area(area_file_name, *regions):
 
     Returns
     -------
-    area_defs : object or list
-        If one area name is specified a single AreaDefinition object is returned
+    area_defs : AreaDefinition or list
+        If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
 
     Raises
@@ -141,7 +141,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
         params['pixel_size'] = _get_list(params, 'pixel_size', ['x_size', 'y_size'])
-        params['radius'] = _get_list(params, 'radius', ['x_length', 'y_length'])
+        params['radius'] = _get_list(params, 'radius', ['x_radius', 'y_radius'])
         res.append(from_params(**params))
     return res
 
@@ -282,7 +282,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         ID of projection
     area_name :str
         Description of area
-    proj4_args : list or str
+    proj4_args : list, dict, or str
         Proj4 arguments as list of arguments or string
     x_size : int
         Number of pixel in x dimension
@@ -299,10 +299,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         AreaDefinition object
     """
 
-    from pyresample.geometry import AreaDefinition
     proj_dict = _get_proj4_args(proj4_args)
-    # return AreaDefinition(area_id, area_name, proj_id, proj_dict,
-    #                       x_size, y_size, area_extent)
     return from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
                        shape=(y_size, x_size), area_extent=area_extent)
 
@@ -584,7 +581,52 @@ def recursive_dict_update(d, u):
 def from_params(description, projection, shape=None, top_left_extent=None, center=None, area_extent=None,
                 pixel_size=None,
                 radius=None, units=None, **kwargs):
-    """Takes data the user knows and tries to make an area definition from what can be found."""
+    """Takes data the user knows and tries to make an area definition from what can be found.
+
+    Parameters
+    ----------
+    description : str
+        Name of area
+    projection : dict or str
+        Dictionary with Proj.4 parameters
+    area_id : str, optional
+        ID of area
+    proj_id : str, optional
+        ID of projection
+    units : str, optional
+        Default projection units: meters, radians, or degrees
+    shape : list or int, optional
+        Number of pixels (height, width)
+    area_extent : list, optional
+        Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+    top_left_extent : list, optional
+        Upper left corner of upper left pixel (x_ul, y_ul)
+    center : list, optional
+        Center of projection (center_x, center_y)
+    pixel_size : list or float, optional
+        Size of pixels: (x_size, y_size)
+    radius : list or float, optional
+        Length from the center to the edges of the projection (x_radius, y_radius)
+    rotation: float, optional
+        rotation in degrees (negative is cw)
+    nprocs : int, optional
+        Number of processor cores to be used
+    lons : numpy array, optional
+        Grid lons
+    lats : numpy array, optional
+        Grid lats
+
+    Returns
+    -------
+    AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+        If shape and area_extent are found, an AreaDefinition object is returned.
+        If only shape or area_extent can be found, a DynamicAreaDefinition object is returned
+
+    Raises
+    ------
+    ValueError:
+        If neither shape nor area_extent could be found
+    """
     area_id, proj_id = kwargs.pop('area_id', description), kwargs.pop('proj_id', None)
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.

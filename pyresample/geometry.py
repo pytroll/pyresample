@@ -669,13 +669,14 @@ class DynamicAreaDefinition(object):
         info."""
         if resolution is not None and size is not None:
             raise ValueError("Both resolution and size can't be provided.")
+        elif resolution is None and size is None:
+            raise ValueError("Either resolution or size must be provided.")
 
         if size:
             x_size, y_size = size
             x_resolution = (corners[2] - corners[0]) * 1.0 / (x_size - 1)
             y_resolution = (corners[3] - corners[1]) * 1.0 / (y_size - 1)
-
-        elif resolution:
+        else:
             try:
                 x_resolution, y_resolution = resolution
             except TypeError:
@@ -726,10 +727,7 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-            # For shape and area_extent to be defined, resolution or size must be defined.
-            domain = None
-            if not (resolution is None and size is None):
-                domain = self.compute_domain(corners, resolution, size)
+            domain = self.compute_domain(corners, resolution, size)
             self.area_extent, self.x_size, self.y_size = domain
         return AreaDefinition(self.area_id, self.description, '',
                               self.proj_dict, self.x_size, self.y_size,
@@ -873,22 +871,159 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @classmethod
-    def from_extent(cls, name, proj4, area_extent, shape, **kwargs):
-        return utils.from_params(name, proj4, area_extent=area_extent, shape=shape, **kwargs)
+    def from_extent(cls, description, projection, area_extent, shape, **kwargs):
+        """Create an AreaDefinition object from area_extent and shape.
+
+        Parameters
+        ----------
+        description : str
+            Name of area
+        projection : dict or str
+            Dictionary with Proj.4 parameters
+        area_extent : list
+            Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+        shape : list or int
+            Number of pixels (height, width)
+        area_id : str, optional
+            ID of area
+        proj_id : str, optional
+            ID of projection
+        units : str, optional
+            Default projection units: meters, radians, or degrees
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.from_params(description, projection, area_extent=area_extent, shape=shape, **kwargs)
 
     @classmethod
-    def from_circle(cls, name, proj4, center, radius, pixel_size=None, shape=None, **kwargs):
-        return utils.from_params(name, proj4, center=center, radius=radius, shape=shape, pixel_size=pixel_size,
-                                 **kwargs)
+    def from_circle(cls, description, projection, center, radius, shape=None, pixel_size=None, **kwargs):
+        """Create an AreaDefinition object from center, radius, and shape or from center, radius, and pixel_size.
+
+        Parameters
+        ----------
+        description : str
+            Name of area
+        projection : dict or str
+            Dictionary with Proj.4 parameters
+        center : list
+            Center of projection (center_x, center_y)
+        radius : list or float
+            Length from the center to the edges of the projection (x_radius, y_radius)
+        pixel_size : list or float, optional
+            Size of pixels: (x_size, y_size)
+        shape : list or int, optional
+            Number of pixels (height, width)
+        area_id : str, optional
+            ID of area
+        proj_id : str, optional
+            ID of projection
+        units : str, optional
+            Default projection units: meters, radians, or degrees
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+
+        Raises
+        ------
+        ValueError:
+            If neither shape nor pixel_size were provided
+        """
+        return utils.from_params(description, projection, center=center, radius=radius, shape=shape,
+                                 pixel_size=pixel_size, **kwargs)
 
     @classmethod
-    def from_area_of_interest(cls, name, proj4, center, pixel_size, shape, **kwargs):
-        return utils.from_params(name, proj4, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
+    def from_area_of_interest(cls, description, projection, center, pixel_size, shape, **kwargs):
+        """Create an AreaDefinition object from center, pixel_size, and shape.
+
+        Parameters
+        ----------
+        description : str
+            Name of area
+        projection : dict or str
+            Dictionary with Proj.4 parameters
+        center : list
+            Center of projection (center_x, center_y)
+        pixel_size : list or float
+            Size of pixels: (x_size, y_size)
+        shape : list or int
+            Number of pixels (height, width)
+        area_id : str, optional
+            ID of area
+        proj_id : str, optional
+            ID of projection
+        units : str, optional
+            Default projection units: meters, radians, or degrees
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.from_params(description, projection, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, name, proj4, top_left_extent, pixel_size, shape, **kwargs):
-        return utils.from_params(name, proj4, top_left_extent=top_left_extent, pixel_size=pixel_size, shape=shape,
-                                 **kwargs)
+    def from_geotiff(cls, description, projection, top_left_extent, pixel_size, shape, **kwargs):
+        """Create an AreaDefinition object from top_left_extent, pixel_size, and shape.
+
+        Parameters
+        ----------
+        description : str
+            Name of area
+        projection : dict or str
+            Dictionary with Proj.4 parameters
+        top_left_extent : list
+            Upper left corner of upper left pixel (x_ul, y_ul)
+        pixel_size : list or float
+            Size of pixels: (x_size, y_size)
+        shape : list or int
+            Number of pixels (height, width)
+        area_id : str, optional
+            ID of area
+        proj_id : str, optional
+            ID of projection
+        units : str, optional
+            Default projection units: meters, radians, or degrees
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.from_params(description, projection, top_left_extent=top_left_extent, pixel_size=pixel_size,
+                                 shape=shape, **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""

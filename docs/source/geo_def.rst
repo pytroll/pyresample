@@ -1,26 +1,31 @@
 Geometry definitions
 ====================
-The module **pyresample.geometry** contains classes for describing different kinds of types
-of remote sensing data geometries. The use of the different classes is described below.
+The module `pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_
+contains classes for describing different kinds of types of remote sensing data geometries.
+The use of the different classes is described below.
 
 Remarks
 -------
 
-All longitudes and latitudes provided to **pyresample.geometry** must be in degrees.
+All longitudes and latitudes provided to
+`pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_ must be in degrees.
 Longitudes must additionally be in the [-180;+180[ validity range.
 
-As of version 1.1.1, the **pyresample.geometry** contructors will check the range of
-longitude values, send a warning if some of them fall outside validity range,
+As of version 1.1.1, the
+`pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_ contructors will
+check the range of longitude values, send a warning if some of them fall outside validity range,
 and automatically correct the invalid values into [-180;+180[.
 
-Use function **utils.wrap_longitudes** for wrapping longitudes yourself.
+Use function `utils.wrap_longitudes <https://pyresample.readthedocs.io/en/latest/API.html#utils.wrap_longitudes>`_
+for wrapping longitudes yourself.
 
-AreaDefinition
---------------
+`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
+------------------------------------------------------------------------------------------------
 
-The cartographic definition of grid areas used by Pyresample is contained in an
-object of type AreaDefintion. The following arguments are needed to initialize
-an area:
+The cartographic definition of grid areas used by
+`Pyresample <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-api>`_ is contained in an
+object of type `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_.
+The following arguments are needed to initialize an area:
 
 * **area_id** ID of area
 * **name**: Description
@@ -61,12 +66,14 @@ Creating an area definition:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-pyresample.utils
-****************
+`pyresample.utils <https://pyresample.readthedocs.io/en/latest/API.html#module-utils>`_
+***************************************************************************************
 
-The utils module of pyresample has convenience functions for constructing
-area defintions. The function **get_area_def** can construct an area definition
-based on area extent and a proj4-string/dict or a list of proj4 arguments.
+The `utils <https://pyresample.readthedocs.io/en/latest/API.html#module-utils>`_ module of pyresample
+has convenience functions for constructing area definitions. The function
+`get_area_def <https://pyresample.readthedocs.io/en/latest/API.html#utils.get_area_def>`_ can
+construct an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
+object based on area extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
 
@@ -89,7 +96,9 @@ based on area extent and a proj4-string/dict or a list of proj4 arguments.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The function **from_params** attempts to find shape and area_extent with the given data below:
+The function `from_params <https://pyresample.readthedocs.io/en/latest/API.html#utils.from_params>`_ attempts
+to return an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
+object if the number of pixel (shape) and area_extent can be found with the given data below:
 
 Required (positional) arguments:
 
@@ -99,49 +108,40 @@ Required (positional) arguments:
 Optional (keyword) arguments:
 
 * **area_id**, **proj_id**, and **area_extent**: same as AreaDefinition
-* **units**: Default projection units (meters/radians/degrees)
-* **shape**: (height, width). Note: if height = width, then only height or width needs to be passed.
-* **top_left_extent**: (x_ul, y_ul)
-* **center**: (center_x, center_y)
-* **pixel_size**: (x_size, y_size). Note: if x_size = y_size, then only x_size or y_size needs to be passed.
-* **radius**: (x_length, y_length). Note: if x_length = y_length, then only x_length or y_length needs to be passed.
+* **units**: Default projection units: meters, radians, or degrees
+* **shape**: Number of pixels: (height, width)
+* **top_left_extent**: Upper left corner of upper left pixel: (x_ul, y_ul)
+* **center**: Center of projection: (center_x, center_y)
+* **pixel_size**: Size of pixels: (x_size, y_size)
+* **radius**: Length from the center to the edges of the projection: (x_radius, y_radius)
 
 where
 
-* **x_ul**: projection x coordinate of upper left corner of upper left pixel
-* **y_ul**: projection y coordinate of upper left corner of upper left pixel
-* **center_x**: projection x coordinate of center of projection
-* **center_y**: projection y coordinate of center of projection
-* **height**: number of pixels in y direction (number of grid rows)
-* **width**: number of pixels in x direction (number of grid columns)
-* **x_size**: projection size of pixels in the x direction
-* **y_size**: projection size of pixels in the y direction
-* **x_length**: projection length from center to left/right outer edge
-* **y_length**: projection length from center to top/bottom outer edge
-* **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is: units expressed
-  with each variable, units passed to **units**, units used in **projection**, then meters. **shape** is not affected
-  by units. To add units to a specific variable, you can make an xarray.DataArray with a variable and then use
-  {'units': unit_of_choice} as its attrs attribute.
-
-**from_params** returns the following outcomes:
-
-1. If shape and area_extent are found, an AreaDefinition is returned
-2. If only shape or area_extent can be found, a DynamicAreaDefinition is returned
-3. If neither shape nor area_extent can be found, an error will occur
+* **x_ul** and **y_ul**: projection x and y coordinate of upper left corner of upper left pixel
+* **center_x** and **center_y**: projection x and y coordinate of the center of projection
+* **height** and **width**: number of pixels in y (number of grid rows) and x (number of grid columns) direction
+* **x_size** and **y_size**: projection size of pixels in the x and y direction
+* **x_radius** and **y_radius**: projection length from the center to the left/right and top/bottom outer edges
+* **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+    1. units expressed with each variable
+    2. units passed to **units**
+    3. units used in **projection**
+    4. meters
+* **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
 
 .. doctest::
 
  >>> from pyresample import utils
  >>> from xarray import DataArray
- >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
- >>> proj_id = 'ease_sh'
  >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
- >>> area_extent = DataArray((-135.0, -17.516001139327766, 45.0, -17.516001139327766), attrs={'units': 'degrees'})
- >>> pixel_size = 25067.525
- >>> center = [0, 0]
- >>> area_def = utils.from_params(description, proj_dict, area_extent=area_extent, center=center, pixel_size=pixel_size,
- ...                              area_id=area_id, proj_id=proj_id)
+ >>> area_def = utils.from_params(description, projection, pixel_size=(45, -89.681194),
+ ...                              area_extent=(-135.0, -17.516001139327766, 45.0, -17.516001139327766),
+ ...                              units='degrees', area_id='ease_sh', proj_id='ease_sh')
+ >>> print(area_def)
+ >>> print('-----------------------------------------------------------------------')
+ >>> area_def = utils.from_params(description, projection, pixel_size=25067.525,
+ ...                              area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625))
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
@@ -150,27 +150,128 @@ where
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+ -----------------------------------------------------------------------
+ Area ID: Antarctic EASE grid
+ Description: Antarctic EASE grid
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The **load_area** function can be used to parse area definitions from a configuration file by giving it the area file
-name and regions you wish to load. **load_area** takes advantage of **from_params** and hence uses the same arguments.
-
-When composing a yaml file, things to keep in mind are:
-
-* If the elements of **shape**, **pixel_size**, or **radius** respectively are the same, you may define the
-  variable by the element alone. Example: [0, 0] = 0.
-* **area_id** defaults to the name used to specify the area definition (in this case ease_sh or ease_nh).
-* You may add a key to a variable with the same name as the variable itself. This variable-key has the
-  exact same parameters as the variable it is named after. Note: This only makes sense if you are adding units.
-* Only a variable/variable-key, **lower_left_xy**, and **upper_right_xy** can be expressed as a list.
-* A variable-key will override other data included except for **units**. An example using **shape**:
-  If shape: [425, 425], height: 850, and width: 850 are provided, **shape** will be [425, 425].
+The `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_ function can be
+used to parse area definitions from a configuration file by giving it the area file name and regions
+you wish to load. `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_
+takes advantage of `from_params <https://pyresample.readthedocs.io/en/latest/API.html#utils.from_params>`_
+and hence uses the same arguments.
 
 Assuming the file **areas.yaml** exists with the following content
 
 .. code-block:: yaml
 
- ease_sh:
-   description: Antarctic EASE grid
+ extents:
+  description: extents
+  area_id: ease_sh
+  proj_id: ease_sh
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape: [425, 850]
+  area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+
+ extents_2:
+  description: extents
+  area_id: ease_sh
+  proj_id: ease_sh
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape: [425, 850]
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+
+ geotiff:
+   description: geotiff
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   shape: [425, 850]
+   top_left_extent: [-5326849.0625, 5326849.0625]
+   pixel_size: [12533.7625, 25067.525]
+
+ circle:
+   description: circle
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   center: [0, 0]
+   pixel_size: [12533.7625, 25067.525]
+   radius: 5326849.0625
+
+ circle_2:
+   description: circle_2
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   center:
+     center_x: 0
+     center_y: 0
+     units: m
+   shape:
+     width: 850
+     height: 425
+   radius:
+     x_radius: 5326849.0625
+     y_radius: 5326849.0625
+     units: m
+
+ area_of_interest:
+   description: area_of_interest
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   shape: [425, 850]
+   center:
+     center: [0, 0]
+     units: m
+   pixel_size: [12533.7625, 25067.525]
+
+ area_of_interest_2:
+   description: area_of_interest_2
+   area_id: ease_sh
+   proj_id: ease_sh
+   units: meters
    projection:
      a: 6371228.0
      units: m
@@ -178,59 +279,25 @@ Assuming the file **areas.yaml** exists with the following content
      proj: laea
      lat_0: -90
    shape:
-     height: 425
-     width: 425
-   area_extent:
-     lower_left_xy: [-5326849.0625, -5326849.0625]
-     upper_right_xy: [5326849.0625, 5326849.0625]
-   top_left_extent: [-5326849.0625, 5326849.0625]
-   center:
-     center: [0, 0]
+     shape: [425, 850]
      units: m
+   center: [0, 0]
    pixel_size:
-     x_size: 25067.525
+     x_size: 12533.7625
      y_size: 25067.525
-     units: m
-   radius: 5326849.0625
- ease_nh:
-   area_id: ease_sh
-   proj_id: ease_sh
-   units: meters
-   description: Arctic EASE grid
-   projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
-     proj: laea
-     lat_0: -90
-   shape: 425
-   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
-   top_left_extent:
-     x_ul: -5326849.0625
-     y_ul: 5326849.0625
-     units: m
-   center:
-     center_x: 0
-     center_y: 0
-     units: m
-   pixel_size:
-     pixel_size: 25067.525
-     units: m
-   radius:
-     x_length: 5326849.0625
-     y_length: 5326849.0625
 
 An area definition dict can be read using
 
 .. doctest::
 
  >>> from pyresample import utils
- >>> area = utils.load_area('areas.yaml', 'ease_nh')
- >>> print(area)
- Area ID: ease_nh
- Description: Arctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
+ >>> area_def = utils.load_area('areas.yaml', 'geotiff')
+ >>> print(area_def)
+ Area ID: ease_sh
+ Description: geotiff
+ Projection ID: ease_sh
+ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Number of columns: 850
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
@@ -246,16 +313,15 @@ Several area definitions can be read at once using the region names in an argume
 .. doctest::
 
  >>> from pyresample import utils
- >>> nh_def, sh_def = utils.load_area('areas.yaml', 'ease_nh', 'ease_sh')
- >>> print(sh_def)
+ >>> geotiff, extents = utils.load_area('areas.yaml', 'geotiff', 'extents')
+ >>> print(extents)
  Area ID: ease_sh
- Description: Antarctic EASE grid
+ Description: extents
+ Projection ID: ease_sh
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
+ Number of columns: 850
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-
 
 .. note::
 
@@ -315,10 +381,12 @@ Several area definitions can be read at once using the region names in an argume
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-GridDefinition
---------------
-If the lons and lats grid values are known the area definition information can be skipped for some types
-of resampling by using a GridDefinition object instead an AreaDefinition object.
+`GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_
+------------------------------------------------------------------------------------------------
+If the lons and lats grid values are known, the area definition information can be skipped for some types of
+resampling by using a `GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_
+object instead of an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
+object.
 
 .. doctest::
 
@@ -328,8 +396,8 @@ of resampling by using a GridDefinition object instead an AreaDefinition object.
  >>> lats = np.ones((100, 100))
  >>> grid_def = geometry.GridDefinition(lons=lons, lats=lats)
 
-SwathDefinition
----------------
+`SwathDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.SwathDefinition>`_
+--------------------------------------------------------------------------------------------------
 A swath is defined by the lon and lat values of the data points
 
 .. doctest::
@@ -340,7 +408,7 @@ A swath is defined by the lon and lat values of the data points
  >>> lats = np.ones((500, 20))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
-Two swaths can be concatenated if their coloumn count matches
+Two swaths can be concatenated if their column count matches
 
 .. doctest::
 
@@ -356,14 +424,14 @@ Two swaths can be concatenated if their coloumn count matches
 
 Geographic coordinates and boundaries
 -------------------------------------
-A ***definition** object allows for retrieval of geographic coordinates using array slicing (slice stepping is currently not supported).
+A ***definition** object allows for retrieval of geographic coordinates using array slicing
+(slice stepping is currently not supported).
 
 All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-AreaDefinition exposes the full set of projection coordinates as
-**projection_x_coords** and **projection_y_coords**. Note that in the case of
-projection coordinates expressed in longitude and latitude,
-**projection_x_coords** will be longitude and **projection_y_coords** will be
-latitude.
+`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_ exposes the
+full set of projection coordinates as **projection_x_coords** and **projection_y_coords**. Note that in the
+case of projection coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
+and **projection_y_coords** will be latitude.
 
 .. versionchanged:: 1.5.1
 
@@ -423,7 +491,9 @@ Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The
 spherical geometry operations are calculated based on the corners of a
-GeometryDefinition (2D SwathDefinition or Grid/AreaDefinition) and assuming the
+GeometryDefinition (`GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_,
+`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_, or
+2D `SwathDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.SwathDefinition>`_) and assuming the
 edges are great circle arcs.
 
 It can be tested if geometries overlaps
