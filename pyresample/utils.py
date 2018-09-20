@@ -157,7 +157,7 @@ def _get_list(params, var, arg_list, default=None):
         return variable
     list_of_values = []
     # Add var as a key in case users want to express the entire variable with units.
-    arg_list.append(var)
+    arg_list.insert(0, var)
     # Iterate through dict.
     for arg in arg_list:
         try:
@@ -170,6 +170,8 @@ def _get_list(params, var, arg_list, default=None):
                 list_of_values.append(values)
         except KeyError:
             pass
+        except AttributeError:
+            raise ValueError('Incorrect yaml: {0} has too many arguments: {0}, {1}'.format(var, arg))
     # If units are present, convert to xarray.
     units = variable.get('units')
     if units is not None:
@@ -796,8 +798,7 @@ def _format_list(var, name):
         var = tuple(float(num) for num in var)
     # Single number format.
     elif len(np.ravel(var)) == 1 and name in ('shape', 'pixel_size', 'radius'):
-        var = [float(var)]
-        var.extend(var)
+        var = [float(var), float(var)]
     return tuple(var)
 
 
