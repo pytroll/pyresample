@@ -19,8 +19,8 @@ and automatically correct the invalid values into [-180;+180[.
 Use function `utils.wrap_longitudes <https://pyresample.readthedocs.io/en/latest/API.html#utils.wrap_longitudes>`_
 for wrapping longitudes yourself.
 
-`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
-------------------------------------------------------------------------------------------------
+AreaDefinition
+--------------
 
 The cartographic definition of grid areas used by
 `Pyresample <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-api>`_ is contained in an
@@ -66,8 +66,8 @@ Creating an area definition:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-`pyresample.utils <https://pyresample.readthedocs.io/en/latest/API.html#module-utils>`_
-***************************************************************************************
+pyresample.utils
+****************
 
 The `utils <https://pyresample.readthedocs.io/en/latest/API.html#module-utils>`_ module of pyresample
 has convenience functions for constructing area definitions. The function
@@ -110,14 +110,13 @@ Optional (keyword) arguments:
 * **area_id**, **proj_id**, and **area_extent**: same as AreaDefinition
 * **units**: Default projection units: meters, radians, or degrees
 * **shape**: Number of pixels: (height, width)
-* **top_left_extent**: Upper left corner of upper left pixel: (x_ul, y_ul)
+* **top_left_extent**: The projection x and y coordinates of the upper left corner of the upper left pixel (x_ul, y_ul)
 * **center**: Center of projection: (center_x, center_y)
 * **pixel_size**: Size of pixels: (x_size, y_size)
 * **radius**: Length from the center to the edges of the projection: (x_radius, y_radius)
 
 where
 
-* **x_ul** and **y_ul**: projection x and y coordinate of upper left corner of upper left pixel
 * **center_x** and **center_y**: projection x and y coordinate of the center of projection
 * **height** and **width**: number of pixels in y (number of grid rows) and x (number of grid columns) direction
 * **x_size** and **y_size**: projection size of pixels in the x and y direction
@@ -386,8 +385,8 @@ Several area definitions can be read at once using the region names in an argume
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-`GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_
-------------------------------------------------------------------------------------------------
+GridDefinition
+--------------
 If the lons and lats grid values are known, the area definition information can be skipped for some types of
 resampling by using a `GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_
 object instead of an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
@@ -401,8 +400,8 @@ object.
  >>> lats = np.ones((100, 100))
  >>> grid_def = geometry.GridDefinition(lons=lons, lats=lats)
 
-`SwathDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.SwathDefinition>`_
---------------------------------------------------------------------------------------------------
+SwathDefinition
+---------------
 A swath is defined by the lon and lat values of the data points
 
 .. doctest::
