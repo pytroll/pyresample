@@ -149,15 +149,6 @@ Optional (keyword) arguments:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-.. note::
-
- * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-     1. units expressed with each variable
-     2. units passed to **units**
-     3. units used in **projection**
-     4. meters
- * **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
-
 The `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_ function can be
 used to parse area definitions from a configuration file by giving it the area file name and regions
 you wish to load. `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_

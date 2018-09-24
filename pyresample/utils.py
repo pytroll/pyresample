@@ -618,6 +618,14 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     lats : numpy array, optional
         Grid lats
 
+
+    * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+        1. units expressed with each variable
+        2. units passed to **units**
+        3. units used in **projection**
+        4. meters
+    * **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
+
     Returns
     -------
     AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
