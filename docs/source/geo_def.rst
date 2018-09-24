@@ -103,7 +103,7 @@ object if the number of pixel (shape) and area_extent can be found with the give
 Required (positional) arguments:
 
 * **description**: Description
-* **projection**: projection parameters as a proj4_dict or proj4_string
+* **projection**: Projection parameters as a proj4_dict or proj4_string
 
 Optional (keyword) arguments:
 
@@ -119,15 +119,15 @@ Optional (keyword) arguments:
 
  >>> from pyresample import utils
  >>> from xarray import DataArray
- >>> description = 'Antarctic EASE grid'
+ >>> area_id = 'ease_sh'
  >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
- >>> area_def = utils.from_params(description, projection, pixel_size=(45, -89.681194),
- ...                              area_extent=(-135.0, -17.516001139327766, 45.0, -17.516001139327766),
- ...                              units='degrees', area_id='ease_sh', proj_id='ease_sh')
+ >>> area_def = utils.from_params(area_id, projection, center=(0, -90),
+ ...                              radius=(45, -17.516001139327766),
+ ...                              pixel_size=(45, -89.681194), units='degrees',
+ ...                              description='Antarctic EASE grid')
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
- Projection ID: ease_sh
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
@@ -137,13 +137,13 @@ Optional (keyword) arguments:
 
  >>> from pyresample import utils
  >>> from xarray import DataArray
- >>> description = 'Antarctic EASE grid'
+ >>> area_id = 'ease_sh'
  >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
- >>> area_def = utils.from_params(description, projection, pixel_size=25067.525,
- ...                              area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625))
+ >>> area_def = utils.from_params(area_id, projection, center=(0, 0), radius=5326849.0625,
+ ...                              pixel_size=25067.525)
  >>> print(area_def)
- Area ID: Antarctic EASE grid
- Description: Antarctic EASE grid
+ Area ID: ease_sh
+ Description: ease_sh
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
@@ -169,38 +169,36 @@ Assuming the file **areas.yaml** exists with the following content
 .. code-block:: yaml
 
  extents:
-  description: extents
-  area_id: ease_sh
-  proj_id: ease_sh
-  projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
-    proj: laea
-    lat_0: -90
-  shape: [425, 850]
-  area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
-
- extents_2:
-  description: extents
-  area_id: ease_sh
-  proj_id: ease_sh
-  projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
-    proj: laea
-    lat_0: -90
-  shape: [425, 850]
-  area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
-
- geotiff:
    description: geotiff
    area_id: ease_sh
-   proj_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   shape: [425, 850]
+   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+
+ extents_2:
+   description: extents_2
+   area_id: ease_sh
+   units: meters
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   shape: [425, 850]
+   area_extent:
+     lower_left_xy: [-5326849.0625, -5326849.0625]
+     upper_right_xy: [5326849.0625, 5326849.0625]
+     units: m
+
+ geotiff_2:
+   description: geotiff_2
    units: meters
    projection:
      a: 6371228.0
@@ -214,8 +212,6 @@ Assuming the file **areas.yaml** exists with the following content
 
  circle:
    description: circle
-   area_id: ease_sh
-   proj_id: ease_sh
    units: meters
    projection:
      a: 6371228.0
@@ -225,12 +221,10 @@ Assuming the file **areas.yaml** exists with the following content
      lat_0: -90
    center: [0, 0]
    pixel_size: [12533.7625, 25067.525]
-   radius: 5326849.0625
+   radius: [5326849.0625, 5326849.0625]
 
  circle_2:
    description: circle_2
-   area_id: ease_sh
-   proj_id: ease_sh
    units: meters
    projection:
      a: 6371228.0
@@ -245,15 +239,13 @@ Assuming the file **areas.yaml** exists with the following content
    shape:
      width: 850
      height: 425
+     units: m
    radius:
-     x_radius: 5326849.0625
-     y_radius: 5326849.0625
+     radius: 5326849.0625
      units: m
 
  area_of_interest:
    description: area_of_interest
-   area_id: ease_sh
-   proj_id: ease_sh
    units: meters
    projection:
      a: 6371228.0
@@ -262,15 +254,11 @@ Assuming the file **areas.yaml** exists with the following content
      proj: laea
      lat_0: -90
    shape: [425, 850]
-   center:
-     center: [0, 0]
-     units: m
+   center: [0, 0]
    pixel_size: [12533.7625, 25067.525]
 
  area_of_interest_2:
    description: area_of_interest_2
-   area_id: ease_sh
-   proj_id: ease_sh
    units: meters
    projection:
      a: 6371228.0
@@ -293,9 +281,8 @@ An area definition dict can be read using
  >>> from pyresample import utils
  >>> area_def = utils.load_area('areas.yaml', 'geotiff')
  >>> print(area_def)
- Area ID: ease_sh
+ Area ID: geotiff
  Description: geotiff
- Projection ID: ease_sh
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425
@@ -317,7 +304,6 @@ Several area definitions can be read at once using the region names in an argume
  >>> print(extents)
  Area ID: ease_sh
  Description: extents
- Projection ID: ease_sh
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425

@@ -268,7 +268,7 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return from_params(config['NAME'], config['PCS_DEF'], area_id=config['REGION'],
+    return from_params(config['REGION'], config['PCS_DEF'], description=config['NAME'],
                        proj_id=config['PCS_ID'], shape=(config['YSIZE'], config['XSIZE']),
                        area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
@@ -303,7 +303,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
     """
 
     proj_dict = _get_proj4_args(proj4_args)
-    return from_params(area_name, proj_dict, area_id=area_id, proj_id=proj_id,
+    return from_params(area_id, proj_dict, description=area_name, proj_id=proj_id,
                        shape=(y_size, x_size), area_extent=area_extent)
 
 
@@ -581,21 +581,20 @@ def recursive_dict_update(d, u):
     return d
 
 
-def from_params(description, projection, shape=None, top_left_extent=None, center=None, area_extent=None,
-                pixel_size=None,
-                radius=None, units=None, **kwargs):
+def from_params(area_id, projection, shape=None, top_left_extent=None, center=None, area_extent=None,
+                pixel_size=None, radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found.
 
     Parameters
     ----------
-    description : str
-        Name of area
+    area_id : str
+        ID of area
     projection : dict or str
         Dictionary with Proj.4 parameters
-    area_id : str, optional
-        ID of area
+    description : str, optional
+        Description/name of area. Defaults to area_id
     proj_id : str, optional
-        ID of projection
+        ID of projection (being deprecated)
     units : str, optional
         Default projection units: meters, radians, or degrees
     shape : list or int, optional
@@ -630,7 +629,7 @@ def from_params(description, projection, shape=None, top_left_extent=None, cente
     ValueError:
         If neither shape nor area_extent could be found
     """
-    area_id, proj_id = kwargs.pop('area_id', description), kwargs.pop('proj_id', None)
+    description, proj_id = kwargs.pop('description', area_id), kwargs.pop('proj_id', None)
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict, p = _get_proj_data(projection)

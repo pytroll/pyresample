@@ -1,7 +1,7 @@
 extents:
-  description: extents
   area_id: ease_sh
-  proj_id: ease_sh
+  description: extents
+  units: meters
   projection:
     a: 6371228.0
     units: m
@@ -11,10 +11,23 @@ extents:
   shape: [425, 850]
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
+extents_2:
+  description: extents_2
+  units: meters
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape: [425, 850]
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+
 geotiff:
   description: geotiff
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -28,8 +41,6 @@ geotiff:
 
 circle:
   description: circle
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -43,8 +54,6 @@ circle:
 
 circle_2:
   description: circle_2
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -66,8 +75,6 @@ circle_2:
 
 area_of_interest:
   description: area_of_interest
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -81,8 +88,6 @@ area_of_interest:
 
 area_of_interest_2:
   description: area_of_interest_2
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -100,8 +105,6 @@ area_of_interest_2:
 
 test_meters:
   description: test_meters
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -131,7 +134,6 @@ test_meters:
 test_radians:
   description: test_radians
   area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0
@@ -162,8 +164,6 @@ test_radians:
 
 test_degrees:
   description: test_degrees
-  area_id: ease_sh
-  proj_id: ease_sh
   units: meters
   projection:
     a: 6371228.0

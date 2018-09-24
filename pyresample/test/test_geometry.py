@@ -1291,8 +1291,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
             self.assertEqual(area_def.shape, shape)
 
         area_id = 'ease_sh'
-        name = 'Antarctic EASE grid'
-        proj4_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
+        description = 'Antarctic EASE grid'
+        projection_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                       '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id = 'ease_sh'
         shape = DataArray((425, 850), attrs={'units': 'degrees'})
@@ -1305,11 +1305,11 @@ class TestStackedAreaDefinition(unittest.TestCase):
         # reducing the length of AreaDefinition.from_params makes lines much shorter.
         area = utils.from_params
 
-        # Tests that incorrect lists do not create an area definition, that both proj4 strings and dicts are accepted,
-        # and that degrees, meters, and radians all create the same area definition.
+        # Tests that incorrect lists do not create an area definition, that both projection strings and
+        # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
         # area_list used to check that areas are all correct at the end.
         area_list = []
-        for proj4 in proj4_list:
+        for projection in projection_list:
             for units in units_list:
                 for center in center_list:
                     # essentials = center, radius, top_left_extent, pixel_size, area_extent.
@@ -1334,39 +1334,42 @@ class TestStackedAreaDefinition(unittest.TestCase):
                     if len(center) == 2:
                         center = essentials[0]
                     try:
-                        area_list.append(area(name, proj4, proj_id=proj_id, top_left_extent=essentials[2],
+                        area_list.append(area(area_id, projection, proj_id=proj_id, top_left_extent=essentials[2],
                                               center=center, area_extent=essentials[4], pixel_size=essentials[3],
-                                              radius=essentials[1], area_id=area_id, units=units))
+                                              radius=essentials[1], description=description, units=units))
                     except ValueError:
                         pass
         self.assertEqual(len(area_list), 6)
 
         # Tests that specifying units through xarrays works.
-        area_list.append(area(name, proj4_list[1], shape=shape,
+        area_list.append(area(area_id, projection_list[1], shape=shape,
                               area_extent=DataArray((-135.0, -17.516001139327766,
                                                      45.0, -17.516001139327766),
                                                     attrs={'units': 'degrees'})))
         # Tests area functions 1-A and 2-A.
-        area_list.append(area(name, proj4_list[1], pixel_size=pixel_size, area_extent=area_extent))
+        area_list.append(area(area_id, projection_list[1], pixel_size=pixel_size, area_extent=area_extent))
         # Tests area function 1-B.
-        area_list.append(area(name, proj4_list[1], shape=shape, center=center_list[0], top_left_extent=top_left_extent))
+        area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0],
+                              top_left_extent=top_left_extent))
         # Tests area function 1-C.
-        area_list.append(area(name, proj4_list[1], shape=shape, center=center_list[0], radius=radius))
+        area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
         # Tests area function 1-D.
-        area_list.append(area(name, proj4_list[1], shape=shape, radius=radius, top_left_extent=top_left_extent))
+        area_list.append(area(area_id, projection_list[1], shape=shape, radius=radius, top_left_extent=top_left_extent))
         # Tests all 4 user cases.
-        area_list.append(AreaDefinition.from_extent(name, proj4_list[1], area_extent, shape))
-        area_list.append(AreaDefinition.from_circle(name, proj4_list[1], center_list[0], radius, pixel_size=pixel_size))
-        area_list.append(AreaDefinition.from_area_of_interest(name, proj4_list[1], center_list[0], pixel_size, shape))
-        area_list.append(AreaDefinition.from_geotiff(name, proj4_list[1], top_left_extent, pixel_size, shape))
+        area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], area_extent, shape))
+        area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
+                                                    pixel_size=pixel_size))
+        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], pixel_size,
+                                                              shape))
+        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], top_left_extent, pixel_size, shape))
 
         # Checks every area definition made
         for area_def in area_list:
             verify_area(area_def)
 
         # Makes sure if shape or area_extent is found/given, a DynamicAreaDefinition is made.
-        self.assertTrue(isinstance(area(name, proj4_list[1], shape=shape), DynamicAreaDefinition))
-        self.assertTrue(isinstance(area(name, proj4_list[1], area_extent=area_extent), DynamicAreaDefinition))
+        self.assertTrue(isinstance(area(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
+        self.assertTrue(isinstance(area(area_id, projection_list[1], area_extent=area_extent), DynamicAreaDefinition))
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):
