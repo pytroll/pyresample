@@ -171,7 +171,8 @@ def _get_list(params, var, arg_list, default=None):
         except KeyError:
             pass
         except AttributeError:
-            raise ValueError('Incorrect yaml: {0} has too many arguments: {0}, {1}'.format(var, arg))
+            raise ValueError('Incorrect yaml: {0} has too many arguments: Both {0} and {1} were specified.'.format(var,
+                                                                                                                   arg))
     # If units are present, convert to xarray.
     units = variable.get('units')
     if units is not None:

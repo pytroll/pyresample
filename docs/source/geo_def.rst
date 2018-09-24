@@ -109,24 +109,11 @@ Optional (keyword) arguments:
 
 * **area_id**, **proj_id**, and **area_extent**: same as AreaDefinition
 * **units**: Default projection units: meters, radians, or degrees
-* **shape**: Number of pixels: (height, width)
-* **top_left_extent**: The projection x and y coordinates of the upper left corner of the upper left pixel (x_ul, y_ul)
-* **center**: Center of projection: (center_x, center_y)
-* **pixel_size**: Size of pixels: (x_size, y_size)
-* **radius**: Length from the center to the edges of the projection: (x_radius, y_radius)
-
-where
-
-* **center_x** and **center_y**: projection x and y coordinate of the center of projection
-* **height** and **width**: number of pixels in y (number of grid rows) and x (number of grid columns) direction
-* **x_size** and **y_size**: projection size of pixels in the x and y direction
-* **x_radius** and **y_radius**: projection length from the center to the left/right and top/bottom outer edges
-* **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-    1. units expressed with each variable
-    2. units passed to **units**
-    3. units used in **projection**
-    4. meters
-* **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
+* **shape**: Number of pixels in y (number of grid rows) and x (number of grid columns) direction (height, width)
+* **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x_ul, y_ul)
+* **center**: Projection x and y coordinate of the center of projection (center_x, center_y)
+* **pixel_size**: Projection size of pixels in the x and y direction (x_size, y_size)
+* **radius**: Projection length from the center to the left/right and top/bottom outer edges (x_radius, y_radius)
 
 .. doctest::
 
@@ -161,6 +148,15 @@ where
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+.. note::
+
+ * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+     1. units expressed with each variable
+     2. units passed to **units**
+     3. units used in **projection**
+     4. meters
+ * **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
 
 The `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_ function can be
 used to parse area definitions from a configuration file by giving it the area file name and regions
