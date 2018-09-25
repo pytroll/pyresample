@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
 # Copyright (C) 2010-2015
