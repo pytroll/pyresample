@@ -145,16 +145,14 @@ Getting a Basemap object
 .. warning::
 
     Basemap is no longer maintained. Cartopy (see above) should be used
-    instead.
+    instead. Basemap does not support Matplotlib 3.0+ either.
 
 In order to make more advanced plots than the preconfigured quicklooks a Basemap object can be generated from an
 AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
 **Example usage:**
 
-.. doctest::
-
- >>> import numpy as np	
+ >>> import numpy as np
  >>> import matplotlib.pyplot as plt
  >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
  >>> from pyresample.kd_tree import resample_nearest
