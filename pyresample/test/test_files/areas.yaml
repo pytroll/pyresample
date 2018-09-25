@@ -1,6 +1,6 @@
 extents:
   area_id: ease_sh
-  description: extents
+  description: Example of using extents
   units: meters
   projection:
     a: 6371228.0
@@ -12,7 +12,7 @@ extents:
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
 extents_2:
-  description: extents_2
+  description: Another example of using extents
   units: meters
   projection:
     a: 6371228.0
@@ -27,7 +27,7 @@ extents_2:
     units: m
 
 geotiff:
-  description: geotiff
+  description: Example of using geotiff
   units: meters
   projection:
     a: 6371228.0
@@ -40,7 +40,7 @@ geotiff:
   pixel_size: [12533.7625, 25067.525]
 
 circle:
-  description: circle
+  description: Example of using circle
   units: meters
   projection:
     a: 6371228.0
@@ -53,7 +53,7 @@ circle:
   radius: [5326849.0625, 5326849.0625]
 
 circle_2:
-  description: circle_2
+  description: Another example of using circle
   units: meters
   projection:
     a: 6371228.0
@@ -74,7 +74,7 @@ circle_2:
     units: m
 
 area_of_interest:
-  description: area_of_interest
+  description: Example of using area_of_interest
   units: meters
   projection:
     a: 6371228.0
@@ -87,7 +87,7 @@ area_of_interest:
   pixel_size: [12533.7625, 25067.525]
 
 area_of_interest_2:
-  description: area_of_interest_2
+  description: Another example of using area_of_interest
   units: meters
   projection:
     a: 6371228.0

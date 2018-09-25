@@ -134,8 +134,8 @@ def _parse_yaml_area_file(area_file_name, *regions):
         except KeyError:
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
                 area_name, area_file_name))
-        # Optional arguments.
         params.setdefault('area_id', area_name)
+        # Optional arguments.
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
         params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x_ul', 'y_ul'])
         params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
@@ -624,7 +624,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         2. units passed to **units**
         3. units used in **projection**
         4. meters
-    * **shape**, **pixel_size**, and **radius** can be specified with one value when their elements are the same.
+    * **shape**, **pixel_size**, and **radius** can be specified with one value if their elements are the same
 
     Returns
     -------

@@ -876,16 +876,16 @@ class AreaDefinition(BaseDefinition):
 
         Parameters
         ----------
-        description : str
-            Name of area
+        area_id : str
+            ID of area
         projection : dict or str
             Dictionary with Proj.4 parameters
         area_extent : list
             Area extent as a list (LL_x, LL_y, UR_x, UR_y)
         shape : list or int
-            Number of pixels (height, width)
-        area_id : str, optional
-            ID of area
+            Number of pixels (height, width). Can be specified with one value if its elements are the same
+        description : str, optional
+            Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
         units : str, optional
@@ -899,6 +899,13 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+
+        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+            1. units expressed with each variable
+            2. units passed to **units**
+            3. units used in **projection**
+            4. meters
+
         Returns
         -------
         AreaDefinition : AreaDefinition
@@ -906,13 +913,13 @@ class AreaDefinition(BaseDefinition):
         return utils.from_params(description, projection, area_extent=area_extent, shape=shape, **kwargs)
 
     @classmethod
-    def from_circle(cls, description, projection, center, radius, shape=None, pixel_size=None, **kwargs):
+    def from_circle(cls, area_id, projection, center, radius, shape=None, pixel_size=None, **kwargs):
         """Create an AreaDefinition object from center, radius, and shape or from center, radius, and pixel_size.
 
         Parameters
         ----------
-        description : str
-            Name of area
+        area_id : str
+            ID of area
         projection : dict or str
             Dictionary with Proj.4 parameters
         center : list
@@ -923,8 +930,8 @@ class AreaDefinition(BaseDefinition):
             Size of pixels: (x_size, y_size)
         shape : list or int, optional
             Number of pixels (height, width)
-        area_id : str, optional
-            ID of area
+        description : str, optional
+            Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
         units : str, optional
@@ -938,26 +945,31 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+
+        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+            1. units expressed with each variable
+            2. units passed to **units**
+            3. units used in **projection**
+            4. meters
+        * **shape**, **pixel_size**, and **radius** can be specified with one value if their elements are the same
+
         Returns
         -------
-        AreaDefinition : AreaDefinition
-
-        Raises
-        ------
-        ValueError:
-            If neither shape nor pixel_size were provided
+        AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+            If shape or pixel_size are provided, an AreaDefinition object is returned.
+            Else a DynamicAreaDefinition object is returned
         """
-        return utils.from_params(description, projection, center=center, radius=radius, shape=shape,
+        return utils.from_params(area_id, projection, center=center, radius=radius, shape=shape,
                                  pixel_size=pixel_size, **kwargs)
 
     @classmethod
-    def from_area_of_interest(cls, description, projection, center, pixel_size, shape, **kwargs):
+    def from_area_of_interest(cls, area_id, projection, center, pixel_size, shape, **kwargs):
         """Create an AreaDefinition object from center, pixel_size, and shape.
 
         Parameters
         ----------
-        description : str
-            Name of area
+        area_id : str
+            ID of area
         projection : dict or str
             Dictionary with Proj.4 parameters
         center : list
@@ -966,8 +978,8 @@ class AreaDefinition(BaseDefinition):
             Size of pixels: (x_size, y_size)
         shape : list or int
             Number of pixels (height, width)
-        area_id : str, optional
-            ID of area
+        description : str, optional
+            Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
         units : str, optional
@@ -981,20 +993,28 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+
+        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+            1. units expressed with each variable
+            2. units passed to **units**
+            3. units used in **projection**
+            4. meters
+        * **shape** and **pixel_size** can be specified with one value if their elements are the same
+
         Returns
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(description, projection, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
+        return utils.from_params(area_id, projection, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, description, projection, top_left_extent, pixel_size, shape, **kwargs):
+    def from_geotiff(cls, area_id, projection, top_left_extent, pixel_size, shape, **kwargs):
         """Create an AreaDefinition object from top_left_extent, pixel_size, and shape.
 
         Parameters
         ----------
-        description : str
-            Name of area
+        area_id : str
+            ID of area
         projection : dict or str
             Dictionary with Proj.4 parameters
         top_left_extent : list
@@ -1003,8 +1023,8 @@ class AreaDefinition(BaseDefinition):
             Size of pixels: (x_size, y_size)
         shape : list or int
             Number of pixels (height, width)
-        area_id : str, optional
-            ID of area
+        description : str, optional
+            Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
         units : str, optional
@@ -1018,11 +1038,19 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+
+        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
+            1. units expressed with each variable
+            2. units passed to **units**
+            3. units used in **projection**
+            4. meters
+        * **shape** and **pixel_size** can be specified with one value if their elements are the same
+
         Returns
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(description, projection, top_left_extent=top_left_extent, pixel_size=pixel_size,
+        return utils.from_params(area_id, projection, top_left_extent=top_left_extent, pixel_size=pixel_size,
                                  shape=shape, **kwargs)
 
     def __hash__(self):

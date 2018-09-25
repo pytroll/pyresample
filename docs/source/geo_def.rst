@@ -102,12 +102,13 @@ object if the number of pixel (shape) and area_extent can be found with the give
 
 Required (positional) arguments:
 
-* **description**: Description
+* **area_id**: ID of area
 * **projection**: Projection parameters as a proj4_dict or proj4_string
 
 Optional (keyword) arguments:
 
-* **area_id**, **proj_id**, and **area_extent**: same as AreaDefinition
+* **proj_id**, and **area_extent**: Same as AreaDefinition
+* **description**: Description
 * **units**: Default projection units: meters, radians, or degrees
 * **shape**: Number of pixels in y (number of grid rows) and x (number of grid columns) direction (height, width)
 * **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x_ul, y_ul)
@@ -160,7 +161,7 @@ Assuming the file **areas.yaml** exists with the following content
 .. code-block:: yaml
 
  extents:
-   description: geotiff
+   description: Example of using extents
    area_id: ease_sh
    units: meters
    projection:
@@ -173,8 +174,7 @@ Assuming the file **areas.yaml** exists with the following content
    area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
  extents_2:
-   description: extents_2
-   area_id: ease_sh
+   description: Another example of using extents
    units: meters
    projection:
      a: 6371228.0
@@ -188,8 +188,8 @@ Assuming the file **areas.yaml** exists with the following content
      upper_right_xy: [5326849.0625, 5326849.0625]
      units: m
 
- geotiff_2:
-   description: geotiff_2
+ geotiff:
+   description: Example of using geotiff
    units: meters
    projection:
      a: 6371228.0
@@ -202,7 +202,7 @@ Assuming the file **areas.yaml** exists with the following content
    pixel_size: [12533.7625, 25067.525]
 
  circle:
-   description: circle
+   description: Example of using circle
    units: meters
    projection:
      a: 6371228.0
@@ -215,7 +215,7 @@ Assuming the file **areas.yaml** exists with the following content
    radius: [5326849.0625, 5326849.0625]
 
  circle_2:
-   description: circle_2
+   description: Another example of using circle
    units: meters
    projection:
      a: 6371228.0
@@ -236,7 +236,7 @@ Assuming the file **areas.yaml** exists with the following content
      units: m
 
  area_of_interest:
-   description: area_of_interest
+   description: Example of using area_of_interest
    units: meters
    projection:
      a: 6371228.0
@@ -249,7 +249,7 @@ Assuming the file **areas.yaml** exists with the following content
    pixel_size: [12533.7625, 25067.525]
 
  area_of_interest_2:
-   description: area_of_interest_2
+   description: Another xample of using area_of_interest
    units: meters
    projection:
      a: 6371228.0
@@ -273,7 +273,7 @@ An area definition dict can be read using
  >>> area_def = utils.load_area('areas.yaml', 'geotiff')
  >>> print(area_def)
  Area ID: geotiff
- Description: geotiff
+ Description: Example of using geotiff
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425
@@ -294,7 +294,7 @@ Several area definitions can be read at once using the region names in an argume
  >>> geotiff, extents = utils.load_area('areas.yaml', 'geotiff', 'extents')
  >>> print(extents)
  Area ID: ease_sh
- Description: extents
+ Description: Example of using extents
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425
