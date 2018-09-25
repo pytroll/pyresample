@@ -181,8 +181,7 @@ def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
 def _get_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', cmap='jet'):
-    """Get default Basemap matplotlib plot
-    """
+    """Get default cartopy matplotlib plot."""
     bmap_to_cartopy_res = {
         'c': '110m',
         'l': '110m',
@@ -229,8 +228,8 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
         ylocs = np.arange(-90, 90, num_parallels)
     ax.gridlines(xlocs=xlocs, ylocs=ylocs)
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
-        col = plt.imshow(data, transform=crs, extent=crs.bounds,
-                         origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
+        col = ax.imshow(data, transform=crs, extent=crs.bounds,
+                        origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
         plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
     return plt
 
