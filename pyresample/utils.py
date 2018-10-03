@@ -570,3 +570,15 @@ def recursive_dict_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+def convert_def_to_yaml(def_area_file, yaml_area_file):
+    """Convert a legacy area def file to the yaml counter partself.
+
+    *yaml_area_file* will be overwritten by the operation.
+    """
+    from pyresample.utils import parse_area_file
+    areas = parse_area_file('satpy/satpy/etc/areas.def')
+    with open(yaml_area_file, 'w') as yaml_file:
+        for area in areas:
+            yaml_file.write(area.create_areas_def())
