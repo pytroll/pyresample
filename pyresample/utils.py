@@ -577,8 +577,7 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
 
     *yaml_area_file* will be overwritten by the operation.
     """
-    from pyresample.utils import parse_area_file
-    areas = parse_area_file('satpy/satpy/etc/areas.def')
+    areas = parse_area_file(def_area_file)
     with open(yaml_area_file, 'w') as yaml_file:
         for area in areas:
             yaml_file.write(area.create_areas_def())
