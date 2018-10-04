@@ -104,15 +104,17 @@ class Test(unittest.TestCase):
                                             -909968.64000000001,
                                             1029087.28,
                                             1490031.3600000001])
-        res = area_def.create_areas_def()
-        expected = ('areaD:\n  description: Europe (3km, HRV, VTC)\n'
-                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
-                    '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
-                    '    proj: stere\n  shape:\n    height: 800\n'
-                    '    width: 800\n  area_extent:\n'
-                    '    lower_left_xy: [-1370912.72, -909968.64]\n'
-                    '    upper_right_xy: [1029087.28, 1490031.36]\n')
-        self.assertEqual(res, expected)
+        import yaml
+        res = yaml.load(area_def.create_areas_def())
+        expected = yaml.load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
+                              '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
+                              '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                              '    proj: stere\n  shape:\n    height: 800\n'
+                              '    width: 800\n  area_extent:\n'
+                              '    lower_left_xy: [-1370912.72, -909968.64]\n'
+                              '    upper_right_xy: [1029087.28, 1490031.36]\n'))
+
+        self.assertDictEqual(res, expected)
 
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
