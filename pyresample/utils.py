@@ -202,7 +202,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
     in_area = False
     for line in area_file:
         if not in_area:
-            if 'REGION' in line:
+            if 'REGION' in line and not line.strip().startswith('#'):
                 area_id = line.replace('REGION:', ''). \
                     replace('{', '').strip()
                 if area_id in area_list or select_all_areas:
@@ -210,11 +210,14 @@ def _parse_legacy_area_file(area_file_name, *regions):
                     area_content = ''
         elif '};' in line:
             in_area = False
-            if select_all_areas:
-                area_defs.append(_create_area(area_id, area_content))
-            else:
-                area_defs[area_list.index(area_id)] = _create_area(area_id,
-                                                                   area_content)
+            try:
+                if select_all_areas:
+                    area_defs.append(_create_area(area_id, area_content))
+                else:
+                    area_defs[area_list.index(area_id)] = _create_area(area_id,
+                                                                       area_content)
+            except KeyError:
+                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
         else:
             area_content += line
 
