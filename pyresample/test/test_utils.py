@@ -265,61 +265,10 @@ class TestMisc(unittest.TestCase):
         filehandle, yaml_file = tempfile.mkstemp()
         try:
             utils.convert_def_to_yaml(def_file, yaml_file)
-            with open(yaml_file) as fd:
-                res = fd.read()
-            expected = """ease_sh:
-  description: Antarctic EASE grid
-  projection:
-    proj: laea
-    lat_0: -90.0
-    lon_0: 0.0
-    a: 6371228.0
-  shape:
-    height: 425
-    width: 425
-  area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
-ease_nh:
-  description: Arctic EASE grid
-  projection:
-    proj: laea
-    lat_0: 90.0
-    lon_0: 0.0
-    a: 6371228.0
-  shape:
-    height: 425
-    width: 425
-  area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
-pc_world:
-  description: Plate Carree world map
-  projection:
-    proj: eqc
-  shape:
-    height: 480
-    width: 640
-  area_extent:
-    lower_left_xy: [-20037508.342789244, -10018754.171394622]
-    upper_right_xy: [20037508.342789244, 10018754.171394622]
-ortho:
-  description: Ortho globe
-  projection:
-    proj: ortho
-    a: 6370997.0
-    lon_0: 40.0
-    lat_0: -40.0
-  shape:
-    height: 480
-    width: 640
-  area_extent:
-    lower_left_xy: [-10000000.0, -10000000.0]
-    upper_right_xy: [10000000.0, 10000000.0]
-"""
-            self.assertEqual(res, expected)
+            areas_new = set(utils.parse_area_file(yaml_file))
+            areas_old = set(utils.parse_area_file(def_file))
+
+            self.assertEqual(areas_new, areas_old)
         finally:
             os.remove(yaml_file)
 

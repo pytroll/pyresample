@@ -150,6 +150,10 @@ def _parse_yaml_area_file(area_file_name, *regions):
         except KeyError:
             area_extent = None
         try:
+            projection['units'] = params['area_extent']['units']
+        except KeyError:
+            pass
+        try:
             rotation = params['rotation']
         except KeyError:
             rotation = 0
