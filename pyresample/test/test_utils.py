@@ -257,6 +257,72 @@ class TestMisc(unittest.TestCase):
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
 
+    def test_def2yaml_converter(self):
+        from pyresample import utils
+        import tempfile
+        def_file = os.path.join(os.path.dirname(__file__), 'test_files',
+                                'areas.cfg')
+        filehandle, yaml_file = tempfile.mkstemp()
+        try:
+            utils.convert_def_to_yaml(def_file, yaml_file)
+            with open(yaml_file) as fd:
+                res = fd.read()
+            expected = """ease_sh:
+  description: Antarctic EASE grid
+  projection:
+    proj: laea
+    lat_0: -90.0
+    lon_0: 0.0
+    a: 6371228.0
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+ease_nh:
+  description: Arctic EASE grid
+  projection:
+    proj: laea
+    lat_0: 90.0
+    lon_0: 0.0
+    a: 6371228.0
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+pc_world:
+  description: Plate Carree world map
+  projection:
+    proj: eqc
+  shape:
+    height: 480
+    width: 640
+  area_extent:
+    lower_left_xy: [-20037508.342789244, -10018754.171394622]
+    upper_right_xy: [20037508.342789244, 10018754.171394622]
+ortho:
+  description: Ortho globe
+  projection:
+    proj: ortho
+    a: 6370997.0
+    lon_0: 40.0
+    lat_0: -40.0
+  shape:
+    height: 480
+    width: 640
+  area_extent:
+    lower_left_xy: [-10000000.0, -10000000.0]
+    upper_right_xy: [10000000.0, 10000000.0]
+"""
+            self.assertEqual(res, expected)
+        finally:
+            os.remove(yaml_file)
+
 
 def suite():
     """The test suite.

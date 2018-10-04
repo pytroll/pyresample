@@ -28,7 +28,7 @@ import numpy as np
 import six
 import yaml
 from configobj import ConfigObj
-from collections import Mapping
+from collections import Mapping, OrderedDict
 
 
 class AreaNotFound(KeyError):
@@ -413,7 +413,7 @@ def fwhm2sigma(fwhm):
 
 def convert_proj_floats(proj_pairs):
     """Convert PROJ.4 parameters to floats if possible."""
-    proj_dict = {}
+    proj_dict = OrderedDict()
     for x in proj_pairs:
         if len(x) == 1 or x[1] is True:
             proj_dict[x[0]] = True
@@ -432,10 +432,10 @@ def _get_proj4_args(proj4_args):
     """
 
     if isinstance(proj4_args, (str, six.text_type)):
-        proj_config = ConfigObj(str(proj4_args).replace('+', '').split())
+        proj_config = proj4_str_to_dict(str(proj4_args))
     else:
         proj_config = ConfigObj(proj4_args)
-    return convert_proj_floats(proj_config.dict().items())
+    return convert_proj_floats(proj_config.items())
 
 
 def proj4_str_to_dict(proj4_str):
