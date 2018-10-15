@@ -1283,13 +1283,6 @@ class TestStackedAreaDefinition(unittest.TestCase):
         from pyresample.geometry import DynamicAreaDefinition
         from pyresample import utils
 
-        def verify_area(area_def, area_extent=(-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
-                        shape=(425, 850)):
-            """Makes sure that the area definitions created are correct."""
-            self.assertTrue(isinstance(area_def, AreaDefinition))
-            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
-            self.assertEqual(area_def.shape, shape)
-
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
         projection_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
@@ -1304,6 +1297,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
         units_list = ['meters', 'degrees', 'radians']
         # reducing the length of AreaDefinition.from_params makes lines much shorter.
         area = utils.from_params
+
+        def verify_area(area_def, area_extent=area_extent,
+                        shape=shape):
+            """Makes sure that the area definitions created are correct."""
+            self.assertTrue(isinstance(area_def, AreaDefinition))
+            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
+            self.assertEqual(area_def.shape, shape)
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
@@ -1320,14 +1320,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                                                 5326849.0625)]
                     elif 'deg' in units:
                         # Degrees.
-                        essentials = [(0.0, -90.0), (45.0, -17.516001139327766), (-45.0, -17.516001139327766),
-                                      (26.56505117707799, -89.74796184090499), (-135.0, -17.516001139327766, 45.0,
-                                                                                -17.516001139327766)]
+                        essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
+                                      (0.11271487315, 0.225429746313),
+                                      (-135.0, -17.516001139327766, 45.0, -17.516001139327766)]
                     else:
                         # Radians.
-                        essentials = [(0.0, -1.5707963267948966), (0.7853981633974483, -0.30571189166434753),
-                                      (-0.7853981633974483, -0.30571189166434753),
-                                      (0.4636476090008061, -1.5663974310780233),
+                        essentials = [(0.0, -1.5707963267948966), 0.86257209725,
+                                      (-0.7853981633974483, -0.30571189166434753), (0.00196724565, 0.0039344913),
                                       (-2.356194490192345, -0.30571189166434753, 0.7853981633974483,
                                        -0.30571189166434753)]
                     # If center is valid, use it.

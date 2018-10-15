@@ -800,7 +800,7 @@ class AreaDefinition(BaseDefinition):
     pixel_size_y : float
         Pixel height in projection units
     top_left_extent : list
-        Coordinates (x, y) of extent of upper left pixel in projection units
+        Coordinates (UL_x, UL_y) of upper left corner of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
         left pixel in units of pixels.
@@ -881,7 +881,7 @@ class AreaDefinition(BaseDefinition):
         area_id : str
             ID of area
         projection : dict or str
-            Dictionary with Proj.4 parameters
+            Projection parameters as a proj4_dict or proj4_string
         area_extent : list
             Area extent as a list (LL_x, LL_y, UR_x, UR_y)
         shape : list or int
@@ -923,7 +923,7 @@ class AreaDefinition(BaseDefinition):
         area_id : str
             ID of area
         projection : dict or str
-            Dictionary with Proj.4 parameters
+            Projection parameters as a proj4_dict or proj4_string
         center : list
             Center of projection (center_x, center_y)
         radius : list or float
@@ -973,7 +973,7 @@ class AreaDefinition(BaseDefinition):
         area_id : str
             ID of area
         projection : dict or str
-            Dictionary with Proj.4 parameters
+            Projection parameters as a proj4_dict or proj4_string
         center : list
             Center of projection (center_x, center_y)
         pixel_size : list or float
@@ -1018,11 +1018,11 @@ class AreaDefinition(BaseDefinition):
         area_id : str
             ID of area
         projection : dict or str
-            Dictionary with Proj.4 parameters
+            Projection parameters as a proj4_dict or proj4_string
         top_left_extent : list
             Upper left corner of upper left pixel (x_ul, y_ul)
         pixel_size : list or float
-            Size of pixels: (x_size, y_size)
+            Size of pixels: (x_size, y_size). Must be given in meters
         shape : list or int
             Number of pixels (height, width)
         description : str, optional

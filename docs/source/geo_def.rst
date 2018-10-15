@@ -1,30 +1,25 @@
 Geometry definitions
 ====================
-The module `pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_
-contains classes for describing different kinds of types of remote sensing data geometries.
-The use of the different classes is described below.
+The module :mod:`pyresample.geometry <geometry>` contains classes for describing different kinds
+of types of remote sensing data geometries. The use of the different classes is described below.
 
 Remarks
 -------
 
-All longitudes and latitudes provided to
-`pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_ must be in degrees.
-Longitudes must additionally be in the [-180;+180[ validity range.
+All longitudes and latitudes provided to :mod:`pyresample.geometry <geometry>` must be
+in degrees. Longitudes must additionally be in the [-180;+180[ validity range.
 
-As of version 1.1.1, the
-`pyresample.geometry <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-geometry>`_ contructors will
+As of version 1.1.1, the :mod:`pyresample.geometry <geometry>` contructors will
 check the range of longitude values, send a warning if some of them fall outside validity range,
 and automatically correct the invalid values into [-180;+180[.
 
-Use function `utils.wrap_longitudes <https://pyresample.readthedocs.io/en/latest/API.html#utils.wrap_longitudes>`_
-for wrapping longitudes yourself.
+Use function :mod:`utils.wrap_longitudes <utils.wrap_longitudes>` for wrapping longitudes yourself.
 
 AreaDefinition
 --------------
 
-The cartographic definition of grid areas used by
-`Pyresample <https://pyresample.readthedocs.io/en/latest/API.html#pyresample-api>`_ is contained in an
-object of type `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_.
+The cartographic definition of grid areas used by Pyresample is
+contained in an object of type :mod:`AreaDefinition <geometry.AreaDefinition>`
 The following arguments are needed to initialize an area:
 
 * **area_id** ID of area
@@ -69,11 +64,11 @@ Creating an area definition:
 pyresample.utils
 ****************
 
-The `utils <https://pyresample.readthedocs.io/en/latest/API.html#module-utils>`_ module of pyresample
+The :mod:`utils <utils>` module of Pyresample
 has convenience functions for constructing area definitions. The function
-`get_area_def <https://pyresample.readthedocs.io/en/latest/API.html#utils.get_area_def>`_ can
-construct an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
-object based on area extent and a proj4-string/dict or a list of proj4 arguments.
+:mod:`get_area_def <utils.get_area_def>` can construct an
+:mod:`AreaDefinition <geometry.AreaDefinition>` object based on
+area_extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
 
@@ -96,20 +91,21 @@ object based on area extent and a proj4-string/dict or a list of proj4 arguments
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The function `from_params <https://pyresample.readthedocs.io/en/latest/API.html#utils.from_params>`_ attempts
-to return an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
-object if the number of pixel (shape) and area_extent can be found with the given data below:
+The function :mod:`from_params <utils.from_params>` attempts to return
+an :mod:`AreaDefinition <geometry.AreaDefinition>` object if the number
+of pixels (shape) and area_extent can be found with the given data below:
 
-Required (positional) arguments:
+Required arguments:
 
 * **area_id**: ID of area
 * **projection**: Projection parameters as a proj4_dict or proj4_string
 
-Optional (keyword) arguments:
+Optional arguments:
 
-* **proj_id**, and **area_extent**: Same as AreaDefinition
 * **description**: Description
-* **units**: Default projection units: meters, radians, or degrees
+* **proj_id**: ID of projection (being deprecated)
+* **units**: Default projection units: meters, radians, or degrees. Defaults to: units used in **projection**, meters.
+* **area_extent**: Area extent as a list (x_ll, y_ll, x_ur, y_ur)
 * **shape**: Number of pixels in y (number of grid rows) and x (number of grid columns) direction (height, width)
 * **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x_ul, y_ul)
 * **center**: Projection x and y coordinate of the center of projection (center_x, center_y)
@@ -123,8 +119,8 @@ Optional (keyword) arguments:
  >>> area_id = 'ease_sh'
  >>> projection = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
  >>> area_def = utils.from_params(area_id, projection, center=(0, -90),
- ...                              radius=(45, -17.516001139327766),
- ...                              pixel_size=(45, -89.681194), units='degrees',
+ ...                              radius=49.4217406986,
+ ...                              pixel_size=0.225429746313, units='degrees',
  ...                              description='Antarctic EASE grid')
  >>> print(area_def)
  Area ID: ease_sh
@@ -150,20 +146,68 @@ Optional (keyword) arguments:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_ function can be
-used to parse area definitions from a configuration file by giving it the area file name and regions
-you wish to load. `load_area <https://pyresample.readthedocs.io/en/latest/API.html#utils.load_area>`_
-takes advantage of `from_params <https://pyresample.readthedocs.io/en/latest/API.html#utils.from_params>`_
+.. note::
+
+  **radius** and **pixel size** are distances, **NOT** coordinates. Thus when expressed
+  as an angle, they will be the distance from the center of your projection to the
+  latitude/longitude located at (center[0] + radius[0], center[1] + radius[1]).
+
+There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` that utilize
+:mod:`from_params <utils.from_params>` to guarantee that a definition is made, thus each argument below is the same as
+above. The following functions require **area_id** and **projection** (in that order) along with a few other arguments:
+
+:mod:`from_extent <geometry.AreaDefinition.from_extent>`:
+
+ Additional required arguments:
+
+ * **area_extent**
+ * **shape**
+
+:mod:`from_circle <geometry.AreaDefinition.from_circle>`
+
+ Additional required arguments:
+
+ * **center**
+ * **radius**
+
+ Optional arguments. One of the following arguments is required to
+ make an :mod:`AreaDefinition <geometry.AreaDefinition>` object, else a
+ :mod:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>` object is made:
+
+ * **pixel_size**
+ * **shape**
+
+
+:mod:`from_area_of_interest <geometry.AreaDefinition.from_area_of_interest>`
+
+ Additional required arguments:
+
+ * **center**
+ * **pixel_size**
+ * **shape**
+
+:mod:`from_geotiff <geometry.AreaDefinition.from_geotiff>`
+
+
+ Additional required arguments:
+
+ * **top_left_extent**
+ * **pixel_size**
+ * **shape**
+
+The :mod:`load_area <utils.load_area>` function can be used to
+parse area definitions from a configuration file by giving it the
+area file name and regions you wish to load. :mod:`load_area <utils.load_area>`
+takes advantage of :mod:`from_params <utils.from_params>`
 and hence uses the same arguments.
 
 Assuming the file **areas.yaml** exists with the following content
 
 .. code-block:: yaml
 
- extents:
-   description: Example of using extents
+ boundary:
    area_id: ease_sh
-   units: meters
+   description: Example of finding an area definition using shape and area_extent
    projection:
      a: 6371228.0
      units: m
@@ -173,24 +217,24 @@ Assuming the file **areas.yaml** exists with the following content
    shape: [425, 850]
    area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
- extents_2:
-   description: Another example of using extents
-   units: meters
+ boundary_2:
+   description: Another example of finding an area definition using shape and area_extent
+   units: degrees
    projection:
      a: 6371228.0
      units: m
      lon_0: 0
      proj: laea
      lat_0: -90
-   shape: [425, 850]
+   shape:
+     height: 425
+     width: 850
    area_extent:
-     lower_left_xy: [-5326849.0625, -5326849.0625]
-     upper_right_xy: [5326849.0625, 5326849.0625]
-     units: m
+     lower_left_xy: [-135.0, -17.516001139327766]
+     upper_right_xy: [45.0, -17.516001139327766]
 
- geotiff:
-   description: Example of using geotiff
-   units: meters
+ corner:
+   description: Example of finding an area definition using shape, top_left_extent, and pixel_size
    projection:
      a: 6371228.0
      units: m
@@ -201,9 +245,26 @@ Assuming the file **areas.yaml** exists with the following content
    top_left_extent: [-5326849.0625, 5326849.0625]
    pixel_size: [12533.7625, 25067.525]
 
+ corner_2:
+   description: Another example of finding an area definition using shape, top_left_extent, and pixel_size
+   units: degrees
+   projection:
+     a: 6371228.0
+     units: m
+     lon_0: 0
+     proj: laea
+     lat_0: -90
+   shape: [425, 850]
+   top_left_extent:
+     x_ul: -45.0
+     y_ul: -17.516001139327766
+   pixel_size:
+     x_size: 12533.7625
+     y_size: 25067.525
+     units: meters
+
  circle:
-   description: Example of using circle
-   units: meters
+   description: Example of finding an area definition using center, pixel_size, and radius
    projection:
      a: 6371228.0
      units: m
@@ -215,8 +276,8 @@ Assuming the file **areas.yaml** exists with the following content
    radius: [5326849.0625, 5326849.0625]
 
  circle_2:
-   description: Another example of using circle
-   units: meters
+   area_id: ease_sh
+   description: Another example of finding an area definition using center, pixel_size, and radius
    projection:
      a: 6371228.0
      units: m
@@ -225,19 +286,18 @@ Assuming the file **areas.yaml** exists with the following content
      lat_0: -90
    center:
      center_x: 0
-     center_y: 0
-     units: m
+     center_y: -90
+     units: degrees
    shape:
      width: 850
      height: 425
-     units: m
    radius:
-     radius: 5326849.0625
-     units: m
+     x_radius: -49.4217406986
+     y_radius: -49.4217406986
+     units: degrees
 
  area_of_interest:
-   description: Example of using area_of_interest
-   units: meters
+   description: Example of finding an area definition using shape, center, and pixel_size
    projection:
      a: 6371228.0
      units: m
@@ -249,31 +309,29 @@ Assuming the file **areas.yaml** exists with the following content
    pixel_size: [12533.7625, 25067.525]
 
  area_of_interest_2:
-   description: Another xample of using area_of_interest
-   units: meters
+   area_id: ease_sh
+   description: Another example of finding an area definition using shape, center, and pixel_size
    projection:
      a: 6371228.0
      units: m
      lon_0: 0
      proj: laea
      lat_0: -90
-   shape:
-     shape: [425, 850]
-     units: m
+   shape: [425, 850]
    center: [0, 0]
    pixel_size:
-     x_size: 12533.7625
-     y_size: 25067.525
+     pixel_size: -0.22542974631300449
+     units: degrees
 
 An area definition dict can be read using
 
 .. doctest::
 
  >>> from pyresample import utils
- >>> area_def = utils.load_area('areas.yaml', 'geotiff')
+ >>> area_def = utils.load_area('areas.yaml', 'corner')
  >>> print(area_def)
- Area ID: geotiff
- Description: Example of using geotiff
+ Area ID: corner
+ Description: Example of finding an area definition using shape, top_left_extent, and pixel_size
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425
@@ -291,10 +349,10 @@ Several area definitions can be read at once using the region names in an argume
 .. doctest::
 
  >>> from pyresample import utils
- >>> geotiff, extents = utils.load_area('areas.yaml', 'geotiff', 'extents')
- >>> print(extents)
+ >>> corner, boundary = utils.load_area('areas.yaml', 'corner', 'boundary')
+ >>> print(boundary)
  Area ID: ease_sh
- Description: Example of using extents
+ Description: Example of finding an area definition using shape and area_extent
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 850
  Number of rows: 425
@@ -360,10 +418,9 @@ Several area definitions can be read at once using the region names in an argume
 
 GridDefinition
 --------------
-If the lons and lats grid values are known, the area definition information can be skipped for some types of
-resampling by using a `GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_
-object instead of an `AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_
-object.
+If the lons and lats grid values are known, the area definition information can be skipped for
+some types of resampling by using a :mod:`GridDefinition <geometry.GridDefinition>`
+object instead of an :mod:`AreaDefinition <geometry.AreaDefinition>` object.
 
 .. doctest::
 
@@ -405,9 +462,9 @@ A ***definition** object allows for retrieval of geographic coordinates using ar
 (slice stepping is currently not supported).
 
 All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_ exposes the
-full set of projection coordinates as **projection_x_coords** and **projection_y_coords**. Note that in the
-case of projection coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
+:mod:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
+as **projection_x_coords** and **projection_y_coords**. Note that in the case of projection
+coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
 and **projection_y_coords** will be latitude.
 
 .. versionchanged:: 1.5.1
@@ -467,11 +524,9 @@ using the **projection_x_coord** or **projection_y_coords** property of a geogra
 Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The
-spherical geometry operations are calculated based on the corners of a
-GeometryDefinition (`GridDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.GridDefinition>`_,
-`AreaDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.AreaDefinition>`_, or
-2D `SwathDefinition <https://pyresample.readthedocs.io/en/latest/API.html#geometry.SwathDefinition>`_) and assuming the
-edges are great circle arcs.
+spherical geometry operations are calculated based on the corners of a GeometryDefinition
+(:mod:`GridDefinition <geometry.GridDefinition>`, :mod:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
+:mod:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
 
 It can be tested if geometries overlaps
 

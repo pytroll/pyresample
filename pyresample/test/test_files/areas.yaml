@@ -1,7 +1,6 @@
-extents:
+boundary:
   area_id: ease_sh
-  description: Example of using extents
-  units: meters
+  description: Example of finding an area definition using shape and area_extent
   projection:
     a: 6371228.0
     units: m
@@ -11,24 +10,24 @@ extents:
   shape: [425, 850]
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
-extents_2:
-  description: Another example of using extents
-  units: meters
+boundary_2:
+  description: Another example of finding an area definition using shape and area_extent
+  units: degrees
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape:
+    height: 425
+    width: 850
   area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
+    lower_left_xy: [-135.0, -17.516001139327766]
+    upper_right_xy: [45.0, -17.516001139327766]
 
-geotiff:
-  description: Example of using geotiff
-  units: meters
+corner:
+  description: Example of finding an area definition using shape, top_left_extent, and pixel_size
   projection:
     a: 6371228.0
     units: m
@@ -39,9 +38,26 @@ geotiff:
   top_left_extent: [-5326849.0625, 5326849.0625]
   pixel_size: [12533.7625, 25067.525]
 
+corner_2:
+  description: Another example of finding an area definition using shape, top_left_extent, and pixel_size
+  units: degrees
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  shape: [425, 850]
+  top_left_extent:
+    x_ul: -45.0
+    y_ul: -17.516001139327766
+  pixel_size:
+    x_size: 12533.7625
+    y_size: 25067.525
+    units: meters
+
 circle:
-  description: Example of using circle
-  units: meters
+  description: Example of finding an area definition using center, pixel_size, and radius
   projection:
     a: 6371228.0
     units: m
@@ -53,8 +69,8 @@ circle:
   radius: [5326849.0625, 5326849.0625]
 
 circle_2:
-  description: Another example of using circle
-  units: meters
+  area_id: ease_sh
+  description: Another example of finding an area definition using center, pixel_size, and radius
   projection:
     a: 6371228.0
     units: m
@@ -63,19 +79,18 @@ circle_2:
     lat_0: -90
   center:
     center_x: 0
-    center_y: 0
-    units: m
+    center_y: -90
+    units: degrees
   shape:
     width: 850
     height: 425
-    units: m
   radius:
-    radius: 5326849.0625
-    units: m
+    x_radius: 49.4217406986
+    y_radius: 49.4217406986
+    units: degrees
 
 area_of_interest:
-  description: Example of using area_of_interest
-  units: meters
+  description: Example of finding an area definition using shape, center, and pixel_size
   projection:
     a: 6371228.0
     units: m
@@ -87,21 +102,21 @@ area_of_interest:
   pixel_size: [12533.7625, 25067.525]
 
 area_of_interest_2:
-  description: Another example of using area_of_interest
-  units: meters
+  area_id: ease_sh
+  description: Another example of finding an area definition using shape, center, and pixel_size
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape:
-    shape: [425, 850]
-    units: m
-  center: [0, 0]
+  shape: [425, 850]
+  center:
+    center: [0, -1.570796]
+    units: degrees
   pixel_size:
-    x_size: 12533.7625
-    y_size: 25067.525
+    pixel_size: 0.22542974631300449
+    units: degrees
 
 test_meters:
   description: test_meters
