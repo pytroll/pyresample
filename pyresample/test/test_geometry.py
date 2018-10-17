@@ -1303,7 +1303,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
             """Makes sure that the area definitions created are correct."""
             self.assertTrue(isinstance(area_def, AreaDefinition))
             self.assertTrue(np.allclose(area_def.area_extent, area_extent))
-            self.assertEqual(area_def.shape, shape)
+            self.assertEqual(area_def.shape, (425, 850))
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees, meters, and radians all create the same area definition.

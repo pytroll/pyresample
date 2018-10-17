@@ -777,9 +777,10 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
         var = _round_poles(var, units)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees/radians.
+    # Converts list-like from degrees/radians to meters. Lists must be within
+    # [-90, 90] degrees or [-pi/2, pi/2] radians.
     if (u'\xb0' in units or 'deg' in units or 'rad' in units) and not inverse:
-        # Converts list-like from degrees/radians to meters. Lists must be within
-        # [-90, 90] degrees or [-pi/2, pi/2] radians.
+        # Interprets radius and pixel_size as distances between latitudes/longitudes.
         if name in ('radius', 'pixel_size'):
             if center is None:
                 raise ValueError('center must be given to convert radius or pixel_size from an angle to meters')

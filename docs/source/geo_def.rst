@@ -246,6 +246,7 @@ Assuming the file **areas.yaml** exists with the following content
    pixel_size: [12533.7625, 25067.525]
 
  corner_2:
+   area_id: ease_sh
    description: Another example of finding an area definition using shape, top_left_extent, and pixel_size
    units: degrees
    projection:
