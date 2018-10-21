@@ -394,8 +394,7 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
     try:
         if rasterio is not None and isinstance(source, (rasterio.io.DatasetReader, rasterio.io.DatasetWriter)):
             return _get_area_def_from_rasterio(source, area_id, name, proj_id, proj_dict)
-        else:
-            return _get_area_def_from_gdal(source, area_id, name, proj_id, proj_dict)
+        return _get_area_def_from_gdal(source, area_id, name, proj_id, proj_dict)
     finally:
         if cleanup_rasterio:
             source.close()
