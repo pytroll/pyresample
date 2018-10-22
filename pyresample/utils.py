@@ -825,8 +825,6 @@ def _validate_variable(var, new_var, var_name, input_list):
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p):
     """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
-    if center is not None:
-        radius = _convert_units(radius, 'radius', units, p, center=center)
     # Input unaffected by data below: When area extent is calcuated, it's either with
     # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
     # Yet output (center/radius/top_left_extent) is essential for data below.
@@ -843,9 +841,12 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
+        radius = _convert_units(radius, 'radius', units, p, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
     # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
+    else:
+        radius = _convert_units(radius, 'radius', units, p, center=center)
     resolution = _convert_units(resolution, 'resolution', units, p, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
     if radius is not None and resolution is not None:
