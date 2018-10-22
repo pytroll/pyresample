@@ -740,19 +740,27 @@ def _sign(num):
     return 1
 
 
-def _round_poles(center, units):
+def _round_poles(center, units, p):
     """Rounds center to the nearest pole if it is extremely close to said pole. Used to work around float arithmetic."""
-    if 'deg' in units:
-        if abs(abs(center[1]) - 90) < .0001:
+    # For a laea projection, this allows for an error of 11 meters around the pole.
+    error = .0001
+    if 'm' in units:
+        center = p(*center, inverse=True, errcheck=True)
+        if abs(abs(center[1]) - 90) < error:
+            center = (center[0], _sign(center[1]) * 90)
+        center = p(*center, errcheck=True)
+    if 'deg' in units or u'\xb0' in units:
+        if abs(abs(center[1]) - 90) < error:
             center = (center[0], _sign(center[1]) * 90)
     if 'rad' in units:
-        if abs(abs(center[1]) - math.pi / 2) < .0001 * math.pi / 180:
+        if abs(abs(center[1]) - math.pi / 2) < error * math.pi / 180:
             center = (center[0], _sign(center[1]) * math.pi / 2)
     return center
 
 
 def _convert_units(var, name, units, p, inverse=False, center=None):
     """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite.
+
     Uses UTF-8 for degree symbol.
     """
     if var is None:
@@ -771,7 +779,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
     if name == 'center':
-        var = _round_poles(var, units)
+        var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees/radians.
     # Converts list-like from degrees/radians to meters.
@@ -782,7 +790,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
                 raise ValueError('center must be given to convert radius or resolution from an angle to meters')
             else:
                 # If on a pole, use northern/southern latitude for both height and width.
-                center_as_angle = p(*center, radians='rad' in units, inverse=True)
+                center_as_angle = p(*center, radians='rad' in units, inverse=True, errcheck=True)
                 if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-10:
                     var = (abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[0]),
                                  radians='rad' in units, errcheck=True)[1] + center[1]),
@@ -817,6 +825,8 @@ def _validate_variable(var, new_var, var_name, input_list):
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p):
     """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
+    if center is not None:
+        radius = _convert_units(radius, 'radius', units, p, center=center)
     # Input unaffected by data below: When area extent is calcuated, it's either with
     # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
     # Yet output (center/radius/top_left_extent) is essential for data below.
@@ -833,12 +843,9 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
-        radius = _convert_units(radius, 'radius', units, p, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
-    # Convert radius and resolution to meters if given as angles. If center is not found, an exception is raised.
-    else:
-        radius = _convert_units(radius, 'radius', units, p, center=center)
+    # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
     resolution = _convert_units(resolution, 'resolution', units, p, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
     if radius is not None and resolution is not None:
@@ -875,8 +882,7 @@ def _format_list(var, name):
 
 
 def _verify_list(name, var, length):
-    """ Checks that every piece of data that should be list-like (converts lists/tuples to xarrays) is list-like,
-        makes sure shapes are accurate, and checks to make sure their values are numbers."""
+    """ Checks that list-like variables are list-like, shapes are accurate, and values are numbers."""
     # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
     if var is None:
         return None

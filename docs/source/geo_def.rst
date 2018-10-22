@@ -167,10 +167,11 @@ An example with degrees as units using a mercator projection:
   they represent the degrees or radians of longitude/latitude away from the center that
   they should span. Hence in these cases **center must be provided or findable**.
 
-There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` that utilize
-:mod:`from_params <utils.from_params>` to guarantee that an area definition is made, thus each
-argument below is the same as above. The following functions require and **area_id** and **projection**
-(in that order) along with a few other arguments:
+There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` utilizing
+:mod:`from_params <utils.from_params>` to guarantee that an area definition is made. Hence
+each argument below is the same as above and can take the same optional arguments as
+:mod:`from_params <utils.from_params>` (i.e. units). The following functions require an
+**area_id** and **projection** along with a few other arguments:
 
 :mod:`from_extent <geometry.AreaDefinition.from_extent>`:
 
@@ -379,6 +380,13 @@ Assuming the file **areas.yaml** exists with the following content
      resolution: 0.0039344913
      units: radians
 
+.. note::
+
+  The `lower_left_xy` and `upper_right_xy` items give the coordinates of the
+  outer edges of the corner pixels on the x and y axis respectively. When the
+  projection coordinates are longitudes and latitudes, it is expected to
+  provide the extent in `longitude, latitude` order.
+
 An area definition dict can be read using
 
 .. doctest::
@@ -392,13 +400,6 @@ An area definition dict can be read using
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-.. note::
-
-  The `lower_left_xy` and `upper_right_xy` items give the coordinates of the
-  outer edges of the corner pixels on the x and y axis respectively. When the
-  projection coordinates are longitudes and latitudes, it is expected to
-  provide the extent in `longitude, latitude` order.
 
 Several area definitions can be read at once using the region names in an argument list
 
@@ -589,14 +590,16 @@ The fraction of overlap can be calculated
 
 .. doctest::
 
- >>> print(swath_def.overlap_rate(area_def))
+ >>> overlap_fraction = swath_def.overlap_rate(area_def)
+ >>> print(overlap_fraction)
  0.05843953132633209
 
 And the polygon defining the (great circle) boundaries over the overlapping area can be calculated
 
 .. doctest::
 
- >>> print(swath_def.intersection(area_def))
+ >>> overlap_polygon = swath_def.intersection(area_def)
+ >>> print(overlap_polygon)
  [(-40.0, -70.1), (-11.1, -58.3), (72.3, -50.0), (90.3, -59.5)]
 
 It can be tested if a (lon, lat) point is inside a GeometryDefinition
