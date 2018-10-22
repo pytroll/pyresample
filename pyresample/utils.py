@@ -659,7 +659,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
 
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
     center, top_left_extent, area_extent = _get_converted_lists(center, top_left_extent,
-                                                                                    area_extent, units, p)
+                                                                area_extent, units, p)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
