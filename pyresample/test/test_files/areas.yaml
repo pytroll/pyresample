@@ -7,7 +7,7 @@ boundary:
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape: [425, 425]
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
 boundary_2:
@@ -21,44 +21,44 @@ boundary_2:
     lat_0: -90
   shape:
     height: 425
-    width: 850
+    width: 425
   area_extent:
     lower_left_xy: [-135.0, -17.516001139327766]
     upper_right_xy: [45.0, -17.516001139327766]
 
 corner:
-  description: Example of finding an area definition using shape, top_left_extent, and pixel_size
+  description: Example of finding an area definition using shape, top_left_extent, and resolution
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape: [425, 425]
   top_left_extent: [-5326849.0625, 5326849.0625]
-  pixel_size: [12533.7625, 25067.525]
+  resolution: 25067.525
 
 corner_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using shape, top_left_extent, and pixel_size
-  units: degrees
+  description: Another example of finding an area definition using shape, top_left_extent, and resolution
+  units:  °
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape: [425, 425]
   top_left_extent:
-    x_ul: -45.0
-    y_ul: -17.516001139327766
-  pixel_size:
-    x_size: 12533.7625
-    y_size: 25067.525
+    x: -45.0
+    y: -17.516001139327766
+  resolution:
+    dx: 25067.525
+    dy: 25067.525
     units: meters
 
 circle:
-  description: Example of finding an area definition using center, pixel_size, and radius
+  description: Example of finding an area definition using center, resolution, and radius
   projection:
     a: 6371228.0
     units: m
@@ -66,12 +66,12 @@ circle:
     proj: laea
     lat_0: -90
   center: [0, 0]
-  pixel_size: [12533.7625, 25067.525]
-  radius: [5326849.0625, 5326849.0625]
+  resolution: [25067.525, 25067.525]
+  radius: 5326849.0625
 
 circle_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using center, pixel_size, and radius
+  description: Another example of finding an area definition using center, resolution, and radius
   projection:
     a: 6371228.0
     units: m
@@ -79,45 +79,45 @@ circle_2:
     proj: laea
     lat_0: -90
   center:
-    center_x: 0
-    center_y: -90
+    x: 0
+    y: -90
     units: degrees
   shape:
-    width: 850
+    width: 425
     height: 425
   radius:
-    x_radius: 49.4217406986
-    y_radius: 49.4217406986
-    units: degrees
+    dx: 49.4217406986
+    dy: 49.4217406986
+    units: °
 
 area_of_interest:
-  description: Example of finding an area definition using shape, center, and pixel_size
+  description: Example of finding an area definition using shape, center, and resolution
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape: [425, 425]
   center: [0, 0]
-  pixel_size: [12533.7625, 25067.525]
+  resolution: [25067.525, 25067.525]
 
 area_of_interest_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using shape, center, and pixel_size
+  description: Another example of finding an area definition using shape, center, and resolution
   projection:
     a: 6371228.0
     units: m
     lon_0: 0
     proj: laea
     lat_0: -90
-  shape: [425, 850]
+  shape: [425, 425]
   center:
     center: [0, -1.570796]
-    units: degrees
-  pixel_size:
-    pixel_size: 0.22542974631300449
-    units: degrees
+    units: radians
+  resolution:
+    resolution: 0.0039344913
+    units: radians
 
 test_meters:
   description: test_meters
@@ -136,13 +136,13 @@ test_meters:
     width: 850
     height: 425
   top_left_extent:
-    x_ul: -5326849.0625
-    y_ul: 5326849.0625
+    x: -5326849.0625
+    y: 5326849.0625
     units: m
   center:
     center: [0, 0]
     units: m
-  pixel_size: [12533.7625, 25067.525]
+  resolution: [12533.7625, 25067.525]
   radius:
     radius: 5326849.0625
     units: m
@@ -162,20 +162,20 @@ test_radians:
     units: radians
   shape: [425, 850]
   top_left_extent:
-    x_ul: -0.7853981633974483
-    y_ul: -0.30571189166434753
+    x: -0.7853981633974483
+    y: -0.30571189166434753
     units: radians
   center:
-    center_x: 0
-    center_y: -1.5707963267948966
+    x: 0
+    y: -1.5707963267948966
     units: radians
-  pixel_size:
-    x_size: 0.7853981633974483
-    y_size: -1.5652321122412096
+  resolution:
+    dx: 0.7853981633974483
+    dy: -1.5652321122412096
     units: radians
   radius:
-    x_radius: 0.7853981633974483
-    y_radius: -0.30571189166434753
+    dx: 0.7853981633974483
+    dy: -0.30571189166434753
     units: radians
 
 test_degrees:
@@ -195,20 +195,20 @@ test_degrees:
     width: 850
     height: 425
   top_left_extent:
-    x_ul: -45.0
-    y_ul: -17.516001139327766
+    x: -45.0
+    y: -17.516001139327766
     units: °
   center:
-    center_x: 0
-    center_y: -90
+    x: 0
+    y: -90
     units: degrees
-  pixel_size:
-    x_size: 45
-    y_size: -89.681194
+  resolution:
+    dx: 45
+    dy: -89.681194
     units: degrees
   radius:
-    x_radius: 45.0
-    y_radius: -17.516001139327766
+    dx: 45.0
+    dy: -17.516001139327766
     units: degrees
 
 ease_sh:

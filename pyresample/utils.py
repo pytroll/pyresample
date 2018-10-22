@@ -141,11 +141,11 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params.setdefault('area_id', area_name)
         # Optional arguments.
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
-        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x_ul', 'y_ul'])
+        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y'])
         params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
-        params['pixel_size'] = _get_list(params, 'pixel_size', ['x_size', 'y_size'])
-        params['radius'] = _get_list(params, 'radius', ['x_radius', 'y_radius'])
+        params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
+        params['radius'] = _get_list(params, 'radius', ['dx', 'dy'])
         res.append(from_params(**params))
     return res
 
@@ -277,7 +277,7 @@ def _create_area(area_id, area_content):
                        area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
 
 
-def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
+def get_area_def(area_id, area_name, proj_id, proj4_args, width, height,
                  area_extent, rotation=0):
     """Construct AreaDefinition object from arguments
 
@@ -291,9 +291,9 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
         Description of area
     proj4_args : list, dict, or str
         Proj4 arguments as list of arguments or string
-    x_size : int
+    width : int
         Number of pixel in x dimension
-    y_size : int
+    height : int
         Number of pixel in y dimension
     rotation: float
         Rotation in degrees (negative is cw)
@@ -308,7 +308,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, x_size, y_size,
 
     proj_dict = _get_proj4_args(proj4_args)
     return from_params(area_id, proj_dict, description=area_name, proj_id=proj_id,
-                       shape=(y_size, x_size), area_extent=area_extent)
+                       shape=(height, width), area_extent=area_extent)
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,
@@ -586,7 +586,7 @@ def recursive_dict_update(d, u):
 
 
 def from_params(area_id, projection, shape=None, top_left_extent=None, center=None, area_extent=None,
-                pixel_size=None, radius=None, units=None, **kwargs):
+                resolution=None, radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found.
 
     Parameters
@@ -601,18 +601,18 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         ID of projection (being deprecated)
     units : str, optional
         Default projection units: meters, radians, or degrees
-    shape : list or int, optional
-        Number of pixels (height, width)
+    shape : list, optional
+        Number of pixels in the x and y direction (height, width)
     area_extent : list, optional
-        Area extent as a list (x_ll, y_ll, x_ur, y_ur)
+        Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     top_left_extent : list, optional
-        Upper left corner of upper left pixel (x_ul, y_ul)
+        Upper left corner of upper left pixel (upper_left_x, upper_left_y)
     center : list, optional
         Center of projection (center_x, center_y)
-    pixel_size : list or float, optional
-        Size of pixels: (x_size, y_size)
+    resolution : list or float, optional
+        Size of pixels: (x, y)
     radius : list or float, optional
-        Length from the center to the edges of the projection (x_radius, y_radius)
+        Length from the center to the edges of the projection (x, y)
     rotation: float, optional
         rotation in degrees (negative is cw)
     nprocs : int, optional
@@ -623,13 +623,13 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         Grid lats
 
 
-    * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-        1. units expressed with each variable
+    * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+        1. units expressed with each variable through a DataArray's attr attribute.
         2. units passed to **units**
         3. units used in **projection**
         4. meters
-    * **shape**, **pixel_size**, and **radius** can be specified with one value if their elements are the same
-    * If **pixel_size** and **radius** are provided as angles, center must be given or findable
+    * **resolution** and **radius** can be specified with one value if dx == dy
+    * If **resolution** and **radius** are provided as angles, center must be given or findable
 
     Returns
     -------
@@ -650,19 +650,20 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
         units = proj_dict.get('units', 'meters')
+
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
-    center, radius, top_left_extent, pixel_size, area_extent, shape =\
+    center, radius, top_left_extent, resolution, shape, area_extent =\
         [_verify_list(var_name, var, length) for var_name, var, length in
-         zip(*[['center', 'radius', 'top_left_extent', 'pixel_size', 'area_extent', 'shape'],
-               [center, radius, top_left_extent, pixel_size, area_extent, shape], [2, 2, 2, 2, 4, 2]])]
+         zip(*[['center', 'radius', 'top_left_extent', 'resolution', 'shape', 'area_extent'],
+               [center, radius, top_left_extent, resolution, shape, area_extent], [2, 2, 2, 2, 2, 4]])]
 
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-    center, radius, top_left_extent, pixel_size, area_extent = _get_converted_lists(center, radius, top_left_extent,
-                                                                                    pixel_size, area_extent, units, p)
+    center, top_left_extent, area_extent = _get_converted_lists(center, top_left_extent,
+                                                                                    area_extent, units, p)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
-        area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, pixel_size,
+        area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, resolution,
                                                       top_left_extent, units, p)
     return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
@@ -674,25 +675,25 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
 
     # Used for area definition to prevent indexing None.
     # Make sure shape is an integer. Rounds down if shape is less than .01 away from nearest int. Else rounds up.
-    x_size, y_size = None, None
+    width, height = None, None
     if shape is not None:
         if shape[1] - math.floor(shape[1]) < .01 or math.ceil(shape[1]) - shape[1] < .01:
-            x_size = int(round(shape[1]))
+            width = int(round(shape[1]))
         else:
-            x_size = math.ceil(shape[1])
-            logging.warning('x_size must be an integer: {0}. Rounding x_size to {1}'.format(shape[1], x_size))
+            width = math.ceil(shape[1])
+            logging.warning('width must be an integer: {0}. Rounding width to {1}'.format(shape[1], width))
         if shape[0] - math.floor(shape[0]) < .01 or math.ceil(shape[0]) - shape[0] < .01:
-            y_size = int(round(shape[0]))
+            height = int(round(shape[0]))
         else:
-            y_size = math.ceil(shape[0])
-            logging.warning('y_size must be an integer: {0}. Rounding y_size to {1}'.format(shape[0], y_size))
+            height = math.ceil(shape[0])
+            logging.warning('height must be an integer: {0}. Rounding height to {1}'.format(shape[0], height))
     # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
     if None not in (area_extent, shape):
-        return AreaDefinition(area_id, description, proj_id, proj_dict, x_size, y_size, area_extent, **kwargs)
+        return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
     elif area_extent is not None or shape is not None:
-        return DynamicAreaDefinition(area_id=area_id, description=description, proj_dict=proj_dict, x_size=x_size,
-                                     y_size=y_size, area_extent=area_extent, rotation=kwargs.get('rotation'),
+        return DynamicAreaDefinition(area_id=area_id, description=description, proj_dict=proj_dict, width=width,
+                                     height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
                                      optimize_projection=kwargs.get('optimize_projection', False))
     raise ValueError('Not enough information provided to create an area definition')
 
@@ -711,7 +712,7 @@ def _get_proj_data(projection):
     return proj_dict, Proj(proj_dict)
 
 
-def _get_converted_lists(center, radius, top_left_extent, pixel_size, area_extent, units, p):
+def _get_converted_lists(center, top_left_extent, area_extent, units, p):
     """handles area_extent being a set of two points and calls _convert_units."""
     # Splits area_extent into two lists so that its units can be converted
     if area_extent is None:
@@ -729,16 +730,7 @@ def _get_converted_lists(center, radius, top_left_extent, pixel_size, area_exten
     # Recombine area_extent.
     if area_extent is not None:
         area_extent = area_extent_ll + area_extent_ur
-    return center, radius, top_left_extent, pixel_size, area_extent
-
-
-def _validate_variable(var, new_var, var_name, input_list):
-    """Makes sure data given does not conflict with itself."""
-    if var is not None and not np.allclose(var, new_var):
-        raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
-            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
-                                                                                      input_list))
-    return new_var
+    return center, top_left_extent, area_extent
 
 
 def _sign(num):
@@ -770,23 +762,26 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
         var = tuple(var.data.tolist())
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
-    if not (units and (u'\xb0' in units or 'deg' in units or 'rad' in units or 'm' in units)):
+    viable_units = False
+    for unit in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
+        if units == unit:
+            viable_units = True
+            break
+    if not viable_units:
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
     if name == 'center':
         var = _round_poles(var, units)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees/radians.
-    # Converts list-like from degrees/radians to meters. Lists must be within
-    # [-90, 90] degrees or [-pi/2, pi/2] radians.
+    # Converts list-like from degrees/radians to meters.
     if (u'\xb0' in units or 'deg' in units or 'rad' in units) and not inverse:
-        # Interprets radius and pixel_size as distances between latitudes/longitudes.
-        if name in ('radius', 'pixel_size'):
+        # Interprets radius and resolution as distances between latitudes/longitudes.
+        if name in ('radius', 'resolution'):
             if center is None:
-                raise ValueError('center must be given to convert radius or pixel_size from an angle to meters')
+                raise ValueError('center must be given to convert radius or resolution from an angle to meters')
             else:
-                # Uses southern latitude for both height and width if radius is positive. Uses a northern latitude
-                # for both height and width if radius is negative.
+                # If on a pole, use northern/southern latitude for both height and width.
                 center_as_angle = p(*center, radians='rad' in units, inverse=True)
                 if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-10:
                     var = (abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[0]),
@@ -804,12 +799,23 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
             var = p(*var, radians='rad' in units, errcheck=True)
     # Don't convert if inverse is False: Want meters.
     elif inverse and 'm' in units:
-        # Converts list-like from meters to degrees. (list[0]^2 + list[1]^2)^.5 must be less than 12742456 meters.
+        # Converts list-like from meters to degrees.
         var = p(*var, inverse=True, errcheck=True)
+    if name in ('radius', 'resolution'):
+        var = (abs(var[0]), abs(var[1]))
     return var
 
 
-def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top_left_extent, units, p):
+def _validate_variable(var, new_var, var_name, input_list):
+    """Makes sure data given does not conflict with itself."""
+    if var is not None and not np.allclose(var, new_var):
+        raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
+            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
+                                                                                      input_list))
+    return new_var
+
+
+def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p):
     """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
     # Input unaffected by data below: When area extent is calcuated, it's either with
     # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
@@ -830,19 +836,19 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
         radius = _convert_units(radius, 'radius', units, p, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
-    # Convert radius and pixel_size to meters if given as angles. If center is not found, an exception is raised.
+    # Convert radius and resolution to meters if given as angles. If center is not found, an exception is raised.
     else:
         radius = _convert_units(radius, 'radius', units, p, center=center)
-    pixel_size = _convert_units(pixel_size, 'pixel_size', units, p, center=center)
+    resolution = _convert_units(resolution, 'resolution', units, p, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
-    if radius is not None and pixel_size is not None:
+    if radius is not None and resolution is not None:
         # Function 2-A
-        new_shape = (2 * radius[1] / pixel_size[1], 2 * radius[0] / pixel_size[0])
-        shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'pixel_size'])
-    elif pixel_size is not None and shape is not None:
+        new_shape = (2 * radius[1] / resolution[1], 2 * radius[0] / resolution[0])
+        shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'resolution'])
+    elif resolution is not None and shape is not None:
         # Function 2-B
-        new_radius = (pixel_size[0] * shape[1] / 2, pixel_size[1] * shape[0] / 2)
-        radius = _validate_variable(radius, new_radius, 'radius', ['shape', 'pixel_size'])
+        new_radius = (resolution[0] * shape[1] / 2, resolution[1] * shape[0] / 2)
+        radius = _validate_variable(radius, new_radius, 'radius', ['shape', 'resolution'])
     # Input determined from above functions, but output does not affect above functions: area_extent can be
     # used to find center/top_left_extent which are used to find each other, which is redundant.
     if center is not None and radius is not None:
@@ -859,13 +865,13 @@ def _extrapolate_information(area_extent, shape, center, radius, pixel_size, top
 
 
 def _format_list(var, name):
-    """Used to let shape, pixel_size, and radius to be single numbers if their elements are equal."""
-    if isinstance(var, (list, tuple)):
+    """Used to let shape, resolution, and radius to be single numbers if their elements are equal."""
+    # Single-number format.
+    if not isinstance(var, (list, tuple)) and name in ('resolution', 'radius'):
+        var = (float(var), float(var))
+    else:
         var = tuple(float(num) for num in var)
-    # Single number format.
-    elif len(np.ravel(var)) == 1 and name in ('shape', 'pixel_size', 'radius'):
-        var = [float(var), float(var)]
-    return tuple(var)
+    return var
 
 
 def _verify_list(name, var, length):
@@ -874,7 +880,7 @@ def _verify_list(name, var, length):
     # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
     if var is None:
         return None
-    # Verify that list is made of numbers and list-like.
+    # Verify that list is made of numbers and is list-like.
     try:
         if hasattr(var, 'units') and name != 'shape':
             # For len(var) to work, DataArray must contain a list, not a tuple

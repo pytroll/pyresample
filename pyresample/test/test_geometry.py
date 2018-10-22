@@ -1292,7 +1292,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         top_left_extent = (-5326849.0625, 5326849.0625)
         center_list = [[0, 0], 'a', (1, 2, 3)]
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-        pixel_size = (12533.7625, 25067.525)
+        resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
         units_list = ['meters', 'degrees', 'radians']
         # reducing the length of AreaDefinition.from_params makes lines much shorter.
@@ -1312,7 +1312,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         for projection in projection_list:
             for units in units_list:
                 for center in center_list:
-                    # essentials = center, radius, top_left_extent, pixel_size, area_extent.
+                    # essentials = center, radius, top_left_extent, resolution, area_extent.
                     if 'm' in units:
                         # Meters.
                         essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
@@ -1334,7 +1334,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                         center = essentials[0]
                     try:
                         area_list.append(area(area_id, projection, proj_id=proj_id, top_left_extent=essentials[2],
-                                              center=center, area_extent=essentials[4], pixel_size=essentials[3],
+                                              center=center, area_extent=essentials[4], resolution=essentials[3],
                                               radius=essentials[1], description=description, units=units))
                     except ValueError:
                         pass
@@ -1346,7 +1346,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                                      45.0, -17.516001139327766),
                                                     attrs={'units': 'degrees'})))
         # Tests area functions 1-A and 2-A.
-        area_list.append(area(area_id, projection_list[1], pixel_size=pixel_size, area_extent=area_extent))
+        area_list.append(area(area_id, projection_list[1], resolution=resolution, area_extent=area_extent))
         # Tests area function 1-B.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0],
                               top_left_extent=top_left_extent))
@@ -1357,10 +1357,10 @@ class TestStackedAreaDefinition(unittest.TestCase):
         # Tests all 4 user cases.
         area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], area_extent, shape))
         area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
-                                                    pixel_size=pixel_size))
-        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], pixel_size,
+                                                    resolution=resolution))
+        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], resolution,
                                                               shape))
-        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], top_left_extent, pixel_size, shape))
+        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], top_left_extent, resolution, shape))
 
         # Checks every area definition made
         for area_def in area_list:
@@ -1421,7 +1421,7 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         corners = [1, 1, 9, 9]
         self.assertRaises(ValueError, area.compute_domain, corners, 1, 1)
 
-        area_extent, x_size, y_size = area.compute_domain(corners, size=(5, 5))
+        area_extent, x_size, y_size = area.compute_domain(corners, shape=(5, 5))
         self.assertTupleEqual(area_extent, (0, 0, 10, 10))
         self.assertEqual(x_size, 5)
         self.assertEqual(y_size, 5)

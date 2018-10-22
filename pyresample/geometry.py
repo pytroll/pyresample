@@ -619,26 +619,26 @@ class SwathDefinition(CoordinateDefinition):
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
         lines, cols = self.lons.shape
-        x_size = int(cols * 1.1)
-        y_size = int(lines * 1.1)
+        width = int(cols * 1.1)
+        height = int(lines * 1.1)
 
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
         lons, lats = self.get_edge_lonlats()
-        return area.freeze((lons, lats), size=(x_size, y_size))
+        return area.freeze((lons, lats), shape=(height, width))
 
 
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
-    The purpose of this class is to be able to adapt the area extent and size
+    The purpose of this class is to be able to adapt the area extent and shape
     of the area to a given set of longitudes and latitudes, such that e.g.
     polar satellite granules can be resampled optimaly to a give projection.
     """
 
     def __init__(self, area_id=None, description=None, proj_dict=None,
-                 x_size=None, y_size=None, area_extent=None,
+                 width=None, height=None, area_extent=None,
                  optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
 
@@ -648,8 +648,8 @@ class DynamicAreaDefinition(object):
           The description of the area.
         proj_dict:
           The dictionary of projection parameters. Doesn't have to be complete.
-        x_size, y_size:
-          The size of the resulting area.
+        height, width:
+          The shape of the resulting area.
         area_extent:
           The area extent of the area.
         optimize_projection:
@@ -660,42 +660,45 @@ class DynamicAreaDefinition(object):
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
-        self.x_size = x_size
-        self.y_size = y_size
+        self.x_size = self.width = width
+        self.y_size = self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
         self.rotation = rotation
 
-    def compute_domain(self, corners, resolution=None, size=None):
-        """Compute size and area_extent from corners and [size or resolution]
-        info."""
-        if resolution is not None and size is not None:
-            raise ValueError("Both resolution and size can't be provided.")
-        elif resolution is None and size is None:
-            raise ValueError("Either resolution or size must be provided.")
+    # size = (x_size, y_size) and shape = (y_size, x_size)
+    def compute_domain(self, corners, resolution=None, shape=None):
+        """Compute shape and area_extent from corners and [shape or resolution] info.
+        
+        Corners represents the center of pixels, while area_extent represents the edge of pixels.
+        """
+        if resolution is not None and shape is not None:
+            raise ValueError("Both resolution and shape can't be provided.")
+        elif resolution is None and shape is None:
+            raise ValueError("Either resolution or shape must be provided.")
 
-        if size:
-            x_size, y_size = size
-            x_resolution = (corners[2] - corners[0]) * 1.0 / (x_size - 1)
-            y_resolution = (corners[3] - corners[1]) * 1.0 / (y_size - 1)
+        if shape:
+            height, width = shape
+            x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
+            y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
         else:
             try:
                 x_resolution, y_resolution = resolution
             except TypeError:
                 x_resolution = y_resolution = resolution
-            x_size = int(np.rint((corners[2] - corners[0]) * 1.0 /
+            width = int(np.rint((corners[2] - corners[0]) * 1.0 /
                                  x_resolution + 1))
-            y_size = int(np.rint((corners[3] - corners[1]) * 1.0 /
+            height = int(np.rint((corners[3] - corners[1]) * 1.0 /
                                  y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,
                        corners[2] + x_resolution / 2,
                        corners[3] + y_resolution / 2)
-        return area_extent, x_size, y_size
+        return area_extent, width, height
 
     def freeze(self, lonslats=None,
-               resolution=None, size=None,
+               resolution=None, shape=None,
                proj_info=None, rotation=None):
         """Create an AreaDefintion from this area with help of some extra info.
 
@@ -703,14 +706,14 @@ class DynamicAreaDefinition(object):
           the geographical coordinates to contain in the resulting area.
         resolution:
           the resolution of the resulting area.
-        size:
-          the size of the resulting area.
+        shape:
+          the shape of the resulting area.
         proj_info:
           complementing parameters to the projection info.
         rotation:
           rotation in degrees (negative is cw)
 
-        Resolution and Size parameters are ignored if the instance is created
+        Resolution and shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
         """
         if proj_info is not None:
@@ -718,7 +721,7 @@ class DynamicAreaDefinition(object):
 
         if self.optimize_projection:
             return lonslats.compute_optimal_bb_area(self.proj_dict)
-        if not self.area_extent or not self.x_size or not self.y_size:
+        if not self.area_extent or not self.width or not self.height:
             proj4 = Proj(**self.proj_dict)
             try:
                 lons, lats = lonslats
@@ -729,10 +732,11 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-            domain = self.compute_domain(corners, resolution, size)
-            self.area_extent, self.x_size, self.y_size = domain
+            # Note: size=(width, height) was changed to shape=(height, width).
+            domain = self.compute_domain(corners, resolution, shape)
+            self.area_extent, self.width, self.height = domain
         return AreaDefinition(self.area_id, self.description, '',
-                              self.proj_dict, self.x_size, self.y_size,
+                              self.proj_dict, self.width, self.height,
                               self.area_extent, self.rotation)
 
 
@@ -756,9 +760,9 @@ class AreaDefinition(BaseDefinition):
         ID of projection
     proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int
+    width : int
         x dimension in number of pixels
-    y_size : int
+    height : int
         y dimension in number of pixels
     rotation: float
         rotation in degrees (negative is cw)
@@ -781,9 +785,9 @@ class AreaDefinition(BaseDefinition):
         ID of projection
     proj_dict : dict
         Dictionary with Proj.4 parameters
-    x_size : int
+    width : int
         x dimension in number of pixels
-    y_size : int
+    height : int
         y dimension in number of pixels
     rotation: float
         rotation in degrees (negative is cw)
@@ -821,7 +825,7 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
+    def __init__(self, area_id, name, proj_id, proj_dict, width, height,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         if not isinstance(proj_dict, dict):
@@ -832,9 +836,9 @@ class AreaDefinition(BaseDefinition):
         self.area_id = area_id
         self.name = name
         self.proj_id = proj_id
-        self.x_size = int(x_size)
-        self.y_size = int(y_size)
-        self.shape = (y_size, x_size)
+        self.x_size = self.width = int(width)
+        self.y_size = self.height = int(height)
+        self.shape = (height, width)
         self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
@@ -844,10 +848,10 @@ class AreaDefinition(BaseDefinition):
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
                                  'area definition')
-        self.size = y_size * x_size
+        self.size = height * width
         self.ndim = 2
-        self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(x_size)
-        self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
+        self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
+        self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self.proj_dict = utils.convert_proj_floats(proj_dict.items())
         self.area_extent = tuple(area_extent)
 
@@ -873,7 +877,7 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @classmethod
-    def from_extent(cls, description, projection, area_extent, shape, **kwargs):
+    def from_extent(cls, area_id, projection, area_extent, shape, **kwargs):
         """Create an AreaDefinition object from area_extent and shape.
 
         Parameters
@@ -883,9 +887,9 @@ class AreaDefinition(BaseDefinition):
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
         area_extent : list
-            Area extent as a list (LL_x, LL_y, UR_x, UR_y)
-        shape : list or int
-            Number of pixels (height, width). Can be specified with one value if its elements are the same
+            Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+        shape : list
+            Number of pixels in the x and y direction (height, width)
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -902,8 +906,8 @@ class AreaDefinition(BaseDefinition):
             Grid lats
 
 
-        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-            1. units expressed with each variable
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+            1. units expressed with each variable through a DataArray's attr attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
@@ -912,11 +916,11 @@ class AreaDefinition(BaseDefinition):
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(description, projection, area_extent=area_extent, shape=shape, **kwargs)
+        return utils.from_params(area_id, projection, area_extent=area_extent, shape=shape, **kwargs)
 
     @classmethod
-    def from_circle(cls, area_id, projection, center, radius, shape=None, pixel_size=None, **kwargs):
-        """Create an AreaDefinition object from center, radius, and shape or from center, radius, and pixel_size.
+    def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, **kwargs):
+        """Create an AreaDefinition object from center, radius, and shape or from center, radius, and resolution.
 
         Parameters
         ----------
@@ -925,13 +929,13 @@ class AreaDefinition(BaseDefinition):
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
         center : list
-            Center of projection (center_x, center_y)
+            Center of projection (x, y)
         radius : list or float
-            Length from the center to the edges of the projection (x_radius, y_radius)
-        pixel_size : list or float, optional
-            Size of pixels: (x_size, y_size)
-        shape : list or int, optional
-            Number of pixels (height, width)
+            Length from the center to the edges of the projection (dx, dy)
+        resolution : list or float, optional
+            Size of pixels: (dx, dy)
+        shape : list, optional
+            Number of pixels in the x and y direction (height, width)
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -948,25 +952,25 @@ class AreaDefinition(BaseDefinition):
             Grid lats
 
 
-        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-            1. units expressed with each variable
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+            1. units expressed with each variable through a DataArray's attr attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-        * **shape**, **pixel_size**, and **radius** can be specified with one value if their elements are the same
+        * **resolution** and **radius** can be specified with one value if dx == dy
 
         Returns
         -------
         AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
-            If shape or pixel_size are provided, an AreaDefinition object is returned.
+            If shape or resolution are provided, an AreaDefinition object is returned.
             Else a DynamicAreaDefinition object is returned
         """
         return utils.from_params(area_id, projection, center=center, radius=radius, shape=shape,
-                                 pixel_size=pixel_size, **kwargs)
+                                 resolution=resolution, **kwargs)
 
     @classmethod
-    def from_area_of_interest(cls, area_id, projection, center, pixel_size, shape, **kwargs):
-        """Create an AreaDefinition object from center, pixel_size, and shape.
+    def from_area_of_interest(cls, area_id, projection, center, resolution, shape, **kwargs):
+        """Create an AreaDefinition object from center, resolution, and shape.
 
         Parameters
         ----------
@@ -975,11 +979,11 @@ class AreaDefinition(BaseDefinition):
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
         center : list
-            Center of projection (center_x, center_y)
-        pixel_size : list or float
-            Size of pixels: (x_size, y_size)
-        shape : list or int
-            Number of pixels (height, width)
+            Center of projection (x, y)
+        resolution : list or float
+            Size of pixels: (dx, dy). Can be specified with one value if dx == dy
+        shape : list
+            Number of pixels in the x and y direction (height, width)
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -996,22 +1000,21 @@ class AreaDefinition(BaseDefinition):
             Grid lats
 
 
-        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-            1. units expressed with each variable
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+            1. units expressed with each variable through a DataArray's attr attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-        * **shape** and **pixel_size** can be specified with one value if their elements are the same
 
         Returns
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(area_id, projection, center=center, pixel_size=pixel_size, shape=shape, **kwargs)
+        return utils.from_params(area_id, projection, center=center, resolution=resolution, shape=shape, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, area_id, projection, top_left_extent, pixel_size, shape, **kwargs):
-        """Create an AreaDefinition object from top_left_extent, pixel_size, and shape.
+    def from_geotiff(cls, area_id, projection, top_left_extent, resolution, shape, **kwargs):
+        """Create an AreaDefinition object from top_left_extent, resolution, and shape.
 
         Parameters
         ----------
@@ -1020,11 +1023,11 @@ class AreaDefinition(BaseDefinition):
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
         top_left_extent : list
-            Upper left corner of upper left pixel (x_ul, y_ul)
-        pixel_size : list or float
-            Size of pixels: (x_size, y_size). Must be given in meters
-        shape : list or int
-            Number of pixels (height, width)
+            Upper left corner of upper left pixel (x, y)
+        resolution : list or float
+            Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
+        shape : list
+            Number of pixels in the x and y direction (height, width)
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1041,18 +1044,17 @@ class AreaDefinition(BaseDefinition):
             Grid lats
 
 
-        * **units** accepts anything with 'm', 'rad', 'deg' or '°'. The order of default is:
-            1. units expressed with each variable
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+            1. units expressed with each variable through a DataArray's attr attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-        * **shape** and **pixel_size** can be specified with one value if their elements are the same
 
         Returns
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(area_id, projection, top_left_extent=top_left_extent, pixel_size=pixel_size,
+        return utils.from_params(area_id, projection, top_left_extent=top_left_extent, resolution=resolution,
                                  shape=shape, **kwargs)
 
     def __hash__(self):
