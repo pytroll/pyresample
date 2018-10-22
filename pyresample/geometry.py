@@ -669,7 +669,7 @@ class DynamicAreaDefinition(object):
     # size = (x_size, y_size) and shape = (y_size, x_size)
     def compute_domain(self, corners, resolution=None, shape=None):
         """Compute shape and area_extent from corners and [shape or resolution] info.
-        
+
         Corners represents the center of pixels, while area_extent represents the edge of pixels.
         """
         if resolution is not None and shape is not None:
