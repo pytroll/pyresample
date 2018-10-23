@@ -31,9 +31,10 @@ requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy>=1.10.0', 'configob
 extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
+                  'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1']}
 
-test_requires = []
+test_requires = ['rasterio']
 if sys.version_info < (3, 3):
     test_requires.append('mock')
 if sys.version_info < (2, 6):

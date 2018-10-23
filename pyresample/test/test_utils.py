@@ -2,6 +2,7 @@ import os
 import unittest
 
 import numpy as np
+import uuid
 
 from pyresample.test.utils import create_test_longitude, create_test_latitude
 
@@ -9,6 +10,16 @@ from pyresample.test.utils import create_test_longitude, create_test_latitude
 def tmp(f):
     f.tmp = True
     return f
+
+
+def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
+    import rasterio
+    array = np.ones((width, height)).astype(dtype)
+    fname = '/vsimem/%s' % uuid.uuid4()
+    with rasterio.open(fname, 'w', driver='GTiff', count=1, transform=transform,
+                       width=width, height=height, crs=crs, dtype=dtype) as dst:
+        dst.write(array, 1)
+    return fname
 
 
 class TestLegacyAreaParser(unittest.TestCase):
@@ -250,6 +261,63 @@ class TestMisc(unittest.TestCase):
         self.assertDictEqual(proj_dict, proj_dict2)
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
+
+    def test_get_area_def_from_raster(self):
+        from rasterio.crs import CRS
+        from affine import Affine
+        from pyresample import utils
+        x_size = 791
+        y_size = 718
+        transform = Affine(300.0379266750948, 0.0, 101985.0,
+                           0.0, -300.041782729805, 2826915.0)
+        crs = CRS(init='epsg:3857')
+        source = tmptiff(x_size, y_size, transform, crs=crs)
+        area_id = 'area_id'
+        proj_id = 'proj_id'
+        name = 'name'
+        area_def = utils.get_area_def_from_raster(source, area_id=area_id, name=name, proj_id=proj_id)
+        self.assertEquals(area_def.area_id, area_id)
+        self.assertEquals(area_def.proj_id, proj_id)
+        self.assertEquals(area_def.name, name)
+        self.assertEquals(area_def.x_size, x_size)
+        self.assertEquals(area_def.y_size, y_size)
+        self.assertDictEqual(crs.to_dict(), area_def.proj_dict)
+        self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
+                                                     transform.c + transform.a * x_size, transform.f))
+
+    def test_get_area_def_from_raster_extracts_proj_id(self):
+        from rasterio.crs import CRS
+        from pyresample import utils
+        crs = CRS(init='epsg:3857')
+        source = tmptiff(crs=crs)
+        area_def = utils.get_area_def_from_raster(source)
+        self.assertEquals(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
+
+    def test_get_area_def_from_raster_rotated_value_err(self):
+        from pyresample import utils
+        from affine import Affine
+        transform = Affine(300.0379266750948, 0.1, 101985.0,
+                           0.0, -300.041782729805, 2826915.0)
+        source = tmptiff(transform=transform)
+        self.assertRaises(ValueError, utils.get_area_def_from_raster, source)
+
+    def test_get_area_def_from_raster_non_georef_value_err(self):
+        from pyresample import utils
+        from affine import Affine
+        transform = Affine(300.0379266750948, 0.0, 101985.0,
+                           0.0, -300.041782729805, 2826915.0)
+        source = tmptiff(transform=transform)
+        self.assertRaises(ValueError, utils.get_area_def_from_raster, source)
+
+    def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
+        from pyresample import utils
+        from affine import Affine
+        transform = Affine(300.0379266750948, 0.0, 101985.0,
+                           0.0, -300.041782729805, 2826915.0)
+        source = tmptiff(transform=transform)
+        proj_dict = {'init': 'epsg:3857'}
+        area_def = utils.get_area_def_from_raster(source, proj_dict=proj_dict)
+        self.assertDictEqual(area_def.proj_dict, proj_dict)
 
 
 def suite():
