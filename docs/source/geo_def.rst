@@ -28,14 +28,14 @@ The following arguments are needed to initialize an area:
 * **proj_dict**: Proj4 parameters as dict
 * **width**: Number of grid columns
 * **height**: Number of grid rows
-* **area_extent**: (x_ll, y_ll, x_ur, y_ur)
+* **area_extent**: (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
 
 where
 
-* **x_ll**: projection x coordinate of lower left corner of lower left pixel
-* **y_ll**: projection y coordinate of lower left corner of lower left pixel
-* **x_ur**: projection x coordinate of upper right corner of upper right pixel
-* **y_ur**: projection y coordinate of upper right corner of upper right pixel
+* **lower_left_x**: projection x coordinate of lower left corner of lower left pixel
+* **lower_left_y**: projection y coordinate of lower left corner of lower left pixel
+* **upper_right_x**: projection x coordinate of upper right corner of upper right pixel
+* **upper_right_y**: projection y coordinate of upper right corner of upper right pixel
 
 Creating an area definition:
 
@@ -91,8 +91,8 @@ area_extent and a proj4-string/dict or a list of proj4 arguments.
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 The function :mod:`from_params <utils.from_params>` attempts to return
-an :mod:`AreaDefinition <geometry.AreaDefinition>` object if the number
-of pixels (shape) and area_extent can be found with the given data below:
+an :mod:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
+and **area_extent** can be found with the given data below:
 
 Required arguments:
 
@@ -103,9 +103,9 @@ Optional arguments:
 
 * **description**: Description. If not provided, defaults to **area_id**
 * **proj_id**: ID of projection (being deprecated)
-* **units**: Default projection units: meters, radians, or degrees. Defaults to: units used in **projection**, meters.
-* **area_extent**: Area extent as a list (x_ll, y_ll, x_ur, y_ur)
-* **shape**: Number of pixels in the y (grid rows) and x (grid columns) direction (height, width)
+* **units**: Default projection units: meters, radians, or degrees
+* **area_extent**: Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+* **shape**: Number of pixels in the y and x direction (height, width), aka (grid_rows, grid_columns)
 * **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x, y)
 * **center**: Projection x and y coordinate of the center of projection (x, y)
 * **resolution**: Projection size of pixels in the x and y direction (dx, dy)
@@ -129,7 +129,7 @@ Optional arguments:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-When **radius**'s or **resolution**'s elements are the same, they can be passed as a single number:
+**resolution** and **radius** can be specified with one value if dx == dy:
 
 .. doctest::
 
@@ -161,15 +161,25 @@ An example with degrees as units using a mercator projection:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+If only **area_extent** or **shape** can be found, a
+:mod:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
+is returned:
+
+.. doctest::
+
+ >>> area_def = utils.from_params(area_id, proj_string, radius=radius, resolution=resolution)
+ >>> print(type(area_def))
+ <class 'pyresample.geometry.DynamicAreaDefinition'>
+
 .. note::
 
   **radius** and **pixel size** are distances, **NOT** coordinates. When expressed as angles,
   they represent the degrees or radians of longitude/latitude away from the center that
-  they should span. Hence in these cases **center must be provided or findable**.
+  they should span. Hence in these cases **center or area_extent must be provided**.
 
 There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` utilizing
-:mod:`from_params <utils.from_params>` to guarantee that an area definition is made. Hence
-each argument below is the same as above and can take the same optional arguments as
+:mod:`from_params <utils.from_params>` to guarantee that an area definition is made.
+Hence each argument below is the same as above and can take the same arguments as
 :mod:`from_params <utils.from_params>` (i.e. units). The following functions require an
 **area_id** and **projection** along with a few other arguments:
 
@@ -261,7 +271,7 @@ Assuming the file **areas.yaml** exists with the following content
 
  boundary:
    area_id: ease_sh
-   description: Example of finding an area definition using shape and area_extent
+   description: Example of making an area definition using shape and area_extent
    projection:
      a: 6371228.0
      units: m
@@ -272,7 +282,7 @@ Assuming the file **areas.yaml** exists with the following content
    area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
  boundary_2:
-   description: Another example of finding an area definition using shape and area_extent
+   description: Another example of making an area definition using shape and area_extent
    units: degrees
    projection:
      a: 6371228.0
@@ -288,7 +298,7 @@ Assuming the file **areas.yaml** exists with the following content
      upper_right_xy: [45.0, -17.516001139327766]
 
  corner:
-   description: Example of finding an area definition using shape, top_left_extent, and resolution
+   description: Example of making an area definition using shape, top_left_extent, and resolution
    projection:
      a: 6371228.0
      units: m
@@ -301,7 +311,7 @@ Assuming the file **areas.yaml** exists with the following content
 
  corner_2:
    area_id: ease_sh
-   description: Another example of finding an area definition using shape, top_left_extent, and resolution
+   description: Another example of making an area definition using shape, top_left_extent, and resolution
    units:  °
    projection:
      a: 6371228.0
@@ -319,7 +329,7 @@ Assuming the file **areas.yaml** exists with the following content
      units: meters
 
  circle:
-   description: Example of finding an area definition using center, resolution, and radius
+   description: Example of making an area definition using center, resolution, and radius
    projection:
      a: 6371228.0
      units: m
@@ -332,7 +342,7 @@ Assuming the file **areas.yaml** exists with the following content
 
  circle_2:
    area_id: ease_sh
-   description: Another example of finding an area definition using center, resolution, and radius
+   description: Another example of making an area definition using center, resolution, and radius
    projection:
      a: 6371228.0
      units: m
@@ -352,7 +362,7 @@ Assuming the file **areas.yaml** exists with the following content
      units: °
 
  area_of_interest:
-   description: Example of finding an area definition using shape, center, and resolution
+   description: Example of making an area definition using shape, center, and resolution
    projection:
      a: 6371228.0
      units: m
@@ -365,7 +375,7 @@ Assuming the file **areas.yaml** exists with the following content
 
  area_of_interest_2:
    area_id: ease_sh
-   description: Another example of finding an area definition using shape, center, and resolution
+   description: Another example of making an area definition using shape, center, and resolution
    projection:
      a: 6371228.0
      units: m
@@ -395,7 +405,7 @@ An area definition dict can be read using
  >>> area_def = utils.load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
- Description: Example of finding an area definition using shape, top_left_extent, and resolution
+ Description: Example of making an area definition using shape, top_left_extent, and resolution
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
@@ -408,7 +418,7 @@ Several area definitions can be read at once using the region names in an argume
  >>> corner, boundary = utils.load_area('areas.yaml', 'corner', 'boundary')
  >>> print(boundary)
  Area ID: ease_sh
- Description: Example of finding an area definition using shape and area_extent
+ Description: Example of making an area definition using shape and area_extent
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
@@ -591,8 +601,9 @@ The fraction of overlap can be calculated
 .. doctest::
 
  >>> overlap_fraction = swath_def.overlap_rate(area_def)
+ >>> overlap_fraction = round(overlap_fraction, 10)
  >>> print(overlap_fraction)
- 0.05843953132633209
+ 0.0584395313
 
 And the polygon defining the (great circle) boundaries over the overlapping area can be calculated
 

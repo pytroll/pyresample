@@ -606,13 +606,13 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     area_extent : list, optional
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     top_left_extent : list, optional
-        Upper left corner of upper left pixel (upper_left_x, upper_left_y)
+        Upper left corner of upper left pixel (x, y)
     center : list, optional
-        Center of projection (center_x, center_y)
+        Center of projection (x, y)
     resolution : list or float, optional
-        Size of pixels: (x, y)
+        Size of pixels: (dx, dy)
     radius : list or float, optional
-        Length from the center to the edges of the projection (x, y)
+        Length from the center to the edges of the projection (dx, dy)
     rotation: float, optional
         rotation in degrees (negative is cw)
     nprocs : int, optional
@@ -624,7 +624,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
 
 
     * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-        1. units expressed with each variable through a DataArray's attr attribute.
+        1. units expressed with each variable through a DataArray's attrs attribute.
         2. units passed to **units**
         3. units used in **projection**
         4. meters

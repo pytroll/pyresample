@@ -761,13 +761,13 @@ class AreaDefinition(BaseDefinition):
     proj_dict : dict
         Dictionary with Proj.4 parameters
     width : int
-        x dimension in number of pixels
+        x dimension in number of pixels, aka number of grid columns
     height : int
-        y dimension in number of pixels
+        y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
     area_extent : list
-        Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+        Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
@@ -786,25 +786,25 @@ class AreaDefinition(BaseDefinition):
     proj_dict : dict
         Dictionary with Proj.4 parameters
     width : int
-        x dimension in number of pixels
+        x dimension in number of pixels, aka number of grid columns
     height : int
-        y dimension in number of pixels
+        y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
     shape : tuple
-        Corresponding array shape as (rows, cols)
+        Corresponding array shape as (height, width)
     size : int
         Number of points in grid
     area_extent : tuple
-        Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)
+        Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     area_extent_ll : tuple
-        Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)
+        Area extent in lons lats as a tuple (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat)
     pixel_size_x : float
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
     top_left_extent : list
-        Coordinates (UL_x, UL_y) of upper left corner of upper left pixel in projection units
+        Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
         left pixel in units of pixels.
@@ -907,7 +907,7 @@ class AreaDefinition(BaseDefinition):
 
 
         * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-            1. units expressed with each variable through a DataArray's attr attribute.
+            1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
@@ -953,7 +953,7 @@ class AreaDefinition(BaseDefinition):
 
 
         * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-            1. units expressed with each variable through a DataArray's attr attribute.
+            1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
@@ -1001,7 +1001,7 @@ class AreaDefinition(BaseDefinition):
 
 
         * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-            1. units expressed with each variable through a DataArray's attr attribute.
+            1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
@@ -1045,7 +1045,7 @@ class AreaDefinition(BaseDefinition):
 
 
         * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-            1. units expressed with each variable through a DataArray's attr attribute.
+            1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters

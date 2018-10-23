@@ -1,6 +1,6 @@
 boundary:
   area_id: ease_sh
-  description: Example of finding an area definition using shape and area_extent
+  description: Example of making an area definition using shape and area_extent
   projection:
     a: 6371228.0
     units: m
@@ -11,7 +11,7 @@ boundary:
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
 boundary_2:
-  description: Another example of finding an area definition using shape and area_extent
+  description: Another example of making an area definition using shape and area_extent
   units: degrees
   projection:
     a: 6371228.0
@@ -27,7 +27,7 @@ boundary_2:
     upper_right_xy: [45.0, -17.516001139327766]
 
 corner:
-  description: Example of finding an area definition using shape, top_left_extent, and resolution
+  description: Example of making an area definition using shape, top_left_extent, and resolution
   projection:
     a: 6371228.0
     units: m
@@ -40,7 +40,7 @@ corner:
 
 corner_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using shape, top_left_extent, and resolution
+  description: Another example of making an area definition using shape, top_left_extent, and resolution
   units:  °
   projection:
     a: 6371228.0
@@ -58,7 +58,7 @@ corner_2:
     units: meters
 
 circle:
-  description: Example of finding an area definition using center, resolution, and radius
+  description: Example of making an area definition using center, resolution, and radius
   projection:
     a: 6371228.0
     units: m
@@ -71,7 +71,7 @@ circle:
 
 circle_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using center, resolution, and radius
+  description: Another example of making an area definition using center, resolution, and radius
   projection:
     a: 6371228.0
     units: m
@@ -91,7 +91,7 @@ circle_2:
     units: °
 
 area_of_interest:
-  description: Example of finding an area definition using shape, center, and resolution
+  description: Example of making an area definition using shape, center, and resolution
   projection:
     a: 6371228.0
     units: m
@@ -104,7 +104,7 @@ area_of_interest:
 
 area_of_interest_2:
   area_id: ease_sh
-  description: Another example of finding an area definition using shape, center, and resolution
+  description: Another example of making an area definition using shape, center, and resolution
   projection:
     a: 6371228.0
     units: m
