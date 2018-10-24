@@ -1,6 +1,6 @@
 Geometry definitions
 ====================
-The module :any:`pyresample.geometry <geometry>` contains classes for describing different kinds
+The module :mod:`pyresample.geometry <geometry>` contains classes for describing different kinds
 of types of remote sensing data geometries. The use of the different classes is described below.
 
 Remarks
@@ -19,7 +19,7 @@ AreaDefinition
 --------------
 
 The cartographic definition of grid areas used by Pyresample is
-contained in an object of type :obj:`AreaDefinition <geometry.AreaDefinition>`
+contained in an object of type :class:`AreaDefinition <geometry.AreaDefinition>`
 The following arguments are needed to initialize an area:
 
 * **area_id** ID of area
@@ -66,7 +66,7 @@ pyresample.utils
 The :mod:`utils <utils>` module of Pyresample
 has convenience functions for constructing area definitions. The function
 :func:`get_area_def <utils.get_area_def>` can construct an
-:obj:`AreaDefinition <geometry.AreaDefinition>` object based on
+:class:`AreaDefinition <geometry.AreaDefinition>` object based on
 area_extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
@@ -91,7 +91,7 @@ area_extent and a proj4-string/dict or a list of proj4 arguments.
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 The function :func:`from_params <utils.from_params>` attempts to return
-an :obj:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
+an :class:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
 and **area_extent** can be found with the given data below:
 
 Required arguments:
@@ -162,7 +162,7 @@ An example with degrees as units using a mercator projection:
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 If only **area_extent** or **shape** can be found, a
-:obj:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
+:class:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
 object is returned:
 
 .. doctest::
@@ -177,7 +177,7 @@ object is returned:
   they represent the degrees or radians of longitude/latitude away from the center that
   they should span. Hence in these cases **center or area_extent must be provided**.
 
-There are four subfunctions of :obj:`AreaDefinition <geometry.AreaDefinition>` utilizing
+There are four subfunctions of :class:`AreaDefinition <geometry.AreaDefinition>` utilizing
 :func:`from_params <utils.from_params>` to guarantee that an area definition is made.
 Hence each argument below is the same as above and can take the same arguments as
 :func:`from_params <utils.from_params>` (i.e. units). The following functions require
@@ -484,8 +484,8 @@ Several area definitions can be read at once using the region names in an argume
 GridDefinition
 --------------
 If the lons and lats grid values are known, the area definition information can be skipped for
-some types of resampling by using a :obj:`GridDefinition <geometry.GridDefinition>`
-object instead of an :obj:`AreaDefinition <geometry.AreaDefinition>` object.
+some types of resampling by using a :class:`GridDefinition <geometry.GridDefinition>`
+object instead of an :class:`AreaDefinition <geometry.AreaDefinition>` object.
 
 .. doctest::
 
@@ -525,7 +525,7 @@ A ***definition** object allows for retrieval of geographic coordinates using ar
 (slice stepping is currently not supported).
 
 All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-:obj:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
+:class:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
 as **projection_x_coords** and **projection_y_coords**. Note that in the case of projection
 coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
 and **projection_y_coords** will be latitude.
@@ -572,8 +572,8 @@ Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The
 spherical geometry operations are calculated based on the corners of a GeometryDefinition
-(:obj:`GridDefinition <geometry.GridDefinition>`, :obj:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
-:obj:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
+(:class:`GridDefinition <geometry.GridDefinition>`, :class:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
+:class:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
 
 It can be tested if geometries overlaps
 
