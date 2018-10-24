@@ -1012,7 +1012,7 @@ class AreaDefinition(BaseDefinition):
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.from_params(area_id, projection, center=center,resolution=resolution,
+        return utils.from_params(area_id, projection, center=center, resolution=resolution,
                                  shape=shape, units=units, **kwargs)
 
     @classmethod
