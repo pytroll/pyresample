@@ -1,6 +1,6 @@
 Geometry definitions
 ====================
-The module :mod:`pyresample.geometry <geometry>` contains classes for describing different kinds
+The module :any:`pyresample.geometry <geometry>` contains classes for describing different kinds
 of types of remote sensing data geometries. The use of the different classes is described below.
 
 Remarks
@@ -13,13 +13,13 @@ As of version 1.1.1, the :mod:`pyresample.geometry <geometry>` contructors will
 check the range of longitude values, send a warning if some of them fall outside validity range,
 and automatically correct the invalid values into [-180;+180[.
 
-Use function :mod:`utils.wrap_longitudes <utils.wrap_longitudes>` for wrapping longitudes yourself.
+Use function :func:`utils.wrap_longitudes <utils.wrap_longitudes>` for wrapping longitudes yourself.
 
 AreaDefinition
 --------------
 
 The cartographic definition of grid areas used by Pyresample is
-contained in an object of type :mod:`AreaDefinition <geometry.AreaDefinition>`
+contained in an object of type :obj:`AreaDefinition <geometry.AreaDefinition>`
 The following arguments are needed to initialize an area:
 
 * **area_id** ID of area
@@ -45,7 +45,7 @@ Creating an area definition:
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -65,8 +65,8 @@ pyresample.utils
 
 The :mod:`utils <utils>` module of Pyresample
 has convenience functions for constructing area definitions. The function
-:mod:`get_area_def <utils.get_area_def>` can construct an
-:mod:`AreaDefinition <geometry.AreaDefinition>` object based on
+:func:`get_area_def <utils.get_area_def>` can construct an
+:obj:`AreaDefinition <geometry.AreaDefinition>` object based on
 area_extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
@@ -75,7 +75,7 @@ area_extent and a proj4-string/dict or a list of proj4 arguments.
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
- >>> proj_string = '+a=6371228.0 +units=m +lon_0=0 +proj=laea +lat_0=-90'
+ >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -90,8 +90,8 @@ area_extent and a proj4-string/dict or a list of proj4 arguments.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The function :mod:`from_params <utils.from_params>` attempts to return
-an :mod:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
+The function :func:`from_params <utils.from_params>` attempts to return
+an :obj:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
 and **area_extent** can be found with the given data below:
 
 Required arguments:
@@ -115,7 +115,7 @@ Optional arguments:
 
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = (5326849.0625, 5326849.0625)
  >>> resolution = (25067.525, 25067.525)
@@ -133,7 +133,7 @@ Optional arguments:
 
 .. doctest::
 
- >>> proj_string = '+a=6371228.0 +units=m +lon_0=0 +proj=laea +lat_0=-90'
+ >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
  >>> area_def = utils.from_params(area_id, proj_string, center=center,
  ...                              radius=5326849.0625, resolution=25067.525)
  >>> print(area_def)
@@ -162,8 +162,8 @@ An example with degrees as units using a mercator projection:
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 If only **area_extent** or **shape** can be found, a
-:mod:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
-is returned:
+:obj:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
+object is returned:
 
 .. doctest::
 
@@ -177,19 +177,19 @@ is returned:
   they represent the degrees or radians of longitude/latitude away from the center that
   they should span. Hence in these cases **center or area_extent must be provided**.
 
-There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` utilizing
-:mod:`from_params <utils.from_params>` to guarantee that an area definition is made.
+There are four subfunctions of :obj:`AreaDefinition <geometry.AreaDefinition>` utilizing
+:func:`from_params <utils.from_params>` to guarantee that an area definition is made.
 Hence each argument below is the same as above and can take the same arguments as
-:mod:`from_params <utils.from_params>` (i.e. units). The following functions require
+:func:`from_params <utils.from_params>` (i.e. units). The following functions require
 **area_id** and **projection** along with a few other arguments:
 
-:mod:`from_extent <geometry.AreaDefinition.from_extent>`:
+:func:`from_extent <geometry.AreaDefinition.from_extent>`:
 
 .. doctest::
 
  >>> from pyresample import utils
  >>> area_id = 'ease_sh'
- >>> proj_string = '+a=6371228.0 +units=m +lon_0=0 +proj=laea +lat_0=-90'
+ >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
  >>> shape = (425, 425)
  >>> area_def = geometry.AreaDefinition.from_extent(area_id, proj_string,
@@ -202,11 +202,11 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:mod:`from_circle <geometry.AreaDefinition.from_circle>`
+:func:`from_circle <geometry.AreaDefinition.from_circle>`
 
 .. doctest::
 
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'}
+ >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = 5326849.0625
  >>> area_def = geometry.AreaDefinition.from_circle(area_id, proj_dict, center,
@@ -232,7 +232,7 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:mod:`from_area_of_interest <geometry.AreaDefinition.from_area_of_interest>`
+:func:`from_area_of_interest <geometry.AreaDefinition.from_area_of_interest>`
 
 .. doctest::
 
@@ -246,7 +246,7 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:mod:`from_geotiff <geometry.AreaDefinition.from_geotiff>`
+:func:`from_geotiff <geometry.AreaDefinition.from_geotiff>`
 
  >>> top_left_extent = (-5326849.0625, 5326849.0625)
  >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, top_left_extent,
@@ -259,10 +259,10 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The :mod:`load_area <utils.load_area>` function can be used to
+The :func:`load_area <utils.load_area>` function can be used to
 parse area definitions from a configuration file by giving it the
-area file name and regions you wish to load. :mod:`load_area <utils.load_area>`
-takes advantage of :mod:`from_params <utils.from_params>`
+area file name and regions you wish to load. :func:`load_area <utils.load_area>`
+takes advantage of :func:`from_params <utils.from_params>`
 and hence uses the same arguments.
 
 Assuming the file **areas.yaml** exists with the following content
@@ -484,8 +484,8 @@ Several area definitions can be read at once using the region names in an argume
 GridDefinition
 --------------
 If the lons and lats grid values are known, the area definition information can be skipped for
-some types of resampling by using a :mod:`GridDefinition <geometry.GridDefinition>`
-object instead of an :mod:`AreaDefinition <geometry.AreaDefinition>` object.
+some types of resampling by using a :obj:`GridDefinition <geometry.GridDefinition>`
+object instead of an :obj:`AreaDefinition <geometry.AreaDefinition>` object.
 
 .. doctest::
 
@@ -525,7 +525,7 @@ A ***definition** object allows for retrieval of geographic coordinates using ar
 (slice stepping is currently not supported).
 
 All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-:mod:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
+:obj:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
 as **projection_x_coords** and **projection_y_coords**. Note that in the case of projection
 coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
 and **projection_y_coords** will be latitude.
@@ -572,8 +572,8 @@ Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The
 spherical geometry operations are calculated based on the corners of a GeometryDefinition
-(:mod:`GridDefinition <geometry.GridDefinition>`, :mod:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
-:mod:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
+(:obj:`GridDefinition <geometry.GridDefinition>`, :obj:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
+:obj:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
 
 It can be tested if geometries overlaps
 
