@@ -133,11 +133,9 @@ def _parse_yaml_area_file(area_file_name, *regions):
     area_list = regions or area_dict.keys()
     res = []
     for area_name in area_list:
-        try:
-            params = area_dict[area_name]
-        except KeyError:
-            raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(
-                area_name, area_file_name))
+        params = area_dict.get(area_name)
+        if params is None:
+            raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(area_name, area_file_name))
         params.setdefault('area_id', area_name)
         # Optional arguments.
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
@@ -150,30 +148,27 @@ def _parse_yaml_area_file(area_file_name, *regions):
     return res
 
 
-def _get_list(params, var, arg_list, default=None):
+def _get_list(params, var, arg_list):
     """Reads a list-like param variable."""
     # Check if variable is in yaml.
-    try:
-        variable = params[var]
-    except KeyError:
-        return default
+    variable = params.get(var)
     if not isinstance(variable, dict):
         return variable
     list_of_values = []
-    # Add var as a key in case users want to express the entire variable with units.
+    # Add var as a key in case users want to express the entire variable with units. Insert
+    # at 0 to allow Attribute errors when too many arguments are specified.
     arg_list.insert(0, var)
     # Iterate through dict.
     for arg in arg_list:
         try:
-            values = variable[arg]
-            if arg == var:
-                list_of_values = values
-            elif arg in ('lower_left_xy', 'upper_right_xy') and isinstance(values, list):
-                list_of_values.extend(values)
-            else:
-                list_of_values.append(values)
-        except KeyError:
-            pass
+            values = variable.get(arg)
+            if values is not None:
+                if arg == var:
+                    list_of_values = values
+                elif arg in ('lower_left_xy', 'upper_right_xy') and isinstance(values, list):
+                    list_of_values.extend(values)
+                else:
+                    list_of_values.append(values)
         except AttributeError:
             raise ValueError('Incorrect yaml: {0} has too many arguments: Both {0} and {1} were specified.'.format(var,
                                                                                                                    arg))
@@ -790,6 +785,8 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
     if (u'\xb0' in units or 'deg' in units or 'rad' in units) and not inverse:
         # Interprets radius and resolution as distances between latitudes/longitudes.
         if name in ('radius', 'resolution'):
+            # Since the distance between longitudes and latitudes is not constant in
+            # most projections, there must be reference point to start from.
             if center is None:
                 raise ValueError('center must be given to convert radius or resolution from an angle to meters')
             else:

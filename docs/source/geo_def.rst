@@ -1,25 +1,25 @@
 Geometry definitions
 ====================
-The module :mod:`pyresample.geometry <geometry>` contains classes for describing different kinds
+The module :mod:`pyresample.geometry` contains classes for describing different kinds
 of types of remote sensing data geometries. The use of the different classes is described below.
 
 Remarks
 -------
 
-All longitudes and latitudes provided to :mod:`pyresample.geometry <geometry>` must be
+All longitudes and latitudes provided to :mod:`pyresample.geometry` must be
 in degrees. Longitudes must additionally be in the [-180;+180[ validity range.
 
-As of version 1.1.1, the :mod:`pyresample.geometry <geometry>` contructors will
+As of version 1.1.1, the :mod:`pyresample.geometry` contructors will
 check the range of longitude values, send a warning if some of them fall outside validity range,
 and automatically correct the invalid values into [-180;+180[.
 
-Use function :func:`utils.wrap_longitudes <utils.wrap_longitudes>` for wrapping longitudes yourself.
+Use the function :func:`pyresample.utils.wrap_longitudes` for wrapping longitudes yourself.
 
 AreaDefinition
 --------------
 
 The cartographic definition of grid areas used by Pyresample is
-contained in an object of type :class:`AreaDefinition <geometry.AreaDefinition>`
+contained in an object of type :class:`AreaDefinition <pyresample.geometry.AreaDefinition>`
 The following arguments are needed to initialize an area:
 
 * **area_id** ID of area
@@ -63,10 +63,10 @@ Creating an area definition:
 pyresample.utils
 ****************
 
-The :mod:`utils <utils>` module of Pyresample
+The :mod:`pyresample.utils` module of Pyresample
 has convenience functions for constructing area definitions. The function
-:func:`get_area_def <utils.get_area_def>` can construct an
-:class:`AreaDefinition <geometry.AreaDefinition>` object based on
+:func:`get_area_def <pyresample.utils.get_area_def>` can construct an
+:class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object based on
 area_extent and a proj4-string/dict or a list of proj4 arguments.
 
 .. doctest::
@@ -90,8 +90,8 @@ area_extent and a proj4-string/dict or a list of proj4 arguments.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The function :func:`from_params <utils.from_params>` attempts to return
-an :class:`AreaDefinition <geometry.AreaDefinition>` object if **shape**
+The function :func:`from_params <pyresample.utils.from_params>` attempts to return
+an :class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object if **shape**
 and **area_extent** can be found with the given data below:
 
 Required arguments:
@@ -162,7 +162,7 @@ An example with degrees as units using a mercator projection:
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 If only **area_extent** or **shape** can be found, a
-:class:`DynamicAreaDefinition <geometry.DynamicAreaDefinition>`
+:class:`DynamicAreaDefinition <pyresample.geometry.DynamicAreaDefinition>`
 object is returned:
 
 .. doctest::
@@ -177,13 +177,13 @@ object is returned:
   they represent the degrees or radians of longitude/latitude away from the center that
   they should span. Hence in these cases **center or area_extent must be provided**.
 
-There are four subfunctions of :class:`AreaDefinition <geometry.AreaDefinition>` utilizing
-:func:`from_params <utils.from_params>` to guarantee that an area definition is made.
+There are four subfunctions of :class:`geometry.AreaDefinition <pyresample.geometry.AreaDefinition>` utilizing
+:func:`from_params <pyresample.utils.from_params>` to guarantee that an area definition is made.
 Hence each argument below is the same as above and can take the same arguments as
-:func:`from_params <utils.from_params>` (i.e. units). The following functions require
+:func:`from_params <pyresample.utils.from_params>` (i.e. units). The following functions require
 **area_id** and **projection** along with a few other arguments:
 
-:func:`from_extent <geometry.AreaDefinition.from_extent>`:
+:func:`from_extent <pyresample.geometry.AreaDefinition.from_extent>`:
 
 .. doctest::
 
@@ -202,7 +202,7 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:func:`from_circle <geometry.AreaDefinition.from_circle>`
+:func:`from_circle <pyresample.geometry.AreaDefinition.from_circle>`
 
 .. doctest::
 
@@ -232,7 +232,7 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:func:`from_area_of_interest <geometry.AreaDefinition.from_area_of_interest>`
+:func:`from_area_of_interest <pyresample.geometry.AreaDefinition.from_area_of_interest>`
 
 .. doctest::
 
@@ -246,7 +246,7 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-:func:`from_geotiff <geometry.AreaDefinition.from_geotiff>`
+:func:`from_geotiff <pyresample.geometry.AreaDefinition.from_geotiff>`
 
  >>> top_left_extent = (-5326849.0625, 5326849.0625)
  >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, top_left_extent,
@@ -259,10 +259,10 @@ Hence each argument below is the same as above and can take the same arguments a
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The :func:`load_area <utils.load_area>` function can be used to
+The :func:`load_area <pyresample.utils.load_area>` function can be used to
 parse area definitions from a configuration file by giving it the
-area file name and regions you wish to load. :func:`load_area <utils.load_area>`
-takes advantage of :func:`from_params <utils.from_params>`
+area file name and regions you wish to load. :func:`load_area <pyresample.utils.load_area>`
+takes advantage of :func:`from_params <pyresample.utils.from_params>`
 and hence uses the same arguments.
 
 Assuming the file **areas.yaml** exists with the following content
@@ -484,8 +484,8 @@ Several area definitions can be read at once using the region names in an argume
 GridDefinition
 --------------
 If the lons and lats grid values are known, the area definition information can be skipped for
-some types of resampling by using a :class:`GridDefinition <geometry.GridDefinition>`
-object instead of an :class:`AreaDefinition <geometry.AreaDefinition>` object.
+some types of resampling by using a :class:`GridDefinition <pyresample.geometry.GridDefinition>`
+object instead of an :class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object.
 
 .. doctest::
 
@@ -525,7 +525,7 @@ A ***definition** object allows for retrieval of geographic coordinates using ar
 (slice stepping is currently not supported).
 
 All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-:class:`AreaDefinition <geometry.AreaDefinition>` exposes the full set of projection coordinates
+:class:`AreaDefinition <pyresample.geometry.AreaDefinition>` exposes the full set of projection coordinates
 as **projection_x_coords** and **projection_y_coords**. Note that in the case of projection
 coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
 and **projection_y_coords** will be latitude.
@@ -572,8 +572,9 @@ Spherical geometry operations
 -----------------------------
 Some basic spherical operations are available for ***definition** objects. The
 spherical geometry operations are calculated based on the corners of a GeometryDefinition
-(:class:`GridDefinition <geometry.GridDefinition>`, :class:`AreaDefinition <geometry.AreaDefinition>`, or a 2D
-:class:`SwathDefinition <geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
+(:class:`GridDefinition <pyresample.geometry.GridDefinition>`,
+:class:`AreaDefinition <pyresample.geometry.AreaDefinition>`, or a 2D
+:class:`SwathDefinition <pyresample.geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
 
 It can be tested if geometries overlaps
 

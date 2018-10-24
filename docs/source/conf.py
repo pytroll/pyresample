@@ -48,7 +48,6 @@ if os.environ.get("READTHEDOCS") == "True":
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, '/opt/lib/python2.5/site-packages')
 sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../pyresample'))
 # sys.path.append('')
 # print sys.path
 
@@ -90,7 +89,7 @@ copyright = u'2013, Esben S. Nielsen'
 # built documents.
 #
 
-import version as current_version
+from pyresample import version as current_version
 # The short X.Y version.
 version = current_version.__version__
 # The full version, including alpha/beta/rc tags.
