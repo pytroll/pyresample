@@ -142,7 +142,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         # Optional arguments.
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
         params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y'])
-        params['center'] = _get_list(params, 'center', ['center_x', 'center_y'])
+        params['center'] = _get_list(params, 'center', ['x', 'y'])
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
         params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
         params['radius'] = _get_list(params, 'radius', ['dx', 'dy'])
@@ -621,6 +621,8 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         Grid lons
     lats : numpy array, optional
         Grid lats
+    optimize_projection:
+        Whether the projection parameters have to be optimized for a DynamicAreaDefinition.
 
 
     * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
@@ -673,8 +675,8 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
 
+    # Makes sure shape is an integer. Rounds down if shape is less than .01 away from nearest int. Else rounds up.
     # Used for area definition to prevent indexing None.
-    # Make sure shape is an integer. Rounds down if shape is less than .01 away from nearest int. Else rounds up.
     width, height = None, None
     if shape is not None:
         if shape[1] - math.floor(shape[1]) < .01 or math.ceil(shape[1]) - shape[1] < .01:
@@ -687,14 +689,16 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
         else:
             height = math.ceil(shape[0])
             logging.warning('height must be an integer: {0}. Rounding height to {1}'.format(shape[0], height))
-    # If enough data is provided, create an area_definition. If only shape or area_extent are found, make a
+    # Remove arguments that are only for DynamicAreaDefinition.
+    optimize_projection = kwargs.pop('optimize_projection', False)
+    # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
     if None not in (area_extent, shape):
         return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
     elif area_extent is not None or shape is not None:
         return DynamicAreaDefinition(area_id=area_id, description=description, proj_dict=proj_dict, width=width,
                                      height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
-                                     optimize_projection=kwargs.get('optimize_projection', False))
+                                     optimize_projection=optimize_projection)
     raise ValueError('Not enough information provided to create an area definition')
 
 
@@ -708,7 +712,7 @@ def _get_proj_data(projection):
         proj_dict = projection
     else:
         raise ValueError('"projection" must be a proj4_dict or a proj4_string.'
-                         'Type entered: {0}'.format(projection.__class__))
+                         'Type entered: {0}'.format(type(projection)))
     return proj_dict, Proj(proj_dict)
 
 
@@ -791,7 +795,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
             else:
                 # If on a pole, use northern/southern latitude for both height and width.
                 center_as_angle = p(*center, radians='rad' in units, inverse=True, errcheck=True)
-                if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-10:
+                if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-8:
                     var = (abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[0]),
                                  radians='rad' in units, errcheck=True)[1] + center[1]),
                            abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[1]),
@@ -873,7 +877,10 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
 
 
 def _format_list(var, name):
-    """Used to let shape, resolution, and radius to be single numbers if their elements are equal."""
+    """Used to let resolution and radius to be single numbers if their elements are equal.
+
+    Also makes sure that data is list-like and contains only numbers.
+    """
     # Single-number format.
     if not isinstance(var, (list, tuple)) and name in ('resolution', 'radius'):
         var = (float(var), float(var))

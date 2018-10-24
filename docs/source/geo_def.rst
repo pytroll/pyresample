@@ -148,7 +148,7 @@ An example with degrees as units using a mercator projection:
 
 .. doctest::
 
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'merc', 'lat_0': '-90'}
+ >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'merc', 'lat_0': '0'}
  >>> area_def = utils.from_params(area_id, proj_dict, center=(0, 0),
  ...                              radius=(47.90379019311, 43.1355420077),
  ...                              resolution=0.225429746313, units='degrees',
@@ -156,7 +156,7 @@ An example with degrees as units using a mercator projection:
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '0.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -180,7 +180,7 @@ is returned:
 There are four subfunctions of :mod:`AreaDefinition <geometry.AreaDefinition>` utilizing
 :mod:`from_params <utils.from_params>` to guarantee that an area definition is made.
 Hence each argument below is the same as above and can take the same arguments as
-:mod:`from_params <utils.from_params>` (i.e. units). The following functions require an
+:mod:`from_params <utils.from_params>` (i.e. units). The following functions require
 **area_id** and **projection** along with a few other arguments:
 
 :mod:`from_extent <geometry.AreaDefinition.from_extent>`:

@@ -1295,11 +1295,10 @@ class TestStackedAreaDefinition(unittest.TestCase):
         resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
         units_list = ['meters', 'degrees', 'radians']
-        # reducing the length of AreaDefinition.from_params makes lines much shorter.
+        # reducing the length of from_params makes lines much shorter.
         area = utils.from_params
 
-        def verify_area(area_def, area_extent=area_extent,
-                        shape=shape):
+        def verify_area(area_def):
             """Makes sure that the area definitions created are correct."""
             self.assertTrue(isinstance(area_def, AreaDefinition))
             self.assertTrue(np.allclose(area_def.area_extent, area_extent))
@@ -1326,7 +1325,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                     else:
                         # Radians.
                         essentials = [(0.0, -1.5707963267948966), 0.86257209725,
-                                      (-0.7853981633974483, -0.30571189166434753), (0.00196724565, 0.0039344913),
+                                      (-0.7853981633974483, -0.30571189166434753), (0.00196724565, 0.003934491305097),
                                       (-2.356194490192345, -0.30571189166434753, 0.7853981633974483,
                                        -0.30571189166434753)]
                     # If center is valid, use it.
@@ -1347,9 +1346,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                                     attrs={'units': 'degrees'})))
         # Tests area functions 1-A and 2-A.
         area_list.append(area(area_id, projection_list[1], resolution=resolution, area_extent=area_extent))
-        # Tests area function 1-B.
+        # Tests area function 1-B. Also test that DynamicAreaDefinition arguments don't crash AreaDefinition.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0],
-                              top_left_extent=top_left_extent))
+                              top_left_extent=top_left_extent, optimize_projection=None))
         # Tests area function 1-C.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
         # Tests area function 1-D.
@@ -1361,7 +1360,17 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], resolution,
                                                               shape))
         area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], top_left_extent, resolution, shape))
-
+        # Tests non-poles using degrees and mercator.
+        area_def = area(area_id, '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
+                        center=(0, 0), radius=45, resolution=1, units='degrees')
+        self.assertTrue(isinstance(area_def, AreaDefinition))
+        self.assertTrue(np.allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761)))
+        self.assertEqual(area_def.shape, (101, 90))
+        # Tests that load_area works with from_params
+        area_defs = utils.load_area('/Users/wroberts/Desktop/pyresample/pyresample/test/test_files/areas.yaml',
+                                    'test_meters', 'test_radians', 'test_degrees')
+        for area_def in area_defs:
+            area_list.append(area_def)
         # Checks every area definition made
         for area_def in area_list:
             verify_area(area_def)
