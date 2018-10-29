@@ -920,21 +920,18 @@ class AreaDefinition(BaseDefinition):
         return crs
 
     def create_areas_def(self):
-        to_dump = OrderedDict()
-        res = OrderedDict()
-        to_dump[self.area_id] = res
 
-        res['description'] = self.name
-        res['shape'] = OrderedDict([('height', self.y_size),
-                                    ('width', self.x_size)])
-        res['area_extent'] = OrderedDict([('lower_left_xy',
-                                           list(self.area_extent[:2])),
-                                          ('upper_right_xy',
-                                           list(self.area_extent[2:])),
-                                          ('units', 'm')
-                                          ])
+        res = OrderedDict(description=self.name,
+                          projection=OrderedDict(self.proj_dict),
+                          shape=OrderedDict([('height', self.y_size), ('width', self.x_size)]))
+        units = res['projection'].pop('units', None)
+        extent = OrderedDict([('lower_left_xy', list(self.area_extent[:2])),
+                              ('upper_right_xy', list(self.area_extent[2:]))])
+        if units is not None:
+            extent['units'] = units
+        res['area_extent'] = extent
 
-        return ordered_dump(to_dump)
+        return ordered_dump(OrderedDict([(self.area_id, res)]))
 
     def create_areas_def_legacy(self):
         proj_dict = self.proj_dict

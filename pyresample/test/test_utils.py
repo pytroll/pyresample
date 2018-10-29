@@ -37,7 +37,7 @@ Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_nh.__str__(), nh_str)
+        self.assertEqual(ease_nh.__str__(), nh_str)
         self.assertIsInstance(ease_nh.proj_dict['lat_0'], float)
 
         sh_str = """Area ID: ease_sh
@@ -47,7 +47,7 @@ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea',
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_sh.__str__(), sh_str)
+        self.assertEqual(ease_sh.__str__(), sh_str)
         self.assertIsInstance(ease_sh.proj_dict['lat_0'], float)
 
     def test_load_area(self):
@@ -62,7 +62,7 @@ Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(nh_str, ease_nh.__str__())
+        self.assertEqual(nh_str, ease_nh.__str__())
 
     def test_not_found_exception(self):
         from pyresample import utils
@@ -70,6 +70,12 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
                           os.path.join(
                               os.path.dirname(__file__), 'test_files', 'areas.cfg'),
                           'no_area')
+
+    def test_commented(self):
+        from pyresample import utils
+        areas = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
+                                                   'test_files', 'areas.cfg'))
+        self.assertNotIn('commented', [area.name for area in areas])
 
 
 class TestYAMLAreaParser(unittest.TestCase):
@@ -87,7 +93,7 @@ Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_nh.__str__(), nh_str)
+        self.assertEqual(ease_nh.__str__(), nh_str)
 
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
@@ -95,7 +101,7 @@ Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea',
 Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEquals(ease_sh.__str__(), sh_str)
+        self.assertEqual(ease_sh.__str__(), sh_str)
 
     def test_multiple_file_content(self):
         from pyresample import utils
@@ -132,7 +138,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
     units: m
 """]
         results = utils.parse_area_file(area_list)
-        self.assertEquals(len(results), 2)
+        self.assertEqual(len(results), 2)
         self.assertIn(results[0].area_id, ('ease_sh', 'ease_sh2'))
         self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
 
@@ -148,7 +154,7 @@ class TestPreprocessing(unittest.TestCase):
 
         extents2 = [-1000, -1000, 1000. * 4000, 1000. * 4000]
         area_def2 = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
-                                           proj_dict, 600, 700, extents2)
+                                            proj_dict, 600, 700, extents2)
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, area_def2, 12000.)
 
     def test_nearest_neighbor_area_grid(self):
@@ -262,6 +268,22 @@ class TestMisc(unittest.TestCase):
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
 
+    def test_def2yaml_converter(self):
+        from pyresample import utils
+        import tempfile
+        def_file = os.path.join(os.path.dirname(__file__), 'test_files',
+                                'areas.cfg')
+        filehandle, yaml_file = tempfile.mkstemp()
+        os.close(filehandle)
+        try:
+            utils.convert_def_to_yaml(def_file, yaml_file)
+            areas_new = set(utils.parse_area_file(yaml_file))
+            areas_old = set(utils.parse_area_file(def_file))
+
+            self.assertEqual(areas_new, areas_old)
+        finally:
+            os.remove(yaml_file)
+
     def test_get_area_def_from_raster(self):
         from rasterio.crs import CRS
         from affine import Affine
@@ -276,11 +298,11 @@ class TestMisc(unittest.TestCase):
         proj_id = 'proj_id'
         name = 'name'
         area_def = utils.get_area_def_from_raster(source, area_id=area_id, name=name, proj_id=proj_id)
-        self.assertEquals(area_def.area_id, area_id)
-        self.assertEquals(area_def.proj_id, proj_id)
-        self.assertEquals(area_def.name, name)
-        self.assertEquals(area_def.x_size, x_size)
-        self.assertEquals(area_def.y_size, y_size)
+        self.assertEqual(area_def.area_id, area_id)
+        self.assertEqual(area_def.proj_id, proj_id)
+        self.assertEqual(area_def.name, name)
+        self.assertEqual(area_def.x_size, x_size)
+        self.assertEqual(area_def.y_size, y_size)
         self.assertDictEqual(crs.to_dict(), area_def.proj_dict)
         self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
                                                      transform.c + transform.a * x_size, transform.f))
@@ -291,7 +313,7 @@ class TestMisc(unittest.TestCase):
         crs = CRS(init='epsg:3857')
         source = tmptiff(crs=crs)
         area_def = utils.get_area_def_from_raster(source)
-        self.assertEquals(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
+        self.assertEqual(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
 
     def test_get_area_def_from_raster_rotated_value_err(self):
         from pyresample import utils
@@ -331,3 +353,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestMisc))
 
     return mysuite
+
+
+if __name__ == '__main__':
+    unittest.main()
