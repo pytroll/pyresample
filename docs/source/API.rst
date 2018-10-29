@@ -1,49 +1,47 @@
 pyresample API
-======================
+==============
 
 pyresample.geometry
----------------------------------
+-------------------
 .. automodule:: geometry
-	:members:
+    :members:
 
 pyresample.image
----------------------------------
+----------------
 .. automodule:: image
-	:members:
+    :members:
 
 pyresample.grid
----------------------------------
+---------------
 .. automodule:: grid
-	:members:
+    :members:
 
 pyresample.kd_tree
----------------------------------
+------------------
 .. automodule:: kd_tree
-	:members:
-	
+    :members:
+
 pyresample.bilinear
----------------------------------
+-------------------
 .. automodule:: bilinear
-	:members:
-	
+    :members:
+
 pyresample.utils
----------------------------------
+----------------
 .. automodule:: utils
-	:members:
+    :members:
 
 pyresample.data_reduce
----------------------------------
+----------------------
 .. automodule:: data_reduce
-	:members:
+    :members:
 
 pyresample.plot
----------------------------------
+---------------
 .. automodule:: plot
-	:members:
+    :members:
 
 pyresample.ewa
 --------------
 .. automodule:: ewa
     :members:
-
-	
