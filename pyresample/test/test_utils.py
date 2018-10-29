@@ -263,6 +263,7 @@ class TestMisc(unittest.TestCase):
         def_file = os.path.join(os.path.dirname(__file__), 'test_files',
                                 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
+        os.close(filehandle)
         try:
             utils.convert_def_to_yaml(def_file, yaml_file)
             areas_new = set(utils.parse_area_file(yaml_file))
