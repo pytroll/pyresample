@@ -298,11 +298,11 @@ class TestMisc(unittest.TestCase):
         proj_id = 'proj_id'
         name = 'name'
         area_def = utils.get_area_def_from_raster(source, area_id=area_id, name=name, proj_id=proj_id)
-        self.assertEquals(area_def.area_id, area_id)
-        self.assertEquals(area_def.proj_id, proj_id)
-        self.assertEquals(area_def.name, name)
-        self.assertEquals(area_def.x_size, x_size)
-        self.assertEquals(area_def.y_size, y_size)
+        self.assertEqual(area_def.area_id, area_id)
+        self.assertEqual(area_def.proj_id, proj_id)
+        self.assertEqual(area_def.name, name)
+        self.assertEqual(area_def.x_size, x_size)
+        self.assertEqual(area_def.y_size, y_size)
         self.assertDictEqual(crs.to_dict(), area_def.proj_dict)
         self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
                                                      transform.c + transform.a * x_size, transform.f))
@@ -313,7 +313,7 @@ class TestMisc(unittest.TestCase):
         crs = CRS(init='epsg:3857')
         source = tmptiff(crs=crs)
         area_def = utils.get_area_def_from_raster(source)
-        self.assertEquals(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
+        self.assertEqual(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
 
     def test_get_area_def_from_raster_rotated_value_err(self):
         from pyresample import utils
