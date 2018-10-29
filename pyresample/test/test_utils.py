@@ -268,7 +268,6 @@ class TestMisc(unittest.TestCase):
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
 
-
     def test_def2yaml_converter(self):
         from pyresample import utils
         import tempfile
@@ -284,7 +283,6 @@ class TestMisc(unittest.TestCase):
             self.assertEqual(areas_new, areas_old)
         finally:
             os.remove(yaml_file)
-
 
     def test_get_area_def_from_raster(self):
         from rasterio.crs import CRS
