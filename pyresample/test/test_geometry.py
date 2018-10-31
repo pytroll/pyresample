@@ -89,6 +89,33 @@ class Test(unittest.TestCase):
                           area_def.area_extent[1],
                           area_def.area_extent[3]))
 
+    def test_create_areas_def(self):
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+                                           'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                            -909968.64000000001,
+                                            1029087.28,
+                                            1490031.3600000001])
+        import yaml
+        res = yaml.load(area_def.create_areas_def())
+        expected = yaml.load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
+                              '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
+                              '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                              '    proj: stere\n  shape:\n    height: 800\n'
+                              '    width: 800\n  area_extent:\n'
+                              '    lower_left_xy: [-1370912.72, -909968.64]\n'
+                              '    upper_right_xy: [1029087.28, 1490031.36]\n'))
+
+        self.assertDictEqual(res, expected)
+
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
@@ -866,15 +893,15 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEquals(area.proj_str,
-                          '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere')
+        self.assertEqual(area.proj_str,
+                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere')
         proj_dict['no_rot'] = ''
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEquals(area.proj_str,
-                          '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
+        self.assertEqual(area.proj_str,
+                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
 
 
 def assert_np_dict_allclose(dict1, dict2):

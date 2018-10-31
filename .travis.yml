@@ -4,7 +4,7 @@ env:
   - PYTHON_VERSION=$PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
-  - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy pillow matplotlib
+  - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio kealib pillow matplotlib
     pyyaml pyproj coveralls configobj coverage codecov'
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request'

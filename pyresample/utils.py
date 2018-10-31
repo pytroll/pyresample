@@ -32,7 +32,7 @@ import numpy as np
 import six
 import yaml
 from configobj import ConfigObj
-from collections import Mapping
+from collections import Mapping, OrderedDict
 from xarray import DataArray
 
 
@@ -214,7 +214,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
     in_area = False
     for line in area_file:
         if not in_area:
-            if 'REGION' in line:
+            if 'REGION' in line and not line.strip().startswith('#'):
                 area_id = line.replace('REGION:', ''). \
                     replace('{', '').strip()
                 if area_id in area_list or select_all_areas:
@@ -222,11 +222,14 @@ def _parse_legacy_area_file(area_file_name, *regions):
                     area_content = ''
         elif '};' in line:
             in_area = False
-            if select_all_areas:
-                area_defs.append(_create_area(area_id, area_content))
-            else:
-                area_defs[area_list.index(area_id)] = _create_area(area_id,
-                                                                   area_content)
+            try:
+                if select_all_areas:
+                    area_defs.append(_create_area(area_id, area_content))
+                else:
+                    area_defs[area_list.index(area_id)] = _create_area(area_id,
+                                                                       area_content)
+            except KeyError:
+                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
         else:
             area_content += line
 
@@ -304,6 +307,110 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height,
     proj_dict = _get_proj4_args(proj4_args)
     return from_params(area_id, proj_dict, description=area_name, proj_id=proj_id,
                        shape=(height, width), area_extent=area_extent)
+
+
+def _get_area_def_from_gdal(dataset, area_id=None, name=None, proj_id=None, proj_dict=None):
+    from pyresample.geometry import AreaDefinition
+
+    # a: width of a pixel
+    # b: row rotation (typically zero)
+    # c: x-coordinate of the upper-left corner of the upper-left pixel
+    # d: column rotation (typically zero)
+    # e: height of a pixel (typically negative)
+    # f: y-coordinate of the of the upper-left corner of the upper-left pixel
+    c, a, b, f, d, e = dataset.GetGeoTransform()
+    if not (b == d == 0):
+        raise ValueError('Rotated rasters are not supported at this time.')
+    area_extent = (c, f + e * dataset.RasterYSize, c + a * dataset.RasterXSize, f)
+
+    if proj_dict is None:
+        from osgeo import osr
+        proj = dataset.GetProjection()
+        if proj != '':
+            sref = osr.SpatialReference(wkt=proj)
+            proj_dict = proj4_str_to_dict(sref.ExportToProj4())
+        else:
+            raise ValueError('The source raster is not gereferenced, please provide the value of proj_dict')
+
+        if proj_id is None:
+            proj_id = proj.split('"')[1]
+
+    area_def = AreaDefinition(area_id, name, proj_id, proj_dict,
+                              dataset.RasterXSize, dataset.RasterYSize, area_extent)
+    return area_def
+
+
+def _get_area_def_from_rasterio(dataset, area_id, name, proj_id=None, proj_dict=None):
+    from pyresample.geometry import AreaDefinition
+
+    a, b, c, d, e, f, _, _, _ = dataset.transform
+    if not (b == d == 0):
+        raise ValueError('Rotated rasters are not supported at this time.')
+
+    if proj_dict is None:
+        crs = dataset.crs
+        if crs is not None:
+            proj_dict = dataset.crs.to_dict()
+        else:
+            raise ValueError('The source raster is not gereferenced, please provide the value of proj_dict')
+
+        if proj_id is None:
+            proj_id = crs.wkt.split('"')[1]
+
+    area_def = AreaDefinition(area_id, name, proj_id, proj_dict,
+                              dataset.width, dataset.height, dataset.bounds)
+    return area_def
+
+
+def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj_dict=None):
+    """Construct AreaDefinition object from raster
+
+    Parameters
+    ----------
+    source : str, Dataset, DatasetReader or DatasetWriter
+        A file name. Also it can be ``osgeo.gdal.Dataset``,
+        ``rasterio.io.DatasetReader`` or ``rasterio.io.DatasetWriter``
+    area_id : str, optional
+        ID of area
+    name : str, optional
+        Name of area
+    proj_id : str, optional
+        ID of projection
+    proj_dict : dict, optional
+        PROJ.4 parameters
+
+    Returns
+    -------
+    area_def : object
+        AreaDefinition object
+    """
+    try:
+        import rasterio
+    except ImportError:
+        rasterio = None
+        try:
+            from osgeo import gdal
+        except ImportError:
+            raise ImportError('Either rasterio or gdal must be available')
+
+    cleanup_gdal = cleanup_rasterio = None
+    if isinstance(source, (str, six.text_type)):
+        if rasterio is not None:
+            source = rasterio.open(source)
+            cleanup_rasterio = True
+        else:
+            source = gdal.Open(source)
+            cleanup_gdal = True
+
+    try:
+        if rasterio is not None and isinstance(source, (rasterio.io.DatasetReader, rasterio.io.DatasetWriter)):
+            return _get_area_def_from_rasterio(source, area_id, name, proj_id, proj_dict)
+        return _get_area_def_from_gdal(source, area_id, name, proj_id, proj_dict)
+    finally:
+        if cleanup_rasterio:
+            source.close()
+        elif cleanup_gdal:
+            source = None
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def,
@@ -418,7 +525,7 @@ def fwhm2sigma(fwhm):
 
 def convert_proj_floats(proj_pairs):
     """Convert PROJ.4 parameters to floats if possible."""
-    proj_dict = {}
+    proj_dict = OrderedDict()
     for x in proj_pairs:
         if len(x) == 1 or x[1] is True:
             proj_dict[x[0]] = True
@@ -437,10 +544,10 @@ def _get_proj4_args(proj4_args):
     """
 
     if isinstance(proj4_args, (str, six.text_type)):
-        proj_config = ConfigObj(str(proj4_args).replace('+', '').split())
+        proj_config = proj4_str_to_dict(str(proj4_args))
     else:
         proj_config = ConfigObj(proj4_args)
-    return convert_proj_floats(proj_config.dict().items())
+    return convert_proj_floats(proj_config.items())
 
 
 def proj4_str_to_dict(proj4_str):
@@ -578,6 +685,17 @@ def recursive_dict_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+def convert_def_to_yaml(def_area_file, yaml_area_file):
+    """Convert a legacy area def file to the yaml counter partself.
+
+    *yaml_area_file* will be overwritten by the operation.
+    """
+    areas = _parse_legacy_area_file(def_area_file)
+    with open(yaml_area_file, 'w') as yaml_file:
+        for area in areas:
+            yaml_file.write(area.create_areas_def())
 
 
 def from_params(area_id, projection, shape=None, top_left_extent=None, center=None, area_extent=None,

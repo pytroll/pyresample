@@ -1,8 +1,22 @@
+## Version 1.10.2 (2018/10/01)
+
+### Issues Closed
+
+* [Issue 133](https://github.com/pytroll/pyresample/issues/133) - Build issue with Python 3.7 ([PR 135](https://github.com/pytroll/pyresample/pull/135))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 139](https://github.com/pytroll/pyresample/pull/139) - Fix area parsing code to convert PROJ.4 parameters to float if possible
+* [PR 135](https://github.com/pytroll/pyresample/pull/135) - Fix Python 3.7 compatibility ([133](https://github.com/pytroll/pyresample/issues/133))
+
+In this release 2 pull requests were closed.
 
 
-###############################################################################
 ## Version 1.10.1 (2018/07/03)
-
 
 ### Pull Requests Merged
 
@@ -68,5 +82,3 @@ In this release 2 pull requests were closed.
 * [PR 115](https://github.com/pytroll/pyresample/pull/115) - Geos area reduction
 
 In this release 1 pull request was closed.
-
-###############################################################################
