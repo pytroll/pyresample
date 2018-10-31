@@ -637,7 +637,7 @@ class DynamicAreaDefinition(object):
     polar satellite granules can be resampled optimaly to a give projection.
     """
 
-    def __init__(self, area_id=None, description=None, proj_dict=None,
+    def __init__(self, area_id=None, description=None, projection=None,
                  width=None, height=None, area_extent=None,
                  optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
@@ -646,8 +646,8 @@ class DynamicAreaDefinition(object):
           The name of the area.
         description:
           The description of the area.
-        proj_dict:
-          The dictionary of projection parameters. Doesn't have to be complete.
+        projection:
+          The dictionary or string of projection parameters. Doesn't have to be complete.
         height, width:
           The shape of the resulting area.
         area_extent:
@@ -657,6 +657,13 @@ class DynamicAreaDefinition(object):
         rotation:
           Rotation in degrees (negative is cw)
           """
+        if isinstance(projection, str):
+            proj_dict = utils.proj4_str_to_dict(projection)
+        elif isinstance(projection, dict):
+            proj_dict = projection
+        else:
+            raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
+
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
@@ -783,8 +790,8 @@ class AreaDefinition(BaseDefinition):
         Name of area
     proj_id : str
         ID of projection
-    proj_dict : dict
-        Dictionary with Proj.4 parameters
+    projection : dict or str
+        Dictionary or string with Proj.4 parameters
     width : int
         x dimension in number of pixels, aka number of grid columns
     height : int
@@ -825,12 +832,15 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, width, height,
+    def __init__(self, area_id, name, proj_id, projection, width, height,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
-        if not isinstance(proj_dict, dict):
-            raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
-                            % type(proj_dict))
+        if isinstance(projection, str):
+            proj_dict = utils.proj4_str_to_dict(projection)
+        elif isinstance(projection, dict):
+            proj_dict = projection
+        else:
+            raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
 
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id

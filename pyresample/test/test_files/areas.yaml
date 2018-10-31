@@ -192,8 +192,8 @@ test_degrees:
     y: -90
     units: degrees
   resolution:
-    dx: 0.11271487315
-    dy: 0.22542974631
+    dx: 0.11271481862984278
+    dy: 0.22542974631297721
     units: degrees
   radius:
     dx: 49.4217406986

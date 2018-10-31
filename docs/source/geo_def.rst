@@ -25,7 +25,7 @@ The following arguments are needed to initialize an area:
 * **area_id** ID of area
 * **name**: Description
 * **proj_id**: ID of projection (being deprecated)
-* **proj_dict**: Proj4 parameters as dict
+* **projection**: Proj4 parameters as a dict or string
 * **width**: Number of grid columns
 * **height**: Number of grid rows
 * **area_extent**: (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
@@ -148,11 +148,11 @@ An example with degrees as units using a mercator projection:
 
 .. doctest::
 
- >>> proj_dict = {'a': '6371228.0', 'units': 'm', 'lon_0': '0', 'proj': 'merc', 'lat_0': '0'}
+ >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> area_def = utils.from_params(area_id, proj_dict, center=(0, 0),
  ...                              radius=(47.90379019311, 43.1355420077),
- ...                              resolution=0.225429746313, units='degrees',
- ...                              description='Antarctic EASE grid')
+ ...                              resolution=(0.22542960090875294, 0.22542901929487608),
+ ...                              units='degrees', description='Antarctic EASE grid')
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid

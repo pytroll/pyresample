@@ -267,9 +267,9 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return from_params(config['REGION'], config['PCS_DEF'], description=config['NAME'],
-                       proj_id=config['PCS_ID'], shape=(config['YSIZE'], config['XSIZE']),
-                       area_extent=config['AREA_EXTENT'], rotation=config['ROTATION'])
+    return from_params(config['REGION'], config['PCS_DEF'], description=config['NAME'], proj_id=config['PCS_ID'],
+                       shape=(config['YSIZE'], config['XSIZE']), area_extent=config['AREA_EXTENT'],
+                       rotation=config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, width, height,
@@ -655,8 +655,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
                [center, radius, top_left_extent, resolution, shape, area_extent], [2, 2, 2, 2, 2, 4]])]
 
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-    center, top_left_extent, area_extent = _get_converted_lists(center, top_left_extent,
-                                                                area_extent, units, p)
+    center, top_left_extent, area_extent = _get_converted_lists(center, top_left_extent, area_extent, units, p)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
@@ -670,28 +669,17 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
 
-    # Makes sure shape is an integer. Rounds down if shape is less than .01 away from nearest int. Else rounds up.
-    # Used for area definition to prevent indexing None.
-    width, height = None, None
-    if shape is not None:
-        if shape[1] - math.floor(shape[1]) < .01 or math.ceil(shape[1]) - shape[1] < .01:
-            width = int(round(shape[1]))
-        else:
-            width = math.ceil(shape[1])
-            logging.warning('width must be an integer: {0}. Rounding width to {1}'.format(shape[1], width))
-        if shape[0] - math.floor(shape[0]) < .01 or math.ceil(shape[0]) - shape[0] < .01:
-            height = int(round(shape[0]))
-        else:
-            height = math.ceil(shape[0])
-            logging.warning('height must be an integer: {0}. Rounding height to {1}'.format(shape[0], height))
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
+    height, width = (None, None)
+    if shape is not None:
+        height, width = shape
     if None not in (area_extent, shape):
         return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
     elif area_extent is not None or shape is not None:
-        return DynamicAreaDefinition(area_id=area_id, description=description, proj_dict=proj_dict, width=width,
+        return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
                                      height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
                                      optimize_projection=optimize_projection)
     raise ValueError('Not enough information provided to create an area definition')
@@ -700,14 +688,12 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
 def _get_proj_data(projection):
     """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function."""
     from pyproj import Proj
-
     if isinstance(projection, str):
         proj_dict = proj4_str_to_dict(projection)
     elif isinstance(projection, dict):
         proj_dict = projection
     else:
-        raise ValueError('"projection" must be a proj4_dict or a proj4_string.'
-                         'Type entered: {0}'.format(type(projection)))
+        raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
     return proj_dict, Proj(proj_dict)
 
 
@@ -793,10 +779,11 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
                 # If on a pole, use northern/southern latitude for both height and width.
                 center_as_angle = p(*center, radians='rad' in units, inverse=True, errcheck=True)
                 if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-8:
-                    var = (abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[0]),
-                                 radians='rad' in units, errcheck=True)[1] + center[1]),
-                           abs(p(0, center_as_angle[1] - _sign(center_as_angle[1]) * abs(var[1]),
-                                 radians='rad' in units, errcheck=True)[1] + center[1]))
+                    direction_of_poles = _sign(p(0, -90)[1] - p(0, 90)[1])
+                    var = (abs(center[1] - p(center_as_angle[0], center_as_angle[1] - direction_of_poles * abs(var[0]),
+                                             radians='rad' in units, errcheck=True)[1]),
+                           abs(center[1] - p(center_as_angle[0], center_as_angle[1] - direction_of_poles * abs(var[1]),
+                                             radians='rad' in units, errcheck=True)[1]))
                 # Uses southern latitude and western longitude if radius is positive. Uses northern latitude and
                 # eastern longitude if radius is negative.
                 else:
@@ -810,8 +797,6 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
     elif inverse and 'm' in units:
         # Converts list-like from meters to degrees.
         var = p(*var, inverse=True, errcheck=True)
-    if name in ('radius', 'resolution'):
-        var = (abs(var[0]), abs(var[1]))
     return var
 
 
@@ -822,6 +807,35 @@ def _validate_variable(var, new_var, var_name, input_list):
             var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
                                                                                       input_list))
     return new_var
+
+
+def _round_shape(shape, radius=None, resolution=None, center=None, p=None):
+    """Makes sure shape is an integer. Rounds down if shape is less than .01 above nearest int. Else rounds up."""
+    # Used for area definition to prevent indexing None.
+    if shape is None:
+        return None
+    incorrect_shape = False
+    height, width = shape
+    if abs(width - round(width)) > 1e-8:
+        incorrect_shape = True
+        if width - math.floor(width) >= .01:
+            width = math.ceil(width)
+    width = int(round(width))
+    if abs(height - round(height)) > 1e-8:
+        incorrect_shape = True
+        if height - math.floor(height) >= .01:
+            height = math.ceil(height)
+    height = int(round(height))
+    if incorrect_shape:
+        if radius is not None and resolution is not None:
+            new_resolution = (2 * radius[0] / width, 2 * radius[1] / height)
+            logging.warning('shape found from radius and resolution does not contain only '
+                            'integers: {0}\nRounding shape to {1} and resolution from {2} meters to '
+                            '{3} meters'.format(shape, (height, width), resolution, new_resolution))
+        else:
+            logging.warning('shape provided does not contain only integers: {0}\n'
+                            'Rounding shape to {1}'.format(shape, (height, width)))
+    return height, width
 
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p):
@@ -845,14 +859,15 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
         radius = _convert_units(radius, 'radius', units, p, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
-    # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
     else:
         radius = _convert_units(radius, 'radius', units, p, center=center)
+    # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
     resolution = _convert_units(resolution, 'resolution', units, p, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
     if radius is not None and resolution is not None:
         # Function 2-A
-        new_shape = (2 * radius[1] / resolution[1], 2 * radius[0] / resolution[0])
+        new_shape = _round_shape((2 * radius[1] / resolution[1], 2 * radius[0] / resolution[0]), radius=radius,
+                                 resolution=resolution, center=center, p=p)
         shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'resolution'])
     elif resolution is not None and shape is not None:
         # Function 2-B
@@ -881,6 +896,8 @@ def _format_list(var, name):
     # Single-number format.
     if not isinstance(var, (list, tuple)) and name in ('resolution', 'radius'):
         var = (float(var), float(var))
+    elif name == 'shape':
+        var = _round_shape(var)
     else:
         var = tuple(float(num) for num in var)
     return var
