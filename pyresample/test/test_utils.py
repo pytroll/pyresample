@@ -82,7 +82,7 @@ class TestYAMLAreaParser(unittest.TestCase):
     def test_area_parser_yaml(self):
         """Test YAML area parser."""
         from pyresample import utils
-        ease_nh, ease_sh, test_m, test_deg, test_rad= utils.parse_area_file(os.path.join(os.path.dirname(
+        ease_nh, ease_sh, test_m, test_deg, test_rad = utils.parse_area_file(os.path.join(os.path.dirname(
             __file__), 'test_files', 'areas.yaml'), 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees', 'test_radians')
 
         nh_str = """Area ID: ease_nh
