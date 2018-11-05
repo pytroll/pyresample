@@ -989,7 +989,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     if radius is not None and resolution is not None:
         # Function 2-A
         new_shape = _round_shape((2 * radius[1] / resolution[1], 2 * radius[0] / resolution[0]), radius=radius,
-                                 resolution=resolution, center=center, p=p)
+                                 resolution=resolution)
         shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'resolution'])
     elif resolution is not None and shape is not None:
         # Function 2-B
