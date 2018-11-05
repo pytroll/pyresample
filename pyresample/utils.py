@@ -144,6 +144,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
         params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
         params['radius'] = _get_list(params, 'radius', ['dx', 'dy'])
+        params['rotation'] = _get_list(params, 'rotation', [])
         res.append(from_params(**params))
     return res
 
@@ -727,7 +728,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     radius : list or float, optional
         Length from the center to the edges of the projection (dx, dy)
     rotation: float, optional
-        rotation in degrees (negative is cw)
+        rotation in degrees or radians (negative is cw)
     nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
@@ -771,9 +772,10 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         [_verify_list(var_name, var, length) for var_name, var, length in
          zip(*[['center', 'radius', 'top_left_extent', 'resolution', 'shape', 'area_extent'],
                [center, radius, top_left_extent, resolution, shape, area_extent], [2, 2, 2, 2, 2, 4]])]
-
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-    center, top_left_extent, area_extent = _get_converted_lists(center, top_left_extent, area_extent, units, p)
+    center, top_left_extent, area_extent, kwargs['rotation'] = _get_converted_lists(center, top_left_extent,
+                                                                                    area_extent, kwargs.get('rotation'),
+                                                                                    units, p)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
@@ -786,7 +788,6 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
     """Handles the creation of an area definition for from_params."""
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
-
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
@@ -815,7 +816,7 @@ def _get_proj_data(projection):
     return proj_dict, Proj(proj_dict)
 
 
-def _get_converted_lists(center, top_left_extent, area_extent, units, p):
+def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, p):
     """handles area_extent being a set of two points and calls _convert_units."""
     # Splits area_extent into two lists so that its units can be converted
     if area_extent is None:
@@ -824,6 +825,14 @@ def _get_converted_lists(center, top_left_extent, area_extent, units, p):
     else:
         area_extent_ll = area_extent[:2]
         area_extent_ur = area_extent[2:]
+    if rotation is not None:
+        rotation_units = units
+        if isinstance(rotation, DataArray):
+            if hasattr(rotation, 'units'):
+                rotation_units = rotation.units
+            rotation = rotation.data
+        if rotation_units in ['rad',  'radians']:
+            rotation = rotation * 180 / math.pi
 
     center, top_left_extent, area_extent_ll, area_extent_ur =\
         [_convert_units(var, name, units, p) for var, name in zip(*[[center, top_left_extent,
@@ -833,7 +842,7 @@ def _get_converted_lists(center, top_left_extent, area_extent, units, p):
     # Recombine area_extent.
     if area_extent is not None:
         area_extent = area_extent_ll + area_extent_ur
-    return center, top_left_extent, area_extent
+    return center, top_left_extent, area_extent, rotation
 
 
 def _sign(num):
@@ -871,16 +880,11 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if p.is_latlong() and 'm' in units:
-        raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
-    viable_units = False
-    for unit in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
-        if units == unit:
-            viable_units = True
-            break
-    if not viable_units:
+    if units not in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
+    if p.is_latlong() and 'm' in units:
+        raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     if name == 'center':
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.

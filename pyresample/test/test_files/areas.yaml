@@ -120,7 +120,6 @@ area_of_interest_2:
     units: radians
 
 test_meters:
-  description: test_meters
   units: degrees
   projection:
     a: 6371228.0
@@ -142,9 +141,9 @@ test_meters:
   radius:
     radius: 5326849.0625
     units: m
+  rotation: 45
 
 test_radians:
-  description: test_radians
   projection:
     a: 6371228.0
     units: m
@@ -170,9 +169,11 @@ test_radians:
     dx: 0.86257209725
     dy: 0.86257209725
     units: radians
+  rotation:
+    rotation: 0.7853981633974483
+    units: radians
 
 test_degrees:
-  description: test_degrees
   projection:
     a: 6371228.0
     units: m
@@ -198,6 +199,9 @@ test_degrees:
   radius:
     dx: 49.4217406986
     dy: 49.4217406986
+    units: degrees
+  rotation:
+    rotation: 45
     units: degrees
 
 ease_sh:

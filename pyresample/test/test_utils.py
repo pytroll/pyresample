@@ -82,10 +82,8 @@ class TestYAMLAreaParser(unittest.TestCase):
     def test_area_parser_yaml(self):
         """Test YAML area parser."""
         from pyresample import utils
-        ease_nh, ease_sh = utils.parse_area_file(os.path.join(os.path.dirname(__file__),
-                                                              'test_files',
-                                                              'areas.yaml'),
-                                                 'ease_nh', 'ease_sh')
+        ease_nh, ease_sh, test_m, test_deg, test_rad= utils.parse_area_file(os.path.join(os.path.dirname(
+            __file__), 'test_files', 'areas.yaml'), 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees', 'test_radians')
 
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
@@ -102,6 +100,31 @@ Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEqual(ease_sh.__str__(), sh_str)
+
+        m_str = """Area ID: test_meters
+Description: test_meters
+Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 850
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEqual(test_m.__str__(), m_str)
+
+        deg_str = """Area ID: test_degrees
+Description: test_degrees
+Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 850
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEqual(test_deg.__str__(), deg_str)
+
+        rad_str = """Area ID: test_radians
+Description: test_radians
+Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Number of columns: 850
+Number of rows: 425
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+        self.assertEqual(test_rad.rotation, 45)
+        self.assertEqual(test_rad.__str__(), rad_str)
 
     def test_multiple_file_content(self):
         from pyresample import utils
@@ -278,8 +301,10 @@ class TestMisc(unittest.TestCase):
         try:
             utils.convert_def_to_yaml(def_file, yaml_file)
             areas_new = set(utils.parse_area_file(yaml_file))
-            areas_old = set(utils.parse_area_file(def_file))
-
+            areas = utils.parse_area_file(def_file)
+            for area in areas:
+                area.proj_dict.pop('units', None)
+            areas_old = set(areas)
             self.assertEqual(areas_new, areas_old)
         finally:
             os.remove(yaml_file)

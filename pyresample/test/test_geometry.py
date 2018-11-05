@@ -1315,21 +1315,16 @@ class TestStackedAreaDefinition(unittest.TestCase):
         projection_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
                            '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
         proj_id = 'ease_sh'
-        shape = DataArray((425, 850), attrs={'units': 'degrees'})
+        shape = (425, 850)
         top_left_extent = (-5326849.0625, 5326849.0625)
         center_list = [[0, 0], 'a', (1, 2, 3)]
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
         units_list = ['meters', 'degrees', 'radians']
+        base_def = AreaDefinition(area_id, description, '', projection_list[0], shape[1], shape[0], area_extent)
         # reducing the length of from_params makes lines much shorter.
         area = utils.from_params
-
-        def verify_area(area_def):
-            """Makes sure that the area definitions created are correct."""
-            self.assertTrue(isinstance(area_def, AreaDefinition))
-            self.assertTrue(np.allclose(area_def.area_extent, area_extent))
-            self.assertEqual(area_def.shape, (425, 850))
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
@@ -1358,7 +1353,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                     try:
                         area_list.append(area(area_id, projection, proj_id=proj_id, top_left_extent=essentials[2],
                                               center=center, shape=essentials[4], resolution=essentials[3],
-                                              radius=essentials[1], description=description, units=units))
+                                              radius=essentials[1], description=description, units=units, rotation=45))
                     except ValueError:
                         pass
         self.assertEqual(len(area_list), 6)
@@ -1390,14 +1385,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
         self.assertTrue(isinstance(area_def, AreaDefinition))
         self.assertTrue(np.allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761)))
         self.assertEqual(area_def.shape, (101, 90))
-        # Tests that load_area works with from_params
-        area_defs = utils.load_area('/Users/wroberts/Desktop/pyresample/pyresample/test/test_files/areas.yaml',
-                                    'test_meters', 'test_radians', 'test_degrees')
-        for area_def in area_defs:
-            area_list.append(area_def)
         # Checks every area definition made
         for area_def in area_list:
-            verify_area(area_def)
+            self.assertEqual(area_def, base_def)
 
         # Makes sure if shape or area_extent is found/given, a DynamicAreaDefinition is made.
         self.assertTrue(isinstance(area(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
