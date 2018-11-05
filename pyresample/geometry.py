@@ -832,7 +832,7 @@ class AreaDefinition(BaseDefinition):
         Grid projection y coordinate
     """
 
-    def __init__(self, area_id, name, proj_id, projection, width, height,
+    def __init__(self, area_id, description, proj_id, projection, width, height,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         if isinstance(projection, str):
@@ -844,7 +844,7 @@ class AreaDefinition(BaseDefinition):
 
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
-        self.name = name
+        self.name = self.description = description
         self.proj_id = proj_id
         self.x_size = self.width = int(width)
         self.y_size = self.height = int(height)

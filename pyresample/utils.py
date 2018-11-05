@@ -931,7 +931,7 @@ def _validate_variable(var, new_var, var_name, input_list):
     return new_var
 
 
-def _round_shape(shape, radius=None, resolution=None, center=None, p=None):
+def _round_shape(shape, radius=None, resolution=None):
     """Makes sure shape is an integer. Rounds down if shape is less than .01 above nearest int. Else rounds up."""
     # Used for area definition to prevent indexing None.
     if shape is None:

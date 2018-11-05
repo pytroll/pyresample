@@ -2,11 +2,11 @@ boundary:
   area_id: ease_sh
   description: Example of making an area definition using shape and area_extent
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 425]
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
@@ -14,11 +14,11 @@ boundary_2:
   description: Another example of making an area definition using shape and area_extent
   units: degrees
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape:
     height: 425
     width: 425
@@ -29,11 +29,11 @@ boundary_2:
 corner:
   description: Example of making an area definition using shape, top_left_extent, and resolution
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 425]
   top_left_extent: [-5326849.0625, 5326849.0625]
   resolution: 25067.525
@@ -43,11 +43,11 @@ corner_2:
   description: Another example of making an area definition using shape, top_left_extent, and resolution
   units:  °
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 425]
   top_left_extent:
     x: -45.0
@@ -60,11 +60,11 @@ corner_2:
 circle:
   description: Example of making an area definition using center, resolution, and radius
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   center: [0, 0]
   resolution: [25067.525, 25067.525]
   radius: 5326849.0625
@@ -73,11 +73,11 @@ circle_2:
   area_id: ease_sh
   description: Another example of making an area definition using center, resolution, and radius
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   center:
     x: 0
     y: -90
@@ -93,11 +93,11 @@ circle_2:
 area_of_interest:
   description: Example of making an area definition using shape, center, and resolution
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 425]
   center: [0, 0]
   resolution: [25067.525, 25067.525]
@@ -106,11 +106,11 @@ area_of_interest_2:
   area_id: ease_sh
   description: Another example of making an area definition using shape, center, and resolution
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 425]
   center:
     center: [0, -1.570796]
@@ -122,11 +122,11 @@ area_of_interest_2:
 test_meters:
   units: degrees
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape: [425, 850]
   top_left_extent:
     x: -5326849.0625
@@ -145,11 +145,11 @@ test_meters:
 
 test_radians:
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   area_extent:
     area_extent: [-2.356194490192345, -0.30571189166434753, 0.7853981633974483, -0.30571189166434753]
     units: radians
@@ -175,11 +175,11 @@ test_radians:
 
 test_degrees:
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   area_extent:
     lower_left_xy: [-135.0, -17.516001139327766]
     upper_right_xy: [45.0, -17.516001139327766]
@@ -207,11 +207,11 @@ test_degrees:
 ease_sh:
   description: Antarctic EASE grid
   projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
     proj: laea
     lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
   shape:
     height: 425
     width: 425
@@ -223,11 +223,11 @@ ease_sh:
 ease_nh:
   description: Arctic EASE grid
   projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
     a: 6371228.0
     units: m
-    lon_0: 0
-    proj: laea
-    lat_0: 90
   shape:
     height: 425
     width: 425

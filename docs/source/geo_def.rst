@@ -273,11 +273,11 @@ Assuming the file **areas.yaml** exists with the following content
    area_id: ease_sh
    description: Example of making an area definition using shape and area_extent
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape: [425, 425]
    area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
 
@@ -285,11 +285,11 @@ Assuming the file **areas.yaml** exists with the following content
    description: Another example of making an area definition using shape and area_extent
    units: degrees
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape:
      height: 425
      width: 425
@@ -300,11 +300,11 @@ Assuming the file **areas.yaml** exists with the following content
  corner:
    description: Example of making an area definition using shape, top_left_extent, and resolution
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape: [425, 425]
    top_left_extent: [-5326849.0625, 5326849.0625]
    resolution: 25067.525
@@ -314,11 +314,11 @@ Assuming the file **areas.yaml** exists with the following content
    description: Another example of making an area definition using shape, top_left_extent, and resolution
    units:  °
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape: [425, 425]
    top_left_extent:
      x: -45.0
@@ -331,11 +331,11 @@ Assuming the file **areas.yaml** exists with the following content
  circle:
    description: Example of making an area definition using center, resolution, and radius
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    center: [0, 0]
    resolution: [25067.525, 25067.525]
    radius: 5326849.0625
@@ -344,11 +344,11 @@ Assuming the file **areas.yaml** exists with the following content
    area_id: ease_sh
    description: Another example of making an area definition using center, resolution, and radius
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    center:
      x: 0
      y: -90
@@ -364,11 +364,11 @@ Assuming the file **areas.yaml** exists with the following content
  area_of_interest:
    description: Example of making an area definition using shape, center, and resolution
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape: [425, 425]
    center: [0, 0]
    resolution: [25067.525, 25067.525]
@@ -377,11 +377,11 @@ Assuming the file **areas.yaml** exists with the following content
    area_id: ease_sh
    description: Another example of making an area definition using shape, center, and resolution
    projection:
-     a: 6371228.0
-     units: m
-     lon_0: 0
      proj: laea
      lat_0: -90
+     lon_0: 0
+     a: 6371228.0
+     units: m
    shape: [425, 425]
    center:
      center: [0, -1.570796]
