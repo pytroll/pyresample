@@ -1312,8 +1312,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
-        projection_list = [{'a': '6371228.0', 'units_list': 'm', 'lon_0': '0', 'proj': 'laea', 'lat_0': '-90'},
-                           '+a=6371228.0 +units_list=m +lon_0=0 +proj=laea +lat_0=-90']
+        projection_list = [{'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+                           '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m']
         proj_id = 'ease_sh'
         shape = (425, 850)
         top_left_extent = (-5326849.0625, 5326849.0625)

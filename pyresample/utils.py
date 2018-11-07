@@ -880,7 +880,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if units not in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
+    if units not in ['°', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
     if p.is_latlong() and 'm' in units:
@@ -898,27 +898,32 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
             if center is None:
                 raise ValueError('center must be given to convert radius or resolution from an angle to meters')
             else:
-                # If on a pole, use northern/southern latitude for both height and width.
                 center_as_angle = p(*center, radians='rad' in units, inverse=True, errcheck=True)
-                if abs(abs(p(*center, inverse=True)[1]) - 90) < 1e-8:
+                unit_conversion = 90
+                if 'rad' in units:
+                    unit_conversion = math.pi / 2
+                # If on a pole, use northern/southern latitude for both height and width.
+                if abs(abs(center_as_angle[1]) - unit_conversion) < 1e-8:
                     direction_of_poles = _sign(p(0, -90)[1] - p(0, 90)[1])
-                    var = (abs(center[1] - p(center_as_angle[0], center_as_angle[1] - direction_of_poles * abs(var[0]),
-                                             radians='rad' in units, errcheck=True)[1]),
-                           abs(center[1] - p(center_as_angle[0], center_as_angle[1] - direction_of_poles * abs(var[1]),
-                                             radians='rad' in units, errcheck=True)[1]))
+                    var = (center[1] - p(_sign(center_as_angle[0]) * unit_conversion, center_as_angle[1] -
+                                         direction_of_poles * abs(var[0]), radians='rad' in units, errcheck=True)[0],
+                           center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[1]),
+                                         radians='rad' in units, errcheck=True)[1])
                 # Uses southern latitude and western longitude if radius is positive. Uses northern latitude and
                 # eastern longitude if radius is negative.
                 else:
-                    var = (abs(center[0] - p(center_as_angle[0] - var[0], center_as_angle[1],
-                                             radians='rad' in units, errcheck=True)[0]),
-                           abs(center[1] - p(center_as_angle[0], center_as_angle[1] - var[1],
-                                             radians='rad' in units, errcheck=True)[1]))
+                    var = (center[0] - p(center_as_angle[0] - var[0], center_as_angle[1],
+                                         radians='rad' in units, errcheck=True)[0],
+                           center[1] - p(center_as_angle[0], center_as_angle[1] - var[1],
+                                         radians='rad' in units, errcheck=True)[1])
         else:
             var = p(*var, radians='rad' in units, errcheck=True)
     # Don't convert if inverse is False: Want meters.
     elif inverse and 'm' in units:
         # Converts list-like from meters to degrees.
         var = p(*var, inverse=True, errcheck=True)
+    if name in ['radius', 'resolution']:
+        var = (abs(var[0]), abs(var[1]))
     return var
 
 
