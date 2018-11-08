@@ -1449,13 +1449,17 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
 def combine_area_extents_vertical(area1, area2):
     """Combine the area extents of areas 1 and 2."""
-    if (area1.area_extent[0] == area2.area_extent[0] and
-            area1.area_extent[2] == area2.area_extent[2]):
+    if (area1.area_extent[0] == area2.area_extent[0]
+            and area1.area_extent[2] == area2.area_extent[2]):
         current_extent = list(area1.area_extent)
         if np.isclose(area1.area_extent[1], area2.area_extent[3]):
             current_extent[1] = area2.area_extent[1]
         elif np.isclose(area1.area_extent[3], area2.area_extent[1]):
             current_extent[3] = area2.area_extent[3]
+        else:
+            raise IncompatibleAreas(
+                "Can't concatenate non-contiguous area definitions: "
+                "{0} and {1}".format(area1, area2))
     else:
         raise IncompatibleAreas(
             "Can't concatenate area definitions with "
