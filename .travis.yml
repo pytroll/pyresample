@@ -4,12 +4,13 @@ env:
   - PYTHON_VERSION=$PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
-  - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio kealib pillow matplotlib
+  - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio pillow matplotlib
     pyyaml pyproj coveralls configobj coverage codecov'
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request'
   - SETUP_CMD='test'
   - CONDA_CHANNELS='conda-forge'
+  - CONDA_CHANNEL_PRIORITY='True'
 matrix:
   include:
   - env: PYTHON_VERSION=2.7
