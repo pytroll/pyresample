@@ -746,7 +746,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         4. meters
     * **resolution** and **radius** can be specified with one value if dx == dy
     * If **resolution** and **radius** are provided as angles, center must be given or findable. In such a case,
-    they represent (projection x distance from center to center+dx, projection y distance from center to center+dy)
+      they represent (projection x distance from center to center+dx, projection y distance from center to center+dy)
 
     Returns
     -------
@@ -857,7 +857,7 @@ def _round_poles(center, units, p):
     """Rounds center to the nearest pole if it is extremely close to said pole. Used to work around float arithmetic."""
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
-    if 'deg' in units or u'\xb0' in units:
+    if 'deg' in units or u'°' in units:
         if abs(abs(center[1]) - 90) < error:
             center = (center[0], _sign(center[1]) * 90)
     elif 'rad' in units:
@@ -886,18 +886,19 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     # Convert from var projection units to projection units given by projection from user.
-    if not (u'\xb0' in units or 'deg' in units or 'rad' in units):
+    if not (u'°' in units or 'deg' in units or 'rad' in units):
         if units == 'meters':
             units = 'm'
-        tmp_proj_dict = proj_dict.copy()
-        tmp_proj_dict['units'] = units
-        var = transform(Proj(tmp_proj_dict, preserve_units=True), p, *var)
+        if proj_dict.get('units', 'm') != units:
+            tmp_proj_dict = proj_dict.copy()
+            tmp_proj_dict['units'] = units
+            var = transform(Proj(tmp_proj_dict, preserve_units=True), p, *var)
     if name == 'center':
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees/radians.
     # Converts list-like from degrees/radians to meters.
-    if (u'\xb0' in units or 'deg' in units or 'rad' in units) and not inverse:
+    if (u'°' == units or 'deg' in units or 'rad' in units) and not inverse:
         # Interprets radius and resolution as distances between latitudes/longitudes.
         if name in ('radius', 'resolution'):
             # Since the distance between longitudes and latitudes is not constant in

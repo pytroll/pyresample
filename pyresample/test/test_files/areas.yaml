@@ -126,6 +126,7 @@ test_meters:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    units: m
   shape: [425, 850]
   top_left_extent:
     x: -17476538.918963253
