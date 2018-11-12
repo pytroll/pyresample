@@ -173,8 +173,8 @@ object is returned:
 
 .. note::
 
-  **radius** and **pixel size** are distances, **NOT** coordinates. When expressed as angles,
-  they represent the degrees or radians of longitude/latitude away from the center that
+  **radius** and **resolution** are distances, **NOT** coordinates. When expressed as angles,
+  they represent the degrees of longitude/latitude away from the center that
   they should span. Hence in these cases **center or area_extent must be provided**.
 
 There are four subfunctions of :class:`geometry.AreaDefinition <pyresample.geometry.AreaDefinition>` utilizing

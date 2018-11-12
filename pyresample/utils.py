@@ -745,7 +745,8 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
         3. units used in **projection**
         4. meters
     * **resolution** and **radius** can be specified with one value if dx == dy
-    * If **resolution** and **radius** are provided as angles, center must be given or findable
+    * If **resolution** and **radius** are provided as angles, center must be given or findable. In such a case,
+    they represent (projection x distance from center to center+dx, projection y distance from center to center+dy)
 
     Returns
     -------
@@ -880,7 +881,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if units not in ['°', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
+    if units not in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
         raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
                                                                                                             units))
     if p.is_latlong() and 'm' in units:
@@ -904,7 +905,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
                     unit_conversion = math.pi / 2
                 # If on a pole, use northern/southern latitude for both height and width.
                 if abs(abs(center_as_angle[1]) - unit_conversion) < 1e-8:
-                    direction_of_poles = _sign(p(0, -90)[1] - p(0, 90)[1])
+                    direction_of_poles = _sign(center_as_angle[1])
                     var = (center[1] - p(_sign(center_as_angle[0]) * unit_conversion, center_as_angle[1] -
                                          direction_of_poles * abs(var[0]), radians='rad' in units, errcheck=True)[0],
                            center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[1]),
