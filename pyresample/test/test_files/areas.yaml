@@ -126,12 +126,11 @@ test_meters:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
-    units: m
   shape: [425, 850]
   top_left_extent:
-    x: -5326849.0625
-    y: 5326849.0625
-    units: m
+    x: -17476538.918963253
+    y: 17476538.918963253
+    units: ft
   center:
     center: [0, 0]
     units: m
@@ -139,8 +138,8 @@ test_meters:
     resolution: [12533.7625, 25067.525]
     units: meters
   radius:
-    radius: 5326849.0625
-    units: m
+    radius: 3309.9505528339496
+    units: mi
   rotation: 45
 
 test_radians:

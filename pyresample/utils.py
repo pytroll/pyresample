@@ -776,12 +776,12 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
     center, top_left_extent, area_extent, kwargs['rotation'] = _get_converted_lists(center, top_left_extent,
                                                                                     area_extent, kwargs.get('rotation'),
-                                                                                    units, p)
+                                                                                    units, p, proj_dict)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
         area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, resolution,
-                                                      top_left_extent, units, p)
+                                                      top_left_extent, units, p, proj_dict)
     return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
 
@@ -814,10 +814,10 @@ def _get_proj_data(projection):
         proj_dict = projection
     else:
         raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
-    return proj_dict, Proj(proj_dict)
+    return proj_dict, Proj(proj_dict, preserve_units=True)
 
 
-def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, p):
+def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, p, proj_dict):
     """handles area_extent being a set of two points and calls _convert_units."""
     # Splits area_extent into two lists so that its units can be converted
     if area_extent is None:
@@ -836,7 +836,7 @@ def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, 
             rotation = rotation * 180 / math.pi
 
     center, top_left_extent, area_extent_ll, area_extent_ur =\
-        [_convert_units(var, name, units, p) for var, name in zip(*[[center, top_left_extent,
+        [_convert_units(var, name, units, p, proj_dict) for var, name in zip(*[[center, top_left_extent,
                                                                      area_extent_ll, area_extent_ur],
                                                                     ['center', 'top_left_extent',
                                                                      'area_extent', 'area_extent']])]
@@ -857,35 +857,41 @@ def _round_poles(center, units, p):
     """Rounds center to the nearest pole if it is extremely close to said pole. Used to work around float arithmetic."""
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
-    if 'm' in units:
+    if 'deg' in units or u'\xb0' in units:
+        if abs(abs(center[1]) - 90) < error:
+            center = (center[0], _sign(center[1]) * 90)
+    elif 'rad' in units:
+        if abs(abs(center[1]) - math.pi / 2) < error * math.pi / 180:
+            center = (center[0], _sign(center[1]) * math.pi / 2)
+    else:
         center = p(*center, inverse=True, errcheck=True)
         if abs(abs(center[1]) - 90) < error:
             center = (center[0], _sign(center[1]) * 90)
         center = p(*center, errcheck=True)
-    if 'deg' in units or u'\xb0' in units:
-        if abs(abs(center[1]) - 90) < error:
-            center = (center[0], _sign(center[1]) * 90)
-    if 'rad' in units:
-        if abs(abs(center[1]) - math.pi / 2) < error * math.pi / 180:
-            center = (center[0], _sign(center[1]) * math.pi / 2)
     return center
 
 
-def _convert_units(var, name, units, p, inverse=False, center=None):
+def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite.
 
     Uses UTF-8 for degree symbol.
     """
+    from pyproj import transform
+    from pyproj import Proj
     if var is None:
         return None
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if units not in [u'\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters']:
-        raise ValueError("{0}'s units must be in degrees, radians, or meters. Given units were: {1}".format(name,
-                                                                                                            units))
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
+    # Convert from var projection units to projection units given by projection from user.
+    if not (u'\xb0' in units or 'deg' in units or 'rad' in units):
+        if units == 'meters':
+            units = 'm'
+        tmp_proj_dict = proj_dict.copy()
+        tmp_proj_dict['units'] = units
+        var = transform(Proj(tmp_proj_dict, preserve_units=True), p, *var)
     if name == 'center':
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
@@ -920,7 +926,7 @@ def _convert_units(var, name, units, p, inverse=False, center=None):
         else:
             var = p(*var, radians='rad' in units, errcheck=True)
     # Don't convert if inverse is False: Want meters.
-    elif inverse and 'm' in units:
+    elif inverse and not (u'\xb0' in units or 'deg' in units or 'rad' in units):
         # Converts list-like from meters to degrees.
         var = p(*var, inverse=True, errcheck=True)
     if name in ['radius', 'resolution']:
@@ -966,7 +972,7 @@ def _round_shape(shape, radius=None, resolution=None):
     return height, width
 
 
-def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p):
+def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p, proj_dict):
     """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
     # Input unaffected by data below: When area extent is calcuated, it's either with
     # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
@@ -976,7 +982,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
         new_center = ((area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2)
         center = _validate_variable(center, new_center, 'center', ['area_extent'])
         # If radius is given in an angle without center it will raise an exception, and to verify, it must be in meters.
-        radius = _convert_units(radius, 'radius', units, p, center=center)
+        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
         new_radius = ((area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2)
         radius = _validate_variable(radius, new_radius, 'radius', ['area_extent'])
         new_top_left_extent = (area_extent[0], area_extent[3])
@@ -984,13 +990,13 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
-        radius = _convert_units(radius, 'radius', units, p, center=center)
+        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
     else:
-        radius = _convert_units(radius, 'radius', units, p, center=center)
+        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
     # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
-    resolution = _convert_units(resolution, 'resolution', units, p, center=center)
+    resolution = _convert_units(resolution, 'resolution', units, p, proj_dict, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
     if radius is not None and resolution is not None:
         # Function 2-A
