@@ -1266,6 +1266,14 @@ class TestStackedAreaDefinition(unittest.TestCase):
         res = combine_area_extents_vertical(area1, area2)
         self.assertListEqual(res, [1, 2, 3, 6])
 
+        # Non contiguous area extends shouldn't be combinable
+        area1 = MagicMock()
+        area1.area_extent = (1, 2, 3, 4)
+        area2 = MagicMock()
+        area2.area_extent = (1, 5, 3, 7)
+        self.assertRaises(IncompatibleAreas,
+                          combine_area_extents_vertical, area1, area2)
+
     def test_append_area_defs_fail(self):
         """Fail appending areas."""
         area1 = MagicMock()
