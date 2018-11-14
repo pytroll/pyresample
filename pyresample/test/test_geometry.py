@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import with_statement
 
 import random
@@ -1312,22 +1313,22 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      area_extent)
 
     def test_degrees_1(self):
-        self.assertTrue(u'°' in '°')
+        self.assertEqual(u'°', '°')
 
     def test_degrees_2(self):
-        self.assertTrue(u'\u00b0' in '°')
+        self.assertEqual(u'\u00b0', '°')
 
     def test_degrees_3(self):
-        self.assertTrue(u'\u00B0' in '°')
+        self.assertEqual(u'\u00B0', '°')
 
     def test_degrees_4(self):
-        self.assertTrue(u'\N{DEGREE SIGN}' in '°')
+        self.assertEqual(u'\N{DEGREE SIGN}', '°')
 
     def test_degrees_5(self):
-        self.assertTrue(u'\xb0' in '°')
+        self.assertEqual(u'\xb0', '°')
 
     def test_degrees_6(self):
-        self.assertTrue(u'\xB0' in '°')
+        self.assertEqual(u'\xB0', '°')
 
     def test_from_params(self):
         """Test from_params and the four sub-methods that call it in AreaDefinition."""
