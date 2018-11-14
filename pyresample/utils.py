@@ -844,9 +844,9 @@ def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, 
 
     center, top_left_extent, area_extent_ll, area_extent_ur =\
         [_convert_units(var, name, units, p, proj_dict) for var, name in zip(*[[center, top_left_extent,
-                                                                     area_extent_ll, area_extent_ur],
-                                                                    ['center', 'top_left_extent',
-                                                                     'area_extent', 'area_extent']])]
+                                                                                area_extent_ll, area_extent_ur],
+                                                                               ['center', 'top_left_extent',
+                                                                                'area_extent', 'area_extent']])]
     # Recombine area_extent.
     if area_extent is not None:
         area_extent = area_extent_ll + area_extent_ur
