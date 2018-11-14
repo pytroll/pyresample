@@ -915,16 +915,19 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
 
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+        Notes
+        -----
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
+
             1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-
-        Returns
-        -------
-        AreaDefinition : AreaDefinition
         """
         return utils.from_params(area_id, projection, area_extent=area_extent, shape=shape, units=units, **kwargs)
 
@@ -963,19 +966,22 @@ class AreaDefinition(BaseDefinition):
         optimize_projection:
             Whether the projection parameters have to be optimized for a DynamicAreaDefinition.
 
-
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-            1. units expressed with each variable through a DataArray's attrs attribute.
-            2. units passed to **units**
-            3. units used in **projection**
-            4. meters
-        * **resolution** and **radius** can be specified with one value if dx == dy
-
         Returns
         -------
         AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
             If shape or resolution are provided, an AreaDefinition object is returned.
             Else a DynamicAreaDefinition object is returned
+
+        Notes
+        -----
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to **units**
+            3. units used in **projection**
+            4. meters
+        * **resolution** and **radius** can be specified with one value if dx == dy
         """
         return utils.from_params(area_id, projection, center=center, radius=radius, shape=shape,
                                  resolution=resolution, units=units, **kwargs)
@@ -1011,16 +1017,19 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
 
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+        Notes
+        -----
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
+
             1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-
-        Returns
-        -------
-        AreaDefinition : AreaDefinition
         """
         return utils.from_params(area_id, projection, center=center, resolution=resolution,
                                  shape=shape, units=units, **kwargs)
@@ -1056,16 +1065,19 @@ class AreaDefinition(BaseDefinition):
         lats : numpy array, optional
             Grid lats
 
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
 
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
+        Notes
+        -----
+        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
+
             1. units expressed with each variable through a DataArray's attrs attribute.
             2. units passed to **units**
             3. units used in **projection**
             4. meters
-
-        Returns
-        -------
-        AreaDefinition : AreaDefinition
         """
         return utils.from_params(area_id, projection, top_left_extent=top_left_extent, resolution=resolution,
                                  shape=shape, units=units, **kwargs)

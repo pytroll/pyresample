@@ -160,6 +160,9 @@ def _get_list(params, var, arg_list):
     # at 0 to allow Attribute errors when too many arguments are specified.
     arg_list.insert(0, var)
     # Iterate through dict.
+    for key in variable.keys():
+        if key not in arg_list and (var == 'shape' or key != 'units'):
+            raise ValueError('{0} is not a valid argument for {1}'.format(key, var))
     for arg in arg_list:
         try:
             values = variable.get(arg)
@@ -738,16 +741,6 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     optimize_projection:
         Whether the projection parameters have to be optimized for a DynamicAreaDefinition.
 
-
-    * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'm', 'meters'. The order of default is:
-        1. units expressed with each variable through a DataArray's attrs attribute.
-        2. units passed to **units**
-        3. units used in **projection**
-        4. meters
-    * **resolution** and **radius** can be specified with one value if dx == dy
-    * If **resolution** and **radius** are provided as angles, center must be given or findable. In such a case,
-      they represent (projection x distance from center to center+dx, projection y distance from center to center+dy)
-
     Returns
     -------
     AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
@@ -758,6 +751,20 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     ------
     ValueError:
         If neither shape nor area_extent could be found
+
+    Notes
+    -----
+    * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+      (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
+
+        1. units expressed with each variable through a DataArray's attrs attribute.
+        2. units passed to **units**
+        3. units used in **projection**
+        4. meters
+    * **resolution** and **radius** can be specified with one value if dx == dy
+    * If **resolution** and **radius** are provided as angles, center must be given or findable. In such a case,
+      they represent [projection x distance from center[0] to center[0]+dx, projection y distance from center[1] to
+      center[1]+dy]
     """
     description, proj_id = kwargs.pop('description', area_id), kwargs.pop('proj_id', None)
 
@@ -766,7 +773,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'meters')
+        units = proj_dict.get('units', 'm')
 
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
     center, radius, top_left_extent, resolution, shape, area_extent =\
@@ -885,8 +892,11 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
         var = tuple(var.data.tolist())
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
+    is_angle = (u'°' == units or 'deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
+    if ('deg' in units or 'rad' in units) and not is_angle:
+        logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
-    if not (u'°' in units or 'deg' in units or 'rad' in units):
+    if not is_angle:
         if units == 'meters':
             units = 'm'
         if proj_dict.get('units', 'm') != units:
@@ -898,7 +908,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees/radians.
     # Converts list-like from degrees/radians to meters.
-    if (u'°' == units or 'deg' in units or 'rad' in units) and not inverse:
+    if is_angle and not inverse:
         # Interprets radius and resolution as distances between latitudes/longitudes.
         if name in ('radius', 'resolution'):
             # Since the distance between longitudes and latitudes is not constant in
@@ -927,7 +937,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
         else:
             var = p(*var, radians='rad' in units, errcheck=True)
     # Don't convert if inverse is False: Want meters.
-    elif inverse and not (u'\xb0' in units or 'deg' in units or 'rad' in units):
+    elif inverse and not is_angle:
         # Converts list-like from meters to degrees.
         var = p(*var, inverse=True, errcheck=True)
     if name in ['radius', 'resolution']:
@@ -1048,8 +1058,6 @@ def _verify_list(name, var, length):
         if hasattr(var, 'units') and name != 'shape':
             # For len(var) to work, DataArray must contain a list, not a tuple
             var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
-        elif isinstance(var, DataArray):
-            var = _format_list(var.data.tolist(), name)
         else:
             var = _format_list(var, name)
     except TypeError:
