@@ -1312,23 +1312,6 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      area1.proj_dict, area1.x_size, y_size,
                                      area_extent)
 
-    def test_degrees_1(self):
-        self.assertEqual(u'°', '°')
-
-    def test_degrees_2(self):
-        self.assertEqual(u'\u00b0', '°')
-
-    def test_degrees_3(self):
-        self.assertEqual(u'\u00B0', '°')
-
-    def test_degrees_4(self):
-        self.assertEqual(u'\N{DEGREE SIGN}', '°')
-
-    def test_degrees_5(self):
-        self.assertEqual(u'\xb0', '°')
-
-    def test_degrees_6(self):
-        self.assertEqual(u'\xB0', '°')
 
     def test_from_params(self):
         """Test from_params and the four sub-methods that call it in AreaDefinition."""

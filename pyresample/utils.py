@@ -892,7 +892,13 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
         var = tuple(var.data.tolist())
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
-    is_angle = (u'°' == units or 'deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
+    # Handle unicode for python 2.7 and 3.6
+    try:
+        if isinstance(units, unicode):
+            units = units.encode('utf8')
+        is_angle = ('\xc2\xb0' == units or 'deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
+    except NameError:
+        is_angle = ('°' == units or 'deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
     if ('deg' in units or 'rad' in units) and not is_angle:
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
@@ -1058,6 +1064,13 @@ def _verify_list(name, var, length):
         if hasattr(var, 'units') and name != 'shape':
             # For len(var) to work, DataArray must contain a list, not a tuple
             var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
+        elif isinstance(var, DataArray):
+            if name == 'shape':
+                logging.warning("{0} is unitless, but was passed as a DataArray".format(name, var.attrs))
+            else:
+                logging.warning("{0} is a DataArray but does not have the attribute 'units',"
+                                "but instead has attribute(s): {1}".format(name, var.attrs))
+            var = _format_list(var.data.tolist(), name)
         else:
             var = _format_list(var, name)
     except TypeError:
