@@ -688,7 +688,7 @@ class Test(unittest.TestCase):
         xcoord, ycoord = area_def.get_proj_coords()
         np.testing.assert_allclose(xcoord[0, :],
                                    np.array([742462.120246, 745997.654152, 749533.188058, 753068.721964,
-                                             756604.25587 , 760139.789776, 763675.323681, 767210.857587,
+                                             756604.25587, 760139.789776, 763675.323681, 767210.857587,
                                              770746.391493, 774281.925399]))
         np.testing.assert_allclose(ycoord[:, 0],
                                    np.array([-675286.976033, -678822.509939, -682358.043845, -685893.577751,
@@ -697,7 +697,7 @@ class Test(unittest.TestCase):
 
         xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2), slice(None, None, 2)))
         np.testing.assert_allclose(xcoord[0, :],
-                                   np.array([742462.120246, 749533.188058, 756604.25587 , 763675.323681,
+                                   np.array([742462.120246, 749533.188058, 756604.25587, 763675.323681,
                                              770746.391493]))
         np.testing.assert_allclose(ycoord[:, 0],
                                    np.array([-675286.976033, -682358.043845, -689429.111657, -696500.179469,
