@@ -1111,133 +1111,140 @@ class AreaDefinition(BaseDefinition):
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return np.asscalar(lon), np.asscalar(lat)
 
-    def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        import dask.array as da
-        if dtype is None:
-            dtype = self.dtype
+    @staticmethod
+    def _do_rotation(xspan, yspan, rot_deg=0):
+        """Helper method to apply a rotation factor to a matrix of points."""
+        if hasattr(xspan, 'chunks'):
+            # we were given dask arrays, use dask functions
+            import dask.array as np
+        rot_rad = np.radians(rot_deg)
+        rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
+                            [-np.sin(rot_rad), np.cos(rot_rad)]])
+        x, y = np.meshgrid(xspan, yspan)
+        return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
 
-        if not isinstance(chunks, int):
+    def get_proj_vectors_dask(self, chunks=None, dtype=None):
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self._get_proj_vectors(dtype=dtype, chunks=chunks)
+
+    def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
+        """Helper for getting 1D projection coordinates."""
+        x_kwargs = {}
+        y_kwargs = {}
+
+        if chunks is not None and not isinstance(chunks, int):
             y_chunks = chunks[0]
             x_chunks = chunks[1]
         else:
-            y_chunks = chunks
-            x_chunks = chunks
+            y_chunks = x_chunks = chunks
 
-        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * \
-            self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
-            self.pixel_size_y + self.pixel_upper_left[1]
+        if x_chunks is not None or y_chunks is not None:
+            # use dask functions instead of numpy
+            from dask.array import arange
+            x_kwargs = {'chunks': x_chunks}
+            y_kwargs = {'chunks': y_chunks}
+        else:
+            arange = np.arange
+        if check_rotation and self.rotation != 0:
+            warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
+        if dtype is None:
+            dtype = self.dtype
+        x_kwargs['dtype'] = dtype
+        y_kwargs['dtype'] = dtype
+
+        target_x = arange(self.x_size, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = arange(self.y_size, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
-    def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        # TODO: Add rotation
-        import dask.array as da
-        target_x, target_y = self.get_proj_vectors_dask(chunks, dtype)
-        return da.meshgrid(target_x, target_y)
+    def get_proj_vectors(self, dtype=None):
+        """Calculate 1D projection coordinates for the X and Y dimension.
 
-    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
+        Returns
+        -------
+        tuple: (X, Y) where X and Y are 1-dimensional numpy arrays
+
+        The data type of the returned arrays can be controlled with the
+        `dtype` keyword argument.
+
+        """
+        return self._get_proj_vectors(dtype=dtype)
+
+    def get_proj_coords_dask(self, chunks=None, dtype=None):
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_proj_coords(chunks=chunks, dtype=dtype)
+
+    def get_proj_coords(self, data_slice=None, dtype=None, chunks=None):
         """Get projection coordinates of grid.
 
         Parameters
         ----------
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
-        cache : bool, optional
-            Store the result. Requires data_slice to be None
+        dtype : numpy.dtype, optional
+            Data type of the returned arrays
+        chunks: int or tuple, optional
+            Create dask arrays and use this chunk size
 
         Returns
         -------
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
 
+        .. versionchanged:: 1.10.2
+
+            Removed 'cache' keyword argument and add 'chunks' for creating
+            dask arrays.
+
         """
-        def do_rotation(xspan, yspan, rot_deg=0):
-            rot_rad = np.radians(rot_deg)
-            rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
-                                [-np.sin(rot_rad), np.cos(rot_rad)]])
-            x, y = np.meshgrid(xspan, yspan)
-            return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
-
-        def get_val(val, sub_val, max):
-            # Get value with substitution and wrapping
-            if val is None:
-                return sub_val
-            else:
-                if val < 0:
-                    # Wrap index
-                    return max + val
-                else:
-                    return val
-
-        if self._projection_x_coords is not None and self._projection_y_coords is not None:
-            # Projection coords are cached
-            if data_slice is None:
-                return self._projection_x_coords, self._projection_y_coords
-            else:
-                return self._projection_x_coords[data_slice], self._projection_y_coords[data_slice]
-
-        is_single_value = False
-        is_1d_select = False
-
-        if dtype is None:
-            dtype = self.dtype
-
-        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
-        if data_slice is None or data_slice == slice(None):
-            pass
-        elif isinstance(data_slice, slice):
+        target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
+        if data_slice is not None and isinstance(data_slice, slice):
             target_y = target_y[data_slice]
-        else:
+        elif data_slice is not None:
             target_y = target_y[data_slice[0]]
             target_x = target_x[data_slice[1]]
 
         if self.rotation != 0:
-            res = do_rotation(target_x, target_y, self.rotation)
+            res = self.do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
+        elif chunks is not None:
+            import dask.array as da
+            target_x, target_y = da.meshgrid(target_x, target_y)
         else:
             target_x, target_y = np.meshgrid(target_x, target_y)
-
-        if is_single_value:
-            # Return single values
-            target_x = float(target_x)
-            target_y = float(target_y)
-        elif is_1d_select:
-            # Reshape to 1D array
-            target_x = target_x.reshape((target_x.size,))
-            target_y = target_y.reshape((target_y.size,))
-
-        if cache and data_slice is None:
-            # Cache the result if requested
-            self._projection_x_coords = target_x
-            self._projection_y_coords = target_y
 
         return target_x, target_y
 
     @property
     def projection_x_coords(self):
-        return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
+        if self.rotation != 0:
+            # rotation is only supported in 'get_proj_coords' right now
+            return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
+        else:
+            return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
-        return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
+        if self.rotation != 0:
+            # rotation is only supported in 'get_proj_coords' right now
+            return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
+        else:
+            return self.get_proj_vectors()[1]
 
     @property
     def proj_x_coords(self):
-        warnings.warn(
-            "Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
+        warnings.warn("Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
         return self.projection_x_coords
 
     @property
     def proj_y_coords(self):
-        warnings.warn(
-            "Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
+        warnings.warn("Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
         return self.projection_y_coords
 
     @property
     def outer_boundary_corners(self):
-        """Return the lon,lat of the outer edges of the corner points
-        """
+        """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
         proj = Proj(**self.proj_dict)
 
