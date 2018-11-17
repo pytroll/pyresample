@@ -1116,12 +1116,13 @@ class AreaDefinition(BaseDefinition):
         """Helper method to apply a rotation factor to a matrix of points."""
         if hasattr(xspan, 'chunks'):
             # we were given dask arrays, use dask functions
-            import dask.array as np
-        rot_rad = np.radians(rot_deg)
-        rot_mat = np.array([[np.cos(rot_rad),  np.sin(rot_rad)],
-                            [-np.sin(rot_rad), np.cos(rot_rad)]])
-        x, y = np.meshgrid(xspan, yspan)
-        return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
+            import dask.array as numpy
+        else:
+            numpy = np
+        rot_rad = numpy.radians(rot_deg)
+        rot_mat = numpy.array([[np.cos(rot_rad),  np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
+        x, y = numpy.meshgrid(xspan, yspan)
+        return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
 
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         if chunks is None:
@@ -1192,7 +1193,7 @@ class AreaDefinition(BaseDefinition):
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
 
-        .. versionchanged:: 1.10.2
+        .. versionchanged:: 1.11.0
 
             Removed 'cache' keyword argument and add 'chunks' for creating
             dask arrays.
@@ -1206,7 +1207,7 @@ class AreaDefinition(BaseDefinition):
             target_x = target_x[data_slice[1]]
 
         if self.rotation != 0:
-            res = self.do_rotation(target_x, target_y, self.rotation)
+            res = self._do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
         elif chunks is not None:
             import dask.array as da
