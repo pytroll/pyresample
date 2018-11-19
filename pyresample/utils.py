@@ -893,9 +893,12 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     # Handle unicode for python 2.7 and 3.6
-    print(name, units, u'°'.encode('utf8'), units.encode('utf8'))
-    is_angle = (u'°'.encode('utf8') == units.encode('utf8') or 'deg' == units or
-                'rad' == units or 'degrees' == units or 'radians' == units)
+    if isinstance(units, str):
+        is_angle = (u'°'.encode('utf8') == units.decode('utf8').encode('utf8') or 'deg' == units or
+                    'rad' == units or 'degrees' == units or 'radians' == units)
+    else:
+        is_angle = (u'°'.encode('utf8') == units.encode('utf8') or 'deg' == units or
+                    'rad' == units or 'degrees' == units or 'radians' == units)
     if ('deg' in units or 'rad' in units) and not is_angle:
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
