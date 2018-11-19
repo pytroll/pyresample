@@ -878,6 +878,20 @@ def _round_poles(center, units, p):
     return center
 
 
+def _is_angle(units, name):
+    try:
+        unicode_type = unicode
+    except NameError:
+        unicode_type = bytes
+    is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
+    if isinstance(units, bytes):
+        return u'°'.encode('utf8') == units.decode('utf8').encode('utf8') or is_angle
+    elif isinstance(units, (str, unicode_type)):
+        return u'°'.encode('utf8') == units.encode('utf8') or is_angle
+    raise ValueError('units for {0} must be a string. Given units were {1} as type {2}'.format(name, units,
+                                                                                               type(units)))
+
+
 def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite.
 
@@ -893,12 +907,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     # Handle unicode for python 2.7 and 3.6
-    if isinstance(units, str):
-        is_angle = (u'°'.encode('utf8') == units.decode('utf8').encode('utf8') or 'deg' == units or
-                    'rad' == units or 'degrees' == units or 'radians' == units)
-    else:
-        is_angle = (u'°'.encode('utf8') == units.encode('utf8') or 'deg' == units or
-                    'rad' == units or 'degrees' == units or 'radians' == units)
+    is_angle = _is_angle(units, name)
     if ('deg' in units or 'rad' in units) and not is_angle:
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
