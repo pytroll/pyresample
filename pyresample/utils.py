@@ -754,7 +754,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
 
     Notes
     -----
-    * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+    * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
       (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
         1. units expressed with each variable through a DataArray's attrs attribute.
@@ -838,6 +838,8 @@ def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, 
         if isinstance(rotation, DataArray):
             if hasattr(rotation, 'units'):
                 rotation_units = rotation.units
+            if rotation_units not in ['deg', 'degrees', 'rad',  'radians']:
+                raise ValueError('units provided to rotation are incorrect: {0}'.format(rotation_units))
             rotation = rotation.data
         if rotation_units in ['rad',  'radians']:
             rotation = rotation * 180 / math.pi
@@ -864,7 +866,7 @@ def _round_poles(center, units, p):
     """Rounds center to the nearest pole if it is extremely close to said pole. Used to work around float arithmetic."""
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
-    if 'deg' in units or u'°' in units:
+    if 'deg' in units:
         if abs(abs(center[1]) - 90) < error:
             center = (center[0], _sign(center[1]) * 90)
     elif 'rad' in units:
@@ -876,20 +878,6 @@ def _round_poles(center, units, p):
             center = (center[0], _sign(center[1]) * 90)
         center = p(*center, errcheck=True)
     return center
-
-
-def _is_angle(units, name):
-    try:
-        unicode_type = unicode
-    except NameError:
-        unicode_type = bytes
-    is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
-    if isinstance(units, bytes):
-        return u'°'.encode('utf8') == units.decode('utf8').encode('utf8') or is_angle
-    elif isinstance(units, (str, unicode_type)):
-        return u'°'.encode('utf8') == units.encode('utf8') or is_angle
-    raise ValueError('units for {0} must be a string. Given units were {1} as type {2}'.format(name, units,
-                                                                                               type(units)))
 
 
 def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
@@ -906,8 +894,8 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
         var = tuple(var.data.tolist())
     if p.is_latlong() and 'm' in units:
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
-    # Handle unicode for python 2.7 and 3.6
-    is_angle = _is_angle(units, name)
+    # Check if units are an angle.
+    is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
     if ('deg' in units or 'rad' in units) and not is_angle:
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.

@@ -921,7 +921,7 @@ class AreaDefinition(BaseDefinition):
 
         Notes
         -----
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
           (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
             1. units expressed with each variable through a DataArray's attrs attribute.
@@ -974,7 +974,7 @@ class AreaDefinition(BaseDefinition):
 
         Notes
         -----
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
           (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
             1. units expressed with each variable through a DataArray's attrs attribute.
@@ -1023,7 +1023,7 @@ class AreaDefinition(BaseDefinition):
 
         Notes
         -----
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
           (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
             1. units expressed with each variable through a DataArray's attrs attribute.
@@ -1071,7 +1071,7 @@ class AreaDefinition(BaseDefinition):
 
         Notes
         -----
-        * **units** accepts '\xb0', 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
           (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
             1. units expressed with each variable through a DataArray's attrs attribute.
