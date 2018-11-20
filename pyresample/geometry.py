@@ -1125,9 +1125,11 @@ class AreaDefinition(BaseDefinition):
         return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
 
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
+                      "'get_proj_vectors' with the 'chunks' keyword argument specified.")
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
-        return self._get_proj_vectors(dtype=dtype, chunks=chunks)
+        return self.get_proj_vectors(dtype=dtype, chunks=chunks)
 
     def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
         """Helper for getting 1D projection coordinates."""
@@ -1158,18 +1160,28 @@ class AreaDefinition(BaseDefinition):
         target_y = arange(self.y_size, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
-    def get_proj_vectors(self, dtype=None):
+    def get_proj_vectors(self, dtype=None, chunks=None):
         """Calculate 1D projection coordinates for the X and Y dimension.
+
+        Parameters
+        ----------
+        dtype : numpy.dtype
+            Numpy data type for the returned arrays
+        chunks : int or tuple
+            Return dask arrays with the chunk size specified. If this is a
+            tuple then the first element is the Y array's chunk size and the
+            second is the X array's chunk size.
 
         Returns
         -------
         tuple: (X, Y) where X and Y are 1-dimensional numpy arrays
 
         The data type of the returned arrays can be controlled with the
-        `dtype` keyword argument.
+        `dtype` keyword argument. If `chunks` is provided then dask arrays
+        are returned instead.
 
         """
-        return self._get_proj_vectors(dtype=dtype)
+        return self._get_proj_vectors(dtype=dtype, chunks=chunks)
 
     def get_proj_coords_dask(self, chunks=None, dtype=None):
         if chunks is None:
