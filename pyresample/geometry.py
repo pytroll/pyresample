@@ -1126,7 +1126,7 @@ class AreaDefinition(BaseDefinition):
 
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
-                      "'get_proj_vectors' with the 'chunks' keyword argument specified.")
+                      "'get_proj_vectors' with the 'chunks' keyword argument specified.", DeprecationWarning)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
@@ -1184,6 +1184,8 @@ class AreaDefinition(BaseDefinition):
         return self._get_proj_vectors(dtype=dtype, chunks=chunks)
 
     def get_proj_coords_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_proj_coords_dask' is deprecated, please use "
+                      "'get_proj_coords' with the 'chunks' keyword argument specified.", DeprecationWarning)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_coords(chunks=chunks, dtype=dtype)
@@ -1271,19 +1273,14 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
 
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        from dask.array import map_blocks
+    def get_lonlats_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks, dtype=dtype)
 
-        dtype = dtype or self.dtype
-        target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
-
-        res = map_blocks(invproj, target_x, target_y,
-                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                         new_axis=[2], proj_dict=self.proj_dict)
-
-        return res[:, :, 0], res[:, :, 1]
-
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of area.
 
         Parameters
@@ -1295,6 +1292,10 @@ class AreaDefinition(BaseDefinition):
             Calculate only coordinates for specified slice
         cache : bool, optional
             Store result the result. Requires data_slice to be None
+        dtype : numpy.dtype, optional
+            Data type of the returned arrays
+        chunks: int or tuple, optional
+            Create dask arrays and use this chunk size
 
         Returns
         -------
@@ -1305,44 +1306,47 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        if self.lons is None or self.lats is None:
-            # Data is not cached
-            if nprocs is None:
-                nprocs = self.nprocs
+        if self.lons is not None:
+            # Data is cache already
+            lons = self.lons
+            lats = self.lats
+            if data_slice is not None:
+                lons = lons[data_slice]
+                lats = lats[data_slice]
+            return lons, lats
 
-            # Proj.4 definition of target area projection
-            if nprocs > 1:
-                target_proj = Proj_MP(**self.proj_dict)
-            else:
-                target_proj = Proj(**self.proj_dict)
+        # Get X/Y coordinates for the whole area
+        target_x, target_y = self.get_proj_coords(data_slice=data_slice, chunks=chunks, dtype=dtype)
+        if nprocs is None and not hasattr(target_x, 'chunks'):
+            nprocs = self.nprocs
+        if nprocs is not None and hasattr(target_x, 'chunks'):
+            # we let 'get_proj_coords' decide if dask arrays should be made
+            # but if the user provided nprocs then this doesn't make sense
+            raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
-            # Get coordinates of local area as ndarrays
-            target_x, target_y = self.get_proj_coords(
-                data_slice=data_slice, dtype=dtype)
+        # Proj.4 definition of target area projection
+        if hasattr(target_x, 'chunks'):
+            # we are using dask arrays, map blocks to th
+            from dask.array import map_blocks
+            res = map_blocks(invproj, target_x, target_y,
+                             chunks=(target_x.chunks[0], target_x.chunks[1], 2),
+                             new_axis=[2], proj_dict=self.proj_dict)
+            return res[:, :, 0], res[:, :, 1]
 
-            # Get corresponding longitude and latitude values
-            lons, lats = target_proj(target_x, target_y, inverse=True,
-                                     nprocs=nprocs)
-            lons = np.asanyarray(lons, dtype=dtype)
-            lats = np.asanyarray(lats, dtype=dtype)
-
-            if cache and data_slice is None:
-                # Cache the result if requested
-                self.lons = lons
-                self.lats = lats
-
-            # Free memory
-            del(target_x)
-            del(target_y)
+        if nprocs > 1:
+            target_proj = Proj_MP(**self.proj_dict)
         else:
-            # Data is cached
-            if data_slice is None:
-                # Full slice
-                lons = self.lons
-                lats = self.lats
-            else:
-                lons = self.lons[data_slice]
-                lats = self.lats[data_slice]
+            target_proj = Proj(**self.proj_dict)
+
+        # Get corresponding longitude and latitude values
+        lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
+        lons = np.asanyarray(lons, dtype=dtype)
+        lats = np.asanyarray(lats, dtype=dtype)
+
+        if cache and data_slice is None:
+            # Cache the result if requested
+            self.lons = lons
+            self.lats = lats
 
         return lons, lats
 
