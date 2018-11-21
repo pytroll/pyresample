@@ -251,6 +251,9 @@ class BaseDefinition(object):
         -------
         cartesian_coords : numpy array
         """
+        if cache:
+            warnings.warn("'cache' keyword argument will be removed in the "
+                          "future and data will not be cached.", PendingDeprecationWarning)
 
         if self.cartesian_coords is None:
             # Coordinates are not cached
@@ -1307,6 +1310,9 @@ class AreaDefinition(BaseDefinition):
             Grids of area lons and and lats
         """
 
+        if cache:
+            warnings.warn("'cache' keyword argument will be removed in the "
+                          "future and data will not be cached.", PendingDeprecationWarning)
         if dtype is None:
             dtype = self.dtype
 
