@@ -185,29 +185,33 @@ class BaseDefinition(object):
             raise ValueError('lon/lat values are not defined')
         return self.lons[row, col], self.lats[row, col]
 
-    def get_lonlats(self, data_slice=None, **kwargs):
+    def get_lonlats(self, data_slice=None, chunks=None, **kwargs):
         """Base method for lon lat retrieval with slicing"""
 
-        if self.lons is None or self.lats is None:
+        lons = self.lons
+        lats = self.lats
+        if lons is None or lats is None:
             raise ValueError('lon/lat values are not defined')
-        elif data_slice is None:
-            return self.lons, self.lats
-        else:
-            return self.lons[data_slice], self.lats[data_slice]
-
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
-        """Get the lon lats as a single dask array."""
-        import dask.array as da
-        lons, lats = self.get_lonlats()
-
-        if isinstance(lons.data, da.Array):
-            return lons.data, lats.data
-        else:
-            lons = da.from_array(np.asanyarray(lons),
-                                 chunks=chunks)
-            lats = da.from_array(np.asanyarray(lats),
-                                 chunks=chunks)
+        elif chunks is not None:
+            import dask.array as da
+            if isinstance(lons.data, da.Array):
+                # xarray DataArray
+                lons = lons.data
+                lats = lats.data
+            elif not isinstance(lons, da.Array):
+                lons = da.from_array(np.asanyarray(lons), chunks=chunks)
+                lats = da.from_array(np.asanyarray(lats), chunks=chunks)
+        if data_slice is not None:
+            lons, lats = lons[data_slice], lats[data_slice]
         return lons, lats
+
+    def get_lonlats_dask(self, chunks=None):
+        """Get the lon lats as a single dask array."""
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks)
 
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
@@ -1562,8 +1566,13 @@ class StackedAreaDefinition(BaseDefinition):
         except (IncompatibleAreas, IndexError):
             self.defs.append(definition)
 
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of the area."""
+
+        if chunks is not None:
+            from dask.array import vstack
+        else:
+            vstack = np.vstack
 
         llons = []
         llats = []
@@ -1575,40 +1584,27 @@ class StackedAreaDefinition(BaseDefinition):
         offset = 0
         for definition in self.defs:
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0),
-                                        definition.y_size),
+                                    min(max(row_slice.stop - offset, 0), definition.y_size),
                                     row_slice.step)
-            lons, lats = definition.get_lonlats(nprocs=nprocs,
-                                                data_slice=(local_row_slice,
-                                                            col_slice),
-                                                cache=cache,
-                                                dtype=dtype)
+            lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
+                                                cache=cache, dtype=dtype, chunks=chunks)
 
             llons.append(lons)
             llats.append(lats)
             offset += lons.shape[0]
 
-        self.lons = np.vstack(llons)
-        self.lats = np.vstack(llats)
+        self.lons = vstack(llons)
+        self.lats = vstack(llats)
 
         return self.lons, self.lats
 
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
+    def get_lonlats_dask(self, chunks=None, dtype=None):
         """"Return lon and lat dask arrays of the area."""
-        import dask.array as da
-        llons = []
-        llats = []
-        for definition in self.defs:
-            lons, lats = definition.get_lonlats_dask(chunks=chunks,
-                                                     dtype=dtype)
-
-            llons.append(lons)
-            llats.append(lats)
-
-        self.lons = da.concatenate(llons, axis=0)
-        self.lats = da.concatenate(llats, axis=0)
-
-        return self.lons, self.lats
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks, dtype=dtype)
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""
