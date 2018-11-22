@@ -797,6 +797,34 @@ class TestXArrayResamplerNN(unittest.TestCase):
         ])
         np.testing.assert_allclose(actual, expected)
 
+    def test_nearest_type_preserve(self):
+        """Test 1D swath definition to 2D grid definition; 1 neighbor."""
+        from pyresample.kd_tree import XArrayResamplerNN
+        import xarray as xr
+        import dask.array as da
+        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+                                      radius_of_influence=100000,
+                                      neighbours=1)
+        data = self.tdata_1d
+        data = xr.DataArray(da.from_array(np.array([1, 2, 3]),
+                                          chunks=5),
+                            dims=('my_dim1',))
+        ninfo = resampler.get_neighbour_info()
+        for val in ninfo[:3]:
+            # vii, ia, voi
+            self.assertIsInstance(val, da.Array)
+        res = resampler.get_sample_from_neighbour_info(data, fill_value=255)
+        self.assertIsInstance(res, xr.DataArray)
+        self.assertIsInstance(res.data, da.Array)
+        actual = res.values
+        expected = np.array([
+            [1, 2, 2],
+            [1, 2, 2],
+            [1, 255, 2],
+            [1, 2, 2],
+        ])
+        np.testing.assert_equal(actual, expected)
+
     def test_nearest_swath_2d_mask_to_area_1n(self):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
