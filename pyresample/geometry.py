@@ -1255,16 +1255,6 @@ class AreaDefinition(BaseDefinition):
             return self.get_proj_vectors()[1]
 
     @property
-    def proj_x_coords(self):
-        warnings.warn("Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
-        return self.projection_x_coords
-
-    @property
-    def proj_y_coords(self):
-        warnings.warn("Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
-        return self.projection_y_coords
-
-    @property
     def outer_boundary_corners(self):
         """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
