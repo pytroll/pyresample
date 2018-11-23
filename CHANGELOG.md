@@ -1,3 +1,26 @@
+## Version 1.10.3 (2018/11/23)
+
+### Issues Closed
+
+* [Issue 92](https://github.com/pytroll/pyresample/issues/92) - Add utility function for converting geotiffs to area definitions ([PR 143](https://github.com/pytroll/pyresample/pull/143))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 147](https://github.com/pytroll/pyresample/pull/147) - Fix dtype preservation for kdtree resampling
+* [PR 144](https://github.com/pytroll/pyresample/pull/144) - Non-contiguous area definitions are now not concatenable ([491](https://github.com/pytroll/satpy/issues/491))
+
+#### Features added
+
+* [PR 143](https://github.com/pytroll/pyresample/pull/143) - get_area_def_from_raster ([92](https://github.com/pytroll/pyresample/issues/92))
+* [PR 142](https://github.com/pytroll/pyresample/pull/142) - Add converter from def to yaml
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.10.2 (2018/10/01)
 
 ### Issues Closed
