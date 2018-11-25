@@ -1,9 +1,5 @@
 # Releasing Pyresample
 
-prerequisites: `pip install bumpversion setuptools twine`
-
-NB! You do not need `mercurial`. `bumpversion` is supposed to function without it. If it still doesn't work it might be that your PATH variable is screwed up. Check that all elements of your PATH are readable!
-
 1. checkout master
 2. pull from repo
 3. run the unittests
@@ -15,36 +11,15 @@ loghub pytroll/pyresample -u <username> -st v0.8.0 -plg bug "Bugs fixed" -plg en
 
 Don't forget to commit!
 
-5. run `bumpversion` with either `patch`, `minor`, `major`, `pre`, or `num` to
-reach the desired version number
-
-See [semver.org](http://semver.org/) for the definition of those values.
-
-If the current "dev" version is not the desired version run:
+5. Create a tag with the new version number, starting with a 'v', eg:
 
 ```
-bumpversion <level>
+git tag -a v0.22.45 -m "Version 0.22.45"
 ```
 
-Where `level` is `num`, `pre`, `patch`, `minor`, or `major` to get to the correct
-version. Check version.py to verify proper version. Then run:
+See [semver.org](http://semver.org/) on how to write a version number.
 
-```
-bumpversion --tag release
-```
 
-To remove the `devN` portion of the version number and tag the release.
 
 6. push changes to github `git push --follow-tags`
-7. Verify travis tests passed and deploy sdist and wheel to PyPI
-8. Update version to "dev" version of next release:
-
-```
-bumpversion patch
-```
-
-Which will set the version to "X.Y.Zdev0"
-
-See [this issue](https://github.com/peritus/bumpversion/issues/77) for more information.
-
-9. Push changes to github `git push` (there shouldn't be any new tags).
+7. Verify travis tests passed and deployed sdist and wheel to PyPI
