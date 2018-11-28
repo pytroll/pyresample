@@ -13,7 +13,6 @@
 
 import sys
 import os
-from pyresample import __version__  # noqa
 
 class Mock(object):
 
@@ -49,6 +48,8 @@ if os.environ.get("READTHEDOCS") == "True":
 #sys.path.insert(0, '/opt/lib/python2.5/site-packages')
 sys.path.insert(0, os.path.abspath('../../'))
 sys.path.insert(0, os.path.abspath('../../pyresample'))
+from pyresample import __version__  # noqa
+
 # sys.path.append('')
 # print sys.path
 
