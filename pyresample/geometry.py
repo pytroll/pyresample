@@ -832,6 +832,7 @@ class AreaDefinition(BaseDefinition):
         Grid projection x coordinate
     projection_y_coords : object
         Grid projection y coordinate
+
     """
 
     def __init__(self, area_id, description, proj_id, projection, width, height,
@@ -887,6 +888,11 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    @property
+    def pixel_upper_left(self):
+        warnings.warn("'pixel_upper_left' is deprecated, use 'top_left_extent' instead.", PendingDeprecationWarning)
+        return self.top_left_extent
 
     @classmethod
     def from_extent(cls, area_id, projection, area_extent, shape, units=None, **kwargs):
