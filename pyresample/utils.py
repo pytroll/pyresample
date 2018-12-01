@@ -37,16 +37,15 @@ from xarray import DataArray
 
 
 class AreaNotFound(KeyError):
-
-    """Exception raised when specified are is no found in file"""
+    """Exception raised when specified are is no found in file."""
     pass
 
 
 def load_area(area_file_name, *regions):
-    """Load area(s) from area file
+    """Load area(s) from area file.
 
     Parameters
-    -----------
+    ----------
     area_file_name : str
         Path to area definition file
     regions : str argument list
@@ -196,15 +195,13 @@ def _read_legacy_area_file_lines(area_file_name):
             continue
         elif isinstance(area_file_obj, (str, six.text_type)):
             # filename
-            with open(area_file_obj, 'r') as area_file_obj:
-
-                for line in area_file_obj.readlines():
+            with open(area_file_obj, 'r') as area_file:
+                for line in area_file.readlines():
                     yield line
 
 
 def _parse_legacy_area_file(area_file_name, *regions):
     """Parse area information from a legacy area file."""
-
     area_file = _read_legacy_area_file_lines(area_file_name)
     area_list = list(regions)
     if len(area_list) == 0:
@@ -367,7 +364,7 @@ def _get_area_def_from_rasterio(dataset, area_id, name, proj_id=None, proj_dict=
 
 
 def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj_dict=None):
-    """Construct AreaDefinition object from raster
+    """Construct AreaDefinition object from raster.
 
     Parameters
     ----------
@@ -987,8 +984,14 @@ def _round_shape(shape, radius=None, resolution=None):
 
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, top_left_extent, units, p, proj_dict):
-    """Attempts to find shape and area_extent based on data provided. Note: order does matter."""
-    # Input unaffected by data below: When area extent is calcuated, it's either with
+    """Attempts to find shape and area_extent based on data provided.
+
+    Parameters are used in a specific order to determine area_extent and shape.
+    Providing some parameters may have no effect if other parameters could be
+    to used determine this information. The order of 
+
+    """
+    # Input unaffected by data below: When area extent is calculated, it's either with
     # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
     # Yet output (center/radius/top_left_extent) is essential for data below.
     if area_extent is not None:
@@ -1052,7 +1055,7 @@ def _format_list(var, name):
 
 
 def _verify_list(name, var, length):
-    """ Checks that list-like variables are list-like, shapes are accurate, and values are numbers."""
+    """Checks that list-like variables are list-like, shapes are accurate, and values are numbers."""
     # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
     if var is None:
         return None
