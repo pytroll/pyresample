@@ -847,10 +847,10 @@ class AreaDefinition(BaseDefinition):
 
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
-        self.name = self.description = description
+        self.description = description
         self.proj_id = proj_id
-        self.x_size = self.width = int(width)
-        self.y_size = self.height = int(height)
+        self.width = int(width)
+        self.height = int(height)
         self.shape = (height, width)
         self.crop_offset = (0, 0)
         try:
@@ -888,6 +888,21 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    @property
+    def name(self):
+        warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning)
+        return self.description
+
+    @property
+    def x_size(self):
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        return self.width
+
+    @property
+    def y_size(self):
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        return self.height
 
     @property
     def pixel_upper_left(self):
