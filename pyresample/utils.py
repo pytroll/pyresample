@@ -822,7 +822,7 @@ def _get_proj_data(projection):
 
 
 def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, p, proj_dict):
-    """handles area_extent being a set of two points and calls _convert_units."""
+    """Handle area_extent being a set of two points and convert units."""
     # Splits area_extent into two lists so that its units can be converted
     if area_extent is None:
         area_extent_ll = None
@@ -853,14 +853,21 @@ def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, 
 
 
 def _sign(num):
-    """Returns the sign of the number provided. 0 returns 1"""
-    if num < 0:
-        return -1
-    return 1
+    """Return the sign of the number provided.
+
+    Returns:
+        1 if number is greater than 0, -1 otherwise
+
+    """
+    return -1 if num < 0 else 1
 
 
 def _round_poles(center, units, p):
-    """Rounds center to the nearest pole if it is extremely close to said pole. Used to work around float arithmetic."""
+    """Round center to the nearest pole if it is extremely close to said pole.
+
+    Used to work around floating point precision issues .
+
+    """
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
     if 'deg' in units:
@@ -878,9 +885,10 @@ def _round_poles(center, units, p):
 
 
 def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
-    """Converts units from lon/lat to projection coordinates (meters). The inverse does the opposite.
+    """Converts units from lon/lat to projection coordinates (meters).
 
-    Uses UTF-8 for degree symbol.
+    If `inverse` it True then the inverse calculation is done.
+
     """
     from pyproj import transform
     from pyproj import Proj
@@ -955,7 +963,13 @@ def _validate_variable(var, new_var, var_name, input_list):
 
 
 def _round_shape(shape, radius=None, resolution=None):
-    """Makes sure shape is an integer. Rounds down if shape is less than .01 above nearest int. Else rounds up."""
+    """Make sure shape is an integer.
+
+    Rounds down if shape is less than .01 above nearest whole number to
+    handle floating point precision issues. Otherwise the number is round
+    up.
+
+    """
     # Used for area definition to prevent indexing None.
     if shape is None:
         return None
@@ -987,8 +1001,17 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     """Attempts to find shape and area_extent based on data provided.
 
     Parameters are used in a specific order to determine area_extent and shape.
+    The area_extent and shape are later used to create an `AreaDefinition`.
     Providing some parameters may have no effect if other parameters could be
-    to used determine this information. The order of 
+    to used determine area_extent and shape. The order of the parameters used
+    is:
+
+    1. area_extent
+    2. top_left_extent and center
+    3. radius and resolution
+    4. resolution and shape
+    5. radius and center
+    6. top_left_extent and radius
 
     """
     # Input unaffected by data below: When area extent is calculated, it's either with
