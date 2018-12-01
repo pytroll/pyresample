@@ -639,7 +639,7 @@ class DynamicAreaDefinition(object):
 
     def __init__(self, area_id=None, description=None, projection=None,
                  width=None, height=None, area_extent=None,
-                 optimize_projection=False, rotation=None):
+                 resolution=None, optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
 
         area_id:
@@ -652,11 +652,14 @@ class DynamicAreaDefinition(object):
           The shape of the resulting area.
         area_extent:
           The area extent of the area.
+        resolution:
+          the resolution of the resulting area.
         optimize_projection:
           Whether the projection parameters have to be optimized.
         rotation:
           Rotation in degrees (negative is cw)
-          """
+
+        """
         if isinstance(projection, str):
             proj_dict = utils.proj4_str_to_dict(projection)
         elif isinstance(projection, dict):
@@ -671,6 +674,7 @@ class DynamicAreaDefinition(object):
         self.y_size = self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
+        self.resolution = resolution
         self.rotation = rotation
 
     # size = (x_size, y_size) and shape = (y_size, x_size)
@@ -704,10 +708,8 @@ class DynamicAreaDefinition(object):
                        corners[3] + y_resolution / 2)
         return area_extent, width, height
 
-    def freeze(self, lonslats=None,
-               resolution=None, shape=None,
-               proj_info=None, rotation=None):
-        """Create an AreaDefintion from this area with help of some extra info.
+    def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
+        """Create an AreaDefinition from this area with help of some extra info.
 
         lonlats:
           the geographical coordinates to contain in the resulting area.
@@ -717,8 +719,6 @@ class DynamicAreaDefinition(object):
           the shape of the resulting area.
         proj_info:
           complementing parameters to the projection info.
-        rotation:
-          rotation in degrees (negative is cw)
 
         Resolution and shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
@@ -728,6 +728,8 @@ class DynamicAreaDefinition(object):
 
         if self.optimize_projection:
             return lonslats.compute_optimal_bb_area(self.proj_dict)
+        if resolution is None:
+            resolution = self.resolution
         if not self.area_extent or not self.width or not self.height:
             proj4 = Proj(**self.proj_dict)
             try:
