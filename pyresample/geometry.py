@@ -186,19 +186,34 @@ class BaseDefinition(object):
         return self.lons[row, col], self.lats[row, col]
 
     def get_lonlats(self, data_slice=None, chunks=None, **kwargs):
-        """Base method for lon lat retrieval with slicing"""
+        """Get longitude and latitude arrays representing this geometry.
 
+        Returns
+        -------
+        (lon, lat) : tuple of numpy arrays
+            If `chunks` is provided then the arrays will be dask arrays
+            with the provided chunk size. If `chunks` is not provided then
+            the returned arrays are the same as the internal data types
+            of this geometry object (numpy or dask).
+
+        """
         lons = self.lons
         lats = self.lats
         if lons is None or lats is None:
             raise ValueError('lon/lat values are not defined')
-        elif chunks is not None:
+        elif DataArray is not np.ndarray and isinstance(lons, DataArray):
+            # lons/lats are xarray DataArray objects, use numpy/dask array underneath
+            lons = lons.data
+            lats = lats.data
+
+        if chunks is not None:
             import dask.array as da
-            if isinstance(lons.data, da.Array):
-                # xarray DataArray
-                lons = lons.data
-                lats = lats.data
+            if isinstance(lons, da.Array):
+                # rechunk to this specific chunk size
+                lons = lons.rechunk(chunks)
+                lats = lats.rechunk(chunks)
             elif not isinstance(lons, da.Array):
+                # convert numpy array to dask array
                 lons = da.from_array(np.asanyarray(lons), chunks=chunks)
                 lats = da.from_array(np.asanyarray(lats), chunks=chunks)
         if data_slice is not None:
@@ -271,13 +286,10 @@ class BaseDefinition(object):
             else:
                 cartesian = Cartesian()
 
-            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons),
-                                                           np.ravel(lats))
-
+            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons), np.ravel(lats))
             if isinstance(lons, np.ndarray) and lons.ndim > 1:
                 # Reshape to correct shape
-                cartesian_coords = cartesian_coords.reshape(lons.shape[0],
-                                                            lons.shape[1], 3)
+                cartesian_coords = cartesian_coords.reshape(lons.shape[0], lons.shape[1], 3)
 
             if cache and data_slice is None:
                 self.cartesian_coords = cartesian_coords
