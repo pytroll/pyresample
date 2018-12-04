@@ -27,7 +27,7 @@ boundary_2:
     upper_right_xy: [45.0, -17.516001139327766]
 
 corner:
-  description: Example of making an area definition using shape, top_left_extent, and resolution
+  description: Example of making an area definition using shape, , and resolution
   projection:
     proj: laea
     lat_0: -90
@@ -35,12 +35,12 @@ corner:
     a: 6371228.0
     units: m
   shape: [425, 425]
-  top_left_extent: [-5326849.0625, 5326849.0625]
+  upper_left_extent: [-5326849.0625, 5326849.0625]
   resolution: 25067.525
 
 corner_2:
   area_id: ease_sh
-  description: Another example of making an area definition using shape, top_left_extent, and resolution
+  description: Another example of making an area definition using shape, , and resolution
   units:  degrees
   projection:
     proj: laea
@@ -49,7 +49,7 @@ corner_2:
     a: 6371228.0
     units: m
   shape: [425, 425]
-  top_left_extent:
+  upper_left_extent:
     x: -45.0
     y: -17.516001139327766
   resolution:
@@ -128,7 +128,7 @@ test_meters:
     a: 6371228.0
     units: m
   shape: [425, 850]
-  top_left_extent:
+  upper_left_extent:
     x: -17476538.918963253
     y: 17476538.918963253
     units: ft
@@ -153,7 +153,7 @@ test_radians:
   area_extent:
     area_extent: [-2.356194490192345, -0.30571189166434753, 0.7853981633974483, -0.30571189166434753]
     units: radians
-  top_left_extent:
+  upper_left_extent:
     x: -0.7853981633974483
     y: -0.30571189166434753
     units: radians
@@ -184,7 +184,7 @@ test_degrees:
     lower_left_xy: [-135.0, -17.516001139327766]
     upper_right_xy: [45.0, -17.516001139327766]
     units: degrees
-  top_left_extent:
+  upper_left_extent:
     x: -45.0
     y: -17.516001139327766
     units: degrees

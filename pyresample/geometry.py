@@ -808,7 +808,7 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    top_left_extent : list
+    upper_left_extent : list
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
@@ -869,7 +869,9 @@ class AreaDefinition(BaseDefinition):
                                corner_lons[1], corner_lats[1])
 
         # Calculate projection coordinates of extent of upper left pixel
-        self.top_left_extent = (float(area_extent[0]), float(area_extent[3]))
+        self.upper_left_extent = (float(area_extent[0]), float(area_extent[3]))
+        self.pixel_upper_left = (float(area_extent[0]) + float(self.pixel_size_x) / 2,
+                                 float(area_extent[3]) - float(self.pixel_size_y) / 2)
 
         # Pixel_offset defines the distance to projection center from origin
         # (UL) of image in units of pixels.
@@ -895,11 +897,6 @@ class AreaDefinition(BaseDefinition):
     def y_size(self):
         warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
         return self.height
-
-    @property
-    def pixel_upper_left(self):
-        warnings.warn("'pixel_upper_left' is deprecated, use 'top_left_extent' instead.", PendingDeprecationWarning)
-        return self.top_left_extent
 
     @classmethod
     def from_extent(cls, area_id, projection, area_extent, shape, units=None, **kwargs):
@@ -1051,7 +1048,7 @@ class AreaDefinition(BaseDefinition):
 
     @classmethod
     def from_geotiff(cls, area_id, projection, top_left_extent, resolution, shape, units=None, **kwargs):
-        """Creates an AreaDefinition object from top_left_extent, resolution, and shape.
+        """Creates an AreaDefinition object from upper_left_extent, resolution, and shape.
 
         Parameters
         ----------
@@ -1335,10 +1332,8 @@ class AreaDefinition(BaseDefinition):
             y_chunks = chunks
             x_chunks = chunks
 
-        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x +\
-            self.top_left_extent[0] + self.pixel_size_x / 2
-        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - \
-            self.pixel_size_y + self.top_left_extent[1] - self.pixel_size_y / 2
+        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
     def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
@@ -1395,10 +1390,8 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x +\
-            self.top_left_extent[0] + self.pixel_size_x / 2
-        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y +\
-            self.top_left_extent[1] - self.pixel_size_y / 2
+        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
         if data_slice is None or data_slice == slice(None):
             pass
         elif isinstance(data_slice, slice):
@@ -1600,14 +1593,10 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
-        new_area_extent = ((self.top_left_extent[0] + self.pixel_size_x / 2 +
-                            (xslice.start - 0.5) * self.pixel_size_x),
-                           (self.top_left_extent[1] - self.pixel_size_y / 2 -
-                            (yslice.stop - 0.5) * self.pixel_size_y),
-                           (self.top_left_extent[0] + self.pixel_size_x / 2 +
-                            (xslice.stop - 0.5) * self.pixel_size_x),
-                           (self.top_left_extent[1] - self.pixel_size_y / 2 -
-                            (yslice.start - 0.5) * self.pixel_size_y))
+        new_area_extent = ((self.pixel_upper_left[0] + (xslice.start - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] - (yslice.stop - 0.5) * self.pixel_size_y),
+                           (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
         new_area = AreaDefinition(self.area_id, self.name,
                                   self.proj_id, self.proj_dict,

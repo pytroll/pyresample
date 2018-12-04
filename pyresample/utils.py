@@ -138,7 +138,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params.setdefault('area_id', area_name)
         # Optional arguments.
         params['shape'] = _get_list(params, 'shape', ['height', 'width'])
-        params['top_left_extent'] = _get_list(params, 'top_left_extent', ['x', 'y'])
+        params['upper_left_extent'] = _get_list(params, 'upper_left_extent', ['x', 'y'])
         params['center'] = _get_list(params, 'center', ['x', 'y'])
         params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
         params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
@@ -775,7 +775,7 @@ def from_params(area_id, projection, shape=None, top_left_extent=None, center=No
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
     center, radius, top_left_extent, resolution, shape, area_extent =\
         [_verify_list(var_name, var, length) for var_name, var, length in
-         zip(*[['center', 'radius', 'top_left_extent', 'resolution', 'shape', 'area_extent'],
+         zip(*[['center', 'radius', 'upper_left_extent', 'resolution', 'shape', 'area_extent'],
                [center, radius, top_left_extent, resolution, shape, area_extent], [2, 2, 2, 2, 2, 4]])]
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
     center, top_left_extent, area_extent, kwargs['rotation'] = _get_converted_lists(center, top_left_extent,
@@ -844,7 +844,7 @@ def _get_converted_lists(center, top_left_extent, area_extent, rotation, units, 
     center, top_left_extent, area_extent_ll, area_extent_ur =\
         [_convert_units(var, name, units, p, proj_dict) for var, name in zip(*[[center, top_left_extent,
                                                                                 area_extent_ll, area_extent_ur],
-                                                                               ['center', 'top_left_extent',
+                                                                               ['center', 'upper_left_extent',
                                                                                 'area_extent', 'area_extent']])]
     # Recombine area_extent.
     if area_extent is not None:
@@ -1007,16 +1007,16 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
     is:
 
     1. area_extent
-    2. top_left_extent and center
+    2. upper_left_extent and center
     3. radius and resolution
     4. resolution and shape
     5. radius and center
-    6. top_left_extent and radius
+    6. upper_left_extent and radius
 
     """
     # Input unaffected by data below: When area extent is calculated, it's either with
-    # shape (giving you an area definition) or with center/radius/top_left_extent (which this produces).
-    # Yet output (center/radius/top_left_extent) is essential for data below.
+    # shape (giving you an area definition) or with center/radius/upper_left_extent (which this produces).
+    # Yet output (center/radius/upper_left_extent) is essential for data below.
     if area_extent is not None:
         # Function 1-A
         new_center = ((area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2)
@@ -1026,13 +1026,13 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
         new_radius = ((area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2)
         radius = _validate_variable(radius, new_radius, 'radius', ['area_extent'])
         new_top_left_extent = (area_extent[0], area_extent[3])
-        top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'top_left_extent', ['area_extent'])
-    # Output used below, but nowhere else is top_left_extent made. Thus it should go as early as possible.
+        top_left_extent = _validate_variable(top_left_extent, new_top_left_extent, 'upper_left_extent', ['area_extent'])
+    # Output used below, but nowhere else is upper_left_extent made. Thus it should go as early as possible.
     elif None not in (top_left_extent, center):
         # Function 1-B
         radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
         new_radius = (center[0] - top_left_extent[0], top_left_extent[1] - center[1])
-        radius = _validate_variable(radius, new_radius, 'radius', ['top_left_extent', 'center'])
+        radius = _validate_variable(radius, new_radius, 'radius', ['upper_left_extent', 'center'])
     else:
         radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
     # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
@@ -1048,7 +1048,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
         new_radius = (resolution[0] * shape[1] / 2, resolution[1] * shape[0] / 2)
         radius = _validate_variable(radius, new_radius, 'radius', ['shape', 'resolution'])
     # Input determined from above functions, but output does not affect above functions: area_extent can be
-    # used to find center/top_left_extent which are used to find each other, which is redundant.
+    # used to find center/upper_left_extent which are used to find each other, which is redundant.
     if center is not None and radius is not None:
         # Function 1-C
         new_area_extent = (center[0] - radius[0], center[1] - radius[1], center[0] + radius[0], center[1] + radius[1])
@@ -1058,7 +1058,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, top
         new_area_extent = (
             top_left_extent[0], top_left_extent[1] - 2 * radius[1], top_left_extent[0] + 2 * radius[0],
             top_left_extent[1])
-        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent', ['top_left_extent', 'radius'])
+        area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent', ['upper_left_extent', 'radius'])
     return area_extent, shape
 
 

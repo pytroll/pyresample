@@ -1343,7 +1343,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         for projection in projection_list:
             for units in units_list:
                 for center in center_list:
-                    # essentials = center, radius, top_left_extent, resolution, shape.
+                    # essentials = center, radius, upper_left_extent, resolution, shape.
                     if 'm' in units:
                         # Meters.
                         essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
