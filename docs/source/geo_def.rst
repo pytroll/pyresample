@@ -1,29 +1,42 @@
 Geometry definitions
 ====================
-The module :mod:`pyresample.geometry` contains classes for describing different kinds
-of types of remote sensing data geometries. The use of the different classes is described below.
 
-Remarks
--------
+The :mod:`pyresample.geometry` module contains classes for describing different
+geographic areas using a mesh of points or pixels. Some classes represent
+geographic areas made of of evenly spaced/sized pixels, others handle the cases
+where the region is described by non-uniform pixels. The best object for describing a
+region depends on the use case and the information known about it. The different
+classes available in pyresample are described below.
 
-All longitudes and latitudes provided to :mod:`pyresample.geometry` must be
-in degrees. Longitudes must additionally be in the [-180;+180[ validity range.
+Note that all longitudes and latitudes provided to :mod:`pyresample.geometry`
+classes must be in degrees. Additionally, longitudes must be in the
+[-180;+180[ validity range.
 
-As of version 1.1.1, the :mod:`pyresample.geometry` contructors will
-check the range of longitude values, send a warning if some of them fall outside validity range,
-and automatically correct the invalid values into [-180;+180[.
+.. versionchanged:: 1.8.0
 
-Use the function :func:`pyresample.utils.wrap_longitudes` for wrapping longitudes yourself.
+    Geometry objects no longer check the validity of the provided longitude
+    and latitude coordinates to improve performance. Longitude arrays are
+    expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
+    This also applies to all geometry definitions that are provided longitude
+    and latitude arrays on initialization. Use
+    :func:`~pyresample.utils.check_and_wrap` to preprocess your arrays.
 
 AreaDefinition
 --------------
 
-The cartographic definition of grid areas used by Pyresample is
-contained in an object of type :class:`AreaDefinition <pyresample.geometry.AreaDefinition>`
+An :class:`~pyresample.geometry.AreaDefinition`, or ``area``, is the primary
+way of specifying a uniformly spaced geographic region in pyresample. It is
+also one of the only geometry objects that understands geographic projects.
+Areas use the :doc:`PROJ.4 <proj4:index>` method for describing projected
+coordinate reference systems (CRS). If the projection for an area is not
+described by longitude/latitude coordinates then it is typically described
+in X/Y coordinates in meters. See the PROJ.4 documentation for more
+information on projections and coordinate reference systems.
+
 The following arguments are needed to initialize an area:
 
-* **area_id** ID of area
-* **name**: Description
+* **area_id**: ID of area
+* **description**: Description
 * **proj_id**: ID of projection (being deprecated)
 * **projection**: Proj4 parameters as a dict or string
 * **width**: Number of grid columns
@@ -37,11 +50,11 @@ where
 * **upper_right_x**: projection x coordinate of upper right corner of upper right pixel
 * **upper_right_y**: projection y coordinate of upper right corner of upper right pixel
 
-Creating an area definition:
+Below is an example of creating an ``AreaDefinition``:
 
 .. doctest::
 
- >>> from pyresample import geometry
+ >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
@@ -49,8 +62,8 @@ Creating an area definition:
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
- >>> area_def = geometry.AreaDefinition(area_id, description, proj_id, proj_dict,
- ...                                    width, height, area_extent)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, proj_dict,
+ ...                           width, height, area_extent)
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
@@ -60,452 +73,47 @@ Creating an area definition:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-pyresample.utils
-****************
-
-The :mod:`pyresample.utils` module of Pyresample
-has convenience functions for constructing area definitions. The function
-:func:`get_area_def <pyresample.utils.get_area_def>` can construct an
-:class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object based on
-area_extent and a proj4-string/dict or a list of proj4 arguments.
-
-.. doctest::
-
- >>> from pyresample import utils
- >>> area_id = 'ease_sh'
- >>> description = 'Antarctic EASE grid'
- >>> proj_id = 'ease_sh'
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> width = 425
- >>> height = 425
- >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
- >>> area_def = utils.get_area_def(area_id, description, proj_id, proj_string,
- ...                               width, height, area_extent)
- >>> print(area_def)
- Area ID: ease_sh
- Description: Antarctic EASE grid
- Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-The function :func:`from_params <pyresample.utils.from_params>` attempts to return
-an :class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object if **shape**
-and **area_extent** can be found with the given data below:
-
-Required arguments:
-
-* **area_id**: ID of area
-* **projection**: Projection parameters as a proj4_dict or proj4_string
-
-Optional arguments:
-
-* **description**: Description. If not provided, defaults to **area_id**
-* **proj_id**: ID of projection (being deprecated)
-* **units**: Default projection units: meters, radians, or degrees
-* **area_extent**: Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-* **shape**: Number of pixels in the y and x direction (height, width), aka (grid_rows, grid_columns)
-* **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x, y)
-* **center**: Projection x and y coordinate of the center of projection (x, y)
-* **resolution**: Projection size of pixels in the x and y direction (dx, dy)
-* **radius**: Projection length from the center to the left/right and top/bottom outer edges (dx, dy)
-
-.. doctest::
-
- >>> from pyresample import utils
- >>> area_id = 'ease_sh'
- >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> center = (0, 0)
- >>> radius = (5326849.0625, 5326849.0625)
- >>> resolution = (25067.525, 25067.525)
- >>> area_def = utils.from_params(area_id, proj_dict, center=center,
- ...                              radius=radius, resolution=resolution)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-**resolution** and **radius** can be specified with one value if dx == dy:
-
-.. doctest::
-
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> area_def = utils.from_params(area_id, proj_string, center=center,
- ...                              radius=5326849.0625, resolution=25067.525)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-An example with degrees as units using a mercator projection:
-
-.. doctest::
-
- >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> area_def = utils.from_params(area_id, proj_dict, center=(0, 0),
- ...                              radius=(47.90379019311, 43.1355420077),
- ...                              resolution=(0.22542960090875294, 0.22542901929487608),
- ...                              units='degrees', description='Antarctic EASE grid')
- >>> print(area_def)
- Area ID: ease_sh
- Description: Antarctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '0.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-If only **area_extent** or **shape** can be found, a
-:class:`DynamicAreaDefinition <pyresample.geometry.DynamicAreaDefinition>`
-object is returned:
-
-.. doctest::
-
- >>> area_def = utils.from_params(area_id, proj_string, radius=radius, resolution=resolution)
- >>> print(type(area_def))
- <class 'pyresample.geometry.DynamicAreaDefinition'>
-
-.. note::
-
-  **radius** and **resolution** are distances, **NOT** coordinates. When expressed as angles,
-  they represent the degrees of longitude/latitude away from the center that
-  they should span. Hence in these cases **center or area_extent must be provided**.
-
-There are four subfunctions of :class:`geometry.AreaDefinition <pyresample.geometry.AreaDefinition>` utilizing
-:func:`from_params <pyresample.utils.from_params>` to guarantee that an area definition is made.
-Hence each argument below is the same as above and can take the same arguments as
-:func:`from_params <pyresample.utils.from_params>` (i.e. units). The following functions require
-**area_id** and **projection** along with a few other arguments:
-
-:func:`from_extent <pyresample.geometry.AreaDefinition.from_extent>`:
-
-.. doctest::
-
- >>> from pyresample import utils
- >>> area_id = 'ease_sh'
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
- >>> shape = (425, 425)
- >>> area_def = geometry.AreaDefinition.from_extent(area_id, proj_string,
- ...                                                area_extent, shape)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-:func:`from_circle <pyresample.geometry.AreaDefinition.from_circle>`
-
-.. doctest::
-
- >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> center = (0, 0)
- >>> radius = 5326849.0625
- >>> area_def = geometry.AreaDefinition.from_circle(area_id, proj_dict, center,
- ...                                                radius, shape=shape)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-.. doctest::
-
- >>> resolution = 25067.525
- >>> area_def = geometry.AreaDefinition.from_circle(area_id, proj_string, center,
- ...                                                radius, resolution=resolution)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-:func:`from_area_of_interest <pyresample.geometry.AreaDefinition.from_area_of_interest>`
-
-.. doctest::
-
- >>> area_def = geometry.AreaDefinition.from_area_of_interest(area_id, proj_dict, center,
- ...                                                          resolution, shape)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-:func:`from_geotiff <pyresample.geometry.AreaDefinition.from_geotiff>`
-
- >>> top_left_extent = (-5326849.0625, 5326849.0625)
- >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, top_left_extent,
- ...                                                 resolution, shape)
- >>> print(area_def)
- Area ID: ease_sh
- Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-The :func:`load_area <pyresample.utils.load_area>` function can be used to
-parse area definitions from a configuration file by giving it the
-area file name and regions you wish to load. :func:`load_area <pyresample.utils.load_area>`
-takes advantage of :func:`from_params <pyresample.utils.from_params>`
-and hence uses the same arguments.
-
-Assuming the file **areas.yaml** exists with the following content
-
-.. code-block:: yaml
-
- boundary:
-   area_id: ease_sh
-   description: Example of making an area definition using shape and area_extent
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape: [425, 425]
-   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
-
- boundary_2:
-   description: Another example of making an area definition using shape and area_extent
-   units: degrees
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape:
-     height: 425
-     width: 425
-   area_extent:
-     lower_left_xy: [-135.0, -17.516001139327766]
-     upper_right_xy: [45.0, -17.516001139327766]
-
- corner:
-   description: Example of making an area definition using shape, top_left_extent, and resolution
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape: [425, 425]
-   top_left_extent: [-5326849.0625, 5326849.0625]
-   resolution: 25067.525
-
- corner_2:
-   area_id: ease_sh
-   description: Another example of making an area definition using shape, top_left_extent, and resolution
-   units:  °
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape: [425, 425]
-   top_left_extent:
-     x: -45.0
-     y: -17.516001139327766
-   resolution:
-     dx: 25067.525
-     dy: 25067.525
-     units: meters
-
- circle:
-   description: Example of making an area definition using center, resolution, and radius
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   center: [0, 0]
-   resolution: [25067.525, 25067.525]
-   radius: 5326849.0625
-
- circle_2:
-   area_id: ease_sh
-   description: Another example of making an area definition using center, resolution, and radius
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   center:
-     x: 0
-     y: -90
-     units: degrees
-   shape:
-     width: 425
-     height: 425
-   radius:
-     dx: 49.4217406986
-     dy: 49.4217406986
-     units: °
-
- area_of_interest:
-   description: Example of making an area definition using shape, center, and resolution
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape: [425, 425]
-   center: [0, 0]
-   resolution: [25067.525, 25067.525]
-
- area_of_interest_2:
-   area_id: ease_sh
-   description: Another example of making an area definition using shape, center, and resolution
-   projection:
-     proj: laea
-     lat_0: -90
-     lon_0: 0
-     a: 6371228.0
-     units: m
-   shape: [425, 425]
-   center:
-     center: [0, -1.570796]
-     units: radians
-   resolution:
-     resolution: 0.0039344913
-     units: radians
-
-.. note::
-
-  The `lower_left_xy` and `upper_right_xy` items give the coordinates of the
-  outer edges of the corner pixels on the x and y axis respectively. When the
-  projection coordinates are longitudes and latitudes, it is expected to
-  provide the extent in `longitude, latitude` order.
-
-An area definition dict can be read using
-
-.. doctest::
-
- >>> from pyresample import utils
- >>> area_def = utils.load_area('areas.yaml', 'corner')
- >>> print(area_def)
- Area ID: corner
- Description: Example of making an area definition using shape, top_left_extent, and resolution
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-Several area definitions can be read at once using the region names in an argument list
-
-.. doctest::
-
- >>> corner, boundary = utils.load_area('areas.yaml', 'corner', 'boundary')
- >>> print(boundary)
- Area ID: ease_sh
- Description: Example of making an area definition using shape and area_extent
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-.. note::
-
-  For backwards compatibility, we still support the legacy area file format:
-
-Assuming the file **areas.cfg** exists with the following content
-
-.. code-block:: bash
-
- REGION: ease_sh {
-	NAME:           Antarctic EASE grid
-	PCS_ID:         ease_sh
-        PCS_DEF:        proj=laea, lat_0=-90, lon_0=0, a=6371228.0, units=m
-        XSIZE:          425
-        YSIZE:          425
-        AREA_EXTENT:    (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- };
-
- REGION: ease_nh {
-        NAME:           Arctic EASE grid
-        PCS_ID:         ease_nh
-        PCS_DEF:        proj=laea, lat_0=90, lon_0=0, a=6371228.0, units=m
-        XSIZE:          425
-        YSIZE:          425
-        AREA_EXTENT:    (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- };
-
-An area definition dict can be read using
-
-.. doctest::
-
- >>> from pyresample import utils
- >>> area = utils.load_area('areas.cfg', 'ease_nh')
- >>> print(area)
- Area ID: ease_nh
- Description: Arctic EASE grid
- Projection ID: ease_nh
- Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-Note: In the configuration file **REGION** maps to **area_id** and **PCS_ID** maps to **proj_id**.
-
-Several area definitions can be read at once using the region names in an argument list
-
-.. doctest::
-
- >>> nh_def, sh_def = utils.load_area('areas.cfg', 'ease_nh', 'ease_sh')
- >>> print(sh_def)
- Area ID: ease_sh
- Description: Antarctic EASE grid
- Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+Creating an ``AreaDefinition`` can be complex if you don't know everything
+about the region being described. Pyresample provides multiple utilities
+for creating areas as well as storing them on disk for repeated use. See
+the :doc:`geometry_utils` documentation for more information.
 
 GridDefinition
 --------------
-If the lons and lats grid values are known, the area definition information can be skipped for
-some types of resampling by using a :class:`GridDefinition <pyresample.geometry.GridDefinition>`
-object instead of an :class:`AreaDefinition <pyresample.geometry.AreaDefinition>` object.
+
+If the longitude and latitude values for an area are known, the complexity
+of an ``AreaDefinition`` can be skipped by using a
+:class:`GridDefinition <pyresample.geometry.GridDefinition>` object instead.
+Note that although grid definitions are simpler to define they come at the
+cost of much higher memory and CPU usage for almost all operations.
+The longitude and latitude arrays passed to ``GridDefinition`` are expected to
+be evenly spaced. If they are not then a ``SwathDefinition`` should be used
+(see below).
 
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import geometry
+ >>> from pyresample.geometry import GridDefinition
  >>> lons = np.ones((100, 100))
  >>> lats = np.ones((100, 100))
- >>> grid_def = geometry.GridDefinition(lons=lons, lats=lats)
+ >>> grid_def = GridDefinition(lons=lons, lats=lats)
 
 SwathDefinition
 ---------------
-A swath is defined by the lon and lat values of the data points
+
+A swath is defined by the longitude and latitude coordinates for the pixels
+it represents. The coordinates represent the center point of each pixel.
+Swaths make no assumptions about the uniformity of pixel size and spacing.
+This means that operations using then may take longer, but are also accurately
+represented.
 
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import geometry
+ >>> from pyresample.geometry import SwathDefinition
  >>> lons = np.ones((500, 20))
  >>> lats = np.ones((500, 20))
- >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> swath_def = SwathDefinition(lons=lons, lats=lats)
 
 Two swaths can be concatenated if their column count matches
 
@@ -513,33 +121,36 @@ Two swaths can be concatenated if their column count matches
 
  >>> lons1 = np.ones((500, 20))
  >>> lats1 = np.ones((500, 20))
- >>> swath_def1 = geometry.SwathDefinition(lons=lons1, lats=lats1)
+ >>> swath_def1 = SwathDefinition(lons=lons1, lats=lats1)
  >>> lons2 = np.ones((300, 20))
  >>> lats2 = np.ones((300, 20))
- >>> swath_def2 = geometry.SwathDefinition(lons=lons2, lats=lats2)
+ >>> swath_def2 = SwathDefinition(lons=lons2, lats=lats2)
  >>> swath_def3 = swath_def1.concatenate(swath_def2)
 
 Geographic coordinates and boundaries
 -------------------------------------
-A ***definition** object allows for retrieval of geographic coordinates using array slicing
-(slice stepping is currently not supported).
 
-All ***definition** objects expose the coordinates **lons**, **lats** and **cartesian_coords**.
-:class:`AreaDefinition <pyresample.geometry.AreaDefinition>` exposes the full set of projection coordinates
-as **projection_x_coords** and **projection_y_coords**. Note that in the case of projection
-coordinates expressed in longitude and latitude, **projection_x_coords** will be longitude
-and **projection_y_coords** will be latitude.
+All geometry definition objects provide access to longitude and latitude
+coordinates. The ``get_lonlats()`` method can be used to get
+this data and will perform any additional calculations needed to get the
+coordinates.
+
+:class:`AreaDefinition <pyresample.geometry.AreaDefinition>` exposes the full
+set of projection coordinates as **projection_x_coords** and
+**projection_y_coords** properties. Note that for lon/lat projections
+(`+proj=latlong`) these coordinates will be in longitude/latitude degrees,
+where **projection_x_coords** will be longitude and **projection_y_coords**
+will be latitude.
 
 .. versionchanged:: 1.5.1
 
     Renamed `proj_x_coords` to `projection_x_coords` and `proj_y_coords`
     to `projection_y_coords`.
 
-Get full coordinate set:
+Get longitude and latitude arrays:
 
 .. doctest::
 
- >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
@@ -547,16 +158,16 @@ Get full coordinate set:
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, description, proj_id, projection,
- ...                               width, height, area_extent)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
  >>> lons, lats = area_def.get_lonlats()
 
-Get slice of coordinate set:
+Get geocentric X, Y, Z coordinates:
 
 .. doctest::
 
- >>> area_def = utils.get_area_def(area_id, description, proj_id, projection,
- ...                               width, height, area_extent)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
  >>> cart_subset = area_def.get_cartesian_coords()[100:200, 350:]
 
 If only the 1D range of a projection coordinate is required it can be extracted
@@ -564,24 +175,24 @@ using the **projection_x_coord** or **projection_y_coords** property of a geogra
 
 .. doctest::
 
- >>> area_def = utils.get_area_def(area_id, description, proj_id, projection,
- ...                  			   width, height, area_extent)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
  >>> proj_x_range = area_def.projection_x_coords
 
 Spherical geometry operations
 -----------------------------
-Some basic spherical operations are available for ***definition** objects. The
-spherical geometry operations are calculated based on the corners of a GeometryDefinition
-(:class:`GridDefinition <pyresample.geometry.GridDefinition>`,
-:class:`AreaDefinition <pyresample.geometry.AreaDefinition>`, or a 2D
-:class:`SwathDefinition <pyresample.geometry.SwathDefinition>`) and assuming the edges are great circle arcs.
 
-It can be tested if geometries overlaps
+Some basic spherical operations are available for geometry definition objects. The
+spherical geometry operations are calculated based on the corners of a GeometryDefinition
+(:class:`~pyresample.geometry.GridDefinition`,
+:class:`~pyresample.geometry.AreaDefinition`, or a 2D
+:class:`~pyresample.geometry.SwathDefinition`) assuming the edges are great circle arcs.
+
+Geometries can be checked for overlap:
 
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import utils
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
@@ -589,11 +200,11 @@ It can be tested if geometries overlaps
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
- >>> area_def = utils.get_area_def(area_id, description, proj_id, projection,
- ...                  			   width, height, area_extent)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
  >>> lons = np.array([[-40, -11.1], [9.5, 19.4], [65.5, 47.5], [90.3, 72.3]])
  >>> lats = np.array([[-70.1, -58.3], [-78.8, -63.4], [-73, -57.6], [-59.5, -50]])
- >>> swath_def = geometry.SwathDefinition(lons, lats)
+ >>> swath_def = SwathDefinition(lons, lats)
  >>> print(swath_def.overlaps(area_def))
  True
 

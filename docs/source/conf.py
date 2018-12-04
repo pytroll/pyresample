@@ -56,7 +56,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx']
 
 # DocTest Settings
 doctest_test_doctest_blocks = ''
@@ -238,3 +238,16 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+# Intersphinx extention
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'xarray': ('https://xarray.pydata.org/en/stable', None),
+    'dask': ('https://docs.dask.org/en/latest', None),
+    'pyresample': ('https://pyresample.readthedocs.io/en/stable', None),
+    'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
+    'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
+    'proj4': ('https://proj4.org', None),
+}

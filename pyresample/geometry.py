@@ -762,13 +762,13 @@ class AreaDefinition(BaseDefinition):
     Parameters
     ----------
     area_id : str
-        ID of area
-    name : str
-        Name of area
+        Identifier for the area
+    description : str
+        Human-readable description of the area
     proj_id : str
         ID of projection
-    proj_dict : dict
-        Dictionary with Proj.4 parameters
+    projection: dict or str
+        Dictionary or string of Proj.4 parameters
     width : int
         x dimension in number of pixels, aka number of grid columns
     height : int
@@ -778,18 +778,14 @@ class AreaDefinition(BaseDefinition):
     area_extent : list
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     nprocs : int, optional
-        Number of processor cores to be used
-    lons : numpy array, optional
-        Grid lons
-    lats : numpy array, optional
-        Grid lats
+        Number of processor cores to be used for certain calculations
 
     Attributes
     ----------
     area_id : str
-        ID of area
-    name : str
-        Name of area
+        Identifier for the area
+    description : str
+        Human-readable description of the area
     proj_id : str
         ID of projection
     projection : dict or str
@@ -822,10 +818,6 @@ class AreaDefinition(BaseDefinition):
         left pixel in units of pixels..
     proj4_string : str
         Projection defined as Proj.4 string
-    lons : object
-        Grid lons
-    lats : object
-        Grid lats
     cartesian_coords : object
         Grid cartesian coordinates
     projection_x_coords : object

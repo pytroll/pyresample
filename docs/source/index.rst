@@ -16,6 +16,7 @@ Documentation
 
    installation
    geo_def
+   geometry_utils
    geo_filter
    grid
    swath
