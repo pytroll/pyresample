@@ -1381,7 +1381,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
         # Tests area function 1-C.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
         # Tests area function 1-D.
-        area_list.append(area(area_id, projection_list[1], shape=shape, radius=radius, upper_left_extent=upper_left_extent))
+        area_list.append(area(area_id, projection_list[1], shape=shape,
+                              radius=radius, upper_left_extent=upper_left_extent))
         # Tests all 4 user cases.
         area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], area_extent, shape))
         area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,

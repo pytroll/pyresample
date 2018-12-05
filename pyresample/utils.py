@@ -779,8 +779,9 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
                [center, radius, upper_left_extent, resolution, shape, area_extent], [2, 2, 2, 2, 2, 4]])]
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
     center, upper_left_extent, area_extent, kwargs['rotation'] = _get_converted_lists(center, upper_left_extent,
-                                                                                    area_extent, kwargs.get('rotation'),
-                                                                                    units, p, proj_dict)
+                                                                                      area_extent, kwargs.get(
+                                                                                          'rotation'),
+                                                                                      units, p, proj_dict)
 
     # Fills in missing information to attempt to create an area definition.
     if None in (area_extent, shape):
@@ -1026,7 +1027,8 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
         new_radius = ((area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2)
         radius = _validate_variable(radius, new_radius, 'radius', ['area_extent'])
         new_upper_left_extent = (area_extent[0], area_extent[3])
-        upper_left_extent = _validate_variable(upper_left_extent, new_upper_left_extent, 'upper_left_extent', ['area_extent'])
+        upper_left_extent = _validate_variable(
+            upper_left_extent, new_upper_left_extent, 'upper_left_extent', ['area_extent'])
     # Output used below, but nowhere else is upper_left_extent made. Thus it should go as early as possible.
     elif None not in (upper_left_extent, center):
         # Function 1-B
