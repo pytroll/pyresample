@@ -1313,10 +1313,10 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
     def test_from_params(self):
         """Test from_params and the four sub-methods that call it in AreaDefinition."""
-        from xarray import DataArray
         from pyresample.geometry import AreaDefinition
         from pyresample.geometry import DynamicAreaDefinition
         from pyresample import utils
+        DataArray = utils.DataArray
 
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'

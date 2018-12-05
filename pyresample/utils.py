@@ -33,7 +33,24 @@ import six
 import yaml
 from configobj import ConfigObj
 from collections import Mapping, OrderedDict
-from xarray import DataArray
+
+try:
+    from xarray import DataArray
+except ImportError:
+    class DataArray(object):
+        """Stand-in for DataArray for holding units information."""
+        def __init__(self, data, attrs=None):
+            self.attrs = attrs or {}
+            self.data = np.array(data)
+
+        def __getitem__(self, item):
+            return DataArray(self.data[item], attrs=self.attrs)
+
+        def __getattr__(self, item):
+            return self.attrs[item]
+
+        def __len__(self):
+            return len(self.data)
 
 
 class AreaNotFound(KeyError):
@@ -1080,7 +1097,7 @@ def _verify_list(name, var, length):
         return None
     # Verify that list is made of numbers and is list-like.
     try:
-        if hasattr(var, 'units') and name != 'shape':
+        if 'units' in getattr(var, 'attrs', {}) and name != 'shape':
             # For len(var) to work, DataArray must contain a list, not a tuple
             var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
         elif isinstance(var, DataArray):

@@ -125,11 +125,12 @@ from_extent
 .. doctest::
 
  >>> from pyresample import utils
+ >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
  >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
  >>> shape = (425, 425)
- >>> area_def = geometry.AreaDefinition.from_extent(area_id, proj_string, area_extent, shape)
+ >>> area_def = AreaDefinition.from_extent(area_id, proj_string, area_extent, shape)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -148,7 +149,7 @@ from_circle
  >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = 5326849.0625
- >>> area_def = geometry.AreaDefinition.from_circle(area_id, proj_dict, center, radius, shape=shape)
+ >>> area_def = AreaDefinition.from_circle(area_id, proj_dict, center, radius, shape=shape)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -160,7 +161,7 @@ from_circle
 .. doctest::
 
  >>> resolution = 25067.525
- >>> area_def = geometry.AreaDefinition.from_circle(area_id, proj_string, center, radius, resolution=resolution)
+ >>> area_def = AreaDefinition.from_circle(area_id, proj_string, center, radius, resolution=resolution)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -176,7 +177,7 @@ from_area_of_interest
 
 .. doctest::
 
- >>> area_def = geometry.AreaDefinition.from_area_of_interest(area_id, proj_dict, center, resolution, shape)
+ >>> area_def = AreaDefinition.from_area_of_interest(area_id, proj_dict, center, resolution, shape)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -191,7 +192,7 @@ from_geotiff
 :func:`~pyresample.geometry.AreaDefinition.from_geotiff`
 
  >>> upper_left_extent = (-5326849.0625, 5326849.0625)
- >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, upper_left_extent, resolution, shape)
+ >>> area_def = AreaDefinition.from_geotiff(area_id, proj_string, upper_left_extent, resolution, shape)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh

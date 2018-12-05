@@ -27,7 +27,7 @@ boundary_2:
     upper_right_xy: [45.0, -17.516001139327766]
 
 corner:
-  description: Example of making an area definition using shape, , and resolution
+  description: Example of making an area definition using shape, upper_left_extent, and resolution
   projection:
     proj: laea
     lat_0: -90
