@@ -808,8 +808,10 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    upper_left_extent : list
+    upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
+    pixel_upper_left : tuple
+        Coordinates (x, y) of center of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
         left pixel in units of pixels.

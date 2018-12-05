@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
         self.assertTrue(res[0] == 2)
 
     def test_gauss_base(self):
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(self.tswath,
                                          self.tdata.ravel(), self.tgrid,
                                          50000, 25000, reduce_data=False, segments=1)
@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
         def wf(dist):
             return 1 - dist / 100000.0
 
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_custom(self.tswath,
                                           self.tdata.ravel(), self.tgrid,
                                           50000, wf, reduce_data=False, segments=1)
@@ -71,7 +71,7 @@ class Test(unittest.TestCase):
 
     def test_gauss_uncert(self):
         sigma = utils.fwhm2sigma(41627.730557884883)
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res, stddev, count = kd_tree.resample_gauss(self.tswath, self.tdata,
                                                         self.tgrid, 100000, sigma,
                                                         with_uncert=True)
@@ -89,7 +89,7 @@ class Test(unittest.TestCase):
         def wf(dist):
             return 1 - dist / 100000.0
 
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res, stddev, counts = kd_tree.resample_custom(self.tswath,
                                                           self.tdata, self.tgrid,
                                                           100000, wf, with_uncert=True)
@@ -266,7 +266,7 @@ class Test(unittest.TestCase):
         lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, 25000, segments=1)
             self.assertFalse(len(w) != 1)
@@ -282,7 +282,7 @@ class Test(unittest.TestCase):
         lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(swath_def, data.ravel(),
                                          self.area_def, 50000, utils.fwhm2sigma(41627.730557884883), segments=1)
             self.assertFalse(len(w) != 1)
@@ -300,7 +300,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [25000, 15000, 10000], segments=1)
             self.assertFalse(len(w) != 1)
@@ -318,7 +318,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             # The assertion below checks if there is only one warning raised
             # and whether it contains a specific message from pyresample
             # On python 2.7.9+ the resample_gauss method raises multiple deprecation warnings
@@ -354,7 +354,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
@@ -374,7 +374,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_gauss(swath_def, data_multi,
                                          self.area_def, 50000, [
                                              25000, 15000, 10000],
@@ -411,7 +411,7 @@ class Test(unittest.TestCase):
         lats = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_custom(swath_def, data.ravel(),
                                           self.area_def, 50000, wf, segments=1)
             self.assertFalse(len(w) != 1)
@@ -438,7 +438,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_custom(swath_def, data_multi,
                                           self.area_def, 50000, [wf1, wf2, wf3], segments=1)
             self.assertFalse(len(w) != 1)
@@ -633,7 +633,7 @@ class Test(unittest.TestCase):
         data_multi = np.column_stack((data.ravel(), data.ravel(),
                                       data.ravel()))
 
-        with catch_warnings() as w:
+        with catch_warnings(UserWarning) as w:
             valid_input_index, valid_output_index, index_array, distance_array = \
                 kd_tree.get_neighbour_info(swath_def,
                                            self.area_def,
