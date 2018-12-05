@@ -58,8 +58,8 @@ class GridFilter(object):
                     (y_coord / self.area_def.pixel_size_y)).astype(np.int32)
 
         # Create mask for pixels outside array (invalid pixels)
-        target_x_valid = (target_x >= 0) & (target_x < self.area_def.x_size)
-        target_y_valid = (target_y >= 0) & (target_y < self.area_def.y_size)
+        target_x_valid = (target_x >= 0) & (target_x < self.area_def.width)
+        target_y_valid = (target_y >= 0) & (target_y < self.area_def.height)
 
         # Set index of invalid pixels to 0
         target_x[np.invert(target_x_valid)] = 0

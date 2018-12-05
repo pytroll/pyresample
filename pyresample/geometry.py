@@ -670,8 +670,8 @@ class DynamicAreaDefinition(object):
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
-        self.x_size = self.width = width
-        self.y_size = self.height = height
+        self.width = self.width = width
+        self.height = self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
         self.resolution = resolution
@@ -1119,8 +1119,8 @@ class AreaDefinition(BaseDefinition):
             third_line = "Projection ID: {0}\n".format(self.proj_id)
         return ('Area ID: {0}\nDescription: {1}\n{2}'
                 'Projection: {3}\nNumber of columns: {4}\nNumber of rows: {5}\n'
-                'Area extent: {6}').format(self.area_id, self.name, third_line,
-                                           proj_str, self.x_size, self.y_size,
+                'Area extent: {6}').format(self.area_id, self.description, third_line,
+                                           proj_str, self.width, self.height,
                                            tuple(round(x, 4) for x in self.area_extent))
 
     __repr__ = __str__
@@ -1136,9 +1136,9 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def(self):
 
-        res = OrderedDict(description=self.name,
+        res = OrderedDict(description=self.description,
                           projection=OrderedDict(self.proj_dict),
-                          shape=OrderedDict([('height', self.y_size), ('width', self.x_size)]))
+                          shape=OrderedDict([('height', self.height), ('width', self.width)]))
         units = res['projection'].pop('units', None)
         extent = OrderedDict([('lower_left_xy', list(self.area_extent[:2])),
                               ('upper_right_xy', list(self.area_extent[2:]))])
@@ -1161,9 +1161,9 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tYSIZE:\t{y_size}\n"
         # fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
-        area_def_str = fmt.format(name=self.name, area_id=self.area_id,
-                                  proj_str=proj_str, x_size=self.x_size,
-                                  y_size=self.y_size,
+        area_def_str = fmt.format(name=self.description, area_id=self.area_id,
+                                  proj_str=proj_str, x_size=self.width,
+                                  y_size=self.height,
                                   area_extent=self.area_extent)
         return area_def_str
 
@@ -1285,24 +1285,24 @@ class AreaDefinition(BaseDefinition):
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
         xscale = (self.area_extent[2] -
-                  self.area_extent[0]) / float(self.x_size)
+                  self.area_extent[0]) / float(self.width)
         # because rows direction is the opposite of y's
         yscale = (self.area_extent[1] -
-                  self.area_extent[3]) / float(self.y_size)
+                  self.area_extent[3]) / float(self.height)
 
         x__ = (xm - upl_x) / xscale
         y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ >= self.x_size)) |
-                    ((y__ < 0) | (y__ >= self.y_size)))
+            mask = (((x__ < 0) | (x__ >= self.width)) |
+                    ((y__ < 0) | (y__ >= self.height)))
             return (np.ma.masked_array(x__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False),
                     np.ma.masked_array(y__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False))
         else:
-            if ((x__ < 0 or x__ >= self.x_size) or
-                    (y__ < 0 or y__ >= self.y_size)):
+            if ((x__ < 0 or x__ >= self.width) or
+                    (y__ < 0 or y__ >= self.height)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
 
@@ -1334,8 +1334,8 @@ class AreaDefinition(BaseDefinition):
             y_chunks = chunks
             x_chunks = chunks
 
-        target_x = da.arange(self.x_size, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.y_size, chunks=y_chunks, dtype=dtype) * - self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = da.arange(self.width, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = da.arange(self.height, chunks=y_chunks, dtype=dtype) * - self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
     def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
@@ -1392,8 +1392,8 @@ class AreaDefinition(BaseDefinition):
         if dtype is None:
             dtype = self.dtype
 
-        target_x = np.arange(self.x_size, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(self.y_size, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = np.arange(self.width, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = np.arange(self.height, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
         if data_slice is None or data_slice == slice(None):
             pass
         elif isinstance(data_slice, slice):
@@ -1559,8 +1559,8 @@ class AreaDefinition(BaseDefinition):
 
             xstart = 0 if x[0] is np.ma.masked else x[0]
             ystart = 0 if y[1] is np.ma.masked else y[1]
-            xstop = self.x_size if x[1] is np.ma.masked else x[1] + 1
-            ystop = self.y_size if y[0] is np.ma.masked else y[0] + 1
+            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
+            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
 
             return slice(xstart, xstop), slice(ystart, ystop)
 
@@ -1600,7 +1600,7 @@ class AreaDefinition(BaseDefinition):
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
-        new_area = AreaDefinition(self.area_id, self.name,
+        new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
                                   xslice.stop - xslice.start,
                                   yslice.stop - yslice.start,
@@ -1679,7 +1679,7 @@ def concatenate_area_defs(area1, area2, axis=0):
     different_items = (set(area1.proj_dict.items()) ^
                        set(area2.proj_dict.items()))
     if axis == 0:
-        same_size = area1.x_size == area2.x_size
+        same_size = area1.width == area2.width
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
     if different_items or not same_size:
@@ -1689,11 +1689,11 @@ def concatenate_area_defs(area1, area2, axis=0):
 
     if axis == 0:
         area_extent = combine_area_extents_vertical(area1, area2)
-        x_size = int(area1.x_size)
-        y_size = int(area1.y_size + area2.y_size)
+        x_size = int(area1.width)
+        y_size = int(area1.height + area2.height)
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
-    return AreaDefinition(area1.area_id, area1.name, area1.proj_id,
+    return AreaDefinition(area1.area_id, area1.description, area1.proj_id,
                           area1.proj_dict, x_size, y_size,
                           area_extent)
 
@@ -1715,16 +1715,26 @@ class StackedAreaDefinition(BaseDefinition):
             self.append(definition)
 
     @property
+    def width(self):
+        return self.defs[0].width
+
+    @property
     def x_size(self):
-        return self.defs[0].x_size
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        return self.width
+
+    @property
+    def height(self):
+        return sum(definition.height for definition in self.defs)
 
     @property
     def y_size(self):
-        return sum(definition.y_size for definition in self.defs)
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        return self.height
 
     @property
     def size(self):
-        return self.y_size * self.x_size
+        return self.height * self.width
 
     def append(self, definition):
         """Append another definition to the area."""
@@ -1732,7 +1742,7 @@ class StackedAreaDefinition(BaseDefinition):
             for area in definition.defs:
                 self.append(area)
             return
-        if definition.y_size == 0:
+        if definition.height == 0:
             return
         if not self.defs:
             self.proj_dict = definition.proj_dict
@@ -1752,13 +1762,13 @@ class StackedAreaDefinition(BaseDefinition):
         try:
             row_slice, col_slice = data_slice
         except TypeError:
-            row_slice = slice(0, self.y_size)
-            col_slice = slice(0, self.x_size)
+            row_slice = slice(0, self.height)
+            col_slice = slice(0, self.width)
         offset = 0
         for definition in self.defs:
             local_row_slice = slice(max(row_slice.start - offset, 0),
                                     min(max(row_slice.stop - offset, 0),
-                                        definition.y_size),
+                                        definition.height),
                                     row_slice.step)
             lons, lats = definition.get_lonlats(nprocs=nprocs,
                                                 data_slice=(local_row_slice,

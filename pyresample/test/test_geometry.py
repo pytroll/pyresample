@@ -1296,22 +1296,20 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area1 = MagicMock()
         area1.area_extent = (1, 2, 3, 4)
         area1.proj_dict = {"proj": 'A'}
-        area1.y_size = random.randrange(6425)
-        area1.x_size = x_size
+        area1.height = random.randrange(6425)
+        area1.width = x_size
 
         area2 = MagicMock()
         area2.area_extent = (1, 4, 3, 6)
         area2.proj_dict = {"proj": 'A'}
-        area2.y_size = random.randrange(6425)
-        area2.x_size = x_size
+        area2.height = random.randrange(6425)
+        area2.width = x_size
 
         concatenate_area_defs(area1, area2)
         area_extent = [1, 2, 3, 6]
-        y_size = area1.y_size + area2.y_size
-        adef.assert_called_once_with(area1.area_id, area1.name, area1.proj_id,
-                                     area1.proj_dict, area1.x_size, y_size,
-                                     area_extent)
-
+        y_size = area1.height + area2.height
+        adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
+                                     area1.proj_dict, area1.width, y_size, area_extent)
 
     def test_from_params(self):
         """Test from_params and the four sub-methods that call it in AreaDefinition."""

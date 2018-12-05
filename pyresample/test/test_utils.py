@@ -326,8 +326,8 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(area_def.area_id, area_id)
         self.assertEqual(area_def.proj_id, proj_id)
         self.assertEqual(area_def.name, name)
-        self.assertEqual(area_def.x_size, x_size)
-        self.assertEqual(area_def.y_size, y_size)
+        self.assertEqual(area_def.width, x_size)
+        self.assertEqual(area_def.height, y_size)
         self.assertDictEqual(crs.to_dict(), area_def.proj_dict)
         self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
                                                      transform.c + transform.a * x_size, transform.f))
