@@ -31,7 +31,7 @@ and optional arguments:
 * **units**: Default projection units: meters, radians, or degrees
 * **area_extent**: Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
 * **shape**: Number of pixels in the y and x direction (height, width), aka (grid_rows, grid_columns)
-* **top_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x, y)
+* **upper_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x, y)
 * **center**: Projection x and y coordinate of the center of projection (x, y)
 * **resolution**: Projection size of pixels in the x and y direction (dx, dy)
 * **radius**: Projection length from the center to the left/right and top/bottom outer edges (dx, dy)
@@ -190,9 +190,8 @@ from_geotiff
 
 :func:`~pyresample.geometry.AreaDefinition.from_geotiff`
 
- >>> top_left_extent = (-5326849.0625, 5326849.0625)
- >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, top_left_extent,
- ...                                                 resolution, shape)
+ >>> upper_left_extent = (-5326849.0625, 5326849.0625)
+ >>> area_def = geometry.AreaDefinition.from_geotiff(area_id, proj_string, upper_left_extent, resolution, shape)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -244,7 +243,7 @@ an area might be specified.
      upper_right_xy: [45.0, -17.516001139327766]
 
  corner:
-   description: Example of making an area definition using shape, top_left_extent, and resolution
+   description: Example of making an area definition using shape, upper_left_extent, and resolution
    projection:
      proj: laea
      lat_0: -90
@@ -252,12 +251,12 @@ an area might be specified.
      a: 6371228.0
      units: m
    shape: [425, 425]
-   top_left_extent: [-5326849.0625, 5326849.0625]
+   upper_left_extent: [-5326849.0625, 5326849.0625]
    resolution: 25067.525
 
  corner_2:
    area_id: ease_sh
-   description: Another example of making an area definition using shape, top_left_extent, and resolution
+   description: Another example of making an area definition using shape, upper_left_extent, and resolution
    units:  °
    projection:
      proj: laea
@@ -266,7 +265,7 @@ an area might be specified.
      a: 6371228.0
      units: m
    shape: [425, 425]
-   top_left_extent:
+   upper_left_extent:
      x: -45.0
      y: -17.516001139327766
    resolution:
@@ -352,7 +351,7 @@ read a single ``AreaDefinition`` named ``corner`` by doing:
  >>> area_def = utils.load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
- Description: Example of making an area definition using shape, top_left_extent, and resolution
+ Description: Example of making an area definition using shape, upper_left_extent, and resolution
  Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425

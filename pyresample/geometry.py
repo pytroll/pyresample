@@ -1047,7 +1047,7 @@ class AreaDefinition(BaseDefinition):
                                  shape=shape, units=units, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, area_id, projection, top_left_extent, resolution, shape, units=None, **kwargs):
+    def from_geotiff(cls, area_id, projection, upper_left_extent, resolution, shape, units=None, **kwargs):
         """Creates an AreaDefinition object from upper_left_extent, resolution, and shape.
 
         Parameters
@@ -1056,7 +1056,7 @@ class AreaDefinition(BaseDefinition):
             ID of area
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
-        top_left_extent : list
+        upper_left_extent : list
             Upper left corner of upper left pixel (x, y)
         resolution : list or float
             Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
@@ -1091,7 +1091,7 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, top_left_extent=top_left_extent, resolution=resolution,
+        return utils.from_params(area_id, projection, upper_left_extent=upper_left_extent, resolution=resolution,
                                  shape=shape, units=units, **kwargs)
 
     def __hash__(self):

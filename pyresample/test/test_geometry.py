@@ -1326,7 +1326,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m']
         proj_id = 'ease_sh'
         shape = (425, 850)
-        top_left_extent = (-5326849.0625, 5326849.0625)
+        upper_left_extent = (-5326849.0625, 5326849.0625)
         center_list = [[0, 0], 'a', (1, 2, 3)]
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         resolution = (12533.7625, 25067.525)
@@ -1361,7 +1361,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                     if len(center) == 2:
                         center = essentials[0]
                     try:
-                        area_list.append(area(area_id, projection, proj_id=proj_id, top_left_extent=essentials[2],
+                        area_list.append(area(area_id, projection, proj_id=proj_id, upper_left_extent=essentials[2],
                                               center=center, shape=essentials[4], resolution=essentials[3],
                                               radius=essentials[1], description=description, units=units, rotation=45))
                     except ValueError:
@@ -1377,18 +1377,18 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_list.append(area(area_id, projection_list[1], resolution=resolution, area_extent=area_extent))
         # Tests area function 1-B. Also test that DynamicAreaDefinition arguments don't crash AreaDefinition.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0],
-                              top_left_extent=top_left_extent, optimize_projection=None))
+                              upper_left_extent=upper_left_extent, optimize_projection=None))
         # Tests area function 1-C.
         area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
         # Tests area function 1-D.
-        area_list.append(area(area_id, projection_list[1], shape=shape, radius=radius, top_left_extent=top_left_extent))
+        area_list.append(area(area_id, projection_list[1], shape=shape, radius=radius, upper_left_extent=upper_left_extent))
         # Tests all 4 user cases.
         area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], area_extent, shape))
         area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
                                                     resolution=resolution))
         area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], resolution,
                                                               shape))
-        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], top_left_extent, resolution, shape))
+        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], upper_left_extent, resolution, shape))
         # Tests non-poles using degrees and mercator.
         area_def = area(area_id, '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
                         center=(0, 0), radius=45, resolution=(1, 0.9999291722135637), units='degrees')
