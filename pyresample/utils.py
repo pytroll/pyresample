@@ -39,6 +39,7 @@ try:
 except ImportError:
     class DataArray(object):
         """Stand-in for DataArray for holding units information."""
+
         def __init__(self, data, attrs=None):
             self.attrs = attrs or {}
             self.data = np.array(data)
