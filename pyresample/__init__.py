@@ -19,8 +19,6 @@ import os
 
 CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
 
-from pyresample.version import __version__  # noqa
-
 # Backwards compatibility
 from pyresample import geometry  # noqa
 from pyresample import grid  # noqa
@@ -35,6 +33,10 @@ from pyresample.geometry import (SwathDefinition,  # noqa
 from pyresample.utils import load_area  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
 from pyresample.plot import save_quicklook, area_def2basemap  # noqa
+from .version import get_versions  # noqa
 
 __all__ = ['grid', 'image', 'kd_tree',
            'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
+
+__version__ = get_versions()['version']
+del get_versions

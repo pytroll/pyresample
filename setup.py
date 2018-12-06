@@ -15,16 +15,14 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import imp
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 import multiprocessing  # noqa: F401
+import versioneer
 import os
 import sys
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
-
-version = imp.load_source('pyresample.version', 'pyresample/version.py')
 
 requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy>=1.10.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'six']
@@ -68,6 +66,10 @@ def set_builtin(name, value):
         setattr(__builtins__, name, value)
 
 
+cmdclass = versioneer.get_cmdclass()
+versioneer_build_ext = cmdclass.get('build_ext', _build_ext)
+
+
 class build_ext(_build_ext):
     """Work around to bootstrap numpy includes in to extensions.
 
@@ -78,12 +80,14 @@ class build_ext(_build_ext):
     """
 
     def finalize_options(self):
-        _build_ext.finalize_options(self)
+        versioneer_build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process:
         set_builtin('__NUMPY_SETUP__', False)
         import numpy
         self.include_dirs.append(numpy.get_include())
 
+
+cmdclass['build_ext'] = build_ext
 
 if __name__ == "__main__":
     if not os.getenv("USE_CYTHON", False) or cythonize is None:
@@ -91,8 +95,7 @@ if __name__ == "__main__":
             "Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
 
         def cythonize(extensions, **_ignore):
-            """Fake function to compile from C/C++ files instead of compiling .pyx files with cython.
-            """
+            """Fake function to compile from C/C++ files instead of compiling .pyx files with cython."""
             for extension in extensions:
                 sources = []
                 for sfile in extension.sources:
@@ -108,7 +111,8 @@ if __name__ == "__main__":
             return extensions
 
     setup(name='pyresample',
-          version=version.__version__,
+          version=versioneer.get_version(),
+          cmdclass=cmdclass,
           description='Resampling of remote sensing data in Python',
           author='Thomas Lavergne',
           author_email='t.lavergne@met.no',
@@ -119,7 +123,6 @@ if __name__ == "__main__":
           install_requires=requirements,
           extras_require=extras_require,
           tests_require=test_requires,
-          cmdclass={'build_ext': build_ext},
           ext_modules=cythonize(extensions),
           test_suite='pyresample.test.suite',
           zip_safe=False,
