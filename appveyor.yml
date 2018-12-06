@@ -35,9 +35,6 @@ install:
     - "activate test"
     # HACK: Copy tiff.dll to libtiff.dll
     - "cd %PYTHON%\\envs\\test\\Library\\bin"
-    - "dir"
-    - "dir tiff.dll"
-    - "echo %cd%"
     - "copy tiff.dll libtiff.dll"
     - "cd C:\\projects\\pyresample"
 
