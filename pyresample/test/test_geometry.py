@@ -640,7 +640,8 @@ class Test(unittest.TestCase):
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
-    def test_get_proj_coords(self):
+    def test_get_proj_coords_basic(self):
+        """Test basic get_proj_coords usage."""
         from pyresample import utils
         area_id = 'test'
         area_name = 'Test area with 2x2 pixels'
@@ -648,16 +649,8 @@ class Test(unittest.TestCase):
         x_size = 10
         y_size = 10
         area_extent = [1000000, 0, 1050000, 50000]
-        proj_dict = {"proj": 'laea',
-                     'lat_0': '60',
-                     'lon_0': '0',
-                     'a': '6371228.0', 'units': 'm'}
-        area_def = utils.get_area_def(area_id,
-                                      area_name,
-                                      proj_id,
-                                      proj_dict,
-                                      x_size, y_size,
-                                      area_extent)
+        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
+        area_def = utils.get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
 
         xcoord, ycoord = area_def.get_proj_coords()
         self.assertTrue(np.allclose(xcoord[0, :],
@@ -673,6 +666,74 @@ class Test(unittest.TestCase):
         xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
                                                               slice(None, None, 2)))
 
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1012500., 1022500.,
+                                              1032500., 1042500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 37500., 27500., 17500.,
+                                              7500.])))
+
+    def test_get_proj_coords_rotation(self):
+        """Test basic get_proj_coords usage with rotation specified."""
+        from pyresample.geometry import AreaDefinition
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 10
+        y_size = 10
+        area_extent = [1000000, 0, 1050000, 50000]
+        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
+        area_def = AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent, rotation=45)
+
+        xcoord, ycoord = area_def.get_proj_coords()
+        np.testing.assert_allclose(xcoord[0, :],
+                                   np.array([742462.120246, 745997.654152, 749533.188058, 753068.721964,
+                                             756604.25587, 760139.789776, 763675.323681, 767210.857587,
+                                             770746.391493, 774281.925399]))
+        np.testing.assert_allclose(ycoord[:, 0],
+                                   np.array([-675286.976033, -678822.509939, -682358.043845, -685893.577751,
+                                             -689429.111657, -692964.645563, -696500.179469, -700035.713375,
+                                             -703571.247281, -707106.781187]))
+
+        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2), slice(None, None, 2)))
+        np.testing.assert_allclose(xcoord[0, :],
+                                   np.array([742462.120246, 749533.188058, 756604.25587, 763675.323681,
+                                             770746.391493]))
+        np.testing.assert_allclose(ycoord[:, 0],
+                                   np.array([-675286.976033, -682358.043845, -689429.111657, -696500.179469,
+                                             -703571.247281]))
+
+    def test_get_proj_coords_dask(self):
+        """Test get_proj_coords usage with dask arrays."""
+        from pyresample import utils
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 10
+        y_size = 10
+        area_extent = [1000000, 0, 1050000, 50000]
+        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
+        area_def = utils.get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
+
+        xcoord, ycoord = area_def.get_proj_coords_dask()
+        xcoord = xcoord.compute()
+        ycoord = ycoord.compute()
+        self.assertTrue(np.allclose(xcoord[0, :],
+                                    np.array([1002500., 1007500., 1012500.,
+                                              1017500., 1022500., 1027500.,
+                                              1032500., 1037500., 1042500.,
+                                              1047500.])))
+        self.assertTrue(np.allclose(ycoord[:, 0],
+                                    np.array([47500., 42500., 37500., 32500.,
+                                              27500., 22500., 17500., 12500.,
+                                              7500.,  2500.])))
+
+        # use the shared method and provide chunks and slices
+        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
+                                                              slice(None, None, 2)),
+                                                  chunks=4096)
+        xcoord = xcoord.compute()
+        ycoord = ycoord.compute()
         self.assertTrue(np.allclose(xcoord[0, :],
                                     np.array([1002500., 1012500., 1022500.,
                                               1032500., 1042500.])))
