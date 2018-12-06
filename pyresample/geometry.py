@@ -187,29 +187,48 @@ class BaseDefinition(object):
             raise ValueError('lon/lat values are not defined')
         return self.lons[row, col], self.lats[row, col]
 
-    def get_lonlats(self, data_slice=None, **kwargs):
-        """Base method for lon lat retrieval with slicing"""
+    def get_lonlats(self, data_slice=None, chunks=None, **kwargs):
+        """Get longitude and latitude arrays representing this geometry.
 
-        if self.lons is None or self.lats is None:
+        Returns
+        -------
+        (lon, lat) : tuple of numpy arrays
+            If `chunks` is provided then the arrays will be dask arrays
+            with the provided chunk size. If `chunks` is not provided then
+            the returned arrays are the same as the internal data types
+            of this geometry object (numpy or dask).
+
+        """
+        lons = self.lons
+        lats = self.lats
+        if lons is None or lats is None:
             raise ValueError('lon/lat values are not defined')
-        elif data_slice is None:
-            return self.lons, self.lats
-        else:
-            return self.lons[data_slice], self.lats[data_slice]
+        elif DataArray is not np.ndarray and isinstance(lons, DataArray):
+            # lons/lats are xarray DataArray objects, use numpy/dask array underneath
+            lons = lons.data
+            lats = lats.data
 
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE):
-        """Get the lon lats as a single dask array."""
-        import dask.array as da
-        lons, lats = self.get_lonlats()
-
-        if isinstance(lons.data, da.Array):
-            return lons.data, lats.data
-        else:
-            lons = da.from_array(np.asanyarray(lons),
-                                 chunks=chunks)
-            lats = da.from_array(np.asanyarray(lats),
-                                 chunks=chunks)
+        if chunks is not None:
+            import dask.array as da
+            if isinstance(lons, da.Array):
+                # rechunk to this specific chunk size
+                lons = lons.rechunk(chunks)
+                lats = lats.rechunk(chunks)
+            elif not isinstance(lons, da.Array):
+                # convert numpy array to dask array
+                lons = da.from_array(np.asanyarray(lons), chunks=chunks)
+                lats = da.from_array(np.asanyarray(lats), chunks=chunks)
+        if data_slice is not None:
+            lons, lats = lons[data_slice], lats[data_slice]
         return lons, lats
+
+    def get_lonlats_dask(self, chunks=None):
+        """Get the lon lats as a single dask array."""
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks)
 
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
@@ -249,6 +268,9 @@ class BaseDefinition(object):
         -------
         cartesian_coords : numpy array
         """
+        if cache:
+            warnings.warn("'cache' keyword argument will be removed in the "
+                          "future and data will not be cached.", PendingDeprecationWarning)
 
         if self.cartesian_coords is None:
             # Coordinates are not cached
@@ -266,13 +288,10 @@ class BaseDefinition(object):
             else:
                 cartesian = Cartesian()
 
-            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons),
-                                                           np.ravel(lats))
-
+            cartesian_coords = cartesian.transform_lonlats(np.ravel(lons), np.ravel(lats))
             if isinstance(lons, np.ndarray) and lons.ndim > 1:
                 # Reshape to correct shape
-                cartesian_coords = cartesian_coords.reshape(lons.shape[0],
-                                                            lons.shape[1], 3)
+                cartesian_coords = cartesian_coords.reshape(lons.shape[0], lons.shape[1], 3)
 
             if cache and data_slice is None:
                 self.cartesian_coords = cartesian_coords
@@ -1322,132 +1341,145 @@ class AreaDefinition(BaseDefinition):
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return np.asscalar(lon), np.asscalar(lat)
 
-    def get_proj_vectors_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        import dask.array as da
-        if dtype is None:
-            dtype = self.dtype
+    @staticmethod
+    def _do_rotation(xspan, yspan, rot_deg=0):
+        """Helper method to apply a rotation factor to a matrix of points."""
+        if hasattr(xspan, 'chunks'):
+            # we were given dask arrays, use dask functions
+            import dask.array as numpy
+        else:
+            numpy = np
+        rot_rad = numpy.radians(rot_deg)
+        rot_mat = numpy.array([[np.cos(rot_rad),  np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
+        x, y = numpy.meshgrid(xspan, yspan)
+        return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
 
-        if not isinstance(chunks, int):
+    def get_proj_vectors_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
+                      "'get_proj_vectors' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_proj_vectors(dtype=dtype, chunks=chunks)
+
+    def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
+        """Helper for getting 1D projection coordinates."""
+        x_kwargs = {}
+        y_kwargs = {}
+
+        if chunks is not None and not isinstance(chunks, int):
             y_chunks = chunks[0]
             x_chunks = chunks[1]
         else:
-            y_chunks = chunks
-            x_chunks = chunks
+            y_chunks = x_chunks = chunks
 
-        target_x = da.arange(self.width, chunks=x_chunks, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = da.arange(self.height, chunks=y_chunks, dtype=dtype) * - self.pixel_size_y + self.pixel_upper_left[1]
+        if x_chunks is not None or y_chunks is not None:
+            # use dask functions instead of numpy
+            from dask.array import arange
+            x_kwargs = {'chunks': x_chunks}
+            y_kwargs = {'chunks': y_chunks}
+        else:
+            arange = np.arange
+        if check_rotation and self.rotation != 0:
+            warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
+        if dtype is None:
+            dtype = self.dtype
+        x_kwargs['dtype'] = dtype
+        y_kwargs['dtype'] = dtype
+
+        target_x = arange(self.width, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = arange(self.height, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
-    def get_proj_coords_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        # TODO: Add rotation
-        import dask.array as da
-        target_x, target_y = self.get_proj_vectors_dask(chunks, dtype)
-        return da.meshgrid(target_x, target_y)
+    def get_proj_vectors(self, dtype=None, chunks=None):
+        """Calculate 1D projection coordinates for the X and Y dimension.
 
-    def get_proj_coords(self, data_slice=None, cache=False, dtype=None):
+        Parameters
+        ----------
+        dtype : numpy.dtype
+            Numpy data type for the returned arrays
+        chunks : int or tuple
+            Return dask arrays with the chunk size specified. If this is a
+            tuple then the first element is the Y array's chunk size and the
+            second is the X array's chunk size.
+
+        Returns
+        -------
+        tuple: (X, Y) where X and Y are 1-dimensional numpy arrays
+
+        The data type of the returned arrays can be controlled with the
+        `dtype` keyword argument. If `chunks` is provided then dask arrays
+        are returned instead.
+
+        """
+        return self._get_proj_vectors(dtype=dtype, chunks=chunks)
+
+    def get_proj_coords_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_proj_coords_dask' is deprecated, please use "
+                      "'get_proj_coords' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_proj_coords(chunks=chunks, dtype=dtype)
+
+    def get_proj_coords(self, data_slice=None, dtype=None, chunks=None):
         """Get projection coordinates of grid.
 
         Parameters
         ----------
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
-        cache : bool, optional
-            Store the result. Requires data_slice to be None
+        dtype : numpy.dtype, optional
+            Data type of the returned arrays
+        chunks: int or tuple, optional
+            Create dask arrays and use this chunk size
 
         Returns
         -------
         (target_x, target_y) : tuple of numpy arrays
             Grids of area x- and y-coordinates in projection units
 
+        .. versionchanged:: 1.11.0
+
+            Removed 'cache' keyword argument and add 'chunks' for creating
+            dask arrays.
+
         """
-
-        def do_rotation(xspan, yspan, rot_deg=0):
-            rot_rad = np.radians(rot_deg)
-            rot_mat = np.array([[np.cos(rot_rad), np.sin(rot_rad)],
-                                [-np.sin(rot_rad), np.cos(rot_rad)]])
-            x, y = np.meshgrid(xspan, yspan)
-            return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
-
-        def get_val(val, sub_val, max):
-            # Get value with substitution and wrapping
-            if val is None:
-                return sub_val
-            else:
-                if val < 0:
-                    # Wrap index
-                    return max + val
-                else:
-                    return val
-
-        if self._projection_x_coords is not None and self._projection_y_coords is not None:
-            # Projection coords are cached
-            if data_slice is None:
-                return self._projection_x_coords, self._projection_y_coords
-            else:
-                return self._projection_x_coords[data_slice], self._projection_y_coords[data_slice]
-
-        is_single_value = False
-        is_1d_select = False
-
-        if dtype is None:
-            dtype = self.dtype
-
-        target_x = np.arange(self.width, dtype=dtype) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = np.arange(self.height, dtype=dtype) * -self.pixel_size_y + self.pixel_upper_left[1]
-        if data_slice is None or data_slice == slice(None):
-            pass
-        elif isinstance(data_slice, slice):
+        target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
+        if data_slice is not None and isinstance(data_slice, slice):
             target_y = target_y[data_slice]
-        else:
+        elif data_slice is not None:
             target_y = target_y[data_slice[0]]
             target_x = target_x[data_slice[1]]
 
         if self.rotation != 0:
-            res = do_rotation(target_x, target_y, self.rotation)
+            res = self._do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
+        elif chunks is not None:
+            import dask.array as da
+            target_x, target_y = da.meshgrid(target_x, target_y)
         else:
             target_x, target_y = np.meshgrid(target_x, target_y)
-
-        if is_single_value:
-            # Return single values
-            target_x = float(target_x)
-            target_y = float(target_y)
-        elif is_1d_select:
-            # Reshape to 1D array
-            target_x = target_x.reshape((target_x.size,))
-            target_y = target_y.reshape((target_y.size,))
-
-        if cache and data_slice is None:
-            # Cache the result if requested
-            self._projection_x_coords = target_x
-            self._projection_y_coords = target_y
 
         return target_x, target_y
 
     @property
     def projection_x_coords(self):
-        return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
+        if self.rotation != 0:
+            # rotation is only supported in 'get_proj_coords' right now
+            return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
+        else:
+            return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
-        return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
-
-    @property
-    def proj_x_coords(self):
-        warnings.warn(
-            "Deprecated, use 'projection_x_coords' instead", DeprecationWarning)
-        return self.projection_x_coords
-
-    @property
-    def proj_y_coords(self):
-        warnings.warn(
-            "Deprecated, use 'projection_y_coords' instead", DeprecationWarning)
-        return self.projection_y_coords
+        if self.rotation != 0:
+            # rotation is only supported in 'get_proj_coords' right now
+            return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
+        else:
+            return self.get_proj_vectors()[1]
 
     @property
     def outer_boundary_corners(self):
-        """Return the lon,lat of the outer edges of the corner points
-        """
+        """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
         proj = Proj(**self.proj_dict)
 
@@ -1461,19 +1493,14 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[2], corner_lats[2]),
                 Coordinate(corner_lons[3], corner_lats[3])]
 
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
-        from dask.array import map_blocks
+    def get_lonlats_dask(self, chunks=None, dtype=None):
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks, dtype=dtype)
 
-        dtype = dtype or self.dtype
-        target_x, target_y = self.get_proj_coords_dask(chunks, dtype)
-
-        res = map_blocks(invproj, target_x, target_y,
-                         chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                         new_axis=[2], proj_dict=self.proj_dict)
-
-        return res[:, :, 0], res[:, :, 1]
-
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of area.
 
         Parameters
@@ -1485,6 +1512,10 @@ class AreaDefinition(BaseDefinition):
             Calculate only coordinates for specified slice
         cache : bool, optional
             Store result the result. Requires data_slice to be None
+        dtype : numpy.dtype, optional
+            Data type of the returned arrays
+        chunks: int or tuple, optional
+            Create dask arrays and use this chunk size
 
         Returns
         -------
@@ -1492,47 +1523,53 @@ class AreaDefinition(BaseDefinition):
             Grids of area lons and and lats
         """
 
+        if cache:
+            warnings.warn("'cache' keyword argument will be removed in the "
+                          "future and data will not be cached.", PendingDeprecationWarning)
         if dtype is None:
             dtype = self.dtype
 
-        if self.lons is None or self.lats is None:
-            # Data is not cached
-            if nprocs is None:
-                nprocs = self.nprocs
+        if self.lons is not None:
+            # Data is cache already
+            lons = self.lons
+            lats = self.lats
+            if data_slice is not None:
+                lons = lons[data_slice]
+                lats = lats[data_slice]
+            return lons, lats
 
-            # Proj.4 definition of target area projection
-            if nprocs > 1:
-                target_proj = Proj_MP(**self.proj_dict)
-            else:
-                target_proj = Proj(**self.proj_dict)
+        # Get X/Y coordinates for the whole area
+        target_x, target_y = self.get_proj_coords(data_slice=data_slice, chunks=chunks, dtype=dtype)
+        if nprocs is None and not hasattr(target_x, 'chunks'):
+            nprocs = self.nprocs
+        if nprocs is not None and hasattr(target_x, 'chunks'):
+            # we let 'get_proj_coords' decide if dask arrays should be made
+            # but if the user provided nprocs then this doesn't make sense
+            raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
-            # Get coordinates of local area as ndarrays
-            target_x, target_y = self.get_proj_coords(
-                data_slice=data_slice, dtype=dtype)
+        # Proj.4 definition of target area projection
+        if hasattr(target_x, 'chunks'):
+            # we are using dask arrays, map blocks to th
+            from dask.array import map_blocks
+            res = map_blocks(invproj, target_x, target_y,
+                             chunks=(target_x.chunks[0], target_x.chunks[1], 2),
+                             new_axis=[2], proj_dict=self.proj_dict)
+            return res[:, :, 0], res[:, :, 1]
 
-            # Get corresponding longitude and latitude values
-            lons, lats = target_proj(target_x, target_y, inverse=True,
-                                     nprocs=nprocs)
-            lons = np.asanyarray(lons, dtype=dtype)
-            lats = np.asanyarray(lats, dtype=dtype)
-
-            if cache and data_slice is None:
-                # Cache the result if requested
-                self.lons = lons
-                self.lats = lats
-
-            # Free memory
-            del (target_x)
-            del (target_y)
+        if nprocs > 1:
+            target_proj = Proj_MP(**self.proj_dict)
         else:
-            # Data is cached
-            if data_slice is None:
-                # Full slice
-                lons = self.lons
-                lats = self.lats
-            else:
-                lons = self.lons[data_slice]
-                lats = self.lats[data_slice]
+            target_proj = Proj(**self.proj_dict)
+
+        # Get corresponding longitude and latitude values
+        lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
+        lons = np.asanyarray(lons, dtype=dtype)
+        lats = np.asanyarray(lats, dtype=dtype)
+
+        if cache and data_slice is None:
+            # Cache the result if requested
+            self.lons = lons
+            self.lats = lats
 
         return lons, lats
 
@@ -1754,8 +1791,13 @@ class StackedAreaDefinition(BaseDefinition):
         except (IncompatibleAreas, IndexError):
             self.defs.append(definition)
 
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of the area."""
+
+        if chunks is not None:
+            from dask.array import vstack
+        else:
+            vstack = np.vstack
 
         llons = []
         llats = []
@@ -1767,40 +1809,27 @@ class StackedAreaDefinition(BaseDefinition):
         offset = 0
         for definition in self.defs:
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0),
-                                        definition.height),
+                                    min(max(row_slice.stop - offset, 0), definition.height),
                                     row_slice.step)
-            lons, lats = definition.get_lonlats(nprocs=nprocs,
-                                                data_slice=(local_row_slice,
-                                                            col_slice),
-                                                cache=cache,
-                                                dtype=dtype)
+            lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
+                                                cache=cache, dtype=dtype, chunks=chunks)
 
             llons.append(lons)
             llats.append(lats)
             offset += lons.shape[0]
 
-        self.lons = np.vstack(llons)
-        self.lats = np.vstack(llats)
+        self.lons = vstack(llons)
+        self.lats = vstack(llats)
 
         return self.lons, self.lats
 
-    def get_lonlats_dask(self, chunks=CHUNK_SIZE, dtype=None):
+    def get_lonlats_dask(self, chunks=None, dtype=None):
         """"Return lon and lat dask arrays of the area."""
-        import dask.array as da
-        llons = []
-        llats = []
-        for definition in self.defs:
-            lons, lats = definition.get_lonlats_dask(chunks=chunks,
-                                                     dtype=dtype)
-
-            llons.append(lons)
-            llats.append(lats)
-
-        self.lons = da.concatenate(llons, axis=0)
-        self.lats = da.concatenate(llats, axis=0)
-
-        return self.lons, self.lats
+        warnings.warn("'get_lonlats_dask' is deprecated, please use "
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+        if chunks is None:
+            chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
+        return self.get_lonlats(chunks=chunks, dtype=dtype)
 
     def squeeze(self):
         """Generate a single AreaDefinition if possible."""

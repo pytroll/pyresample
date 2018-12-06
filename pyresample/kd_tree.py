@@ -1077,12 +1077,16 @@ class XArrayResamplerNN(object):
         Args:
             data (dask.array.Array): Source data pixels to sample
             fill_value (float): Output fill value when no source data is
-                                near the target pixel. If the input data
-                                is a integer array then the minimum value
-                                for that integer type is used. Otherwise,
-                                NaN is used and can be detected in the result
-                                with ``res.isnull()``.
+                near the target pixel. When omitted, if the input data is an
+                integer array then the maximum value for that integer type is
+                used, but otherwise, NaN is used and can be detected in the
+                result with ``res.isnull()``.
 
+        Returns:
+            dask.array.Array: The resampled array. The dtype of the array will
+                be the same as the input data. Pixels with no matching data from
+                the input array will be filled (see the `fill_value` parameter
+                description above).
         """
         if fill_value is not None and np.isnan(fill_value) and \
                 np.issubdtype(data.dtype, np.integer):
@@ -1200,10 +1204,7 @@ class XArrayResamplerNN(object):
                       dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=data.attrs.copy())
-        res.attrs['_FillValue'] = fill_value
-        # if fill_value isn't NaN then we have to tell xarray what null is
-        if not np.isnan(fill_value):
-            res = res.where(res != fill_value)
+
         return res
 
 

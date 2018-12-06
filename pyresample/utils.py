@@ -113,7 +113,7 @@ def parse_area_file(area_file_name, *regions):
 
     try:
         return _parse_yaml_area_file(area_file_name, *regions)
-    except yaml.scanner.ScannerError:
+    except (yaml.scanner.ScannerError, yaml.parser.ParserError):
         return _parse_legacy_area_file(area_file_name, *regions)
 
 
