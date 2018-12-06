@@ -730,7 +730,7 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
     units : str, optional
         Default projection units: meters, radians, or degrees
     shape : list, optional
-        Number of pixels in the x and y direction (height, width)
+        Number of pixels in the y and x direction (height, width)
     area_extent : list, optional
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     upper_left_extent : list, optional
@@ -894,7 +894,7 @@ def _round_poles(center, units, p):
 
 
 def _distance_from_center_forward(var, center, p, is_radians):
-    """Convert distances in degrees to projection units."""
+    """Convert distances in radians or degrees to projection units."""
     # Interprets radius and resolution as distances between latitudes/longitudes.
     # Since the distance between longitudes and latitudes is not constant in
     # most projections, there must be reference point to start from.

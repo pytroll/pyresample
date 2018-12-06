@@ -26,12 +26,13 @@ AreaDefinition
 
 An :class:`~pyresample.geometry.AreaDefinition`, or ``area``, is the primary
 way of specifying a uniformly spaced geographic region in pyresample. It is
-also one of the only geometry objects that understands geographic projects.
+also one of the only geometry objects that understands geographic projections.
 Areas use the :doc:`PROJ.4 <proj4:index>` method for describing projected
 coordinate reference systems (CRS). If the projection for an area is not
 described by longitude/latitude coordinates then it is typically described
-in X/Y coordinates in meters. See the PROJ.4 documentation for more
-information on projections and coordinate reference systems.
+in X/Y coordinates in meters. See the :doc:`PROJ.4 <proj4:index>`
+documentation for more information on projections and coordinate reference
+systems.
 
 The following arguments are needed to initialize an area:
 
