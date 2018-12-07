@@ -3,3 +3,5 @@ recursive-include docs/source *
 include test/test_files/*
 include LICENSE.txt
 include pyresample/ewa/*.h
+include versioneer.py
+include pyresample/version.py
