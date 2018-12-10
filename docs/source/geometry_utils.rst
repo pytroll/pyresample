@@ -28,13 +28,13 @@ and optional arguments:
 
 * **description**: Human-readable description. If not provided, defaults to **area_id**
 * **proj_id**: ID of projection (being deprecated)
-* **units**: Default projection units: meters, radians, or degrees
+* **units**: Units that provided arguments should be interpreted as: Defaults to meters
+* **shape**: Number of pixels in the y and x direction following row-column format (height, width)
 * **area_extent**: Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-* **shape**: Number of pixels in the y and x direction (height, width), aka (grid_rows, grid_columns)
-* **upper_left_extent**: Projection x and y coordinates of the upper left corner of the upper left pixel (x, y)
-* **center**: Projection x and y coordinate of the center of projection (x, y)
-* **resolution**: Projection size of pixels in the x and y direction (dx, dy)
-* **radius**: Projection length from the center to the left/right and top/bottom outer edges (dx, dy)
+* **upper_left_extent**: x and y coordinates of the upper left corner of the upper left pixel (x, y)
+* **center**: x and y coordinate of the center of projection (x, y)
+* **resolution**: Size of pixels in the x and y direction (dx, dy)
+* **radius**: Length from the center to the left/right and top/bottom outer edges (dx, dy)
 
 .. doctest::
 
@@ -120,7 +120,7 @@ arguments:
 from_extent
 ***********
 
-:func:`~pyresample.geometry.AreaDefinition.from_extent`:
+:func:`~pyresample.geometry.AreaDefinition.from_extent`
 
 .. doctest::
 
@@ -130,7 +130,7 @@ from_extent
  >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
  >>> shape = (425, 425)
- >>> area_def = AreaDefinition.from_extent(area_id, proj_string, area_extent, shape)
+ >>> area_def = AreaDefinition.from_extent(area_id, proj_string, shape, area_extent)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -177,7 +177,7 @@ from_area_of_interest
 
 .. doctest::
 
- >>> area_def = AreaDefinition.from_area_of_interest(area_id, proj_dict, center, resolution, shape)
+ >>> area_def = AreaDefinition.from_area_of_interest(area_id, proj_dict, shape, center, resolution)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -186,13 +186,13 @@ from_area_of_interest
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-from_geotiff
-************
+from_ul_corner
+**************
 
-:func:`~pyresample.geometry.AreaDefinition.from_geotiff`
+:func:`~pyresample.geometry.AreaDefinition.from_ul_corner`
 
  >>> upper_left_extent = (-5326849.0625, 5326849.0625)
- >>> area_def = AreaDefinition.from_geotiff(area_id, proj_string, upper_left_extent, resolution, shape)
+ >>> area_def = AreaDefinition.from_ul_corner(area_id, proj_string, shape, upper_left_extent, resolution)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh

@@ -920,7 +920,7 @@ class AreaDefinition(BaseDefinition):
         return self.height
 
     @classmethod
-    def from_extent(cls, area_id, projection, area_extent, shape, units=None, **kwargs):
+    def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
         """Creates an AreaDefinition object from area_extent and shape.
 
         Parameters
@@ -929,12 +929,12 @@ class AreaDefinition(BaseDefinition):
             ID of area
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
         area_extent : list
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-        shape : list
-            Number of pixels in the x and y direction (height, width)
         units : str, optional
-            Default projection units: meters, radians, or degrees
+            Units that provided arguments should be interpreted as
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -962,7 +962,7 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, area_extent=area_extent, shape=shape, units=units, **kwargs)
+        return utils.from_params(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
     @classmethod
     def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
@@ -978,12 +978,12 @@ class AreaDefinition(BaseDefinition):
             Center of projection (x, y)
         radius : list or float
             Length from the center to the edges of the projection (dx, dy)
+        shape : list, optional
+            Number of pixels in the y and x direction (height, width)
         resolution : list or float, optional
             Size of pixels: (dx, dy)
-        shape : list, optional
-            Number of pixels in the x and y direction (height, width)
         units : str, optional
-            Default projection units: meters, radians, or degrees
+            Units that provided arguments should be interpreted as
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1016,11 +1016,11 @@ class AreaDefinition(BaseDefinition):
             4. meters
         * **resolution** and **radius** can be specified with one value if dx == dy
         """
-        return utils.from_params(area_id, projection, center=center, radius=radius, shape=shape,
+        return utils.from_params(area_id, projection, shape=shape, center=center, radius=radius,
                                  resolution=resolution, units=units, **kwargs)
 
     @classmethod
-    def from_area_of_interest(cls, area_id, projection, center, resolution, shape, units=None, **kwargs):
+    def from_area_of_interest(cls, area_id, projection, shape, center, resolution, units=None, **kwargs):
         """Creates an AreaDefinition object from center, resolution, and shape.
 
         Parameters
@@ -1029,14 +1029,14 @@ class AreaDefinition(BaseDefinition):
             ID of area
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
         center : list
             Center of projection (x, y)
         resolution : list or float
             Size of pixels: (dx, dy). Can be specified with one value if dx == dy
-        shape : list
-            Number of pixels in the x and y direction (height, width)
         units : str, optional
-            Default projection units: meters, radians, or degrees
+            Units that provided arguments should be interpreted as
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1064,11 +1064,11 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, center=center, resolution=resolution,
-                                 shape=shape, units=units, **kwargs)
+        return utils.from_params(area_id, projection, shape=shape, center=center,
+                                 resolution=resolution, units=units, **kwargs)
 
     @classmethod
-    def from_geotiff(cls, area_id, projection, upper_left_extent, resolution, shape, units=None, **kwargs):
+    def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
         """Creates an AreaDefinition object from upper_left_extent, resolution, and shape.
 
         Parameters
@@ -1077,18 +1077,18 @@ class AreaDefinition(BaseDefinition):
             ID of area
         projection : dict or str
             Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
         upper_left_extent : list
             Upper left corner of upper left pixel (x, y)
         resolution : list or float
             Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
-        shape : list
-            Number of pixels in the x and y direction (height, width)
+        units : str, optional
+            Units that provided arguments should be interpreted as
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        units : str, optional
-            Default projection units: meters, radians, or degrees
         rotation: float, optional
             rotation in degrees (negative is cw)
         nprocs : int, optional
@@ -1112,8 +1112,8 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, upper_left_extent=upper_left_extent, resolution=resolution,
-                                 shape=shape, units=units, **kwargs)
+        return utils.from_params(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
+                                 resolution=resolution, units=units, **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""

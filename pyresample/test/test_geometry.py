@@ -1443,12 +1443,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_list.append(area(area_id, projection_list[1], shape=shape,
                               radius=radius, upper_left_extent=upper_left_extent))
         # Tests all 4 user cases.
-        area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], area_extent, shape))
+        area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], shape, area_extent))
         area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
                                                     resolution=resolution))
-        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], center_list[0], resolution,
-                                                              shape))
-        area_list.append(AreaDefinition.from_geotiff(area_id, projection_list[1], upper_left_extent, resolution, shape))
+        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], shape, center_list[0],
+                                                              resolution))
+        area_list.append(AreaDefinition.from_ul_corner(area_id, projection_list[1], shape, upper_left_extent,
+                                                       resolution))
         # Tests non-poles using degrees and mercator.
         area_def = area(area_id, '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
                         center=(0, 0), radius=45, resolution=(1, 0.9999291722135637), units='degrees')

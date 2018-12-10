@@ -191,8 +191,8 @@ def _get_list(params, var, arg_list):
                 else:
                     list_of_values.append(values)
         except AttributeError:
-            raise ValueError('Incorrect yaml: {0} has too many arguments: Both {0} and {1} were specified.'.format(var,
-                                                                                                                   arg))
+            raise ValueError('Invalid area definition:: {0} has too many arguments: Both' +
+                             '{0} and {1} were specified.'.format(var, arg))
     # If units are present, convert to xarray.
     units = variable.get('units')
     if units is not None:
@@ -713,8 +713,8 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
             yaml_file.write(area.create_areas_def())
 
 
-def from_params(area_id, projection, shape=None, upper_left_extent=None, center=None, area_extent=None,
-                resolution=None, radius=None, units=None, rotation=None, **kwargs):
+def from_params(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
+                center=None, resolution=None, radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found.
 
     Parameters
@@ -728,11 +728,15 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
     proj_id : str, optional
         ID of projection (being deprecated)
     units : str, optional
-        Default projection units: meters, radians, or degrees
-    shape : list, optional
-        Number of pixels in the y and x direction (height, width)
+        Units that provided arguments should be interpreted as
+    width : str, optional
+        Number of pixels in the x direction
+    height : str, optional
+        Number of pixels in the y direction
     area_extent : list, optional
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+    shape : list, optional
+        Number of pixels in the y and x direction (height, width)
     upper_left_extent : list, optional
         Upper left corner of upper left pixel (x, y)
     center : list, optional
@@ -765,7 +769,7 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
 
     Notes
     -----
-    * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
+    * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any parameter from cs2cs
       (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
 
         1. units expressed with each variable through a DataArray's attrs attribute.
@@ -789,6 +793,10 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
     if units is None:
         units = proj_dict.get('units', 'm')
 
+    # Allow height and width to be provided for more consistency across functions in pyresample.
+    if height is not None or width is not None:
+        shape = _validate_variable(shape, (height, width), 'shape', ['height', 'width'])
+
     # Makes sure list-like objects are list-like, have the right shape, and contain only numbers.
     center = _verify_list('center', center, 2)
     radius = _verify_list('radius', radius, 2)
@@ -807,14 +815,13 @@ def from_params(area_id, projection, shape=None, upper_left_extent=None, center=
         area_extent_ll = _convert_units(area_extent_ll, 'area_extent', units, p, proj_dict)
         area_extent_ur = _convert_units(area_extent_ur, 'area_extent', units, p, proj_dict)
         area_extent = area_extent_ll + area_extent_ur
-    if rotation is not None:
-        rotation = _convert_rotation(rotation, units)
+        kwargs['rotation'] = _convert_rotation(kwargs.get('rotation'), units)
 
     # Fills in missing information to attempt to create an area definition.
     if area_extent is None or shape is None:
         area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, resolution,
                                                       upper_left_extent, units, p, proj_dict)
-    return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, rotation=rotation, **kwargs)
+    return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
 
 def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs):
@@ -850,6 +857,8 @@ def _get_proj_data(projection):
 
 def _convert_rotation(rotation, units):
     """Convert rotation to degrees."""
+    if rotation is None:
+        return None
     if isinstance(rotation, DataArray):
         if hasattr(rotation, 'units'):
             units = rotation.units
@@ -902,13 +911,13 @@ def _distance_from_center_forward(var, center, p, is_radians):
         raise ValueError('center must be given to convert radius or resolution from an angle to meters')
 
     center_as_angle = p(*center, radians=is_radians, inverse=True, errcheck=True)
-    unit_conversion = 90
+    pole = 90
     if is_radians:
-        unit_conversion = math.pi / 2
+        pole = math.pi / 2
     # If on a pole, use northern/southern latitude for both height and width.
-    if abs(abs(center_as_angle[1]) - unit_conversion) < 1e-8:
+    if abs(abs(center_as_angle[1]) - pole) < 1e-8:
         direction_of_poles = _sign(center_as_angle[1])
-        var = (center[1] - p(_sign(center_as_angle[0]) * unit_conversion, center_as_angle[1] -
+        var = (center[1] - p(_sign(center_as_angle[0]) * pole, center_as_angle[1] -
                              direction_of_poles * abs(var[0]), radians=is_radians, errcheck=True)[0],
                center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[1]),
                              radians=is_radians, errcheck=True)[1])
@@ -932,7 +941,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if p.is_latlong() and 'm' in units:
+    if p.is_latlong() and ('m' == units or 'meters' == units or 'metres' == units):
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     # Check if units are an angle.
     is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
@@ -941,7 +950,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
     if not is_angle:
-        if units == 'meters':
+        if units == 'meters' or units == 'metres':
             units = 'm'
         if proj_dict.get('units', 'm') != units:
             tmp_proj_dict = proj_dict.copy()
@@ -964,15 +973,6 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if name in ['radius', 'resolution']:
         var = (abs(var[0]), abs(var[1]))
     return var
-
-
-def _validate_variable(var, new_var, var_name, input_list):
-    """Makes sure data given does not conflict with itself."""
-    if var is not None and not np.allclose(var, new_var):
-        raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
-            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
-                                                                                      input_list))
-    return new_var
 
 
 def _round_shape(shape, radius=None, resolution=None):
@@ -1008,6 +1008,20 @@ def _round_shape(shape, radius=None, resolution=None):
             logging.warning('shape provided does not contain only integers: {0}\n'
                             'Rounding shape to {1}'.format(shape, (height, width)))
     return height, width
+
+
+def _validate_variable(var, new_var, var_name, input_list):
+    """Makes sure data given by the user does not conflict with itself.
+
+    If a variable that was given by the user contradicts other data provided, an exception is raised.
+    Example: upper_left_extent is (-10, 10), but area_extent is (-20, -20, 20, 20).
+
+    """
+    if var is not None and not np.allclose(np.array(var, dtype=float), np.array(new_var, dtype=float), equal_nan=True):
+        raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
+            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
+                                                                                          input_list))
+    return new_var
 
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, upper_left_extent, units, p, proj_dict):
