@@ -1020,7 +1020,7 @@ def _validate_variable(var, new_var, var_name, input_list):
     if var is not None and not np.allclose(np.array(var, dtype=float), np.array(new_var, dtype=float), equal_nan=True):
         raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
             var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
-                                                                                          input_list))
+                                                                                      input_list))
     return new_var
 
 
