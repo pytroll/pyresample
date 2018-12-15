@@ -27,8 +27,17 @@ The ``from_params`` function has the following required arguments:
 and optional arguments:
 
 * **description**: Human-readable description. If not provided, defaults to **area_id**
-* **proj_id**: ID of projection (being deprecated)
-* **units**: Units that provided arguments should be interpreted as: Defaults to meters
+* **proj_id**: ID of projection (deprecated)
+* **units**: Units that provided arguments should be interpreted as. This can be
+    one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+    parameter supported by the
+    `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+    command. Units are determined in the following priority:
+
+    1. units expressed with each variable through a DataArray's attrs attribute.
+    2. units passed to ``units``
+    3. units used in ``projection``
+    4. meters
 * **shape**: Number of pixels in the y and x direction following row-column format (height, width)
 * **area_extent**: Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
 * **upper_left_extent**: x and y coordinates of the upper left corner of the upper left pixel (x, y)
@@ -258,6 +267,7 @@ an area might be specified.
  corner_2:
    area_id: ease_sh
    description: Another example of making an area definition using shape, upper_left_extent, and resolution
+   # Change to degrees units
    units:  °
    projection:
      proj: laea

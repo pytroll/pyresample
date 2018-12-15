@@ -726,9 +726,19 @@ def from_params(area_id, projection, width=None, height=None, area_extent=None, 
     description : str, optional
         Description/name of area. Defaults to area_id
     proj_id : str, optional
-        ID of projection (being deprecated)
+        ID of projection (deprecated)
     units : str, optional
-        Units that provided arguments should be interpreted as
+        Units that provided arguments should be interpreted as. This can be
+        one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+        parameter supported by the
+        `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+        command. Units are determined in the following priority:
+
+        1. units expressed with each variable through a DataArray's attrs attribute.
+        2. units passed to ``units``
+        3. units used in ``projection``
+        4. meters
+
     width : str, optional
         Number of pixels in the x direction
     height : str, optional
@@ -769,15 +779,8 @@ def from_params(area_id, projection, width=None, height=None, area_extent=None, 
 
     Notes
     -----
-    * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any parameter from cs2cs
-      (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
-
-        1. units expressed with each variable through a DataArray's attrs attribute.
-        2. units passed to **units**
-        3. units used in **projection**
-        4. meters
-    * **resolution** and **radius** can be specified with one value if dx == dy
-    * If **resolution** and **radius** are provided as angles, center must be given or findable. In such a case,
+    * ``resolution`` and ``radius`` can be specified with one value if dx == dy
+    * If ``resolution`` and ``radius`` are provided as angles, center must be given or findable. In such a case,
       they represent [projection x distance from center[0] to center[0]+dx, projection y distance from center[1] to
       center[1]+dy]
     """
