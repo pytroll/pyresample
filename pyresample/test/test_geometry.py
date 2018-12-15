@@ -1399,32 +1399,31 @@ class TestStackedAreaDefinition(unittest.TestCase):
         # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
         # area_list used to check that areas are all correct at the end.
         area_list = []
-        for projection in projection_list:
-            for units in units_list:
-                for center in center_list:
-                    # essentials = center, radius, upper_left_extent, resolution, shape.
-                    if 'm' in units:
-                        # Meters.
-                        essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
-                                      (12533.7625, 25067.525), (425, 850)]
-                    elif 'deg' in units:
-                        # Degrees.
-                        essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
-                                      (0.11271481862984278, 0.22542974631297721), (425, 850)]
-                    else:
-                        # Radians.
-                        essentials = [(0.0, -1.5707963267948966), 0.86257209725,
-                                      (-0.7853981633974483, -0.30571189166434753),
-                                      (0.001967244700879, 0.003934491305097), (425, 850)]
-                    # If center is valid, use it.
-                    if len(center) == 2:
-                        center = essentials[0]
-                    try:
-                        area_list.append(area(area_id, projection, proj_id=proj_id, upper_left_extent=essentials[2],
-                                              center=center, shape=essentials[4], resolution=essentials[3],
-                                              radius=essentials[1], description=description, units=units, rotation=45))
-                    except ValueError:
-                        pass
+        from itertools import product
+        for projection, units, center in product(projection_list, units_list, center_list):
+            # essentials = center, radius, upper_left_extent, resolution, shape.
+            if 'm' in units:
+                # Meters.
+                essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
+                              (12533.7625, 25067.525), (425, 850)]
+            elif 'deg' in units:
+                # Degrees.
+                essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
+                              (0.11271481862984278, 0.22542974631297721), (425, 850)]
+            else:
+                # Radians.
+                essentials = [(0.0, -1.5707963267948966), 0.86257209725,
+                              (-0.7853981633974483, -0.30571189166434753),
+                              (0.001967244700879, 0.003934491305097), (425, 850)]
+            # If center is valid, use it.
+            if len(center) == 2:
+                center = essentials[0]
+            try:
+                area_list.append(area(area_id, projection, proj_id=proj_id, upper_left_extent=essentials[2],
+                                      center=center, shape=essentials[4], resolution=essentials[3],
+                                      radius=essentials[1], description=description, units=units, rotation=45))
+            except ValueError:
+                pass
         self.assertEqual(len(area_list), 6)
 
         # Tests that specifying units through xarrays works.
