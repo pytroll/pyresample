@@ -962,7 +962,7 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
+        return utils.create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
     @classmethod
     def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
@@ -1016,8 +1016,8 @@ class AreaDefinition(BaseDefinition):
             4. meters
         * **resolution** and **radius** can be specified with one value if dx == dy
         """
-        return utils.from_params(area_id, projection, shape=shape, center=center, radius=radius,
-                                 resolution=resolution, units=units, **kwargs)
+        return utils.create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
+                                     resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_area_of_interest(cls, area_id, projection, shape, center, resolution, units=None, **kwargs):
@@ -1064,8 +1064,8 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, shape=shape, center=center,
-                                 resolution=resolution, units=units, **kwargs)
+        return utils.create_area_def(area_id, projection, shape=shape, center=center,
+                                     resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
@@ -1112,8 +1112,8 @@ class AreaDefinition(BaseDefinition):
             3. units used in **projection**
             4. meters
         """
-        return utils.from_params(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
-                                 resolution=resolution, units=units, **kwargs)
+        return utils.create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
+                                     resolution=resolution, units=units, **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""

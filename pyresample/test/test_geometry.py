@@ -1372,8 +1372,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
         adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
                                      area1.proj_dict, area1.width, y_size, area_extent)
 
-    def test_from_params(self):
-        """Test from_params and the four sub-methods that call it in AreaDefinition."""
+    def test_create_area_def(self):
+        """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
         from pyresample.geometry import AreaDefinition
         from pyresample.geometry import DynamicAreaDefinition
         from pyresample import utils
@@ -1392,8 +1392,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
         radius = [5326849.0625, 5326849.0625]
         units_list = ['meters', 'degrees', 'radians']
         base_def = AreaDefinition(area_id, description, '', projection_list[0], shape[1], shape[0], area_extent)
-        # reducing the length of from_params makes lines much shorter.
-        area = utils.from_params
+        # reducing the length of create_area_def makes lines much shorter.
+        area = utils.create_area_def
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees, meters, and radians all create the same area definition.

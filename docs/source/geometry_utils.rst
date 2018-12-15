@@ -11,7 +11,7 @@ AreaDefinition Creation
 
 The main utility function for creating
 :class:`~pyresample.geometry.AreaDefinition` objects is the
-:func:`~pyresample.utils.from_params` function. This function will take
+:func:`~pyresample.utils.create_area_def` function. This function will take
 whatever information can be provided to describe a geographic region and
 create a valid ``AreaDefinition`` object if possible. If it can't make
 a fully specified ``AreaDefinition`` then it will provide a
@@ -19,7 +19,7 @@ a fully specified ``AreaDefinition`` then it will provide a
 can handle unit conversions and will perform the coordinate calculations
 necessary to get an area's ``shape`` and ``area_extent``.
 
-The ``from_params`` function has the following required arguments:
+The ``create_area_def`` function has the following required arguments:
 
 * **area_id**: ID of area
 * **projection**: Projection parameters as a proj4_dict or proj4_string
@@ -53,7 +53,7 @@ and optional arguments:
  >>> center = (0, 0)
  >>> radius = (5326849.0625, 5326849.0625)
  >>> resolution = (25067.525, 25067.525)
- >>> area_def = utils.from_params(area_id, proj_dict, center=center, radius=radius, resolution=resolution)
+ >>> area_def = utils.create_area_def(area_id, proj_dict, center=center, radius=radius, resolution=resolution)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
@@ -62,14 +62,14 @@ and optional arguments:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-The ``from_params`` function accepts some parameters in multiple forms
+The ``create_area_def`` function accepts some parameters in multiple forms
 to make it as easy as possible. For example, the **resolution** and **radius**
 keyword arguments can be specified with one value if ``dx == dy``:
 
 .. doctest::
 
  >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> area_def = utils.from_params(area_id, proj_string, center=center,
+ >>> area_def = utils.create_area_def(area_id, proj_string, center=center,
  ...                              radius=5326849.0625, resolution=25067.525)
  >>> print(area_def)
  Area ID: ease_sh
@@ -86,7 +86,7 @@ the mercator projection with radius and resolution defined in degrees.
 .. doctest::
 
  >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> area_def = utils.from_params(area_id, proj_dict, center=(0, 0),
+ >>> area_def = utils.create_area_def(area_id, proj_dict, center=(0, 0),
  ...                              radius=(47.90379019311, 43.1355420077),
  ...                              resolution=(0.22542960090875294, 0.22542901929487608),
  ...                              units='degrees', description='Antarctic EASE grid')
@@ -104,7 +104,7 @@ information provided by the user, a
 
 .. doctest::
 
- >>> area_def = utils.from_params(area_id, proj_string, radius=radius, resolution=resolution)
+ >>> area_def = utils.create_area_def(area_id, proj_string, radius=radius, resolution=resolution)
  >>> print(type(area_def))
  <class 'pyresample.geometry.DynamicAreaDefinition'>
 
@@ -119,9 +119,9 @@ AreaDefinition Class Methods
 
 There are four class methods available on the
 :class:`~pyresample.geometry.AreaDefinition` class utilizing
-:func:`~pyresample.utils.from_params` providing a simpler interface to the
+:func:`~pyresample.utils.create_area_def` providing a simpler interface to the
 functionality described in the previous section.
-Hence each argument used below is the same as the ``from_params`` arguments
+Hence each argument used below is the same as the ``create_area_def`` arguments
 described above and can be used in the same way (i.e. units). The following
 functions require **area_id** and **projection** along with a few other
 arguments:
@@ -216,7 +216,7 @@ Loading from disk
 The :func:`~pyresample.utils.load_area` function can be used to
 parse area definitions from a configuration file by giving it the
 area file name and regions you wish to load. :func:`~pyresample.utils.load_area`
-takes advantage of :func:`~pyresample.utils.from_params`
+takes advantage of :func:`~pyresample.utils.create_area_def`
 and hence allows for the same arguments in the on-disk file.
 Pyresample uses the YAML file format to store on-disk area definitions.
 Below is an example YAML configuration file showing the various ways

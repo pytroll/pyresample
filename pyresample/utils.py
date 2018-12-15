@@ -162,7 +162,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
         params['radius'] = _get_list(params, 'radius', ['dx', 'dy'])
         params['rotation'] = _get_list(params, 'rotation', [])
-        res.append(from_params(**params))
+        res.append(create_area_def(**params))
     return res
 
 
@@ -289,9 +289,9 @@ def _create_area(area_id, area_content):
         config['AREA_EXTENT'][i] = float(val)
 
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
-    return from_params(config['REGION'], config['PCS_DEF'], description=config['NAME'], proj_id=config['PCS_ID'],
-                       shape=(config['YSIZE'], config['XSIZE']), area_extent=config['AREA_EXTENT'],
-                       rotation=config['ROTATION'])
+    return create_area_def(config['REGION'], config['PCS_DEF'], description=config['NAME'], proj_id=config['PCS_ID'],
+                           shape=(config['YSIZE'], config['XSIZE']), area_extent=config['AREA_EXTENT'],
+                           rotation=config['ROTATION'])
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_extent, rotation=0):
@@ -323,8 +323,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
     """
 
     proj_dict = _get_proj4_args(proj4_args)
-    return from_params(area_id, proj_dict, description=area_name, proj_id=proj_id,
-                       shape=(height, width), area_extent=area_extent)
+    return create_area_def(area_id, proj_dict, description=area_name, proj_id=proj_id,
+                           shape=(height, width), area_extent=area_extent)
 
 
 def _get_area_def_from_gdal(dataset, area_id=None, name=None, proj_id=None, proj_dict=None):
@@ -713,8 +713,8 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
             yaml_file.write(area.create_areas_def())
 
 
-def from_params(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
-                center=None, resolution=None, radius=None, units=None, **kwargs):
+def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
+                    center=None, resolution=None, radius=None, units=None, **kwargs):
     """Takes data the user knows and tries to make an area definition from what can be found.
 
     Parameters
@@ -828,7 +828,7 @@ def from_params(area_id, projection, width=None, height=None, area_extent=None, 
 
 
 def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs):
-    """Handles the creation of an area definition for from_params."""
+    """Handles the creation of an area definition for create_area_def."""
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
     # Remove arguments that are only for DynamicAreaDefinition.
