@@ -186,11 +186,17 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
     for sub_arg in argument_keys:
         # Verify that provided sub-arguments are valid.
         if sub_arg not in sub_arg_list:
-            raise ValueError('Invalid area definition: {0} is not a valid argument for {1}'.format(sub_arg, arg_name))
-        # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
-        elif arg_name in argument_keys and sub_arg != arg_name and sub_arg != 'units':
-            raise ValueError('Invalid area definition: {0} has too many arguments: Both {0} and {1} were specified.'.
-                             format(arg_name, sub_arg))
+            raise ValueError('Invalid area definition: {0} is not a valid sub-argument for {1}'.format(sub_arg,
+                                                                                                      arg_name))
+        elif arg_name in argument_keys:
+            # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
+            if sub_arg != arg_name and sub_arg != 'units':
+                raise ValueError('Invalid area definition: {0} has too many sub-arguments: Both {0} and {1} were '
+                                 'specified.'.
+                                 format(arg_name, sub_arg))
+            # If the arg_name is provided, it's expected that units is also provided.
+            elif 'units' not in argument_keys:
+                raise ValueError('Invalid area definition: {0} has the sub-argument {0} without units'.format(arg_name))
     units = argument.pop('units', None)
     list_of_values = argument.pop(arg_name, [])
     for sub_arg in sub_arg_list:

@@ -267,8 +267,7 @@ an area might be specified.
  corner_2:
    area_id: ease_sh
    description: Another example of making an area definition using shape, upper_left_extent, and resolution
-   # Change to degrees units
-   units:  °
+   units:  degrees
    projection:
      proj: laea
      lat_0: -90
@@ -315,7 +314,7 @@ an area might be specified.
    radius:
      dx: 49.4217406986
      dy: 49.4217406986
-     units: °
+     units: degrees
 
  area_of_interest:
    description: Example of making an area definition using shape, center, and resolution
