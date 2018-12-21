@@ -187,7 +187,7 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
         # Verify that provided sub-arguments are valid.
         if sub_arg not in sub_arg_list:
             raise ValueError('Invalid area definition: {0} is not a valid sub-argument for {1}'.format(sub_arg,
-                                                                                                      arg_name))
+                                                                                                       arg_name))
         elif arg_name in argument_keys:
             # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
             if sub_arg != arg_name and sub_arg != 'units':
