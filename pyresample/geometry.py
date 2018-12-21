@@ -934,7 +934,17 @@ class AreaDefinition(BaseDefinition):
         area_extent : list
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
         units : str, optional
-            Units that provided arguments should be interpreted as
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -951,16 +961,6 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
-        Notes
-        -----
-        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
-          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
-
-            1. units expressed with each variable through a DataArray's attrs attribute.
-            2. units passed to **units**
-            3. units used in **projection**
-            4. meters
         """
         return utils.create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
@@ -983,7 +983,17 @@ class AreaDefinition(BaseDefinition):
         resolution : list or float, optional
             Size of pixels: (dx, dy)
         units : str, optional
-            Units that provided arguments should be interpreted as
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1007,14 +1017,7 @@ class AreaDefinition(BaseDefinition):
 
         Notes
         -----
-        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
-          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
-
-            1. units expressed with each variable through a DataArray's attrs attribute.
-            2. units passed to **units**
-            3. units used in **projection**
-            4. meters
-        * **resolution** and **radius** can be specified with one value if dx == dy
+        * ``resolution`` and ``radius`` can be specified with one value if dx == dy
         """
         return utils.create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
                                      resolution=resolution, units=units, **kwargs)
@@ -1036,7 +1039,17 @@ class AreaDefinition(BaseDefinition):
         resolution : list or float
             Size of pixels: (dx, dy). Can be specified with one value if dx == dy
         units : str, optional
-            Units that provided arguments should be interpreted as
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1053,16 +1066,6 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
-        Notes
-        -----
-        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
-          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
-
-            1. units expressed with each variable through a DataArray's attrs attribute.
-            2. units passed to **units**
-            3. units used in **projection**
-            4. meters
         """
         return utils.create_area_def(area_id, projection, shape=shape, center=center,
                                      resolution=resolution, units=units, **kwargs)
@@ -1084,7 +1087,17 @@ class AreaDefinition(BaseDefinition):
         resolution : list or float
             Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
         units : str, optional
-            Units that provided arguments should be interpreted as
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
         description : str, optional
             Description/name of area. Defaults to area_id
         proj_id : str, optional
@@ -1101,16 +1114,6 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
-        Notes
-        -----
-        * **units** accepts 'deg', 'degrees', 'rad', 'radians', 'meters', and any parameter from cs2cs
-          (https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu). The order of default is:
-
-            1. units expressed with each variable through a DataArray's attrs attribute.
-            2. units passed to **units**
-            3. units used in **projection**
-            4. meters
         """
         return utils.create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
                                      resolution=resolution, units=units, **kwargs)

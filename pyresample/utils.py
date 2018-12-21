@@ -155,46 +155,53 @@ def _parse_yaml_area_file(area_file_name, *regions):
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(area_name, area_file_name))
         params.setdefault('area_id', area_name)
         # Optional arguments.
-        params['shape'] = _get_list(params, 'shape', ['height', 'width'])
-        params['upper_left_extent'] = _get_list(params, 'upper_left_extent', ['x', 'y'])
-        params['center'] = _get_list(params, 'center', ['x', 'y'])
-        params['area_extent'] = _get_list(params, 'area_extent', ['lower_left_xy', 'upper_right_xy'])
-        params['resolution'] = _get_list(params, 'resolution', ['dx', 'dy'])
-        params['radius'] = _get_list(params, 'radius', ['dx', 'dy'])
-        params['rotation'] = _get_list(params, 'rotation', [])
+        params['shape'] = _capture_subarguments(params, 'shape', ['height', 'width'])
+        params['upper_left_extent'] = _capture_subarguments(params, 'upper_left_extent', ['upper_left_extent', 'x', 'y',
+                                                                                          'units'])
+        params['center'] = _capture_subarguments(params, 'center', ['center', 'x', 'y', 'units'])
+        params['area_extent'] = _capture_subarguments(params, 'area_extent', ['area_extent', 'lower_left_xy',
+                                                                              'upper_right_xy', 'units'])
+        params['resolution'] = _capture_subarguments(params, 'resolution', ['resolution', 'dx', 'dy', 'units'])
+        params['radius'] = _capture_subarguments(params, 'radius', ['radius', 'dx', 'dy', 'units'])
+        params['rotation'] = _capture_subarguments(params, 'rotation', ['rotation', 'units'])
         res.append(create_area_def(**params))
     return res
 
 
-def _get_list(params, var, arg_list):
-    """Reads a list-like param variable."""
-    # Check if variable is in yaml.
-    variable = params.get(var)
-    if not isinstance(variable, dict):
-        return variable
-    list_of_values = []
-    # Add var as a key in case users want to express the entire variable with units. Insert
-    # at 0 to allow Attribute errors when too many arguments are specified.
-    arg_list.insert(0, var)
-    # Iterate through dict.
-    for key in variable.keys():
-        if key not in arg_list and (var == 'shape' or key != 'units'):
-            raise ValueError('{0} is not a valid argument for {1}'.format(key, var))
-    for arg in arg_list:
-        try:
-            values = variable.get(arg)
-            if values is not None:
-                if arg == var:
-                    list_of_values = values
-                elif arg in ('lower_left_xy', 'upper_right_xy') and isinstance(values, list):
-                    list_of_values.extend(values)
-                else:
-                    list_of_values.append(values)
-        except AttributeError:
-            raise ValueError('Invalid area definition:: {0} has too many arguments: Both' +
-                             '{0} and {1} were specified.'.format(var, arg))
-    # If units are present, convert to xarray.
-    units = variable.get('units')
+def _capture_subarguments(params, arg_name, sub_arg_list):
+    """Captures :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
+    
+    Example:
+        resolution:
+          dx: 11
+          dy: 22
+          units: meters
+    returns DataArray((11, 22), attrs={'units': 'meters})
+    """
+    # Check if argument is in yaml.
+    argument = params.get(arg_name)
+    if not isinstance(argument, dict):
+        return argument
+    argument_keys = argument.keys()
+    for sub_arg in argument_keys:
+        # Verify that provided sub-arguments are valid.
+        if sub_arg not in sub_arg_list:
+            raise ValueError('Invalid area definition: {0} is not a valid argument for {1}'.format(sub_arg, arg_name))
+        # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
+        elif arg_name in argument_keys and sub_arg != arg_name and sub_arg != 'units':
+            raise ValueError('Invalid area definition: {0} has too many arguments: Both {0} and {1} were specified.'.
+                             format(arg_name, sub_arg))
+    units = argument.pop('units', None)
+    list_of_values = argument.pop(arg_name, [])
+    for sub_arg in sub_arg_list:
+        sub_arg_value = argument.get(sub_arg)
+        # Don't append units to the argument.
+        if sub_arg_value is not None:
+            if sub_arg in ('lower_left_xy', 'upper_right_xy') and isinstance(sub_arg_value, list):
+                list_of_values.extend(sub_arg_value)
+            else:
+                list_of_values.append(sub_arg_value)
+    # If units are provided, convert to xarray.
     if units is not None:
         return DataArray(list_of_values, attrs={'units': units})
     return list_of_values
