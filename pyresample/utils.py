@@ -170,7 +170,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
 
 def _capture_subarguments(params, arg_name, sub_arg_list):
     """Captures :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
-    
+
     Example:
         resolution:
           dx: 11
