@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import with_statement
 
 import random
@@ -1356,21 +1357,111 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area1 = MagicMock()
         area1.area_extent = (1, 2, 3, 4)
         area1.proj_dict = {"proj": 'A'}
-        area1.y_size = random.randrange(6425)
-        area1.x_size = x_size
+        area1.height = random.randrange(6425)
+        area1.width = x_size
 
         area2 = MagicMock()
         area2.area_extent = (1, 4, 3, 6)
         area2.proj_dict = {"proj": 'A'}
-        area2.y_size = random.randrange(6425)
-        area2.x_size = x_size
+        area2.height = random.randrange(6425)
+        area2.width = x_size
 
         concatenate_area_defs(area1, area2)
         area_extent = [1, 2, 3, 6]
-        y_size = area1.y_size + area2.y_size
-        adef.assert_called_once_with(area1.area_id, area1.name, area1.proj_id,
-                                     area1.proj_dict, area1.x_size, y_size,
-                                     area_extent)
+        y_size = area1.height + area2.height
+        adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
+                                     area1.proj_dict, area1.width, y_size, area_extent)
+
+    def test_create_area_def(self):
+        """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
+        from pyresample.geometry import AreaDefinition
+        from pyresample.geometry import DynamicAreaDefinition
+        from pyresample import utils
+        DataArray = utils.DataArray
+
+        area_id = 'ease_sh'
+        description = 'Antarctic EASE grid'
+        projection_list = [{'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+                           '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m']
+        proj_id = 'ease_sh'
+        shape = (425, 850)
+        upper_left_extent = (-5326849.0625, 5326849.0625)
+        center_list = [[0, 0], 'a', (1, 2, 3)]
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+        resolution = (12533.7625, 25067.525)
+        radius = [5326849.0625, 5326849.0625]
+        units_list = ['meters', 'degrees', 'radians']
+        base_def = AreaDefinition(area_id, description, '', projection_list[0], shape[1], shape[0], area_extent)
+        # reducing the length of create_area_def makes lines much shorter.
+        area = utils.create_area_def
+
+        # Tests that incorrect lists do not create an area definition, that both projection strings and
+        # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
+        # area_list used to check that areas are all correct at the end.
+        area_list = []
+        from itertools import product
+        for projection, units, center in product(projection_list, units_list, center_list):
+            # essentials = center, radius, upper_left_extent, resolution, shape.
+            if 'm' in units:
+                # Meters.
+                essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
+                              (12533.7625, 25067.525), (425, 850)]
+            elif 'deg' in units:
+                # Degrees.
+                essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
+                              (0.11271481862984278, 0.22542974631297721), (425, 850)]
+            else:
+                # Radians.
+                essentials = [(0.0, -1.5707963267948966), 0.86257209725,
+                              (-0.7853981633974483, -0.30571189166434753),
+                              (0.001967244700879, 0.003934491305097), (425, 850)]
+            # If center is valid, use it.
+            if len(center) == 2:
+                center = essentials[0]
+            try:
+                area_list.append(area(area_id, projection, proj_id=proj_id, upper_left_extent=essentials[2],
+                                      center=center, shape=essentials[4], resolution=essentials[3],
+                                      radius=essentials[1], description=description, units=units, rotation=45))
+            except ValueError:
+                pass
+        self.assertEqual(len(area_list), 6)
+
+        # Tests that specifying units through xarrays works.
+        area_list.append(area(area_id, projection_list[1], shape=shape,
+                              area_extent=DataArray((-135.0, -17.516001139327766,
+                                                     45.0, -17.516001139327766),
+                                                    attrs={'units': 'degrees'})))
+        # Tests area functions 1-A and 2-A.
+        area_list.append(area(area_id, projection_list[1], resolution=resolution, area_extent=area_extent))
+        # Tests area function 1-B. Also test that DynamicAreaDefinition arguments don't crash AreaDefinition.
+        area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0],
+                              upper_left_extent=upper_left_extent, optimize_projection=None))
+        # Tests area function 1-C.
+        area_list.append(area(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
+        # Tests area function 1-D.
+        area_list.append(area(area_id, projection_list[1], shape=shape,
+                              radius=radius, upper_left_extent=upper_left_extent))
+        # Tests all 4 user cases.
+        area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], shape, area_extent))
+        area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
+                                                    resolution=resolution))
+        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], shape, center_list[0],
+                                                              resolution))
+        area_list.append(AreaDefinition.from_ul_corner(area_id, projection_list[1], shape, upper_left_extent,
+                                                       resolution))
+        # Tests non-poles using degrees and mercator.
+        area_def = area(area_id, '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
+                        center=(0, 0), radius=45, resolution=(1, 0.9999291722135637), units='degrees')
+        self.assertTrue(isinstance(area_def, AreaDefinition))
+        self.assertTrue(np.allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761)))
+        self.assertEqual(area_def.shape, (101, 90))
+        # Checks every area definition made
+        for area_def in area_list:
+            self.assertEqual(area_def, base_def)
+
+        # Makes sure if shape or area_extent is found/given, a DynamicAreaDefinition is made.
+        self.assertTrue(isinstance(area(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
+        self.assertTrue(isinstance(area(area_id, projection_list[1], area_extent=area_extent), DynamicAreaDefinition))
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):
@@ -1423,7 +1514,7 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         corners = [1, 1, 9, 9]
         self.assertRaises(ValueError, area.compute_domain, corners, 1, 1)
 
-        area_extent, x_size, y_size = area.compute_domain(corners, size=(5, 5))
+        area_extent, x_size, y_size = area.compute_domain(corners, shape=(5, 5))
         self.assertTupleEqual(area_extent, (0, 0, 10, 10))
         self.assertEqual(x_size, 5)
         self.assertEqual(y_size, 5)
@@ -1514,9 +1605,7 @@ class TestCrop(unittest.TestCase):
                                         -909968.64000000001,
                                         1029087.28,
                                         1490031.3600000001])
-
         res = area[slice(20, 720), slice(100, 500)]
-
         self.assertTrue(np.allclose((-1070912.72, -669968.6399999999,
                                      129087.28000000003, 1430031.36),
                                     res.area_extent))

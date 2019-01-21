@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
 # Copyright (C) 2010-2016
@@ -22,17 +24,17 @@
 
 """Classes for geometry operations"""
 
+import hashlib
 import warnings
 from collections import OrderedDict
 from logging import getLogger
-import hashlib
 
 import numpy as np
 import yaml
 from pyproj import Geod
 
-from pyresample import utils, CHUNK_SIZE
-from pyresample._spatial_mp import Proj, Proj_MP, Cartesian, Cartesian_MP
+from pyresample import CHUNK_SIZE, utils
+from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 
 try:
@@ -460,7 +462,6 @@ class CoordinateDefinition(BaseDefinition):
 
 
 class GridDefinition(CoordinateDefinition):
-
     """Grid defined by lons and lats
 
     Parameters
@@ -592,8 +593,7 @@ class SwathDefinition(CoordinateDefinition):
         if abs(azimuth) > 90:
             azimuth = 180 + azimuth
 
-        prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
-                      'lat_0': float(lat0),  'lonc': float(lonc),
+        prj_params = {'proj': 'omerc', 'alpha': float(azimuth), 'lat_0': float(lat0), 'lonc': float(lonc),
                       'gamma': 0,
                       'ellps': ellipsoid}
 
@@ -638,97 +638,108 @@ class SwathDefinition(CoordinateDefinition):
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
         lines, cols = self.lons.shape
-        x_size = int(cols * 1.1)
-        y_size = int(lines * 1.1)
+        width = int(cols * 1.1)
+        height = int(lines * 1.1)
 
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
         lons, lats = self.get_edge_lonlats()
-        return area.freeze((lons, lats), size=(x_size, y_size))
+        return area.freeze((lons, lats), shape=(height, width))
 
 
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
-    The purpose of this class is to be able to adapt the area extent and size
+    The purpose of this class is to be able to adapt the area extent and shape
     of the area to a given set of longitudes and latitudes, such that e.g.
     polar satellite granules can be resampled optimaly to a give projection.
     """
 
-    def __init__(self, area_id=None, description=None, proj_dict=None,
-                 x_size=None, y_size=None, area_extent=None,
-                 optimize_projection=False, rotation=None):
+    def __init__(self, area_id=None, description=None, projection=None,
+                 width=None, height=None, area_extent=None,
+                 resolution=None, optimize_projection=False, rotation=None):
         """Initialize the DynamicAreaDefinition.
 
         area_id:
           The name of the area.
         description:
           The description of the area.
-        proj_dict:
-          The dictionary of projection parameters. Doesn't have to be complete.
-        x_size, y_size:
-          The size of the resulting area.
+        projection:
+          The dictionary or string of projection parameters. Doesn't have to be complete.
+        height, width:
+          The shape of the resulting area.
         area_extent:
           The area extent of the area.
+        resolution:
+          the resolution of the resulting area.
         optimize_projection:
           Whether the projection parameters have to be optimized.
         rotation:
           Rotation in degrees (negative is cw)
-          """
+
+        """
+        if isinstance(projection, str):
+            proj_dict = utils.proj4_str_to_dict(projection)
+        elif isinstance(projection, dict):
+            proj_dict = projection
+        else:
+            raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
+
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
-        self.x_size = x_size
-        self.y_size = y_size
+        self.width = self.width = width
+        self.height = self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
+        self.resolution = resolution
         self.rotation = rotation
 
-    def compute_domain(self, corners, resolution=None, size=None):
-        """Compute size and area_extent from corners and [size or resolution]
-        info."""
-        if resolution is not None and size is not None:
-            raise ValueError("Both resolution and size can't be provided.")
+    # size = (x_size, y_size) and shape = (y_size, x_size)
+    def compute_domain(self, corners, resolution=None, shape=None):
+        """Compute shape and area_extent from corners and [shape or resolution] info.
 
-        if size:
-            x_size, y_size = size
-            x_resolution = (corners[2] - corners[0]) * 1.0 / (x_size - 1)
-            y_resolution = (corners[3] - corners[1]) * 1.0 / (y_size - 1)
+        Corners represents the center of pixels, while area_extent represents the edge of pixels.
+        """
+        if resolution is not None and shape is not None:
+            raise ValueError("Both resolution and shape can't be provided.")
+        elif resolution is None and shape is None:
+            raise ValueError("Either resolution or shape must be provided.")
 
-        if resolution:
+        if shape:
+            height, width = shape
+            x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
+            y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
+        else:
             try:
                 x_resolution, y_resolution = resolution
             except TypeError:
                 x_resolution = y_resolution = resolution
-            x_size = int(np.rint((corners[2] - corners[0]) * 1.0 /
+            width = int(np.rint((corners[2] - corners[0]) * 1.0 /
                                  x_resolution + 1))
-            y_size = int(np.rint((corners[3] - corners[1]) * 1.0 /
+            height = int(np.rint((corners[3] - corners[1]) * 1.0 /
                                  y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,
                        corners[2] + x_resolution / 2,
                        corners[3] + y_resolution / 2)
-        return area_extent, x_size, y_size
+        return area_extent, width, height
 
-    def freeze(self, lonslats=None,
-               resolution=None, size=None,
-               proj_info=None, rotation=None):
-        """Create an AreaDefintion from this area with help of some extra info.
+    def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
+        """Create an AreaDefinition from this area with help of some extra info.
 
         lonlats:
           the geographical coordinates to contain in the resulting area.
         resolution:
           the resolution of the resulting area.
-        size:
-          the size of the resulting area.
+        shape:
+          the shape of the resulting area.
         proj_info:
           complementing parameters to the projection info.
-        rotation:
-          rotation in degrees (negative is cw)
 
-        Resolution and Size parameters are ignored if the instance is created
+        Resolution and shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
         """
         if proj_info is not None:
@@ -736,8 +747,9 @@ class DynamicAreaDefinition(object):
 
         if self.optimize_projection:
             return lonslats.compute_optimal_bb_area(self.proj_dict)
-
-        if not self.area_extent or not self.x_size or not self.y_size:
+        if resolution is None:
+            resolution = self.resolution
+        if not self.area_extent or not self.width or not self.height:
             proj4 = Proj(**self.proj_dict)
             try:
                 lons, lats = lonslats
@@ -748,12 +760,11 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-
-            domain = self.compute_domain(corners, resolution, size)
-            self.area_extent, self.x_size, self.y_size = domain
-
+            # Note: size=(width, height) was changed to shape=(height, width).
+            domain = self.compute_domain(corners, resolution, shape)
+            self.area_extent, self.width, self.height = domain
         return AreaDefinition(self.area_id, self.description, '',
-                              self.proj_dict, self.x_size, self.y_size,
+                              self.proj_dict, self.width, self.height,
                               self.area_extent, self.rotation)
 
 
@@ -765,63 +776,60 @@ def invproj(data_x, data_y, proj_dict):
 
 
 class AreaDefinition(BaseDefinition):
-
     """Holds definition of an area.
 
     Parameters
     ----------
     area_id : str
-        ID of area
-    name : str
-        Name of area
+        Identifier for the area
+    description : str
+        Human-readable description of the area
     proj_id : str
         ID of projection
-    proj_dict : dict
-        Dictionary with Proj.4 parameters
-    x_size : int
-        x dimension in number of pixels
-    y_size : int
-        y dimension in number of pixels
+    projection: dict or str
+        Dictionary or string of Proj.4 parameters
+    width : int
+        x dimension in number of pixels, aka number of grid columns
+    height : int
+        y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
     area_extent : list
-        Area extent as a list (LL_x, LL_y, UR_x, UR_y)
+        Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     nprocs : int, optional
-        Number of processor cores to be used
-    lons : numpy array, optional
-        Grid lons
-    lats : numpy array, optional
-        Grid lats
+        Number of processor cores to be used for certain calculations
 
     Attributes
     ----------
     area_id : str
-        ID of area
-    name : str
-        Name of area
+        Identifier for the area
+    description : str
+        Human-readable description of the area
     proj_id : str
         ID of projection
-    proj_dict : dict
-        Dictionary with Proj.4 parameters
-    x_size : int
-        x dimension in number of pixels
-    y_size : int
-        y dimension in number of pixels
+    projection : dict or str
+        Dictionary or string with Proj.4 parameters
+    width : int
+        x dimension in number of pixels, aka number of grid columns
+    height : int
+        y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
     shape : tuple
-        Corresponding array shape as (rows, cols)
+        Corresponding array shape as (height, width)
     size : int
         Number of points in grid
     area_extent : tuple
-        Area extent as a tuple (LL_x, LL_y, UR_x, UR_y)
+        Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     area_extent_ll : tuple
-        Area extent in lons lats as a tuple (LL_lon, LL_lat, UR_lon, UR_lat)
+        Area extent in lons lats as a tuple (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat)
     pixel_size_x : float
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    pixel_upper_left : list
+    upper_left_extent : tuple
+        Coordinates (x, y) of upper left corner of upper left pixel in projection units
+    pixel_upper_left : tuple
         Coordinates (x, y) of center of upper left pixel in projection units
     pixel_offset_x : float
         x offset between projection center and upper left corner of upper
@@ -831,32 +839,32 @@ class AreaDefinition(BaseDefinition):
         left pixel in units of pixels..
     proj4_string : str
         Projection defined as Proj.4 string
-    lons : object
-        Grid lons
-    lats : object
-        Grid lats
     cartesian_coords : object
         Grid cartesian coordinates
     projection_x_coords : object
         Grid projection x coordinate
     projection_y_coords : object
         Grid projection y coordinate
+
     """
 
-    def __init__(self, area_id, name, proj_id, proj_dict, x_size, y_size,
+    def __init__(self, area_id, description, proj_id, projection, width, height,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
-        if not isinstance(proj_dict, dict):
-            raise TypeError('Wrong type for proj_dict: %s. Expected dict.'
-                            % type(proj_dict))
+        if isinstance(projection, str):
+            proj_dict = utils.proj4_str_to_dict(projection)
+        elif isinstance(projection, dict):
+            proj_dict = projection
+        else:
+            raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
 
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
-        self.name = name
+        self.description = description
         self.proj_id = proj_id
-        self.x_size = int(x_size)
-        self.y_size = int(y_size)
-        self.shape = (y_size, x_size)
+        self.width = int(width)
+        self.height = int(height)
+        self.shape = (height, width)
         self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
@@ -866,10 +874,10 @@ class AreaDefinition(BaseDefinition):
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
                                  'area definition')
-        self.size = y_size * x_size
+        self.size = height * width
         self.ndim = 2
-        self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(x_size)
-        self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(y_size)
+        self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
+        self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self.proj_dict = utils.convert_proj_floats(proj_dict.items())
         self.area_extent = tuple(area_extent)
 
@@ -881,14 +889,12 @@ class AreaDefinition(BaseDefinition):
         self.area_extent_ll = (corner_lons[0], corner_lats[0],
                                corner_lons[1], corner_lats[1])
 
-        # Calculate projection coordinates of center of upper left pixel
-        self.pixel_upper_left = \
-            (float(area_extent[0]) +
-             float(self.pixel_size_x) / 2,
-             float(area_extent[3]) -
-             float(self.pixel_size_y) / 2)
+        # Calculate projection coordinates of extent of upper left pixel
+        self.upper_left_extent = (float(area_extent[0]), float(area_extent[3]))
+        self.pixel_upper_left = (float(area_extent[0]) + float(self.pixel_size_x) / 2,
+                                 float(area_extent[3]) - float(self.pixel_size_y) / 2)
 
-        # Pixel_offset defines the distance to projection center from origen
+        # Pixel_offset defines the distance to projection center from origin
         # (UL) of image in units of pixels.
         self.pixel_offset_x = -self.area_extent[0] / self.pixel_size_x
         self.pixel_offset_y = self.area_extent[3] / self.pixel_size_y
@@ -897,6 +903,220 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    @property
+    def name(self):
+        warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning)
+        return self.description
+
+    @property
+    def x_size(self):
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        return self.width
+
+    @property
+    def y_size(self):
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        return self.height
+
+    @classmethod
+    def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
+        """Creates an AreaDefinition object from area_extent and shape.
+
+        Parameters
+        ----------
+        area_id : str
+            ID of area
+        projection : dict or str
+            Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
+        area_extent : list
+            Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+        units : str, optional
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
+        description : str, optional
+            Description/name of area. Defaults to area_id
+        proj_id : str, optional
+            ID of projection
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
+
+    @classmethod
+    def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
+        """Creates an AreaDefinition object from center, radius, and shape or from center, radius, and resolution.
+
+        Parameters
+        ----------
+        area_id : str
+            ID of area
+        projection : dict or str
+            Projection parameters as a proj4_dict or proj4_string
+        center : list
+            Center of projection (x, y)
+        radius : list or float
+            Length from the center to the edges of the projection (dx, dy)
+        shape : list, optional
+            Number of pixels in the y and x direction (height, width)
+        resolution : list or float, optional
+            Size of pixels: (dx, dy)
+        units : str, optional
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
+        description : str, optional
+            Description/name of area. Defaults to area_id
+        proj_id : str, optional
+            ID of projection
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+        optimize_projection:
+            Whether the projection parameters have to be optimized for a DynamicAreaDefinition.
+
+        Returns
+        -------
+        AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+            If shape or resolution are provided, an AreaDefinition object is returned.
+            Else a DynamicAreaDefinition object is returned
+
+        Notes
+        -----
+        * ``resolution`` and ``radius`` can be specified with one value if dx == dy
+        """
+        return utils.create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
+                                     resolution=resolution, units=units, **kwargs)
+
+    @classmethod
+    def from_area_of_interest(cls, area_id, projection, shape, center, resolution, units=None, **kwargs):
+        """Creates an AreaDefinition object from center, resolution, and shape.
+
+        Parameters
+        ----------
+        area_id : str
+            ID of area
+        projection : dict or str
+            Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
+        center : list
+            Center of projection (x, y)
+        resolution : list or float
+            Size of pixels: (dx, dy). Can be specified with one value if dx == dy
+        units : str, optional
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
+        description : str, optional
+            Description/name of area. Defaults to area_id
+        proj_id : str, optional
+            ID of projection
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.create_area_def(area_id, projection, shape=shape, center=center,
+                                     resolution=resolution, units=units, **kwargs)
+
+    @classmethod
+    def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
+        """Creates an AreaDefinition object from upper_left_extent, resolution, and shape.
+
+        Parameters
+        ----------
+        area_id : str
+            ID of area
+        projection : dict or str
+            Projection parameters as a proj4_dict or proj4_string
+        shape : list
+            Number of pixels in the y and x direction (height, width)
+        upper_left_extent : list
+            Upper left corner of upper left pixel (x, y)
+        resolution : list or float
+            Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
+        units : str, optional
+            Units that provided arguments should be interpreted as. This can be
+            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            parameter supported by the
+            `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+            command. Units are determined in the following priority:
+
+            1. units expressed with each variable through a DataArray's attrs attribute.
+            2. units passed to ``units``
+            3. units used in ``projection``
+            4. meters
+
+        description : str, optional
+            Description/name of area. Defaults to area_id
+        proj_id : str, optional
+            ID of projection
+        rotation: float, optional
+            rotation in degrees (negative is cw)
+        nprocs : int, optional
+            Number of processor cores to be used
+        lons : numpy array, optional
+            Grid lons
+        lats : numpy array, optional
+            Grid lats
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+        """
+        return utils.create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
+                                     resolution=resolution, units=units, **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""
@@ -915,17 +1135,15 @@ class AreaDefinition(BaseDefinition):
                     ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k]))
                                for k in sorted(proj_dict.keys())]) +
                     '}')
-
         if not self.proj_id:
             third_line = ""
         else:
             third_line = "Projection ID: {0}\n".format(self.proj_id)
-
         return ('Area ID: {0}\nDescription: {1}\n{2}'
                 'Projection: {3}\nNumber of columns: {4}\nNumber of rows: {5}\n'
-                'Area extent: {6}').format(self.area_id, self.name, third_line,
-                                           proj_str, self.x_size, self.y_size,
-                                           self.area_extent)
+                'Area extent: {6}').format(self.area_id, self.description, third_line,
+                                           proj_str, self.width, self.height,
+                                           tuple(round(x, 4) for x in self.area_extent))
 
     __repr__ = __str__
 
@@ -940,9 +1158,9 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def(self):
 
-        res = OrderedDict(description=self.name,
+        res = OrderedDict(description=self.description,
                           projection=OrderedDict(self.proj_dict),
-                          shape=OrderedDict([('height', self.y_size), ('width', self.x_size)]))
+                          shape=OrderedDict([('height', self.height), ('width', self.width)]))
         units = res['projection'].pop('units', None)
         extent = OrderedDict([('lower_left_xy', list(self.area_extent[:2])),
                               ('upper_right_xy', list(self.area_extent[2:]))])
@@ -963,11 +1181,11 @@ class AreaDefinition(BaseDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
-        fmt += "\tROTATION:\t{rotation}\n"
+        # fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
-        area_def_str = fmt.format(name=self.name, area_id=self.area_id,
-                                  proj_str=proj_str, x_size=self.x_size,
-                                  y_size=self.y_size,
+        area_def_str = fmt.format(name=self.description, area_id=self.area_id,
+                                  proj_str=proj_str, x_size=self.width,
+                                  y_size=self.height,
                                   area_extent=self.area_extent)
         return area_def_str
 
@@ -1038,9 +1256,7 @@ class AreaDefinition(BaseDefinition):
             lat = np.array(lat)
 
         if ((isinstance(lon, np.ndarray) and
-             not isinstance(lat, np.ndarray)) or
-            (not isinstance(lon, np.ndarray) and
-             isinstance(lat, np.ndarray))):
+             not isinstance(lat, np.ndarray)) or (not isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray))):
             raise ValueError("Both lon and lat needs to be of " +
                              "the same type and have the same dimensions!")
 
@@ -1079,9 +1295,7 @@ class AreaDefinition(BaseDefinition):
             ym = np.array(ym)
 
         if ((isinstance(xm, np.ndarray) and
-             not isinstance(ym, np.ndarray)) or
-            (not isinstance(xm, np.ndarray) and
-             isinstance(ym, np.ndarray))):
+             not isinstance(ym, np.ndarray)) or (not isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray))):
             raise ValueError("Both projection coordinates xm and ym needs to be of " +
                              "the same type and have the same dimensions!")
 
@@ -1093,24 +1307,24 @@ class AreaDefinition(BaseDefinition):
         upl_x = self.area_extent[0]
         upl_y = self.area_extent[3]
         xscale = (self.area_extent[2] -
-                  self.area_extent[0]) / float(self.x_size)
+                  self.area_extent[0]) / float(self.width)
         # because rows direction is the opposite of y's
         yscale = (self.area_extent[1] -
-                  self.area_extent[3]) / float(self.y_size)
+                  self.area_extent[3]) / float(self.height)
 
         x__ = (xm - upl_x) / xscale
         y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ >= self.x_size)) |
-                    ((y__ < 0) | (y__ >= self.y_size)))
+            mask = (((x__ < 0) | (x__ >= self.width)) |
+                    ((y__ < 0) | (y__ >= self.height)))
             return (np.ma.masked_array(x__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False),
                     np.ma.masked_array(y__.astype('int'), mask=mask,
                                        fill_value=-1, copy=False))
         else:
-            if ((x__ < 0 or x__ >= self.x_size) or
-                    (y__ < 0 or y__ >= self.y_size)):
+            if ((x__ < 0 or x__ >= self.width) or
+                    (y__ < 0 or y__ >= self.height)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
             return int(x__), int(y__)
 
@@ -1175,8 +1389,8 @@ class AreaDefinition(BaseDefinition):
         x_kwargs['dtype'] = dtype
         y_kwargs['dtype'] = dtype
 
-        target_x = arange(self.x_size, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = arange(self.y_size, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
+        target_x = arange(self.width, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
+        target_y = arange(self.height, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
         return target_x, target_y
 
     def get_proj_vectors(self, dtype=None, chunks=None):
@@ -1255,16 +1469,14 @@ class AreaDefinition(BaseDefinition):
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
-        else:
-            return self.get_proj_vectors()[0]
+        return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
-        else:
-            return self.get_proj_vectors()[1]
+        return self.get_proj_vectors()[1]
 
     @property
     def outer_boundary_corners(self):
@@ -1385,8 +1597,8 @@ class AreaDefinition(BaseDefinition):
 
             xstart = 0 if x[0] is np.ma.masked else x[0]
             ystart = 0 if y[1] is np.ma.masked else y[1]
-            xstop = self.x_size if x[1] is np.ma.masked else x[1] + 1
-            ystop = self.y_size if y[0] is np.ma.masked else y[0] + 1
+            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
+            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
 
             return slice(xstart, xstop), slice(ystart, ystop)
 
@@ -1421,16 +1633,12 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
-        new_area_extent = ((self.pixel_upper_left[0] +
-                            (xslice.start - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] -
-                            (yslice.stop - 0.5) * self.pixel_size_y),
-                           (self.pixel_upper_left[0] +
-                            (xslice.stop - 0.5) * self.pixel_size_x),
-                           (self.pixel_upper_left[1] -
-                            (yslice.start - 0.5) * self.pixel_size_y))
+        new_area_extent = ((self.pixel_upper_left[0] + (xslice.start - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] - (yslice.stop - 0.5) * self.pixel_size_y),
+                           (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
+                           (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
-        new_area = AreaDefinition(self.area_id, self.name,
+        new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
                                   xslice.stop - xslice.start,
                                   yslice.stop - yslice.start,
@@ -1449,8 +1657,8 @@ def get_geostationary_angle_extent(geos_area):
     h = geos_area.proj_dict['h'] / 1000 + req
 
     # compute some constants
-    aeq = 1 - req**2 / (h ** 2)
-    ap_ = 1 - rp**2 / (h ** 2)
+    aeq = 1 - req ** 2 / (h ** 2)
+    ap_ = 1 - rp ** 2 / (h ** 2)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
@@ -1509,7 +1717,7 @@ def concatenate_area_defs(area1, area2, axis=0):
     different_items = (set(area1.proj_dict.items()) ^
                        set(area2.proj_dict.items()))
     if axis == 0:
-        same_size = area1.x_size == area2.x_size
+        same_size = area1.width == area2.width
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
     if different_items or not same_size:
@@ -1519,11 +1727,11 @@ def concatenate_area_defs(area1, area2, axis=0):
 
     if axis == 0:
         area_extent = combine_area_extents_vertical(area1, area2)
-        x_size = int(area1.x_size)
-        y_size = int(area1.y_size + area2.y_size)
+        x_size = int(area1.width)
+        y_size = int(area1.height + area2.height)
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
-    return AreaDefinition(area1.area_id, area1.name, area1.proj_id,
+    return AreaDefinition(area1.area_id, area1.description, area1.proj_id,
                           area1.proj_dict, x_size, y_size,
                           area_extent)
 
@@ -1545,16 +1753,26 @@ class StackedAreaDefinition(BaseDefinition):
             self.append(definition)
 
     @property
+    def width(self):
+        return self.defs[0].width
+
+    @property
     def x_size(self):
-        return self.defs[0].x_size
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        return self.width
+
+    @property
+    def height(self):
+        return sum(definition.height for definition in self.defs)
 
     @property
     def y_size(self):
-        return sum(definition.y_size for definition in self.defs)
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        return self.height
 
     @property
     def size(self):
-        return self.y_size * self.x_size
+        return self.height * self.width
 
     def append(self, definition):
         """Append another definition to the area."""
@@ -1562,7 +1780,7 @@ class StackedAreaDefinition(BaseDefinition):
             for area in definition.defs:
                 self.append(area)
             return
-        if definition.y_size == 0:
+        if definition.height == 0:
             return
         if not self.defs:
             self.proj_dict = definition.proj_dict
@@ -1587,12 +1805,12 @@ class StackedAreaDefinition(BaseDefinition):
         try:
             row_slice, col_slice = data_slice
         except TypeError:
-            row_slice = slice(0, self.y_size)
-            col_slice = slice(0, self.x_size)
+            row_slice = slice(0, self.height)
+            col_slice = slice(0, self.width)
         offset = 0
         for definition in self.defs:
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0), definition.y_size),
+                                    min(max(row_slice.stop - offset, 0), definition.height),
                                     row_slice.step)
             lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
                                                 cache=cache, dtype=dtype, chunks=chunks)

@@ -47,18 +47,14 @@ if os.environ.get("READTHEDOCS") == "True":
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, '/opt/lib/python2.5/site-packages')
 sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../pyresample'))
 from pyresample import __version__  # noqa
-
-# sys.path.append('')
-# print sys.path
 
 # -- General configuration -----------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx']
 
 # DocTest Settings
 doctest_test_doctest_blocks = ''
@@ -224,17 +220,30 @@ latex_documents = [
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+# latex_logo = None
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+# latex_use_parts = False
 
 # Additional stuff for the LaTeX preamble.
-#latex_preamble = ''
+# latex_preamble = ''
 
 # Documents to append as an appendix to all manuals.
-#latex_appendices = []
+# latex_appendices = []
 
 # If false, no module index is generated.
-#latex_use_modindex = True
+# latex_use_modindex = True
+
+# Intersphinx extention
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'xarray': ('https://xarray.pydata.org/en/stable', None),
+    'dask': ('https://docs.dask.org/en/latest', None),
+    'pyresample': ('https://pyresample.readthedocs.io/en/stable', None),
+    'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
+    'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
+    'proj4': ('https://proj4.org', None),
+}
