@@ -176,7 +176,7 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
           dx: 11
           dy: 22
           units: meters
-    returns DataArray((11, 22), attrs={'units': 'meters})
+        # returns DataArray((11, 22), attrs={'units': 'meters})
     """
     # Check if argument is in yaml.
     argument = params.get(arg_name)
