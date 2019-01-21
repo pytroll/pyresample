@@ -1,16 +1,20 @@
 Installing Pyresample
 =====================
 
-Pyresample depends on pyproj, numpy(>= 1.10), pyyaml, configobj, six, and pykdtree (>= 1.1.1).
+Pyresample depends on pyproj, numpy(>= 1.10), pyyaml, configobj, six,
+and pykdtree (>= 1.1.1).
 
-In order to use the pyresample plotting functionality Cartopy and matplotlib (>= 1.0) must be installed.
-These packages are not a prerequisite for using any other pyresample functionality.
+In order to use the pyresample plotting functionality Cartopy and
+matplotlib (>= 1.0) must be installed. These packages are not a prerequisite
+for using any other pyresample functionality.
 
 Optionally, for dask and xarray support these libraries must also be installed.
 Some utilities like converting from rasterio objects to pyresample objects
 will require rasterio or other libraries to be installed. The older
-multiprocessing interfaces (Proj_MP) use the ``scipy`` KDTree implementation.
-Newer xarray/dask interfaces are recommended if possible.
+multiprocessing interfaces (Proj_MP) use the ``scipy`` package's KDTree
+implementation. These multiprocessing interfaces are used when the ``nprocs``
+keyword argument in the various pyresample interfaces is greater than 1.
+Newer xarray/dask interfaces are recommended when possible.
 
 Package test
 ************
@@ -56,7 +60,6 @@ reflected in your python environment run the following instead of the above
 pip command:
 
     pip install -e .
-
 
 pykdtree and numexpr
 ********************
