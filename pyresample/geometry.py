@@ -1469,16 +1469,14 @@ class AreaDefinition(BaseDefinition):
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
-        else:
-            return self.get_proj_vectors()[0]
+        return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
-        else:
-            return self.get_proj_vectors()[1]
+        return self.get_proj_vectors()[1]
 
     @property
     def outer_boundary_corners(self):
