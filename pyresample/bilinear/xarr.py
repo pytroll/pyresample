@@ -12,16 +12,7 @@ import numpy as np
 
 from pyproj import Proj
 
-try:
-    from pykdtree.kdtree import KDTree
-    kd_tree_name = 'pykdtree'
-except ImportError:
-    try:
-        import scipy.spatial as sp
-        kd_tree_name = 'scipy.spatial'
-    except ImportError:
-        raise ImportError('Either pykdtree or scipy must be available')
-
+from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry, CHUNK_SIZE
 
 
@@ -266,12 +257,7 @@ class XArrayResamplerBilinear(object):
         input_coords = input_coords.astype(np.float)
         valid_input_index, input_coords = da.compute(valid_input_index,
                                                      input_coords)
-        if kd_tree_name == 'pykdtree':
-            resample_kdtree = KDTree(input_coords)
-        else:
-            resample_kdtree = sp.cKDTree(input_coords)
-
-        return valid_input_index, resample_kdtree
+        return valid_input_index, KDTree(input_coords)
 
     def _query_resample_kdtree(self,
                                resample_kdtree,

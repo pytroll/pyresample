@@ -21,7 +21,6 @@ import ctypes
 
 import numpy as np
 import pyproj
-#import scipy.spatial as sp
 import multiprocessing as mp
 
 try:
