@@ -245,11 +245,6 @@ grid point (the nearest neighbour). Also note **distance_array** is not a requir
 Segmented resampling
 ********************
 Whenever a resampling function takes the keyword argument **segments** the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of **segments** is left to default pyresample will estimate the number of segments to use. 
-    
-Speedup using pykdtree
-**********************
-
-pykdtree can be used instead of scipy to gain significant speedup for large datasets. See :ref:`multi`. 
 
 pyresample.bilinear
 -------------------

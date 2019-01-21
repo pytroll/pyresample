@@ -16,6 +16,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
+# remove when python 2 support is dropped
 import multiprocessing  # noqa: F401
 import versioneer
 import os
@@ -32,12 +33,9 @@ extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1']}
 
-test_requires = ['rasterio']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy']
 if sys.version_info < (3, 3):
     test_requires.append('mock')
-if sys.version_info < (2, 6):
-    # multiprocessing is not in the standard library
-    requirements.append('multiprocessing')
 
 if sys.platform.startswith("win"):
     extra_compile_args = []

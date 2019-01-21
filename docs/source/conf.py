@@ -37,8 +37,7 @@ class Mock(object):
 
 # If we are on read the docs then just mock external packages
 if os.environ.get("READTHEDOCS") == "True":
-    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj',
-                    'scipy', 'scipy.spatial', 'pyresample.ewa']
+    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj', 'pyresample.ewa']
     for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = Mock()
 
