@@ -36,6 +36,8 @@ from pyproj import Geod
 from pyresample import CHUNK_SIZE, utils
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
+from pyresample.utils import proj4_str_to_dict, proj4_dict_to_str, convert_proj_floats
+from pyresample.area_config import create_area_def
 
 try:
     from xarray import DataArray
@@ -61,7 +63,7 @@ class BaseDefinition(object):
         `BaseDefinition` no longer checks the validity of the provided
         longitude and latitude coordinates to improve performance. Longitude
         arrays are expected to be between -180 and 180 degrees, latitude -90
-        to 90 degrees. Use `pyresample.utils.check_and_wrap` to preprocess
+        to 90 degrees. Use :func:`~pyresample.utils.check_and_wrap` to preprocess
         your arrays.
 
     """
@@ -680,7 +682,7 @@ class DynamicAreaDefinition(object):
 
         """
         if isinstance(projection, str):
-            proj_dict = utils.proj4_str_to_dict(projection)
+            proj_dict = proj4_str_to_dict(projection)
         elif isinstance(projection, dict):
             proj_dict = projection
         else:
@@ -852,7 +854,7 @@ class AreaDefinition(BaseDefinition):
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         if isinstance(projection, str):
-            proj_dict = utils.proj4_str_to_dict(projection)
+            proj_dict = proj4_str_to_dict(projection)
         elif isinstance(projection, dict):
             proj_dict = projection
         else:
@@ -878,7 +880,7 @@ class AreaDefinition(BaseDefinition):
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
-        self.proj_dict = utils.convert_proj_floats(proj_dict.items())
+        self.proj_dict = convert_proj_floats(proj_dict.items())
         self.area_extent = tuple(area_extent)
 
         # Calculate area_extent in lon lat
@@ -962,7 +964,7 @@ class AreaDefinition(BaseDefinition):
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
+        return create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
     @classmethod
     def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
@@ -1019,8 +1021,8 @@ class AreaDefinition(BaseDefinition):
         -----
         * ``resolution`` and ``radius`` can be specified with one value if dx == dy
         """
-        return utils.create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
-                                     resolution=resolution, units=units, **kwargs)
+        return create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
+                               resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_area_of_interest(cls, area_id, projection, shape, center, resolution, units=None, **kwargs):
@@ -1067,8 +1069,8 @@ class AreaDefinition(BaseDefinition):
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.create_area_def(area_id, projection, shape=shape, center=center,
-                                     resolution=resolution, units=units, **kwargs)
+        return create_area_def(area_id, projection, shape=shape, center=center,
+                               resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
@@ -1115,8 +1117,8 @@ class AreaDefinition(BaseDefinition):
         -------
         AreaDefinition : AreaDefinition
         """
-        return utils.create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
-                                     resolution=resolution, units=units, **kwargs)
+        return create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
+                               resolution=resolution, units=units, **kwargs)
 
     def __hash__(self):
         """Compute the hash of this object."""
@@ -1126,7 +1128,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_str(self):
-        return utils.proj4_dict_to_str(self.proj_dict, sort=True)
+        return proj4_dict_to_str(self.proj_dict, sort=True)
 
     def __str__(self):
         # We need a sorted dictionary for a unique hash of str(self)
@@ -1579,7 +1581,7 @@ class AreaDefinition(BaseDefinition):
         """Return projection definition as Proj.4 string."""
         warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
                       "instead.", DeprecationWarning)
-        return utils.proj4_dict_to_str(self.proj_dict)
+        return proj4_dict_to_str(self.proj_dict)
 
     def get_area_slices(self, area_to_cover):
         """Compute the slice to read based on an `area_to_cover`."""
