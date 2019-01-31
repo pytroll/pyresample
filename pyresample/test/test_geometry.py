@@ -1376,7 +1376,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
         from pyresample.geometry import AreaDefinition
         from pyresample.geometry import DynamicAreaDefinition
-        from pyresample.area_config import DataArray, create_area_def
+        from pyresample.area_config import DataArray
         from pyresample.area_config import create_area_def as cad
 
         area_id = 'ease_sh'

@@ -74,7 +74,7 @@ class Test(unittest.TestCase):
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
                                           radius_of_influence=20000,
                                           fill_value=None)
-        plt = plot._get_quicklook(area_def, result, num_meridians=0, num_parallels=0)
+        plot._get_quicklook(area_def, result, num_meridians=0, num_parallels=0)
 
     def test_easeplot(self):
         from pyresample import plot, kd_tree, geometry
@@ -84,7 +84,7 @@ class Test(unittest.TestCase):
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
                                           radius_of_influence=20000,
                                           fill_value=None)
-        plt = plot._get_quicklook(area_def, result)
+        plot._get_quicklook(area_def, result)
 
     def test_orthoplot(self):
         from pyresample import plot, kd_tree, geometry
@@ -94,7 +94,7 @@ class Test(unittest.TestCase):
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
                                           radius_of_influence=20000,
                                           fill_value=None)
-        plt = plot._get_quicklook(area_def, result)
+        plot._get_quicklook(area_def, result)
 
 
 def suite():
