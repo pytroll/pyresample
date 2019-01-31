@@ -75,8 +75,7 @@ def load_area(area_file_name, *regions):
     area_list = parse_area_file(area_file_name, *regions)
     if len(area_list) == 1:
         return area_list[0]
-    else:
-        return area_list
+    return area_list
 
 
 def parse_area_file(area_file_name, *regions):
@@ -226,7 +225,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
     """Parse area information from a legacy area file."""
     area_file = _read_legacy_area_file_lines(area_file_name)
     area_list = list(regions)
-    if len(area_list) == 0:
+    if not area_list:
         select_all_areas = True
         area_defs = []
     else:
