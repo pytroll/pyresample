@@ -317,7 +317,8 @@ class TestMisc(unittest.TestCase):
         area_id = 'area_id'
         proj_id = 'proj_id'
         name = 'name'
-        area_def = pyresample.utils._rasterio.get_area_def_from_raster(source, area_id=area_id, name=name, proj_id=proj_id)
+        area_def = pyresample.utils._rasterio.get_area_def_from_raster(
+            source, area_id=area_id, name=name, proj_id=proj_id)
         self.assertEqual(area_def.area_id, area_id)
         self.assertEqual(area_def.proj_id, proj_id)
         self.assertEqual(area_def.name, name)
