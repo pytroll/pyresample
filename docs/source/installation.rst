@@ -1,69 +1,76 @@
 Installing Pyresample
 =====================
-Pyresample depends on pyproj, numpy(>= 1.3), scipy(>= 0.7), multiprocessing 
-(builtin package for Python > 2.5) and configobj. Optionally pykdtree can be used instead of scipy from v0.8.0.
 
-The correct version of the packages should be installed on your system 
-(refer to numpy and scipy installation instructions) or use easy_install to handle dependencies automatically.
+Pyresample depends on pyproj, numpy(>= 1.10), pyyaml, configobj, six,
+and pykdtree (>= 1.1.1).
 
-In order to use the pyresample plotting functionality Basemap and matplotlib (>= 0.98) must be installed. 
-These packages are not a prerequisite for using any other pyresample functionality. 
+In order to use the pyresample plotting functionality Cartopy and
+matplotlib (>= 1.0) must be installed. These packages are not a prerequisite
+for using any other pyresample functionality.
+
+Optionally, for dask and xarray support these libraries must also be installed.
+Some utilities like converting from rasterio objects to pyresample objects
+will require rasterio or other libraries to be installed. The older
+multiprocessing interfaces (Proj_MP) use the ``scipy`` package's KDTree
+implementation. These multiprocessing interfaces are used when the ``nprocs``
+keyword argument in the various pyresample interfaces is greater than 1.
+Newer xarray/dask interfaces are recommended when possible.
 
 Package test
 ************
-Test the package (requires nose):
+
+Testing pyresample requires all optional packages to be installed including
+rasterio, dask, xarray, cartopy, pillow, and matplotlib. Without all of these
+dependencies some tests may fail.
+To run tests from a source tarball:
 
 .. code-block:: bash
 
-	$ tar -zxvf pyresample-<version>.tar.gz
-	$ cd pyresample-<version>
-	$ nosetests
-	
+    tar -zxf pyresample-<version>.tar.gz
+    cd pyresample-<version>
+    python setup.py test
+
 If all the tests passes the functionality of all pyresample functions on the system has been verified.
 
 Package installation
 ********************
-A sandbox environment can be created for pyresample using `Virtualenv <http://pypi.python.org/pypi/virtualenv>`_
 
-Pyresample is available from pypi.
-  
-Install Pyresample using pip:
+Pyresample is available from PyPI and can be installed with pip:
 
 .. code-block:: bash
 
-	$ pip install pyresample
+    pip install pyresample
 
-Alternatively install from tarball:
+Pyresample can also be installed with conda via the conda-forge channel:
 
 .. code-block:: bash
 
-	$ tar -zxvf pyresample-<version>.tar.gz
-	$ cd pyresample-<version>
-	$ python setup.py install
+    conda install -c conda-forge pyresample
 
-Using pykdtree
-**************
+Or directly from a source tarball:
 
-As of pyresample v0.8.0 pykdtree can be used as backend instead of scipy. 
-This enables significant speedups for large datasets.
+.. code-block:: bash
 
-pykdtree is used as a drop-in replacement for scipy. If it's available it will be used otherwise scipy will be used.
-To check which backend is active for your pyresample installation do:
+    tar -zxvf pyresample-<version>.tar.gz
+    cd pyresample-<version>
+    pip install .
 
- >>> import pyresample as pr
- >>> pr.kd_tree.which_kdtree()
+To install in a "development" mode where source file changes are immediately
+reflected in your python environment run the following instead of the above
+pip command:
 
-which returns either 'pykdtree' or 'scipy.spatial'.
+    pip install -e .
 
-Please refere to pykdtree_ for installation description.
+pykdtree and numexpr
+********************
 
-If pykdtree is built with OpenMP support the number of threads is controlled with the standard OpenMP environment variable OMP_NUM_THREADS.
-The *nprocs* argument has no effect on pykdtree.
+Pyresample uses the ``pykdtree`` package which can be built with
+multi-threaded support. If it is built with this support the environment
+variable ``OMP_NUM_THREADS`` can be used to control the number of threads.
+Please refer to the pykdtree_ repository for more information.
 
-Using numexpr
-*************
-
-As of pyresample v1.0.0 numexpr_ will be used for minor bottleneck optimization if available
+As of pyresample v1.0.0 numexpr_ will be used for minor bottleneck
+optimization if available.
 
 .. _pykdtree: https://github.com/storpipfugl/pykdtree
 .. _numexpr: https://code.google.com/p/numexpr/
