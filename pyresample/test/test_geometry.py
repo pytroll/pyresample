@@ -1215,7 +1215,7 @@ class TestGCPDefinition(unittest.TestCase):
         lats1 = np.fromfunction(
             lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
 
-        swath_def = geometry.SwathDefinition(lons1, lats1, gcps=[1, 2, 3])
+        swath_def = geometry.GCPDefinition(lons1, lats1, gcps=[1, 2, 3])
         self.assertListEqual(swath_def.gcps, [1, 2, 3])
 
 
