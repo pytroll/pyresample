@@ -516,8 +516,6 @@ class SwathDefinition(CoordinateDefinition):
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
-    gcps : iterable
-        Iterable of ground control points.
 
     Attributes
     ----------
@@ -533,12 +531,10 @@ class SwathDefinition(CoordinateDefinition):
         Swath lats
     cartesian_coords : object
         Swath cartesian coordinates
-    gcps : iterable
-        Ground control points
 
     """
 
-    def __init__(self, lons, lats, nprocs=1, gcps=None):
+    def __init__(self, lons, lats, nprocs=1):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
@@ -547,7 +543,6 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
-        self.gcps = gcps
 
     def __hash__(self):
         """Compute the hash of this object."""
@@ -651,6 +646,42 @@ class SwathDefinition(CoordinateDefinition):
         area = DynamicAreaDefinition(area_id, description, proj_dict)
         lons, lats = self.get_edge_lonlats()
         return area.freeze((lons, lats), size=(x_size, y_size))
+
+
+class GCPDefinition(SwathDefinition):
+    """Swath defined by lons and lats from GCPs.
+
+    Parameters
+    ----------
+    lons : numpy array
+    lats : numpy array
+    nprocs : int, optional
+        Number of processor cores to be used for calculations.
+    gcps : iterable
+        Iterable of ground control points.
+
+    Attributes
+    ----------
+    shape : tuple
+        Swath shape
+    size : int
+        Number of elements in swath
+    ndims : int
+        Swath dimensions
+    lons : object
+        Swath lons
+    lats : object
+        Swath lats
+    cartesian_coords : object
+        Swath cartesian coordinates
+    gcps : iterable
+        Ground control points
+
+    """
+
+    def __init__(self, lons, lats, nprocs=1, gcps=None):
+        super(GCPDefinition, self).__init__(lons, lats, nprocs)
+        self.gcps = gcps
 
 
 class DynamicAreaDefinition(object):

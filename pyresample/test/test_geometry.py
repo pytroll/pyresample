@@ -991,9 +991,6 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
                          msg='Caching of swath coordinates failed')
 
-        swath_def = geometry.SwathDefinition(lons1, lats1, gcps=[1, 2, 3])
-        self.assertListEqual(swath_def.gcps, [1, 2, 3])
-
     def test_slice(self):
         """Test that SwathDefinitions can be sliced."""
         lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
@@ -1207,6 +1204,19 @@ class TestSwathDefinition(unittest.TestCase):
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
+
+
+class TestGCPDefinition(unittest.TestCase):
+
+    """Test the GCPDefinition."""
+
+    def test_swath(self):
+        lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))
+        lats1 = np.fromfunction(
+            lambda y, x: 75 - (50.0 / 5000) * y, (5000, 100))
+
+        swath_def = geometry.SwathDefinition(lons1, lats1, gcps=[1, 2, 3])
+        self.assertListEqual(swath_def.gcps, [1, 2, 3])
 
 
 class TestStackedAreaDefinition(unittest.TestCase):
@@ -1535,6 +1545,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestGCPDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
 
     return mysuite
