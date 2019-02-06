@@ -991,6 +991,9 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertFalse(id(lons1) != id(lons2) or id(lats1) != id(lats2),
                          msg='Caching of swath coordinates failed')
 
+        swath_def = geometry.SwathDefinition(lons1, lats1, gcps=[1, 2, 3])
+        self.assertListEqual(swath_def.gcps, [1, 2, 3])
+
     def test_slice(self):
         """Test that SwathDefinitions can be sliced."""
         lons1 = np.fromfunction(lambda y, x: 3 + (10.0 / 100) * x, (5000, 100))

@@ -507,6 +507,7 @@ def get_array_hashable(arr):
             return np.asarray(arr).view(np.uint8)  # np array
 
 
+
 class SwathDefinition(CoordinateDefinition):
     """Swath defined by lons and lats.
 
@@ -516,6 +517,8 @@ class SwathDefinition(CoordinateDefinition):
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
+    gcps : iterable
+        Iterable of ground control points.
 
     Attributes
     ----------
@@ -531,10 +534,12 @@ class SwathDefinition(CoordinateDefinition):
         Swath lats
     cartesian_coords : object
         Swath cartesian coordinates
+    gcps : iterable
+        Ground control points
 
     """
 
-    def __init__(self, lons, lats, nprocs=1):
+    def __init__(self, lons, lats, nprocs=1, gcps=None):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
@@ -543,6 +548,7 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+        self.gcps = gcps
 
     def __hash__(self):
         """Compute the hash of this object."""
