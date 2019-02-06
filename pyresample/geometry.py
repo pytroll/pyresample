@@ -507,7 +507,6 @@ def get_array_hashable(arr):
             return np.asarray(arr).view(np.uint8)  # np array
 
 
-
 class SwathDefinition(CoordinateDefinition):
     """Swath defined by lons and lats.
 
