@@ -30,13 +30,14 @@ from pyresample import plot  # noqa
 from pyresample.geometry import (SwathDefinition,  # noqa
                                  AreaDefinition,  # noqa
                                  DynamicAreaDefinition)  # noqa
-from pyresample.utils import load_area  # noqa
+from pyresample.area_config import load_area, create_area_def, get_area_def, \
+                                   parse_area_file, convert_def_to_yaml  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
 from pyresample.plot import save_quicklook, area_def2basemap  # noqa
 from .version import get_versions  # noqa
 
-__all__ = ['grid', 'image', 'kd_tree',
-           'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE']
+__all__ = ['grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',
+           'load_area', 'create_area_def', 'get_area_def', 'parse_area_file', 'convert_def_to_yaml']
 
 __version__ = get_versions()['version']
 del get_versions
