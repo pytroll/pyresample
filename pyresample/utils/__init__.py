@@ -48,6 +48,12 @@ def convert_def_to_yaml(*args, **kwargs):
     return convert_def_to_yaml(*args, **kwargs)
 
 
+def parse_area_file(*args, **kwargs):
+    from pyresample.area_config import parse_area_file
+    warnings.warn("'parse_area_file' has moved, import it with 'from pyresample import parse_area_file'")
+    return parse_area_file(*args, **kwargs)
+
+
 def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
     """Generate linesample arrays for quick grid resampling
 
