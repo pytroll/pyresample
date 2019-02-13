@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Miscellaneous utility functions for pyresample."""
-from typing import Mapping
+from collections import Mapping
 import numpy as np
 import warnings
 
