@@ -26,7 +26,7 @@ try:
 except ImportError:
     DataArray = np.ndarray
 
-from pyresample.utils import proj4_str_to_dict
+from pyresample.utils._proj4 import proj4_str_to_dict
 import cartopy.crs as ccrs
 import shapely.geometry as sgeom
 
