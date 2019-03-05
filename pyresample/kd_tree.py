@@ -35,6 +35,10 @@ logger = getLogger(__name__)
 try:
     from xarray import DataArray
     import dask.array as da
+    try:
+        from dask.array import blockwise
+    except ImportError:
+        from dask.array import atop as blockwise
     import dask
 except ImportError:
     DataArray = None
@@ -926,11 +930,11 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     if index_array.ndim == 1:
         index_array = index_array[:, None]
 
-    # KDTree query returns out-of-bounds neighbors as `len(arr)`
+    # KDTree query returns out-of-bounds neighbours as `len(arr)`
     # which is an invalid index, we mask those out so -1 represents
     # invalid values
     # voi is 2D (trows, tcols)
-    # index_array is 2D (valid output pixels, neighbors)
+    # index_array is 2D (valid output pixels, neighbours)
     # there are as many Trues in voi as rows in index_array
     good_pixels = index_array < kdtree.n
     res_ia = np.empty(shape, dtype=np.int)
@@ -1009,8 +1013,8 @@ class XArrayResamplerNN(object):
             ndims = self.source_geo_def.ndim
             dims = 'mn'[:ndims]
             args = (mask, dims, self.valid_input_index, dims)
-        # res.shape = rows, cols, neighbors
-        # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
+        # res.shape = rows, cols, neighbours
+        # j=rows, i=cols, k=neighbours, m=source rows, n=source cols
         res = da.atop(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
                       valid_oi, 'ji', *args, kdtree=resample_kdtree,
                       neighbours=self.neighbours, epsilon=self.epsilon,
@@ -1094,12 +1098,8 @@ class XArrayResamplerNN(object):
             logger.warning("Fill value incompatible with integer data "
                            "using {:d} instead.".format(fill_value))
 
-        # Convert back to 1 neighbor
-        if self.neighbours > 1:
-            raise NotImplementedError("Nearest neighbor resampling can not "
-                                      "handle more than 1 neighbor yet.")
-        # Convert from multiple neighbor shape to 1 neighbor
-        ia = self.index_array[:, :, 0]
+        # Convert from multiple neighbour shape to 1 neighbour
+        ia = self.index_array
         vii = self.valid_input_index
 
         if isinstance(self.source_geo_def, geometry.SwathDefinition):
@@ -1124,6 +1124,18 @@ class XArrayResamplerNN(object):
         #        dims either
         def contain_coords(var, coord_list):
             return bool(set(coord_list).intersection(set(var.dims)))
+
+        def _my_index(index_arr, vii, data_arr, vii_slices=None,
+                      ia_slices=None, fill_value=np.nan):
+            vii_slices = tuple(
+                x if x is not None else vii.ravel() for x in vii_slices)
+            mask_slices = tuple(
+                x if x is not None else (index_arr == -1) for x in ia_slices)
+            ia_slices = tuple(
+                x if x is not None else index_arr for x in ia_slices)
+            res = data_arr[vii_slices][ia_slices]
+            res[mask_slices] = fill_value
+            return res
 
         coords = {c: c_var for c, c_var in data.coords.items()
                   if not contain_coords(c_var, src_geo_dims + dst_geo_dims)}
@@ -1168,40 +1180,27 @@ class XArrayResamplerNN(object):
         dst_dim_to_ind = src_dim_to_ind.copy()
         dst_dim_to_ind['y'] = i + 1
         dst_dim_to_ind['x'] = i + 2
-        # FUTURE: when we allow more than one neighbor
-        # neighbors_dim = i + 3
-
-        def _my_index(index_arr, vii, data_arr, vii_slices=None,
-                      ia_slices=None, fill_value=np.nan):
-            vii_slices = tuple(
-                x if x is not None else vii.ravel() for x in vii_slices)
-            mask_slices = tuple(
-                x if x is not None else (index_arr == -1) for x in ia_slices)
-            ia_slices = tuple(
-                x if x is not None else index_arr for x in ia_slices)
-            res = data_arr[vii_slices][ia_slices]
-            res[mask_slices] = fill_value
-            return res
+        dst_dims.append('neighbour_dim')
+        dst_dim_to_ind['neighbour_dim'] = i + 3
 
         new_data = data.data.reshape(flat_src_shape)
         vii = vii.ravel()
         dst_adims = [dst_dim_to_ind[dim] for dim in dst_dims]
         ia_adims = [dst_dim_to_ind[dim] for dim in dst_geo_dims]
-        # FUTURE: when we allow more than one neighbor add neighbors dimension
-        # dst_adims.append(neighbors_dim)
-        # ia_adims.append(neighbors_dim)
-        # FUTURE: when we allow more than one neighbor we need to add
+        ia_adims.append(ia_adims[-1] + 1)
+        # FUTURE: when we allow more than one neighbour we need to add
         #         the new axis to atop:
-        #         `new_axes={neighbor_dim: self.neighbors}`
+        #         `new_axes={neighbour_dim: self.neighbours}`
         # FUTURE: if/when dask can handle index arrays that are dask arrays
         #         then we can avoid all of this complicated atop stuff
-        res = da.atop(_my_index, dst_adims,
-                      ia, ia_adims,
-                      vii, flat_adim,
-                      new_data, src_adims,
-                      vii_slices=vii_slices, ia_slices=ia_slices,
-                      fill_value=fill_value,
-                      dtype=new_data.dtype, concatenate=True)
+        res = blockwise(_my_index, dst_adims,
+                        ia, ia_adims,
+                        vii, flat_adim,
+                        new_data, src_adims,
+                        vii_slices=vii_slices, ia_slices=ia_slices,
+                        fill_value=fill_value,
+                        dtype=new_data.dtype, concatenate=True)
+                        #new_axes={'neighbour_dim': self.neighbours})
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=data.attrs.copy())
 
