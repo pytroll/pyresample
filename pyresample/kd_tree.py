@@ -1153,12 +1153,12 @@ class XArrayResamplerNN(object):
         ia_slices = []
         # whether we have seen the geo dims in our analysis
         geo_handled = False
-        # dimension indexes for da.atop
+        # dimension indexes for da.blockwise
         src_adims = []
         flat_adim = []
-        # map source dimension name to dimension number for da.atop
+        # map source dimension name to dimension number for da.blockwise
         src_dim_to_ind = {}
-        # destination array dimension indexes for da.atop
+        # destination array dimension indexes for da.blockwise
         dst_dims = []
         for i, dim in enumerate(data.dims):
             src_dim_to_ind[dim] = i
