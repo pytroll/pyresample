@@ -91,10 +91,13 @@ class XArrayResamplerBilinear(XArrayResamplerNN):
 
         # Calculate vertical and horizontal fractional distances t and s
         t__, s__ = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
-        self.bilinear_t, self.bilinear_s = t__, s__
+
+        shp = self.target_geo_def.shape
+        self.bilinear_t = t__.reshape(shp)
+        self.bilinear_s = s__.reshape(shp)
 
         self.valid_output_index = voi
-        self.index_array = iar
+        self.index_array = iar.reshape((shp[0], shp[1], 4))
         self.distance_array = dar
 
         return (self.bilinear_t, self.bilinear_s, self.valid_input_index,
@@ -104,17 +107,18 @@ class XArrayResamplerBilinear(XArrayResamplerNN):
         """Get data using bilinear interpolation."""
 
         res = self.get_sample_from_neighbour_info(data, fill_value=fill_value)
+        coords = res.coords
 
         try:
+            p_1 = res[:, :, :, 0]
+            p_2 = res[:, :, :, 1]
+            p_3 = res[:, :, :, 2]
+            p_4 = res[:, :, :, 3]
+        except IndexError:
             p_1 = res[:, :, 0]
             p_2 = res[:, :, 1]
             p_3 = res[:, :, 2]
             p_4 = res[:, :, 3]
-        except IndexError:
-            p_1 = res[:, 0]
-            p_2 = res[:, 1]
-            p_3 = res[:, 2]
-            p_4 = res[:, 3]
 
         s__, t__ = self.bilinear_s, self.bilinear_t
 
@@ -129,11 +133,6 @@ class XArrayResamplerBilinear(XArrayResamplerNN):
 
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
-        shp = self.target_geo_def.shape
-        if data.ndim == 3:
-            res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
-        else:
-            res = da.reshape(res, (shp[0], shp[1]))
         res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
                         dims=data.dims, coords=coords)
 
