@@ -45,9 +45,6 @@ class XArrayResamplerBilinear(XArrayResamplerNN):
         self.bilinear_t = None
         self.bilinear_s = None
 
-    # def query_resample_kdtree(self)
-    # can be used
-
     def get_bil_info(self, mask=None):
         """Return neighbour info.
 
