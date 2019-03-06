@@ -1200,7 +1200,7 @@ class XArrayResamplerNN(object):
                         vii_slices=vii_slices, ia_slices=ia_slices,
                         fill_value=fill_value,
                         dtype=new_data.dtype, concatenate=True)
-                  # new_axes={'neighbour_dim': self.neighbours})
+            # new_axes={'neighbour_dim': self.neighbours})
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=data.attrs.copy())
 
