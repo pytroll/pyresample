@@ -230,6 +230,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, iar):
             np.transpose(np.vstack((x_4, y_4))),
             iar)
 
+
 def _get_corner_dask(stride, valid, in_x, in_y, iar):
     """Get closest set of coordinates from the *valid* locations"""
     # Find the closest valid pixels, if any
