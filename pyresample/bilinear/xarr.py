@@ -71,6 +71,8 @@ class XArrayResamplerBilinear(XArrayResamplerNN):
         input_size = da.sum(vii)
         index_mask = iar == input_size
         iar = da.where(index_mask, 0, iar)
+        shp = iar.shape
+        iar = da.reshape(iar, (shp[0] * shp[1], shp[-1]))
 
         # Get output projection as pyproj object
         proj = Proj(self.target_geo_def.proj_str)
@@ -144,13 +146,11 @@ def _get_output_xy_dask(target_geo_def, proj):
     out_lons, out_lats = target_geo_def.get_lonlats_dask()
 
     # Mask invalid coordinates
-    out_lons, out_lats = _mask_coordinates_dask(out_lons, out_lats)
+    out_lons, out_lats = _mask_coordinates_dask(out_lons.ravel(),
+                                                out_lats.ravel())
 
     # Convert coordinates to output projection x/y space
-    res = da.dstack(proj(out_lons.compute(), out_lats.compute()))
-
-    out_x = res[:, :, 0]
-    out_y = res[:, :, 1]
+    out_x, out_y = proj(out_lons.compute(), out_lats.compute())
 
     return out_x, out_y
 
@@ -166,18 +166,14 @@ def _get_input_xy_dask(source_geo_def, proj, input_idxs, iar):
     # TODO: direct indexing w/o .compute() results in
     # "ValueError: object too deep for desired array
     # input_idxs = input_idxs.ravel()
-    #in_lons = da.ravel(in_lons)
     in_lons = in_lons.compute()
     in_lons = in_lons[input_idxs]
-    #in_lats = da.ravel(in_lats)
     in_lats = in_lats.compute()
     in_lats = in_lats[input_idxs]
 
     # Expand input coordinates for each output location
-    # in_lons = in_lons.compute()
     iar = iar.compute()
     in_lons = in_lons[iar]
-    # in_lats = in_lats.compute()
     in_lats = in_lats[iar]
 
     # Convert coordinates to output projection x/y space
@@ -188,8 +184,6 @@ def _get_input_xy_dask(source_geo_def, proj, input_idxs, iar):
 
 def _mask_coordinates_dask(lons, lats):
     """Mask invalid coordinate values"""
-    # lons = da.ravel(lons)
-    # lats = da.ravel(lats)
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
     lons = da.where(idxs, np.nan, lons)
@@ -206,11 +200,8 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, iar):
 
     # Find four closest pixels around the target location
 
-    # FIXME: how to daskify?
-    # Tile output coordinates to same shape as neighbour info
-    # Replacing with da.transpose and da.tile doesn't work
-    out_x_tile = np.transpose(np.tile(out_x, (neighbours, 1)))
-    out_y_tile = np.transpose(np.tile(out_y, (neighbours, 1)))
+    out_x_tile = np.repeat(out_x.reshape(out_x.size, 1), neighbours, 1)
+    out_y_tile = np.repeat(out_y.reshape(out_y.size, 1), neighbours, 1)
 
     # Get differences in both directions
     x_diff = out_x_tile - in_x
@@ -243,7 +234,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, iar):
             np.transpose(np.vstack((x_4, y_4))),
             iar)
 
-def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
+def _get_corner_dask(stride, valid, in_x, in_y, iar):
     """Get closest set of coordinates from the *valid* locations"""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
@@ -251,7 +242,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
     invalid = np.invert(np.max(valid, axis=1))
 
     # idxs = idxs.compute()
-    idx_ref = idx_ref.compute()
+    iar = iar.compute()
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify
@@ -259,7 +250,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
     y__ = in_y[stride, idxs]  # TODO: daskify
     y__ = np.where(invalid, np.nan, y__)
 
-    idx = idx_ref[stride, idxs]  # TODO: daskify
+    idx = iar[stride, idxs]  # TODO: daskify
 
     return x__, y__, idx
 
