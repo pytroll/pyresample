@@ -423,7 +423,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'm')
+        units = proj_dict.get('units', 'm' if not p.is_latlong() else 'degrees')
 
     # Allow height and width to be provided for more consistency across functions in pyresample.
     if height is not None or width is not None:
