@@ -549,8 +549,8 @@ def _distance_from_center_forward(var, center, p, is_radians):
     # If on a pole, use northern/southern latitude for both height and width.
     if abs(abs(center_as_angle[1]) - pole) < 1e-8:
         direction_of_poles = _sign(center_as_angle[1])
-        var = (center[1] - p(_sign(center_as_angle[0]) * pole, center_as_angle[1] -
-                             direction_of_poles * abs(var[0]), radians=is_radians, errcheck=True)[0],
+        var = (center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[0]),
+                             radians=is_radians, errcheck=True)[1],
                center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[1]),
                              radians=is_radians, errcheck=True)[1])
     # Uses southern latitude and western longitude if radius is positive. Uses northern latitude and
