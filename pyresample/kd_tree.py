@@ -23,12 +23,13 @@ from __future__ import absolute_import
 import sys
 import types
 import warnings
+from copy import deepcopy
 from logging import getLogger
 
 import numpy as np
+
 from pykdtree.kdtree import KDTree
-from pyresample import _spatial_mp, data_reduce, geometry
-from pyresample import CHUNK_SIZE
+from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
 
 logger = getLogger(__name__)
 
@@ -1203,7 +1204,7 @@ class XArrayResamplerNN(object):
                       fill_value=fill_value,
                       dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims, coords=coords,
-                        attrs=data.attrs.copy())
+                        attrs=deepcopy(data.attrs))
 
         return res
 
