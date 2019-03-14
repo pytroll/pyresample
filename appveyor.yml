@@ -8,21 +8,6 @@ environment:
     CONDA_CHANNEL_PRIORITY: "True"
 
   matrix:
-    - PYTHON: "C:\\Python27_32"
-      PYTHON_VERSION: "2.7"
-      PYTHON_ARCH: "32"
-      NUMPY_VERSION: "stable"
-
-    - PYTHON: "C:\\Python27_64"
-      PYTHON_VERSION: "2.7"
-      PYTHON_ARCH: "64"
-      NUMPY_VERSION: "stable"
-
-    - PYTHON: "C:\\Python36_32"
-      PYTHON_VERSION: "3.6"
-      PYTHON_ARCH: "32"
-      NUMPY_VERSION: "stable"
-
     - PYTHON: "C:\\Python36_64"
       PYTHON_VERSION: "3.6"
       PYTHON_ARCH: "64"
@@ -33,10 +18,6 @@ install:
     - "powershell ci-helpers/appveyor/install-miniconda.ps1"
     - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
     - "activate test"
-    # HACK: Copy tiff.dll to libtiff.dll
-    - "cd %PYTHON%\\envs\\test\\Library\\bin"
-    - "copy tiff.dll libtiff.dll"
-    - "cd C:\\projects\\pyresample"
 
 build: false  # Not a C# project, build stuff at the test step instead.
 
