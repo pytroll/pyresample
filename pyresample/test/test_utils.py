@@ -78,8 +78,10 @@ class TestYAMLAreaParser(unittest.TestCase):
     def test_area_parser_yaml(self):
         """Test YAML area parser."""
         from pyresample import parse_area_file
-        ease_nh, ease_sh, test_m, test_deg, test_rad = parse_area_file(os.path.join(os.path.dirname(
-            __file__), 'test_files', 'areas.yaml'), 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees', 'test_radians')
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_areas = parse_area_file(test_area_file, 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees',
+                                     'test_radians', 'test_latlong')
+        ease_nh, ease_sh, test_m, test_deg, test_rad, test_latlong = test_areas
 
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
@@ -121,6 +123,14 @@ Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEqual(test_rad.rotation, 45)
         self.assertEqual(test_rad.__str__(), rad_str)
+
+        latlong_str = """Area ID: test_latlong
+Description: Basic latlong grid
+Projection: {'ellps': 'WGS84', 'lat_0': '27.12', 'lon_0': '-81.36', 'proj': 'longlat'}
+Number of columns: 3473
+Number of rows: 4058
+Area extent: (1.4186, 0.007, 1.4214, 0.0095)"""
+        self.assertEqual(test_latlong.__str__(), latlong_str)
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
@@ -290,8 +300,7 @@ class TestMisc(unittest.TestCase):
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml
         import tempfile
-        def_file = os.path.join(os.path.dirname(__file__), 'test_files',
-                                'areas.cfg')
+        def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
         os.close(filehandle)
         try:
