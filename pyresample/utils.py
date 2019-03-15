@@ -1,6 +1,6 @@
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2015
+# Copyright (C) 2010-2019
 #
 # Authors:
 #    Esben S. Nielsen
