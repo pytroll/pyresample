@@ -905,7 +905,7 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     """Query the kdtree. No distances are returned.
 
     NOTE: Dask array arguments must always come before other keyword arguments
-          for `da.atop` arguments to work.
+          for `da.blockwise` arguments to work.
 
     """
     voi = valid_output_index
@@ -1012,11 +1012,11 @@ class XArrayResamplerNN(object):
             args = (mask, dims, self.valid_input_index, dims)
         # res.shape = rows, cols, neighbors
         # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
-        res = da.atop(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
-                      valid_oi, 'ji', *args, kdtree=resample_kdtree,
-                      neighbours=self.neighbours, epsilon=self.epsilon,
-                      radius=self.radius_of_influence, dtype=np.int,
-                      new_axes={'k': self.neighbours}, concatenate=True)
+        res = da.blockwise(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
+                           valid_oi, 'ji', *args, kdtree=resample_kdtree,
+                           neighbours=self.neighbours, epsilon=self.epsilon,
+                           radius=self.radius_of_influence, dtype=np.int,
+                           new_axes={'k': self.neighbours}, concatenate=True)
         return res, None
 
     def get_neighbour_info(self, mask=None):
@@ -1142,12 +1142,12 @@ class XArrayResamplerNN(object):
         ia_slices = []
         # whether we have seen the geo dims in our analysis
         geo_handled = False
-        # dimension indexes for da.atop
+        # dimension indexes for da.blockwise
         src_adims = []
         flat_adim = []
-        # map source dimension name to dimension number for da.atop
+        # map source dimension name to dimension number for da.blockwise
         src_dim_to_ind = {}
-        # destination array dimension indexes for da.atop
+        # destination array dimension indexes for da.blockwise
         dst_dims = []
         for i, dim in enumerate(data.dims):
             src_dim_to_ind[dim] = i
@@ -1165,7 +1165,7 @@ class XArrayResamplerNN(object):
                 ia_slices.append(slice(None))
                 src_adims.append(i)
                 dst_dims.append(dim)
-        # map destination dimension names to atop dimension indexes
+        # map destination dimension names to blockwise dimension indexes
         dst_dim_to_ind = src_dim_to_ind.copy()
         dst_dim_to_ind['y'] = i + 1
         dst_dim_to_ind['x'] = i + 2
@@ -1192,17 +1192,17 @@ class XArrayResamplerNN(object):
         # dst_adims.append(neighbors_dim)
         # ia_adims.append(neighbors_dim)
         # FUTURE: when we allow more than one neighbor we need to add
-        #         the new axis to atop:
+        #         the new axis to blockwise:
         #         `new_axes={neighbor_dim: self.neighbors}`
         # FUTURE: if/when dask can handle index arrays that are dask arrays
-        #         then we can avoid all of this complicated atop stuff
-        res = da.atop(_my_index, dst_adims,
-                      ia, ia_adims,
-                      vii, flat_adim,
-                      new_data, src_adims,
-                      vii_slices=vii_slices, ia_slices=ia_slices,
-                      fill_value=fill_value,
-                      dtype=new_data.dtype, concatenate=True)
+        #         then we can avoid all of this complicated blockwise stuff
+        res = da.blockwise(_my_index, dst_adims,
+                           ia, ia_adims,
+                           vii, flat_adim,
+                           new_data, src_adims,
+                           vii_slices=vii_slices, ia_slices=ia_slices,
+                           fill_value=fill_value,
+                           dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=deepcopy(data.attrs))
 
