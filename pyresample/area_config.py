@@ -472,11 +472,10 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
         height, width = shape
     if None not in (area_extent, shape):
         return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
-    else:
-        return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
-                                     height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
-                                     optimize_projection=optimize_projection)
-    raise ValueError('Not enough information provided to create an area definition')
+
+    return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
+                                 height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
+                                 optimize_projection=optimize_projection)
 
 
 def _get_proj_data(projection):
