@@ -419,7 +419,10 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict = _get_proj_data(projection)
-    p = Proj(proj_dict, preserve_units=True)
+    try:
+        p = Proj(proj_dict, preserve_units=True)
+    except RuntimeError:
+        return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
@@ -469,7 +472,7 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
         height, width = shape
     if None not in (area_extent, shape):
         return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
-    elif area_extent is not None or shape is not None:
+    else:
         return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
                                      height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
                                      optimize_projection=optimize_projection)
