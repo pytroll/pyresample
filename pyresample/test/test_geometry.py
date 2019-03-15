@@ -1461,6 +1461,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
         self.assertTrue(isinstance(cad(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
         self.assertTrue(isinstance(cad(area_id, projection_list[1], area_extent=area_extent), DynamicAreaDefinition))
 
+        area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
+        self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
+
 
 class TestDynamicAreaDefinition(unittest.TestCase):
 
