@@ -38,9 +38,9 @@ try:
     import dask.array as da
     import dask
     if hasattr(dask, 'blockwise'):
-        blockwise = dask.blockwise
+        blockwise = da.blockwise
     else:
-        blockwise = dask.atop
+        blockwise = da.atop
 except ImportError:
     DataArray = None
     da = None
