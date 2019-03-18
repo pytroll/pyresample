@@ -33,4 +33,6 @@ Pyresample is tested with Python 2.7 and 3.6, but should additionally work
 on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
 
 [Documentation](https://pyresample.readthedocs.org/en/latest/)
-Look at [pytroll.github.io](http://pytroll.github.io/) for more information.
+
+See [pytroll.github.io](http://pytroll.github.io/) for more information on the
+PyTroll group and related packages.
