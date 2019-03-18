@@ -37,6 +37,10 @@ try:
     from xarray import DataArray
     import dask.array as da
     import dask
+    if hasattr(dask, 'blockwise'):
+        blockwise = dask.blockwise
+    else:
+        blockwise = dask.atop
 except ImportError:
     DataArray = None
     da = None
@@ -1012,11 +1016,11 @@ class XArrayResamplerNN(object):
             args = (mask, dims, self.valid_input_index, dims)
         # res.shape = rows, cols, neighbors
         # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
-        res = da.blockwise(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
-                           valid_oi, 'ji', *args, kdtree=resample_kdtree,
-                           neighbours=self.neighbours, epsilon=self.epsilon,
-                           radius=self.radius_of_influence, dtype=np.int,
-                           new_axes={'k': self.neighbours}, concatenate=True)
+        res = blockwise(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
+                        valid_oi, 'ji', *args, kdtree=resample_kdtree,
+                        neighbours=self.neighbours, epsilon=self.epsilon,
+                        radius=self.radius_of_influence, dtype=np.int,
+                        new_axes={'k': self.neighbours}, concatenate=True)
         return res, None
 
     def get_neighbour_info(self, mask=None):
@@ -1196,13 +1200,13 @@ class XArrayResamplerNN(object):
         #         `new_axes={neighbor_dim: self.neighbors}`
         # FUTURE: if/when dask can handle index arrays that are dask arrays
         #         then we can avoid all of this complicated blockwise stuff
-        res = da.blockwise(_my_index, dst_adims,
-                           ia, ia_adims,
-                           vii, flat_adim,
-                           new_data, src_adims,
-                           vii_slices=vii_slices, ia_slices=ia_slices,
-                           fill_value=fill_value,
-                           dtype=new_data.dtype, concatenate=True)
+        res = blockwise(_my_index, dst_adims,
+                        ia, ia_adims,
+                        vii, flat_adim,
+                        new_data, src_adims,
+                        vii_slices=vii_slices, ia_slices=ia_slices,
+                        fill_value=fill_value,
+                        dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=deepcopy(data.attrs))
 
