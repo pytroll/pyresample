@@ -1,3 +1,62 @@
+## Version 1.11.2 (2019/03/18)
+
+### Pull Requests Merged
+
+#### Documentation changes
+
+* [PR 176](https://github.com/pytroll/pyresample/pull/176) - Fix typos in README and index page
+
+In this release 1 pull request was closed.
+
+## Version 1.11.1 (2019/03/18)
+
+### Issues Closed
+
+* [Issue 165](https://github.com/pytroll/pyresample/issues/165) - Update use of dask `atop` to `blockwise`
+* [Issue 172](https://github.com/pytroll/pyresample/issues/172) - Missing metadata on PyPI ([PR 173](https://github.com/pytroll/pyresample/pull/173))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 175](https://github.com/pytroll/pyresample/pull/175) - Fix dask.blockwise backwards compatibility with dask.atop
+
+In this release 1 pull request was closed.
+
+
+## Version 1.11.0 (2019/03/15)
+
+### Issues Closed
+
+* [Issue 160](https://github.com/pytroll/pyresample/issues/160) - No coastlines in cartopy if area is flipped ([PR 161](https://github.com/pytroll/pyresample/pull/161))
+* [Issue 136](https://github.com/pytroll/pyresample/issues/136) - Update documentation to not reference scipy kdtree ([PR 155](https://github.com/pytroll/pyresample/pull/155))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 170](https://github.com/pytroll/pyresample/pull/170) - Allow create_area_def to work with incomplete proj dicts to create DynamicAreas
+* [PR 167](https://github.com/pytroll/pyresample/pull/167) - Fix yaml area loading when projection is latlong (units degrees)
+
+#### Features added
+
+* [PR 164](https://github.com/pytroll/pyresample/pull/164) - Delete unused requirements.txt file
+* [PR 156](https://github.com/pytroll/pyresample/pull/156) - Refactor pyresample.utils in to separate modules
+* [PR 150](https://github.com/pytroll/pyresample/pull/150) - Switch to versioneer
+* [PR 145](https://github.com/pytroll/pyresample/pull/145) - Refactor and deprecate geometry "*_dask" methods
+* [PR 138](https://github.com/pytroll/pyresample/pull/138) - Add `create_area_def` utility method and refactor AreaDefinition arguments
+
+#### Documentation changes
+
+* [PR 155](https://github.com/pytroll/pyresample/pull/155) - Update installation instructions to match current best practices ([136](https://github.com/pytroll/pyresample/issues/136))
+
+In this release 8 pull requests were closed.
+
+
 ## Version 1.10.3 (2018/11/23)
 
 ### Issues Closed

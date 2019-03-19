@@ -27,8 +27,7 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy>=1.10.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'six']
-extras_require = {'pykdtree': ['pykdtree>=1.1.1'],
-                  'numexpr': ['numexpr'],
+extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1']}
@@ -108,10 +107,13 @@ if __name__ == "__main__":
                 extension.sources[:] = sources
             return extensions
 
+    README = open('README.md', 'r').read()
     setup(name='pyresample',
           version=versioneer.get_version(),
           cmdclass=cmdclass,
-          description='Resampling of remote sensing data in Python',
+          description='Geospatial image resampling in Python',
+          long_description=README,
+          long_description_content_type='text/markdown',
           author='Thomas Lavergne',
           author_email='t.lavergne@met.no',
           package_dir={'pyresample': 'pyresample'},
