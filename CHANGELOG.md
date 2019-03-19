@@ -1,10 +1,21 @@
+## Version 1.11.2 (2019/03/18)
+
+### Pull Requests Merged
+
+#### Documentation changes
+
+* [PR 176](https://github.com/pytroll/pyresample/pull/176) - Fix typos in README and index page
+
+In this release 1 pull request was closed.
+
 ## Version 1.11.1 (2019/03/18)
 
 ### Issues Closed
 
+* [Issue 165](https://github.com/pytroll/pyresample/issues/165) - Update use of dask `atop` to `blockwise`
 * [Issue 172](https://github.com/pytroll/pyresample/issues/172) - Missing metadata on PyPI ([PR 173](https://github.com/pytroll/pyresample/pull/173))
 
-In this release 1 issue was closed.
+In this release 2 issues were closed.
 
 ### Pull Requests Merged
 
