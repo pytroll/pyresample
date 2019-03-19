@@ -8,8 +8,8 @@ reprojection is the process of mapping input geolocated data points to a
 new target geographic projection and area.
 
 Pyresample can operate on both fixed grids of data and geolocated swath data.
-To describe these data Pyresample use various "geometry" objects include the
-`AreaDefinition` and `SwathDefinition` classes.
+To describe these data Pyresample uses various "geometry" objects including
+the `AreaDefinition` and `SwathDefinition` classes.
 
 Pyresample offers multiple resampling algorithms including:
 
