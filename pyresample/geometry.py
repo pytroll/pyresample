@@ -577,6 +577,7 @@ class SwathDefinition(CoordinateDefinition):
             thelats = self.lats[:, int(cols / 2)]
             thelats = thelats.where(thelats.notnull(), drop=True)
             lon1, lon2 = np.asanyarray(thelons[[0, -1]])
+            lines = len(thelats)
             lat1, lat, lat2 = np.asanyarray(thelats[[0, int(lines / 2), -1]])
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
