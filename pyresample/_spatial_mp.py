@@ -130,7 +130,9 @@ class Proj_MP(BaseProj):
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
-        super(Proj_MP, self).__init__(*args, **kwargs)
+        if not Proj.__init__ == object.__init__:
+            # pyproj-2.0+
+            super(Proj_MP, self).__init__(*args, **kwargs)
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
