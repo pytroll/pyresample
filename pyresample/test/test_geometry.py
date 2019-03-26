@@ -918,8 +918,7 @@ class Test(unittest.TestCase):
         # totally different area
         area_to_cover = geometry.AreaDefinition('epsg4326', 'Global equal latitude/longitude grid for global sphere',
                                                 'epsg4326',
-                                                {"init": 'EPSG:4326',
-                                                 'units': 'degrees'},
+                                                {"init": 'EPSG:4326'},
                                                 8192,
                                                 4096,
                                                 [-180.0, -90.0, 180.0, 90.0])
