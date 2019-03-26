@@ -937,7 +937,7 @@ class AreaDefinition(BaseDefinition):
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
         units : str, optional
             Units that provided arguments should be interpreted as. This can be
-            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            one of 'deg', 'degrees', 'meters', 'metres', and any
             parameter supported by the
             `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
             command. Units are determined in the following priority:
@@ -986,7 +986,7 @@ class AreaDefinition(BaseDefinition):
             Size of pixels: (dx, dy)
         units : str, optional
             Units that provided arguments should be interpreted as. This can be
-            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            one of 'deg', 'degrees', 'meters', 'metres', and any
             parameter supported by the
             `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
             command. Units are determined in the following priority:
@@ -1042,7 +1042,7 @@ class AreaDefinition(BaseDefinition):
             Size of pixels: (dx, dy). Can be specified with one value if dx == dy
         units : str, optional
             Units that provided arguments should be interpreted as. This can be
-            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            one of 'deg', 'degrees', 'meters', 'metres', and any
             parameter supported by the
             `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
             command. Units are determined in the following priority:
@@ -1090,7 +1090,7 @@ class AreaDefinition(BaseDefinition):
             Size of pixels in **meters**: (dx, dy). Can be specified with one value if dx == dy
         units : str, optional
             Units that provided arguments should be interpreted as. This can be
-            one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+            one of 'deg', 'degrees', 'meters', 'metres', and any
             parameter supported by the
             `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
             command. Units are determined in the following priority:

@@ -22,7 +22,7 @@ import os
 import numpy as np
 import six
 import yaml
-from pyresample.utils import proj4_str_to_dict, is_latlong
+from pyresample.utils import proj4_str_to_dict
 
 try:
     from xarray import DataArray
@@ -358,7 +358,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
         ID of projection (deprecated)
     units : str, optional
         Units that provided arguments should be interpreted as. This can be
-        one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
+        one of 'deg', 'degrees', 'meters', 'metres', and any
         parameter supported by the
         `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
         command. Units are determined in the following priority:
@@ -385,7 +385,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     radius : list or float, optional
         Length from the center to the edges of the projection (dx, dy)
     rotation: float, optional
-        rotation in degrees or radians (negative is cw)
+        rotation in degrees(negative is cw)
     nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
@@ -413,7 +413,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
       they represent [projection x distance from center[0] to center[0]+dx, projection y distance from center[1] to
       center[1]+dy]
     """
-    from pyproj import Proj
+    from pyresample._spatial_mp import Proj
     description = kwargs.pop('description', area_id)
     proj_id = kwargs.pop('proj_id', None)
 
@@ -426,7 +426,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'm' if not is_latlong(p) else 'degrees')
+        units = proj_dict.get('units', 'm' if not p.is_latlong() else 'degrees')
 
     # Allow height and width to be provided for more consistency across functions in pyresample.
     if height is not None or width is not None:
@@ -450,7 +450,6 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
         area_extent_ll = _convert_units(area_extent_ll, 'area_extent', units, p, proj_dict)
         area_extent_ur = _convert_units(area_extent_ur, 'area_extent', units, p, proj_dict)
         area_extent = area_extent_ll + area_extent_ur
-        kwargs['rotation'] = _convert_rotation(kwargs.get('rotation'), units)
 
     # Fills in missing information to attempt to create an area definition.
     if area_extent is None or shape is None:
@@ -489,21 +488,6 @@ def _get_proj_data(projection):
     return proj_dict
 
 
-def _convert_rotation(rotation, units):
-    """Convert rotation to degrees."""
-    if rotation is None:
-        return None
-    if isinstance(rotation, DataArray):
-        if hasattr(rotation, 'units'):
-            units = rotation.units
-        if units not in ['deg', 'degrees', 'rad',  'radians']:
-            raise ValueError('units provided to rotation are incorrect: {0}'.format(units))
-        rotation = rotation.data
-    if units in ['rad',  'radians']:
-        rotation *= 180 / math.pi
-    return rotation
-
-
 def _sign(num):
     """Return the sign of the number provided.
 
@@ -525,9 +509,6 @@ def _round_poles(center, units, p):
     if 'deg' in units:
         if abs(abs(center[1]) - 90) < error:
             center = (center[0], _sign(center[1]) * 90)
-    elif 'rad' in units:
-        if abs(abs(center[1]) - math.pi / 2) < error * math.pi / 180:
-            center = (center[0], _sign(center[1]) * math.pi / 2)
     else:
         center = p(*center, inverse=True, errcheck=True)
         if abs(abs(center[1]) - 90) < error:
@@ -536,30 +517,28 @@ def _round_poles(center, units, p):
     return center
 
 
-def _distance_from_center_forward(var, center, p, is_radians):
-    """Convert distances in radians or degrees to projection units."""
+def _distance_from_center_forward(var, center, p):
+    """Convert distances in degrees to projection units."""
     # Interprets radius and resolution as distances between latitudes/longitudes.
     # Since the distance between longitudes and latitudes is not constant in
     # most projections, there must be reference point to start from.
     if center is None:
         raise ValueError('center must be given to convert radius or resolution from an angle to meters')
 
-    center_as_angle = p(*center, radians=is_radians, inverse=True, errcheck=True)
+    center_as_angle = p(*center, inverse=True, errcheck=True)
     pole = 90
-    if is_radians:
-        pole = math.pi / 2
     # If on a pole, use northern/southern latitude for both height and width.
     if abs(abs(center_as_angle[1]) - pole) < 1e-8:
         direction_of_poles = _sign(center_as_angle[1])
         var = (center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[0]),
-                             radians=is_radians, errcheck=True)[1],
+                             errcheck=True)[1],
                center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[1]),
-                             radians=is_radians, errcheck=True)[1])
+                             errcheck=True)[1])
     # Uses southern latitude and western longitude if radius is positive. Uses northern latitude and
     # eastern longitude if radius is negative.
     else:
-        var = (center[0] - p(center_as_angle[0] - var[0], center_as_angle[1], radians=is_radians, errcheck=True)[0],
-               center[1] - p(center_as_angle[0], center_as_angle[1] - var[1], radians=is_radians, errcheck=True)[1])
+        var = (center[0] - p(center_as_angle[0] - var[0], center_as_angle[1], errcheck=True)[0],
+               center[1] - p(center_as_angle[0], center_as_angle[1] - var[1], errcheck=True)[1])
     return var
 
 
@@ -569,18 +548,18 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     If `inverse` it True then the inverse calculation is done.
 
     """
-    from pyproj import transform, Proj
+    from pyproj import transform
+    from pyresample._spatial_mp import Proj
     if var is None:
         return None
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if is_latlong(p) and ('m' == units or 'meters' == units or 'metres' == units):
-        raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
+    if p.is_latlong() and not ('deg' == units or 'degrees' == units):
+        raise ValueError('latlon/latlong projection cannot take {0} as units: {1}'.format(units, name))
     # Check if units are an angle.
-    is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
-    is_radians = 'rad' in units
-    if ('deg' in units or 'rad' in units) and not is_angle:
+    is_angle = ('deg' == units or 'degrees' == units)
+    if ('deg' in units) and not is_angle:
         logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
     if not is_angle:
@@ -593,13 +572,13 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if name == 'center':
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
-    # Don't convert if inverse is True: Want degrees/radians.
-    # Converts list-like from degrees/radians to meters.
+    # Don't convert if inverse is True: Want degrees.
+    # Converts list-like from degrees to meters.
     if is_angle and not inverse:
         if name in ('radius', 'resolution'):
-            var = _distance_from_center_forward(var, center, p, is_radians)
+            var = _distance_from_center_forward(var, center, p)
         else:
-            var = p(*var, radians=is_radians, errcheck=True)
+            var = p(*var, errcheck=True)
     # Don't convert if inverse is False: Want meters.
     elif not is_angle and inverse:
         # Converts list-like from meters to degrees.

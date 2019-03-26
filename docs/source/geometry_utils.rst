@@ -29,8 +29,7 @@ and optional arguments:
 * **description**: Human-readable description. If not provided, defaults to **area_id**
 * **proj_id**: ID of projection (deprecated)
 * **units**: Units that provided arguments should be interpreted as. This can be
-    one of 'deg', 'degrees', 'rad', 'radians', 'meters', 'metres', and any
-    parameter supported by the
+    one of 'deg', 'degrees', 'meters', 'metres', and any parameter supported by the
     `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
     command. Units are determined in the following priority:
 
@@ -339,11 +338,11 @@ an area might be specified.
      units: m
    shape: [425, 425]
    center:
-     center: [0, -1.570796]
-     units: radians
+     center: [0, -90]
+     units: deg
    resolution:
-     resolution: 0.0039344913
-     units: radians
+     resolution: 0.22542974631297721
+     units: deg
 
 .. note::
 
