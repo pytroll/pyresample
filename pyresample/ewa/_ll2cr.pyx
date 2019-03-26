@@ -63,6 +63,13 @@ class MyProj(Proj):
         else:
             return super(MyProj, self).__call__(lons, lats, **kwargs)
 
+    def is_latlong(self):
+        try:
+            # pyproj 2.0+
+            return self.crs.is_geographic
+        except AttributeError:
+            return super(MyProj, self).is_latlong()
+
 
 def projection_circumference(p):
     """Return the projection circumference if the projection is cylindrical. None is returned otherwise.

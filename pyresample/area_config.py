@@ -22,7 +22,7 @@ import os
 import numpy as np
 import six
 import yaml
-from pyresample.utils import proj4_str_to_dict
+from pyresample.utils import proj4_str_to_dict, is_latlong
 
 try:
     from xarray import DataArray
@@ -426,7 +426,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'm' if not p.is_latlong() else 'degrees')
+        units = proj_dict.get('units', 'm' if not is_latlong(p) else 'degrees')
 
     # Allow height and width to be provided for more consistency across functions in pyresample.
     if height is not None or width is not None:
@@ -575,7 +575,7 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if p.is_latlong() and ('m' == units or 'meters' == units or 'metres' == units):
+    if is_latlong(p) and ('m' == units or 'meters' == units or 'metres' == units):
         raise ValueError('latlon/latlong projection cannot take meters as units: {0}'.format(name))
     # Check if units are an angle.
     is_angle = ('deg' == units or 'rad' == units or 'degrees' == units or 'radians' == units)
