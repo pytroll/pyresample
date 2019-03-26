@@ -884,7 +884,6 @@ class AreaDefinition(BaseDefinition):
         self.area_extent = tuple(area_extent)
 
         # Calculate area_extent in lon lat
-        print(proj_dict)
         proj = Proj(**proj_dict)
         corner_lons, corner_lats = proj((area_extent[0], area_extent[2]),
                                         (area_extent[1], area_extent[3]),
