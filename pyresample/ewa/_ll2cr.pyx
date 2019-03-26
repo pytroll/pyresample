@@ -53,13 +53,12 @@ class MyProj(BaseProj):
         elif isinstance(lons, numpy.ndarray):
             # Because we are doing this we know that we are getting a double array
             inverse = kwargs.get('inverse', False)
-            radians = kwargs.get('radians', False)
             errcheck = kwargs.get('errcheck', False)
             # call proj4 functions. inx and iny modified in place.
             if inverse:
-                _proj.Proj._inv(self, lons, lats, radians=radians, errcheck=errcheck)
+                _proj.Proj._inv(self, lons, lats, errcheck=errcheck)
             else:
-                _proj.Proj._fwd(self, lons, lats, radians=radians, errcheck=errcheck)
+                _proj.Proj._fwd(self, lons, lats, errcheck=errcheck)
             # if inputs were lists, tuples or floats, convert back.
             return lons, lats
         else:
