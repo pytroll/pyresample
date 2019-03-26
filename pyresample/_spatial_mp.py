@@ -105,7 +105,16 @@ class cKDTree_MP(object):
         return _d.copy(), _i.copy()
 
 
-class Proj(pyproj.Proj):
+class BaseProj(pyproj.Proj):
+    def is_latlong(self):
+        try:
+            # pyproj 2.0+
+            return self.crs.is_geographic
+        except AttributeError:
+            return super(BaseProj, self).is_latlong()
+
+
+class Proj(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
@@ -115,15 +124,8 @@ class Proj(pyproj.Proj):
         return super(Proj, self).__call__(data1, data2, inverse=inverse,
                                           radians=radians, errcheck=errcheck)
 
-    def is_latlong(self):
-        try:
-            # pyproj 2.0+
-            return self.crs.is_geographic
-        except AttributeError:
-            return super(Proj, self).is_latlong()
 
-
-class Proj_MP(pyproj.Proj):
+class Proj_MP(BaseProj):
 
     def __init__(self, *args, **kwargs):
         self._args = args
@@ -164,13 +166,6 @@ class Proj_MP(pyproj.Proj):
 
         _run_jobs(_parallel_proj, proj_call_args, nprocs)
         return _res1.copy().reshape(grid_shape), _res2.copy().reshape(grid_shape)
-
-    def is_latlong(self):
-        try:
-            # pyproj 2.0+
-            return self.crs.is_geographic
-        except AttributeError:
-            return super(Proj_MP, self).is_latlong()
 
 
 class Cartesian(object):

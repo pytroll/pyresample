@@ -23,11 +23,13 @@
 """
 __docformat__ = "restructuredtext en"
 
-from pyproj import _proj, Proj
+from pyproj import _proj
 import numpy
 cimport cython
 from cpython cimport bool
 cimport numpy
+
+from pyresample._spatial_mp import BaseProj
 
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
@@ -39,7 +41,7 @@ cdef extern from "numpy/npy_math.h":
     bint npy_isnan(double x)
 
 
-class MyProj(Proj):
+class MyProj(BaseProj):
     """Custom class to make ll2cr projection work faster without compiling against the PROJ.4 library itself.
 
     THIS SHOULD NOT BE USED OUTSIDE OF LL2CR! It makes assumptions and has requirements that may not make sense outside
@@ -62,13 +64,6 @@ class MyProj(Proj):
             return lons, lats
         else:
             return super(MyProj, self).__call__(lons, lats, **kwargs)
-
-    def is_latlong(self):
-        try:
-            # pyproj 2.0+
-            return self.crs.is_geographic
-        except AttributeError:
-            return super(MyProj, self).is_latlong()
 
 
 def projection_circumference(p):
