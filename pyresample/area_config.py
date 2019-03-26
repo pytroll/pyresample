@@ -117,9 +117,9 @@ def _read_yaml_area_file_content(area_file_name):
         if (isinstance(area_file_obj, (str, six.text_type)) and
                 os.path.isfile(area_file_obj)):
             with open(area_file_obj) as area_file_obj:
-                tmp_dict = yaml.load(area_file_obj)
+                tmp_dict = yaml.safe_load(area_file_obj)
         else:
-            tmp_dict = yaml.load(area_file_obj)
+            tmp_dict = yaml.safe_load(area_file_obj)
         area_dict = recursive_dict_update(area_dict, tmp_dict)
 
     return area_dict
@@ -419,11 +419,14 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict = _get_proj_data(projection)
-    p = Proj(proj_dict, preserve_units=True)
+    try:
+        p = Proj(proj_dict, preserve_units=True)
+    except RuntimeError:
+        return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'm')
+        units = proj_dict.get('units', 'm' if not p.is_latlong() else 'degrees')
 
     # Allow height and width to be provided for more consistency across functions in pyresample.
     if height is not None or width is not None:
@@ -469,11 +472,10 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
         height, width = shape
     if None not in (area_extent, shape):
         return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
-    elif area_extent is not None or shape is not None:
-        return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
-                                     height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
-                                     optimize_projection=optimize_projection)
-    raise ValueError('Not enough information provided to create an area definition')
+
+    return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
+                                 height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
+                                 optimize_projection=optimize_projection)
 
 
 def _get_proj_data(projection):

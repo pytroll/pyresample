@@ -69,26 +69,47 @@ class Test(unittest.TestCase):
                         msg='Calculation of cartesian coordinates failed')
 
     def test_cartopy_crs(self):
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
-                                           'areaD',
-                                           {'a': '6378144.0',
-                                            'b': '6356759.0',
-                                            'lat_0': '50.00',
-                                            'lat_ts': '50.00',
-                                            'lon_0': '8.00',
-                                            'proj': 'stere'},
-                                           800,
-                                           800,
-                                           [-1370912.72,
-                                            -909968.64000000001,
-                                            1029087.28,
-                                            1490031.3600000001])
-        crs = area_def.to_cartopy_crs()
-        self.assertEqual(crs.bounds,
-                         (area_def.area_extent[0],
-                          area_def.area_extent[2],
-                          area_def.area_extent[1],
-                          area_def.area_extent[3]))
+        """Test conversion from area definition to cartopy crs"""
+        europe = geometry.AreaDefinition(area_id='areaD',
+                                         description='Europe (3km, HRV, VTC)',
+                                         proj_id='areaD',
+                                         projection={'a': '6378144.0',
+                                                     'b': '6356759.0',
+                                                     'lat_0': '50.00',
+                                                     'lat_ts': '50.00',
+                                                     'lon_0': '8.00',
+                                                     'proj': 'stere'},
+                                         width=800, height=800,
+                                         area_extent=[-1370912.72,
+                                                      -909968.64000000001,
+                                                      1029087.28,
+                                                      1490031.3600000001])
+        seviri = geometry.AreaDefinition(area_id='seviri',
+                                         description='SEVIRI HRIT like (flipped, south up)',
+                                         proj_id='seviri',
+                                         projection={'proj': 'geos',
+                                                     'lon_0': 0.0,
+                                                     'a': 6378169.00,
+                                                     'b': 6356583.80,
+                                                     'h': 35785831.00,
+                                                     'units': 'm'},
+                                         width=123, height=123,
+                                         area_extent=[5500000, 5500000, -5500000, -5500000])
+
+        for area_def in [europe, seviri]:
+            crs = area_def.to_cartopy_crs()
+
+            # Bounds
+            self.assertEqual(crs.bounds,
+                             (area_def.area_extent[0],
+                              area_def.area_extent[2],
+                              area_def.area_extent[1],
+                              area_def.area_extent[3]))
+
+            # Threshold
+            thresh_exp = min(np.fabs(area_def.area_extent[2] - area_def.area_extent[0]),
+                             np.fabs(area_def.area_extent[3] - area_def.area_extent[1])) / 100.
+            self.assertEqual(crs.threshold, thresh_exp)
 
     def test_create_areas_def(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
@@ -1460,6 +1481,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
         # Makes sure if shape or area_extent is found/given, a DynamicAreaDefinition is made.
         self.assertTrue(isinstance(cad(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
         self.assertTrue(isinstance(cad(area_id, projection_list[1], area_extent=area_extent), DynamicAreaDefinition))
+
+        area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
+        self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):

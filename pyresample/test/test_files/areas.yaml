@@ -235,3 +235,17 @@ ease_nh:
     lower_left_xy: [-5326849.0625, -5326849.0625]
     upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
+
+test_latlong:
+  description: Basic latlong grid
+  projection:
+    proj: longlat
+    lat_0: 27.12
+    lon_0: -81.36
+    ellps: WGS84
+  shape:
+    height: 4058
+    width: 3473
+  area_extent:
+    lower_left_xy: [-0.08115781021773638, 0.4038691889114878]
+    upper_right_xy: [0.08115781021773638, 0.5427973973702365]
