@@ -96,12 +96,3 @@ def proj4_radius_parameters(proj4_dict):
             new_info['b'] = geod.b
 
     return float(new_info['a']), float(new_info['b'])
-
-
-def is_latlong(p):
-    """Determine whether the given projection is in geographic (lon/lat) coordinates"""
-    try:
-        # pyproj 2.0+
-        return p.crs.is_geographic
-    except AttributeError:
-        return p.is_latlong()

@@ -1633,11 +1633,11 @@ def suite():
     """
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
-    # mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(Test))
     mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
-    # mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
-    # mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
-    # mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
 
     return mysuite
 
