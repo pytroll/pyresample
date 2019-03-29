@@ -35,16 +35,9 @@ class Mock(object):
         else:
             return Mock()
 
-# If we are on read the docs then just mock external packages
-if os.environ.get("READTHEDOCS") == "True":
-    MOCK_MODULES = ['numpy', 'pykdtree', 'configobj', 'pyproj', 'pyresample.ewa']
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = Mock()
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, '/opt/lib/python2.5/site-packages')
 sys.path.insert(0, os.path.abspath('../../'))
 from pyresample import __version__  # noqa
 
