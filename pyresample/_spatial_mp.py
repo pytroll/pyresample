@@ -130,9 +130,9 @@ class Proj_MP(BaseProj):
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
-        pyproj.__version__ >= '2'
-        # pyproj-2.0+
-        super(Proj_MP, self).__init__(*args, **kwargs)
+        if pyproj.__version__ >= '2':
+            # pyproj-2.0+
+            super(Proj_MP, self).__init__(*args, **kwargs)
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
