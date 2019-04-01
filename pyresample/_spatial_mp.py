@@ -130,7 +130,7 @@ class Proj_MP(BaseProj):
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
-        if not Proj.__init__ == object.__init__:
+        pyproj.__version__ >= '2'
             # pyproj-2.0+
             super(Proj_MP, self).__init__(*args, **kwargs)
 
