@@ -577,10 +577,6 @@ class SwathDefinition(CoordinateDefinition):
                          coords=res.coords, attrs=self.lons.attrs.copy())
         return SwathDefinition(lons, lats)
 
-
-    def __getitem__(self, key):
-        return SwathDefinition(self.lons[key], self.lats[key])
-
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
@@ -939,6 +935,29 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    def copy(self, **override_kwargs):
+        """Make a copy of the current area, replacing the current values with anything in *override_kwargs*."""
+        kwargs = {'area_id': self.area_id,
+                  'description': self.description,
+                  'proj_id': self.proj_id,
+                  'projection': self.proj_dict,
+                  'width': self.width,
+                  'height': self.height,
+                  'area_extent': self.area_extent,
+                  'rotation': self.rotation}
+        kwargs.update(override_kwargs)
+        return AreaDefinition(**kwargs)
+
+    def aggregate(self, **dims):
+        """Return an aggregated version of the area."""
+        width = int(self.width / dims.get('x', 1))
+        height = int(self.height / dims.get('y', 1))
+        return self.copy(height=height, width=width)
+
+    @property
+    def shape(self):
+        return (self.height, self.width)
 
     @property
     def name(self):
@@ -1669,6 +1688,14 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
+        # Get actual values, replace Nones
+        yindices = yslice.indices(self.height)
+        ystopactual = yindices[1] - (yindices[1] - 1) % yindices[2]
+        xindices = xslice.indices(self.width)
+        xstopactual = xindices[1] - (xindices[1] - 1) % xindices[2]
+        yslice = slice(yindices[0], ystopactual, yindices[2])
+        xslice = slice(xindices[0], xstopactual, xindices[2])
+
         new_area_extent = ((self.pixel_upper_left[0] + (xslice.start - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.stop - 0.5) * self.pixel_size_y),
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
@@ -1676,8 +1703,8 @@ class AreaDefinition(BaseDefinition):
 
         new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
-                                  xslice.stop - xslice.start,
-                                  yslice.stop - yslice.start,
+                                  int((xslice.stop - xslice.start) / xslice.step),
+                                  int((yslice.stop - yslice.start) / yslice.step),
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
