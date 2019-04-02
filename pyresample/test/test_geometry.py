@@ -1692,23 +1692,24 @@ class TestCrop(unittest.TestCase):
     def test_aggregate(self):
         """Test aggregation of AreaDefinitions."""
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                               {'a': '6378144.0',
-                                'b': '6356759.0',
-                                'lat_0': '50.00',
-                                'lat_ts': '50.00',
-                                'lon_0': '8.00',
-                                'proj': 'stere'},
-                               800,
-                               800,
-                               [-1370912.72,
-                                -909968.64000000001,
-                                1029087.28,
-                                1490031.3600000001])
+                                       {'a': '6378144.0',
+                                        'b': '6356759.0',
+                                        'lat_0': '50.00',
+                                        'lat_ts': '50.00',
+                                        'lon_0': '8.00',
+                                        'proj': 'stere'},
+                                       800,
+                                       800,
+                                       [-1370912.72,
+                                           -909968.64000000001,
+                                           1029087.28,
+                                           1490031.3600000001])
         res = area.aggregate(x=4, y=2)
         self.assertDictEqual(res.proj_dict, area.proj_dict)
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         self.assertEqual(res.shape[0], area.shape[0] / 2)
         self.assertEqual(res.shape[1], area.shape[1] / 4)
+
 
 def suite():
     """The test suite.
