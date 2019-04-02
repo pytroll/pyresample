@@ -1227,6 +1227,37 @@ class TestSwathDefinition(unittest.TestCase):
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
 
+    def test_aggregation(self):
+        """Test aggregation on SwathDefinitions."""
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        from pyresample.geometry import SwathDefinition
+        sd = SwathDefinition(xlons, xlats)
+        res = sd.aggregate(y=2, x=2)
+        np.testing.assert_allclose(res.lons, [[179, -179]])
+        np.testing.assert_allclose(res.lats, [[0.5, 0.5]], atol=2e-5)
+
+    def test_striding(self):
+        """Test striding."""
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        from pyresample.geometry import SwathDefinition
+        sd = SwathDefinition(xlons, xlats)
+        res = sd[::2, ::2]
+        np.testing.assert_allclose(res.lons, [[178.5, -179.5]])
+        np.testing.assert_allclose(res.lats, [[0, 0]], atol=2e-5)
+
+
 
 class TestStackedAreaDefinition(unittest.TestCase):
 

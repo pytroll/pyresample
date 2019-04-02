@@ -547,6 +547,40 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def copy(self):
+        return SwathDefinition(self.lons, self.lats)
+
+    def aggregate(self, **dims):
+        import pyproj
+        import dask.array as da
+
+        def do_transform(src, dst, lons, lats, alt):
+            import pyproj
+            x, y, z = pyproj.transform(src, dst, lons, lats, alt)
+            return np.dstack((x, y, z))
+
+        geocent = pyproj.Proj(proj='geocent')
+        latlong = pyproj.Proj(proj='latlong')
+        res = da.map_blocks(do_transform, latlong, geocent,
+                            self.lons.data, self.lats.data,
+                            da.zeros_like(self.lons.data), new_axis=[2],
+                            chunks=(self.lons.chunks[0], self.lons.chunks[1], 3))
+        res = DataArray(res, dims=['y', 'x', 'coord'], coords=self.lons.coords)
+        res = res.coarsen(**dims).mean()
+        lonlatalt = da.map_blocks(do_transform, geocent, latlong,
+                                  res[:, :, 0].data, res[:, :, 1].data,
+                                  res[:, :, 2].data, new_axis=[2],
+                                  chunks=res.data.chunks)
+        lons = DataArray(lonlatalt[:, :, 0], dims=self.lons.dims,
+                         coords=res.coords, attrs=self.lons.attrs.copy())
+        lats = DataArray(lonlatalt[:, :, 1], dims=self.lons.dims,
+                         coords=res.coords, attrs=self.lons.attrs.copy())
+        return SwathDefinition(lons, lats)
+
+
+    def __getitem__(self, key):
+        return SwathDefinition(self.lons[key], self.lats[key])
+
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
