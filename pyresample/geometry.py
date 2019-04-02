@@ -896,7 +896,6 @@ class AreaDefinition(BaseDefinition):
         self.proj_id = proj_id
         self.width = int(width)
         self.height = int(height)
-        self.shape = (height, width)
         self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
