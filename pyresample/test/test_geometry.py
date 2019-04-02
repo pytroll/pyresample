@@ -1254,6 +1254,8 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
+        if (sys.version_info < (3, 0)):
+            self.skipTest("Not implemented in python 2 (xarray).")
         import dask.array as da
         import xarray as xr
         import numpy as np
