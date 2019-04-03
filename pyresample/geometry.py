@@ -575,9 +575,12 @@ class SwathDefinition(CoordinateDefinition):
                          coords=res.coords, attrs=self.lons.attrs.copy())
         lats = DataArray(lonlatalt[:, :, 1], dims=self.lons.dims,
                          coords=res.coords, attrs=self.lons.attrs.copy())
-        resolution = lons.attrs['resolution'] / ((dims.get('x', 1) + dims.get('y', 1)) / 2)
-        lons.attrs['resolution'] = resolution
-        lats.attrs['resolution'] = resolution
+        try:
+            resolution = lons.attrs['resolution'] / ((dims.get('x', 1) + dims.get('y', 1)) / 2)
+            lons.attrs['resolution'] = resolution
+            lats.attrs['resolution'] = resolution
+        except KeyError:
+            pass
         return SwathDefinition(lons, lats)
 
     def __hash__(self):
