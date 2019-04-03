@@ -548,9 +548,15 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
     def copy(self):
+        """Copy the current swath."""
         return SwathDefinition(self.lons, self.lats)
 
     def aggregate(self, **dims):
+        """Aggregate the current swath definition by averaging.
+
+        For example, averaging over 2x2 windows:
+        `sd.aggregate(x=2, y=2)`
+        """
         import pyproj
         import dask.array as da
 
@@ -942,7 +948,10 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     def copy(self, **override_kwargs):
-        """Make a copy of the current area, replacing the current values with anything in *override_kwargs*."""
+        """Make a copy of the current area.
+
+        This replaces the current values with anything in *override_kwargs*.
+        """
         kwargs = {'area_id': self.area_id,
                   'description': self.description,
                   'proj_id': self.proj_id,
@@ -962,7 +971,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def shape(self):
-        return (self.height, self.width)
+        return self.height, self.width
 
     @property
     def name(self):
