@@ -571,6 +571,14 @@ class SwathDefinition(CoordinateDefinition):
         lon1, lon2 = np.asanyarray(self.lons[[0, -1], int(cols / 2)])
         lat1, lat, lat2 = np.asanyarray(
             self.lats[[0, int(lines / 2), -1], int(cols / 2)])
+        if any(np.isnan((lon1, lon2, lat1, lat, lat2))):
+            thelons = self.lons[:, int(cols / 2)]
+            thelons = thelons.where(thelons.notnull(), drop=True)
+            thelats = self.lats[:, int(cols / 2)]
+            thelats = thelats.where(thelats.notnull(), drop=True)
+            lon1, lon2 = np.asanyarray(thelons[[0, -1]])
+            lines = len(thelats)
+            lat1, lat, lat2 = np.asanyarray(thelats[[0, int(lines / 2), -1]])
 
         proj_dict2points = {'proj': 'omerc', 'lat_0': lat, 'ellps': ellipsoid,
                             'lat_1': lat1, 'lon_1': lon1,

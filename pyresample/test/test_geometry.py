@@ -1166,6 +1166,22 @@ class TestSwathDefinition(unittest.TestCase):
                      'gamma': 0, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
+        import xarray as xr
+        lats = xr.DataArray(np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469, np.nan],
+                                      [80.84000396728516, 60.74200439453125, 34.08500289916992, np.nan],
+                                      [67.07600402832031, 54.147003173828125, 30.547000885009766, np.nan]]).T,
+                            dims=['y', 'x'])
+
+        lons = xr.DataArray(np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906, np.nan],
+                                      [79.11000061035156, 7.284000396728516, -5.107000350952148, np.nan],
+                                      [81.26400756835938, 29.672000885009766, 10.260000228881836, np.nan]]).T)
+
+        area = geometry.SwathDefinition(lons, lats)
+        proj_dict = {'lonc': -11.391744043133668, 'ellps': 'WGS84',
+                     'proj': 'omerc', 'alpha': 9.185764390923012,
+                     'gamma': 0, 'lat_0': -0.2821013754097188}
+        assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
+                                proj_dict)
 
     def test_get_edge_lonlats(self):
         """Test the `get_edge_lonlats` functionality."""
