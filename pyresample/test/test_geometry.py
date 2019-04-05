@@ -782,8 +782,8 @@ class Test(unittest.TestCase):
                                       proj_dict,
                                       x_size, y_size,
                                       area_extent)
-        import pyproj
-        p__ = pyproj.Proj(proj_dict)
+        from pyresample._spatial_mp import Proj
+        p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
         lon_ll, lat_ll = p__(1000000, 0, inverse=True)
