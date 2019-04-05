@@ -421,7 +421,7 @@ class TestProjRotation(unittest.TestCase):
             upper_right_xy: [11136477.43264252, 8236799.845095873]
           units: m"""
         fyaml = "/tmp/TestProjRotation_test_rotation_yaml.txt"
-        f = open(fyaml,"w")
+        f = open(fyaml, "w")
         f.write(yamlDef)
         f.close()
         test_area = load_area(fyaml, 'regionB')
