@@ -23,7 +23,6 @@ import numpy as np
 import pyproj
 import multiprocessing as mp
 import warnings
-from collections import Iterable
 
 from pyresample.utils import proj4_str_to_dict
 
@@ -113,18 +112,21 @@ class cKDTree_MP(object):
 class BaseProj(pyproj.Proj):
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
+        # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
         if pyproj.__version__ >= '2':
-            warn_msg = '{"init": "EPSG:XXXX"} is no longer supported. Use "EPSG:XXXX" as a proj string instead'
+            # If init is found in any of the data, override any other area parameters.
             if 'init' in kwargs:
                 warnings.warn('init="EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead')
-                projparams = int(kwargs.pop('init').replace('EPSG:', ''))
-            elif isinstance(projparams, Iterable) and 'init' in projparams:
-                # Dicts are cleaner to parse than strings.
+                projparams = kwargs.pop('init')
+            # Proj takes params in projparams over the params in kwargs.
+            if isinstance(projparams, (dict, str)) and 'init' in projparams:
+                warn_msg = '{"init": "EPSG:XXXX"} is no longer supported. Use "EPSG:XXXX" as a proj string instead'
                 if isinstance(projparams, str):
                     warn_msg = '"+init=EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead'
+                    # Proj-dicts are cleaner to parse than strings.
                     projparams = proj4_str_to_dict(projparams)
                 warnings.warn(warn_msg)
-                projparams = int(projparams.pop('init').replace('EPSG:', ''))
+                projparams = projparams.pop('init')
             super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
 
     def is_latlong(self):
