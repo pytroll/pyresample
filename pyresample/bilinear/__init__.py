@@ -29,7 +29,7 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 """
 
 import numpy as np
-from pyproj import Proj
+from pyresample._spatial_mp import Proj
 import warnings
 
 from pyresample import kd_tree

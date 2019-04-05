@@ -80,8 +80,8 @@ class TestYAMLAreaParser(unittest.TestCase):
         from pyresample import parse_area_file
         test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
         test_areas = parse_area_file(test_area_file, 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees',
-                                     'test_radians', 'test_latlong')
-        ease_nh, ease_sh, test_m, test_deg, test_rad, test_latlong = test_areas
+                                     'test_latlong')
+        ease_nh, ease_sh, test_m, test_deg, test_latlong = test_areas
 
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
@@ -115,21 +115,12 @@ Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
         self.assertEqual(test_deg.__str__(), deg_str)
 
-        rad_str = """Area ID: test_radians
-Description: test_radians
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
-Number of columns: 850
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
-        self.assertEqual(test_rad.rotation, 45)
-        self.assertEqual(test_rad.__str__(), rad_str)
-
         latlong_str = """Area ID: test_latlong
 Description: Basic latlong grid
 Projection: {'ellps': 'WGS84', 'lat_0': '27.12', 'lon_0': '-81.36', 'proj': 'longlat'}
 Number of columns: 3473
 Number of rows: 4058
-Area extent: (1.4186, 0.007, 1.4214, 0.0095)"""
+Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)"""
         self.assertEqual(test_latlong.__str__(), latlong_str)
 
     def test_multiple_file_content(self):

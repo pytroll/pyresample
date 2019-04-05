@@ -10,7 +10,7 @@ except ImportError:
 
 import numpy as np
 
-from pyproj import Proj
+from pyresample._spatial_mp import Proj
 
 from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry, CHUNK_SIZE
