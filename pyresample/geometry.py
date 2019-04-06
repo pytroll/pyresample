@@ -547,6 +547,48 @@ class SwathDefinition(CoordinateDefinition):
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
 
+    def copy(self):
+        """Copy the current swath."""
+        return SwathDefinition(self.lons, self.lats)
+
+    def aggregate(self, **dims):
+        """Aggregate the current swath definition by averaging.
+
+        For example, averaging over 2x2 windows:
+        `sd.aggregate(x=2, y=2)`
+        """
+        import pyproj
+        import dask.array as da
+
+        def do_transform(src, dst, lons, lats, alt):
+            import pyproj
+            x, y, z = pyproj.transform(src, dst, lons, lats, alt)
+            return np.dstack((x, y, z))
+
+        geocent = pyproj.Proj(proj='geocent')
+        latlong = pyproj.Proj(proj='latlong')
+        res = da.map_blocks(do_transform, latlong, geocent,
+                            self.lons.data, self.lats.data,
+                            da.zeros_like(self.lons.data), new_axis=[2],
+                            chunks=(self.lons.chunks[0], self.lons.chunks[1], 3))
+        res = DataArray(res, dims=['y', 'x', 'coord'], coords=self.lons.coords)
+        res = res.coarsen(**dims).mean()
+        lonlatalt = da.map_blocks(do_transform, geocent, latlong,
+                                  res[:, :, 0].data, res[:, :, 1].data,
+                                  res[:, :, 2].data, new_axis=[2],
+                                  chunks=res.data.chunks)
+        lons = DataArray(lonlatalt[:, :, 0], dims=self.lons.dims,
+                         coords=res.coords, attrs=self.lons.attrs.copy())
+        lats = DataArray(lonlatalt[:, :, 1], dims=self.lons.dims,
+                         coords=res.coords, attrs=self.lons.attrs.copy())
+        try:
+            resolution = lons.attrs['resolution'] / ((dims.get('x', 1) + dims.get('y', 1)) / 2)
+            lons.attrs['resolution'] = resolution
+            lats.attrs['resolution'] = resolution
+        except KeyError:
+            pass
+        return SwathDefinition(lons, lats)
+
     def __hash__(self):
         """Compute the hash of this object."""
         if self.hash is None:
@@ -874,7 +916,6 @@ class AreaDefinition(BaseDefinition):
         self.proj_id = proj_id
         self.width = int(width)
         self.height = int(height)
-        self.shape = (height, width)
         self.crop_offset = (0, 0)
         try:
             self.rotation = float(rotation)
@@ -913,6 +954,32 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    def copy(self, **override_kwargs):
+        """Make a copy of the current area.
+
+        This replaces the current values with anything in *override_kwargs*.
+        """
+        kwargs = {'area_id': self.area_id,
+                  'description': self.description,
+                  'proj_id': self.proj_id,
+                  'projection': self.proj_dict,
+                  'width': self.width,
+                  'height': self.height,
+                  'area_extent': self.area_extent,
+                  'rotation': self.rotation}
+        kwargs.update(override_kwargs)
+        return AreaDefinition(**kwargs)
+
+    def aggregate(self, **dims):
+        """Return an aggregated version of the area."""
+        width = int(self.width / dims.get('x', 1))
+        height = int(self.height / dims.get('y', 1))
+        return self.copy(height=height, width=width)
+
+    @property
+    def shape(self):
+        return self.height, self.width
 
     @property
     def name(self):
@@ -1643,6 +1710,14 @@ class AreaDefinition(BaseDefinition):
     def __getitem__(self, key):
         """Apply slices to the area_extent and size of the area."""
         yslice, xslice = key
+        # Get actual values, replace Nones
+        yindices = yslice.indices(self.height)
+        ystopactual = yindices[1] - (yindices[1] - 1) % yindices[2]
+        xindices = xslice.indices(self.width)
+        xstopactual = xindices[1] - (xindices[1] - 1) % xindices[2]
+        yslice = slice(yindices[0], ystopactual, yindices[2])
+        xslice = slice(xindices[0], xstopactual, xindices[2])
+
         new_area_extent = ((self.pixel_upper_left[0] + (xslice.start - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.stop - 0.5) * self.pixel_size_y),
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
@@ -1650,8 +1725,8 @@ class AreaDefinition(BaseDefinition):
 
         new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
-                                  xslice.stop - xslice.start,
-                                  yslice.stop - yslice.start,
+                                  int((xslice.stop - xslice.start) / xslice.step),
+                                  int((yslice.stop - yslice.start) / yslice.step),
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
