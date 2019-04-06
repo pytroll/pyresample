@@ -19,6 +19,7 @@
 
 import os
 import unittest
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import uuid
@@ -391,13 +392,11 @@ class TestProjRotation(unittest.TestCase):
         ROTATION:      -45
         AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
         };"""
-        flegacy = "/tmp/TestProjRotation_test_rotation_legacy.txt"
-        f = open(flegacy, "w")
-        f.write(legacyDef)
-        f.close()
-        test_area = load_area(flegacy, 'regionB')
+        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
+            f.write(legacyDef)
+        test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, -45)
-        os.remove(flegacy)
+        os.remove(f.name)
 
     def test_rotation_yaml(self):
         """Basic rotation in yaml format."""
@@ -420,13 +419,11 @@ class TestProjRotation(unittest.TestCase):
             lower_left_xy: [-7761424.714818418, -4861746.639279127]
             upper_right_xy: [11136477.43264252, 8236799.845095873]
           units: m"""
-        fyaml = "/tmp/TestProjRotation_test_rotation_yaml.txt"
-        f = open(fyaml, "w")
-        f.write(yamlDef)
-        f.close()
-        test_area = load_area(fyaml, 'regionB')
+        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
+            f.write(yamlDef)
+        test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, -45)
-        os.remove(fyaml)
+        os.remove(f.name)
 
     def test_norotation_legacy(self):
         """No rotation specified in legacy format."""
@@ -439,13 +436,11 @@ class TestProjRotation(unittest.TestCase):
         YSIZE:         548
         AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
         };"""
-        flegacy = "/tmp/TestProjRotation_test_rotation_legacy.txt"
-        f = open(flegacy, "w")
-        f.write(legacyDef)
-        f.close()
-        test_area = load_area(flegacy, 'regionB')
+        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
+            f.write(legacyDef)
+        test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
-        os.remove(flegacy)
+        os.remove(f.name)
 
     def test_norotation_yaml(self):
         """No rotation specified in yaml format."""
@@ -467,13 +462,11 @@ class TestProjRotation(unittest.TestCase):
             lower_left_xy: [-7761424.714818418, -4861746.639279127]
             upper_right_xy: [11136477.43264252, 8236799.845095873]
           units: m"""
-        fyaml = "/tmp/TestProjRotation_test_rotation_yaml.txt"
-        f = open(fyaml, "w")
-        f.write(yamlDef)
-        f.close()
-        test_area = load_area(fyaml, 'regionB')
+        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
+            f.write(yamlDef)
+        test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
-        os.remove(fyaml)
+        os.remove(f.name)
 
 
 def suite():
