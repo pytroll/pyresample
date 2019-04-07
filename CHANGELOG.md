@@ -15,8 +15,9 @@ In this release 1 issue was closed.
 #### Features added
 
 * [PR 182](https://github.com/pytroll/pyresample/pull/182) - Implement striding and aggregation for Swath- and AreaDefinitions
+* [PR 180](https://github.com/pytroll/pyresample/pull/180) - Remove radians from create_area_def and allow compatibility with pyproj-2.0+
 
-In this release 2 pull requests were closed.
+In this release 3 pull requests were closed.
 
 
 ## Version 1.11.2 (2019/03/18)
