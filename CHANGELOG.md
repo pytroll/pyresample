@@ -1,3 +1,24 @@
+## Version 1.12.0 (2019/04/06)
+
+### Issues Closed
+
+* [Issue 178](https://github.com/pytroll/pyresample/issues/178) - Can't install pyresample on OSX Mojave
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 177](https://github.com/pytroll/pyresample/pull/177) - Fix dynamic omerc parameter computation to survive nans
+
+#### Features added
+
+* [PR 182](https://github.com/pytroll/pyresample/pull/182) - Implement striding and aggregation for Swath- and AreaDefinitions
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.11.2 (2019/03/18)
 
 ### Pull Requests Merged
