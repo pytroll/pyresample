@@ -305,10 +305,10 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
     -----------
     area_id : str
         ID of area
-    proj_id : str
-        ID of projection
     area_name :str
         Description of area
+    proj_id : str
+        ID of projection
     proj4_args : list, dict, or str
         Proj4 arguments as list of arguments or string
     width : int
