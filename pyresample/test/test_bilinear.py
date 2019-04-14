@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from pyproj import Proj
+from pyresample._spatial_mp import Proj
 
 import pyresample.bilinear as bil
 from pyresample import geometry, utils, kd_tree

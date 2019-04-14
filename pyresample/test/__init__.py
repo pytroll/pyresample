@@ -43,8 +43,7 @@ import unittest
 
 
 def suite():
-    """The global test suite.
-    """
+    """The global test suite."""
     mysuite = unittest.TestSuite()
     # Use the unittests also
     mysuite.addTests(test_geometry.suite())

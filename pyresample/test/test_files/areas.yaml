@@ -113,11 +113,11 @@ area_of_interest_2:
     units: m
   shape: [425, 425]
   center:
-    center: [0, -1.570796]
-    units: radians
+    center: [0, -90]
+    units: deg
   resolution:
-    resolution: 0.003934491305097
-    units: radians
+    resolution: 0.22542974631297721
+    units: deg
 
 test_meters:
   units: degrees
@@ -142,36 +142,6 @@ test_meters:
     radius: 3309.9505528339496
     units: mi
   rotation: 45
-
-test_radians:
-  projection:
-    proj: laea
-    lat_0: -90
-    lon_0: 0
-    a: 6371228.0
-    units: m
-  area_extent:
-    area_extent: [-2.356194490192345, -0.30571189166434753, 0.7853981633974483, -0.30571189166434753]
-    units: radians
-  upper_left_extent:
-    x: -0.7853981633974483
-    y: -0.30571189166434753
-    units: radians
-  center:
-    x: 0
-    y: -1.5707963267948966
-    units: radians
-  resolution:
-    dx: 0.001967244700879
-    dy: 0.003934491305097
-    units: radians
-  radius:
-    dx: 0.86257209725
-    dy: 0.86257209725
-    units: radians
-  rotation:
-    rotation: 0.7853981633974483
-    units: radians
 
 test_degrees:
   projection:

@@ -782,8 +782,8 @@ class Test(unittest.TestCase):
                                       proj_dict,
                                       x_size, y_size,
                                       area_extent)
-        import pyproj
-        p__ = pyproj.Proj(proj_dict)
+        from pyresample._spatial_mp import Proj
+        p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
         lon_ll, lat_ll = p__(1000000, 0, inverse=True)
@@ -918,8 +918,7 @@ class Test(unittest.TestCase):
         # totally different area
         area_to_cover = geometry.AreaDefinition('epsg4326', 'Global equal latitude/longitude grid for global sphere',
                                                 'epsg4326',
-                                                {"init": 'EPSG:4326',
-                                                 'units': 'degrees'},
+                                                {"init": 'EPSG:4326'},
                                                 8192,
                                                 4096,
                                                 [-180.0, -90.0, 180.0, 90.0])
@@ -985,6 +984,31 @@ class Test(unittest.TestCase):
                                         1490031.36])
         self.assertEqual(area.proj_str,
                          '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
+
+    def test_striding(self):
+        """Test striding AreaDefinitions."""
+        from pyresample import utils
+
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        area_def = utils.get_area_def(area_id,
+                                      area_name,
+                                      proj_id,
+                                      proj_dict,
+                                      x_size, y_size,
+                                      area_extent)
+
+        reduced_area = area_def[::4, ::4]
+        np.testing.assert_allclose(reduced_area.area_extent, (area_extent[0],
+                                                              area_extent[1] + 3 * area_def.pixel_size_y,
+                                                              area_extent[2] - 3 * area_def.pixel_size_x,
+                                                              area_extent[3]))
 
 
 def assert_np_dict_allclose(dict1, dict2):
@@ -1166,6 +1190,22 @@ class TestSwathDefinition(unittest.TestCase):
                      'gamma': 0, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
+        import xarray as xr
+        lats = xr.DataArray(np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469, np.nan],
+                                      [80.84000396728516, 60.74200439453125, 34.08500289916992, np.nan],
+                                      [67.07600402832031, 54.147003173828125, 30.547000885009766, np.nan]]).T,
+                            dims=['y', 'x'])
+
+        lons = xr.DataArray(np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906, np.nan],
+                                      [79.11000061035156, 7.284000396728516, -5.107000350952148, np.nan],
+                                      [81.26400756835938, 29.672000885009766, 10.260000228881836, np.nan]]).T)
+
+        area = geometry.SwathDefinition(lons, lats)
+        proj_dict = {'lonc': -11.391744043133668, 'ellps': 'WGS84',
+                     'proj': 'omerc', 'alpha': 9.185764390923012,
+                     'gamma': 0, 'lat_0': -0.2821013754097188}
+        assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
+                                proj_dict)
 
     def test_get_edge_lonlats(self):
         """Test the `get_edge_lonlats` functionality."""
@@ -1226,6 +1266,39 @@ class TestSwathDefinition(unittest.TestCase):
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (3, 3))
+
+    def test_aggregation(self):
+        """Test aggregation on SwathDefinitions."""
+        if (sys.version_info < (3, 0)):
+            self.skipTest("Not implemented in python 2 (xarray).")
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        from pyresample.geometry import SwathDefinition
+        sd = SwathDefinition(xlons, xlats)
+        res = sd.aggregate(y=2, x=2)
+        np.testing.assert_allclose(res.lons, [[179, -179]])
+        np.testing.assert_allclose(res.lats, [[0.5, 0.5]], atol=2e-5)
+
+    def test_striding(self):
+        """Test striding."""
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        from pyresample.geometry import SwathDefinition
+        sd = SwathDefinition(xlons, xlats)
+        res = sd[::2, ::2]
+        np.testing.assert_allclose(res.lons, [[178.5, -179.5]])
+        np.testing.assert_allclose(res.lats, [[0, 0]], atol=2e-5)
+
 
 
 class TestStackedAreaDefinition(unittest.TestCase):
@@ -1411,11 +1484,11 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
-        units_list = ['meters', 'degrees', 'radians']
+        units_list = ['meters', 'degrees']
         base_def = AreaDefinition(area_id, description, '', projection_list[0], shape[1], shape[0], area_extent)
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
-        # dicts are accepted, and that degrees, meters, and radians all create the same area definition.
+        # dicts are accepted, and that degrees and meters both create the same area definition.
         # area_list used to check that areas are all correct at the end.
         area_list = []
         from itertools import product
@@ -1425,15 +1498,10 @@ class TestStackedAreaDefinition(unittest.TestCase):
                 # Meters.
                 essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
                               (12533.7625, 25067.525), (425, 850)]
-            elif 'deg' in units:
+            else:
                 # Degrees.
                 essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
                               (0.11271481862984278, 0.22542974631297721), (425, 850)]
-            else:
-                # Radians.
-                essentials = [(0.0, -1.5707963267948966), 0.86257209725,
-                              (-0.7853981633974483, -0.30571189166434753),
-                              (0.001967244700879, 0.003934491305097), (425, 850)]
             # If center is valid, use it.
             if len(center) == 2:
                 center = essentials[0]
@@ -1443,7 +1511,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      radius=essentials[1], description=description, units=units, rotation=45))
             except ValueError:
                 pass
-        self.assertEqual(len(area_list), 6)
+        self.assertEqual(len(area_list), 4)
 
         # Tests that specifying units through xarrays works.
         area_list.append(cad(area_id, projection_list[1], shape=shape,
@@ -1628,10 +1696,31 @@ class TestCrop(unittest.TestCase):
                                         1029087.28,
                                         1490031.3600000001])
         res = area[slice(20, 720), slice(100, 500)]
-        self.assertTrue(np.allclose((-1070912.72, -669968.6399999999,
-                                     129087.28000000003, 1430031.36),
-                                    res.area_extent))
+        np.testing.assert_allclose((-1070912.72, -669968.6399999999,
+                                    129087.28000000003, 1430031.36),
+                                   res.area_extent)
         self.assertEqual(res.shape, (700, 400))
+
+    def test_aggregate(self):
+        """Test aggregation of AreaDefinitions."""
+        area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                       {'a': '6378144.0',
+                                        'b': '6356759.0',
+                                        'lat_0': '50.00',
+                                        'lat_ts': '50.00',
+                                        'lon_0': '8.00',
+                                        'proj': 'stere'},
+                                       800,
+                                       800,
+                                       [-1370912.72,
+                                           -909968.64000000001,
+                                           1029087.28,
+                                           1490031.3600000001])
+        res = area.aggregate(x=4, y=2)
+        self.assertDictEqual(res.proj_dict, area.proj_dict)
+        np.testing.assert_allclose(res.area_extent, area.area_extent)
+        self.assertEqual(res.shape[0], area.shape[0] / 2)
+        self.assertEqual(res.shape[1], area.shape[1] / 4)
 
 
 def suite():

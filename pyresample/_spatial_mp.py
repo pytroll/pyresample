@@ -22,6 +22,10 @@ import ctypes
 import numpy as np
 import pyproj
 import multiprocessing as mp
+import warnings
+
+from pyresample.utils import proj4_str_to_dict
+
 
 try:
     import numexpr as ne
@@ -105,22 +109,48 @@ class cKDTree_MP(object):
         return _d.copy(), _i.copy()
 
 
-class Proj(pyproj.Proj):
+class BaseProj(pyproj.Proj):
+
+    def __init__(self, projparams=None, preserve_units=True, **kwargs):
+        # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
+        if pyproj.__version__ >= '2':
+            # If init is found in any of the data, override any other area parameters.
+            if 'init' in kwargs:
+                warnings.warn('init="EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead')
+                projparams = kwargs.pop('init')
+            # Proj takes params in projparams over the params in kwargs.
+            if isinstance(projparams, (dict, str)) and 'init' in projparams:
+                warn_msg = '{"init": "EPSG:XXXX"} is no longer supported. Use "EPSG:XXXX" as a proj string instead'
+                if isinstance(projparams, str):
+                    warn_msg = '"+init=EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead'
+                    # Proj-dicts are cleaner to parse than strings.
+                    projparams = proj4_str_to_dict(projparams)
+                warnings.warn(warn_msg)
+                projparams = projparams.pop('init')
+            super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
+
+    def is_latlong(self):
+        if pyproj.__version__ >= '2':
+            return self.crs.is_geographic
+        return super(BaseProj, self).is_latlong()
+
+
+class Proj(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
         if self.is_latlong():
             return data1, data2
-
         return super(Proj, self).__call__(data1, data2, inverse=inverse,
                                           radians=radians, errcheck=errcheck)
 
 
-class Proj_MP(pyproj.Proj):
+class Proj_MP(BaseProj):
 
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
+        super(Proj_MP, self).__init__(*args, **kwargs)
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
@@ -187,9 +217,9 @@ def _run_jobs(target, args, nprocs):
     # return status in shared memory
     # access to these values are serialized automatically
     ierr = mp.Value(ctypes.c_int, 0)
-    err_msg = mp.Array(ctypes.c_char, 1024)
+    warn_msg = mp.Array(ctypes.c_char, 1024)
 
-    args.extend((ierr, err_msg))
+    args.extend((ierr, warn_msg))
 
     pool = [mp.Process(target=target, args=args) for n in range(nprocs)]
     for p in pool:
@@ -198,7 +228,7 @@ def _run_jobs(target, args, nprocs):
         p.join()
     if ierr.value != 0:
         raise RuntimeError('%d errors in worker processes. Last one reported:\n%s' %
-                           (ierr.value, err_msg.value.decode()))
+                           (ierr.value, warn_msg.value.decode()))
 
 # This is executed in an external process:
 
@@ -208,7 +238,7 @@ def _parallel_query(scheduler,  # scheduler for load balancing
                     data, ndata, ndim, leafsize,
                     x, nx, d, i,  # query data and results
                     k, eps, p, dub,  # auxillary query parameters
-                    ierr, err_msg):  # return values (0 on success)
+                    ierr, warn_msg):  # return values (0 on success)
 
     try:
         # View shared memory as ndarrays.
@@ -238,11 +268,11 @@ def _parallel_query(scheduler,  # scheduler for load balancing
     # Access to ierr is serialized by multiprocessing.
     except Exception as e:
         ierr.value += 1
-        err_msg.value = str(e).encode()
+        warn_msg.value = str(e).encode()
 
 
 def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,
-                   inverse, radians, errcheck, ierr, err_msg):
+                   inverse, radians, errcheck, ierr, warn_msg):
     try:
         # View shared memory as ndarrays.
         _data1 = shmem_as_ndarray(data1)
@@ -262,10 +292,10 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,
     # Access to ierr is serialized by multiprocessing.
     except Exception as e:
         ierr.value += 1
-        err_msg.value = str(e).encode()
+        warn_msg.value = str(e).encode()
 
 
-def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
+def _parallel_transform(scheduler, lons, lats, n, coords, ierr, warn_msg):
     try:
         # View shared memory as ndarrays.
         _lons = shmem_as_ndarray(lons)
@@ -283,4 +313,4 @@ def _parallel_transform(scheduler, lons, lats, n, coords, ierr, err_msg):
     # Access to ierr is serialized by multiprocessing.
     except Exception as e:
         ierr.value += 1
-        err_msg.value = str(e).encode()
+        warn_msg.value = str(e).encode()
