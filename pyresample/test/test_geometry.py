@@ -70,6 +70,8 @@ class Test(unittest.TestCase):
 
     def test_cartopy_crs(self):
         """Test conversion from area definition to cartopy crs"""
+        import pyproj
+
         europe = geometry.AreaDefinition(area_id='areaD',
                                          description='Europe (3km, HRV, VTC)',
                                          proj_id='areaD',
@@ -110,6 +112,16 @@ class Test(unittest.TestCase):
             thresh_exp = min(np.fabs(area_def.area_extent[2] - area_def.area_extent[0]),
                              np.fabs(area_def.area_extent[3] - area_def.area_extent[1])) / 100.
             self.assertEqual(crs.threshold, thresh_exp)
+
+        # EPSG projection
+        area = geometry.AreaDefinition(
+            area_id='ease-sh-2.0',
+            description='25km EASE Grid 2.0 (Southern Hemisphere)',
+            proj_id='ease-sh-2.0',
+            projection='EPSG:6932' if pyproj.__version__ >= '2' else '+init=EPSG:6932',
+            width=123, height=123,
+            area_extent=[-40000., -40000., 40000., 40000.])
+        area.to_cartopy_crs()
 
     def test_create_areas_def(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
