@@ -113,7 +113,6 @@ class BaseProj(pyproj.Proj):
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
         # Copy dict-type arguments as they will be modified in-place
-        kwargs = kwargs.copy()
         if isinstance(projparams, dict):
             projparams = projparams.copy()
 
