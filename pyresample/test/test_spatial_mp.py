@@ -19,7 +19,11 @@
 """Testing the _spatial_mp module"""
 
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    # separate mock package py<3.3
+    import mock
 import pyproj
 import unittest
 
