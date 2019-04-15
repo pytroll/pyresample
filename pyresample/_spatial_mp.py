@@ -112,6 +112,11 @@ class cKDTree_MP(object):
 class BaseProj(pyproj.Proj):
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
+        # Copy dict-type arguments as they will be modified in-place
+        kwargs = kwargs.copy()
+        if isinstance(projparams, dict):
+            projparams = projparams.copy()
+
         # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
         if pyproj.__version__ >= '2':
             # If init is found in any of the data, override any other area parameters.
@@ -127,6 +132,14 @@ class BaseProj(pyproj.Proj):
                     projparams = proj4_str_to_dict(projparams)
                 warnings.warn(warn_msg)
                 projparams = projparams.pop('init')
+            # New syntax 'EPSG:XXXX'
+            if 'EPSG' in kwargs or (isinstance(projparams, dict) and 'EPSG' in projparams):
+                if 'EPSG' in kwargs:
+                    epsg_code = kwargs.pop('EPSG')
+                else:
+                    epsg_code = projparams.pop('EPSG')
+                projparams = 'EPSG:{}'.format(epsg_code)
+
             super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
 
     def is_latlong(self):
