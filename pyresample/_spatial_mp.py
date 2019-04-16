@@ -24,7 +24,7 @@ import pyproj
 import multiprocessing as mp
 import warnings
 
-from pyresample.utils import proj4_str_to_dict
+from pyresample.utils import proj4_str_to_dict, is_pyproj2
 
 
 try:
@@ -117,7 +117,7 @@ class BaseProj(pyproj.Proj):
             projparams = projparams.copy()
 
         # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
-        if pyproj.__version__ >= '2':
+        if is_pyproj2():
             # If init is found in any of the data, override any other area parameters.
             if 'init' in kwargs:
                 warnings.warn('init="EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead')
@@ -142,7 +142,7 @@ class BaseProj(pyproj.Proj):
             super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
 
     def is_latlong(self):
-        if pyproj.__version__ >= '2':
+        if is_pyproj2():
             return self.crs.is_geographic
         return super(BaseProj, self).is_latlong()
 

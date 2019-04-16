@@ -70,7 +70,7 @@ class Test(unittest.TestCase):
 
     def test_cartopy_crs(self):
         """Test conversion from area definition to cartopy crs"""
-        import pyproj
+        from pyresample import utils
 
         europe = geometry.AreaDefinition(area_id='areaD',
                                          description='Europe (3km, HRV, VTC)',
@@ -118,13 +118,13 @@ class Test(unittest.TestCase):
             area_id='ease-sh-2.0',
             description='25km EASE Grid 2.0 (Southern Hemisphere)',
             proj_id='ease-sh-2.0',
-            projection='EPSG:6932' if pyproj.__version__ >= '2' else '+init=EPSG:6932',
+            projection='EPSG:6932' if utils.is_pyproj2() else '+init=EPSG:6932',
             width=123, height=123,
             area_extent=[-40000., -40000., 40000., 40000.])
         area.to_cartopy_crs()
 
     def test_create_areas_def(self):
-        import pyproj
+        from pyresample import utils
         import yaml
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
@@ -155,12 +155,12 @@ class Test(unittest.TestCase):
         # EPSG
         area_def = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
                                            'sweref99tm',
-                                           'EPSG:3006' if pyproj.__version__ >= '2' else {'init': 'epsg:3006'},
+                                           'EPSG:3006' if utils.is_pyproj2() else {'init': 'epsg:3006'},
                                            4667,
                                            4667,
                                            [-49739, 5954123, 1350361, 7354223])
         res = yaml.load(area_def.create_areas_def())
-        epsg_yaml = "EPSG: 3006" if pyproj.__version__ >= '2' else 'init: epsg:3006'
+        epsg_yaml = "EPSG: 3006" if utils.is_pyproj2() else 'init: epsg:3006'
         expected = yaml.load(('baws300_sweref99tm:\n'
                               '  description: BAWS, 300m resolution, sweref99tm\n'
                               '  projection:\n'
@@ -174,7 +174,7 @@ class Test(unittest.TestCase):
         self.assertDictEqual(res, expected)
 
     def test_parse_area_file(self):
-        import pyproj
+        from pyresample import utils
 
         expected = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
                                            'areaD',
@@ -203,12 +203,12 @@ class Test(unittest.TestCase):
         # EPSG
         expected = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
                                            'sweref99tm',
-                                           'EPSG:3006s' if pyproj.__version__ >= '2' else {'init': 'epsg:3006'},
+                                           'EPSG:3006' if utils.is_pyproj2() else {'init': 'epsg:3006'},
                                            4667,
                                            4667,
                                            [-49739, 5954123, 1350361, 7354223])
 
-        epsg_yaml = "EPSG: 3006" if pyproj.__version__ >= '2' else 'init: epsg:3006'
+        epsg_yaml = "EPSG: 3006" if utils.is_pyproj2() else 'init: epsg:3006'
         yaml_str = ('baws300_sweref99tm:\n'
                     '  description: BAWS, 300m resolution, sweref99tm\n'
                     '  projection:\n'
@@ -930,7 +930,6 @@ class Test(unittest.TestCase):
     def test_get_area_slices(self):
         """Check area slicing."""
         from pyresample import utils
-        import pyproj
 
         # The area of our source data
         area_id = 'orig'
@@ -1003,7 +1002,7 @@ class Test(unittest.TestCase):
         # totally different area
         area_to_cover = geometry.AreaDefinition('epsg4326', 'Global equal latitude/longitude grid for global sphere',
                                                 'epsg4326',
-                                                'EPSG:4326' if pyproj.__version__ >= '2' else {"init": 'EPSG:4326'},
+                                                'EPSG:4326' if utils.is_pyproj2() else {"init": 'EPSG:4326'},
                                                 8192,
                                                 4096,
                                                 [-180.0, -90.0, 180.0, 90.0])
@@ -1049,7 +1048,7 @@ class Test(unittest.TestCase):
 
     def test_proj_str(self):
         from collections import OrderedDict
-        import pyproj
+        from pyresample import utils
 
         proj_dict = OrderedDict()
         proj_dict['proj'] = 'stere'
@@ -1073,7 +1072,7 @@ class Test(unittest.TestCase):
                          '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
 
         # EPSG
-        projection = 'EPSG:6932' if pyproj.__version__ >= '2' else '+init=EPSG:6932'
+        projection = 'EPSG:6932' if utils.is_pyproj2() else '+init=EPSG:6932'
         area = geometry.AreaDefinition(
             area_id='ease-sh-2.0',
             description='25km EASE Grid 2.0 (Southern Hemisphere)',
@@ -1570,13 +1569,14 @@ class TestStackedAreaDefinition(unittest.TestCase):
         from pyresample.geometry import DynamicAreaDefinition
         from pyresample.area_config import DataArray
         from pyresample.area_config import create_area_def as cad
+        from pyresample import utils
         import pyproj
 
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
         projection_list = [{'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
                            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m',
-                           'EPSG:3409' if pyproj.__version__ >= '2' else '+init=EPSG:3409']
+                           'EPSG:3409' if utils.is_pyproj2() else '+init=EPSG:3409']
         proj_id = 'ease_sh'
         shape = (425, 850)
         upper_left_extent = (-5326849.0625, 5326849.0625)
