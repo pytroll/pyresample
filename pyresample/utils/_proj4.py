@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 from collections import OrderedDict
+import six
 
 
 def convert_proj_floats(proj_pairs):
@@ -43,7 +44,12 @@ def proj4_str_to_dict(proj4_str):
     Note: Key only parameters will be assigned a value of `True`.
     """
     if proj4_str.startswith('EPSG:'):
-        return OrderedDict([proj4_str.split(':', 1)])
+        try:
+            code = int(proj4_str.split(':', 1)[1])
+        except ValueError as err:
+            six.raise_from(ValueError("Invalid EPSG code '{}': {}".format(proj4_str, err)),
+                           None)  # Suppresses original exception context in python 3
+        return OrderedDict(EPSG=code)
     pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
     return convert_proj_floats(pairs)
 
