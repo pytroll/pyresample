@@ -293,7 +293,6 @@ class TestMisc(unittest.TestCase):
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
-        import pyproj
         from pyresample import utils
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
@@ -307,7 +306,6 @@ class TestMisc(unittest.TestCase):
 
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
-        import pyproj
 
         proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
         proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
