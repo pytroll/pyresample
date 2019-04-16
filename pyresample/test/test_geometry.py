@@ -6,7 +6,7 @@ import sys
 
 import numpy as np
 
-from pyresample import geo_filter, geometry
+from pyresample import geo_filter, geometry, parse_area_file
 from pyresample.geometry import (IncompatibleAreas,
                                  combine_area_extents_vertical,
                                  concatenate_area_defs)
@@ -124,6 +124,9 @@ class Test(unittest.TestCase):
         area.to_cartopy_crs()
 
     def test_create_areas_def(self):
+        import pyproj
+        import yaml
+
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
                                            'areaD',
                                            {'a': '6378144.0',
@@ -138,7 +141,6 @@ class Test(unittest.TestCase):
                                             -909968.64000000001,
                                             1029087.28,
                                             1490031.3600000001])
-        import yaml
         res = yaml.load(area_def.create_areas_def())
         expected = yaml.load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                               '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
@@ -149,6 +151,76 @@ class Test(unittest.TestCase):
                               '    upper_right_xy: [1029087.28, 1490031.36]\n'))
 
         self.assertDictEqual(res, expected)
+
+        # EPSG
+        area_def = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
+                                           'sweref99tm',
+                                           'EPSG:3006' if pyproj.__version__ >= '2' else {'init': 'epsg:3006'},
+                                           4667,
+                                           4667,
+                                           [-49739, 5954123, 1350361, 7354223])
+        res = yaml.load(area_def.create_areas_def())
+        epsg_yaml = "EPSG: 3006" if pyproj.__version__ >= '2' else 'init: epsg:3006'
+        expected = yaml.load(('baws300_sweref99tm:\n'
+                              '  description: BAWS, 300m resolution, sweref99tm\n'
+                              '  projection:\n'
+                              '    {epsg}\n'
+                              '  shape:\n'
+                              '    height: 4667\n'
+                              '    width: 4667\n'
+                              '  area_extent:\n'
+                              '    lower_left_xy: [-49739, 5954123]\n'
+                              '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml)))
+        self.assertDictEqual(res, expected)
+
+    def test_parse_area_file(self):
+        import pyproj
+
+        expected = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+                                           'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                            -909968.64000000001,
+                                            1029087.28,
+                                            1490031.3600000001])
+        yaml_str = ('areaD:\n  description: Europe (3km, HRV, VTC)\n'
+                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
+                    '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                    '    proj: stere\n  shape:\n    height: 800\n'
+                    '    width: 800\n  area_extent:\n'
+                    '    lower_left_xy: [-1370912.72, -909968.64]\n'
+                    '    upper_right_xy: [1029087.28, 1490031.36]\n')
+        area_def = parse_area_file(yaml_str, 'areaD')[0]
+        self.assertEqual(area_def, expected)
+
+        # EPSG
+        expected = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
+                                           'sweref99tm',
+                                           'EPSG:3006s' if pyproj.__version__ >= '2' else {'init': 'epsg:3006'},
+                                           4667,
+                                           4667,
+                                           [-49739, 5954123, 1350361, 7354223])
+
+        epsg_yaml = "EPSG: 3006" if pyproj.__version__ >= '2' else 'init: epsg:3006'
+        yaml_str = ('baws300_sweref99tm:\n'
+                    '  description: BAWS, 300m resolution, sweref99tm\n'
+                    '  projection:\n'
+                    '    {epsg}\n'
+                    '  shape:\n'
+                    '    height: 4667\n'
+                    '    width: 4667\n'
+                    '  area_extent:\n'
+                    '    lower_left_xy: [-49739, 5954123]\n'
+                    '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
+        area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
+        self.assertEqual(area_def, expected)
 
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
