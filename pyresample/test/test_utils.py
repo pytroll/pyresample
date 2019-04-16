@@ -291,8 +291,24 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
+    def test_convert_proj_floats(self):
+        from collections import OrderedDict
+        import pyproj
+        from pyresample import utils
+
+        pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
+        expected = OrderedDict([('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', -95.0), ('no_defs', True)])
+        self.assertDictEqual(utils._proj4.convert_proj_floats(pairs), expected)
+
+        # EPSG
+        pairs = [('EPSG', 4326)] if pyproj.__version__ >= '2' else [('init', 'EPSG:4326')]
+        expected = OrderedDict(pairs)
+        self.assertDictEqual(utils._proj4.convert_proj_floats(pairs), expected)
+
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
+        import pyproj
+
         proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
         proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
         proj_str2 = utils._proj4.proj4_dict_to_str(proj_dict)
@@ -300,6 +316,16 @@ class TestMisc(unittest.TestCase):
         self.assertDictEqual(proj_dict, proj_dict2)
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
+
+        # EPSG
+        is_pyproj2 = pyproj.__version__ >= '2'
+        proj_str = 'EPSG:4326' if is_pyproj2 else '+init=EPSG:4326'
+        expected = {'EPSG': 4326} if is_pyproj2 else {'init': 'EPSG:4326'}
+        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        self.assertEqual(proj_dict, expected)
+        self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
+        if is_pyproj2:
+            self.assertRaises(ValueError, utils._proj4.proj4_str_to_dict, 'EPSG:XXXX')
 
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml
