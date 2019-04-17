@@ -62,13 +62,15 @@ def proj4_dict_to_str(proj4_dict, sort=False):
     params = []
     for key, val in items:
         if key == 'EPSG':
-            param = 'EPSG:{}'.format(val)
+            # If EPSG code is present, ignore other parameters
+            params = ['EPSG:{}'.format(val)]
+            break
+
+        key = str(key) if key.startswith('+') else '+' + str(key)
+        if key in ['+no_defs', '+no_off', '+no_rot']:
+            param = key
         else:
-            key = str(key) if key.startswith('+') else '+' + str(key)
-            if key in ['+no_defs', '+no_off', '+no_rot']:
-                param = key
-            else:
-                param = '{}={}'.format(key, val)
+            param = '{}={}'.format(key, val)
         params.append(param)
     return ' '.join(params)
 
