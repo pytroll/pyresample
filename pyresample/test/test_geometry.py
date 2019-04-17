@@ -114,14 +114,22 @@ class Test(unittest.TestCase):
             self.assertEqual(crs.threshold, thresh_exp)
 
         # EPSG projection
-        area = geometry.AreaDefinition(
-            area_id='ease-sh-2.0',
-            description='25km EASE Grid 2.0 (Southern Hemisphere)',
-            proj_id='ease-sh-2.0',
-            projection='EPSG:6932' if utils.is_pyproj2() else '+init=EPSG:6932',
-            width=123, height=123,
-            area_extent=[-40000., -40000., 40000., 40000.])
-        area.to_cartopy_crs()
+        projections = ['+init=EPSG:6932']
+        if utils.is_pyproj2():
+            projections.append('EPSG:6932')
+
+        for projection in projections:
+            area = geometry.AreaDefinition(
+                area_id='ease-sh-2.0',
+                description='25km EASE Grid 2.0 (Southern Hemisphere)',
+                proj_id='ease-sh-2.0',
+                projection=projection,
+                width=123, height=123,
+                area_extent=[-40000., -40000., 40000., 40000.])
+            with patch('pyresample._cartopy.warnings.warn') as warn:
+                # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
+                area.to_cartopy_crs()
+                warn.assert_called()
 
     def test_create_areas_def(self):
         from pyresample import utils
@@ -153,25 +161,29 @@ class Test(unittest.TestCase):
         self.assertDictEqual(res, expected)
 
         # EPSG
-        area_def = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
-                                           'sweref99tm',
-                                           'EPSG:3006' if utils.is_pyproj2() else {'init': 'epsg:3006'},
-                                           4667,
-                                           4667,
-                                           [-49739, 5954123, 1350361, 7354223])
-        res = yaml.safe_load(area_def.create_areas_def())
-        epsg_yaml = "EPSG: 3006" if utils.is_pyproj2() else 'init: epsg:3006'
-        expected = yaml.safe_load(('baws300_sweref99tm:\n'
-                                   '  description: BAWS, 300m resolution, sweref99tm\n'
-                                   '  projection:\n'
-                                   '    {epsg}\n'
-                                   '  shape:\n'
-                                   '    height: 4667\n'
-                                   '    width: 4667\n'
-                                   '  area_extent:\n'
-                                   '    lower_left_xy: [-49739, 5954123]\n'
-                                   '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml)))
-        self.assertDictEqual(res, expected)
+        projections = {'+init=epsg:3006': 'init: epsg:3006'}
+        if utils.is_pyproj2():
+            projections['EPSG:3006'] = 'EPSG: 3006'
+
+        for projection, epsg_yaml in projections.items():
+            area_def = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
+                                               'sweref99tm',
+                                               projection,
+                                               4667,
+                                               4667,
+                                               [-49739, 5954123, 1350361, 7354223])
+            res = yaml.safe_load(area_def.create_areas_def())
+            expected = yaml.safe_load(('baws300_sweref99tm:\n'
+                                       '  description: BAWS, 300m resolution, sweref99tm\n'
+                                       '  projection:\n'
+                                       '    {epsg}\n'
+                                       '  shape:\n'
+                                       '    height: 4667\n'
+                                       '    width: 4667\n'
+                                       '  area_extent:\n'
+                                       '    lower_left_xy: [-49739, 5954123]\n'
+                                       '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml)))
+            self.assertDictEqual(res, expected)
 
     def test_parse_area_file(self):
         from pyresample import utils
@@ -201,26 +213,28 @@ class Test(unittest.TestCase):
         self.assertEqual(area_def, expected)
 
         # EPSG
-        expected = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
-                                           'sweref99tm',
-                                           'EPSG:3006' if utils.is_pyproj2() else {'init': 'epsg:3006'},
-                                           4667,
-                                           4667,
-                                           [-49739, 5954123, 1350361, 7354223])
-
-        epsg_yaml = "EPSG: 3006" if utils.is_pyproj2() else 'init: epsg:3006'
-        yaml_str = ('baws300_sweref99tm:\n'
-                    '  description: BAWS, 300m resolution, sweref99tm\n'
-                    '  projection:\n'
-                    '    {epsg}\n'
-                    '  shape:\n'
-                    '    height: 4667\n'
-                    '    width: 4667\n'
-                    '  area_extent:\n'
-                    '    lower_left_xy: [-49739, 5954123]\n'
-                    '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
-        area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
-        self.assertEqual(area_def, expected)
+        projections = {'+init=epsg:3006': 'init: epsg:3006'}
+        if utils.is_pyproj2():
+            projections['EPSG:3006'] = 'EPSG: 3006'
+        for projection, epsg_yaml in projections.items():
+            expected = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
+                                               'sweref99tm',
+                                               projection,
+                                               4667,
+                                               4667,
+                                               [-49739, 5954123, 1350361, 7354223])
+            yaml_str = ('baws300_sweref99tm:\n'
+                        '  description: BAWS, 300m resolution, sweref99tm\n'
+                        '  projection:\n'
+                        '    {epsg}\n'
+                        '  shape:\n'
+                        '    height: 4667\n'
+                        '    width: 4667\n'
+                        '  area_extent:\n'
+                        '    lower_left_xy: [-49739, 5954123]\n'
+                        '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
+            area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
+            self.assertEqual(area_def, expected)
 
     def test_base_type(self):
         lons1 = np.arange(-135., +135, 50.)
@@ -1000,16 +1014,21 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_y, slice(158, 515, None))
 
         # totally different area
-        area_to_cover = geometry.AreaDefinition('epsg4326', 'Global equal latitude/longitude grid for global sphere',
-                                                'epsg4326',
-                                                'EPSG:4326' if utils.is_pyproj2() else {"init": 'EPSG:4326'},
-                                                8192,
-                                                4096,
-                                                [-180.0, -90.0, 180.0, 90.0])
+        projections = [{"init": 'EPSG:4326'}]
+        if utils.is_pyproj2():
+            projections.append('EPSG:4326')
+        for projection in projections:
+            area_to_cover = geometry.AreaDefinition(
+                'epsg4326', 'Global equal latitude/longitude grid for global sphere',
+                'epsg4326',
+                projection,
+                8192,
+                4096,
+                [-180.0, -90.0, 180.0, 90.0])
 
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice_x, slice(46, 3667, None))
-        self.assertEqual(slice_y, slice(52, 3663, None))
+            slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+            self.assertEqual(slice_x, slice(46, 3667, None))
+            self.assertEqual(slice_y, slice(52, 3663, None))
 
     def test_get_area_slices_nongeos(self):
         """Check area slicing for non-geos projections."""
@@ -1072,15 +1091,18 @@ class Test(unittest.TestCase):
                          '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
 
         # EPSG
-        projection = 'EPSG:6932' if utils.is_pyproj2() else '+init=EPSG:6932'
-        area = geometry.AreaDefinition(
-            area_id='ease-sh-2.0',
-            description='25km EASE Grid 2.0 (Southern Hemisphere)',
-            proj_id='ease-sh-2.0',
-            projection=projection,
-            width=123, height=123,
-            area_extent=[-40000., -40000., 40000., 40000.])
-        self.assertEqual(area.proj_str, projection)
+        projections = ['+init=EPSG:6932']
+        if utils.is_pyproj2():
+            projections.append('EPSG:6932')
+        for projection in projections:
+            area = geometry.AreaDefinition(
+                area_id='ease-sh-2.0',
+                description='25km EASE Grid 2.0 (Southern Hemisphere)',
+                proj_id='ease-sh-2.0',
+                projection=projection,
+                width=123, height=123,
+                area_extent=[-40000., -40000., 40000., 40000.])
+            self.assertEqual(area.proj_str, projection)
 
     def test_striding(self):
         """Test striding AreaDefinitions."""
@@ -1576,7 +1598,9 @@ class TestStackedAreaDefinition(unittest.TestCase):
         description = 'Antarctic EASE grid'
         projection_list = [{'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
                            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m',
-                           'EPSG:3409' if utils.is_pyproj2() else '+init=EPSG:3409']
+                           '+init=EPSG:3409']
+        if utils.is_pyproj2():
+            projection_list.append('EPSG:3409')
         proj_id = 'ease_sh'
         shape = (425, 850)
         upper_left_extent = (-5326849.0625, 5326849.0625)
@@ -1611,7 +1635,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      radius=essentials[1], description=description, units=units, rotation=45))
             except ValueError:
                 pass
-        self.assertEqual(len(area_list), 6)
+        self.assertEqual(len(area_list), 8 if utils.is_pyproj2() else 6)
 
         # Tests that specifying units through xarrays works.
         area_list.append(cad(area_id, projection_list[1], shape=shape,
