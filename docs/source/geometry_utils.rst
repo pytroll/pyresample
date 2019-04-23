@@ -212,10 +212,10 @@ from_ul_corner
 Loading from disk
 -----------------
 
-The :func:`~pyresample.utils.load_area` function can be used to
+The :func:`~pyresample.area_config.load_area` function can be used to
 parse area definitions from a configuration file by giving it the
-area file name and regions you wish to load. :func:`~pyresample.utils.load_area`
-takes advantage of :func:`~pyresample.utils.create_area_def`
+area file name and regions you wish to load. :func:`~pyresample.area_config.load_area`
+takes advantage of :func:`~pyresample.area_config.create_area_def`
 and hence allows for the same arguments in the on-disk file.
 Pyresample uses the YAML file format to store on-disk area definitions.
 Below is an example YAML configuration file showing the various ways
@@ -344,6 +344,14 @@ an area might be specified.
      resolution: 0.22542974631297721
      units: deg
 
+ epsg:
+   area_id: ease_sh
+   description: Example of making an area definition using EPSG codes
+   projection:
+     init: EPSG:3410
+   shape: [425, 425]
+   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+
 .. note::
 
   The `lower_left_xy` and `upper_right_xy` items give the coordinates of the
@@ -351,13 +359,18 @@ an area might be specified.
   projection coordinates are longitudes and latitudes, it is expected to
   provide the extent in `longitude, latitude` order.
 
+.. note::
+
+  When using pyproj 2.0+, please use the new ``'EPSG: XXXX'`` syntax
+  as the old ``'init: EPSG:XXXX'`` is no longer supported.
+
 If we assume the YAML content is stored in an ``areas.yaml`` file, we can
 read a single ``AreaDefinition`` named ``corner`` by doing:
 
 .. doctest::
 
- >>> from pyresample import utils
- >>> area_def = utils.load_area('areas.yaml', 'corner')
+ >>> from pyresample import load_area
+ >>> area_def = load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
  Description: Example of making an area definition using shape, upper_left_extent, and resolution
@@ -371,7 +384,7 @@ series of arguments:
 
 .. doctest::
 
- >>> corner, boundary = utils.load_area('areas.yaml', 'corner', 'boundary')
+ >>> corner, boundary = load_area('areas.yaml', 'corner', 'boundary')
  >>> print(boundary)
  Area ID: ease_sh
  Description: Example of making an area definition using shape and area_extent
@@ -410,8 +423,8 @@ An area definition dict can be read using
 
 .. doctest::
 
- >>> from pyresample import utils
- >>> area = utils.load_area('areas.cfg', 'ease_nh')
+ >>> from pyresample import load_area
+ >>> area = load_area('areas.cfg', 'ease_nh')
  >>> print(area)
  Area ID: ease_nh
  Description: Arctic EASE grid
@@ -427,7 +440,7 @@ Several area definitions can be read at once using the region names in an argume
 
 .. doctest::
 
- >>> nh_def, sh_def = utils.load_area('areas.cfg', 'ease_nh', 'ease_sh')
+ >>> nh_def, sh_def = load_area('areas.cfg', 'ease_nh', 'ease_sh')
  >>> print(sh_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid

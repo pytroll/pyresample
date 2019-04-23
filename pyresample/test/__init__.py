@@ -37,6 +37,7 @@ from pyresample.test import (
     test_ewa_fornav,
     test_bilinear,
     test_data_reduce,
+    test_spatial_mp
 )
 
 import unittest
@@ -59,6 +60,7 @@ def suite():
     mysuite.addTests(test_ewa_fornav.suite())
     mysuite.addTests(test_bilinear.suite())
     mysuite.addTests(test_data_reduce.suite())
+    mysuite.addTests(test_spatial_mp.suite())
     return mysuite
 
 

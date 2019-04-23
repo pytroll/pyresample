@@ -19,6 +19,8 @@
 
 from logging import getLogger
 import numpy as np
+import pyproj
+import warnings
 
 try:
     from xarray import DataArray
@@ -59,6 +61,9 @@ def _globe_from_proj4(proj4_terms):
 class _PROJ4Projection(ccrs.Projection):
 
     def __init__(self, proj4_terms, globe=None, bounds=None):
+        if 'EPSG' in proj4_terms.upper():
+            warnings.warn('Converting EPSG projection to proj4 string, which is a potentially lossy transformation')
+            proj4_terms = pyproj.Proj(proj4_terms).definition_string().strip()
         terms = proj4_str_to_dict(proj4_terms)
         globe = _globe_from_proj4(terms) if globe is None else globe
 

@@ -24,7 +24,7 @@ import pyproj
 import multiprocessing as mp
 import warnings
 
-from pyresample.utils import proj4_str_to_dict
+from pyresample.utils import proj4_str_to_dict, is_pyproj2
 
 
 try:
@@ -112,8 +112,12 @@ class cKDTree_MP(object):
 class BaseProj(pyproj.Proj):
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
+        # Copy dict-type arguments as they will be modified in-place
+        if isinstance(projparams, dict):
+            projparams = projparams.copy()
+
         # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
-        if pyproj.__version__ >= '2':
+        if is_pyproj2():
             # If init is found in any of the data, override any other area parameters.
             if 'init' in kwargs:
                 warnings.warn('init="EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead')
@@ -127,10 +131,18 @@ class BaseProj(pyproj.Proj):
                     projparams = proj4_str_to_dict(projparams)
                 warnings.warn(warn_msg)
                 projparams = projparams.pop('init')
+            # New syntax 'EPSG:XXXX'
+            if 'EPSG' in kwargs or (isinstance(projparams, dict) and 'EPSG' in projparams):
+                if 'EPSG' in kwargs:
+                    epsg_code = kwargs.pop('EPSG')
+                else:
+                    epsg_code = projparams.pop('EPSG')
+                projparams = 'EPSG:{}'.format(epsg_code)
+
             super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
 
     def is_latlong(self):
-        if pyproj.__version__ >= '2':
+        if is_pyproj2():
             return self.crs.is_geographic
         return super(BaseProj, self).is_latlong()
 
