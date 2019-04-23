@@ -293,16 +293,14 @@ class TestMisc(unittest.TestCase):
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
-        from pyresample import utils
+        import pyresample.utils as utils
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
         expected = OrderedDict([('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', -95.0), ('no_defs', True)])
         self.assertDictEqual(utils._proj4.convert_proj_floats(pairs), expected)
 
         # EPSG
-        pairs = [('init', 'EPSG:4326')]
-        if utils.is_pyproj2():
-            pairs.append(('EPSG', 4326))
+        pairs = [('init', 'EPSG:4326'), ('EPSG', 4326)]
         for pair in pairs:
             expected = OrderedDict([pair])
             self.assertDictEqual(utils._proj4.convert_proj_floats([pair]), expected)
@@ -319,18 +317,16 @@ class TestMisc(unittest.TestCase):
         self.assertIsInstance(proj_dict2['lon_0'], float)
 
         # EPSG
-        expected = {'+init=EPSG:4326': {'init': 'EPSG:4326'}}
-        if utils.is_pyproj2():
-            expected['EPSG:4326'] = {'EPSG': 4326}
+        expected = {'+init=EPSG:4326': {'init': 'EPSG:4326'},
+                    'EPSG:4326': {'EPSG': 4326}}
 
         for proj_str, proj_dict_exp in expected.items():
             proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
             self.assertEqual(proj_dict, proj_dict_exp)
             self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
-        # Invalid EPSG code
-        if utils.is_pyproj2():
-            self.assertRaises(ValueError, utils._proj4.proj4_str_to_dict, 'EPSG:XXXX')
+        # Invalid EPSG code (pyproj-2 syntax only)
+        self.assertRaises(ValueError, utils._proj4.proj4_str_to_dict, 'EPSG:XXXX')
 
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml
