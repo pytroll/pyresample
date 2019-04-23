@@ -344,12 +344,25 @@ an area might be specified.
      resolution: 0.22542974631297721
      units: deg
 
+ epsg:
+   area_id: ease_sh
+   description: Example of making an area definition using EPSG codes
+   projection:
+     init: EPSG:3410
+   shape: [425, 425]
+   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+
 .. note::
 
   The `lower_left_xy` and `upper_right_xy` items give the coordinates of the
   outer edges of the corner pixels on the x and y axis respectively. When the
   projection coordinates are longitudes and latitudes, it is expected to
   provide the extent in `longitude, latitude` order.
+
+.. note::
+
+  When using pyproj 2.0+, please use the new ``'EPSG: XXXX'`` syntax
+  as the old ``'init: EPSG:XXXX'`` is no longer supported.
 
 If we assume the YAML content is stored in an ``areas.yaml`` file, we can
 read a single ``AreaDefinition`` named ``corner`` by doing:

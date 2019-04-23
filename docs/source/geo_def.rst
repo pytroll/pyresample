@@ -102,8 +102,10 @@ Below are three examples of creating an ``AreaDefinition``:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
-**Note**: When using pyproj 2.0+, please use the new ``'EPSG:XXXX'`` syntax
-as the old ``'+init=EPSG:XXXX'`` is no longer supported.
+.. note::
+
+  When using pyproj 2.0+, please use the new ``'EPSG:XXXX'`` syntax
+  as the old ``'+init=EPSG:XXXX'`` is no longer supported.
 
 Creating an ``AreaDefinition`` can be complex if you don't know everything
 about the region being described. Pyresample provides multiple utilities
