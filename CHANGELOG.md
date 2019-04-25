@@ -1,3 +1,18 @@
+## Version 1.12.1 (2019/04/24)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 186](https://github.com/pytroll/pyresample/pull/186) - Fix support for pyproj-2 EPSG syntax
+
+#### Documentation changes
+
+* [PR 185](https://github.com/pytroll/pyresample/pull/185) - Fix argument order in get_area_def doc
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.12.0 (2019/04/06)
 
 ### Issues Closed
