@@ -635,6 +635,7 @@ class SwathDefinition(CoordinateDefinition):
             return new_proj
 
     def _compute_uniform_shape(self):
+        """Compute the height and width of a domain to have uniform resolution across dimensions."""
         g = Geod(ellps='WGS84')
         leftlons = self.lons[:, 0]
         leftlons = leftlons.where(leftlons.notnull(), drop=True)
@@ -667,6 +668,9 @@ class SwathDefinition(CoordinateDefinition):
         which case the right projection angle `alpha` is computed from the
         swath centerline. For other projections, only the appropriate center of
         projection and area extents are computed.
+
+        The height and width are computed so that the resolution is
+        approximately the same across dimensions.
         """
         if proj_dict is None:
             proj_dict = {}
@@ -749,10 +753,10 @@ class DynamicAreaDefinition(object):
                 x_resolution, y_resolution = resolution
             except TypeError:
                 x_resolution = y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0 /
-                                 x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0 /
-                                 y_resolution + 1))
+            width = int(np.rint((corners[2] - corners[0]) * 1.0
+                                / x_resolution + 1))
+            height = int(np.rint((corners[3] - corners[1]) * 1.0
+                                 / y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,
