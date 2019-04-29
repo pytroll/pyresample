@@ -676,6 +676,33 @@ class SwathDefinition(CoordinateDefinition):
             new_proj.update(proj_dict)
             return new_proj
 
+    def _compute_uniform_shape(self):
+        """Compute the height and width of a domain to have uniform resolution across dimensions."""
+        g = Geod(ellps='WGS84')
+        leftlons = self.lons[:, 0]
+        leftlons = leftlons.where(leftlons.notnull(), drop=True)
+        rightlons = self.lons[:, -1]
+        rightlons = rightlons.where(rightlons.notnull(), drop=True)
+        middlelons = self.lons[:, int(self.lons.shape[1] / 2)]
+        middlelons = middlelons.where(middlelons.notnull(), drop=True)
+        leftlats = self.lats[:, 0]
+        leftlats = leftlats.where(leftlats.notnull(), drop=True)
+        rightlats = self.lats[:, -1]
+        rightlats = rightlats.where(rightlats.notnull(), drop=True)
+        middlelats = self.lats[:, int(self.lats.shape[1] / 2)]
+        middlelats = middlelats.where(middlelats.notnull(), drop=True)
+
+        az1, az2, width1 = g.inv(leftlons[0], leftlats[0], rightlons[0], rightlats[0])
+        az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
+        az1, az2, height = g.inv(middlelons[0], middlelats[0], middlelons[-1], middlelats[-1])
+        width = min(width1, width2)
+        vresolution = height * 1.0 / self.lons.shape[0]
+        hresolution = width * 1.0 / self.lons.shape[1]
+        resolution = min(vresolution, hresolution)
+        width = int(width * 1.1 / resolution)
+        height = int(height * 1.1 / resolution)
+        return height, width
+
     def compute_optimal_bb_area(self, proj_dict=None):
         """Compute the "best" bounding box area for this swath with `proj_dict`.
 
@@ -683,16 +710,16 @@ class SwathDefinition(CoordinateDefinition):
         which case the right projection angle `alpha` is computed from the
         swath centerline. For other projections, only the appropriate center of
         projection and area extents are computed.
+
+        The height and width are computed so that the resolution is
+        approximately the same across dimensions.
         """
         if proj_dict is None:
             proj_dict = {}
         projection = proj_dict.setdefault('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
-        lines, cols = self.lons.shape
-        width = int(cols * 1.1)
-        height = int(lines * 1.1)
-
+        height, width = self._compute_uniform_shape()
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
@@ -768,10 +795,10 @@ class DynamicAreaDefinition(object):
                 x_resolution, y_resolution = resolution
             except TypeError:
                 x_resolution = y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0 /
-                                 x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0 /
-                                 y_resolution + 1))
+            width = int(np.rint((corners[2] - corners[0]) * 1.0
+                                / x_resolution + 1))
+            height = int(np.rint((corners[3] - corners[1]) * 1.0
+                                 / y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,

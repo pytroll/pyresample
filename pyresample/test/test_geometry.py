@@ -1366,25 +1366,27 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_compute_optimal_bb(self):
         """Test computing the bb area."""
+        import xarray as xr
         lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                          [80.84000396728516, 60.74200439453125, 34.08500289916992],
                          [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
-
+        lats = xr.DataArray(lats)
         lons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
                          [79.11000061035156, 7.284000396728516, -5.107000350952148],
                          [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+        lons = xr.DataArray(lons)
 
         area = geometry.SwathDefinition(lons, lats)
 
         res = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'})
 
-        np.testing.assert_allclose(res.area_extent, [-2348379.728104, 2284625.526467,
-                                                     2432121.058435, 11719235.223912])
+        np.testing.assert_allclose(res.area_extent, [-2348379.728104, 3228086.496211,
+                                                     2432121.058435, 10775774.254169])
         proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(res.proj_dict, proj_dict)
-        self.assertEqual(res.shape, (3, 3))
+        self.assertEqual(res.shape, (6, 3))
 
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
@@ -1724,14 +1726,15 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         lats = [[66, 67, 68, 69.],
                 [58, 59, 60, 61],
                 [50, 51, 52, 53]]
-        sdef = geometry.SwathDefinition(lons, lats)
+        import xarray as xr
+        sdef = geometry.SwathDefinition(xr.DataArray(lons), xr.DataArray(lats))
         result = area.freeze(sdef,
                              resolution=1000)
         np.testing.assert_allclose(result.area_extent,
-                                   [-336277.698941, 5047207.008079,
-                                    192456.651909, 8215588.023806])
+                                   [-336277.698941, 5513145.392745,
+                                    192456.651909, 7749649.63914])
         self.assertEqual(result.x_size, 4)
-        self.assertEqual(result.y_size, 3)
+        self.assertEqual(result.y_size, 18)
 
     def test_compute_domain(self):
         """Test computing size and area extent."""
