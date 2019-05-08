@@ -219,3 +219,25 @@ test_latlong:
   area_extent:
     lower_left_xy: [-0.08115781021773638, 0.4038691889114878]
     upper_right_xy: [0.08115781021773638, 0.5427973973702365]
+
+test_dynamic_resolution:
+  description: Dynamic with resolution specified in meters
+  projection:
+    proj: lcc
+    lon_0: -95.0
+    lat_0: 25.0
+    lat_1: 25.0
+    ellps: WGS84
+  resolution: [1000, 1000]
+
+test_dynamic_resolution_ll:
+  description: Dynamic with resolution specified in degrees
+  projection:
+      proj: longlat
+      lat_0: 27.12
+      lon_0: -81.36
+      ellps: WGS84
+  resolution:
+    dy: 1
+    dx: 1
+    units: deg
