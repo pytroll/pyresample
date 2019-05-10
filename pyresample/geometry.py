@@ -31,7 +31,7 @@ from logging import getLogger
 
 import numpy as np
 import yaml
-from pyproj import Geod
+from pyproj import Geod, transform
 
 from pyresample import CHUNK_SIZE, utils
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
@@ -551,6 +551,12 @@ class SwathDefinition(CoordinateDefinition):
         """Copy the current swath."""
         return SwathDefinition(self.lons, self.lats)
 
+    @staticmethod
+    def _do_transform(src, dst, lons, lats, alt):
+        """Helper for 'aggregate' method."""
+        x, y, z = transform(src, dst, lons, lats, alt)
+        return np.dstack((x, y, z))
+
     def aggregate(self, **dims):
         """Aggregate the current swath definition by averaging.
 
@@ -560,20 +566,15 @@ class SwathDefinition(CoordinateDefinition):
         import pyproj
         import dask.array as da
 
-        def do_transform(src, dst, lons, lats, alt):
-            import pyproj
-            x, y, z = pyproj.transform(src, dst, lons, lats, alt)
-            return np.dstack((x, y, z))
-
         geocent = pyproj.Proj(proj='geocent')
         latlong = pyproj.Proj(proj='latlong')
-        res = da.map_blocks(do_transform, latlong, geocent,
+        res = da.map_blocks(self._do_transform, latlong, geocent,
                             self.lons.data, self.lats.data,
                             da.zeros_like(self.lons.data), new_axis=[2],
                             chunks=(self.lons.chunks[0], self.lons.chunks[1], 3))
         res = DataArray(res, dims=['y', 'x', 'coord'], coords=self.lons.coords)
         res = res.coarsen(**dims).mean()
-        lonlatalt = da.map_blocks(do_transform, geocent, latlong,
+        lonlatalt = da.map_blocks(self._do_transform, geocent, latlong,
                                   res[:, :, 0].data, res[:, :, 1].data,
                                   res[:, :, 2].data, new_axis=[2],
                                   chunks=res.data.chunks)
