@@ -136,6 +136,27 @@ Number of rows: 4058
 Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)"""
         self.assertEqual(test_latlong.__str__(), latlong_str)
 
+    def test_dynamic_area_parser_yaml(self):
+        """Test YAML area parser on dynamic areas."""
+        from pyresample import parse_area_file
+        from pyresample.geometry import DynamicAreaDefinition
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution')[0]
+
+        self.assertIsInstance(test_area, DynamicAreaDefinition)
+        self.assertTrue(hasattr(test_area, 'resolution'))
+        self.assertEqual(test_area.resolution, (1000.0, 1000.0))
+
+        # lat/lon
+        from pyresample import parse_area_file
+        from pyresample.geometry import DynamicAreaDefinition
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution_ll')[0]
+
+        self.assertIsInstance(test_area, DynamicAreaDefinition)
+        self.assertTrue(hasattr(test_area, 'resolution'))
+        self.assertEqual(test_area.resolution, (1.0, 1.0))
+
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
         area_list = ["""ease_sh:
