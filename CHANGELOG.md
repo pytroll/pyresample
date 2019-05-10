@@ -1,3 +1,25 @@
+## Version 1.12.2 (2019/05/10)
+
+### Issues Closed
+
+* [Issue 187](https://github.com/pytroll/pyresample/issues/187) - Numerous `RuntimeWarning`s when resampling
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 190](https://github.com/pytroll/pyresample/pull/190) - Fix aggregate method using non-serializable internal function
+* [PR 189](https://github.com/pytroll/pyresample/pull/189) - Fix dask race condition in KDTree resampling
+
+#### Features added
+
+* [PR 183](https://github.com/pytroll/pyresample/pull/183) - Fix bb computation to generate areas with equal h and v resolutions
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.12.1 (2019/04/24)
 
 ### Pull Requests Merged
