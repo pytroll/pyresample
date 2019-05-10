@@ -892,13 +892,13 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
 
 def lonlat2xyz(lons, lats):
-
     R = 6370997.0
-    x_coords = R * da.cos(da.deg2rad(lats)) * da.cos(da.deg2rad(lons))
-    y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
-    z_coords = R * da.sin(da.deg2rad(lats))
+    x_coords = R * np.cos(np.deg2rad(lats)) * np.cos(np.deg2rad(lons))
+    y_coords = R * np.cos(np.deg2rad(lats)) * np.sin(np.deg2rad(lons))
+    z_coords = R * np.sin(np.deg2rad(lats))
 
-    return da.stack(
+    stack = np.stack if isinstance(lons, np.ndarray) else da.stack
+    return stack(
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
@@ -922,7 +922,7 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
 
     coords = lonlat2xyz(target_lons_valid, target_lats_valid)
     distance_array, index_array = kdtree.query(
-        coords.compute(),
+        coords,
         k=neighbours,
         eps=epsilon,
         distance_upper_bound=radius,
@@ -944,6 +944,20 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     res_ia[mask] = index_array[good_pixels]
     res_ia[~mask] = -1
     return res_ia
+
+
+def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None,
+              fill_value=np.nan):
+    """Helper function for 'get_sample_from_neighbour_info'."""
+    vii_slices = tuple(
+        x if x is not None else vii.ravel() for x in vii_slices)
+    mask_slices = tuple(
+        x if x is not None else (index_arr == -1) for x in ia_slices)
+    ia_slices = tuple(
+        x if x is not None else index_arr for x in ia_slices)
+    res = data_arr[vii_slices][ia_slices]
+    res[mask_slices] = fill_value
+    return res
 
 
 class XArrayResamplerNN(object):
@@ -1175,18 +1189,6 @@ class XArrayResamplerNN(object):
         dst_dim_to_ind['x'] = i + 2
         # FUTURE: when we allow more than one neighbor
         # neighbors_dim = i + 3
-
-        def _my_index(index_arr, vii, data_arr, vii_slices=None,
-                      ia_slices=None, fill_value=np.nan):
-            vii_slices = tuple(
-                x if x is not None else vii.ravel() for x in vii_slices)
-            mask_slices = tuple(
-                x if x is not None else (index_arr == -1) for x in ia_slices)
-            ia_slices = tuple(
-                x if x is not None else index_arr for x in ia_slices)
-            res = data_arr[vii_slices][ia_slices]
-            res[mask_slices] = fill_value
-            return res
 
         new_data = data.data.reshape(flat_src_shape)
         vii = vii.ravel()
