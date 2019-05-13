@@ -21,6 +21,11 @@ from __future__ import absolute_import
 
 import math
 import numpy as np
+import warnings
+
+warnings.warn("This module will be removed in pyresample 2.0, please use the "
+              "`pyresample.spherical` module functions and classe instead.",
+              DeprecationWarning)
 
 try:
     range = xrange
@@ -44,7 +49,6 @@ class Coordinate(object):
 
     def __init__(self, lon=None, lat=None,
                  x__=None, y__=None, z__=None, R__=1):
-
         self.R__ = R__
         if lat is not None and lon is not None:
             if not(-180 <= lon <= 180 and -90 <= lat <= 90):
@@ -94,7 +98,6 @@ class Coordinate(object):
         """Compute the cross product, and convert to cartesian coordinates
         (assuming radius 1).
         """
-
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -191,8 +194,16 @@ class Arc(object):
     def __str__(self):
         return str((str(self.start), str(self.end)))
 
-    def angle(self, other_arc):
+    def angle(self, other_arc, snap=True):
         """Oriented angle between two arcs.
+
+        Parameters
+        ----------
+        other_arc : Arc
+        snap : boolean
+            Snap small angles to 0. Allows for detecting colinearity. Disable
+            snapping when calculating polygon areas as it might lead to
+            negative area values.
         """
         if self.start == other_arc.start:
             a__ = self.start
@@ -217,12 +228,20 @@ class Arc(object):
         ub_ = a__.cross(c__)
 
         val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
-        if abs(val - 1) < EPSILON:
-            angle = 0
-        elif abs(val + 1) < EPSILON:
-            angle = math.pi
+        if snap:
+            if abs(val - 1) < EPSILON:
+                angle = 0
+            elif abs(val + 1) < EPSILON:
+                angle = math.pi
+            else:
+                angle = math.acos(val)
         else:
-            angle = math.acos(val)
+            if 0 <= val - 1 < EPSILON:
+                angle = 0
+            elif -EPSILON < val + 1 <= 0:
+                angle = math.pi
+            else:
+                angle = math.acos(val)
 
         n__ = ua_.normalize()
         if n__.dot(c__) > 0:
@@ -231,10 +250,9 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the 
+        """Gives the two intersections of the greats circles defined by the
        current arc and *other_arc*.
         """
-
         if self.end.lon - self.start.lon > math.pi:
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
@@ -259,7 +277,6 @@ class Arc(object):
         """Says if two arcs defined by the current arc and the *other_arc*
         intersect. An arc is defined as the shortest tracks between two points.
         """
-
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
@@ -267,7 +284,6 @@ class Arc(object):
         *other_arc* intersect. An arc is defined as the shortest tracks between
         two points.
         """
-
         for i in self.intersections(other_arc):
             a__ = self.start
             b__ = self.end
@@ -303,18 +319,17 @@ def get_polygon_area(corners):
         b1_ = Arc(c1_, corners[idx])
         b2_ = Arc(c1_, corners[idx + 1])
         b3_ = Arc(corners[idx], corners[idx + 1])
-        e__ = (abs(b1_.angle(b2_)) +
-               abs(b2_.angle(b3_)) +
-               abs(b3_.angle(b1_)))
-        area += R ** 2 * e__ - math.pi
-    return area
+        e__ = (abs(b1_.angle(b2_, snap=False)) +
+               abs(b2_.angle(b3_, snap=False)) +
+               abs(b3_.angle(b1_, snap=False)))
+        area += e__ - math.pi
+    return R ** 2 * area
 
 
 def get_intersections(b__, boundaries):
     """Get the intersections of *b__* with *boundaries*.
     Returns both the intersection coordinates and the concerned boundaries.
     """
-
     intersections = []
     bounds = []
     for other_b in boundaries:

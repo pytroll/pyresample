@@ -1,0 +1,243 @@
+boundary:
+  area_id: ease_sh
+  description: Example of making an area definition using shape and area_extent
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 425]
+  area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
+
+boundary_2:
+  description: Another example of making an area definition using shape and area_extent
+  units: degrees
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-135.0, -17.516001139327766]
+    upper_right_xy: [45.0, -17.516001139327766]
+
+corner:
+  description: Example of making an area definition using shape, upper_left_extent, and resolution
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 425]
+  upper_left_extent: [-5326849.0625, 5326849.0625]
+  resolution: 25067.525
+
+corner_2:
+  area_id: ease_sh
+  description: Another example of making an area definition using shape, , and resolution
+  units:  degrees
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 425]
+  upper_left_extent:
+    x: -45.0
+    y: -17.516001139327766
+  resolution:
+    dx: 25067.525
+    dy: 25067.525
+    units: meters
+
+circle:
+  description: Example of making an area definition using center, resolution, and radius
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  center: [0, 0]
+  resolution: [25067.525, 25067.525]
+  radius: 5326849.0625
+
+circle_2:
+  area_id: ease_sh
+  description: Another example of making an area definition using center, resolution, and radius
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  center:
+    x: 0
+    y: -90
+    units: degrees
+  shape:
+    width: 425
+    height: 425
+  radius:
+    dx: 49.4217406986
+    dy: 49.4217406986
+    units: degrees
+
+area_of_interest:
+  description: Example of making an area definition using shape, center, and resolution
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 425]
+  center: [0, 0]
+  resolution: [25067.525, 25067.525]
+
+area_of_interest_2:
+  area_id: ease_sh
+  description: Another example of making an area definition using shape, center, and resolution
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 425]
+  center:
+    center: [0, -90]
+    units: deg
+  resolution:
+    resolution: 0.22542974631297721
+    units: deg
+
+test_meters:
+  units: degrees
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape: [425, 850]
+  upper_left_extent:
+    x: -17476538.918963253
+    y: 17476538.918963253
+    units: ft
+  center:
+    center: [0, 0]
+    units: m
+  resolution:
+    resolution: [12533.7625, 25067.525]
+    units: meters
+  radius:
+    radius: 3309.9505528339496
+    units: mi
+  rotation: 45
+
+test_degrees:
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  area_extent:
+    lower_left_xy: [-135.0, -17.516001139327766]
+    upper_right_xy: [45.0, -17.516001139327766]
+    units: degrees
+  upper_left_extent:
+    x: -45.0
+    y: -17.516001139327766
+    units: degrees
+  center:
+    x: 0
+    y: -90
+    units: degrees
+  resolution:
+    dx: 0.11271481862984278
+    dy: 0.22542974631297721
+    units: degrees
+  radius:
+    dx: 49.4217406986
+    dy: 49.4217406986
+    units: degrees
+  rotation:
+    rotation: 45
+    units: degrees
+
+ease_sh:
+  description: Antarctic EASE grid
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+
+ease_nh:
+  description: Arctic EASE grid
+  projection:
+    proj: laea
+    lat_0: -90
+    lon_0: 0
+    a: 6371228.0
+    units: m
+  shape:
+    height: 425
+    width: 425
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m
+
+test_latlong:
+  description: Basic latlong grid
+  projection:
+    proj: longlat
+    lat_0: 27.12
+    lon_0: -81.36
+    ellps: WGS84
+  shape:
+    height: 4058
+    width: 3473
+  area_extent:
+    lower_left_xy: [-0.08115781021773638, 0.4038691889114878]
+    upper_right_xy: [0.08115781021773638, 0.5427973973702365]
+
+test_dynamic_resolution:
+  description: Dynamic with resolution specified in meters
+  projection:
+    proj: lcc
+    lon_0: -95.0
+    lat_0: 25.0
+    lat_1: 25.0
+    ellps: WGS84
+  resolution: [1000, 1000]
+
+test_dynamic_resolution_ll:
+  description: Dynamic with resolution specified in degrees
+  projection:
+      proj: longlat
+      lat_0: 27.12
+      lon_0: -81.36
+      ellps: WGS84
+  resolution:
+    dy: 1
+    dx: 1
+    units: deg

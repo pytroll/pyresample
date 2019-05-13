@@ -6,9 +6,18 @@ Resampling of swath data
 Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath. 
 Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function.
 
+.. versionchanged:: 1.8.0
+
+    :class:`~pyresample.geometry.SwathDefinition` no longer checks the validity of the provided longitude
+    and latitude coordinates to improve performance. Longitude arrays are
+    expected to be between -180 and 180 degrees, latitude -90 to 90 degrees.
+    This also applies to all geometry definitions that are provided longitude
+    and latitude arrays on initialization. Use
+    :func:`~pyresample.utils.check_and_wrap` to preprocess your arrays.
+
 pyresample.image
 ----------------
-The ImageContainerNearest class can be used for nearest neighbour resampling of swaths as well as grids.
+The ImageContainerNearest and ImageContanerBilinear classes can be used for resampling of swaths as well as grids.  Below is an example using nearest neighbour resampling.
 
 .. doctest::
 
@@ -29,7 +38,7 @@ The ImageContainerNearest class can be used for nearest neighbour resampling of 
  >>> area_con = swath_con.resample(area_def)
  >>> result = area_con.image_data
 
-For other resampling types or splitting the process in two steps use the functions in **pyresample.kd_tree** described below. 
+For other resampling types or splitting the process in two steps use e.g. the functions in **pyresample.kd_tree** described below. 
 
 pyresample.kd_tree
 ------------------
@@ -236,8 +245,217 @@ grid point (the nearest neighbour). Also note **distance_array** is not a requir
 Segmented resampling
 ********************
 Whenever a resampling function takes the keyword argument **segments** the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of **segments** is left to default pyresample will estimate the number of segments to use. 
-    
-Speedup using pykdtree
-**********************
 
-pykdtree can be used instead of scipy to gain significant speedup for large datasets. See :ref:`multi`. 
+pyresample.bilinear
+-------------------
+
+Compared to nearest neighbour resampling, bilinear interpolation
+produces smoother results near swath edges of polar satellite data and
+edges of geostationary satellites.
+
+The algorithm is implemented from http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf
+
+Below is shown a comparison between image generated with nearest
+neighbour resampling (top) and with bilinear interpolation
+(bottom):
+
+.. image:: _static/images/nearest_overview.png
+   :width: 50%
+.. image:: _static/images/bilinear_overview.png
+   :width: 50%
+
+Click images to see the full resolution versions.
+
+The *perceived* sharpness of the bottom image is lower, but there is more detail present.
+
+resample_bilinear
+*****************
+
+Function for resampling using bilinear interpolation for irregular source grids.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import bilinear, geometry
+ >>> target_def = geometry.AreaDefinition('areaD',
+ ...                                      'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (500, 100))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x * 0.1, (500, 100))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100))
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> result = bilinear.resample_bilinear(data, source_def, target_def,
+ ...                                     radius=50e3, neighbours=32,
+ ...                                     nprocs=1, fill_value=0,
+ ...                                     reduce_data=True, segments=None,
+ ...                                     epsilon=0)
+
+The **target_area** needs to be an area definition with **proj_str**
+attribute.
+
+..
+    The **source_def** can be either an area definition as above,
+    or a 2-tuple of (lons, lats).
+
+Keyword arguments which are passed to **kd_tree**:
+
+* **radius**: radius around each target pixel in meters to search for
+  neighbours in the source data
+* **neighbours**: number of closest locations to consider when
+  selecting the four data points around the target location.  Note that this 
+  value needs to be large enough to ensure "surrounding" the target!
+* **nprocs**: number of processors to use for finding the closest pixels
+* **fill_value**: fill invalid pixel with this value.  If
+  **fill_value=None** is used, masked arrays will be returned
+* **reduce_data**: do/don't do preliminary data reduction before calculating
+  the neigbour info
+* **segments**: number of segments to use in neighbour search
+* **epsilon**: maximum uncertainty allowed in neighbour search
+
+The example above shows the default value for each keyword argument.
+
+Resampling from bilinear coefficients
+*************************************
+
+As for nearest neighbour resampling, also bilinear interpolation can
+be split in two steps.
+
+* Calculate interpolation coefficients, input data reduction matrix
+  and mapping matrix
+* Use this information to resample several datasets between these two
+  areas/swaths
+
+Only the first step is computationally expensive operation, so by
+re-using this information the overall processing time is reduced
+significantly.  This is also done internally by the
+**resample_bilinear** function, but separating these steps makes it
+possible to cache the coefficients if the same transformation is done
+over and over again.  This is very typical in operational
+geostationary satellite image processing.  Note that the output shape is now 
+defined so that the result is reshaped to correct shape.  This reshaping 
+is done internally in **resample_bilinear**.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample import bilinear, geometry
+ >>> target_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+ ...                                      'areaD',
+ ...                                      {'a': '6378144.0', 'b': '6356759.0',
+ ...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                       'lon_0': '8.00', 'proj': 'stere'},
+ ...                                      800, 800,
+ ...                                      [-1370912.72, -909968.64,
+ ...                                       1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> t_params, s_params, input_idxs, idx_ref = \
+ ...     bilinear.get_bil_info(source_def, target_def, radius=50e3, nprocs=1)
+ >>> res = bilinear.get_sample_from_bil_info(data.ravel(), t_params, s_params,
+ ...                                         input_idxs, idx_ref,
+ ...                                         output_shape=target_def.shape)
+
+
+pyresample.ewa
+--------------
+
+Pyresample makes it possible to resample swath data to a uniform grid
+using an Elliptical Weighted Averaging algorithm or EWA for short.
+This algorithm behaves differently than the KDTree based resampling
+algorithms that pyresample provides. The KDTree-based algorithms
+process each output grid pixel by searching for all "nearby" input
+pixels and applying a certain interpolation (nearest neighbor, gaussian, etc).
+The EWA algorithm processes each input pixel mapping it to one or more output
+pixels. Once each input pixel has been analyzed the intermediate results are
+averaged to produce the final gridded result.
+
+The EWA algorithm also has limitations on how the input data is structured
+compared to the generic KDTree algorithms. EWA assumes that data in the array
+is organized geographically; adjacent data in the array is adjacent data
+geographically. The algorithm uses this to configure parameters based on the
+size and location of the swath pixels.
+
+The EWA algorithm consists of two
+steps: ll2cr and fornav. The algorithm was originally part of the
+MODIS Swath to Grid Toolbox (ms2gt) created by the
+NASA National Snow & Ice Data Center (NSIDC). Its default parameters
+work best with MODIS L1B data, but it has been proven to produce high
+quality images from VIIRS and AVHRR data with the right parameters.
+
+.. note::
+
+    This code was originally part of the Polar2Grid project. This
+    documentation and the API documentation for this algorithm may still
+    use references or concepts from Polar2Grid until everything can
+    be updated.
+
+Gridding
+********
+
+The first step is called 'll2cr' which stands for "longitude/latitude to
+column/row". This step maps the pixel location (lon/lat space) into area (grid)
+space. Areas in pyresample are defined by a PROJ.4 projection specification.
+An area is defined by the following parameters:
+
+ - Grid Name
+ - PROJ.4 String (either lat/lon or metered projection space)
+ - Width (number of pixels in the X direction)
+ - Height (number of pixels in the Y direction)
+ - Cell Width (pixel size in the X direction in grid units)
+ - Cell Height (pixel size in the Y direction in grid units)
+ - X Origin (upper-left X coordinate in grid units)
+ - Y Origin (upper-left Y coordinate in grid units)
+
+Resampling
+**********
+
+The second step of EWA remapping is called "fornav", short for
+"forward navigation". This EWA algorithm processes one input scan line
+at a time. The algorithm weights the effect of an input pixel on an output
+pixel based on its location in the scan line and other calculated
+coefficients. It can also handle swaths that are not scan based by specifying
+`rows_per_scan` as the number of rows in the entire swath.
+How the algorithm treats the data can be configured with various
+keyword arguments, see the API documentation for more information.
+Both steps provide additional information to inform the user how much data
+was used in the result. The first returned value of ll2cr tells you how many
+of the input swath pixels overlap the grid. The first returned value of fornav
+tells you how many grid points have valid data values in them.
+
+Example
+*******
+
+.. note::
+
+    EWA resampling in pyresample is still in an alpha stage. As development
+    continues, EWA resampling may be called differently.
+
+.. doctest::
+
+ >>> import numpy as np
+ >>> from pyresample.ewa import ll2cr, fornav
+ >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+ ...                                {'a': '6378144.0', 'b': '6356759.0',
+ ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
+ ...                                800, 800,
+ ...                                [-1370912.72, -909968.64,
+ ...                                 1029087.28, 1490031.36])
+ >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
+ >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+ >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+ >>> # ll2cr converts swath longitudes and latitudes to grid columns and rows
+ >>> swath_points_in_grid, cols, rows = ll2cr(swath_def, area_def)
+ >>> # if the data is scan based, specify how many data rows make up one scan
+ >>> rows_per_scan = 5
+ >>> # fornav resamples the swath data to the gridded area
+ >>> num_valid_points, gridded_data = fornav(cols, rows, area_def, data, rows_per_scan=rows_per_scan)

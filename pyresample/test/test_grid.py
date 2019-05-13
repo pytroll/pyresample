@@ -152,6 +152,22 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(
             cross_sum, expected, msg='Resampling of image failed')
 
+    def test_resampled_image_masked(self):
+        # Generate test image with masked elements
+        data = np.ma.ones(self.msg_area.shape)
+        data.mask = np.zeros(data.shape)
+        data.mask[253:400, 1970:2211] = 1
+
+        # Resample image using multiple segments
+        target_def = self.area_def
+        source_def = self.msg_area
+        res = grid.get_resampled_image(
+            target_def, source_def, data, segments=4, fill_value=None)
+
+        # Make sure the mask has been preserved
+        self.assertGreater(res.mask.sum(), 0,
+                           msg='Resampling did not preserve the mask')
+
     @tmp
     def test_generate_linesample(self):
         data = np.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
@@ -185,8 +201,8 @@ class Test(unittest.TestCase):
             lat, 52.566998432390619, msg='Resampling of single lat failed')
 
     def test_proj4_string(self):
-        proj4_string = self.area_def.proj4_string
-        expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.00 +lon_0=8.00 +proj=stere +lat_0=50.00'
+        proj4_string = self.area_def.proj_str
+        expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere +lat_0=50.0'
         self.assertEqual(
             frozenset(proj4_string.split()), frozenset(expected_string.split()))
 

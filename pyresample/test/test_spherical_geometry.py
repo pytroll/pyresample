@@ -151,8 +151,8 @@ class TestOverlap(unittest.TestCase):
                           [57.304862819933433, 57.304862819933433]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        self.assertAlmostEqual(area1.overlap_rate(area2), 0.5, 2)
-        self.assertAlmostEqual(area2.overlap_rate(area1), 0.068, 3)
+        self.assertAlmostEqual(area1.overlap_rate(area2), 0.509, 2)
+        self.assertAlmostEqual(area2.overlap_rate(area1), 0.0685, 3)
 
 
 class TestSphereGeometry(unittest.TestCase):

@@ -1,13 +1,32 @@
-.. pyresample documentation master file, created by
-   sphinx-quickstart on Tue Jan  5 13:01:32 2010.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Pyresample
-======================================
-Pyresample is a Python package for resampling (reprojection) of earth observing satellite data.
-Pyresample handles both resampling of gridded data (e.g. geostationary satellites) and swath data (polar orbiting satellites). 
-Pyresample can use multiple processor cores for resampling. Pyresample supports masked arrays.
+==========
+
+Pyresample is a python package for resampling geospatial image data. It is the
+primary method for resampling in the `SatPy <https://github.com/pytroll/satpy>`_
+library, but can also be used as a standalone library. Resampling or
+reprojection is the process of mapping input geolocated data points to a
+new target geographic projection and area.
+
+Pyresample can operate on both fixed grids of data and geolocated swath data.
+To describe these data Pyresample uses various "geometry" objects including
+the `AreaDefinition` and `SwathDefinition` classes.
+
+Pyresample offers multiple resampling algorithms including:
+
+- Nearest Neighbor
+- Elliptical Weighted Average (EWA)
+- Bilinear
+
+For nearest neighbor and bilinear interpolation pyresample uses a kd-tree
+approach by using the fast KDTree implementation provided by the
+`pykdtree <https://github.com/storpipfugl/pykdtree>`_ library.
+Pyresample works with numpy arrays and numpy masked arrays. Interfaces to
+XArray objects (including dask array support) are provided in separate
+Resampler class interfaces and are in active development.
+Utility functions are available to easily plot data using Cartopy.
+
+Pyresample is tested with Python 2.7 and 3.6, but should additionally work
+on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
 
 Documentation
 -------------
@@ -16,6 +35,7 @@ Documentation
 
    installation
    geo_def
+   geometry_utils
    geo_filter
    grid
    swath

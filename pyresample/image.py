@@ -21,45 +21,49 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from pyresample import geometry, grid, kd_tree
+from pyresample import geometry, grid, kd_tree, bilinear
 
 
 class ImageContainer(object):
 
-    """Holds image with geometry definition. 
+    """Holds image with geometry definition.
     Allows indexing with linesample arrays.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Geometry definition
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
-        If fill_value is None a masked array is returned 
+        If fill_value is None a masked array is returned
         with undetermined pixels masked
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
 
-    :Attributes:
-    image_data : numpy array 
+    Attributes
+    ----------
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Geometry definition
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
     nprocs : int
         Number of processor cores to be used for geometry operations
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
+        if type(geo_def).__name__ == "DynamicAreaDefinition":
+            geo_def = geo_def.freeze()
         if not isinstance(image_data, (np.ndarray, np.ma.core.MaskedArray)):
             raise TypeError('image_data must be either an ndarray'
                             ' or a masked array')
         elif ((image_data.ndim > geo_def.ndim + 1) or
               (image_data.ndim < geo_def.ndim)):
             raise ValueError(('Unexpected number of dimensions for '
-                              'image_data: ') % image_data.ndim)
+                              'image_data: %s') % image_data.ndim)
         for i, size in enumerate(geo_def.shape):
             if image_data.shape[i] != size:
                 raise ValueError(('Size mismatch for image_data. Expected '
@@ -93,13 +97,15 @@ class ImageContainer(object):
     def get_array_from_linesample(self, row_indices, col_indices):
         """Samples from image based on index arrays.
 
-        :Parameters:
+        Parameters
+        ----------
         row_indices : numpy array
             Row indices. Dimensions must match col_indices
-        col_indices : numpy array 
-            Col indices. Dimensions must match row_indices 
+        col_indices : numpy array
+            Col indices. Dimensions must match row_indices
 
-        :Returns: 
+        Returns
+        -------
         image_data : numpy_array
             Resampled image data
         """
@@ -125,34 +131,36 @@ class ImageContainerQuick(ImageContainer):
     """Holds image with area definition. '
     Allows quick resampling within area.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Area definition as AreaDefinition object
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
-        If fill_value is None a masked array is returned 
+        If fill_value is None a masked array is returned
         with undetermined pixels masked
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used for geometry operations
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
 
-    :Attributes:
-    image_data : numpy array 
+    Attributes
+    ----------
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Area definition as AreaDefinition object
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
-        If fill_value is None a masked array is returned 
-        with undetermined pixels masked 
+        If fill_value is None a masked array is returned
+        with undetermined pixels masked
     nprocs : int
         Number of processor cores to be used
-    segments : {int, None}
-        Number of segments to use when resampling      
+    segments : int or None
+        Number of segments to use when resampling
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1,
@@ -166,16 +174,18 @@ class ImageContainerQuick(ImageContainer):
         self.segments = segments
 
     def resample(self, target_area_def):
-        """Resamples image to area definition using nearest neighbour 
+        """Resamples image to area definition using nearest neighbour
         approach in projection coordinates.
 
-        :Parameters:
-        target_area_def : object 
+        Parameters
+        ----------
+        target_area_def : object
             Target area definition as AreaDefinition object
 
-        :Returns: 
+        Returns
+        -------
         image_container : object
-            ImageContainerQuick object of resampled area   
+            ImageContainerQuick object of resampled area
         """
 
         resampled_image = grid.get_resampled_image(target_area_def,
@@ -192,49 +202,52 @@ class ImageContainerQuick(ImageContainer):
 
 class ImageContainerNearest(ImageContainer):
 
-    """Holds image with geometry definition. 
-    Allows nearest neighbour resampling to new geometry definition.
+    """Holds image with geometry definition.
+    Allows nearest neighbour to new geometry definition.
 
-    :Parameters:
-    image_data : numpy array 
+    Parameters
+    ----------
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Geometry definition
-    radius_of_influence : float 
-        Cut off distance in meters    
+    radius_of_influence : float
+        Cut off distance in meters
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : {int, None} optional 
+    fill_value : int or None, optional
         Set undetermined pixels to this value.
-        If fill_value is None a masked array is returned 
+        If fill_value is None a masked array is returned
         with undetermined pixels masked
     reduce_data : bool, optional
         Perform coarse data reduction before resampling in order
         to reduce execution time
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used for geometry operations
-    segments : {int, None}
+    segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
 
-    :Attributes:
-    image_data : numpy array 
+    Attributes
+    ----------
+
+    image_data : numpy array
         Image data
-    geo_def : object 
+    geo_def : object
         Geometry definition
-    radius_of_influence : float 
-        Cut off distance in meters    
+    radius_of_influence : float
+        Cut off distance in meters
     epsilon : float
         Allowed uncertainty in meters
-    fill_value : {int, None}
+    fill_value : int or None
         Resample result fill value
     reduce_data : bool
         Perform coarse data reduction before resampling
     nprocs : int
         Number of processor cores to be used
-    segments : {int, None}
-        Number of segments to use when resampling   
+    segments : int or None
+        Number of segments to use when resampling
     """
 
     def __init__(self, image_data, geo_def, radius_of_influence, epsilon=0,
@@ -248,16 +261,18 @@ class ImageContainerNearest(ImageContainer):
         self.segments = segments
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using nearest neighbour 
+        """Resamples image to area definition using nearest neighbour
         approach
 
-        :Parameters:
-        target_geo_def : object 
-            Target geometry definition         
+        Parameters
+        ----------
+        target_geo_def : object
+            Target geometry definition
 
-        :Returns: 
+        Returns
+        -------
         image_container : object
-            ImageContainerNearest object of resampled geometry   
+            ImageContainerNearest object of resampled geometry
         """
 
         if self.image_data.ndim > 2 and self.ndim > 1:
@@ -284,3 +299,121 @@ class ImageContainerNearest(ImageContainer):
                                      reduce_data=self.reduce_data,
                                      nprocs=self.nprocs,
                                      segments=self.segments)
+
+
+class ImageContainerBilinear(ImageContainer):
+
+    """Holds image with geometry definition.
+    Allows bilinear to new geometry definition.
+
+    Parameters
+    ----------
+    image_data : numpy array
+        Image data
+    geo_def : object
+        Geometry definition
+    radius_of_influence : float
+        Cut off distance in meters
+    epsilon : float, optional
+        Allowed uncertainty in meters. Increasing uncertainty
+        reduces execution time
+    fill_value : int or None, optional
+        Set undetermined pixels to this value.
+        If fill_value is None a masked array is returned
+        with undetermined pixels masked
+    reduce_data : bool, optional
+        Perform coarse data reduction before resampling in order
+        to reduce execution time
+    nprocs : int, optional
+        Number of processor cores to be used for geometry operations
+    segments : int or None
+        Number of segments to use when resampling.
+        If set to None an estimate will be calculated
+
+    Attributes
+    ----------
+
+    image_data : numpy array
+        Image data
+    geo_def : object
+        Geometry definition
+    radius_of_influence : float
+        Cut off distance in meters
+    epsilon : float
+        Allowed uncertainty in meters
+    fill_value : int or None
+        Resample result fill value
+    reduce_data : bool
+        Perform coarse data reduction before resampling
+    nprocs : int
+        Number of processor cores to be used
+    segments : int or None
+        Number of segments to use when resampling
+    """
+
+    def __init__(self, image_data, geo_def, radius_of_influence, epsilon=0,
+                 fill_value=0, reduce_data=False, nprocs=1, segments=None,
+                 neighbours=32):
+        super(ImageContainerBilinear, self).__init__(image_data, geo_def,
+                                                     fill_value=fill_value,
+                                                     nprocs=nprocs)
+        self.radius_of_influence = radius_of_influence
+        self.epsilon = epsilon
+        self.reduce_data = reduce_data
+        self.segments = segments
+        self.neighbours = neighbours
+
+    def resample(self, target_geo_def):
+        """Resamples image to area definition using bilinear approach
+
+        Parameters
+        ----------
+        target_geo_def : object
+            Target geometry definition
+
+        Returns
+        -------
+        image_container : object
+            ImageContainerBilinear object of resampled geometry
+        """
+
+        if self.image_data.ndim > 2 and self.ndim > 1:
+            image_data = self.image_data.reshape(self.image_data.shape[0] *
+                                                 self.image_data.shape[1],
+                                                 self.image_data.shape[2])
+        else:
+            image_data = self.image_data.ravel()
+
+        try:
+            mask = image_data.mask.copy()
+            image_data = image_data.data.copy()
+            image_data[mask] = np.nan
+        except AttributeError:
+            pass
+
+        resampled_image = \
+            bilinear.resample_bilinear(image_data,
+                                       self.geo_def,
+                                       target_geo_def,
+                                       radius=self.radius_of_influence,
+                                       neighbours=self.neighbours,
+                                       epsilon=self.epsilon,
+                                       fill_value=self.fill_value,
+                                       nprocs=self.nprocs,
+                                       reduce_data=self.reduce_data,
+                                       segments=self.segments)
+        try:
+            resampled_image = resampled_image.reshape(target_geo_def.shape)
+        except ValueError:
+            # The input data was 3D
+            shp = target_geo_def.shape
+            new_shp = [shp[0], shp[1], image_data.shape[-1]]
+            resampled_image = resampled_image.reshape(new_shp)
+
+        return ImageContainerBilinear(resampled_image, target_geo_def,
+                                      self.radius_of_influence,
+                                      epsilon=self.epsilon,
+                                      fill_value=self.fill_value,
+                                      reduce_data=self.reduce_data,
+                                      nprocs=self.nprocs,
+                                      segments=self.segments)

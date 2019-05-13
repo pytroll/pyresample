@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# encoding: utf8
 #
-# Copyright (C) 2010-2015
+# Copyright (C) 2010-2018
 #
 # Authors:
 #    Esben S. Nielsen
@@ -16,8 +17,8 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
 import numpy as np
@@ -26,11 +27,13 @@ import numpy as np
 def ellps2axis(ellps_name):
     """Get semi-major and semi-minor axis from ellipsis definition
 
-    :Parameters:
+    Parameters
+    ---------
     ellps_name : str
         Standard name of ellipsis
 
-    :Returns:
+    Returns
+    -------
     (a, b) : semi-major and semi-minor axis
     """
 
@@ -89,15 +92,22 @@ def ellps2axis(ellps_name):
 def area_def2basemap(area_def, **kwargs):
     """Get Basemap object from AreaDefinition
 
-    :Parameters:
+    Parameters
+    ---------
     area_def : object
         geometry.AreaDefinition object
-    **kwargs: Keyword arguments
+    \*\*kwargs: Keyword arguments
         Additional initialization arguments for Basemap
 
-    :Returns:
+    Returns
+    -------
     bmap : Basemap object
     """
+
+    import warnings
+    warnings.warn("Basemap is no longer maintained. Please switch to cartopy "
+                  "by using 'area_def.to_cartopy_crs()'. See the pyresample "
+                  "documentation for more details.", DeprecationWarning)
 
     from mpl_toolkits.basemap import Basemap
     try:
@@ -149,12 +159,9 @@ def area_def2basemap(area_def, **kwargs):
     return Basemap(**basemap_args)
 
 
-def _get_quicklook(area_def, data, vmin=None, vmax=None,
-                   label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c'):
-    """Get default Basemap matplotlib plot
-    """
-
+def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
+                           label='Variable (units)', num_meridians=45,
+                           num_parallels=10, coast_res='110m', cmap='jet'):
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
@@ -166,18 +173,74 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     if num_parallels > 0:
         bmap.drawparallels(np.arange(-90, 90, num_parallels))
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
-        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax)
+        col = bmap.imshow(data, origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
         plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
+    return plt
 
+
+def _get_quicklook(area_def, data, vmin=None, vmax=None,
+                   label='Variable (units)', num_meridians=45,
+                   num_parallels=10, coast_res='110m', cmap='jet'):
+    """Get default cartopy matplotlib plot."""
+    bmap_to_cartopy_res = {
+        'c': '110m',
+        'l': '110m',
+        'i': '50m',
+        'h': '10m',
+        'f': '10m'
+    }
+
+    try:
+        from pyresample import _cartopy  # noqa
+    except ImportError:
+        if coast_res.endswith('m'):
+            _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}
+            coast_res = _rev_map[coast_res]
+        return _basemap_get_quicklook(
+            area_def, data, vmin, vmax, label, num_meridians,
+            num_parallels, coast_res=coast_res, cmap=cmap)
+
+    if coast_res and coast_res not in ['110m', '50m', '10m']:
+        import warnings
+        warnings.warn("'coast_res' should be either '110m', '50m', '10m'.")
+        coast_res = {
+            'c': '110m',
+            'l': '110m',
+            'i': '50m',
+            'h': '10m',
+            'f': '10m'
+        }[coast_res]
+
+    if area_def.shape != data.shape:
+        raise ValueError('area_def shape %s does not match data shape %s' %
+                         (list(area_def.shape), list(data.shape)))
+    import matplotlib.pyplot as plt
+    crs = area_def.to_cartopy_crs()
+    ax = plt.axes(projection=crs)
+    ax.coastlines(resolution=coast_res)
+    ax.set_global()
+
+    xlocs = None
+    ylocs = None
+    if num_meridians:
+        xlocs = np.arange(-180, 180, num_meridians)
+    if num_parallels:
+        ylocs = np.arange(-90, 90, num_parallels)
+    ax.gridlines(xlocs=xlocs, ylocs=ylocs)
+    if not (np.ma.isMaskedArray(data) and data.mask.all()):
+        col = ax.imshow(data, transform=crs, extent=crs.bounds,
+                        origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
+        plt.colorbar(col, shrink=0.5, pad=0.05).set_label(label)
     return plt
 
 
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c'):
+                   num_parallels=10, coast_res='110m', cmap='jet'):
     """Display default quicklook plot
 
-    :Parameters:
+    Parameters
+    ---------
     area_def : object
         geometry.AreaDefinition object
     data : numpy array | numpy masked array
@@ -195,23 +258,27 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
     coast_res : {'c', 'l', 'i', 'h', 'f'}, optional
         Resolution of coastlines
 
-    :Returns:
+    Returns
+    -------
     bmap : Basemap object
     """
 
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
-                         num_parallels=num_parallels, coast_res=coast_res)
+                         num_parallels=num_parallels, coast_res=coast_res,
+                         cmap=cmap)
     plt.show()
     plt.close()
 
 
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='c', backend='AGG'):
+                   num_parallels=10, coast_res='110m', backend='AGG',
+                   cmap='jet'):
     """Display default quicklook plot
 
-    :Parameters:
+    Parameters
+    ----------
     filename : str
         path to output file
     area_def : object

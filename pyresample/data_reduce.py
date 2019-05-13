@@ -21,29 +21,30 @@ from __future__ import absolute_import
 
 import numpy as np
 
-
 # Earth radius
 R = 6370997.0
 
 
 def swath_from_cartesian_grid(cart_grid, lons, lats, data,
                               radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with 
+    """Makes coarse data reduction of swath data by comparison with
     cartesian grid
 
-    :Parameters:
-    chart_grid : numpy array          
+    Parameters
+    ----------
+    chart_grid : numpy array
         Grid of area cartesian coordinates
-    lons : numpy array                
+    lons : numpy array
         Swath lons
-    lats : numpy array                
+    lats : numpy array
         Swath lats
-    data : numpy array                
+    data : numpy array
         Swath data
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set
     """
@@ -60,22 +61,24 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
 
 def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
                                         radius_of_influence):
-    """Calculates relevant data indices using coarse data reduction of swath 
+    """Calculates relevant data indices using coarse data reduction of swath
     data by comparison with cartesian grid
 
-    :Parameters:
-    chart_grid : numpy array          
+    Parameters
+    ----------
+    chart_grid : numpy array
         Grid of area cartesian coordinates
-    lons : numpy array                
+    lons : numpy array
         Swath lons
-    lats : numpy array                
+    lats : numpy array
         Swath lats
-    data : numpy array                
+    data : numpy array
         Swath data
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     valid_index : numpy array
         Boolean array of same size as lons and lats indicating relevant indices
     """
@@ -106,26 +109,28 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
 
 def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
                            radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with 
+    """Makes coarse data reduction of swath data by comparison with
     lon lat grid
 
-    :Parameters:
-    grid_lons : numpy array          
+    Parameters
+    ----------
+    grid_lons : numpy array
         Grid of area lons
-    grid_lats : numpy array           
+    grid_lats : numpy array
         Grid of area lats
-    lons : numpy array                
+    lons : numpy array
         Swath lons
-    lats : numpy array                
+    lats : numpy array
         Swath lats
-    data : numpy array                
+    data : numpy array
         Swath data
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
 
-    :Returns:
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
-        Reduced swath data and coordinate set 
+        Reduced swath data and coordinate set
     """
 
     valid_index = get_valid_index_from_lonlat_grid(
@@ -140,26 +145,28 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
 
 def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
                                  radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with 
+    """Makes coarse data reduction of swath data by comparison with
     lon lat boundary
 
-    :Parameters:
-    boundary_lons : numpy array          
+    Parameters
+    ----------
+    boundary_lons : numpy array
         Grid of area lons
-    boundary_lats : numpy array           
+    boundary_lats : numpy array
         Grid of area lats
-    lons : numpy array                
+    lons : numpy array
         Swath lons
-    lats : numpy array                
+    lats : numpy array
         Swath lats
-    data : numpy array                
+    data : numpy array
         Swath data
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
 
-    :Returns:
+    Returns
+    -------
     (lons, lats, data) : list of numpy arrays
-        Reduced swath data and coordinate set 
+        Reduced swath data and coordinate set
     """
 
     valid_index = get_valid_index_from_lonlat_boundaries(boundary_lons,
@@ -173,22 +180,24 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
 
 
 def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of_influence):
-    """Calculates relevant data indices using coarse data reduction of swath 
+    """Calculates relevant data indices using coarse data reduction of swath
     data by comparison with lon lat grid
 
-    :Parameters:
-    chart_grid : numpy array          
+    Parameters
+    ----------
+    chart_grid : numpy array
         Grid of area cartesian coordinates
-    lons : numpy array                
+    lons : numpy array
         Swath lons
-    lats : numpy array                
+    lats : numpy array
         Swath lats
-    data : numpy array                
+    data : numpy array
         Swath data
-    radius_of_influence : float 
+    radius_of_influence : float
         Cut off distance in meters
 
-    :Returns: 
+    Returns
+    -------
     valid_index : numpy array
         Boolean array of same size as lon and lat indicating relevant indices
     """
@@ -212,7 +221,7 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
 
 
 def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, radius_of_influence):
-    """Find relevant indices from grid boundaries using the 
+    """Find relevant indices from grid boundaries using the
     winding number theorem"""
 
     valid_index = _get_valid_index(boundary_lons.side1, boundary_lons.side2,
@@ -227,7 +236,7 @@ def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, l
 def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                      lats_side1, lats_side2, lats_side3, lats_side4,
                      lons, lats, radius_of_influence):
-    """Find relevant indices from grid boundaries using the 
+    """Find relevant indices from grid boundaries using the
     winding number theorem"""
 
     # Coarse reduction of data based on extrema analysis of the boundary
@@ -263,24 +272,24 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     # Buffer min and max lon and lat of interest with radius of interest
     lat_min = min(lats_side1.min(), lats_side2.min(), lats_side3.min(),
                   lats_side4.min())
-    lat_min_buffered = lat_min - float(radius_of_influence) / R
+    lat_min_buffered = lat_min - np.degrees(float(radius_of_influence) / R)
     lat_max = max(lats_side1.max(), lats_side2.max(), lats_side3.max(),
                   lats_side4.max())
-    lat_max_buffered = lat_max + float(radius_of_influence) / R
+    lat_max_buffered = lat_max + np.degrees(float(radius_of_influence) / R)
 
     max_angle_s2 = max(abs(lats_side2.max()), abs(lats_side2.min()))
     max_angle_s4 = max(abs(lats_side4.max()), abs(lats_side4.min()))
     lon_min_buffered = (lons_side4.min() -
-                        float(radius_of_influence) /
-                        (np.sin(np.radians(max_angle_s4)) * R))
+                        np.degrees(float(radius_of_influence) /
+                                   (np.sin(np.radians(max_angle_s4)) * R)))
 
     lon_max_buffered = (lons_side2.max() +
-                        float(radius_of_influence) /
-                        (np.sin(np.radians(max_angle_s2)) * R))
+                        np.degrees(float(radius_of_influence) /
+                                   (np.sin(np.radians(max_angle_s2)) * R)))
 
     # From the winding number theorem follows:
     # angle_sum possiblilities:
-    #-360: area covers north pole
+    # -360: area covers north pole
     # 360: area covers south pole
     #   0: area covers no poles
     # else: area covers both poles

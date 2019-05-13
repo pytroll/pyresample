@@ -15,36 +15,29 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
+import os
 
-from pyresample.version import __version__
-import geometry
-import grid
-import image
-import kd_tree
-import utils
-import plot
-import data_reduce
-#import gradient_search
-#import _gradient_search
+CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
 
-__all__ = ['grid', 'image', 'kd_tree',
-           'utils', 'plot', 'geo_filter', 'geometry']
+# Backwards compatibility
+from pyresample import geometry  # noqa
+from pyresample import grid  # noqa
+from pyresample import image  # noqa
+from pyresample import kd_tree  # noqa
+from pyresample import utils  # noqa
+from pyresample import plot  # noqa
+# Easy access
+from pyresample.geometry import (SwathDefinition,  # noqa
+                                 AreaDefinition,  # noqa
+                                 DynamicAreaDefinition)  # noqa
+from pyresample.area_config import load_area, create_area_def, get_area_def, \
+                                   parse_area_file, convert_def_to_yaml  # noqa
+from pyresample.kd_tree import XArrayResamplerNN  # noqa
+from pyresample.plot import save_quicklook, area_def2basemap  # noqa
+from .version import get_versions  # noqa
 
+__all__ = ['grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',
+           'load_area', 'create_area_def', 'get_area_def', 'parse_area_file', 'convert_def_to_yaml']
 
-def get_capabilities():
-    cap = {}
-
-    try:
-        from pykdtree.kdtree import KDTree
-        cap['pykdtree'] = True
-    except ImportError:
-        cap['pykdtree'] = False
-
-    try:
-        import numexpr
-        cap['numexpr'] = True
-    except ImportError:
-        cap['numexpr'] = False
-
-    return cap
+__version__ = get_versions()['version']
+del get_versions
