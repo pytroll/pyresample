@@ -20,6 +20,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+from pyresample import data_reduce
+from _gradient_search import (fast_gradient_search,
+                              two_step_fast_gradient_search,
+                              two_step_fast_gradient_search_with_mask,
+                              fast_gradient_search_with_mask)
+import pyximport
+import h5py
+import mpop.utils
 """Testing the Trishchenko algorithm.
 """
 
@@ -31,18 +40,9 @@ import pyproj
 from mpop.utils import debug_on
 debug_on()
 
-import mpop.utils
 mpop.utils.debug_on()
-import h5py
-import pyximport
 pyximport.install()
-from _gradient_search import (fast_gradient_search,
-                              two_step_fast_gradient_search,
-                              two_step_fast_gradient_search_with_mask,
-                              fast_gradient_search_with_mask)
-from pyresample import data_reduce
 
-import logging
 
 logger = logging.getLogger(__name__)
 
