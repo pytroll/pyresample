@@ -28,6 +28,7 @@ when aggregating data to coarser scale grids.
 import numpy as np
 from pyresample._spatial_mp import Proj
 
+
 def round_to_resolution(arr, resolution):
     """Round the values in *arr* to closest resolution element."""
     return resolution * np.round(arr / resolution)
@@ -86,7 +87,7 @@ def get_sample_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
     for i in range(x_idxs.size):
         x_idx = x_idxs[i]
         y_idx = y_idxs[i]
-        #if x_idx < 0 | y_idx < 0 | np.isnan(data[i]):
+        # if x_idx < 0 | y_idx < 0 | np.isnan(data[i]):
         #    continue
         sums[y_idx, x_idx] += data[i]
         count[y_idx, x_idx] += 1
