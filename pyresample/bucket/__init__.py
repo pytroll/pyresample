@@ -74,7 +74,7 @@ def get_sample_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
     the sum and counts for each bin as two Numpy arrays."""
 
     sums = np.zeros(target_shape)
-    count = np.zeros(target_shape)
+    counts = np.zeros(target_shape)
     data = np.ravel(data)
 
     idxs = (x_idxs > 0) & (y_idxs > 0) & np.isfinite(data)
@@ -89,9 +89,9 @@ def get_sample_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
         #if x_idx < 0 | y_idx < 0 | np.isnan(data[i]):
         #    continue
         sums[y_idx, x_idx] += data[i]
-        count[y_idx, x_idx] += 1
+        counts[y_idx, x_idx] += 1
 
-    return sums, count
+    return sums, counts
 
 
 def resample_bucket_average(adef, data, lats, lons,
@@ -102,7 +102,7 @@ def resample_bucket_average(adef, data, lats, lons,
     sums, counts = get_sample_from_bucket_indices(data, x_idxs, y_idxs,
                                                   adef.shape)
     average = sums / counts
-    average = np.where(count == 0, fill_value, average)
+    average = np.where(counts == 0, fill_value, average)
 
     return average
 
