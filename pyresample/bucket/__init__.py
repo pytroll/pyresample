@@ -28,7 +28,6 @@ when aggregating data to coarser scale grids.
 import dask.array as da
 import numpy as np
 from pyresample._spatial_mp import Proj
-import xarray as xr
 
 
 def round_to_resolution(arr, resolution):
