@@ -25,12 +25,25 @@ Bucket resampling is useful for calculating averages and hit-counts
 when aggregating data to coarser scale grids.
 """
 
+import dask.array as da
 import numpy as np
 from pyresample._spatial_mp import Proj
+import xarray as xr
+
 
 def round_to_resolution(arr, resolution):
     """Round the values in *arr* to closest resolution element."""
     return resolution * np.round(arr / resolution)
+
+
+def _get_proj_coordinates(lons, lats, x_res, y_res, prj):
+    """Calculate projection coordinates and round them to the closest
+    resolution unit."""
+    proj_x, proj_y = prj(lons, lats)
+    proj_x = round_to_resolution(proj_x, x_res)
+    proj_y = round_to_resolution(proj_y, y_res)
+
+    return np.stack((proj_x, proj_y))
 
 
 def get_bucket_indices(adef, lons, lats):
@@ -41,30 +54,28 @@ def get_bucket_indices(adef, lons, lats):
     # Create output grid coordinates in projection units
     x_res = (adef.area_extent[2] - adef.area_extent[0]) / adef.width
     y_res = (adef.area_extent[3] - adef.area_extent[1]) / adef.height
-    x_vect = np.arange(adef.area_extent[0] + x_res / 2.,
+    x_vect = da.arange(adef.area_extent[0] + x_res / 2.,
                        adef.area_extent[2] - x_res / 2., x_res)
     # Orient so that 0-meridian is pointing down
-    y_vect = np.arange(adef.area_extent[3] - y_res / 2.,
+    y_vect = da.arange(adef.area_extent[3] - y_res / 2.,
                        adef.area_extent[1] + y_res / 2.,
                        -y_res)
 
-    lons = np.ravel(lons)
-    lats = np.ravel(lats)
-
-    # Round coordinates to the closest resolution element
-    proj_x, proj_y = prj(lons, lats)
-    proj_x = round_to_resolution(proj_x, x_res)
-    proj_y = round_to_resolution(proj_y, y_res)
+    result = da.map_blocks(_get_proj_coordinates, lons, lats, x_res, y_res,
+                           prj, new_axis=0,
+                           chunks=(2,) + lons.chunks)
+    proj_x = result[0, :]
+    proj_y = result[1, :]
 
     # Calculate array indices
     x_idxs = ((proj_x - np.min(x_vect)) / x_res).astype(np.int)
     y_idxs = ((np.max(y_vect) - proj_y) / y_res).astype(np.int)
 
-    # Mark invalid array indices with -1
-    idxs = ((x_idxs < 0) | (x_idxs >= adef.width) |
-            (y_idxs < 0) | (y_idxs >= adef.height))
-    y_idxs[idxs] = -1
-    x_idxs[idxs] = -1
+    # Get valid index locations
+    idxs = ((x_idxs >= 0) & (x_idxs < adef.width) &
+            (y_idxs >= 0) & (y_idxs < adef.height))
+    y_idxs = da.where(idxs, y_idxs, -1)
+    x_idxs = da.where(idxs, x_idxs, -1)
 
     return x_idxs, y_idxs
 
@@ -86,8 +97,6 @@ def get_sample_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
     for i in range(x_idxs.size):
         x_idx = x_idxs[i]
         y_idx = y_idxs[i]
-        #if x_idx < 0 | y_idx < 0 | np.isnan(data[i]):
-        #    continue
         sums[y_idx, x_idx] += data[i]
         counts[y_idx, x_idx] += 1
 
