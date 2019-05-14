@@ -2,8 +2,6 @@ import unittest
 import numpy as np
 import dask.array as da
 
-from pyresample._spatial_mp import Proj
-
 import pyresample.bucket as bucket
 
 
