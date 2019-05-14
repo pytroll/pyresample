@@ -135,17 +135,6 @@ def resample_bucket_average(adef, data, lats, lons,
     return average
 
 
-def resample_bucket_counts(adef, data, lats, lons,
-                           fill_value=np.nan, x_idxs=None, y_idxs=None):
-    """Get number of hits for each bin."""
-    if x_idxs is None or y_idxs is None:
-        x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
-    _, counts = get_sample_from_bucket_indices(data, x_idxs, y_idxs,
-                                               adef.shape)
-
-    return counts
-
-
 def resample_bucket_fractions(adef, data, lats, lons, categories,
                               fill_value=np.nan, x_idxs=None, y_idxs=None):
     """Get fraction of occurences for each given categorical value."""
