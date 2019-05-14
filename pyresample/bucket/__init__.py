@@ -26,6 +26,7 @@ when aggregating data to coarser scale grids.
 """
 
 import dask.array as da
+import xarray as xr
 import numpy as np
 from pyresample._spatial_mp import Proj
 
@@ -49,6 +50,9 @@ def get_bucket_indices(adef, lons, lats):
     """Get projection indices"""
 
     prj = Proj(adef.proj_dict)
+
+    lons = lons.ravel()
+    lats = lats.ravel()
 
     # Create output grid coordinates in projection units
     x_res = (adef.area_extent[2] - adef.area_extent[0]) / adef.width
@@ -79,27 +83,42 @@ def get_bucket_indices(adef, lons, lats):
     return x_idxs, y_idxs
 
 
-def get_sample_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
+def get_sum_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
     """Resample the given data with drop-in-a-bucket resampling.  Return
     the sum and counts for each bin as two Numpy arrays."""
 
-    sums = np.zeros(target_shape)
-    counts = np.zeros(target_shape)
-    data = np.ravel(data)
+    if isinstance(data, xr.DataArray):
+        data = data.data
+    data = data.ravel()
+    # Remove NaN values from the data when used as weights
+    weights = da.where(np.isnan(data), 0, data)
 
-    idxs = (x_idxs > 0) & (y_idxs > 0) & np.isfinite(data)
-    x_idxs = x_idxs[idxs]
-    y_idxs = y_idxs[idxs]
-    data = data[idxs]
+    # Convert X- and Y-indices to raveled indexing
+    idxs = y_idxs * target_shape[1] + x_idxs
+    # idxs = idxs.ravel()
 
-    # Place the data to proper locations
-    for i in range(x_idxs.size):
-        x_idx = x_idxs[i]
-        y_idx = y_idxs[i]
-        sums[y_idx, x_idx] += data[i]
-        counts[y_idx, x_idx] += 1
+    out_size = target_shape[0] * target_shape[1]
 
-    return sums, counts
+    # Calculate the sum of the data falling to each bin
+    sums, _ = da.histogram(idxs, bins=out_size, range=(0, out_size),
+                           weights=weights, density=False)
+    return sums.reshape(target_shape)
+
+
+def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
+    """Resample the given data with drop-in-a-bucket resampling.  Return
+    the sum and counts for each bin as two Numpy arrays."""
+
+    # Convert X- and Y-indices to raveled index
+    idxs = y_idxs * target_shape[1] + x_idxs
+    # idxs = idxs.ravel()
+
+    out_size = target_shape[0] * target_shape[1]
+
+    # Calculate the sum of the data falling to each bin
+    counts, _ = da.histogram(idxs, bins=out_size, range=(0, out_size))
+
+    return counts.reshape(target_shape)
 
 
 def resample_bucket_average(adef, data, lats, lons,
@@ -107,10 +126,11 @@ def resample_bucket_average(adef, data, lats, lons,
     """Calculate bin-averages using bucket resampling."""
     if x_idxs is None or y_idxs is None:
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
-    sums, counts = get_sample_from_bucket_indices(data, x_idxs, y_idxs,
-                                                  adef.shape)
+    sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
+    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
+
     average = sums / counts
-    average = np.where(counts == 0, fill_value, average)
+    average = da.where(counts == 0, fill_value, average)
 
     return average
 
