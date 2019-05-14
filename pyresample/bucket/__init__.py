@@ -142,11 +142,12 @@ def resample_bucket_fractions(adef, data, lats, lons, categories,
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
     results = []
     for cat in categories:
-        cat_data = np.where(data == cat, 1.0, 0.0)
-        sums, counts = get_sample_from_bucket_indices(cat_data, x_idxs, y_idxs,
-                                                      adef.shape)
+        cat_data = da.where(data == cat, 1.0, 0.0)
+
+        sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
         results.append(sums)
 
+    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
     fractions = [res / counts for res in results]
 
     return fractions
