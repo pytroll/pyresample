@@ -33,6 +33,8 @@ from pyresample._spatial_mp import Proj
 
 def round_to_resolution(arr, resolution):
     """Round the values in *arr* to closest resolution element."""
+    if isinstance(arr, (list, tuple)):
+        arr = np.array(arr)
     return resolution * np.round(arr / resolution)
 
 
