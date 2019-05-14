@@ -144,7 +144,7 @@ def resample_bucket_fractions(adef, data, lats, lons, categories,
     for cat in categories:
         cat_data = da.where(data == cat, 1.0, 0.0)
 
-        sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
+        sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, adef.shape)
         results.append(sums)
 
     counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
