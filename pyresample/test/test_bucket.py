@@ -4,10 +4,10 @@ import dask.array as da
 import dask
 import xarray as xr
 try:
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import MagicMock
 except ImportError:
     # separate mock package py<3.3
-    from mock import MagicMock, patch
+    from mock import MagicMock
 
 from pyresample.geometry import AreaDefinition
 import pyresample.bucket as bucket
