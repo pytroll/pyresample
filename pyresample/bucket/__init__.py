@@ -113,7 +113,6 @@ def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
 
     # Convert X- and Y-indices to raveled index
     idxs = y_idxs * target_shape[1] + x_idxs
-    # idxs = idxs.ravel()
 
     out_size = target_shape[0] * target_shape[1]
 
@@ -123,7 +122,7 @@ def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
     return counts.reshape(target_shape)
 
 
-def resample_bucket_average(adef, data, lats, lons,
+def resample_bucket_average(adef, data, lons, lats,
                             fill_value=np.nan, x_idxs=None, y_idxs=None):
     """Calculate bin-averages using bucket resampling."""
     if x_idxs is None or y_idxs is None:
