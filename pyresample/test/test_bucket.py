@@ -138,6 +138,28 @@ class Test(unittest.TestCase):
                                                     x_idxs=x_idxs,
                                                     y_idxs=y_idxs)
 
+    def test_resample_bucket_fractions(self):
+        """Test fraction calculations for categorical data."""
+        data = da.from_array(np.array([[2, 4], [2, 2]]))
+        categories = [1, 2, 3, 4]
+        # Without pre-calculated indices
+        with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
+            result = bucket.resample_bucket_fractions(self.adef,
+                                                      data, self.lons,
+                                                      self.lats,
+                                                      categories)
+        self.assertEqual(set(categories), set(result.keys()))
+        res = result[1].compute()
+        self.assertTrue(np.nanmax(res) == 0.)
+        res = result[2].compute()
+        self.assertTrue(np.nanmax(res) == 1.)
+        self.assertTrue(np.nanmin(res) == 0.5)
+        res = result[3].compute()
+        self.assertTrue(np.nanmax(res) == 0.)
+        res = result[4].compute()
+        self.assertTrue(np.nanmax(res) == 0.5)
+        self.assertTrue(np.nanmin(res) == 0.)
+
 
 def suite():
     """The test suite.
