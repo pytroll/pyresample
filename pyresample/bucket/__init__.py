@@ -136,19 +136,18 @@ def resample_bucket_average(adef, data, lons, lats,
     return average
 
 
-def resample_bucket_fractions(adef, data, lats, lons, categories,
+def resample_bucket_fractions(adef, data, lons, lats, categories,
                               fill_value=np.nan, x_idxs=None, y_idxs=None):
     """Get fraction of occurences for each given categorical value."""
     if x_idxs is None or y_idxs is None:
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
-    results = []
+    results = {}
+    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
+    counts = counts.astype(float)
     for cat in categories:
         cat_data = da.where(data == cat, 1.0, 0.0)
 
         sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, adef.shape)
-        results.append(sums)
+        results[cat] = sums.astype(float) / counts
 
-    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
-    fractions = [res / counts for res in results]
-
-    return fractions
+    return results
