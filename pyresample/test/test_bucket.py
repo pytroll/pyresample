@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
                           (-3780000.0, -7644000.0, 3900000.0, -1500000.0))
 
     lons = da.from_array(np.array([[25., 25.], [25., 25.]]))
-    lats = da.from_array(np.array([[60., 60.1], [60.2, 60.3]]))
+    lats = da.from_array(np.array([[60., 60.00001], [60.2, 60.3]]))
 
     def test_round_to_resolution(self):
         """Test rounding to given resolution"""
@@ -65,8 +65,8 @@ class Test(unittest.TestCase):
             x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
                                                        self.lats)
         x_idxs, y_idxs = da.compute(x_idxs, y_idxs)
-        self.assertTrue(np.all(x_idxs == np.array([1709, 1708, 1706, 1705])))
-        self.assertTrue(np.all(y_idxs == np.array([465, 461, 458, 455])))
+        self.assertTrue(np.all(x_idxs == np.array([1709, 1709, 1706, 1705])))
+        self.assertTrue(np.all(y_idxs == np.array([465, 465, 458, 455])))
 
     def test_get_sum_from_bucket_indices(self):
         """Test drop-in-a-bucket sum."""
@@ -77,10 +77,12 @@ class Test(unittest.TestCase):
             result = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
                                                         self.adef.shape)
         result = result.compute()
-        # Only one value per bin, so max value is 1.0
-        self.assertTrue(np.max(result) == 2.)
-        # Four values in four separate bins
-        self.assertEqual(np.sum(result == 2.), 4)
+        # One bin with two hits, so max value is 2.0
+        self.assertTrue(np.max(result) == 4.)
+        # Two bins with the same value
+        self.assertEqual(np.sum(result == 2.), 2)
+        # One bin with double the value
+        self.assertEqual(np.sum(result == 4.), 1)
         self.assertEqual(result.shape, self.adef.shape)
 
         # Test that also Xarray.DataArrays work
@@ -88,10 +90,12 @@ class Test(unittest.TestCase):
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
                                                         self.adef.shape)
-        # Only one value per bin, so max value is 1.0
-        self.assertTrue(np.max(result) == 2.)
-        # Four values in four separate bins
-        self.assertEqual(np.sum(result == 2.), 4)
+        # One bin with two hits, so max value is 2.0
+        self.assertTrue(np.max(result) == 4.)
+        # Two bins with the same value
+        self.assertEqual(np.sum(result == 2.), 2)
+        # One bin with double the value
+        self.assertEqual(np.sum(result == 4.), 1)
         self.assertEqual(result.shape, self.adef.shape)
 
     def test_get_count_from_bucket_indices(self):
@@ -102,18 +106,19 @@ class Test(unittest.TestCase):
             result = bucket.get_count_from_bucket_indices(x_idxs, y_idxs,
                                                           self.adef.shape)
         result = result.compute()
-        self.assertTrue(np.max(result) == 1)
-        self.assertEqual(np.sum(result == 1), 4)
+        self.assertTrue(np.max(result) == 2)
+        self.assertEqual(np.sum(result == 1), 2)
+        self.assertEqual(np.sum(result == 2), 1)
 
     def test_resample_bucket_average(self):
         """Test averaging bucket resampling."""
-        data = da.from_array(np.array([[2., 2.], [2., 2.]]))
+        data = da.from_array(np.array([[2., 4.], [2., 2.]]))
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = bucket.resample_bucket_average(self.adef,
                                                     data, self.lons, self.lats)
         result = result.compute()
-        self.assertEqual(np.nanmax(result), 2.)
+        self.assertEqual(np.nanmax(result), 3.)
         self.assertTrue(np.any(np.isnan(result)))
         # Use a fill value other than np.nan
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
@@ -121,7 +126,7 @@ class Test(unittest.TestCase):
                                                     data, self.lons, self.lats,
                                                     fill_value=-1)
         result = result.compute()
-        self.assertEqual(np.max(result), 2.)
+        self.assertEqual(np.max(result), 3.)
         self.assertEqual(np.min(result), -1)
         self.assertFalse(np.any(np.isnan(result)))
         # Pre-calculate the indices
