@@ -1740,8 +1740,10 @@ class AreaDefinition(BaseDefinition):
         yslice, xslice = key
         # Get actual values, replace Nones
         yindices = yslice.indices(self.height)
+        total_rows = int((yindices[1] - yindices[0]) / yindices[2])
         ystopactual = yindices[1] - (yindices[1] - 1) % yindices[2]
         xindices = xslice.indices(self.width)
+        total_cols = int((xindices[1] - xindices[0]) / xindices[2])
         xstopactual = xindices[1] - (xindices[1] - 1) % xindices[2]
         yslice = slice(yindices[0], ystopactual, yindices[2])
         xslice = slice(xindices[0], xstopactual, xindices[2])
@@ -1753,8 +1755,8 @@ class AreaDefinition(BaseDefinition):
 
         new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
-                                  int((xslice.stop - xslice.start) / xslice.step),
-                                  int((yslice.stop - yslice.start) / yslice.step),
+                                  total_cols,
+                                  total_rows,
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
