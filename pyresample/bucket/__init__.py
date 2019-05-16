@@ -32,7 +32,20 @@ from pyresample._spatial_mp import Proj
 
 
 def round_to_resolution(arr, resolution):
-    """Round the values in *arr* to closest resolution element."""
+    """Round the values in *arr* to closest resolution element.
+
+    Parameters
+    ----------
+    arr : list, tuple, Numpy or Dask array
+        Array to be rounded
+    resolution : float
+        Resolution unit to which data are rounded
+
+    Returns
+    -------
+    data : Numpy or Dask array
+        Source data rounded to the closest resolution unit
+    """
     if isinstance(arr, (list, tuple)):
         arr = np.array(arr)
     return resolution * np.round(arr / resolution)
@@ -40,7 +53,26 @@ def round_to_resolution(arr, resolution):
 
 def _get_proj_coordinates(lons, lats, x_res, y_res, prj):
     """Calculate projection coordinates and round them to the closest
-    resolution unit."""
+    resolution unit.
+
+    Parameters
+    ----------
+    lons : Numpy or Dask array
+        Longitude coordinates
+    lats : Numpy or Dask array
+        Latitude coordinates
+    x_res : float
+        Resolution of the output in X direction
+    y_res : float
+        Resolution of the output in Y direction
+    prj : pyproj Proj object
+        Object defining the projection transformation
+
+    Returns
+    -------
+    data : Numpy or Dask array
+        Stack of rounded projection coordinates in X- and Y direction
+    """
     proj_x, proj_y = prj(lons, lats)
     proj_x = round_to_resolution(proj_x, x_res)
     proj_y = round_to_resolution(proj_y, y_res)
@@ -49,7 +81,25 @@ def _get_proj_coordinates(lons, lats, x_res, y_res, prj):
 
 
 def get_bucket_indices(adef, lons, lats):
-    """Get projection indices"""
+    """Calculate projection indices.
+
+    Parameters
+    ----------
+    adef : AreaDefinition
+        Definition of the output area.
+    lons : Numpy or Dask array
+        Longitude coordinates of the input data
+    lats : Numpy or Dask array
+        Latitude coordinates of the input data
+
+    Returns
+    -------
+    x_idxs : Dask array
+        X indices of the target grid where the data are put
+    y_idxs : Dask array
+        Y indices of the target grid where the data are put
+
+    """
 
     prj = Proj(adef.proj_dict)
 
@@ -86,8 +136,24 @@ def get_bucket_indices(adef, lons, lats):
 
 
 def get_sum_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
-    """Resample the given data with drop-in-a-bucket resampling.  Return
-    the sum and counts for each bin as two Numpy arrays."""
+    """Calculate sums for each bin with drop-in-a-bucket resampling.
+
+    Parameters
+    ----------
+    data : Numpy or Dask array
+        Data to be resampled and summed
+    x_idxs : Numpy or Dask array
+        X indices of the target array for each data point
+    y_idxs : Numpy or Dask array
+        Y indices of the target array for each data point
+    target_shape : tuple
+        Shape of the target grid
+
+    Returns
+    -------
+    data : Numpy or Dask array
+        Bin-wise sums in the target grid
+    """
 
     if isinstance(data, xr.DataArray):
         data = data.data
@@ -108,8 +174,23 @@ def get_sum_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
 
 
 def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
-    """Resample the given data with drop-in-a-bucket resampling.  Return
-    the sum and counts for each bin as two Numpy arrays."""
+    """Count the number of occurances for each bin using drop-in-a-bucket
+    resampling.
+
+    Parameters
+    ----------
+    x_idxs : Numpy or Dask array
+        X indices of the target array for each data point
+    y_idxs : Numpy or Dask array
+        Y indices of the target array for each data point
+    target_shape : tuple
+        Shape of the target grid
+
+    Returns
+    -------
+    data : Dask array
+        Bin-wise count of hits for each target grid location
+    """
 
     # Convert X- and Y-indices to raveled index
     idxs = y_idxs * target_shape[1] + x_idxs
@@ -124,7 +205,30 @@ def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
 
 def resample_bucket_average(adef, data, lons, lats,
                             fill_value=np.nan, x_idxs=None, y_idxs=None):
-    """Calculate bin-averages using bucket resampling."""
+    """Calculate bin-averages using bucket resampling.
+
+    Parameters
+    ----------
+    adef : AreaDefinition
+        Definition of the target area
+    data : Numpy or Dask array
+        Data to be binned and averaged
+    lons : Numpy or Dask array
+        Longitude coordinates of the input data
+    lats : Numpy or Dask array
+        Latitude coordinates of the input data
+    fill_value : float
+        Fill value to replace missing values.  Default: np.nan
+    x_idxs : Numpy or Dask array
+        Pre-calculated resampling indices for X dimension. Optional.
+    y_idxs : Numpy or Dask array
+        Pre-calculated resampling indices for Y dimension. Optional.
+
+    Returns
+    -------
+    average : Dask array
+        Binned and averaged data.
+    """
     if x_idxs is None or y_idxs is None:
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
     sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
@@ -136,11 +240,35 @@ def resample_bucket_average(adef, data, lons, lats,
     return average
 
 
-def resample_bucket_fractions(adef, data, lons, lats, categories,
+def resample_bucket_fractions(adef, data, lons, lats, categories=None,
                               fill_value=np.nan, x_idxs=None, y_idxs=None):
-    """Get fraction of occurences for each given categorical value."""
+    """Get fraction of occurences for each given categorical value.
+
+    Parameters
+    ----------
+    adef : AreaDefinition
+        Definition of the target area
+    data : Numpy or Dask array
+        Categorical data to be processed
+    lons : Numpy or Dask array
+        Longitude coordinates of the input data
+    lats : Numpy or Dask array
+        Latitude coordinates of the input data
+    categories : iterable or None
+        One dimensional list of categories in the data, or None.  If None, 
+        categories are determined from the data.
+    fill_value : float
+        Fill value to replace missing values.  Default: np.nan
+    x_idxs : Numpy or Dask array
+        Pre-calculated resampling indices for X dimension. Optional.
+    y_idxs : Numpy or Dask array
+        Pre-calculated resampling indices for Y dimension. Optional.
+    
+    """
     if x_idxs is None or y_idxs is None:
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
+    if categories is None:
+        categories = da.unique(data)
     results = {}
     counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
     counts = counts.astype(float)
