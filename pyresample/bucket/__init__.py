@@ -255,7 +255,7 @@ def resample_bucket_fractions(adef, data, lons, lats, categories=None,
     lats : Numpy or Dask array
         Latitude coordinates of the input data
     categories : iterable or None
-        One dimensional list of categories in the data, or None.  If None, 
+        One dimensional list of categories in the data, or None.  If None,
         categories are determined from the data.
     fill_value : float
         Fill value to replace missing values.  Default: np.nan
