@@ -1128,6 +1128,7 @@ class Test(unittest.TestCase):
                                                               area_extent[1] + 3 * area_def.pixel_size_y,
                                                               area_extent[2] - 3 * area_def.pixel_size_x,
                                                               area_extent[3]))
+        self.assertEqual(reduced_area.shape, (928, 928))
 
 
 def assert_np_dict_allclose(dict1, dict2):
