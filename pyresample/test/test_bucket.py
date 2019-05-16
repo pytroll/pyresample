@@ -159,6 +159,21 @@ class Test(unittest.TestCase):
         res = result[4].compute()
         self.assertTrue(np.nanmax(res) == 0.5)
         self.assertTrue(np.nanmin(res) == 0.)
+        # There should be NaN values
+        self.assertTrue(np.any(np.isnan(res)))
+
+        # Use a fill value
+        with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
+            result = bucket.resample_bucket_fractions(self.adef,
+                                                      data, self.lons,
+                                                      self.lats,
+                                                      categories,
+                                                      fill_value=-1)
+        # There should not be any NaN values
+        for i in categories:
+            res = result[i].compute()
+            self.assertFalse(np.any(np.isnan(res)))
+            self.assertTrue(np.min(res) == -1)
 
 
 def suite():
