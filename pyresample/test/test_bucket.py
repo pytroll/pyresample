@@ -115,15 +115,17 @@ class Test(unittest.TestCase):
         data = da.from_array(np.array([[2., 4.], [2., 2.]]))
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(self.adef,
-                                                    data, self.lons, self.lats)
+            result = bucket.resample_bucket_average(data, adef=self.adef,
+                                                    lons=self.lons,
+                                                    lats=self.lats)
         result = result.compute()
         self.assertEqual(np.nanmax(result), 3.)
         self.assertTrue(np.any(np.isnan(result)))
         # Use a fill value other than np.nan
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(self.adef,
-                                                    data, self.lons, self.lats,
+            result = bucket.resample_bucket_average(data, adef=self.adef,
+                                                    lons=self.lons,
+                                                    lats=self.lats,
                                                     fill_value=-1)
         result = result.compute()
         self.assertEqual(np.max(result), 3.)
@@ -133,10 +135,20 @@ class Test(unittest.TestCase):
         x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
                                                    self.lats)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(self.adef,
-                                                    data, self.lons, self.lats,
+            result = bucket.resample_bucket_average(data, adef=self.adef,
                                                     x_idxs=x_idxs,
                                                     y_idxs=y_idxs)
+        # Don't supply neither lons/lats nor x/y indices
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_average(data, adef=self.adef)
+        # Supply lons/lats, but no adef
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_average(data, lons=1, lats=1)
+        # Missing target shape and adef
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_average(data, x_idxs=1, y_idxs=1)
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_average(data, x_idxs=1, y_idxs=1)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""

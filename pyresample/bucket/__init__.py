@@ -203,8 +203,9 @@ def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
     return counts.reshape(target_shape)
 
 
-def resample_bucket_average(adef, data, lons, lats,
-                            fill_value=np.nan, x_idxs=None, y_idxs=None):
+def resample_bucket_average(data, adef=None, lons=None, lats=None,
+                            fill_value=np.nan, x_idxs=None, y_idxs=None,
+                            target_shape=None):
     """Calculate bin-averages using bucket resampling.
 
     Parameters
@@ -230,7 +231,17 @@ def resample_bucket_average(adef, data, lons, lats,
         Binned and averaged data.
     """
     if x_idxs is None or y_idxs is None:
+        if lons is None or lats is None:
+            raise ValueError("Either lons/lats or x/y indices are needed.")
+        if adef is None:
+            raise ValueError("Area definition needed for index calculations.")
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
+    try:
+        shape = target_shape or adef.shape
+        if shape is None:
+            raise ValueError
+    except (AttributeError, ValueError):
+        raise ValueError("Either target_shape or adef needs to be given.")
     sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
     counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
 
