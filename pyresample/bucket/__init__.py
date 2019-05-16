@@ -242,8 +242,8 @@ def resample_bucket_average(data, adef=None, lons=None, lats=None,
             raise ValueError
     except (AttributeError, ValueError):
         raise ValueError("Either target_shape or adef needs to be given.")
-    sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, adef.shape)
-    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
+    sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, shape)
+    counts = get_count_from_bucket_indices(x_idxs, y_idxs, shape)
 
     average = sums / counts
     average = da.where(counts == 0, fill_value, average)
@@ -292,12 +292,12 @@ def resample_bucket_fractions(data, adef=None, lons=None, lats=None,
     if categories is None:
         categories = da.unique(data)
     results = {}
-    counts = get_count_from_bucket_indices(x_idxs, y_idxs, adef.shape)
+    counts = get_count_from_bucket_indices(x_idxs, y_idxs, shape)
     counts = counts.astype(float)
     for cat in categories:
         cat_data = da.where(data == cat, 1.0, 0.0)
 
-        sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, adef.shape)
+        sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, shape)
         result = sums.astype(float) / counts
         result = da.where(counts == 0.0, fill_value, result)
         results[cat] = result
