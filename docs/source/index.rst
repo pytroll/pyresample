@@ -16,6 +16,7 @@ Pyresample offers multiple resampling algorithms including:
 - Nearest Neighbor
 - Elliptical Weighted Average (EWA)
 - Bilinear
+- Bucket resampling (count hits per bin, averaging, ratios)
 
 For nearest neighbor and bilinear interpolation pyresample uses a kd-tree
 approach by using the fast KDTree implementation provided by the
