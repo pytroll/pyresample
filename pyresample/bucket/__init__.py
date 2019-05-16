@@ -210,10 +210,10 @@ def resample_bucket_average(data, adef=None, lons=None, lats=None,
 
     Parameters
     ----------
-    adef : AreaDefinition
-        Definition of the target area
     data : Numpy or Dask array
         Data to be binned and averaged
+    adef : AreaDefinition
+        Definition of the target area
     lons : Numpy or Dask array
         Longitude coordinates of the input data
     lats : Numpy or Dask array
@@ -251,16 +251,17 @@ def resample_bucket_average(data, adef=None, lons=None, lats=None,
     return average
 
 
-def resample_bucket_fractions(adef, data, lons, lats, categories=None,
-                              fill_value=np.nan, x_idxs=None, y_idxs=None):
+def resample_bucket_fractions(data, adef=None, lons=None, lats=None,
+                              categories=None, fill_value=np.nan,
+                              x_idxs=None, y_idxs=None, target_shape=None):
     """Get fraction of occurences for each given categorical value.
 
     Parameters
     ----------
-    adef : AreaDefinition
-        Definition of the target area
     data : Numpy or Dask array
         Categorical data to be processed
+    adef : AreaDefinition
+        Definition of the target area
     lons : Numpy or Dask array
         Longitude coordinates of the input data
     lats : Numpy or Dask array
@@ -277,7 +278,17 @@ def resample_bucket_fractions(adef, data, lons, lats, categories=None,
 
     """
     if x_idxs is None or y_idxs is None:
+        if lons is None or lats is None:
+            raise ValueError("Either lons/lats or x/y indices are needed.")
+        if adef is None:
+            raise ValueError("Area definition needed for index calculations.")
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
+    try:
+        shape = target_shape or adef.shape
+        if shape is None:
+            raise ValueError
+    except (AttributeError, ValueError):
+        raise ValueError("Either target_shape or adef needs to be given.")
     if categories is None:
         categories = da.unique(data)
     results = {}

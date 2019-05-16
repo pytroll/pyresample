@@ -156,10 +156,10 @@ class Test(unittest.TestCase):
         categories = [1, 2, 3, 4]
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
-            result = bucket.resample_bucket_fractions(self.adef,
-                                                      data, self.lons,
-                                                      self.lats,
-                                                      categories)
+            result = bucket.resample_bucket_fractions(data, adef=self.adef,
+                                                      lons=self.lons,
+                                                      lats=self.lats,
+                                                      categories=categories)
         self.assertEqual(set(categories), set(result.keys()))
         res = result[1].compute()
         self.assertTrue(np.nanmax(res) == 0.)
@@ -176,16 +176,28 @@ class Test(unittest.TestCase):
 
         # Use a fill value
         with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
-            result = bucket.resample_bucket_fractions(self.adef,
-                                                      data, self.lons,
-                                                      self.lats,
-                                                      categories,
+            result = bucket.resample_bucket_fractions(data, adef=self.adef,
+                                                      lons=self.lons,
+                                                      lats=self.lats,
+                                                      categories=categories,
                                                       fill_value=-1)
         # There should not be any NaN values
         for i in categories:
             res = result[i].compute()
             self.assertFalse(np.any(np.isnan(res)))
             self.assertTrue(np.min(res) == -1)
+
+        # Don't supply neither lons/lats nor x/y indices
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_fractions(data, adef=self.adef)
+        # Supply lons/lats, but no adef
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_fractions(data, lons=1, lats=1)
+        # Missing target shape and adef
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_fractions(data, x_idxs=1, y_idxs=1)
+        with self.assertRaises(ValueError):
+            result = bucket.resample_bucket_fractions(data, x_idxs=1, y_idxs=1)
 
 
 def suite():
