@@ -263,7 +263,7 @@ def resample_bucket_fractions(adef, data, lons, lats, categories=None,
         Pre-calculated resampling indices for X dimension. Optional.
     y_idxs : Numpy or Dask array
         Pre-calculated resampling indices for Y dimension. Optional.
-    
+
     """
     if x_idxs is None or y_idxs is None:
         x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
