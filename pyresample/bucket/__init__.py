@@ -276,6 +276,8 @@ def resample_bucket_fractions(adef, data, lons, lats, categories=None,
         cat_data = da.where(data == cat, 1.0, 0.0)
 
         sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, adef.shape)
-        results[cat] = sums.astype(float) / counts
+        result = sums.astype(float) / counts
+        result = da.where(counts == 0.0, fill_value, result)
+        results[cat] = result
 
     return results
