@@ -32,7 +32,7 @@ extras_require = {'numexpr': ['numexpr'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1']}
 
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'pyproj', 'numpy']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy']
 if sys.version_info < (3, 3):
     test_requires.append('mock')
 
