@@ -23,6 +23,16 @@
 """Testing the Trishchenko algorithm.
 """
 
+import dask.array as da
+import logging
+from pyresample import data_reduce
+from _gradient_search import (fast_gradient_search,
+                              two_step_fast_gradient_search,
+                              two_step_fast_gradient_search_with_mask,
+                              fast_gradient_search_with_mask,
+                              fast_gradient_indices)
+import pyximport
+import h5py
 from datetime import datetime
 import numpy as np
 import pyproj
@@ -30,22 +40,10 @@ from satpy.utils import debug_on
 from satpy import CHUNK_SIZE
 debug_on()
 
-import h5py
-import pyximport
 pyximport.install(setup_args={'include_dirs': np.get_include()})
-from _gradient_search import (fast_gradient_search,
-                              two_step_fast_gradient_search,
-                              two_step_fast_gradient_search_with_mask,
-                              fast_gradient_search_with_mask,
-                              fast_gradient_indices)
-from pyresample import data_reduce
 
-import logging
 
 logger = logging.getLogger(__name__)
-
-
-import dask.array as da
 
 
 def _get_proj_coordinates(lons, lats, prj):
@@ -159,11 +157,11 @@ if __name__ == '__main__':
     # avhrr example
     filenames = sorted(glob('/home/a001673/data/satellite/metop/*'))
     g = Scene(
-            sensor='avhrr-3',
-            filenames=filenames,
-            reader="avhrr_l1b_eps",
-            filter_parameters={'area': 'euron1'}
-        )
+        sensor='avhrr-3',
+        filenames=filenames,
+        reader="avhrr_l1b_eps",
+        filter_parameters={'area': 'euron1'}
+    )
     g.load(['4'])
 
     from satpy.resample import get_area_def
