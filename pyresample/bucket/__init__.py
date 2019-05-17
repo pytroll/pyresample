@@ -204,7 +204,6 @@ class BucketResampler(object):
 
         return counts.reshape(self.target_area.shape)
 
-
     def get_average(self, data, fill_value=np.nan):
         """Calculate bin-averages using bucket resampling.
 
