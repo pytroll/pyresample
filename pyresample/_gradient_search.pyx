@@ -139,6 +139,95 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
     # return the output image
     return image
 
+@cython.boundscheck(False)
+def fast_gradient_indices(np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y,
+                          np.ndarray[DTYPE_t, ndim=1] x_1d, np.ndarray[DTYPE_t, ndim=1] y_1d):
+    """Gradient search, simple case variant.
+    """
+    # area extent bounds --> area_def.area_extent
+    cdef double x_min, y_min, x_max, y_max
+    #x_min, y_min, x_max, y_max = area_extent
+    # change the output size (x_size, y_size) to match area_def.shape:
+    # (lines,pixels)
+    cdef int x_size, y_size
+    #y_size, x_size = size
+    x_size = x_1d.shape[0]
+    y_size = y_1d.shape[0]
+    # step in x direction (meters); x-output locations (centre of pixel);
+    # repeat for y
+    #cdef double x_inc = (x_max - x_min) / x_size
+    cdef double x_inc = (x_1d[-1] - x_1d[0]) / (x_size - 1)
+    #cdef np.ndarray[DTYPE_t, ndim = 1] x_1d = np.arange(x_min + x_inc / 2, x_max, x_inc)
+    #cdef double y_inc = (y_max - y_min) / y_size
+    cdef double y_inc = (y_1d[-1] - y_1d[0]) / (y_size - 1)
+    x_min = x_1d[0] - x_inc / 2
+    x_max = x_1d[-1] + x_inc / 2
+    y_min = y_1d[0] - y_inc / 2
+    y_max = y_1d[-1] + y_inc / 2
+
+    #cdef np.ndarray[DTYPE_t, ndim = 1] y_1d = np.arange(y_min + y_inc / 2, y_max, y_inc)
+    # output image array --> needs to be (lines, pixels) --> y,x
+    cdef np.ndarray[np.double_t, ndim = 3] indices = np.full([2, y_size, x_size], -2.0, dtype=np.double)
+    # gradient of output y/x grids (in pixel and line directions)
+    cdef np.ndarray[DTYPE_t, ndim = 2] yp, yl
+    yl, yp = np.gradient(source_y)
+    cdef np.ndarray[DTYPE_t, ndim = 2] xp, xl
+    xl, xp = np.gradient(source_x)
+    # pixel max ---> data is expected in [lines, pixels]
+    cdef int pmax = source_x.shape[1] - 1
+    cdef int lmax = source_x.shape[0] - 1
+    # centre of input image - starting point
+    cdef int p0 = pmax / 2
+    cdef int l0 = lmax / 2
+    # intermediate variables:
+    cdef int l_a, l_b, p_a, p_b, nnl, nnp
+    cdef size_t i, j
+    cdef double dx, dy, d, dl, dp, w_l, w_p
+    # number of iterations
+    cdef int cnt = 0
+    # this was a bit confusing -- "lines" was based on x_size; change this
+    # variable to elements - make it a numpy array (long==numpy int dtype)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    for i in range(y_size):
+        # lines.reverse() --> swapped to elements - provide a reverse view of
+        # the array
+        elements = elements[::-1]
+        for j in elements:
+            cnt = 0
+            while True:
+                cnt += 1
+                # algorithm does not converge.
+                if cnt > 5:
+                    break
+                # check we are within the input image bounds
+                if l0 < lmax and l0 >= 0 and p0 < pmax and p0 >= 0:
+                    # step size
+                    dx = x_1d[j] - source_x[l0, p0]
+                    dy = y_1d[i] - source_y[l0, p0]
+                else:
+                    # reset such that we are back in the input image bounds
+                    l0 = max(0, min(lmax - 1, l0))
+                    p0 = max(0, min(pmax - 1, p0))
+                    continue
+                # distance from pixel/line to output location
+                d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                dl = (xp[l0, p0] * dy - yp[l0, p0] * dx) / d
+                dp = (yl[l0, p0] * dx - xl[l0, p0] * dy) / d
+                # check that our distance to an output location is less than 1
+                # pixel/line
+                if abs(dp) < 1 and abs(dl) < 1:
+                    indices[0, i, j] = max(min(l0 + dl, lmax - 1), 0)
+                    indices[1, i, j] = max(min(p0 + dp, pmax - 1), 0)
+                    # found our solution, next
+                    break
+                else:
+                    # increment...
+                    l0 = int(l0 + dl)
+                    p0 = int(p0 + dp)
+    # return the output image
+    return indices
+
+
 
 @cython.boundscheck(False)
 def two_step_fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y, int chunk_size, area_extent, size):
