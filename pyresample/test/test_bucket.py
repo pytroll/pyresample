@@ -10,7 +10,7 @@ except ImportError:
     from mock import MagicMock
 
 from pyresample.geometry import AreaDefinition
-import pyresample.bucket as bucket
+from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 
@@ -26,6 +26,9 @@ class Test(unittest.TestCase):
 
     lons = da.from_array(np.array([[25., 25.], [25., 25.]]))
     lats = da.from_array(np.array([[60., 60.00001], [60.2, 60.3]]))
+
+    def setUp(self):
+        self.resampler = bucket.BucketResampler(self.adef, self.lons, self.lats)
 
     def test_round_to_resolution(self):
         """Test rounding to given resolution"""
@@ -51,7 +54,8 @@ class Test(unittest.TestCase):
         lons = [1., 1., 1.]
         lats = [2., 2., 2.]
         x_res, y_res = 0.5, 0.5
-        result = bucket._get_proj_coordinates(lons, lats, x_res, y_res, prj)
+        self.resampler.prj = prj
+        result = self.resampler._get_proj_coordinates(lons, lats, x_res, y_res)
         prj.assert_called_once_with(lons, lats)
         self.assertTrue(isinstance(result, np.ndarray))
         self.assertEqual(result.shape, (2, 3))
@@ -62,20 +66,18 @@ class Test(unittest.TestCase):
         """Test calculation of array indices."""
         # Ensure nothing is calculated
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
-                                                       self.lats)
-        x_idxs, y_idxs = da.compute(x_idxs, y_idxs)
+            self.resampler._get_indices()
+        x_idxs, y_idxs = da.compute(self.resampler.x_idxs,
+                                    self.resampler.y_idxs)
         self.assertTrue(np.all(x_idxs == np.array([1709, 1709, 1706, 1705])))
         self.assertTrue(np.all(y_idxs == np.array([465, 465, 458, 455])))
 
-    def test_get_sum_from_bucket_indices(self):
+    def test_get_sum(self):
         """Test drop-in-a-bucket sum."""
-        x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
-                                                   self.lats)
         data = da.from_array(np.array([[2., 2.], [2., 2.]]))
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
-                                                        self.adef.shape)
+            result = self.resampler.get_sum(data)
+
         result = result.compute()
         # One bin with two hits, so max value is 2.0
         self.assertTrue(np.max(result) == 4.)
@@ -88,8 +90,7 @@ class Test(unittest.TestCase):
         # Test that also Xarray.DataArrays work
         data = xr.DataArray(data)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
-                                                        self.adef.shape)
+            result = self.resampler.get_sum(data)
         # One bin with two hits, so max value is 2.0
         self.assertTrue(np.max(result) == 4.)
         # Two bins with the same value
@@ -98,68 +99,38 @@ class Test(unittest.TestCase):
         self.assertEqual(np.sum(result == 4.), 1)
         self.assertEqual(result.shape, self.adef.shape)
 
-    def test_get_count_from_bucket_indices(self):
+    def test_get_count(self):
         """Test drop-in-a-bucket sum."""
-        x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
-                                                   self.lats)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.get_count_from_bucket_indices(x_idxs, y_idxs,
-                                                          self.adef.shape)
+            result = self.resampler.get_count()
         result = result.compute()
         self.assertTrue(np.max(result) == 2)
         self.assertEqual(np.sum(result == 1), 2)
         self.assertEqual(np.sum(result == 2), 1)
 
-    def test_resample_bucket_average(self):
+    def test_get_average(self):
         """Test averaging bucket resampling."""
         data = da.from_array(np.array([[2., 4.], [2., 2.]]))
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(data, adef=self.adef,
-                                                    lons=self.lons,
-                                                    lats=self.lats)
+            result = self.resampler.get_average(data)
         result = result.compute()
         self.assertEqual(np.nanmax(result), 3.)
         self.assertTrue(np.any(np.isnan(result)))
         # Use a fill value other than np.nan
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(data, adef=self.adef,
-                                                    lons=self.lons,
-                                                    lats=self.lats,
-                                                    fill_value=-1)
+            result = self.resampler.get_average(data, fill_value=-1)
         result = result.compute()
         self.assertEqual(np.max(result), 3.)
         self.assertEqual(np.min(result), -1)
         self.assertFalse(np.any(np.isnan(result)))
-        # Pre-calculate the indices
-        x_idxs, y_idxs = bucket.get_bucket_indices(self.adef, self.lons,
-                                                   self.lats)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = bucket.resample_bucket_average(data, adef=self.adef,
-                                                    x_idxs=x_idxs,
-                                                    y_idxs=y_idxs)
-        # Don't supply neither lons/lats nor x/y indices
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_average(data, adef=self.adef)
-        # Supply lons/lats, but no adef
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_average(data, lons=1, lats=1)
-        # Missing target shape and adef
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_average(data, x_idxs=1, y_idxs=1)
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_average(data, x_idxs=1, y_idxs=1)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
         data = da.from_array(np.array([[2, 4], [2, 2]]))
         categories = [1, 2, 3, 4]
-        # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
-            result = bucket.resample_bucket_fractions(data, adef=self.adef,
-                                                      lons=self.lons,
-                                                      lats=self.lats,
-                                                      categories=categories)
+            result = self.resampler.get_fractions(data, categories=categories)
         self.assertEqual(set(categories), set(result.keys()))
         res = result[1].compute()
         self.assertTrue(np.nanmax(res) == 0.)
@@ -176,28 +147,14 @@ class Test(unittest.TestCase):
 
         # Use a fill value
         with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
-            result = bucket.resample_bucket_fractions(data, adef=self.adef,
-                                                      lons=self.lons,
-                                                      lats=self.lats,
-                                                      categories=categories,
-                                                      fill_value=-1)
+            result = self.resampler.get_fractions(data, categories=categories,
+                                                  fill_value=-1)
+
         # There should not be any NaN values
         for i in categories:
             res = result[i].compute()
             self.assertFalse(np.any(np.isnan(res)))
             self.assertTrue(np.min(res) == -1)
-
-        # Don't supply neither lons/lats nor x/y indices
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_fractions(data, adef=self.adef)
-        # Supply lons/lats, but no adef
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_fractions(data, lons=1, lats=1)
-        # Missing target shape and adef
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_fractions(data, x_idxs=1, y_idxs=1)
-        with self.assertRaises(ValueError):
-            result = bucket.resample_bucket_fractions(data, x_idxs=1, y_idxs=1)
 
 
 def suite():

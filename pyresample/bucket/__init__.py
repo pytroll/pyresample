@@ -15,75 +15,246 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Code for resampling using bucket resampling.
-
-Bucket resampling is useful for calculating averages and hit-counts
-when aggregating data to coarser scale grids.
-
-Below are examples how to use the resampler.
-
-Read data using Satpy.  The resampling can also be done (apart from
-fractions) directly from Satpy, but this demonstrates the direct
-low-level usage.
-
-.. code-block:: python
-
-    >>> from pyresample import bucket
-    >>> from satpy import Scene
-    >>> from satpy.resample import get_area_def
-    >>> fname = "hrpt_noaa19_20170519_1214_42635.l1b"
-    >>> glbl = Scene(filenames=[fname])
-    >>> glbl.load(['4'])
-    >>> data = glbl['4']
-    >>> lons, lats = data.area.get_lonlats()
-    >>> target_area = get_area_def('euro4')
-
-Calculate the resampling indices:
-
-.. code-block:: python
-
-    >>> x_idxs, y_idxs = bucket.get_bucket_indices(adef, lons, lats)
-
-Calculate the sum of all the data in each grid location:
-
-.. code-block:: python
-
-    >>> sums = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
-    ... target_area.shape)
-
-Calculate how many values were collected at each grid location:
-
-.. code-block:: python
-
-    >>> counts = bucket.get_count_from_bucket_indices(x_idxs, y_idxs,
-    ... target_area.shape)
-
-The average can be calculated from the above two results, or directly
-using the helper function:
-
-.. code-block:: python
-
-    >>> average = bucket.resample_bucket_average(data, adef, lons, lats)
-
-Calculate fractions of occurences of different values in each grid
-location.  The data needs to be categorical (in integers), so we'll
-create some categorical data from the brightness temperature data that
-were read earlier.  The data are returned in a dictionary with the
-categories as keys.
-
-.. code-block:: python
-
-    >>> data = da.where(data > 250, 1, 0)
-    >>> fractions = bucket.resample_bucket_fractions(data, target_area, lons,
-    ... lats, categories=[0, 1])
-    >>> import matplotlib.pyplot as plt
-    >>> plt.imshow(fractions[0]); plt.show()
-"""
+"""Code for resampling using bucket resampling."""
 
 import dask.array as da
 import xarray as xr
 import numpy as np
 from pyresample._spatial_mp import Proj
+
+
+class BucketResampler(object):
+
+    """Bucket resampling is useful for calculating averages and hit-counts
+    when aggregating data to coarser scale grids.
+
+    Below are examples how to use the resampler.
+
+    Read data using Satpy.  The resampling can also be done (apart from
+    fractions) directly from Satpy, but this demonstrates the direct
+    low-level usage.
+
+    .. code-block:: python
+
+        >>> from pyresample.bucket import BucketResampler
+        >>> from satpy import Scene
+        >>> from satpy.resample import get_area_def
+        >>> fname = "hrpt_noaa19_20170519_1214_42635.l1b"
+        >>> glbl = Scene(filenames=[fname])
+        >>> glbl.load(['4'])
+        >>> data = glbl['4']
+        >>> lons, lats = data.area.get_lonlats()
+        >>> target_area = get_area_def('euro4')
+
+    Initialize the resampler
+
+    .. code-block:: python
+
+        >>> resampler = BucketResampler(adef, lons, lats)
+
+    Calculate the sum of all the data in each grid location:
+
+    .. code-block:: python
+
+        >>> sums = resampler.get_sum(data)
+
+    Calculate how many values were collected at each grid location:
+
+    .. code-block:: python
+
+        >>> counts = resampler.get_count()
+
+    The average can be calculated from the above two results, or directly
+    using the helper method:
+
+    .. code-block:: python
+
+        >>> average = resampler.get_average(data)
+
+    Calculate fractions of occurences of different values in each grid
+    location.  The data needs to be categorical (in integers), so
+    we'll create some categorical data from the brightness temperature
+    data that were read earlier.  The data are returned in a
+    dictionary with the categories as keys.
+
+    .. code-block:: python
+
+        >>> data = da.where(data > 250, 1, 0)
+        >>> fractions = resampler.get_fractions(data, categories=[0, 1])
+        >>> import matplotlib.pyplot as plt
+        >>> plt.imshow(fractions[0]); plt.show()
+    """
+
+    def __init__(self, target_area, source_lons, source_lats):
+
+        self.target_area = target_area
+        self.source_lons = source_lons
+        self.source_lats = source_lats
+        self.prj = Proj(self.target_area.proj_dict)
+        self.x_idxs = None
+        self.y_idxs = None
+        self.idxs = None
+        self._get_indices()
+
+    def _get_proj_coordinates(self, lons, lats, x_res, y_res):
+        """Calculate projection coordinates and round them to the closest
+        resolution unit.
+
+        Parameters
+        ----------
+        lons : Numpy or Dask array
+            Longitude coordinates
+        lats : Numpy or Dask array
+            Latitude coordinates
+        x_res : float
+            Resolution of the output in X direction
+        y_res : float
+            Resolution of the output in Y direction
+        """
+        proj_x, proj_y = self.prj(lons, lats)
+        proj_x = round_to_resolution(proj_x, x_res)
+        proj_y = round_to_resolution(proj_y, y_res)
+
+        return np.stack((proj_x, proj_y))
+
+    def _get_indices(self):
+        """Calculate projection indices.
+
+        Returns
+        -------
+        x_idxs : Dask array
+            X indices of the target grid where the data are put
+        y_idxs : Dask array
+            Y indices of the target grid where the data are put
+        """
+        adef = self.target_area
+
+        lons = self.source_lons.ravel()
+        lats = self.source_lats.ravel()
+
+        # Create output grid coordinates in projection units
+        x_res = (adef.area_extent[2] - adef.area_extent[0]) / adef.width
+        y_res = (adef.area_extent[3] - adef.area_extent[1]) / adef.height
+        x_vect = da.arange(adef.area_extent[0] + x_res / 2.,
+                           adef.area_extent[2] - x_res / 2., x_res)
+        # Orient so that 0-meridian is pointing down
+        y_vect = da.arange(adef.area_extent[3] - y_res / 2.,
+                           adef.area_extent[1] + y_res / 2.,
+                           -y_res)
+
+        result = da.map_blocks(self._get_proj_coordinates, lons,
+                               lats, x_res, y_res,
+                               new_axis=0, chunks=(2,) + lons.chunks)
+        proj_x = result[0, :]
+        proj_y = result[1, :]
+
+        # Calculate array indices
+        x_idxs = ((proj_x - np.min(x_vect)) / x_res).astype(np.int)
+        y_idxs = ((np.max(y_vect) - proj_y) / y_res).astype(np.int)
+
+        # Get valid index locations
+        idxs = ((x_idxs >= 0) & (x_idxs < adef.width) &
+                (y_idxs >= 0) & (y_idxs < adef.height))
+        self.y_idxs = da.where(idxs, y_idxs, -1)
+        self.x_idxs = da.where(idxs, x_idxs, -1)
+
+        # Convert X- and Y-indices to raveled indexing
+        target_shape = self.target_area.shape
+        self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
+
+    def get_sum(self, data):
+        """Calculate sums for each bin with drop-in-a-bucket resampling.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise sums in the target grid
+        """
+
+        if isinstance(data, xr.DataArray):
+            data = data.data
+        data = data.ravel()
+        # Remove NaN values from the data when used as weights
+        weights = da.where(np.isnan(data), 0, data)
+
+        # Calculate the sum of the data falling to each bin
+        out_size = self.target_area.size
+        sums, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size),
+                               weights=weights, density=False)
+        return sums.reshape(self.target_area.shape)
+
+    def get_count(self):
+        """Count the number of occurances for each bin using drop-in-a-bucket
+        resampling.
+
+        Returns
+        -------
+        data : Dask array
+            Bin-wise count of hits for each target grid location
+        """
+
+        out_size = self.target_area.size
+
+        # Calculate the sum of the data falling to each bin
+        counts, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size))
+
+        return counts.reshape(self.target_area.shape)
+
+
+    def get_average(self, data, fill_value=np.nan):
+        """Calculate bin-averages using bucket resampling.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned and averaged
+        fill_value : float
+            Fill value to replace missing values.  Default: np.nan
+
+        Returns
+        -------
+        average : Dask array
+            Binned and averaged data.
+        """
+        sums = self.get_sum(data)
+        counts = self.get_count()
+
+        average = sums / counts
+        average = da.where(counts == 0, fill_value, average)
+
+        return average
+
+    def get_fractions(self, data, categories=None, fill_value=np.nan):
+        """Get fraction of occurences for each given categorical value.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Categorical data to be processed
+        categories : iterable or None
+            One dimensional list of categories in the data, or None.  If None,
+            categories are determined from the data.
+        fill_value : float
+            Fill value to replace missing values.  Default: np.nan
+        """
+        if categories is None:
+            categories = da.unique(data)
+        results = {}
+        counts = self.get_count()
+        counts = counts.astype(float)
+        for cat in categories:
+            cat_data = da.where(data == cat, 1.0, 0.0)
+
+            sums = self.get_sum(cat_data)
+            result = sums.astype(float) / counts
+            result = da.where(counts == 0.0, fill_value, result)
+            results[cat] = result
+
+        return results
 
 
 def round_to_resolution(arr, resolution):
@@ -104,257 +275,3 @@ def round_to_resolution(arr, resolution):
     if isinstance(arr, (list, tuple)):
         arr = np.array(arr)
     return resolution * np.round(arr / resolution)
-
-
-def _get_proj_coordinates(lons, lats, x_res, y_res, prj):
-    """Calculate projection coordinates and round them to the closest
-    resolution unit.
-
-    Parameters
-    ----------
-    lons : Numpy or Dask array
-        Longitude coordinates
-    lats : Numpy or Dask array
-        Latitude coordinates
-    x_res : float
-        Resolution of the output in X direction
-    y_res : float
-        Resolution of the output in Y direction
-    prj : pyproj Proj object
-        Object defining the projection transformation
-
-    Returns
-    -------
-    data : Numpy or Dask array
-        Stack of rounded projection coordinates in X- and Y direction
-    """
-    proj_x, proj_y = prj(lons, lats)
-    proj_x = round_to_resolution(proj_x, x_res)
-    proj_y = round_to_resolution(proj_y, y_res)
-
-    return np.stack((proj_x, proj_y))
-
-
-def get_bucket_indices(adef, lons, lats):
-    """Calculate projection indices.
-
-    Parameters
-    ----------
-    adef : AreaDefinition
-        Definition of the output area.
-    lons : Numpy or Dask array
-        Longitude coordinates of the input data
-    lats : Numpy or Dask array
-        Latitude coordinates of the input data
-
-    Returns
-    -------
-    x_idxs : Dask array
-        X indices of the target grid where the data are put
-    y_idxs : Dask array
-        Y indices of the target grid where the data are put
-
-    """
-
-    prj = Proj(adef.proj_dict)
-
-    lons = lons.ravel()
-    lats = lats.ravel()
-
-    # Create output grid coordinates in projection units
-    x_res = (adef.area_extent[2] - adef.area_extent[0]) / adef.width
-    y_res = (adef.area_extent[3] - adef.area_extent[1]) / adef.height
-    x_vect = da.arange(adef.area_extent[0] + x_res / 2.,
-                       adef.area_extent[2] - x_res / 2., x_res)
-    # Orient so that 0-meridian is pointing down
-    y_vect = da.arange(adef.area_extent[3] - y_res / 2.,
-                       adef.area_extent[1] + y_res / 2.,
-                       -y_res)
-
-    result = da.map_blocks(_get_proj_coordinates, lons, lats, x_res, y_res,
-                           prj, new_axis=0,
-                           chunks=(2,) + lons.chunks)
-    proj_x = result[0, :]
-    proj_y = result[1, :]
-
-    # Calculate array indices
-    x_idxs = ((proj_x - np.min(x_vect)) / x_res).astype(np.int)
-    y_idxs = ((np.max(y_vect) - proj_y) / y_res).astype(np.int)
-
-    # Get valid index locations
-    idxs = ((x_idxs >= 0) & (x_idxs < adef.width) &
-            (y_idxs >= 0) & (y_idxs < adef.height))
-    y_idxs = da.where(idxs, y_idxs, -1)
-    x_idxs = da.where(idxs, x_idxs, -1)
-
-    return x_idxs, y_idxs
-
-
-def get_sum_from_bucket_indices(data, x_idxs, y_idxs, target_shape):
-    """Calculate sums for each bin with drop-in-a-bucket resampling.
-
-    Parameters
-    ----------
-    data : Numpy or Dask array
-        Data to be resampled and summed
-    x_idxs : Numpy or Dask array
-        X indices of the target array for each data point
-    y_idxs : Numpy or Dask array
-        Y indices of the target array for each data point
-    target_shape : tuple
-        Shape of the target grid
-
-    Returns
-    -------
-    data : Numpy or Dask array
-        Bin-wise sums in the target grid
-    """
-
-    if isinstance(data, xr.DataArray):
-        data = data.data
-    data = data.ravel()
-    # Remove NaN values from the data when used as weights
-    weights = da.where(np.isnan(data), 0, data)
-
-    # Convert X- and Y-indices to raveled indexing
-    idxs = y_idxs * target_shape[1] + x_idxs
-    # idxs = idxs.ravel()
-
-    out_size = target_shape[0] * target_shape[1]
-
-    # Calculate the sum of the data falling to each bin
-    sums, _ = da.histogram(idxs, bins=out_size, range=(0, out_size),
-                           weights=weights, density=False)
-    return sums.reshape(target_shape)
-
-
-def get_count_from_bucket_indices(x_idxs, y_idxs, target_shape):
-    """Count the number of occurances for each bin using drop-in-a-bucket
-    resampling.
-
-    Parameters
-    ----------
-    x_idxs : Numpy or Dask array
-        X indices of the target array for each data point
-    y_idxs : Numpy or Dask array
-        Y indices of the target array for each data point
-    target_shape : tuple
-        Shape of the target grid
-
-    Returns
-    -------
-    data : Dask array
-        Bin-wise count of hits for each target grid location
-    """
-
-    # Convert X- and Y-indices to raveled index
-    idxs = y_idxs * target_shape[1] + x_idxs
-
-    out_size = target_shape[0] * target_shape[1]
-
-    # Calculate the sum of the data falling to each bin
-    counts, _ = da.histogram(idxs, bins=out_size, range=(0, out_size))
-
-    return counts.reshape(target_shape)
-
-
-def resample_bucket_average(data, adef=None, lons=None, lats=None,
-                            fill_value=np.nan, x_idxs=None, y_idxs=None,
-                            target_shape=None):
-    """Calculate bin-averages using bucket resampling.
-
-    Parameters
-    ----------
-    data : Numpy or Dask array
-        Data to be binned and averaged
-    adef : AreaDefinition
-        Definition of the target area
-    lons : Numpy or Dask array
-        Longitude coordinates of the input data
-    lats : Numpy or Dask array
-        Latitude coordinates of the input data
-    fill_value : float
-        Fill value to replace missing values.  Default: np.nan
-    x_idxs : Numpy or Dask array
-        Pre-calculated resampling indices for X dimension. Optional.
-    y_idxs : Numpy or Dask array
-        Pre-calculated resampling indices for Y dimension. Optional.
-
-    Returns
-    -------
-    average : Dask array
-        Binned and averaged data.
-    """
-    if x_idxs is None or y_idxs is None:
-        if lons is None or lats is None:
-            raise ValueError("Either lons/lats or x/y indices are needed.")
-        if adef is None:
-            raise ValueError("Area definition needed for index calculations.")
-        x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
-    try:
-        shape = target_shape or adef.shape
-        if shape is None:
-            raise ValueError
-    except (AttributeError, ValueError):
-        raise ValueError("Either target_shape or adef needs to be given.")
-    sums = get_sum_from_bucket_indices(data, x_idxs, y_idxs, shape)
-    counts = get_count_from_bucket_indices(x_idxs, y_idxs, shape)
-
-    average = sums / counts
-    average = da.where(counts == 0, fill_value, average)
-
-    return average
-
-
-def resample_bucket_fractions(data, adef=None, lons=None, lats=None,
-                              categories=None, fill_value=np.nan,
-                              x_idxs=None, y_idxs=None, target_shape=None):
-    """Get fraction of occurences for each given categorical value.
-
-    Parameters
-    ----------
-    data : Numpy or Dask array
-        Categorical data to be processed
-    adef : AreaDefinition
-        Definition of the target area
-    lons : Numpy or Dask array
-        Longitude coordinates of the input data
-    lats : Numpy or Dask array
-        Latitude coordinates of the input data
-    categories : iterable or None
-        One dimensional list of categories in the data, or None.  If None,
-        categories are determined from the data.
-    fill_value : float
-        Fill value to replace missing values.  Default: np.nan
-    x_idxs : Numpy or Dask array
-        Pre-calculated resampling indices for X dimension. Optional.
-    y_idxs : Numpy or Dask array
-        Pre-calculated resampling indices for Y dimension. Optional.
-
-    """
-    if x_idxs is None or y_idxs is None:
-        if lons is None or lats is None:
-            raise ValueError("Either lons/lats or x/y indices are needed.")
-        if adef is None:
-            raise ValueError("Area definition needed for index calculations.")
-        x_idxs, y_idxs = get_bucket_indices(adef, lons, lats)
-    try:
-        shape = target_shape or adef.shape
-        if shape is None:
-            raise ValueError
-    except (AttributeError, ValueError):
-        raise ValueError("Either target_shape or adef needs to be given.")
-    if categories is None:
-        categories = da.unique(data)
-    results = {}
-    counts = get_count_from_bucket_indices(x_idxs, y_idxs, shape)
-    counts = counts.astype(float)
-    for cat in categories:
-        cat_data = da.where(data == cat, 1.0, 0.0)
-
-        sums = get_sum_from_bucket_indices(cat_data, x_idxs, y_idxs, shape)
-        result = sums.astype(float) / counts
-        result = da.where(counts == 0.0, fill_value, result)
-        results[cat] = result
-
-    return results
