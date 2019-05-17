@@ -4,10 +4,10 @@ import dask.array as da
 import dask
 import xarray as xr
 try:
-    from unittest.mock import MagicMock
+    from unittest.mock import MagicMock, patch
 except ImportError:
     # separate mock package py<3.3
-    from mock import MagicMock
+    from mock import MagicMock, patch
 
 from pyresample.geometry import AreaDefinition
 from pyresample import bucket
@@ -29,6 +29,13 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.resampler = bucket.BucketResampler(self.adef, self.lons, self.lats)
+
+    @patch('pyresample.bucket.Proj')
+    @patch('pyresample.bucket.BucketResampler._get_indices')
+    def test_init(self, get_indices, prj):
+        resampler = bucket.BucketResampler(self.adef, self.lons, self.lats)
+        get_indices.assert_called_once()
+        prj.assert_called_once_with(self.adef.proj_dict)
 
     def test_round_to_resolution(self):
         """Test rounding to given resolution"""
