@@ -19,6 +19,65 @@
 
 Bucket resampling is useful for calculating averages and hit-counts
 when aggregating data to coarser scale grids.
+
+Below are examples how to use the resampler.
+
+Read data using Satpy.  The resampling can also be done (apart from
+fractions) directly from Satpy, but this demonstrates the direct
+low-level usage.
+
+.. code-block:: python
+
+    >>> from pyresample import bucket
+    >>> from satpy import Scene
+    >>> from satpy.resample import get_area_def
+    >>> fname = "hrpt_noaa19_20170519_1214_42635.l1b"
+    >>> glbl = Scene(filenames=[fname])
+    >>> glbl.load(['4'])
+    >>> data = glbl['4']
+    >>> lons, lats = data.area.get_lonlats()
+    >>> target_area = get_area_def('euro4')
+
+Calculate the resampling indices:
+
+.. code-block:: python
+
+    >>> x_idxs, y_idxs = bucket.get_bucket_indices(adef, lons, lats)
+
+Calculate the sum of all the data in each grid location:
+
+.. code-block:: python
+
+    >>> sums = bucket.get_sum_from_bucket_indices(data, x_idxs, y_idxs,
+    ... target_area.shape)
+
+Calculate how many values were collected at each grid location:
+
+.. code-block:: python
+
+    >>> counts = bucket.get_count_from_bucket_indices(x_idxs, y_idxs,
+    ... target_area.shape)
+
+The average can be calculated from the above two results, or directly
+using the helper function:
+
+.. code-block:: python
+
+    >>> average = bucket.resample_bucket_average(data, adef, lons, lats)
+
+Calculate fractions of occurences of different values in each grid
+location.  The data needs to be categorical (in integers), so we'll
+create some categorical data from the brightness temperature data that
+were read earlier.  The data are returned in a dictionary with the
+categories as keys.
+
+.. code-block:: python
+
+    >>> data = da.where(data > 250, 1, 0)
+    >>> fractions = bucket.resample_bucket_fractions(data, target_area, lons,
+    ... lats, categories=[0, 1])
+    >>> import matplotlib.pyplot as plt
+    >>> plt.imshow(fractions[0]); plt.show()
 """
 
 import dask.array as da
