@@ -71,7 +71,7 @@ class BucketResampler(object):
 
         >>> average = resampler.get_average(data)
 
-    Calculate fractions of occurences of different values in each grid
+    Calculate fractions of occurrences of different values in each grid
     location.  The data needs to be categorical (in integers), so
     we'll create some categorical data from the brightness temperature
     data that were read earlier.  The data are returned in a
@@ -188,7 +188,7 @@ class BucketResampler(object):
         return sums.reshape(self.target_area.shape)
 
     def get_count(self):
-        """Count the number of occurances for each bin using drop-in-a-bucket
+        """Count the number of occurrences for each bin using drop-in-a-bucket
         resampling.
 
         Returns
@@ -228,7 +228,7 @@ class BucketResampler(object):
         return average
 
     def get_fractions(self, data, categories=None, fill_value=np.nan):
-        """Get fraction of occurences for each given categorical value.
+        """Get fraction of occurrences for each given categorical value.
 
         Parameters
         ----------
