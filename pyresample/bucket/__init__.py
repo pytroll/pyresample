@@ -95,6 +95,7 @@ class BucketResampler(object):
         self.y_idxs = None
         self.idxs = None
         self._get_indices()
+        self.counts = None
 
     def _get_proj_coordinates(self, lons, lats, x_res, y_res):
         """Calculate projection coordinates and round them to the closest
@@ -200,9 +201,12 @@ class BucketResampler(object):
         out_size = self.target_area.size
 
         # Calculate the sum of the data falling to each bin
-        counts, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size))
+        if self.counts is None:
+            counts, _ = da.histogram(self.idxs, bins=out_size,
+                                     range=(0, out_size))
+            self.counts = counts.reshape(self.target_area.shape)
 
-        return counts.reshape(self.target_area.shape)
+        return self.counts
 
     def get_average(self, data, fill_value=np.nan):
         """Calculate bin-averages using bucket resampling.
