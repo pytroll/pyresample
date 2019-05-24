@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         self.assertTrue(hasattr(resampler, 'get_count'))
         self.assertTrue(hasattr(resampler, 'get_average'))
         self.assertTrue(hasattr(resampler, 'get_fractions'))
-
+        self.assertIsNone(resampler.counts)
 
     def test_round_to_resolution(self):
         """Test rounding to given resolution"""
@@ -125,6 +125,7 @@ class Test(unittest.TestCase):
         self.assertTrue(np.max(result) == 2)
         self.assertEqual(np.sum(result == 1), 2)
         self.assertEqual(np.sum(result == 2), 1)
+        self.assertTrue(self.resampler.counts is not None)
 
     def test_get_average(self):
         """Test averaging bucket resampling."""
