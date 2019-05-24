@@ -117,6 +117,16 @@ class Test(unittest.TestCase):
         self.assertEqual(np.sum(result == 4.), 1)
         self.assertEqual(result.shape, self.adef.shape)
 
+        # Test masking all-NaN bins
+        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_sum(data, mask_all_nan=True)
+        self.assertTrue(np.all(np.isnan(result)))
+        # By default all-NaN bins have a value of 0.0
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_sum(data)
+        self.assertEqual(np.nanmax(result), 0.0)
+
     def test_get_count(self):
         """Test drop-in-a-bucket sum."""
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
@@ -143,6 +153,16 @@ class Test(unittest.TestCase):
         self.assertEqual(np.max(result), 3.)
         self.assertEqual(np.min(result), -1)
         self.assertFalse(np.any(np.isnan(result)))
+
+        # Test masking all-NaN bins
+        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data, mask_all_nan=True)
+        self.assertTrue(np.all(np.isnan(result)))
+        # By default all-NaN bins have a value of 0.0
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data)
+        self.assertEqual(np.nanmax(result), 0.0)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""

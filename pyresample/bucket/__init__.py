@@ -163,12 +163,14 @@ class BucketResampler(object):
         target_shape = self.target_area.shape
         self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
 
-    def get_sum(self, data):
+    def get_sum(self, data, mask_all_nan=False):
         """Calculate sums for each bin with drop-in-a-bucket resampling.
 
         Parameters
         ----------
         data : Numpy or Dask array
+        mask_all_nan : boolean (optional)
+            Mask bins that have only NaN results, default: False
 
         Returns
         -------
@@ -186,6 +188,14 @@ class BucketResampler(object):
         out_size = self.target_area.size
         sums, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size),
                                weights=weights, density=False)
+
+        if mask_all_nan:
+            nans = np.isnan(data)
+            nan_sums, _ = da.histogram(self.idxs[nans], bins=out_size,
+                                       range=(0, out_size))
+            counts = self.get_count().ravel()
+            sums = da.where(nan_sums == counts, np.nan, sums)
+
         return sums.reshape(self.target_area.shape)
 
     def get_count(self):
@@ -208,7 +218,7 @@ class BucketResampler(object):
 
         return self.counts
 
-    def get_average(self, data, fill_value=np.nan):
+    def get_average(self, data, fill_value=np.nan, mask_all_nan=False):
         """Calculate bin-averages using bucket resampling.
 
         Parameters
@@ -223,11 +233,12 @@ class BucketResampler(object):
         average : Dask array
             Binned and averaged data.
         """
-        sums = self.get_sum(data)
+        sums = self.get_sum(data, mask_all_nan=mask_all_nan)
         counts = self.get_count()
 
         average = sums / counts
-        average = da.where(counts == 0, fill_value, average)
+        idxs = (counts == 0) | np.isnan(sums)
+        average = da.where(idxs, fill_value, average)
 
         return average
 
