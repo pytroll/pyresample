@@ -36,6 +36,17 @@ class Test(unittest.TestCase):
         resampler = bucket.BucketResampler(self.adef, self.lons, self.lats)
         get_indices.assert_called_once()
         prj.assert_called_once_with(self.adef.proj_dict)
+        self.assertTrue(hasattr(resampler, 'target_area'))
+        self.assertTrue(hasattr(resampler, 'source_lons'))
+        self.assertTrue(hasattr(resampler, 'source_lats'))
+        self.assertTrue(hasattr(resampler, 'x_idxs'))
+        self.assertTrue(hasattr(resampler, 'y_idxs'))
+        self.assertTrue(hasattr(resampler, 'idxs'))
+        self.assertTrue(hasattr(resampler, 'get_sum'))
+        self.assertTrue(hasattr(resampler, 'get_count'))
+        self.assertTrue(hasattr(resampler, 'get_average'))
+        self.assertTrue(hasattr(resampler, 'get_fractions'))
+
 
     def test_round_to_resolution(self):
         """Test rounding to given resolution"""
