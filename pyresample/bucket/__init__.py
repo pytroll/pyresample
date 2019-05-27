@@ -25,7 +25,9 @@ from pyresample._spatial_mp import Proj
 
 class BucketResampler(object):
 
-    """Bucket resampling is useful for calculating averages and hit-counts
+    """Class for bucket resampling.
+
+    Bucket resampling is useful for calculating averages and hit-counts
     when aggregating data to coarser scale grids.
 
     Below are examples how to use the resampler.
