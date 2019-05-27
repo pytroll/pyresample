@@ -100,8 +100,7 @@ class BucketResampler(object):
         self.counts = None
 
     def _get_proj_coordinates(self, lons, lats, x_res, y_res):
-        """Calculate projection coordinates and round them to the closest
-        resolution unit.
+        """Calculate projection coordinates and round to resolution unit.
 
         Parameters
         ----------
