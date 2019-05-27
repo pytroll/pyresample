@@ -181,8 +181,7 @@ def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32)
 
 
 class CustomScheduler(object):
-    """Custom dask scheduler that raises an exception if dask is computed
-    too many times."""
+    """Scheduler raising an exception if data are computed too many times."""
 
     def __init__(self, max_computes=1):
         """Set starting and maximum compute counts."""
