@@ -155,10 +155,10 @@ class BucketResampler(object):
         y_idxs = ((np.max(y_vect) - proj_y) / y_res).astype(np.int)
 
         # Get valid index locations
-        idxs = ((x_idxs >= 0) & (x_idxs < adef.width) &
+        mask = ((x_idxs >= 0) & (x_idxs < adef.width) &
                 (y_idxs >= 0) & (y_idxs < adef.height))
-        self.y_idxs = da.where(idxs, y_idxs, -1)
-        self.x_idxs = da.where(idxs, x_idxs, -1)
+        self.y_idxs = da.where(mask, y_idxs, -1)
+        self.x_idxs = da.where(mask, x_idxs, -1)
 
         # Convert X- and Y-indices to raveled indexing
         target_shape = self.target_area.shape
@@ -238,8 +238,8 @@ class BucketResampler(object):
         counts = self.get_count()
 
         average = sums / counts
-        idxs = (counts == 0) | np.isnan(sums)
-        average = da.where(idxs, fill_value, average)
+        mask = (counts == 0) | np.isnan(sums)
+        average = da.where(mask, fill_value, average)
 
         return average
 
