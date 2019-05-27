@@ -185,6 +185,10 @@ class BucketResampler(object):
         # Remove NaN values from the data when used as weights
         weights = da.where(np.isnan(data), 0, data)
 
+        # Rechunk indices to match the data chunking
+        if weights.chunks != self.idxs.chunks:
+            self.idxs = da.rechunk(self.idxs, weights.chunks)
+
         # Calculate the sum of the data falling to each bin
         out_size = self.target_area.size
         sums, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size),
