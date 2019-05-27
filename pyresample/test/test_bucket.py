@@ -168,7 +168,7 @@ class Test(unittest.TestCase):
         """Test fraction calculations for categorical data."""
         data = da.from_array(np.array([[2, 4], [2, 2]]))
         categories = [1, 2, 3, 4]
-        with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_fractions(data, categories=categories)
         self.assertEqual(set(categories), set(result.keys()))
         res = result[1].compute()
@@ -185,7 +185,7 @@ class Test(unittest.TestCase):
         self.assertTrue(np.any(np.isnan(res)))
 
         # Use a fill value
-        with dask.config.set(scheduler=CustomScheduler(max_computes=10)):
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_fractions(data, categories=categories,
                                                   fill_value=-1)
 
