@@ -256,12 +256,13 @@ class BucketResampler(object):
             Categorical data to be processed
         categories : iterable or None
             One dimensional list of categories in the data, or None.  If None,
-            categories are determined from the data.
+            categories are determined from the data by fully processing the
+            data and finding the unique category values.
         fill_value : float
             Fill value to replace missing values.  Default: np.nan
         """
         if categories is None:
-            categories = da.unique(data)
+            categories = np.unique(data)
         results = {}
         counts = self.get_count()
         counts = counts.astype(float)

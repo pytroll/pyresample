@@ -195,6 +195,11 @@ class Test(unittest.TestCase):
             self.assertFalse(np.any(np.isnan(res)))
             self.assertTrue(np.min(res) == -1)
 
+        # No categories given, need to compute the data once to get
+        # the categories
+        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
+            result = self.resampler.get_fractions(data, categories=None)
+
 
 def suite():
     """The test suite.
