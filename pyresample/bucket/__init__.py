@@ -20,7 +20,10 @@
 import dask.array as da
 import xarray as xr
 import numpy as np
+import logging
 from pyresample._spatial_mp import Proj
+
+LOG = logging.getLogger(__name__)
 
 
 class BucketResampler(object):
@@ -129,6 +132,7 @@ class BucketResampler(object):
         y_idxs : Dask array
             Y indices of the target grid where the data are put
         """
+        LOG.info("Determine bucket resampling indices")
         adef = self.target_area
 
         lons = self.source_lons.ravel()
@@ -178,7 +182,7 @@ class BucketResampler(object):
         data : Numpy or Dask array
             Bin-wise sums in the target grid
         """
-
+        LOG.info("Get sum of values in each location")
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
@@ -212,6 +216,7 @@ class BucketResampler(object):
         data : Dask array
             Bin-wise count of hits for each target grid location
         """
+        LOG.info("Get number of values in each location")
 
         out_size = self.target_area.size
 
@@ -238,6 +243,8 @@ class BucketResampler(object):
         average : Dask array
             Binned and averaged data.
         """
+        LOG.info("Get average value for each location")
+
         sums = self.get_sum(data, mask_all_nan=mask_all_nan)
         counts = self.get_count()
 
@@ -262,10 +269,18 @@ class BucketResampler(object):
             Fill value to replace missing values.  Default: np.nan
         """
         if categories is None:
+            LOG.warning("No categories given, need to compute the data.")
             categories = np.unique(data)
+        try:
+            num = categories.size
+        except AttributeError:
+            num = len(categories)
+        LOG.info("Get fractions for %d categories", num)
         results = {}
         counts = self.get_count()
         counts = counts.astype(float)
+        # Disable logging for calls to get_sum()
+        LOG.disabled = True
         for cat in categories:
             cat_data = da.where(data == cat, 1.0, 0.0)
 
@@ -273,6 +288,8 @@ class BucketResampler(object):
             result = sums.astype(float) / counts
             result = da.where(counts == 0.0, fill_value, result)
             results[cat] = result
+        # Re-enable logging
+        LOG.disabled = False
 
         return results
 
