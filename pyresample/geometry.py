@@ -769,12 +769,16 @@ class DynamicAreaDefinition(object):
         self.area_id = area_id
         self.description = description
         self.proj_dict = proj_dict
-        self.width = self.width = width
-        self.height = self.height = height
+        self.width = width
+        self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
         self.resolution = resolution
         self.rotation = rotation
+
+    @property
+    def shape(self):
+        return self.height, self.width
 
     # size = (x_size, y_size) and shape = (y_size, x_size)
     def compute_domain(self, corners, resolution=None, shape=None):
@@ -1008,6 +1012,10 @@ class AreaDefinition(BaseDefinition):
     @property
     def shape(self):
         return self.height, self.width
+
+    @property
+    def resolution(self):
+        return self.pixel_size_x, self.pixel_size_y
 
     @property
     def name(self):
