@@ -747,12 +747,20 @@ class DynamicAreaDefinition(object):
           The description of the area.
         projection:
           The dictionary or string of projection parameters. Doesn't have to be complete.
-        height, width:
-          The shape of the resulting area.
+        width : int
+            x dimension in number of pixels, aka number of grid columns
+        height : int
+            y dimension in number of pixels, aka number of grid rows
+        shape : tuple
+            Corresponding array shape as (height, width)
         area_extent:
           The area extent of the area.
+        pixel_size_x : float
+            Pixel width in projection units
+        pixel_size_y : float
+            Pixel height in projection units
         resolution:
-          the resolution of the resulting area.
+          the resolution of the resulting area (pixel_size_x, pixel_size_y).
         optimize_projection:
           Whether the projection parameters have to be optimized.
         rotation:
@@ -781,6 +789,18 @@ class DynamicAreaDefinition(object):
         if self.height is None or self.width is None:
             return None
         return self.height, self.width
+
+    @property
+    def pixel_size_x(self):
+        if self.resolution is None:
+            return None
+        return self.resolution[0]
+
+    @property
+    def pixel_size_y(self):
+        if self.resolution is None:
+            return None
+        return self.resolution[1]
 
     # size = (x_size, y_size) and shape = (y_size, x_size)
     def compute_domain(self, corners, resolution=None, shape=None):
@@ -913,6 +933,8 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
+    resolution:
+      the resolution of the resulting area (pixel_size_x, pixel_size_y).
     upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_upper_left : tuple
