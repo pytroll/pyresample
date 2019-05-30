@@ -453,9 +453,12 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     # Fills in missing information to attempt to create an area definition.
     if area_extent is None or shape is None:
-        area_extent, shape = _extrapolate_information(area_extent, shape, center, radius, resolution,
-                                                      upper_left_extent, units, p, proj_dict)
-    return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
+        area_extent, shape, resolution = \
+            _extrapolate_information(area_extent, shape, center, radius,
+                                     resolution, upper_left_extent, units,
+                                     p, proj_dict)
+    return _make_area(area_id, description, proj_id, proj_dict, shape,
+                      area_extent, resolution=resolution, **kwargs)
 
 
 def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs):
@@ -464,6 +467,7 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
     from pyresample.geometry import DynamicAreaDefinition
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
+    resolution = kwargs.pop('resolution', None)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
     height, width = (None, None)
@@ -474,7 +478,7 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
 
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
                                  height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
-                                 optimize_projection=optimize_projection)
+                                 resolution=resolution, optimize_projection=optimize_projection)
 
 
 def _get_proj_data(projection):
@@ -523,7 +527,7 @@ def _distance_from_center_forward(var, center, p):
     # Since the distance between longitudes and latitudes is not constant in
     # most projections, there must be reference point to start from.
     if center is None:
-        raise ValueError('center must be given to convert radius or resolution from an angle to meters')
+        center = (0, 0)
 
     center_as_angle = p(*center, inverse=True, errcheck=True)
     pole = 90
@@ -700,7 +704,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
             upper_left_extent[0], upper_left_extent[1] - 2 * radius[1], upper_left_extent[0] + 2 * radius[0],
             upper_left_extent[1])
         area_extent = _validate_variable(area_extent, new_area_extent, 'area_extent', ['upper_left_extent', 'radius'])
-    return area_extent, shape
+    return area_extent, shape, resolution
 
 
 def _format_list(var, name):

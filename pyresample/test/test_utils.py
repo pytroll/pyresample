@@ -136,6 +136,27 @@ Number of rows: 4058
 Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)"""
         self.assertEqual(test_latlong.__str__(), latlong_str)
 
+    def test_dynamic_area_parser_yaml(self):
+        """Test YAML area parser on dynamic areas."""
+        from pyresample import parse_area_file
+        from pyresample.geometry import DynamicAreaDefinition
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution')[0]
+
+        self.assertIsInstance(test_area, DynamicAreaDefinition)
+        self.assertTrue(hasattr(test_area, 'resolution'))
+        self.assertEqual(test_area.resolution, (1000.0, 1000.0))
+
+        # lat/lon
+        from pyresample import parse_area_file
+        from pyresample.geometry import DynamicAreaDefinition
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution_ll')[0]
+
+        self.assertIsInstance(test_area, DynamicAreaDefinition)
+        self.assertTrue(hasattr(test_area, 'resolution'))
+        self.assertEqual(test_area.resolution, (1.0, 1.0))
+
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
         area_list = ["""ease_sh:
@@ -291,8 +312,23 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
+    def test_convert_proj_floats(self):
+        from collections import OrderedDict
+        import pyresample.utils as utils
+
+        pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
+        expected = OrderedDict([('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', -95.0), ('no_defs', True)])
+        self.assertDictEqual(utils._proj4.convert_proj_floats(pairs), expected)
+
+        # EPSG
+        pairs = [('init', 'EPSG:4326'), ('EPSG', 4326)]
+        for pair in pairs:
+            expected = OrderedDict([pair])
+            self.assertDictEqual(utils._proj4.convert_proj_floats([pair]), expected)
+
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
+
         proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
         proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
         proj_str2 = utils._proj4.proj4_dict_to_str(proj_dict)
@@ -300,6 +336,18 @@ class TestMisc(unittest.TestCase):
         self.assertDictEqual(proj_dict, proj_dict2)
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
+
+        # EPSG
+        expected = {'+init=EPSG:4326': {'init': 'EPSG:4326'},
+                    'EPSG:4326': {'EPSG': 4326}}
+
+        for proj_str, proj_dict_exp in expected.items():
+            proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+            self.assertEqual(proj_dict, proj_dict_exp)
+            self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
+
+        # Invalid EPSG code (pyproj-2 syntax only)
+        self.assertRaises(ValueError, utils._proj4.proj4_str_to_dict, 'EPSG:XXXX')
 
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml

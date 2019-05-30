@@ -31,7 +31,7 @@ from logging import getLogger
 
 import numpy as np
 import yaml
-from pyproj import Geod
+from pyproj import Geod, transform
 
 from pyresample import CHUNK_SIZE, utils
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
@@ -551,6 +551,12 @@ class SwathDefinition(CoordinateDefinition):
         """Copy the current swath."""
         return SwathDefinition(self.lons, self.lats)
 
+    @staticmethod
+    def _do_transform(src, dst, lons, lats, alt):
+        """Helper for 'aggregate' method."""
+        x, y, z = transform(src, dst, lons, lats, alt)
+        return np.dstack((x, y, z))
+
     def aggregate(self, **dims):
         """Aggregate the current swath definition by averaging.
 
@@ -560,20 +566,15 @@ class SwathDefinition(CoordinateDefinition):
         import pyproj
         import dask.array as da
 
-        def do_transform(src, dst, lons, lats, alt):
-            import pyproj
-            x, y, z = pyproj.transform(src, dst, lons, lats, alt)
-            return np.dstack((x, y, z))
-
         geocent = pyproj.Proj(proj='geocent')
         latlong = pyproj.Proj(proj='latlong')
-        res = da.map_blocks(do_transform, latlong, geocent,
+        res = da.map_blocks(self._do_transform, latlong, geocent,
                             self.lons.data, self.lats.data,
                             da.zeros_like(self.lons.data), new_axis=[2],
                             chunks=(self.lons.chunks[0], self.lons.chunks[1], 3))
         res = DataArray(res, dims=['y', 'x', 'coord'], coords=self.lons.coords)
         res = res.coarsen(**dims).mean()
-        lonlatalt = da.map_blocks(do_transform, geocent, latlong,
+        lonlatalt = da.map_blocks(self._do_transform, geocent, latlong,
                                   res[:, :, 0].data, res[:, :, 1].data,
                                   res[:, :, 2].data, new_axis=[2],
                                   chunks=res.data.chunks)
@@ -676,6 +677,33 @@ class SwathDefinition(CoordinateDefinition):
             new_proj.update(proj_dict)
             return new_proj
 
+    def _compute_uniform_shape(self):
+        """Compute the height and width of a domain to have uniform resolution across dimensions."""
+        g = Geod(ellps='WGS84')
+        leftlons = self.lons[:, 0]
+        leftlons = leftlons.where(leftlons.notnull(), drop=True)
+        rightlons = self.lons[:, -1]
+        rightlons = rightlons.where(rightlons.notnull(), drop=True)
+        middlelons = self.lons[:, int(self.lons.shape[1] / 2)]
+        middlelons = middlelons.where(middlelons.notnull(), drop=True)
+        leftlats = self.lats[:, 0]
+        leftlats = leftlats.where(leftlats.notnull(), drop=True)
+        rightlats = self.lats[:, -1]
+        rightlats = rightlats.where(rightlats.notnull(), drop=True)
+        middlelats = self.lats[:, int(self.lats.shape[1] / 2)]
+        middlelats = middlelats.where(middlelats.notnull(), drop=True)
+
+        az1, az2, width1 = g.inv(leftlons[0], leftlats[0], rightlons[0], rightlats[0])
+        az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
+        az1, az2, height = g.inv(middlelons[0], middlelats[0], middlelons[-1], middlelats[-1])
+        width = min(width1, width2)
+        vresolution = height * 1.0 / self.lons.shape[0]
+        hresolution = width * 1.0 / self.lons.shape[1]
+        resolution = min(vresolution, hresolution)
+        width = int(width * 1.1 / resolution)
+        height = int(height * 1.1 / resolution)
+        return height, width
+
     def compute_optimal_bb_area(self, proj_dict=None):
         """Compute the "best" bounding box area for this swath with `proj_dict`.
 
@@ -683,16 +711,16 @@ class SwathDefinition(CoordinateDefinition):
         which case the right projection angle `alpha` is computed from the
         swath centerline. For other projections, only the appropriate center of
         projection and area extents are computed.
+
+        The height and width are computed so that the resolution is
+        approximately the same across dimensions.
         """
         if proj_dict is None:
             proj_dict = {}
         projection = proj_dict.setdefault('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
-        lines, cols = self.lons.shape
-        width = int(cols * 1.1)
-        height = int(lines * 1.1)
-
+        height, width = self._compute_uniform_shape()
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
@@ -768,10 +796,10 @@ class DynamicAreaDefinition(object):
                 x_resolution, y_resolution = resolution
             except TypeError:
                 x_resolution = y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0 /
-                                 x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0 /
-                                 y_resolution + 1))
+            width = int(np.rint((corners[2] - corners[0]) * 1.0
+                                / x_resolution + 1))
+            height = int(np.rint((corners[3] - corners[1]) * 1.0
+                                 / y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,
@@ -1712,8 +1740,10 @@ class AreaDefinition(BaseDefinition):
         yslice, xslice = key
         # Get actual values, replace Nones
         yindices = yslice.indices(self.height)
+        total_rows = int((yindices[1] - yindices[0]) / yindices[2])
         ystopactual = yindices[1] - (yindices[1] - 1) % yindices[2]
         xindices = xslice.indices(self.width)
+        total_cols = int((xindices[1] - xindices[0]) / xindices[2])
         xstopactual = xindices[1] - (xindices[1] - 1) % xindices[2]
         yslice = slice(yindices[0], ystopactual, yindices[2])
         xslice = slice(xindices[0], xstopactual, xindices[2])
@@ -1725,8 +1755,8 @@ class AreaDefinition(BaseDefinition):
 
         new_area = AreaDefinition(self.area_id, self.description,
                                   self.proj_id, self.proj_dict,
-                                  int((xslice.stop - xslice.start) / xslice.step),
-                                  int((yslice.stop - yslice.start) / yslice.step),
+                                  total_cols,
+                                  total_rows,
                                   new_area_extent)
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)

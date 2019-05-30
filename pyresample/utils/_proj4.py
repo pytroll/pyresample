@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 from collections import OrderedDict
+import six
 
 
 def convert_proj_floats(proj_pairs):
@@ -24,6 +25,9 @@ def convert_proj_floats(proj_pairs):
     for x in proj_pairs:
         if len(x) == 1 or x[1] is True:
             proj_dict[x[0]] = True
+            continue
+        if x[0] == 'EPSG':
+            proj_dict[x[0]] = x[1]
             continue
 
         try:
@@ -39,6 +43,13 @@ def proj4_str_to_dict(proj4_str):
 
     Note: Key only parameters will be assigned a value of `True`.
     """
+    if proj4_str.startswith('EPSG:'):
+        try:
+            code = int(proj4_str.split(':', 1)[1])
+        except ValueError as err:
+            six.raise_from(ValueError("Invalid EPSG code '{}': {}".format(proj4_str, err)),
+                           None)  # Suppresses original exception context in python 3
+        return OrderedDict(EPSG=code)
     pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
     return convert_proj_floats(pairs)
 
@@ -50,6 +61,11 @@ def proj4_dict_to_str(proj4_dict, sort=False):
         items = sorted(items)
     params = []
     for key, val in items:
+        if key == 'EPSG':
+            # If EPSG code is present, ignore other parameters
+            params = ['EPSG:{}'.format(val)]
+            break
+
         key = str(key) if key.startswith('+') else '+' + str(key)
         if key in ['+no_defs', '+no_off', '+no_rot']:
             param = key
