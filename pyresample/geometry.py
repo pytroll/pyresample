@@ -778,6 +778,8 @@ class DynamicAreaDefinition(object):
 
     @property
     def shape(self):
+        if self.height is None or self.width is None:
+            return None
         return self.height, self.width
 
     # size = (x_size, y_size) and shape = (y_size, x_size)
