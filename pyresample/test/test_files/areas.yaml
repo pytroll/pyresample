@@ -1,3 +1,14 @@
+test:
+  description: BAWS, 300m resolution, sweref99tm
+  projection:
+    init: epsg:3006
+  shape:
+    height: 4667
+    width: 4667
+  area_extent:
+    lower_left_xy: [-49739, 5954123]
+    upper_right_xy: [1350361, 7354223]
+
 boundary:
   area_id: ease_sh
   description: Example of making an area definition using shape and area_extent

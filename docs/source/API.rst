@@ -31,6 +31,11 @@ pyresample.utils
 .. automodule:: pyresample.utils
     :members:
 
+pyresample.area_config
+----------------------
+.. automodule:: pyresample.area_config
+    :members:
+
 pyresample.data_reduce
 ----------------------
 .. automodule:: pyresample.data_reduce
