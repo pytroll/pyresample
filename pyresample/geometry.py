@@ -747,17 +747,17 @@ class DynamicAreaDefinition(object):
           The description of the area.
         projection:
           The dictionary or string of projection parameters. Doesn't have to be complete.
-        width : int
+        width:
             x dimension in number of pixels, aka number of grid columns
-        height : int
+        height:
             y dimension in number of pixels, aka number of grid rows
-        shape : tuple
+        shape:
             Corresponding array shape as (height, width)
         area_extent:
           The area extent of the area.
-        pixel_size_x : float
+        pixel_size_x:
             Pixel width in projection units
-        pixel_size_y : float
+        pixel_size_y:
             Pixel height in projection units
         resolution:
           the resolution of the resulting area (pixel_size_x, pixel_size_y).
@@ -933,7 +933,7 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    resolution:
+    resolution : tuple
       the resolution of the resulting area (pixel_size_x, pixel_size_y).
     upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
