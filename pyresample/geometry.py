@@ -855,7 +855,9 @@ class DynamicAreaDefinition(object):
             resolution = self.resolution
         if shape is None:
             shape = self.shape
-        if not self.area_extent or not self.shape[1] or not self.shape[0]:
+        height, width = shape
+        area_extent = self.area_extent
+        if not area_extent or not width or not height:
             proj4 = Proj(**self.proj_dict)
             try:
                 lons, lats = lonslats
@@ -866,12 +868,11 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-            # Note: size=(width, height) was changed to shape=(height, width).
             domain = self.compute_domain(corners, resolution, shape)
-            self.area_extent, self.width, self.height = domain
+            area_extent, width, height = domain
         return AreaDefinition(self.area_id, self.description, '',
-                              self.proj_dict, self.width, self.height,
-                              self.area_extent, self.rotation)
+                              self.proj_dict, width, height,
+                              area_extent, self.rotation)
 
 
 def invproj(data_x, data_y, proj_dict):
