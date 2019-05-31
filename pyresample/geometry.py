@@ -856,6 +856,7 @@ class DynamicAreaDefinition(object):
         if shape is None:
             shape = self.shape
         height, width = shape
+        shape = None if None in shape else shape
         area_extent = self.area_extent
         if not area_extent or not width or not height:
             proj4 = Proj(**self.proj_dict)
