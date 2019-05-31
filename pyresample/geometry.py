@@ -760,7 +760,7 @@ class DynamicAreaDefinition(object):
         pixel_size_y:
             Pixel height in projection units
         resolution:
-          the resolution of the resulting area (pixel_size_x, pixel_size_y).
+          the resolution of the resulting area as (pixel_size_x, pixel_size_y).
         optimize_projection:
           Whether the projection parameters have to be optimized.
         rotation:
@@ -855,6 +855,8 @@ class DynamicAreaDefinition(object):
             return lonslats.compute_optimal_bb_area(self.proj_dict)
         if resolution is None:
             resolution = self.resolution
+        if shape is None:
+            shape = self.shape
         if not self.area_extent or not self.width or not self.height:
             proj4 = Proj(**self.proj_dict)
             try:
@@ -934,7 +936,7 @@ class AreaDefinition(BaseDefinition):
     pixel_size_y : float
         Pixel height in projection units
     resolution : tuple
-      the resolution of the resulting area (pixel_size_x, pixel_size_y).
+      the resolution of the resulting area as (pixel_size_x, pixel_size_y).
     upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_upper_left : tuple
