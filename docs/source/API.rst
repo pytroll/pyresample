@@ -45,3 +45,8 @@ pyresample.ewa
 --------------
 .. automodule:: pyresample.ewa
     :members:
+
+pyresample.bucket
+-----------------
+.. automodule:: pyresample.bucket
+    :members:
