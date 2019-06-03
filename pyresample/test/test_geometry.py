@@ -1718,8 +1718,7 @@ class TestDynamicAreaDefinition(unittest.TestCase):
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
-        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
-                                              {'proj': 'omerc'},
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'omerc'},
                                               optimize_projection=True)
         lons = [[10, 12.1, 14.2, 16.3],
                 [10, 12, 14, 16],
@@ -1729,13 +1728,23 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                 [50, 51, 52, 53]]
         import xarray as xr
         sdef = geometry.SwathDefinition(xr.DataArray(lons), xr.DataArray(lats))
-        result = area.freeze(sdef,
-                             resolution=1000)
+        result = area.freeze(sdef, resolution=1000)
         np.testing.assert_allclose(result.area_extent,
                                    [-336277.698941, 5513145.392745,
                                     192456.651909, 7749649.63914])
         self.assertEqual(result.x_size, 4)
         self.assertEqual(result.y_size, 18)
+        # Test for properties and shape usage in freeze.
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
+                                              width=4, height=18)
+        self.assertEqual((18, 4), area.shape)
+        result = area.freeze(sdef)
+        np.testing.assert_allclose(result.area_extent,
+                                   (996309.4426, 6287132.757981, 1931393.165263, 10837238.860543))
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
+                                              resolution=1000)
+        self.assertEqual(1000, area.pixel_size_x)
+        self.assertEqual(1000, area.pixel_size_y)
 
     def test_compute_domain(self):
         """Test computing size and area extent."""

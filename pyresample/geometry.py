@@ -760,7 +760,7 @@ class DynamicAreaDefinition(object):
         pixel_size_y:
             Pixel height in projection units
         resolution:
-          the resolution of the resulting area as (pixel_size_x, pixel_size_y).
+          Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
         optimize_projection:
           Whether the projection parameters have to be optimized.
         rotation:
@@ -781,6 +781,8 @@ class DynamicAreaDefinition(object):
         self.height = height
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
+        if isinstance(resolution, (int, float)):
+            resolution = (resolution, resolution)
         self.resolution = resolution
         self.rotation = rotation
 
@@ -800,7 +802,6 @@ class DynamicAreaDefinition(object):
             return None
         return self.resolution[1]
 
-    # size = (x_size, y_size) and shape = (y_size, x_size)
     def compute_domain(self, corners, resolution=None, shape=None):
         """Compute shape and area_extent from corners and [shape or resolution] info.
 
@@ -816,10 +817,9 @@ class DynamicAreaDefinition(object):
             x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
             y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
         else:
-            try:
-                x_resolution, y_resolution = resolution
-            except TypeError:
-                x_resolution = y_resolution = resolution
+            if isinstance(resolution, (int, float)):
+                resolution = (resolution, resolution)
+            x_resolution, y_resolution = resolution
             width = int(np.rint((corners[2] - corners[0]) * 1.0
                                 / x_resolution + 1))
             height = int(np.rint((corners[3] - corners[1]) * 1.0
@@ -858,7 +858,7 @@ class DynamicAreaDefinition(object):
         height, width = shape
         shape = None if None in shape else shape
         area_extent = self.area_extent
-        if not area_extent or not width or not height:
+        if not area_extent or not shape:
             proj4 = Proj(**self.proj_dict)
             try:
                 lons, lats = lonslats
@@ -869,8 +869,7 @@ class DynamicAreaDefinition(object):
             yarr[yarr > 9e29] = np.nan
             corners = [np.nanmin(xarr), np.nanmin(yarr),
                        np.nanmax(xarr), np.nanmax(yarr)]
-            domain = self.compute_domain(corners, resolution, shape)
-            area_extent, width, height = domain
+            area_extent, width, height = self.compute_domain(corners, resolution, shape)
         return AreaDefinition(self.area_id, self.description, '',
                               self.proj_dict, width, height,
                               area_extent, self.rotation)
