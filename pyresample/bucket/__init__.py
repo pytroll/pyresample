@@ -41,40 +41,40 @@ class BucketResampler(object):
 
     .. code-block:: python
 
-        >>> from pyresample.bucket import BucketResampler
-        >>> from satpy import Scene
-        >>> from satpy.resample import get_area_def
-        >>> fname = "hrpt_noaa19_20170519_1214_42635.l1b"
-        >>> glbl = Scene(filenames=[fname])
-        >>> glbl.load(['4'])
-        >>> data = glbl['4']
-        >>> lons, lats = data.area.get_lonlats()
-        >>> target_area = get_area_def('euro4')
+        from pyresample.bucket import BucketResampler
+        from satpy import Scene
+        from satpy.resample import get_area_def
+        fname = "hrpt_noaa19_20170519_1214_42635.l1b"
+        glbl = Scene(filenames=[fname])
+        glbl.load(['4'])
+        data = glbl['4']
+        lons, lats = data.area.get_lonlats()
+        target_area = get_area_def('euro4')
 
     Initialize the resampler
 
     .. code-block:: python
 
-        >>> resampler = BucketResampler(adef, lons, lats)
+        resampler = BucketResampler(adef, lons, lats)
 
     Calculate the sum of all the data in each grid location:
 
     .. code-block:: python
 
-        >>> sums = resampler.get_sum(data)
+        sums = resampler.get_sum(data)
 
     Calculate how many values were collected at each grid location:
 
     .. code-block:: python
 
-        >>> counts = resampler.get_count()
+        counts = resampler.get_count()
 
     The average can be calculated from the above two results, or directly
     using the helper method:
 
     .. code-block:: python
 
-        >>> average = resampler.get_average(data)
+        average = resampler.get_average(data)
 
     Calculate fractions of occurrences of different values in each grid
     location.  The data needs to be categorical (in integers), so
@@ -84,10 +84,10 @@ class BucketResampler(object):
 
     .. code-block:: python
 
-        >>> data = da.where(data > 250, 1, 0)
-        >>> fractions = resampler.get_fractions(data, categories=[0, 1])
-        >>> import matplotlib.pyplot as plt
-        >>> plt.imshow(fractions[0]); plt.show()
+        data = da.where(data > 250, 1, 0)
+        fractions = resampler.get_fractions(data, categories=[0, 1])
+        import matplotlib.pyplot as plt
+        plt.imshow(fractions[0]); plt.show()
     """
 
     def __init__(self, target_area, source_lons, source_lats):
