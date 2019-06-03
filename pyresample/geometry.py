@@ -858,7 +858,7 @@ class DynamicAreaDefinition(object):
         height, width = shape
         shape = None if None in shape else shape
         area_extent = self.area_extent
-        if not area_extent or not shape:
+        if not area_extent or not width or not height:
             proj4 = Proj(**self.proj_dict)
             try:
                 lons, lats = lonslats
