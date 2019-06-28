@@ -416,7 +416,8 @@ class TestMisc(unittest.TestCase):
                     # pyproj 2.0 adds units back in
                     # pyproj <2 doesn't
                     continue
-                area.proj_dict  # initialize _proj_dict
+                # initialize _proj_dict
+                area.proj_dict  # noqa
                 area._proj_dict.pop('units', None)
             areas_old = set(areas)
             areas_new = {area.area_id: area for area in areas_new}

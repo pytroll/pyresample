@@ -337,10 +337,10 @@ def _get_proj4_args(proj4_args):
     if isinstance(proj4_args, (str, six.text_type)):
         # float conversion is done in `proj4_str_to_dict` already
         return proj4_str_to_dict(str(proj4_args))
-    else:
-        from configobj import ConfigObj
-        proj_config = ConfigObj(proj4_args)
-        return convert_proj_floats(proj_config.items())
+
+    from configobj import ConfigObj
+    proj_config = ConfigObj(proj4_args)
+    return convert_proj_floats(proj_config.items())
 
 
 def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
