@@ -131,6 +131,16 @@ class Test(unittest.TestCase):
                 area.to_cartopy_crs()
                 warn.assert_called()
 
+        # Bounds for latlong projection must be specified in radians
+        latlong_crs = geometry.AreaDefinition(area_id='latlong',
+                                              description='Global regular lat-lon grid',
+                                              proj_id='latlong',
+                                              projection={'proj': 'latlong', 'lon0': 0},
+                                              width=360,
+                                              height=180,
+                                              area_extent=(-180, -90, 180, 90)).to_cartopy_crs()
+        self.assertTrue(np.allclose(latlong_crs.bounds, [-np.pi, np.pi, -np.pi/2, np.pi/2]))
+
     def test_create_areas_def(self):
         from pyresample import utils
         import yaml
