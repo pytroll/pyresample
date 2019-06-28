@@ -1258,7 +1258,7 @@ class AreaDefinition(BaseDefinition):
                   self.area_extent[2],
                   self.area_extent[1],
                   self.area_extent[3])
-        if Proj(**self.proj_dict).is_latlong():
+        if Proj(self.proj_dict).is_latlong():
             # Convert area extent from degrees to radians
             bounds = np.deg2rad(bounds)
         crs = from_proj(self.proj_str, bounds=bounds)
