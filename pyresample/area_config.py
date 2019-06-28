@@ -335,11 +335,12 @@ def _get_proj4_args(proj4_args):
     """Create dict from proj4 args."""
     from pyresample.utils._proj4 import convert_proj_floats
     if isinstance(proj4_args, (str, six.text_type)):
-        proj_config = proj4_str_to_dict(str(proj4_args))
+        # float conversion is done in `proj4_str_to_dict` already
+        return proj4_str_to_dict(str(proj4_args))
     else:
         from configobj import ConfigObj
         proj_config = ConfigObj(proj4_args)
-    return convert_proj_floats(proj_config.items())
+        return convert_proj_floats(proj_config.items())
 
 
 def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
@@ -417,12 +418,17 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     description = kwargs.pop('description', area_id)
     proj_id = kwargs.pop('proj_id', None)
 
+    # convert EPSG dictionaries to projection string
+    # (hold on to EPSG code as much as possible)
+    if isinstance(projection, dict) and 'EPSG' in projection:
+        projection = "EPSG:{}".format(projection['EPSG'])
+
     # Get a proj4_dict from either a proj4_dict or a proj4_string.
     proj_dict = _get_proj_data(projection)
     try:
-        p = Proj(proj_dict, preserve_units=True)
+        p = Proj(projection, preserve_units=True)
     except RuntimeError:
-        return _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs)
+        return _make_area(area_id, description, proj_id, projection, shape, area_extent, **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
@@ -457,7 +463,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
             _extrapolate_information(area_extent, shape, center, radius,
                                      resolution, upper_left_extent, units,
                                      p, proj_dict)
-    return _make_area(area_id, description, proj_id, proj_dict, shape,
+    return _make_area(area_id, description, proj_id, projection, shape,
                       area_extent, resolution=resolution, **kwargs)
 
 
@@ -482,7 +488,23 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
 
 
 def _get_proj_data(projection):
-    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function."""
+    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function.
+
+    There is special handling for the "EPSG:XXXX" case where "XXXX" is an
+    EPSG number code. It can be provided as a string `"EPSG:XXXX"` or as a
+    dictionary (when provided via YAML) as `{'EPSG': XXXX}`.
+    If it is passed as a string ("EPSG:XXXX") then the rules of
+    :func:`~pyresample.utils._proj.proj4_str_to_dict` are followed.
+    If a dictionary and pyproj 2.0+ is installed then the string
+    `"EPSG:XXXX"` is passed to ``proj4_str_to_dict``. If pyproj<2.0
+    is installed then the string ``+init=EPSG:XXXX`` is passed to
+    ``proj4_str_to_dict`` which provides limited information to area
+    config operations.
+
+    """
+    if isinstance(projection, dict) and 'EPSG' in projection:
+        projection = "EPSG:{}".format(projection['EPSG'])
+
     if isinstance(projection, str):
         proj_dict = proj4_str_to_dict(projection)
     elif isinstance(projection, dict):

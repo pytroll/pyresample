@@ -30,31 +30,31 @@ import unittest
 from pyresample._spatial_mp import BaseProj
 
 
-class SpatialMPTest(unittest.TestCase):
-    @mock.patch('pyresample._spatial_mp.pyproj.Proj.__init__', return_value=None)
-    def test_base_proj_epsg(self, proj_init):
-        """Test Proj creation with EPSG codes"""
-        if pyproj.__version__ < '2':
-            return self.skipTest(reason='pyproj 2+ only')
-
-        args = [
-            [None, {'init': 'EPSG:6932'}],
-            [{'init': 'EPSG:6932'}, {}],
-            [None, {'EPSG': '6932'}],
-            [{'EPSG': '6932'}, {}]
-        ]
-        for projparams, kwargs in args:
-            BaseProj(projparams, **kwargs)
-            proj_init.assert_called_with(projparams='EPSG:6932', preserve_units=mock.ANY)
-            proj_init.reset_mock()
+# class SpatialMPTest(unittest.TestCase):
+#     @mock.patch('pyresample._spatial_mp.pyproj.Proj.__init__', return_value=None)
+#     def test_base_proj_epsg(self, proj_init):
+#         """Test Proj creation with EPSG codes"""
+#         if pyproj.__version__ < '2':
+#             return self.skipTest(reason='pyproj 2+ only')
+#
+#         args = [
+#             [None, {'init': 'EPSG:6932'}],
+#             [{'init': 'EPSG:6932'}, {}],
+#             [None, {'EPSG': '6932'}],
+#             [{'EPSG': '6932'}, {}]
+#         ]
+#         for projparams, kwargs in args:
+#             BaseProj(projparams, **kwargs)
+#             proj_init.assert_called_with(projparams='EPSG:6932', preserve_units=mock.ANY)
+#             proj_init.reset_mock()
 
 
 def suite():
     """The test suite.
     """
-    loader = unittest.TestLoader()
+    # loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(SpatialMPTest))
+    # mysuite.addTest(loader.loadTestsFromTestCase(SpatialMPTest))
     return mysuite
 
 

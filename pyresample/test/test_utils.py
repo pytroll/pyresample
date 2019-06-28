@@ -41,39 +41,64 @@ class TestLegacyAreaParser(unittest.TestCase):
     def test_area_parser_legacy(self):
         """Test legacy area parser."""
         from pyresample import parse_area_file
+        from pyresample.utils import is_pyproj2
         ease_nh, ease_sh = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'),
                                            'ease_nh', 'ease_sh')
 
+        if is_pyproj2():
+            # pyproj 2.0+ adds some extra parameters
+            projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
+                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
+        else:
+            projection = ("{'a': '6371228.0', 'lat_0': '90.0', "
+                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(ease_nh.__str__(), nh_str)
-        self.assertIsInstance(ease_nh.proj_dict['lat_0'], float)
+        self.assertIsInstance(ease_nh.proj_dict['lat_0'], (int, float))
 
+        if is_pyproj2():
+            projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
+                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
+        else:
+            projection = ("{'a': '6371228.0', 'lat_0': '-90.0', "
+                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
 Projection ID: ease_sh
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(ease_sh.__str__(), sh_str)
-        self.assertIsInstance(ease_sh.proj_dict['lat_0'], float)
+        self.assertIsInstance(ease_sh.proj_dict['lat_0'], (int, float))
 
     def test_load_area(self):
         from pyresample import load_area
+        from pyresample.utils import is_pyproj2
         ease_nh = load_area(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ease_nh')
+        if is_pyproj2():
+            # pyproj 2.0+ adds some extra parameters
+            projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
+                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
+        else:
+            projection = ("{'a': '6371228.0', 'lat_0': '90.0', "
+                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
-Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(nh_str, ease_nh.__str__())
 
     def test_not_found_exception(self):
@@ -96,44 +121,61 @@ class TestYAMLAreaParser(unittest.TestCase):
                                      'test_latlong')
         ease_nh, ease_sh, test_m, test_deg, test_latlong = test_areas
 
+        from pyresample.utils import is_pyproj2
+        if is_pyproj2():
+            # pyproj 2.0+ adds some extra parameters
+            projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
+                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
+        else:
+            projection = ("{'a': '6371228.0', 'lat_0': '-90.0', "
+                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(ease_nh.__str__(), nh_str)
 
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 425
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(ease_sh.__str__(), sh_str)
 
         m_str = """Area ID: test_meters
 Description: test_meters
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 850
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(test_m.__str__(), m_str)
 
         deg_str = """Area ID: test_degrees
 Description: test_degrees
-Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+Projection: {}
 Number of columns: 850
 Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)"""
+Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(test_deg.__str__(), deg_str)
 
+        if is_pyproj2():
+            # pyproj 2.0+ adds some extra parameters
+            projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
+                          "'lon_0': '-81.36', 'proj': 'longlat', "
+                          "'type': 'crs'}")
+        else:
+            projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
+                          "'lon_0': '-81.36', 'proj': 'longlat'}")
         latlong_str = """Area ID: test_latlong
 Description: Basic latlong grid
-Projection: {'ellps': 'WGS84', 'lat_0': '27.12', 'lon_0': '-81.36', 'proj': 'longlat'}
+Projection: {}
 Number of columns: 3473
 Number of rows: 4058
-Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)"""
+Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         self.assertEqual(test_latlong.__str__(), latlong_str)
 
     def test_dynamic_area_parser_yaml(self):
@@ -338,19 +380,29 @@ class TestMisc(unittest.TestCase):
         self.assertIsInstance(proj_dict2['lon_0'], float)
 
         # EPSG
-        expected = {'+init=EPSG:4326': {'init': 'EPSG:4326'},
-                    'EPSG:4326': {'EPSG': 4326}}
+        proj_str = '+init=EPSG:4326'
+        proj_dict_exp = {'init': 'EPSG:4326'}
+        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        self.assertEqual(proj_dict, proj_dict_exp)
+        self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
-        for proj_str, proj_dict_exp in expected.items():
-            proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_str = 'EPSG:4326'
+        proj_dict_exp = {'init': 'EPSG:4326'}
+        proj_dict_exp2 = {'proj': 'longlat', 'datum': 'WGS84', 'no_defs': None, 'type': 'crs'}
+        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        if 'init' in proj_dict:
+            # pyproj <2.0
             self.assertEqual(proj_dict, proj_dict_exp)
-            self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
-
-        # Invalid EPSG code (pyproj-2 syntax only)
-        self.assertRaises(ValueError, utils._proj4.proj4_str_to_dict, 'EPSG:XXXX')
+        else:
+            # pyproj 2.0+
+            self.assertEqual(proj_dict, proj_dict_exp2)
+        # input != output for this style of EPSG code
+        # EPSG to PROJ.4 can be lossy
+        # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml
+        from pyresample.utils import is_pyproj2
         import tempfile
         def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
@@ -360,8 +412,15 @@ class TestMisc(unittest.TestCase):
             areas_new = set(parse_area_file(yaml_file))
             areas = parse_area_file(def_file)
             for area in areas:
-                area.proj_dict.pop('units', None)
+                if is_pyproj2():
+                    # pyproj 2.0 adds units back in
+                    # pyproj <2 doesn't
+                    continue
+                area.proj_dict  # initialize _proj_dict
+                area._proj_dict.pop('units', None)
             areas_old = set(areas)
+            areas_new = {area.area_id: area for area in areas_new}
+            areas_old = {area.area_id: area for area in areas_old}
             self.assertEqual(areas_new, areas_old)
         finally:
             os.remove(yaml_file)
@@ -375,18 +434,24 @@ class TestMisc(unittest.TestCase):
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         crs = CRS(init='epsg:3857')
+        if utils.is_pyproj2():
+            # pyproj 2.0+ expands CRS parameters
+            from pyproj import CRS
+            proj_dict = CRS(3857).to_dict()
+        else:
+            proj_dict = crs.to_dict()
         source = tmptiff(x_size, y_size, transform, crs=crs)
         area_id = 'area_id'
         proj_id = 'proj_id'
-        name = 'name'
+        description = 'name'
         area_def = utils._rasterio.get_area_def_from_raster(
-            source, area_id=area_id, name=name, proj_id=proj_id)
+            source, area_id=area_id, name=description, proj_id=proj_id)
         self.assertEqual(area_def.area_id, area_id)
         self.assertEqual(area_def.proj_id, proj_id)
-        self.assertEqual(area_def.name, name)
+        self.assertEqual(area_def.description, description)
         self.assertEqual(area_def.width, x_size)
         self.assertEqual(area_def.height, y_size)
-        self.assertDictEqual(crs.to_dict(), area_def.proj_dict)
+        self.assertDictEqual(proj_dict, area_def.proj_dict)
         self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
                                                      transform.c + transform.a * x_size, transform.f))
 
@@ -422,6 +487,9 @@ class TestMisc(unittest.TestCase):
         source = tmptiff(transform=transform)
         proj_dict = {'init': 'epsg:3857'}
         area_def = utils._rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
+        if utils.is_pyproj2():
+            from pyproj import CRS
+            proj_dict = CRS(3857).to_dict()
         self.assertDictEqual(area_def.proj_dict, proj_dict)
 
 

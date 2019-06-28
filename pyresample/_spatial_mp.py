@@ -110,36 +110,15 @@ class cKDTree_MP(object):
 
 
 class BaseProj(pyproj.Proj):
+    """Helper class for easier backwards compatibility."""
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
-        # Copy dict-type arguments as they will be modified in-place
-        if isinstance(projparams, dict):
-            projparams = projparams.copy()
-
-        # Pyproj<2 uses __new__ to initiate data and does not define its own __init__ method.
         if is_pyproj2():
-            # If init is found in any of the data, override any other area parameters.
-            if 'init' in kwargs:
-                warnings.warn('init="EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead')
-                projparams = kwargs.pop('init')
-            # Proj takes params in projparams over the params in kwargs.
-            if isinstance(projparams, (dict, str)) and 'init' in projparams:
-                warn_msg = '{"init": "EPSG:XXXX"} is no longer supported. Use "EPSG:XXXX" as a proj string instead'
-                if isinstance(projparams, str):
-                    warn_msg = '"+init=EPSG:XXXX" is no longer supported. Use "EPSG:XXXX" as a proj string instead'
-                    # Proj-dicts are cleaner to parse than strings.
-                    projparams = proj4_str_to_dict(projparams)
-                warnings.warn(warn_msg)
-                projparams = projparams.pop('init')
-            # New syntax 'EPSG:XXXX'
-            if 'EPSG' in kwargs or (isinstance(projparams, dict) and 'EPSG' in projparams):
-                if 'EPSG' in kwargs:
-                    epsg_code = kwargs.pop('EPSG')
-                else:
-                    epsg_code = projparams.pop('EPSG')
-                projparams = 'EPSG:{}'.format(epsg_code)
-
-            super(BaseProj, self).__init__(projparams=projparams, preserve_units=preserve_units, **kwargs)
+            # have to have this because pyproj uses __new__
+            # subclasses would fail when calling __init__ otherwise
+            super(BaseProj, self).__init__(projparams=projparams,
+                                           preserve_units=preserve_units,
+                                           **kwargs)
 
     def is_latlong(self):
         if is_pyproj2():
@@ -148,6 +127,7 @@ class BaseProj(pyproj.Proj):
 
 
 class Proj(BaseProj):
+    """Helper class to skip transforming lon/lat projection coordinates."""
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
