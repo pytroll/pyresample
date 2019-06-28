@@ -33,7 +33,7 @@ import numpy as np
 import yaml
 from pyproj import Geod, transform
 
-from pyresample import CHUNK_SIZE, utils
+from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import proj4_str_to_dict, proj4_dict_to_str, convert_proj_floats
