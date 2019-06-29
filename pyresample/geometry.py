@@ -870,8 +870,11 @@ class DynamicAreaDefinition(object):
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
         """Create an AreaDefinition from this area with help of some extra info.
 
-        lonlats:
-          the geographical coordinates to contain in the resulting area.
+        Parameters
+        ----------
+        lonlats : SwathDefinition or tuple
+          The geographical coordinates to contain in the resulting area.
+          A tuple should be ``(lons, lats)``.
         resolution:
           the resolution of the resulting area.
         shape:
