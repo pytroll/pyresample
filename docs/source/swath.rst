@@ -459,3 +459,11 @@ Example
  >>> rows_per_scan = 5
  >>> # fornav resamples the swath data to the gridded area
  >>> num_valid_points, gridded_data = fornav(cols, rows, area_def, data, rows_per_scan=rows_per_scan)
+
+pyresample.bucket
+-----------------
+
+.. autoclass:: pyresample.bucket.BucketResampler
+
+See :class:`~pyresample.bucket.BucketResampler` API documentation for
+the details of method parameters.

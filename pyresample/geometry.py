@@ -33,7 +33,7 @@ import numpy as np
 import yaml
 from pyproj import Geod, transform
 
-from pyresample import CHUNK_SIZE, utils
+from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import proj4_str_to_dict, proj4_dict_to_str, convert_proj_floats
@@ -1353,6 +1353,9 @@ class AreaDefinition(BaseDefinition):
             proj_params = "EPSG:{}".format(self.crs.to_epsg())
         else:
             proj_params = self.proj_str
+        if Proj(proj_params).is_latlong():
+            # Convert area extent from degrees to radians
+            bounds = np.deg2rad(bounds)
         crs = from_proj(proj_params, bounds=bounds)
         return crs
 
