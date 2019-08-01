@@ -130,7 +130,7 @@ Cartopy CRS object.
  >>> ax = plt.axes(projection=crs)
  >>> ax.coastlines()
  >>> ax.set_global()
- >>> plt.imshow(data, transform=crs, extent=crs.bounds, origin='upper')
+ >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper')
  >>> plt.colorbar()
  >>> plt.savefig('viirs_i04_cartopy.png')
 
