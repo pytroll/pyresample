@@ -3,7 +3,6 @@ env:
   global:
   - MINICONDA_VERSION=latest
   - CONDA_VERSION=4.7
-  - PYTHON_VERSION=$PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
   - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio pillow matplotlib
