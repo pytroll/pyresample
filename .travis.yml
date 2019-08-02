@@ -1,6 +1,7 @@
 language: python
 env:
   global:
+  - MINICONDA_VERSION=4.7.10
   - CONDA_VERSION=4.7
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
