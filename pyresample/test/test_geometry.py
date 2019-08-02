@@ -129,7 +129,9 @@ class Test(unittest.TestCase):
             with patch('pyresample._cartopy.warnings.warn') as warn:
                 # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
                 area.to_cartopy_crs()
-                warn.assert_called()
+                if projection.startswith('EPSG'):
+                    # we'll only get this for the new EPSG:XXXX syntax
+                    warn.assert_called()
 
         # Bounds for latlong projection must be specified in radians
         latlong_crs = geometry.AreaDefinition(area_id='latlong',
@@ -193,7 +195,7 @@ class Test(unittest.TestCase):
                                        '  area_extent:\n'
                                        '    lower_left_xy: [-49739, 5954123]\n'
                                        '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml)))
-            self.assertDictEqual(res, expected)
+        self.assertDictEqual(res, expected)
 
     def test_parse_area_file(self):
         from pyresample import utils
@@ -1076,9 +1078,12 @@ class Test(unittest.TestCase):
         self.assertEqual(slice(3, 3709, None), slice_y)
 
     def test_proj_str(self):
+        """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
         from pyresample import utils
 
+        # pyproj 2.0+ adds a +type=crs parameter
+        extra_params = ' +type=crs' if utils.is_pyproj2() else ''
         proj_dict = OrderedDict()
         proj_dict['proj'] = 'stere'
         proj_dict['a'] = 6378144.0
@@ -1091,20 +1096,34 @@ class Test(unittest.TestCase):
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
         self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere')
+                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 '
+                         '+lon_0=8.0 +proj=stere' + extra_params)
+        # try a omerc projection and no_rot parameters
+        proj_dict['proj'] = 'omerc'
+        proj_dict['alpha'] = proj_dict.pop('lat_ts')
         proj_dict['no_rot'] = ''
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
         self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 +lon_0=8.0 +no_rot +proj=stere')
+                         '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
+                         '+lon_0=8.0 +no_rot +proj=omerc' + extra_params)
 
         # EPSG
-        projections = ['+init=EPSG:6932']
         if utils.is_pyproj2():
-            projections.append('EPSG:6932')
-        for projection in projections:
+            # With pyproj 2.0+ we expand EPSG to full parameter list
+            full_proj = ('+datum=WGS84 +lat_0=-90 +lon_0=0 +no_defs '
+                         '+proj=laea +type=crs +units=m +x_0=0 +y_0=0')
+            projections = [
+                ('+init=EPSG:6932', full_proj),
+                ('EPSG:6932', full_proj)
+            ]
+        else:
+            projections = [
+                ('+init=EPSG:6932', '+init=EPSG:6932'),
+            ]
+        for projection, expected_proj in projections:
             area = geometry.AreaDefinition(
                 area_id='ease-sh-2.0',
                 description='25km EASE Grid 2.0 (Southern Hemisphere)',
@@ -1112,7 +1131,7 @@ class Test(unittest.TestCase):
                 projection=projection,
                 width=123, height=123,
                 area_extent=[-40000., -40000., 40000., 40000.])
-            self.assertEqual(area.proj_str, projection)
+            self.assertEqual(area.proj_str, expected_proj)
 
     def test_striding(self):
         """Test striding AreaDefinitions."""
@@ -1377,6 +1396,7 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_compute_optimal_bb(self):
         """Test computing the bb area."""
+        from pyresample.utils import is_pyproj2
         import xarray as xr
         lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                          [80.84000396728516, 60.74200439453125, 34.08500289916992],
@@ -1396,6 +1416,11 @@ class TestSwathDefinition(unittest.TestCase):
         proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
+        if is_pyproj2():
+            # pyproj2 adds some extra defaults
+            proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
+                              'k': 1, 'gamma': 0,
+                              'no_defs': None, 'type': 'crs'})
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
 
@@ -1715,21 +1740,35 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         lats = [50, 66, 66, 50]
         result = area.freeze((lons, lats),
                              resolution=3000,
-                             proj_info={'lon0': 16, 'lat0': 58})
+                             proj_info={'lon_0': 16, 'lat_0': 58})
 
+        np.testing.assert_allclose(result.area_extent, (-432079.38952,
+                                                        -872594.690447,
+                                                        432079.38952,
+                                                        904633.303964))
+        self.assertEqual(result.proj_dict['lon_0'], 16)
+        self.assertEqual(result.proj_dict['lat_0'], 58)
+        self.assertEqual(result.width, 288)
+        self.assertEqual(result.height, 592)
+
+        # make sure that setting `proj_info` once doesn't
+        # set it in the dynamic area
+        result = area.freeze((lons, lats),
+                             resolution=3000,
+                             proj_info={'lon_0': 0})
         np.testing.assert_allclose(result.area_extent, (538546.7274949469,
                                                         5380808.879250369,
                                                         1724415.6519203288,
                                                         6998895.701001488))
-        self.assertEqual(result.proj_dict['lon0'], 16)
-        self.assertEqual(result.proj_dict['lat0'], 58)
-        self.assertEqual(result.x_size, 395)
-        self.assertEqual(result.y_size, 539)
+        self.assertEqual(result.proj_dict['lon_0'], 0)
+        # lat_0 could be provided or not depending on version of pyproj
+        self.assertEqual(result.proj_dict.get('lat_0', 0), 0)
+        self.assertEqual(result.width, 395)
+        self.assertEqual(result.height, 539)
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
-        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
-                                              {'proj': 'omerc'},
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'omerc'},
                                               optimize_projection=True)
         lons = [[10, 12.1, 14.2, 16.3],
                 [10, 12, 14, 16],
@@ -1739,13 +1778,23 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                 [50, 51, 52, 53]]
         import xarray as xr
         sdef = geometry.SwathDefinition(xr.DataArray(lons), xr.DataArray(lats))
-        result = area.freeze(sdef,
-                             resolution=1000)
+        result = area.freeze(sdef, resolution=1000)
         np.testing.assert_allclose(result.area_extent,
                                    [-336277.698941, 5513145.392745,
                                     192456.651909, 7749649.63914])
         self.assertEqual(result.x_size, 4)
         self.assertEqual(result.y_size, 18)
+        # Test for properties and shape usage in freeze.
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
+                                              width=4, height=18)
+        self.assertEqual((18, 4), area.shape)
+        result = area.freeze(sdef)
+        np.testing.assert_allclose(result.area_extent,
+                                   (996309.4426, 6287132.757981, 1931393.165263, 10837238.860543))
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
+                                              resolution=1000)
+        self.assertEqual(1000, area.pixel_size_x)
+        self.assertEqual(1000, area.pixel_size_y)
 
     def test_compute_domain(self):
         """Test computing size and area extent."""

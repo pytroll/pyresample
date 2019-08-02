@@ -237,5 +237,5 @@ intersphinx_mapping = {
     'pyresample': ('https://pyresample.readthedocs.io/en/stable', None),
     'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
     'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
-    'proj4': ('https://proj4.org', None),
+    'proj4': ('https://proj.org', None),
 }
