@@ -25,12 +25,19 @@ import sys
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
-requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'numpy>=1.10.0', 'configobj',
+requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'six']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1']}
+
+if sys.version_info.major > 2:
+    setup_requires = ['numpy>=1.10.0']
+    requirements.append('numpy>=1.10.0')
+else:
+    setup_requires = ['numpy>=1.10.0,<1.17.0']
+    requirements.append('numpy>=1.10.0,<1.17.0')
 
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy']
 if sys.version_info < (3, 3):
@@ -119,7 +126,7 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-          setup_requires=['numpy'],
+          setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,
           tests_require=test_requires,
