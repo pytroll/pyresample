@@ -79,42 +79,23 @@ keyword arguments can be specified with one value if ``dx == dy``:
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 You can also specify parameters in degrees even if the projection space
-is defined in meters:
+is defined in meters. For example the below code creates an area in
+the mercator projection with radius and resolution defined in degrees.
 
-* Create an area in the mercator projection with radius and resolution defined in degrees
+.. doctest::
 
- .. doctest::
-
-  >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
-  >>> area_def = create_area_def(area_id, proj_dict, center=(0, 0),
-  ...                            radius=(47.90379019311, 43.1355420077),
-  ...                            resolution=(0.22542960090875294, 0.22542901929487608),
-  ...                            units='degrees', description='Antarctic EASE grid')
-  >>> print(area_def)
-  Area ID: ease_sh
-  Description: Antarctic EASE grid
-  Projection: {'a': '6371228.0', 'lat_0': '0.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
-  Number of columns: 425
-  Number of rows: 425
-  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-* Create a global 1x1 degree lat-lon grid with area extent and resolution defined in degrees
-
- .. doctest::
-
-  >>> area_def = create_area_def('my_area',
-  ...                            {'proj': 'eqc', 'lon_0': 0, 'units': 'm'},
-  ...                            area_extent=[-180, -90, 180, 90],
-  ...                            resolution=1,
-  ...                            units='degrees',
-  ...                            description='Global 1x1 degree lat-lon grid')
-  >>> print(area_def)
-  Area ID: my_area
-  Description: Global 1x1 degree lat-lon grid
-  Projection: {'lon_0': '0.0', 'proj': 'eqc'}
-  Number of columns: 360
-  Number of rows: 180
-  Area extent: (-20037508.3428, -10018754.1714, 20037508.3428, 10018754.1714)
+ >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> area_def = create_area_def(area_id, proj_dict, center=(0, 0),
+ ...                              radius=(47.90379019311, 43.1355420077),
+ ...                              resolution=(0.22542960090875294, 0.22542901929487608),
+ ...                              units='degrees', description='Antarctic EASE grid')
+ >>> print(area_def)
+ Area ID: ease_sh
+ Description: Antarctic EASE grid
+ Projection: {'a': '6371228.0', 'lat_0': '0.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
+ Number of columns: 425
+ Number of rows: 425
+ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
 If only one of **area_extent** or **shape** can be computed from the
 information provided by the user, a
