@@ -51,23 +51,21 @@ where
 * **upper_right_x**: projection x coordinate of upper right corner of upper right pixel
 * **upper_right_y**: projection y coordinate of upper right corner of upper right pixel
 
-Below are three examples of creating an ``AreaDefinition``:
+Example:
 
 .. doctest::
 
  >>> from pyresample.geometry import AreaDefinition
-
- >>> # a) Using a projection dictionary
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
- >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
- >>> area_def = AreaDefinition(area_id, description, proj_id, proj_dict,
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
- >>> print(area_def)
+ >>> area_def
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
@@ -76,35 +74,25 @@ Below are three examples of creating an ``AreaDefinition``:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
- >>> # b) Using an explicit proj4 string
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> area_def = AreaDefinition(area_id, description, proj_id, proj_string,
- ...                           width, height, area_extent)
- >>> print(area_def)
- Area ID: ease_sh
- Description: Antarctic EASE grid
- Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+You can also specify the projection using a PROJ.4 string
 
- >>> # c) Using an EPSG code in a proj4 string
- >>> proj_string = '+init=EPSG:3409'  # Use 'EPSG:3409' with pyproj 2.0+
- >>> area_def = AreaDefinition(area_id, description, proj_id, proj_string,
+.. doctest::
+
+ >>> projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
- >>> print(area_def)
- Area ID: ease_sh
- Description: Antarctic EASE grid
- Projection ID: ease_sh
- Projection: {'init': 'EPSG:3409'}
- Number of columns: 425
- Number of rows: 425
- Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+or an `EPSG code <https://www.epsg-registry.org/>`_:
+
+.. doctest::
+
+ >>> projection = '+init=EPSG:3409'  # Use 'EPSG:3409' with pyproj 2.0+
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
 
 .. note::
 
-  When using pyproj 2.0+, please use the new ``'EPSG:XXXX'`` syntax
+  With pyproj 2.0+ please use the new ``'EPSG:XXXX'`` syntax
   as the old ``'+init=EPSG:XXXX'`` is no longer supported.
 
 Creating an ``AreaDefinition`` can be complex if you don't know everything
