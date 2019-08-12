@@ -100,7 +100,7 @@ the mercator projection with radius and resolution defined in degrees.
 The area definition corresponding to a given lat-lon grid (defined by area extent and resolution)
 can be obtained as follows:
 
- .. doctest::
+.. doctest::
 
  >>> area_def = create_area_def('my_area',
  ...                            {'proj': 'latlong', 'lon_0': 0, 'units': 'm'},
@@ -111,7 +111,7 @@ can be obtained as follows:
  >>> print(area_def)
  Area ID: my_area
  Description: Global 1x1 degree lat-lon grid
- Projection: {'lon_0': '0.0', 'proj': 'eqc'}
+ Projection: {'lon_0': '0.0', 'proj': 'latlong'}
  Number of columns: 360
  Number of rows: 180
  Area extent: (-180.0, -90.0, 180.0, 90.0)
