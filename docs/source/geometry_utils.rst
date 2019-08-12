@@ -103,7 +103,7 @@ is defined in meters:
  .. doctest::
 
   >>> area_def = create_area_def('my_area',
-  ...                            {'proj': 'latlong', 'lon_0': 0, 'units': 'm'},
+  ...                            {'proj': 'eqc', 'lon_0': 0, 'units': 'm'},
   ...                            area_extent=[-180, -90, 180, 90],
   ...                            resolution=1,
   ...                            units='degrees',
@@ -114,7 +114,7 @@ is defined in meters:
   Projection: {'lon_0': '0.0', 'proj': 'eqc'}
   Number of columns: 360
   Number of rows: 180
-  Area extent: (-180.0, -90.0, 180.0, 90.0)
+  Area extent: (-20037508.3428, -10018754.1714, 20037508.3428, 10018754.1714)
 
 If only one of **area_extent** or **shape** can be computed from the
 information provided by the user, a
