@@ -28,7 +28,7 @@ matrix:
     language: c
 install:
 # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-- git clone --depth 1 git://github.com/mwcraig/ci-helpers.git@upgrade-conda-use-channel-strict
+- git clone --depth 1 -b upgrade-conda-use-channel-strict git://github.com/mwcraig/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
 - conda config --remove channels defaults
 - conda install -y $CONDA_DEPENDENCIES
