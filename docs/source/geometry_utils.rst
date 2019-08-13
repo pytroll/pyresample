@@ -103,7 +103,7 @@ can be obtained as follows:
 .. doctest::
 
  >>> area_def = create_area_def('my_area',
- ...                            {'proj': 'latlong', 'lon_0': 0, 'units': 'm'},
+ ...                            {'proj': 'latlong', 'lon_0': 0},
  ...                            area_extent=[-180, -90, 180, 90],
  ...                            resolution=1,
  ...                            units='degrees',
