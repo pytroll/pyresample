@@ -166,10 +166,10 @@ class Test(unittest.TestCase):
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_average(data, mask_all_nan=True)
         self.assertTrue(np.all(np.isnan(result)))
-        # By default all-NaN bins have a value of 0.0
+        # By default all-NaN bins have a value of NaN
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_average(data)
-        self.assertEqual(np.nanmax(result), 0.0)
+        self.assertTrue(np.all(np.isnan(result)))
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
