@@ -234,11 +234,11 @@ class BucketResampler(object):
         LOG.info("Get average value for each location")
 
         sums = self.get_sum(data, mask_all_nan=mask_all_nan)
-        counts = self.get_count()
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int),
+                              mask_all_nan=False)
 
-        average = sums / counts
-        mask = (counts == 0) | np.isnan(sums)
-        average = da.where(mask, fill_value, average)
+        average = sums / da.where(counts == 0, np.nan, counts)
+        average = da.where(np.isnan(average), fill_value, average)
 
         return average
 
