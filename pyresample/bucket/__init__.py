@@ -258,7 +258,8 @@ class BucketResampler(object):
         """
         if categories is None:
             LOG.warning("No categories given, need to compute the data.")
-            categories = np.unique(data).compute()
+            # compute any dask arrays by converting to numpy
+            categories = np.asarray(np.unique(data))
         try:
             num = categories.size
         except AttributeError:
