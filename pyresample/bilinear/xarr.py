@@ -371,8 +371,10 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     # FIXME: how to daskify?
     # Tile output coordinates to same shape as neighbour info
     # Replacing with da.transpose and da.tile doesn't work
-    out_x_tile = np.transpose(np.tile(out_x, (neighbours, 1)))
-    out_y_tile = np.transpose(np.tile(out_y, (neighbours, 1)))
+    out_x_tile = np.reshape(np.tile(out_x, neighbours),
+                            (neighbours, out_x.size)).T
+    out_y_tile = np.reshape(np.tile(out_y, neighbours),
+                            (neighbours, out_y.size)).T
 
     # Get differences in both directions
     x_diff = out_x_tile - in_x
