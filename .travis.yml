@@ -30,7 +30,7 @@ install:
 # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
 - git clone --depth 1 -b upgrade-conda-use-channel-strict git://github.com/djhoese/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
-- conda deactivate test
+- conda deactivate
 - conda activate test
 script:
 - coverage run --source=pyresample setup.py test
