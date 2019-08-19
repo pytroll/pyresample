@@ -30,8 +30,9 @@ class XArrayResamplerBilinear(object):
                  nprocs=1,
                  segments=None):
         """
-        Parameters.
+        Initialize resampler.
 
+        Parameters
         ----------
         source_geo_def : object
             Geometry definition of source
@@ -52,6 +53,7 @@ class XArrayResamplerBilinear(object):
         segments : int or None
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
+
         """
         if da is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
