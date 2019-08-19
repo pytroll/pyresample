@@ -31,9 +31,11 @@ install:
 - git clone --depth 1 -b upgrade-conda-use-channel-strict git://github.com/djhoese/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
 - env
+- type conda
 - conda deactivate
 - conda activate test
 - env
+- type conda
 script:
 - coverage run --source=pyresample setup.py test
 - cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
