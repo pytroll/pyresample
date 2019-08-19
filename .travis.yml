@@ -34,6 +34,7 @@ install:
 - type conda
 - conda deactivate
 - conda activate test
+- hash -r
 - env
 - type conda
 script:
