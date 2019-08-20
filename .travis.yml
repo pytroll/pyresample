@@ -28,7 +28,7 @@ matrix:
     language: c
 install:
 # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-- git clone --depth 1 -b upgrade-conda-use-channel-strict git://github.com/djhoese/ci-helpers.git
+- git clone --depth 1 -b conda-strict2 git://github.com/djhoese/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
 script:
 - coverage run --source=pyresample setup.py test
