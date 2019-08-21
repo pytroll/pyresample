@@ -206,8 +206,8 @@ class XArrayResamplerBilinear(object):
                 except KeyError:
                     pass
 
-        res = data.values[slices]
-        res[mask_slices] = fill_value
+        res = data.values[tuple(slices)]
+        res[tuple(mask_slices)] = fill_value
 
         try:
             p_1 = res[:, :, 0]
