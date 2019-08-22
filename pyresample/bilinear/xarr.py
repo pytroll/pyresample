@@ -27,7 +27,6 @@ class XArrayResamplerBilinear(object):
                  neighbours=32,
                  epsilon=0,
                  reduce_data=True,
-                 nprocs=1,
                  segments=None):
         """
         Initialize resampler.
@@ -48,8 +47,6 @@ class XArrayResamplerBilinear(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-        nprocs : int, optional
-            Number of processor cores to be used
         segments : int or None
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
@@ -67,7 +64,6 @@ class XArrayResamplerBilinear(object):
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
-        self.nprocs = nprocs
         self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
@@ -250,8 +246,7 @@ class XArrayResamplerBilinear(object):
             _get_valid_input_index_dask(self.source_geo_def,
                                         self.target_geo_def,
                                         self.reduce_data,
-                                        self.radius_of_influence,
-                                        nprocs=self.nprocs)
+                                        self.radius_of_influence)
 
         # FIXME: Is dask smart enough to only compute the pixels we end up
         #        using even with this complicated indexing
@@ -305,10 +300,6 @@ def _get_output_xy_dask(target_geo_def, proj):
 
     # Convert coordinates to output projection x/y space
     res = da.dstack(proj(out_lons.compute(), out_lats.compute()))
-    # _run_proj(proj, out_lons, out_lats)
-    # ,
-    #                    chunks=(out_lons.chunks[0], out_lons.chunks[1], 2),
-    #                    new_axis=[2])
     out_x = da.ravel(res[:, :, 0])
     out_y = da.ravel(res[:, :, 1])
 
@@ -317,7 +308,7 @@ def _get_output_xy_dask(target_geo_def, proj):
 
 def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = source_geo_def.get_lonlats_dask()
+    in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
     # Mask invalid values
     in_lons, in_lats = _mask_coordinates_dask(in_lons, in_lats)
@@ -624,10 +615,9 @@ def query_no_distance(target_lons, target_lats,
 def _get_valid_input_index_dask(source_geo_def,
                                 target_geo_def,
                                 reduce_data,
-                                radius_of_influence,
-                                nprocs=1):
+                                radius_of_influence):
     """Find indices of reduced inputput data."""
-    source_lons, source_lats = source_geo_def.get_lonlats_dask()
+    source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
     source_lons = da.ravel(source_lons)
     source_lats = da.ravel(source_lats)
 
