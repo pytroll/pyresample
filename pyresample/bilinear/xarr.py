@@ -187,14 +187,14 @@ class XArrayResamplerBilinear(object):
             if dim == 'y':
                 slices.append(rlines)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_y is not None:
                     coords[dim] = coord_y
             elif dim == 'x':
                 slices.append(rcols)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_x is not None:
                     coords[dim] = coord_x
