@@ -23,10 +23,11 @@ matrix:
   - env: PYTHON_VERSION=3.7
     os: osx
     language: generic
-  allow_failures:
   - env: PYTHON_VERSION=3.7
     os: windows
     language: c
+  allow_failures:
+  - os: windows
 install:
 # - git clone --depth 1 git://github.com/astropy/ci-helpers.git
 - git clone --depth 1 -b all-the-fixes git://github.com/djhoese/ci-helpers.git
