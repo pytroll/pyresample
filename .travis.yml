@@ -23,6 +23,7 @@ matrix:
   - env: PYTHON_VERSION=3.7
     os: osx
     language: generic
+  allow_failures:
   - env: PYTHON_VERSION=3.7
     os: windows
     language: c
