@@ -1872,9 +1872,9 @@ def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
 
     # get some projection parameters
-    req = geos_area.proj_dict['a'] / 1000
-    rp = geos_area.proj_dict['b'] / 1000
-    h = geos_area.proj_dict['h'] / 1000 + req
+    req = geos_area.proj_dict['a'] / 1000.0
+    rp = geos_area.proj_dict['b'] / 1000.0
+    h = geos_area.proj_dict['h'] / 1000.0 + req
 
     # compute some constants
     aeq = 1 - req ** 2 / (h ** 2)
@@ -1897,8 +1897,8 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2))) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2))) * (ymax - 0.0001)
+    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
