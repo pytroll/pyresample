@@ -77,8 +77,8 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
     red_lons = lons[linesmin:linesmax, colsmin:colsmax]
     red_lats = lats[linesmin:linesmax, colsmin:colsmax]
     result = da.map_blocks(_get_proj_coordinates,
-                           red_lons.data,
-                           red_lats.data, prj, new_axis=0,
+                           red_lons,
+                           red_lats, prj, new_axis=0,
                            chunks=(2,) + red_lons.chunks)
     projection_x_coords = result[0, :]
     projection_y_coords = result[1, :]
@@ -167,9 +167,13 @@ def main():
     area = get_area_def("euron1")
 
     tic = datetime.now()
+    lons, lats = glbl[10.8].area.get_lonlats(chunks=CHUNK_SIZE)
+    idxs = (lons <= 180.0) & (lons >= -180.0) & (lats <= 90.0) & (lats >= -90.0)
+    lons = da.where(idxs, lons, np.nan)
+    lats = da.where(idxs, lats, np.nan)
     idx = gradient_search(glbl[10.8].values,
-                          glbl[10.8].attrs['area'].lons,
-                          glbl[10.8].attrs['area'].lats,
+                          lons,
+                          lats,
                           area)
 
     idx = idx.astype(np.int)
