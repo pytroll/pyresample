@@ -152,32 +152,30 @@ def show(data):
 
 def main():
     """Run some tests."""
+    import sys
+
     from satpy import Scene
-    from glob import glob
-    # avhrr example
-    filenames = sorted(glob('/home/a001673/data/satellite/metop/*'))
+    from satpy.resample import get_area_def
+
+    filenames = sorted(sys.argv[1:])
     glbl = Scene(
-        sensor='avhrr-3',
         filenames=filenames,
-        reader="avhrr_l1b_eps",
         filter_parameters={'area': 'euron1'}
     )
-    glbl.load(['4'])
-
-    from satpy.resample import get_area_def
+    glbl.load([10.8])
 
     area = get_area_def("euron1")
 
     tic = datetime.now()
-    idx = gradient_search(glbl['4'].values,
-                          glbl['4'].attrs['area'].lons,
-                          glbl['4'].attrs['area'].lats,
+    idx = gradient_search(glbl[10.8].values,
+                          glbl[10.8].attrs['area'].lons,
+                          glbl[10.8].attrs['area'].lats,
                           area)
 
     idx = idx.astype(np.int)
     idx_x = idx[0, :, :]
     idx_y = idx[1, :, :]
-    res = glbl['4'].values
+    res = glbl[10.8].values
     cidx, cidy = da.compute(idx_x, idx_y)
     image = res[cidx, cidy]
     toc = datetime.now()
@@ -188,7 +186,7 @@ def main():
 
     tic = datetime.now()
     lcl = glbl.resample(area)
-    lcl['4'].values
+    lcl[10.8].values
     toc = datetime.now()
     print("kd-tree took", toc - tic)
 
