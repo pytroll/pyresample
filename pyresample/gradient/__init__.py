@@ -25,20 +25,19 @@
 import dask.array as da
 import logging
 from pyresample import data_reduce
-from _gradient_search import (two_step_fast_gradient_search,
-                              two_step_fast_gradient_search_with_mask,
-                              fast_gradient_search_with_mask,
-                              fast_gradient_indices)
 import pyximport
 from datetime import datetime
 import numpy as np
 import pyproj
 from satpy.utils import debug_on
 from satpy import CHUNK_SIZE
+pyximport.install(setup_args={'include_dirs': np.get_include()})
 debug_on()
 
-pyximport.install(setup_args={'include_dirs': np.get_include()})
-
+from _gradient_search import (two_step_fast_gradient_search,
+                              two_step_fast_gradient_search_with_mask,
+                              fast_gradient_search_with_mask,
+                              fast_gradient_indices)  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
