@@ -150,10 +150,10 @@ def show(data):
     img.save("/tmp/gradient2.png")
 
 
-if __name__ == '__main__':
+def main():
+    """Run some tests."""
     from satpy import Scene
     from glob import glob
-    logger = logging.getLogger("gradient_search")
     # avhrr example
     filenames = sorted(glob('/home/a001673/data/satellite/metop/*'))
     glbl = Scene(
@@ -267,3 +267,7 @@ if __name__ == '__main__':
     # toc = datetime.now()
     # print "pyresample took", toc - tic
     # # l.image.hr_overview().show()
+
+
+if __name__ == '__main__':
+    main()
