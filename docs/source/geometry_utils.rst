@@ -11,7 +11,7 @@ AreaDefinition Creation
 
 The main utility function for creating
 :class:`~pyresample.geometry.AreaDefinition` objects is the
-:func:`~pyresample.utils.create_area_def` function. This function will take
+:func:`~pyresample.area_config.create_area_def` function. This function will take
 whatever information can be provided to describe a geographic region and
 create a valid ``AreaDefinition`` object if possible. If it can't make
 a fully specified ``AreaDefinition`` then it will provide a
@@ -46,17 +46,17 @@ and optional arguments:
 
 .. doctest::
 
- >>> from pyresample import utils
+ >>> from pyresample import create_area_def
  >>> area_id = 'ease_sh'
  >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = (5326849.0625, 5326849.0625)
  >>> resolution = (25067.525, 25067.525)
- >>> area_def = utils.create_area_def(area_id, proj_dict, center=center, radius=radius, resolution=resolution)
+ >>> area_def = create_area_def(area_id, proj_dict, center=center, radius=radius, resolution=resolution)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -68,12 +68,12 @@ keyword arguments can be specified with one value if ``dx == dy``:
 .. doctest::
 
  >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
- >>> area_def = utils.create_area_def(area_id, proj_string, center=center,
+ >>> area_def = create_area_def(area_id, proj_string, center=center,
  ...                              radius=5326849.0625, resolution=25067.525)
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -85,14 +85,14 @@ the mercator projection with radius and resolution defined in degrees.
 .. doctest::
 
  >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> area_def = utils.create_area_def(area_id, proj_dict, center=(0, 0),
+ >>> area_def = create_area_def(area_id, proj_dict, center=(0, 0),
  ...                              radius=(47.90379019311, 43.1355420077),
  ...                              resolution=(0.22542960090875294, 0.22542901929487608),
  ...                              units='degrees', description='Antarctic EASE grid')
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '0.0', 'lon_0': '0.0', 'proj': 'merc', 'units': 'm'}
+ Projection: {'a': '6371228.0', 'lat_0': '0', 'lon_0': '0', 'proj': 'merc', 'type': 'crs', 'units': 'm'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -103,7 +103,7 @@ information provided by the user, a
 
 .. doctest::
 
- >>> area_def = utils.create_area_def(area_id, proj_string, radius=radius, resolution=resolution)
+ >>> area_def = create_area_def(area_id, proj_string, radius=radius, resolution=resolution)
  >>> print(type(area_def))
  <class 'pyresample.geometry.DynamicAreaDefinition'>
 
@@ -118,7 +118,7 @@ AreaDefinition Class Methods
 
 There are four class methods available on the
 :class:`~pyresample.geometry.AreaDefinition` class utilizing
-:func:`~pyresample.utils.create_area_def` providing a simpler interface to the
+:func:`~pyresample.area_config.create_area_def` providing a simpler interface to the
 functionality described in the previous section.
 Hence each argument used below is the same as the ``create_area_def`` arguments
 described above and can be used in the same way (i.e. units). The following
@@ -132,7 +132,6 @@ from_extent
 
 .. doctest::
 
- >>> from pyresample import utils
  >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
  >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
@@ -142,7 +141,7 @@ from_extent
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -161,7 +160,7 @@ from_circle
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -173,7 +172,7 @@ from_circle
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -189,7 +188,7 @@ from_area_of_interest
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -204,7 +203,7 @@ from_ul_corner
  >>> print(area_def)
  Area ID: ease_sh
  Description: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -374,7 +373,7 @@ read a single ``AreaDefinition`` named ``corner`` by doing:
  >>> print(area_def)
  Area ID: corner
  Description: Example of making an area definition using shape, upper_left_extent, and resolution
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -388,7 +387,7 @@ series of arguments:
  >>> print(boundary)
  Area ID: ease_sh
  Description: Example of making an area definition using shape and area_extent
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -429,7 +428,7 @@ An area definition dict can be read using
  Area ID: ease_nh
  Description: Arctic EASE grid
  Projection ID: ease_nh
- Projection: {'a': '6371228.0', 'lat_0': '90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -445,7 +444,7 @@ Several area definitions can be read at once using the region names in an argume
  Area ID: ease_sh
  Description: Antarctic EASE grid
  Projection ID: ease_sh
- Projection: {'a': '6371228.0', 'lat_0': '-90.0', 'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}
+ Projection: {'R': '6371228', 'lat_0': '-90', 'lon_0': '0', 'no_defs': 'None', 'proj': 'laea', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)

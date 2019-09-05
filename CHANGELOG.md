@@ -1,3 +1,14 @@
+## Version 1.12.3 (2019/05/17)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 193](https://github.com/pytroll/pyresample/pull/193) - Fix striding slicing in AreaDefinition
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.12.2 (2019/05/10)
 
 ### Issues Closed
