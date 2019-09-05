@@ -97,6 +97,8 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
     y_inc = (y_min - y_max) / y_size
     y_1d = da.arange(y_max - y_inc / 2, y_min, y_inc, chunks=CHUNK_SIZE)
 
+    indices = None
+    image = None
     if chunk_size == 0:
         if mask is None:
 
@@ -104,33 +106,35 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
                                    px=projection_x_coords, py=projection_y_coords,
                                    new_axes={'k': 2}, dtype=np.float)
         else:
-            _ = fast_gradient_search_with_mask(data[linesmin:linesmax,
-                                                    colsmin:colsmax],
-                                               projection_x_coords,
-                                               projection_y_coords,
-                                               area.area_extent,
-                                               area.shape,
-                                               mask[linesmin:linesmax,
-                                                    colsmin:colsmax])
+            image = fast_gradient_search_with_mask(
+                data[linesmin:linesmax,
+                     colsmin:colsmax],
+                projection_x_coords,
+                projection_y_coords,
+                area.area_extent,
+                area.shape,
+                mask[linesmin:linesmax,
+                     colsmin:colsmax])
 
     elif mask is None:
-        _ = two_step_fast_gradient_search(data[linesmin:linesmax,
-                                               colsmin:colsmax],
-                                          projection_x_coords,
-                                          projection_y_coords,
-                                          chunk_size,
-                                          area.area_extent,
-                                          area.shape)
+        image = two_step_fast_gradient_search(data[linesmin:linesmax,
+                                                   colsmin:colsmax],
+                                              projection_x_coords,
+                                              projection_y_coords,
+                                              chunk_size,
+                                              area.area_extent,
+                                              area.shape)
     else:
-        _ = two_step_fast_gradient_search_with_mask(data[linesmin:linesmax,
-                                                         colsmin:colsmax],
-                                                    projection_x_coords,
-                                                    projection_y_coords,
-                                                    chunk_size,
-                                                    area.area_extent,
-                                                    area.shape,
-                                                    mask[linesmin:linesmax,
-                                                         colsmin:colsmax])
+        image = two_step_fast_gradient_search_with_mask(
+            data[linesmin:linesmax,
+                 colsmin:colsmax],
+            projection_x_coords,
+            projection_y_coords,
+            chunk_size,
+            area.area_extent,
+            area.shape,
+            mask[linesmin:linesmax,
+                 colsmin:colsmax])
 
     # logger.debug("min %f max  %f", image.min(), image.max())
 
@@ -138,6 +142,9 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     logger.debug("resampling took %s", str(toc - tic))
     logger.debug("from which gradient search took %s", str(toc - tic2))
+
+    if indices is None:
+        return image
     return indices
 
 
@@ -171,7 +178,8 @@ def main():
     idxs = (lons <= 180.0) & (lons >= -180.0) & (lats <= 90.0) & (lats >= -90.0)
     lons = da.where(idxs, lons, np.nan)
     lats = da.where(idxs, lats, np.nan)
-    idx = gradient_search(glbl[10.8].values,
+    res = glbl[10.8].values
+    idx = gradient_search(res,
                           lons,
                           lats,
                           area)
@@ -179,7 +187,6 @@ def main():
     idx = idx.astype(np.int)
     idx_x = idx[0, :, :]
     idx_y = idx[1, :, :]
-    res = glbl[10.8].values
     cidx, cidy = da.compute(idx_x, idx_y)
     image = res[cidx, cidy]
     toc = datetime.now()
