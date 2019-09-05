@@ -108,13 +108,13 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
         else:
             image = fast_gradient_search_with_mask(
                 data[linesmin:linesmax,
-                     colsmin:colsmax],
-                projection_x_coords,
-                projection_y_coords,
+                     colsmin:colsmax].astype(np.float),
+                projection_x_coords.compute(),
+                projection_y_coords.compute(),
                 area.area_extent,
                 area.shape,
                 mask[linesmin:linesmax,
-                     colsmin:colsmax])
+                     colsmin:colsmax].astype(np.uint8))
 
     elif mask is None:
         image = two_step_fast_gradient_search(data[linesmin:linesmax,
@@ -164,6 +164,8 @@ def main():
     from satpy import Scene
     from satpy.resample import get_area_def
 
+    use_mask = False
+
     filenames = sorted(sys.argv[1:])
     glbl = Scene(
         filenames=filenames,
@@ -175,20 +177,27 @@ def main():
 
     tic = datetime.now()
     lons, lats = glbl[10.8].area.get_lonlats(chunks=CHUNK_SIZE)
-    idxs = (lons <= 180.0) & (lons >= -180.0) & (lats <= 90.0) & (lats >= -90.0)
-    lons = da.where(idxs, lons, np.nan)
-    lats = da.where(idxs, lats, np.nan)
     res = glbl[10.8].values
-    idx = gradient_search(res,
-                          lons,
-                          lats,
-                          area)
 
-    idx = idx.astype(np.int)
-    idx_x = idx[0, :, :]
-    idx_y = idx[1, :, :]
-    cidx, cidy = da.compute(idx_x, idx_y)
-    image = res[cidx, cidy]
+    if use_mask:
+        mask = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
+        image = gradient_search(res,
+                                lons,
+                                lats,
+                                area,
+                                mask=mask.compute())
+    else:
+        idx = gradient_search(res,
+                              lons,
+                              lats,
+                              area)
+
+        idx = idx.astype(np.int)
+        idx_x = idx[0, :, :]
+        idx_y = idx[1, :, :]
+        cidx, cidy = da.compute(idx_x, idx_y)
+        image = res[cidx, cidy]
+
     toc = datetime.now()
     logger.debug("gradient search took %s", str(toc - tic))
     show(image)
