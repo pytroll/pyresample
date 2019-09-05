@@ -20,19 +20,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Testing the Trishchenko algorithm.
-"""
+"""Test the Trishchenko algorithm."""
 
 import dask.array as da
 import logging
 from pyresample import data_reduce
-from _gradient_search import (fast_gradient_search,
-                              two_step_fast_gradient_search,
+from _gradient_search import (two_step_fast_gradient_search,
                               two_step_fast_gradient_search_with_mask,
                               fast_gradient_search_with_mask,
                               fast_gradient_indices)
 import pyximport
-import h5py
 from datetime import datetime
 import numpy as np
 import pyproj
@@ -54,10 +51,12 @@ def _get_proj_coordinates(lons, lats, prj):
 
 
 def blockwise_gradient_indices(x_1d, y_1d, px, py):
+    """Find indices with blockwise operation."""
     return fast_gradient_indices(px, py, x_1d, y_1d)
 
 
 def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
+    """Run gradient search."""
     tic = datetime.now()
     prj = pyproj.Proj(**area.proj_dict)
 
@@ -106,32 +105,35 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
                                    px=projection_x_coords, py=projection_y_coords,
                                    new_axes={'k': 2}, dtype=np.float)
         else:
-            image = fast_gradient_search_with_mask(data[linesmin:linesmax,
-                                                        colsmin:colsmax],
-                                                   projection_x_coords, projection_y_coords,
-                                                   area.area_extent,
-                                                   area.shape,
-                                                   mask[linesmin:linesmax,
-                                                        colsmin:colsmax])
+            _ = fast_gradient_search_with_mask(data[linesmin:linesmax,
+                                                    colsmin:colsmax],
+                                               projection_x_coords,
+                                               projection_y_coords,
+                                               area.area_extent,
+                                               area.shape,
+                                               mask[linesmin:linesmax,
+                                                    colsmin:colsmax])
 
     elif mask is None:
-        image = two_step_fast_gradient_search(data[linesmin:linesmax,
-                                                   colsmin:colsmax],
-                                              projection_x_coords, projection_y_coords,
-                                              chunk_size,
-                                              area.area_extent,
-                                              area.shape)
+        _ = two_step_fast_gradient_search(data[linesmin:linesmax,
+                                               colsmin:colsmax],
+                                          projection_x_coords,
+                                          projection_y_coords,
+                                          chunk_size,
+                                          area.area_extent,
+                                          area.shape)
     else:
-        image = two_step_fast_gradient_search_with_mask(data[linesmin:linesmax,
-                                                             colsmin:colsmax],
-                                                        projection_x_coords, projection_y_coords,
-                                                        chunk_size,
-                                                        area.area_extent,
-                                                        area.shape,
-                                                        mask[linesmin:linesmax,
-                                                             colsmin:colsmax])
+        _ = two_step_fast_gradient_search_with_mask(data[linesmin:linesmax,
+                                                         colsmin:colsmax],
+                                                    projection_x_coords,
+                                                    projection_y_coords,
+                                                    chunk_size,
+                                                    area.area_extent,
+                                                    area.shape,
+                                                    mask[linesmin:linesmax,
+                                                         colsmin:colsmax])
 
-    #logger.debug("min %f max  %f", image.min(), image.max())
+    # logger.debug("min %f max  %f", image.min(), image.max())
 
     toc = datetime.now()
 
@@ -141,8 +143,7 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
 
 def show(data):
-    """Show the stetched data.
-    """
+    """Show the stretched data."""
     from PIL import Image as pil
     img = pil.fromarray(np.array((data - data.min()) * 255.0 /
                                  (data.max() - data.min()), np.uint8))
@@ -156,25 +157,28 @@ if __name__ == '__main__':
     logger = logging.getLogger("gradient_search")
     # avhrr example
     filenames = sorted(glob('/home/a001673/data/satellite/metop/*'))
-    g = Scene(
+    glbl = Scene(
         sensor='avhrr-3',
         filenames=filenames,
         reader="avhrr_l1b_eps",
         filter_parameters={'area': 'euron1'}
     )
-    g.load(['4'])
+    glbl.load(['4'])
 
     from satpy.resample import get_area_def
 
     area = get_area_def("euron1")
 
     tic = datetime.now()
-    idx = gradient_search(g['4'].values, g['4'].attrs['area'].lons, g['4'].attrs['area'].lats, area)
+    idx = gradient_search(glbl['4'].values,
+                          glbl['4'].attrs['area'].lons,
+                          glbl['4'].attrs['area'].lats,
+                          area)
 
     idx = idx.astype(np.int)
     idx_x = idx[0, :, :]
     idx_y = idx[1, :, :]
-    res = g['4'].values
+    res = glbl['4'].values
     cidx, cidy = da.compute(idx_x, idx_y)
     image = res[cidx, cidy]
     toc = datetime.now()
@@ -184,12 +188,10 @@ if __name__ == '__main__':
     # for comparison
 
     tic = datetime.now()
-    l = g.resample(area)
-    l['4'].values
+    lcl = glbl.resample(area)
+    lcl['4'].values
     toc = datetime.now()
-    print ("kd-tree took", toc - tic)
-
-    pause
+    print("kd-tree took", toc - tic)
 
     # modis example
 
