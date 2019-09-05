@@ -183,92 +183,15 @@ def main():
     cidx, cidy = da.compute(idx_x, idx_y)
     image = res[cidx, cidy]
     toc = datetime.now()
-    print("gradient search took", toc - tic)
+    logger.debug("gradient search took %s", str(toc - tic))
     show(image)
 
     # for comparison
-
     tic = datetime.now()
     lcl = glbl.resample(area)
     lcl[10.8].values
     toc = datetime.now()
-    print("kd-tree took", toc - tic)
-
-    # modis example
-
-    # t = datetime(2012, 12, 10, 10, 29, 35)
-    # g = PolarFactory.create_scene("terra", "", "modis", t)
-    # g.load([0.635, 0.85], resolution=1000)
-    # g.load([10.8])
-
-    # from mpop.projector import get_area_def
-
-    # area = get_area_def("euron1")
-
-    # for comparison
-
-    # tic = datetime.now()
-    # l = g.project(area)
-    # toc = datetime.now()
-    # print "pyresample took", toc - tic
-
-    # res = gradient_search(g[0.635].data.astype(np.float64),
-    # g[0.635].area.lons, g[0.635].area.lats, area, 10)
-
-    # for wl in [0.635, 0.85]:
-
-    #     res = gradient_search(g[wl].data.astype(
-    #         np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
-    #     g[wl] = np.ma.masked_values(res, 0)
-
-    # for wl in [10.8]:
-
-    #     res = gradient_search(g[wl].data.astype(
-    #         np.float64), g[wl].area.lons, g[wl].area.lats, area, 10)
-    #     g[wl] = np.ma.masked_values(res, 0)
-
-    # show(res)
-    # g.image.overview().show()
-
-    # npp example
-
-    # t = datetime(2013, 6, 11, 2, 17)
-    # t1 = datetime(2013, 6, 11, 2, 20)
-    # t2 = datetime(2013, 6, 11, 2, 27)
-    # g = PolarFactory.create_scene("npp", "", "viirs", t, orbit="08395")
-    # wl = 10.8
-    # chunk = 16
-    # wl = "I05"
-    # chunk = 32
-    # #chunk = 0
-    # g.load([wl], time_interval=(t1, t2))
-    # from mpop.projector import get_area_def
-    #
-    # print g[wl].area.lons[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
-    # print g[wl].area.lats[26:38, (640 + 368) * 2 - 5:(640 + 368) * 2 + 5]
-    #
-    # area = get_area_def("test250")
-    #
-    # mask = g[wl].data.mask.astype(np.uint8)
-    # lons = g[wl].area.lons.data
-    # lats = g[wl].area.lats.data
-    # data = g[wl].data.data.astype(np.double)
-    # res = gradient_search(data, lons, lats, area, chunk, mask)
-    # print "max valid", np.max(g[wl].data.compressed())
-    # print "min valid", np.min(g[wl].data.compressed())
-    # print "max res", np.max(res)
-    # print "mask", np.min(mask), np.max(mask)
-    # print data.shape, mask.shape
-    # show(np.ma.masked_equal(res, 0.0))
-    #
-    # # for comparison
-    #
-    # tic = datetime.now()
-    # l = g.project("bsea250")
-    # #l = g.project(area)
-    # toc = datetime.now()
-    # print "pyresample took", toc - tic
-    # # l.image.hr_overview().show()
+    logger.debug("kd-tree took %s", str(toc - tic))
 
 
 if __name__ == '__main__':
