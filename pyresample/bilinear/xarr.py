@@ -16,6 +16,14 @@ from pyresample._spatial_mp import Proj
 from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry, CHUNK_SIZE
 
+CACHE_INDICES = ['bilinear_s',
+                 'bilinear_t',
+                 'slices_x',
+                 'slices_y',
+                 'mask_slices',
+                 'out_coords_x',
+                 'out_coords_y']
+
 
 class XArrayResamplerBilinear(object):
     """Bilinear interpolation using XArray."""
@@ -57,6 +65,13 @@ class XArrayResamplerBilinear(object):
         self.distance_array = None
         self.bilinear_t = None
         self.bilinear_s = None
+        self.slices_x = None
+        self.slices_y = None
+        self.slices = {'x': self.slices_x, 'y': self.slices_y}
+        self.mask_slices = None
+        self.out_coords_x = None
+        self.out_coords_y = None
+        self.out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
@@ -135,82 +150,20 @@ class XArrayResamplerBilinear(object):
         self.index_array = index_array
         self.distance_array = distance_array
 
-        return (self.bilinear_t, self.bilinear_s, self.valid_input_index,
-                self.index_array)
+        self._get_slices()
+
+        return (self.bilinear_t, self.bilinear_s,
+                self.slices, self.mask_slices,
+                self.out_coords)
 
     def get_sample_from_bil_info(self, data, fill_value=np.nan,
                                  output_shape=None):
         """Resample using pre-computed resampling LUTs."""
+        del output_shape
         if fill_value is None:
             fill_value = np.nan
-        # FIXME: can be this made into a dask construct ?
-        cols, lines = np.meshgrid(np.arange(data['x'].size),
-                                  np.arange(data['y'].size))
-        cols = da.ravel(cols)
-        lines = da.ravel(lines)
-        try:
-            self.valid_input_index = self.valid_input_index.compute()
-        except AttributeError:
-            pass
-        vii = self.valid_input_index.squeeze()
-        try:
-            self.index_array = self.index_array.compute()
-        except AttributeError:
-            pass
 
-        # ia contains reduced (valid) indices of the source array, and has the
-        # shape of the destination array
-        ia = self.index_array
-        rlines = lines[vii][ia]
-        rcols = cols[vii][ia]
-
-        slices = []
-        mask_slices = []
-        mask_2d_added = False
-        coords = {}
-        try:
-            # FIXME: Use same chunk size as input data
-            coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
-        except AttributeError:
-            coord_x, coord_y = None, None
-
-        for _, dim in enumerate(data.dims):
-            if dim == 'y':
-                slices.append(rlines)
-                if not mask_2d_added:
-                    mask_slices.append(ia >= self.source_geo_def.size)
-                    mask_2d_added = True
-                if coord_y is not None:
-                    coords[dim] = coord_y
-            elif dim == 'x':
-                slices.append(rcols)
-                if not mask_2d_added:
-                    mask_slices.append(ia >= self.source_geo_def.size)
-                    mask_2d_added = True
-                if coord_x is not None:
-                    coords[dim] = coord_x
-            else:
-                slices.append(slice(None))
-                mask_slices.append(slice(None))
-                try:
-                    coords[dim] = data.coords[dim]
-                except KeyError:
-                    pass
-
-        res = data.values[tuple(slices)]
-        res[tuple(mask_slices)] = fill_value
-
-        try:
-            p_1 = res[:, :, 0]
-            p_2 = res[:, :, 1]
-            p_3 = res[:, :, 2]
-            p_4 = res[:, :, 3]
-        except IndexError:
-            p_1 = res[:, 0]
-            p_2 = res[:, 1]
-            p_3 = res[:, 2]
-            p_4 = res[:, 3]
-
+        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
         s__, t__ = self.bilinear_s, self.bilinear_t
 
         res = (p_1 * (1 - s__) * (1 - t__) +
@@ -229,10 +182,89 @@ class XArrayResamplerBilinear(object):
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
             res = da.reshape(res, (shp[0], shp[1]))
+
+        # Add missing coordinates
+        self._update_coordinates(data)
+
         res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
-                        dims=data.dims, coords=coords)
+                        dims=data.dims, coords=self.out_coords)
 
         return res
+
+    def _compute_indices(self):
+        for idx in CACHE_INDICES:
+            var = getattr(self, idx)
+            try:
+                var = var.compute()
+                setattr(self, idx, var)
+            except AttributeError:
+                continue
+
+    def _update_coordinates(self, data):
+        if self.out_coords['x'] is None and self.out_coords_x is not None:
+            self.out_coords['x'] = self.out_coords_x
+            self.out_coords['y'] = self.out_coords_y
+        for _, dim in enumerate(data.dims):
+            if dim not in self.out_coords:
+                try:
+                    self.out_coords[dim] = data.coords[dim]
+                except KeyError:
+                    pass
+
+    def _slice_data(self, data, fill_value):
+
+        def _slicer(values, sl_x, sl_y, fill_value, mask):
+            if values.ndim == 2:
+                arr = values[(sl_y, sl_x)]
+                arr[(mask, )] = fill_value
+                p_1 = arr[:, 0]
+                p_2 = arr[:, 1]
+                p_3 = arr[:, 2]
+                p_4 = arr[:, 3]
+            elif values.ndim == 3:
+                arr = values[(slice(None), sl_y, sl_x)]
+                arr[(slice(None), mask)] = fill_value
+                p_1 = arr[:, :, 0]
+                p_2 = arr[:, :, 1]
+                p_3 = arr[:, :, 2]
+                p_4 = arr[:, :, 3]
+            else:
+                raise ValueError
+
+            return p_1, p_2, p_3, p_4
+
+        values = data.values
+        sl_y = self.slices_y
+        sl_x = self.slices_x
+        mask = self.mask_slices
+
+        return _slicer(values, sl_x, sl_y, fill_value, mask)
+
+    def _get_slices(self):
+        shp = self.source_geo_def.shape
+        cols, lines = np.meshgrid(np.arange(shp[1]),
+                                  np.arange(shp[0]))
+        cols = np.ravel(cols)
+        lines = np.ravel(lines)
+
+        vii = self.valid_input_index
+        ia_ = self.index_array
+
+        # ia_ contains reduced (valid) indices of the source array, and has the
+        # shape of the destination array
+        rlines = lines[vii][ia_]
+        rcols = cols[vii][ia_]
+
+        try:
+            coord_x, coord_y = self.target_geo_def.get_proj_vectors()
+            self.out_coords_y = coord_y
+            self.out_coords_x = coord_x
+        except AttributeError:
+            pass
+
+        self.mask_slices = ia_ >= self.source_geo_def.size
+        self.slices_y = rlines
+        self.slices_x = rcols
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input."""
