@@ -37,6 +37,7 @@ debug_on()
 from _gradient_search import (two_step_fast_gradient_search,
                               two_step_fast_gradient_search_with_mask,
                               fast_gradient_search_with_mask,
+                              fast_gradient_search,
                               fast_gradient_indices)  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -105,23 +106,30 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     tic2 = datetime.now()
 
-    x_min, y_min, x_max, y_max = area.area_extent
-    y_size, x_size = area.shape
-    x_inc = (x_max - x_min) / x_size
-    x_1d = da.arange(x_min + x_inc / 2, x_max, x_inc, chunks=CHUNK_SIZE)
+    # x_min, y_min, x_max, y_max = area.area_extent
+    # y_size, x_size = area.shape
+    # x_inc = (x_max - x_min) / x_size
+    # x_1d = da.arange(x_min + x_inc / 2, x_max, x_inc, chunks=CHUNK_SIZE)
     # Y dimension is upside-down
-    y_inc = (y_min - y_max) / y_size
-    y_1d = da.arange(y_max - y_inc / 2, y_min, y_inc, chunks=CHUNK_SIZE)
+    # y_inc = (y_min - y_max) / y_size
+    # y_1d = da.arange(y_max - y_inc / 2, y_min, y_inc, chunks=CHUNK_SIZE)
 
     indices = None
     image = None
     if chunk_size == 0:
         if mask is None:
-            indices = da.blockwise(blockwise_gradient_indices,
-                                   'kij', x_1d, 'j', y_1d, 'i',
-                                   px=projection_x_coords,
-                                   py=projection_y_coords,
-                                   new_axes={'k': 2}, dtype=np.float)
+            # indices = da.blockwise(blockwise_gradient_indices,
+            #                        'kij', x_1d, 'j', y_1d, 'i',
+            #                        px=projection_x_coords,
+            #                        py=projection_y_coords,
+            #                        new_axes={'k': 2}, dtype=np.float)
+            image = fast_gradient_search(
+                data[linesmin:linesmax,
+                     colsmin:colsmax].astype(np.float),
+                projection_x_coords.compute(),
+                projection_y_coords.compute(),
+                area.area_extent,
+                area.shape)
         else:
             image = fast_gradient_search_with_mask(
                 data[linesmin:linesmax,
@@ -204,27 +212,28 @@ def main():
                                 area,
                                 mask=mask.compute())
     else:
-        idx, data = gradient_search(data,
-                                    lons,
-                                    lats,
-                                    area)
+        image = gradient_search(data,
+                                lons,
+                                lats,
+                                area)
 
-        tic2 = datetime.now()
-        idx = idx.astype(np.int)
-        idx_x = idx[0, :, :]
-        idx_y = idx[1, :, :]
-        cidx, cidy = da.compute(idx_x, idx_y)
-        image = data[cidx, cidy]
+        # tic2 = datetime.now()
+        # idx = idx.astype(np.int)
+        # idx_x = idx[0, :, :]
+        # idx_y = idx[1, :, :]
+        # cidx, cidy = da.compute(idx_x, idx_y)
+        # image = data[cidx, cidy]
         # The fill value for indices is -2, replace those with NaN
+        # image = da.where(cidx == -2, np.nan, image)
         import xarray as xr
-        image = da.where(cidx == -2, np.nan, image)
+        image = da.where(image == 0, np.nan, image)
 
     glbl['image'] = xr.DataArray(image)
     glbl.save_dataset('image', '/tmp/gradient.png')
     del glbl['image']
 
     toc = datetime.now()
-    logger.debug("slicing and saving took %s", str(toc - tic2))
+    # logger.debug("slicing and saving took %s", str(toc - tic2))
     logger.debug("gradient search took %s", str(toc - tic))
     # show(image)
 
