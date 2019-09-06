@@ -136,8 +136,6 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
             mask[linesmin:linesmax,
                  colsmin:colsmax])
 
-    # logger.debug("min %f max  %f", image.min(), image.max())
-
     toc = datetime.now()
 
     logger.debug("resampling took %s", str(toc - tic))
@@ -151,10 +149,10 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 def show(data):
     """Show the stretched data."""
     from PIL import Image as pil
-    img = pil.fromarray(np.array((data - data.min()) * 255.0 /
-                                 (data.max() - data.min()), np.uint8))
-    img.show()
-    img.save("/tmp/gradient2.png")
+    img = pil.fromarray(np.array((data - np.nanmin(data)) * 255.0 /
+                                 (np.nanmax(data) - np.nanmin(data)), np.uint8))
+    img.save("/tmp/gradient.png")
+    # img.show()
 
 
 def main():
@@ -177,6 +175,9 @@ def main():
 
     tic = datetime.now()
     lons, lats = glbl[10.8].area.get_lonlats(chunks=CHUNK_SIZE)
+    mask = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
+    lons = da.where(mask, np.nan, lons)
+    lats = da.where(mask, np.nan, lats)
     res = glbl[10.8].values
 
     if use_mask:
@@ -192,13 +193,17 @@ def main():
                               lats,
                               area)
 
+        tic2 = datetime.now()
         idx = idx.astype(np.int)
         idx_x = idx[0, :, :]
         idx_y = idx[1, :, :]
         cidx, cidy = da.compute(idx_x, idx_y)
         image = res[cidx, cidy]
+        # The fill value for indices is -2, replace those with NaN
+        image = da.where(cidx == -2, np.nan, image)
 
     toc = datetime.now()
+    logger.debug("slicing took %s", str(toc - tic2))
     logger.debug("gradient search took %s", str(toc - tic))
     show(image)
 
@@ -208,6 +213,7 @@ def main():
     lcl[10.8].values
     toc = datetime.now()
     logger.debug("kd-tree took %s", str(toc - tic))
+    lcl.save_dataset(10.8, '/tmp/kdtree_nearest.png')
 
 
 if __name__ == '__main__':
