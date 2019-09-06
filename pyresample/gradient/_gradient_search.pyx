@@ -139,6 +139,7 @@ def fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[DTYPE_t, n
     # return the output image
     return image
 
+
 @cython.boundscheck(False)
 def fast_gradient_indices(np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE_t, ndim=2] source_y,
                           np.ndarray[DTYPE_t, ndim=1] x_1d, np.ndarray[DTYPE_t, ndim=1] y_1d):
@@ -226,7 +227,6 @@ def fast_gradient_indices(np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE
                     p0 = int(p0 + dp)
     # return the output image
     return indices
-
 
 
 @cython.boundscheck(False)

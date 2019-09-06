@@ -59,27 +59,37 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
     tic = datetime.now()
     prj = pyproj.Proj(**area.proj_dict)
 
-    lon_bound, lat_bound = area.get_boundary_lonlats()
-    idx = data_reduce.get_valid_index_from_lonlat_boundaries(lon_bound,
-                                                             lat_bound,
-                                                             lons, lats,
-                                                             5000).compute()
-    logger.debug('data reduction takes: %s', str(datetime.now() - tic))
-    colsmin, colsmax = np.arange(lons.shape[1])[np.sum(idx, 0, bool)][[0, -1]]
-    linesmin, linesmax = np.arange(
-        lons.shape[0])[np.sum(idx, 1, bool)][[0, -1]]
+    slicing = False
 
-    if chunk_size != 0:
-        linesmin -= linesmin % chunk_size
-        linesmax += chunk_size
-        linesmax -= linesmax % chunk_size
+    if slicing:
+        lon_bound, lat_bound = area.get_boundary_lonlats()
+        idx = data_reduce.get_valid_index_from_lonlat_boundaries(lon_bound,
+                                                                 lat_bound,
+                                                                 lons, lats,
+                                                                 5000).compute()
+        logger.debug('data reduction takes: %s', str(datetime.now() - tic))
+        colsmin, colsmax = np.arange(
+            lons.shape[1])[np.sum(idx, 0, bool)][[0, -1]]
+        linesmin, linesmax = np.arange(
+            lons.shape[0])[np.sum(idx, 1, bool)][[0, -1]]
 
-    red_lons = lons[linesmin:linesmax, colsmin:colsmax]
-    red_lats = lats[linesmin:linesmax, colsmin:colsmax]
-    result = da.map_blocks(_get_proj_coordinates,
-                           red_lons,
-                           red_lats, prj, new_axis=0,
-                           chunks=(2,) + red_lons.chunks)
+        if chunk_size != 0:
+            linesmin -= linesmin % chunk_size
+            linesmax += chunk_size
+            linesmax -= linesmax % chunk_size
+
+        red_lons = lons[linesmin:linesmax, colsmin:colsmax]
+        red_lats = lats[linesmin:linesmax, colsmin:colsmax]
+        result = da.map_blocks(_get_proj_coordinates,
+                               red_lons,
+                               red_lats, prj, new_axis=0,
+                               chunks=(2,) + red_lons.chunks)
+
+    else:
+        result = da.map_blocks(_get_proj_coordinates,
+                               lons,
+                               lats, prj, new_axis=0,
+                               chunks=(2,) + lons.chunks)
     projection_x_coords = result[0, :]
     projection_y_coords = result[1, :]
     toc3 = datetime.now()
@@ -101,9 +111,10 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
     image = None
     if chunk_size == 0:
         if mask is None:
-
-            indices = da.blockwise(blockwise_gradient_indices, 'kij', x_1d, 'j', y_1d, 'i',
-                                   px=projection_x_coords, py=projection_y_coords,
+            indices = da.blockwise(blockwise_gradient_indices,
+                                   'kij', x_1d, 'j', y_1d, 'i',
+                                   px=projection_x_coords,
+                                   py=projection_y_coords,
                                    new_axes={'k': 2}, dtype=np.float)
         else:
             image = fast_gradient_search_with_mask(
@@ -143,7 +154,10 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     if indices is None:
         return image
-    return indices
+    if slicing:
+        return indices, data[linesmin:linesmax, colsmin:colsmax]
+    else:
+        return indices, data
 
 
 def show(data):
@@ -151,8 +165,7 @@ def show(data):
     from PIL import Image as pil
     img = pil.fromarray(np.array((data - np.nanmin(data)) * 255.0 /
                                  (np.nanmax(data) - np.nanmin(data)), np.uint8))
-    img.save("/tmp/gradient.png")
-    # img.show()
+    img.show()
 
 
 def main():
@@ -178,42 +191,46 @@ def main():
     mask = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
     lons = da.where(mask, np.nan, lons)
     lats = da.where(mask, np.nan, lats)
-    res = glbl[10.8].values
+    data = glbl[10.8].values
 
     if use_mask:
         mask = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
-        image = gradient_search(res,
+        image = gradient_search(data,
                                 lons,
                                 lats,
                                 area,
                                 mask=mask.compute())
     else:
-        idx = gradient_search(res,
-                              lons,
-                              lats,
-                              area)
+        idx, data = gradient_search(data,
+                                    lons,
+                                    lats,
+                                    area)
 
         tic2 = datetime.now()
         idx = idx.astype(np.int)
         idx_x = idx[0, :, :]
         idx_y = idx[1, :, :]
         cidx, cidy = da.compute(idx_x, idx_y)
-        image = res[cidx, cidy]
+        image = data[cidx, cidy]
         # The fill value for indices is -2, replace those with NaN
+        import xarray as xr
         image = da.where(cidx == -2, np.nan, image)
 
+    glbl['image'] = xr.DataArray(image)
+    glbl.save_dataset('image', '/tmp/gradient.png')
+    del glbl['image']
+
     toc = datetime.now()
-    logger.debug("slicing took %s", str(toc - tic2))
+    logger.debug("slicing and saving took %s", str(toc - tic2))
     logger.debug("gradient search took %s", str(toc - tic))
-    show(image)
+    # show(image)
 
     # for comparison
     tic = datetime.now()
     lcl = glbl.resample(area)
-    lcl[10.8].values
+    lcl.save_dataset(10.8, '/tmp/kdtree_nearest.png')
     toc = datetime.now()
     logger.debug("kd-tree took %s", str(toc - tic))
-    lcl.save_dataset(10.8, '/tmp/kdtree_nearest.png')
 
 
 if __name__ == '__main__':
