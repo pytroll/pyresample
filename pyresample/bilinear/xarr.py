@@ -234,8 +234,7 @@ class XArrayResamplerBilinear(object):
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
             res = da.reshape(res, (shp[0], shp[1]))
-        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
-                        dims=data.dims, coords=coords)
+        res = DataArray(res, dims=data.dims, coords=coords)
 
         return res
 
