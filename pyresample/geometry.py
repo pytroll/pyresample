@@ -2031,6 +2031,11 @@ class StackedAreaDefinition(BaseDefinition):
         """Return size of the area definition."""
         return self.height * self.width
 
+    @property
+    def shape(self):
+        """Return shape of the area definition."""
+        return (self.height, self.width)
+
     def append(self, definition):
         """Append another definition to the area."""
         if isinstance(definition, StackedAreaDefinition):
