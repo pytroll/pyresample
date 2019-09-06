@@ -1,16 +1,19 @@
+"""Test bilinear interpolation."""
 import unittest
 import numpy as np
 
 from pyresample._spatial_mp import Proj
 
 import pyresample.bilinear as bil
-from pyresample import geometry, utils, kd_tree
+from pyresample import geometry, kd_tree
 
 
-class Test(unittest.TestCase):
+class TestNumpyBilinear(unittest.TestCase):
+    """Test Numpy-based bilinear interpolation."""
 
     @classmethod
     def setUpClass(cls):
+        """Do some setup for the test class."""
         cls.pts_irregular = (np.array([[-1., 1.], ]),
                              np.array([[1., 2.], ]),
                              np.array([[-2., -1.], ]),
@@ -64,6 +67,7 @@ class Test(unittest.TestCase):
         cls.idx_ref = idx_ref
 
     def test_calc_abc(self):
+        """Test calculation of quadratic coefficients."""
         # No np.nan inputs
         pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
         res = bil._calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
@@ -78,6 +82,7 @@ class Test(unittest.TestCase):
         self.assertTrue(np.isnan(res[2]))
 
     def test_get_ts_irregular(self):
+        """Test calculations for irregular corner locations."""
         res = bil._get_ts_irregular(self.pts_irregular[0],
                                     self.pts_irregular[1],
                                     self.pts_irregular[2],
@@ -94,6 +99,7 @@ class Test(unittest.TestCase):
         self.assertTrue(np.isnan(res[1]))
 
     def test_get_ts_uprights_parallel(self):
+        """Test calculation when uprights are parallel."""
         res = bil._get_ts_uprights_parallel(self.pts_vert_parallel[0],
                                             self.pts_vert_parallel[1],
                                             self.pts_vert_parallel[2],
@@ -103,6 +109,7 @@ class Test(unittest.TestCase):
         self.assertEqual(res[1], 0.5)
 
     def test_get_ts_parallellogram(self):
+        """Test calculation when the corners form a parallellogram."""
         res = bil._get_ts_parallellogram(self.pts_both_parallel[0],
                                          self.pts_both_parallel[1],
                                          self.pts_both_parallel[2],
@@ -111,6 +118,7 @@ class Test(unittest.TestCase):
         self.assertEqual(res[1], 0.5)
 
     def test_get_ts(self):
+        """Test get_ts()."""
         out_x = np.array([[0.]])
         out_y = np.array([[0.]])
         res = bil._get_ts(self.pts_irregular[0],
@@ -136,6 +144,7 @@ class Test(unittest.TestCase):
         self.assertEqual(res[1], 0.5)
 
     def test_solve_quadratic(self):
+        """Test solving quadratic equation."""
         res = bil._solve_quadratic(1, 0, 0)
         self.assertEqual(res[0], 0.0)
         res = bil._solve_quadratic(1, 2, 1)
@@ -154,18 +163,21 @@ class Test(unittest.TestCase):
         self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_get_output_xy(self):
+        """Test calculation of output xy-coordinates."""
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = bil._get_output_xy(self.target_def, proj)
         self.assertTrue(out_x.all())
         self.assertTrue(out_y.all())
 
     def test_get_input_xy(self):
+        """Test calculation of input xy-coordinates."""
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = bil._get_output_xy(self.swath_def, proj)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_bounding_corners(self):
+        """Test calculation of bounding corners."""
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = bil._get_output_xy(self.target_def, proj)
         in_x, in_y = bil._get_input_xy(self.swath_def, proj,
@@ -179,6 +191,7 @@ class Test(unittest.TestCase):
                 self.assertTrue(np.isfinite(pt_[5, j]))
 
     def test_get_bil_info(self):
+        """Test calculation of bilinear resampling indices."""
         def _check_ts(t__, s__):
             for i in range(len(t__)):
                 # Just check the exact value for one pixel
@@ -211,6 +224,7 @@ class Test(unittest.TestCase):
         _check_ts(t__, s__)
 
     def test_get_sample_from_bil_info(self):
+        """Test resampling using resampling indices."""
         t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
                                                          self.target_def,
                                                          50e5, neighbours=32,
@@ -239,6 +253,7 @@ class Test(unittest.TestCase):
         self.assertEqual(np.isnan(res).sum(), 4)
 
     def test_resample_bilinear(self):
+        """Test whole bilinear resampling."""
         # Single array
         res = bil.resample_bilinear(self.data1,
                                     self.swath_def,
@@ -271,10 +286,9 @@ class Test(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """Create the test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestNumpyBilinear))
 
     return mysuite
