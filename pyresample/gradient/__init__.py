@@ -84,14 +84,20 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
                                red_lons,
                                red_lats, prj, new_axis=0,
                                chunks=(2,) + red_lons.chunks)
+        idxs = ((red_lons > 180.0) | (red_lons < -180.0) |
+                (red_lats > 90.0) | (red_lats < -90.0))
+        projection_x_coords = da.where(idxs, np.nan, result[0, :])
+        projection_y_coords = da.where(idxs, np.nan, result[1, :])
 
     else:
         result = da.map_blocks(_get_proj_coordinates,
                                lons,
                                lats, prj, new_axis=0,
                                chunks=(2,) + lons.chunks)
-    projection_x_coords = result[0, :]
-    projection_y_coords = result[1, :]
+        idxs = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
+        projection_x_coords = da.where(idxs, np.nan, result[0, :])
+        projection_y_coords = da.where(idxs, np.nan, result[1, :])
+
     toc3 = datetime.now()
 
     toc2 = datetime.now()
@@ -188,9 +194,6 @@ def main():
 
     tic = datetime.now()
     lons, lats = glbl[10.8].area.get_lonlats(chunks=CHUNK_SIZE)
-    mask = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
-    lons = da.where(mask, np.nan, lons)
-    lats = da.where(mask, np.nan, lats)
     data = glbl[10.8].values
 
     if use_mask:
