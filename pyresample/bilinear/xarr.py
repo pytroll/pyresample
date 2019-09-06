@@ -26,8 +26,7 @@ class XArrayResamplerBilinear(object):
                  radius_of_influence,
                  neighbours=32,
                  epsilon=0,
-                 reduce_data=True,
-                 segments=None):
+                 reduce_data=True):
         """
         Initialize resampler.
 
@@ -47,9 +46,6 @@ class XArrayResamplerBilinear(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-        segments : int or None
-            Number of segments to use when resampling.
-            If set to None an estimate will be calculated
 
         """
         if da is None:
@@ -64,7 +60,6 @@ class XArrayResamplerBilinear(object):
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
-        self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
         self.radius_of_influence = radius_of_influence
