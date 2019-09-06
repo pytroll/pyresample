@@ -186,8 +186,7 @@ class XArrayResamplerBilinear(object):
         # Add missing coordinates
         self._update_coordinates(data)
 
-        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
-                        dims=data.dims, coords=self.out_coords)
+        res = DataArray(res, dims=data.dims, coords=self.out_coords)
 
         return res
 
