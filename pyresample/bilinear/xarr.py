@@ -183,14 +183,14 @@ class XArrayResamplerBilinear(object):
             if dim == 'y':
                 slices.append(rlines)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_y is not None:
                     coords[dim] = coord_y
             elif dim == 'x':
                 slices.append(rcols)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_x is not None:
                     coords[dim] = coord_x
@@ -267,10 +267,6 @@ class XArrayResamplerBilinear(object):
                                valid_oi,
                                reduce_data=True):
         """Query kd-tree on slice of target coordinates."""
-#        res = da.map_blocks(query_no_distance, tlons, tlats,
-#                            valid_oi, dtype=np.int, kdtree=resample_kdtree,
-#                            neighbours=self.neighbours, epsilon=self.epsilon,
-#                            radius=self.radius_of_influence)
         res = query_no_distance(tlons, tlats,
                                 valid_oi, resample_kdtree,
                                 self.neighbours, self.epsilon,
@@ -358,6 +354,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     Get four closest locations from (in_x, in_y) so that they form a
     bounding rectangle around the requested location given by (out_x,
     out_y).
+
     """
     # Find four closest pixels around the target location
 
@@ -480,6 +477,7 @@ def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     In this order of arguments used for _get_ts_irregular() and
     _get_ts_uprights().  For _get_ts_uprights switch order of pt_2 and
     pt_3.
+
     """
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -505,7 +503,8 @@ def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
     """Solve quadratic equation.
 
     Solve quadratic equation and return the valid roots from interval
-    [*min_val*, *max_val*]
+    [*min_val*, *max_val*].
+
     """
     discriminant = b__ * b__ - 4 * a__ * c__
 
@@ -659,7 +658,7 @@ def _get_valid_input_index_dask(source_geo_def,
 
 
 def lonlat2xyz(lons, lats):
-    """Conver geographic coordinates to cartesian 3D coordinates."""
+    """Convert geographic coordinates to cartesian 3D coordinates."""
     R = 6370997.0
     x_coords = R * da.cos(da.deg2rad(lats)) * da.cos(da.deg2rad(lons))
     y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
