@@ -59,9 +59,9 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
     tic = datetime.now()
     prj = pyproj.Proj(**area.proj_dict)
 
-    slicing = False
+    reduce_data = True
 
-    if slicing:
+    if reduce_data:
         lon_bound, lat_bound = area.get_boundary_lonlats()
         idx = data_reduce.get_valid_index_from_lonlat_boundaries(lon_bound,
                                                                  lat_bound,
@@ -160,7 +160,7 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     if indices is None:
         return image
-    if slicing:
+    if reduce_data:
         return indices, data[linesmin:linesmax, colsmin:colsmax]
     else:
         return indices, data
