@@ -212,6 +212,9 @@ def fast_gradient_indices(np.ndarray[DTYPE_t, ndim=2] source_x, np.ndarray[DTYPE
                     continue
                 # distance from pixel/line to output location
                 d = yl[l0, p0] * xp[l0, p0] - yp[l0, p0] * xl[l0, p0]
+                if d == 0.0:
+                    # There's no gradient, try again
+                    continue
                 dl = (xp[l0, p0] * dy - yp[l0, p0] * dx) / d
                 dp = (yl[l0, p0] * dx - xl[l0, p0] * dy) / d
                 # check that our distance to an output location is less than 1
