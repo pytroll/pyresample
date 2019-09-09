@@ -163,7 +163,7 @@ class XArrayResamplerBilinear(object):
         if fill_value is None:
             fill_value = np.nan
 
-        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
+        p_1, p_2, p_3, p_4 = self._slice_data(data)
         s__, t__ = self.bilinear_s, self.bilinear_t
 
         res = (p_1 * (1 - s__) * (1 - t__) +
@@ -177,6 +177,7 @@ class XArrayResamplerBilinear(object):
 
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
+        res = da.where(np.isnan(res), fill_value, res)
         shp = self.target_geo_def.shape
         if data.ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
@@ -210,19 +211,19 @@ class XArrayResamplerBilinear(object):
                 except KeyError:
                     pass
 
-    def _slice_data(self, data, fill_value):
+    def _slice_data(self, data):
 
-        def _slicer(values, sl_x, sl_y, fill_value, mask):
+        def _slicer(values, sl_x, sl_y, mask):
             if values.ndim == 2:
                 arr = values[(sl_y, sl_x)]
-                arr[(mask, )] = fill_value
+                arr[(mask, )] = np.nan
                 p_1 = arr[:, 0]
                 p_2 = arr[:, 1]
                 p_3 = arr[:, 2]
                 p_4 = arr[:, 3]
             elif values.ndim == 3:
                 arr = values[(slice(None), sl_y, sl_x)]
-                arr[(slice(None), mask)] = fill_value
+                arr[(slice(None), mask)] = np.nan
                 p_1 = arr[:, :, 0]
                 p_2 = arr[:, :, 1]
                 p_3 = arr[:, :, 2]
@@ -237,7 +238,7 @@ class XArrayResamplerBilinear(object):
         sl_x = self.slices_x
         mask = self.mask_slices
 
-        return _slicer(values, sl_x, sl_y, fill_value, mask)
+        return _slicer(values, sl_x, sl_y, mask)
 
     def _get_slices(self):
         shp = self.source_geo_def.shape
@@ -319,7 +320,7 @@ def _get_fill_mask_value(data_dtype):
 def _get_output_xy_dask(target_geo_def, proj):
     """Get x/y coordinates of the target grid."""
     # Read output coordinates
-    out_lons, out_lats = target_geo_def.get_lonlats_dask()
+    out_lons, out_lats = target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
     # Mask invalid coordinates
     out_lons, out_lats = _mask_coordinates_dask(out_lons, out_lats)
