@@ -256,14 +256,18 @@ class XArrayResamplerBilinear(object):
 
         try:
             coord_x, coord_y = self.target_geo_def.get_proj_vectors()
-            self.out_coords_y = coord_y
-            self.out_coords_x = coord_x
+            self.out_coords['y'] = coord_y
+            self.out_coords['x'] = coord_x
+            self.out_coords_y = self.out_coords['y']
+            self.out_coords_x = self.out_coords['x']
         except AttributeError:
             pass
 
         self.mask_slices = ia_ >= self.source_geo_def.size
-        self.slices_y = rlines
-        self.slices_x = rcols
+        self.slices['y'] = rlines
+        self.slices['x'] = rcols
+        self.slices_y = self.slices['y']
+        self.slices_x = self.slices['x']
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input."""
@@ -348,9 +352,7 @@ def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     index_array = index_array.compute()
 
     # Expand input coordinates for each output location
-    # in_lons = in_lons.compute()
     in_lons = in_lons[index_array]
-    # in_lats = in_lats.compute()
     in_lats = in_lats[index_array]
 
     # Convert coordinates to output projection x/y space
