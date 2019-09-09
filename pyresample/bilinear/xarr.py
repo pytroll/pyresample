@@ -185,7 +185,7 @@ class XArrayResamplerBilinear(object):
             res = da.reshape(res, (shp[0], shp[1]))
 
         # Add missing coordinates
-        self._update_coordinates(data)
+        self._add_missing_coordinates(data)
 
         res = DataArray(res, dims=data.dims, coords=self.out_coords)
 
@@ -200,7 +200,7 @@ class XArrayResamplerBilinear(object):
             except AttributeError:
                 continue
 
-    def _update_coordinates(self, data):
+    def _add_missing_coordinates(self, data):
         if self.out_coords['x'] is None and self.out_coords_x is not None:
             self.out_coords['x'] = self.out_coords_x
             self.out_coords['y'] = self.out_coords_y
