@@ -345,6 +345,7 @@ def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     in_lats = da.ravel(in_lats)
     in_lats = in_lats.compute()
     in_lats = in_lats[valid_input_index]
+    index_array = index_array.compute()
 
     # Expand input coordinates for each output location
     # in_lons = in_lons.compute()
