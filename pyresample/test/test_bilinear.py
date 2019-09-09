@@ -410,6 +410,67 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(resampler.epsilon, 0.1)
         self.assertFalse(resampler.reduce_data)
 
+    def test_get_bil_info(self):
+        """Test calculation of bilinear info."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        def _check_ts(t__, s__, nans):
+            for i, _ in enumerate(t__):
+                # Just check the exact value for one pixel
+                if i == 5:
+                    self.assertAlmostEqual(t__[i], 0.730659147133, 5)
+                    self.assertAlmostEqual(s__[i], 0.310314173004, 5)
+                # These pixels are outside the area
+                elif i in nans:
+                    self.assertTrue(np.isnan(t__[i]))
+                    self.assertTrue(np.isnan(s__[i]))
+                # All the others should have values between 0.0 and 1.0
+                else:
+                    self.assertTrue(t__[i] >= 0.0)
+                    self.assertTrue(s__[i] >= 0.0)
+                    self.assertTrue(t__[i] <= 1.0)
+                    self.assertTrue(s__[i] <= 1.0)
+
+        # Data reduction enabled (default)
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius, reduce_data=True)
+        (t__, s__, slices, mask_slices, out_coords) = resampler.get_bil_info()
+        _check_ts(t__.compute(), s__.compute(), [3, 10, 12, 13, 14, 15])
+
+        # Nothing should be masked based on coordinates
+        self.assertTrue(np.all(~mask_slices))
+        # Four values per output location
+        self.assertEqual(mask_slices.shape, (self.target_def.size, 4))
+
+        # self.slices_{x,y} are used in self.slices dict so they
+        # should be the same (object)
+        self.assertTrue(isinstance(slices, dict))
+        self.assertTrue(resampler.slices['x'] is resampler.slices_x)
+        self.assertTrue(np.all(resampler.slices['x'] == slices['x']))
+        self.assertTrue(resampler.slices['y'] is resampler.slices_y)
+        self.assertTrue(np.all(resampler.slices['y'] == slices['y']))
+
+        # self.slices_{x,y} are used in self.slices dict so they
+        # should be the same (object)
+        self.assertTrue(isinstance(out_coords, dict))
+        self.assertTrue(resampler.out_coords['x'] is resampler.out_coords_x)
+        self.assertTrue(np.all(resampler.out_coords['x'] == out_coords['x']))
+        self.assertTrue(resampler.out_coords['y'] is resampler.out_coords_y)
+        self.assertTrue(np.all(resampler.out_coords['y'] == out_coords['y']))
+
+        # Also some other attributes should have been set
+        self.assertTrue(t__ is resampler.bilinear_t)
+        self.assertTrue(s__ is resampler.bilinear_s)
+        self.assertIsNotNone(resampler.valid_output_index)
+        self.assertIsNotNone(resampler.index_array)
+        self.assertIsNotNone(resampler.valid_input_index)
+
+        # Data reduction disabled
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius, reduce_data=False)
+        (t__, s__, slices, mask_slices, out_coords) = resampler.get_bil_info()
+        _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
+
 
 def suite():
     """Create the test suite."""
