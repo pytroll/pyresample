@@ -88,9 +88,9 @@ class XArrayResamplerBilinear(object):
             Vertical fractional distances from corner to the new points
         s__ : numpy array
             Horizontal fractional distances from corner to the new points
-        input_idxs : numpy array
+        valid_input_index : numpy array
             Valid indices in the input data
-        idx_arr : numpy array
+        index_array : numpy array
             Mapping array from valid source points to target points
 
         """
@@ -99,9 +99,9 @@ class XArrayResamplerBilinear(object):
                           (self.neighbours, self.source_geo_def.size))
 
         # Create kd-tree
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree()
+        valid_input_index, resample_kdtree = self._create_resample_kdtree()
         # This is a numpy array
-        self.valid_input_index = valid_input_idx
+        self.valid_input_index = valid_input_index
 
         if resample_kdtree.n == 0:
             # Handle if all input data is reduced away
@@ -110,7 +110,7 @@ class XArrayResamplerBilinear(object):
                                        self.target_geo_def)
             self.bilinear_t = bilinear_t
             self.bilinear_s = bilinear_s
-            self.valid_input_index = valid_input_idx
+            self.valid_input_index = valid_input_index
             self.index_array = index_array
 
             return bilinear_t, bilinear_s, valid_input_index, index_array
@@ -328,7 +328,7 @@ def _get_output_xy_dask(target_geo_def, proj):
     return out_x, out_y
 
 
-def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
+def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
     in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
@@ -341,16 +341,16 @@ def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
 
     in_lons = da.ravel(in_lons)
     in_lons = in_lons.compute()
-    in_lons = in_lons[input_idxs]
+    in_lons = in_lons[valid_input_index]
     in_lats = da.ravel(in_lats)
     in_lats = in_lats.compute()
-    in_lats = in_lats[input_idxs]
+    in_lats = in_lats[valid_input_index]
 
     # Expand input coordinates for each output location
     # in_lons = in_lons.compute()
-    in_lons = in_lons[idx_ref]
+    in_lons = in_lons[index_array]
     # in_lats = in_lats.compute()
-    in_lats = in_lats[idx_ref]
+    in_lats = in_lats[index_array]
 
     # Convert coordinates to output projection x/y space
     in_x, in_y = proj(in_lons, in_lats)
@@ -374,7 +374,7 @@ def _mask_coordinates_dask(lons, lats):
     return lons, lats
 
 
-def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
+def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array):
     """Get bounding corners.
 
     Get four closest locations from (in_x, in_y) so that they form a
@@ -400,31 +400,31 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
     # Upper left source pixel
     valid = (x_diff > 0) & (y_diff < 0)
-    x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Upper right source pixel
     valid = (x_diff < 0) & (y_diff < 0)
-    x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Lower left source pixel
     valid = (x_diff > 0) & (y_diff > 0)
-    x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Lower right source pixel
     valid = (x_diff < 0) & (y_diff > 0)
-    x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
-    # Combine sorted indices to idx_ref
-    idx_ref = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
+    # Combine sorted indices to index_array
+    index_array = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
 
     return (np.transpose(np.vstack((x_1, y_1))),
             np.transpose(np.vstack((x_2, y_2))),
             np.transpose(np.vstack((x_3, y_3))),
             np.transpose(np.vstack((x_4, y_4))),
-            idx_ref)
+            index_array)
 
 
-def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
+def _get_corner_dask(stride, valid, in_x, in_y, index_array):
     """Get closest set of coordinates from the *valid* locations."""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
@@ -432,7 +432,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
     invalid = np.invert(np.max(valid, axis=1))
 
     # idxs = idxs.compute()
-    idx_ref = idx_ref.compute()
+    index_array = index_array.compute()
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify
@@ -440,7 +440,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
     y__ = in_y[stride, idxs]  # TODO: daskify
     y__ = np.where(invalid, np.nan, y__)
 
-    idx = idx_ref[stride, idxs]  # TODO: daskify
+    idx = index_array[stride, idxs]  # TODO: daskify
 
     return x__, y__, idx
 
@@ -603,13 +603,13 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
     return t__, s__
 
 
-def _check_data_shape_dask(data, input_idxs):
+def _check_data_shape_dask(data, valid_input_index):
     """Check data shape and adjust if necessary."""
     # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == valid_input_index.shape[0]:
         data = da.reshape(data, data.shape[0] * data.shape[1], data.shape[2])
     # Also ravel single dataset
-    elif data.shape[0] != input_idxs.size:
+    elif data.shape[0] != valid_input_index.size:
         data = da.ravel(data)
 
     # Ensure two dimensions
