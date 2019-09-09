@@ -312,10 +312,110 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(shp[-1], 2)
 
 
+class TestXarrayBilinear(unittest.TestCase):
+    """Test Xarra/Dask -based bilinear interpolation."""
+
+    def setUp(self):
+        """Do some setup for common things."""
+        from pyresample import geometry, kd_tree
+
+        self.pts_irregular = (np.array([[-1., 1.], ]),
+                              np.array([[1., 2.], ]),
+                              np.array([[-2., -1.], ]),
+                              np.array([[2., -4.], ]))
+        self.pts_vert_parallel = (np.array([[-1., 1.], ]),
+                                  np.array([[1., 2.], ]),
+                                  np.array([[-1., -1.], ]),
+                                  np.array([[1., -2.], ]))
+        self.pts_both_parallel = (np.array([[-1., 1.], ]),
+                                  np.array([[1., 1.], ]),
+                                  np.array([[-1., -1.], ]),
+                                  np.array([[1., -1.], ]))
+
+        # Area definition with four pixels
+        self.target_def = geometry.AreaDefinition('areaD',
+                                                  'Europe (3km, HRV, VTC)',
+                                                  'areaD',
+                                                  {'a': '6378144.0',
+                                                   'b': '6356759.0',
+                                                   'lat_0': '50.00',
+                                                   'lat_ts': '50.00',
+                                                   'lon_0': '8.00',
+                                                   'proj': 'stere'},
+                                                  4, 4,
+                                                  [-1370912.72,
+                                                   -909968.64000000001,
+                                                   1029087.28,
+                                                   1490031.3600000001])
+
+        # Input data around the target pixel at 0.63388324, 55.08234642,
+        in_shape = (100, 100)
+        self.data1 = np.ones((in_shape[0], in_shape[1]))
+        self.data2 = 2. * self.data1
+        self.data3 = self.data1 + 9.5
+        lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
+                                 np.linspace(45., 75., num=in_shape[1]))
+        self.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+
+        self.radius = 50e3
+        self.neighbours = 32
+        input_idxs, output_idxs, idx_ref, dists = \
+            kd_tree.get_neighbour_info(self.source_def, self.target_def,
+                                       self.radius, neighbours=self.neighbours,
+                                       nprocs=1)
+        input_size = input_idxs.sum()
+        index_mask = (idx_ref == input_size)
+        idx_ref = np.where(index_mask, 0, idx_ref)
+
+        self.input_idxs = input_idxs
+        self.idx_ref = idx_ref
+
+    def test_init(self):
+        """Test that the resampler has been initialized correctly."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        # With defaults
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        self.assertTrue(resampler.source_geo_def == self.source_def)
+        self.assertTrue(resampler.target_geo_def == self.target_def)
+        self.assertEqual(resampler.radius_of_influence, self.radius)
+        self.assertEqual(resampler.neighbours, 32)
+        self.assertEqual(resampler.epsilon, 0)
+        self.assertTrue(resampler.reduce_data)
+        # These should be None
+        self.assertIsNone(resampler.valid_input_index)
+        self.assertIsNone(resampler.valid_output_index)
+        self.assertIsNone(resampler.index_array)
+        self.assertIsNone(resampler.distance_array)
+        self.assertIsNone(resampler.bilinear_t)
+        self.assertIsNone(resampler.bilinear_s)
+        self.assertIsNone(resampler.slices_x)
+        self.assertIsNone(resampler.slices_y)
+        self.assertIsNone(resampler.mask_slices)
+        self.assertIsNone(resampler.out_coords_x)
+        self.assertIsNone(resampler.out_coords_y)
+        # self.slices_{x,y} are used in self.slices dict
+        self.assertTrue(resampler.slices['x'] is resampler.slices_x)
+        self.assertTrue(resampler.slices['y'] is resampler.slices_y)
+        # self.out_coords_{x,y} are used in self.out_coords dict
+        self.assertTrue(resampler.out_coords['x'] is resampler.out_coords_x)
+        self.assertTrue(resampler.out_coords['y'] is resampler.out_coords_y)
+
+        # Override defaults
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius, neighbours=16,
+                                            epsilon=0.1, reduce_data=False)
+        self.assertEqual(resampler.neighbours, 16)
+        self.assertEqual(resampler.epsilon, 0.1)
+        self.assertFalse(resampler.reduce_data)
+
+
 def suite():
     """Create the test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestNumpyBilinear))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestXarrayBilinear))
 
     return mysuite
