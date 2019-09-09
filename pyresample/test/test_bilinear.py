@@ -2,11 +2,6 @@
 import unittest
 import numpy as np
 
-from pyresample._spatial_mp import Proj
-
-import pyresample.bilinear as bil
-from pyresample import geometry, kd_tree
-
 
 class TestNumpyBilinear(unittest.TestCase):
     """Test Numpy-based bilinear interpolation."""
@@ -14,6 +9,8 @@ class TestNumpyBilinear(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Do some setup for the test class."""
+        from pyresample import geometry, kd_tree
+
         cls.pts_irregular = (np.array([[-1., 1.], ]),
                              np.array([[1., 2.], ]),
                              np.array([[-2., -1.], ]),
@@ -68,122 +65,146 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_calc_abc(self):
         """Test calculation of quadratic coefficients."""
+        from pyresample.bilinear import _calc_abc
+
         # No np.nan inputs
         pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
-        res = bil._calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
         self.assertFalse(np.isnan(res[0]))
         self.assertFalse(np.isnan(res[1]))
         self.assertFalse(np.isnan(res[2]))
         # np.nan input -> np.nan output
-        res = bil._calc_abc(np.array([[np.nan, np.nan]]),
-                            pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(np.array([[np.nan, np.nan]]),
+                        pt_2, pt_3, pt_4, 0.0, 0.0)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
 
     def test_get_ts_irregular(self):
         """Test calculations for irregular corner locations."""
-        res = bil._get_ts_irregular(self.pts_irregular[0],
-                                    self.pts_irregular[1],
-                                    self.pts_irregular[2],
-                                    self.pts_irregular[3],
-                                    0., 0.)
+        from pyresample.bilinear import _get_ts_irregular
+
+        res = _get_ts_irregular(self.pts_irregular[0],
+                                self.pts_irregular[1],
+                                self.pts_irregular[2],
+                                self.pts_irregular[3],
+                                0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = bil._get_ts_irregular(self.pts_vert_parallel[0],
-                                    self.pts_vert_parallel[1],
-                                    self.pts_vert_parallel[2],
-                                    self.pts_vert_parallel[3],
-                                    0., 0.)
+        res = _get_ts_irregular(self.pts_vert_parallel[0],
+                                self.pts_vert_parallel[1],
+                                self.pts_vert_parallel[2],
+                                self.pts_vert_parallel[3],
+                                0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
     def test_get_ts_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        res = bil._get_ts_uprights_parallel(self.pts_vert_parallel[0],
-                                            self.pts_vert_parallel[1],
-                                            self.pts_vert_parallel[2],
-                                            self.pts_vert_parallel[3],
-                                            0., 0.)
+        from pyresample.bilinear import _get_ts_uprights_parallel
+
+        res = _get_ts_uprights_parallel(self.pts_vert_parallel[0],
+                                        self.pts_vert_parallel[1],
+                                        self.pts_vert_parallel[2],
+                                        self.pts_vert_parallel[3],
+                                        0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
     def test_get_ts_parallellogram(self):
         """Test calculation when the corners form a parallellogram."""
-        res = bil._get_ts_parallellogram(self.pts_both_parallel[0],
-                                         self.pts_both_parallel[1],
-                                         self.pts_both_parallel[2],
-                                         0., 0.)
+        from pyresample.bilinear import _get_ts_parallellogram
+
+        res = _get_ts_parallellogram(self.pts_both_parallel[0],
+                                     self.pts_both_parallel[1],
+                                     self.pts_both_parallel[2],
+                                     0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
     def test_get_ts(self):
         """Test get_ts()."""
+        from pyresample.bilinear import _get_ts
+
         out_x = np.array([[0.]])
         out_y = np.array([[0.]])
-        res = bil._get_ts(self.pts_irregular[0],
-                          self.pts_irregular[1],
-                          self.pts_irregular[2],
-                          self.pts_irregular[3],
-                          out_x, out_y)
+        res = _get_ts(self.pts_irregular[0],
+                      self.pts_irregular[1],
+                      self.pts_irregular[2],
+                      self.pts_irregular[3],
+                      out_x, out_y)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = bil._get_ts(self.pts_both_parallel[0],
-                          self.pts_both_parallel[1],
-                          self.pts_both_parallel[2],
-                          self.pts_both_parallel[3],
-                          out_x, out_y)
+        res = _get_ts(self.pts_both_parallel[0],
+                      self.pts_both_parallel[1],
+                      self.pts_both_parallel[2],
+                      self.pts_both_parallel[3],
+                      out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
-        res = bil._get_ts(self.pts_vert_parallel[0],
-                          self.pts_vert_parallel[1],
-                          self.pts_vert_parallel[2],
-                          self.pts_vert_parallel[3],
-                          out_x, out_y)
+        res = _get_ts(self.pts_vert_parallel[0],
+                      self.pts_vert_parallel[1],
+                      self.pts_vert_parallel[2],
+                      self.pts_vert_parallel[3],
+                      out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
-        res = bil._solve_quadratic(1, 0, 0)
+        from pyresample.bilinear import (_solve_quadratic, _calc_abc)
+
+        res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res[0], 0.0)
-        res = bil._solve_quadratic(1, 2, 1)
+        res = _solve_quadratic(1, 2, 1)
         self.assertTrue(np.isnan(res[0]))
-        res = bil._solve_quadratic(1, 2, 1, min_val=-2.)
+        res = _solve_quadratic(1, 2, 1, min_val=-2.)
         self.assertEqual(res[0], -1.0)
         # Test that small adjustments work
         pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
         pt_1 = self.pts_vert_parallel[0].copy()
         pt_1[0][0] += 1e-7
-        res = bil._calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
-        res = bil._solve_quadratic(res[0], res[1], res[2])
+        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
-        res = bil._calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
-        res = bil._solve_quadratic(res[0], res[1], res[2])
+        res = _calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_get_output_xy(self):
         """Test calculation of output xy-coordinates."""
+        from pyresample.bilinear import _get_output_xy
+        from pyresample._spatial_mp import Proj
+
         proj = Proj(self.target_def.proj_str)
-        out_x, out_y = bil._get_output_xy(self.target_def, proj)
+        out_x, out_y = _get_output_xy(self.target_def, proj)
         self.assertTrue(out_x.all())
         self.assertTrue(out_y.all())
 
     def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
+        from pyresample.bilinear import _get_input_xy
+        from pyresample._spatial_mp import Proj
+
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = bil._get_output_xy(self.swath_def, proj)
+        in_x, in_y = _get_input_xy(self.swath_def, proj,
+                                   self.input_idxs, self.idx_ref)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_bounding_corners(self):
         """Test calculation of bounding corners."""
+        from pyresample.bilinear import (_get_output_xy,
+                                         _get_input_xy,
+                                         _get_bounding_corners)
+        from pyresample._spatial_mp import Proj
+
         proj = Proj(self.target_def.proj_str)
-        out_x, out_y = bil._get_output_xy(self.target_def, proj)
-        in_x, in_y = bil._get_input_xy(self.swath_def, proj,
-                                       self.input_idxs, self.idx_ref)
-        res = bil._get_bounding_corners(in_x, in_y, out_x, out_y,
-                                        self.neighbours, self.idx_ref)
+        out_x, out_y = _get_output_xy(self.target_def, proj)
+        in_x, in_y = _get_input_xy(self.swath_def, proj,
+                                   self.input_idxs, self.idx_ref)
+        res = _get_bounding_corners(in_x, in_y, out_x, out_y,
+                                    self.neighbours, self.idx_ref)
         for i in range(len(res) - 1):
             pt_ = res[i]
             for j in range(2):
@@ -192,6 +213,8 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_bil_info(self):
         """Test calculation of bilinear resampling indices."""
+        from pyresample.bilinear import get_bil_info
+
         def _check_ts(t__, s__):
             for i in range(len(t__)):
                 # Just check the exact value for one pixel
@@ -209,77 +232,81 @@ class TestNumpyBilinear(unittest.TestCase):
                     self.assertTrue(t__[i] <= 1.0)
                     self.assertTrue(s__[i] <= 1.0)
 
-        t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_def,
-                                                         50e5, neighbours=32,
-                                                         nprocs=1,
-                                                         reduce_data=False)
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
+                                                     self.target_def,
+                                                     50e5, neighbours=32,
+                                                     nprocs=1,
+                                                     reduce_data=False)
         _check_ts(t__, s__)
 
-        t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_def,
-                                                         50e5, neighbours=32,
-                                                         nprocs=1,
-                                                         reduce_data=True)
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
+                                                     self.target_def,
+                                                     50e5, neighbours=32,
+                                                     nprocs=1,
+                                                     reduce_data=True)
         _check_ts(t__, s__)
 
     def test_get_sample_from_bil_info(self):
         """Test resampling using resampling indices."""
-        t__, s__, input_idxs, idx_arr = bil.get_bil_info(self.swath_def,
-                                                         self.target_def,
-                                                         50e5, neighbours=32,
-                                                         nprocs=1)
+        from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
+
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
+                                                     self.target_def,
+                                                     50e5, neighbours=32,
+                                                     nprocs=1)
         # Sample from data1
-        res = bil.get_sample_from_bil_info(self.data1.ravel(), t__, s__,
-                                           input_idxs, idx_arr)
+        res = get_sample_from_bil_info(self.data1.ravel(), t__, s__,
+                                       input_idxs, idx_arr)
         self.assertEqual(res[5], 1.)
         # Sample from data2
-        res = bil.get_sample_from_bil_info(self.data2.ravel(), t__, s__,
-                                           input_idxs, idx_arr)
+        res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
+                                       input_idxs, idx_arr)
         self.assertEqual(res[5], 2.)
         # Reshaping
-        res = bil.get_sample_from_bil_info(self.data2.ravel(), t__, s__,
-                                           input_idxs, idx_arr,
-                                           output_shape=self.target_def.shape)
+        res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
+                                       input_idxs, idx_arr,
+                                       output_shape=self.target_def.shape)
         res = res.shape
         self.assertEqual(res[0], self.target_def.shape[0])
         self.assertEqual(res[1], self.target_def.shape[1])
 
         # Test rounding that is happening for certain values
-        res = bil.get_sample_from_bil_info(self.data3.ravel(), t__, s__,
-                                           input_idxs, idx_arr,
-                                           output_shape=self.target_def.shape)
+        res = get_sample_from_bil_info(self.data3.ravel(), t__, s__,
+                                       input_idxs, idx_arr,
+                                       output_shape=self.target_def.shape)
         # Four pixels are outside of the data
         self.assertEqual(np.isnan(res).sum(), 4)
 
     def test_resample_bilinear(self):
         """Test whole bilinear resampling."""
+        from pyresample.bilinear import resample_bilinear
+
         # Single array
-        res = bil.resample_bilinear(self.data1,
-                                    self.swath_def,
-                                    self.target_def,
-                                    50e5, neighbours=32,
-                                    nprocs=1)
+        res = resample_bilinear(self.data1,
+                                self.swath_def,
+                                self.target_def,
+                                50e5, neighbours=32,
+                                nprocs=1)
         self.assertEqual(res.shape, self.target_def.shape)
         # There are 12 pixels with value 1, all others are zero
         self.assertEqual(res.sum(), 12)
         self.assertEqual((res == 0).sum(), 4)
 
         # Single array with masked output
-        res = bil.resample_bilinear(self.data1,
-                                    self.swath_def,
-                                    self.target_def,
-                                    50e5, neighbours=32,
-                                    nprocs=1, fill_value=None)
+        res = resample_bilinear(self.data1,
+                                self.swath_def,
+                                self.target_def,
+                                50e5, neighbours=32,
+                                nprocs=1, fill_value=None)
         self.assertTrue(hasattr(res, 'mask'))
         # There should be 12 valid pixels
         self.assertEqual(self.target_def.size - res.mask.sum(), 12)
 
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
-        res = bil.resample_bilinear(data,
-                                    self.swath_def,
-                                    self.target_def)
+        res = resample_bilinear(data,
+                                self.swath_def,
+                                self.target_def)
         shp = res.shape
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
