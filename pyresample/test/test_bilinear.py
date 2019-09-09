@@ -549,6 +549,52 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue('bands' in resampler.out_coords)
         self.assertTrue(np.all(resampler.out_coords['bands'] == bands))
 
+    def test_slice_data(self):
+        """Test slicing the data."""
+        import dask.array as da
+        from xarray import DataArray
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+
+        # Too many dimensions
+        data = DataArray(da.ones((1, 3, 10, 10)))
+        with self.assertRaises(ValueError):
+            _ = resampler._slice_data(data)
+
+        # 2D data
+        data = DataArray(da.ones((10, 10)))
+        resampler.slices_x = np.random.randint(0, 10, (100, 4))
+        resampler.slices_y = np.random.randint(0, 10, (100, 4))
+        resampler.mask_slices = np.zeros((100, 4), dtype=np.bool)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        self.assertEqual(p_1.shape, (100, ))
+        self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
+        self.assertTrue(np.all(p_1 == 1.0) and np.all(p_2 == 1.0) and
+                        np.all(p_3 == 1.0) and np.all(p_4 == 1.0))
+
+        # 2D data with masking
+        resampler.mask_slices = np.ones((100, 4), dtype=np.bool)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
+                        np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
+
+        # 3D data
+        data = DataArray(da.ones((3, 10, 10)))
+        resampler.slices_x = np.random.randint(0, 10, (100, 4))
+        resampler.slices_y = np.random.randint(0, 10, (100, 4))
+        resampler.mask_slices = np.zeros((100, 4), dtype=np.bool)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        self.assertEqual(p_1.shape, (3, 100))
+        self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
+
+        # 3D data with masking
+        resampler.mask_slices = np.ones((100, 4), dtype=np.bool)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
+                        np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
+
 
 def suite():
     """Create the test suite."""
