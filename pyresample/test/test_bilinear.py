@@ -1,6 +1,10 @@
 """Test bilinear interpolation."""
 import unittest
 import numpy as np
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 
 class TestNumpyBilinear(unittest.TestCase):
@@ -317,6 +321,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def setUp(self):
         """Do some setup for common things."""
+        import dask.array as da
+        from xarray import DataArray
         from pyresample import geometry, kd_tree
 
         self.pts_irregular = (np.array([[-1., 1.], ]),
@@ -350,7 +356,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # Input data around the target pixel at 0.63388324, 55.08234642,
         in_shape = (100, 100)
-        self.data1 = np.ones((in_shape[0], in_shape[1]))
+        self.data1 = DataArray(da.ones((in_shape[0], in_shape[1])), dims=('y', 'x'))
         self.data2 = 2. * self.data1
         self.data3 = self.data1 + 9.5
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
@@ -470,6 +476,78 @@ class TestXarrayBilinear(unittest.TestCase):
                                             self.radius, reduce_data=False)
         (t__, s__, slices, mask_slices, out_coords) = resampler.get_bil_info()
         _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
+
+    def test_get_sample_from_bil_info(self):
+        """Test bilinear interpolation as a whole."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        _ = resampler.get_bil_info()
+
+        # Sample from data1
+        res = resampler.get_sample_from_bil_info(self.data1)
+        res = res.compute()
+        # Check couple of values
+        self.assertEqual(res.values[1, 1], 1.)
+        self.assertTrue(np.isnan(res.values[0, 3]))
+        # Check that the values haven't gone down or up a lot
+        self.assertAlmostEqual(np.nanmin(res.values), 1.)
+        self.assertAlmostEqual(np.nanmax(res.values), 1.)
+        # Check that dimensions are the same
+        self.assertEqual(res.dims, self.data1.dims)
+
+        # Sample from data1, custom fill value
+        res = resampler.get_sample_from_bil_info(self.data1, fill_value=-1.0)
+        res = res.compute()
+        self.assertEqual(np.nanmin(res.values), -1.)
+
+    @mock.patch('pyresample.bilinear.xarr.setattr')
+    def test_compute_indices(self, mock_setattr):
+        """Test running .compute() for indices."""
+        from pyresample.bilinear.xarr import (XArrayResamplerBilinear,
+                                              CACHE_INDICES)
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+
+        # Set indices to Numpy arrays
+        for idx in CACHE_INDICES:
+            setattr(resampler, idx, np.array([]))
+        resampler._compute_indices()
+        # None of the indices shouldn't have been reassigned
+        mock_setattr.assert_not_called()
+
+        # Set indices to a Mock object
+        arr = mock.MagicMock()
+        for idx in CACHE_INDICES:
+            setattr(resampler, idx, arr)
+        resampler._compute_indices()
+        # All the indices should have been reassigned
+        self.assertEqual(mock_setattr.call_count, len(CACHE_INDICES))
+        # The compute should have been called the same amount of times
+        self.assertEqual(arr.compute.call_count, len(CACHE_INDICES))
+
+    def test_add_missing_coordinates(self):
+        """Test coordinate updating."""
+        import dask.array as da
+        from xarray import DataArray
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        bands = ['R', 'G', 'B']
+        data = DataArray(da.ones((3, 10, 10)), dims=('bands', 'y', 'x'),
+                         coords={'bands': bands,
+                                 'y': np.arange(10), 'x': np.arange(10)})
+        resampler._update_coordinates(data)
+        # X and Y coordinates should not change
+        self.assertIsNone(resampler.out_coords_x)
+        self.assertIsNone(resampler.out_coords_y)
+        self.assertIsNone(resampler.out_coords['x'])
+        self.assertIsNone(resampler.out_coords['y'])
+        self.assertTrue('bands' in resampler.out_coords)
+        self.assertTrue(np.all(resampler.out_coords['bands'] == bands))
 
 
 def suite():
