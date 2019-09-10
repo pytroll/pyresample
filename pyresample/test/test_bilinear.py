@@ -872,6 +872,17 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
+    def test_get_ts_parallellogram(self):
+        """Test calculation when the corners form a parallellogram."""
+        from pyresample.bilinear import _get_ts_parallellogram
+
+        res = _get_ts_parallellogram(self.pts_both_parallel[0],
+                                     self.pts_both_parallel[1],
+                                     self.pts_both_parallel[2],
+                                     0., 0.)
+        self.assertEqual(res[0], 0.5)
+        self.assertEqual(res[1], 0.5)
+
 
 def suite():
     """Create the test suite."""
