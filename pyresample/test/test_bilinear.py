@@ -365,16 +365,16 @@ class TestXarrayBilinear(unittest.TestCase):
 
         self.radius = 50e3
         self.neighbours = 32
-        input_idxs, output_idxs, idx_ref, dists = \
+        valid_input_index, output_idxs, index_array, dists = \
             kd_tree.get_neighbour_info(self.source_def, self.target_def,
                                        self.radius, neighbours=self.neighbours,
                                        nprocs=1)
-        input_size = input_idxs.sum()
-        index_mask = (idx_ref == input_size)
-        idx_ref = np.where(index_mask, 0, idx_ref)
+        input_size = valid_input_index.sum()
+        index_mask = (index_array == input_size)
+        index_array = np.where(index_mask, 0, index_array)
 
-        self.input_idxs = input_idxs
-        self.idx_ref = idx_ref
+        self.valid_input_index = valid_input_index
+        self.index_array = index_array
 
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
