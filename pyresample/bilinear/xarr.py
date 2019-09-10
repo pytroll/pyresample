@@ -408,9 +408,9 @@ def _get_corner_dask(stride, valid, in_x, in_y, index_array):
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify
-    x__ = np.where(invalid, np.nan, x__)
+    x__ = da.where(invalid, np.nan, x__)
     y__ = in_y[stride, idxs]  # TODO: daskify
-    y__ = np.where(invalid, np.nan, y__)
+    y__ = da.where(invalid, np.nan, y__)
 
     idx = index_array[stride, idxs]  # TODO: daskify
 

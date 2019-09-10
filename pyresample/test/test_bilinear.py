@@ -726,7 +726,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # Check which of the locations has four valid X/Y pairs by
         # finding where there are non-NaN values
-        res = np.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1).compute()
+        res = da.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1).compute()
         self.assertEqual(np.sum(~np.isnan(res)), 10)
 
     def test_get_corner_dask(self):
