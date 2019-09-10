@@ -765,6 +765,82 @@ class TestXarrayBilinear(unittest.TestCase):
         # bottom row of the area
         self.assertEqual(np.sum(np.isnan(x_3.compute())), 4)
 
+    @mock.patch('pyresample.bilinear.xarr._get_ts_parallellogram_dask')
+    @mock.patch('pyresample.bilinear.xarr._get_ts_uprights_parallel_dask')
+    @mock.patch('pyresample.bilinear.xarr._get_ts_irregular_dask')
+    def test_get_ts_dask(self, irregular, uprights, parallellogram):
+        """Test that the three separate functions are called."""
+        from pyresample.bilinear.xarr import _get_ts_dask
+
+        # All valid values
+        t_irr = np.array([0.1, 0.2, 0.3])
+        s_irr = np.array([0.1, 0.2, 0.3])
+        irregular.return_value = (t_irr, s_irr)
+        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        irregular.assert_called_once()
+        uprights.assert_not_called()
+        parallellogram.assert_not_called()
+        self.assertTrue(np.allclose(t__.compute(), t_irr))
+        self.assertTrue(np.allclose(s__.compute(), s_irr))
+
+        # NaN in the first step, good value for that location from the
+        # second step
+        t_irr = np.array([0.1, 0.2, np.nan])
+        s_irr = np.array([0.1, 0.2, np.nan])
+        irregular.return_value = (t_irr, s_irr)
+        t_upr = np.array([3, 3, 0.3])
+        s_upr = np.array([3, 3, 0.3])
+        uprights.return_value = (t_upr, s_upr)
+        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        self.assertEqual(irregular.call_count, 2)
+        uprights.assert_called_once()
+        parallellogram.assert_not_called()
+        # Only the last value of the first step should have been replaced
+        t_res = np.array([0.1, 0.2, 0.3])
+        s_res = np.array([0.1, 0.2, 0.3])
+        self.assertTrue(np.allclose(t__.compute(), t_res))
+        self.assertTrue(np.allclose(s__.compute(), s_res))
+
+        # Two NaNs in the first step, one of which are found by the
+        # second, and the last bad value is replaced by the third step
+        t_irr = np.array([0.1, np.nan, np.nan])
+        s_irr = np.array([0.1, np.nan, np.nan])
+        irregular.return_value = (t_irr, s_irr)
+        t_upr = np.array([3, np.nan, 0.3])
+        s_upr = np.array([3, np.nan, 0.3])
+        uprights.return_value = (t_upr, s_upr)
+        t_par = np.array([4, 0.2, 0.3])
+        s_par = np.array([4, 0.2, 0.3])
+        parallellogram.return_value = (t_par, s_par)
+        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        self.assertEqual(irregular.call_count, 3)
+        self.assertEqual(uprights.call_count, 2)
+        parallellogram.assert_called_once()
+        # Only the last two values should have been replaced
+        t_res = np.array([0.1, 0.2, 0.3])
+        s_res = np.array([0.1, 0.2, 0.3])
+        self.assertTrue(np.allclose(t__.compute(), t_res))
+        self.assertTrue(np.allclose(s__.compute(), s_res))
+
+        # Too large and small values should be set to NaN
+        t_irr = np.array([1.00001, -0.00001, 1e6])
+        s_irr = np.array([1.00001, -0.00001, -1e6])
+        irregular.return_value = (t_irr, s_irr)
+        # Second step also returns invalid values
+        t_upr = np.array([1.00001, 0.2, np.nan])
+        s_upr = np.array([-0.00001, 0.2, np.nan])
+        uprights.return_value = (t_upr, s_upr)
+        # Third step has one new valid value, the last will stay invalid
+        t_par = np.array([0.1, 0.2, 4.0])
+        s_par = np.array([0.1, 0.2, 4.0])
+        parallellogram.return_value = (t_par, s_par)
+        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+
+        t_res = np.array([0.1, 0.2, np.nan])
+        s_res = np.array([0.1, 0.2, np.nan])
+        self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
+        self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
+
 
 def suite():
     """Create the test suite."""
