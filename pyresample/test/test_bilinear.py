@@ -376,6 +376,10 @@ class TestXarrayBilinear(unittest.TestCase):
         self.valid_input_index = valid_input_index
         self.index_array = index_array
 
+        shp = self.source_def.shape
+        self.cols, self.lines = np.meshgrid(np.arange(shp[1]),
+                                            np.arange(shp[0]))
+
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
         from pyresample.bilinear.xarr import XArrayResamplerBilinear
@@ -594,6 +598,51 @@ class TestXarrayBilinear(unittest.TestCase):
         p_1, p_2, p_3, p_4 = resampler._slice_data(data)
         self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
                         np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
+
+    @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
+    def test_get_slices(self, meshgrid):
+        """Test slice array creation."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        meshgrid.return_value = (self.cols, self.lines)
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        resampler.valid_input_index = self.valid_input_index
+        resampler.index_array = self.index_array
+
+        resampler._get_slices()
+        self.assertIsNotNone(resampler.out_coords_x)
+        self.assertIsNotNone(resampler.out_coords_y)
+        self.assertTrue(resampler.out_coords_x is resampler.out_coords['x'])
+        self.assertTrue(resampler.out_coords_y is resampler.out_coords['y'])
+        self.assertTrue(np.allclose(
+            resampler.out_coords_x,
+            [-1070912.72, -470912.72, 129087.28, 729087.28]))
+        self.assertTrue(np.allclose(
+            resampler.out_coords_y,
+            [1190031.36,  590031.36,   -9968.64, -609968.64]))
+
+        self.assertIsNotNone(resampler.slices_x)
+        self.assertIsNotNone(resampler.slices_y)
+        self.assertTrue(resampler.slices_x is resampler.slices['x'])
+        self.assertTrue(resampler.slices_y is resampler.slices['y'])
+        self.assertTrue(resampler.slices_x.shape == (self.target_def.size, 32))
+        self.assertTrue(resampler.slices_y.shape == (self.target_def.size, 32))
+        self.assertEqual(np.sum(resampler.slices_x), 12471)
+        self.assertEqual(np.sum(resampler.slices_y), 2223)
+
+        self.assertFalse(np.any(resampler.mask_slices))
+
+        # Ensure that source geo def is used in masking
+        # Setting target_geo_def to 0-size shouldn't cause any masked values
+        resampler.target_geo_def = np.array([])
+        resampler._get_slices()
+        self.assertFalse(np.any(resampler.mask_slices))
+        # Setting source area def to 0-size should mask all values
+        resampler.source_geo_def = np.array([[]])
+        resampler._get_slices()
+        self.assertTrue(np.all(resampler.mask_slices))
 
 
 def suite():
