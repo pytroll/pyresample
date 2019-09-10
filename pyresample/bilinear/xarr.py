@@ -419,8 +419,17 @@ def _get_corner_dask(stride, valid, in_x, in_y, index_array):
 
 def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
+    def invalid_to_nan(t__, s__):
+        idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
+        t__ = da.where(idxs, np.nan, t__)
+        s__ = da.where(idxs, np.nan, s__)
+        return t__, s__
+
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     # Cases where verticals are parallel
     idxs = da.isnan(t__) | da.isnan(s__)
@@ -431,9 +440,11 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t_new, s_new = _get_ts_uprights_parallel_dask(pt_1, pt_2,
                                                       pt_3, pt_4,
                                                       out_y, out_x)
-
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
+
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     # Cases where both verticals and horizontals are parallel
     idxs = da.isnan(t__) | da.isnan(s__)
@@ -445,9 +456,8 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
-    idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
-    t__ = da.where(idxs, np.nan, t__)
-    s__ = da.where(idxs, np.nan, s__)
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     return t__, s__
 
