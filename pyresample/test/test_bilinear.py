@@ -956,6 +956,19 @@ class TestXarrayBilinear(unittest.TestCase):
         # 2700 valid input points
         self.assertEqual(vii.compute().sum(), 2700)
 
+    def test_create_empty_bil_info(self):
+        """Test creation of empty bilinear info."""
+        from pyresample.bilinear.xarr import _create_empty_bil_info
+
+        t__, s__, vii, ia_ = _create_empty_bil_info(self.source_def,
+                                                    self.target_def)
+        self.assertEqual(t__.shape, (self.target_def.size,))
+        self.assertEqual(s__.shape, (self.target_def.size,))
+        self.assertEqual(ia_.shape, (self.target_def.size, 4))
+        self.assertTrue(ia_.dtype == np.int32)
+        self.assertEqual(vii.shape, (self.source_def.size,))
+        self.assertTrue(vii.dtype == np.bool)
+
 
 def suite():
     """Create the test suite."""
