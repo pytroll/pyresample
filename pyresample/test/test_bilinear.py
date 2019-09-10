@@ -699,6 +699,36 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(np.sum(np.isnan(lons)), 4)
         self.assertEqual(np.sum(np.isnan(lats)), 4)
 
+    def test_get_bounding_corners_dask(self):
+        """Test finding surrounding bounding corners."""
+        import dask.array as da
+        from pyresample.bilinear.xarr import (_get_input_xy_dask,
+                                              _get_bounding_corners_dask)
+        from pyresample._spatial_mp import Proj
+        from pyresample import CHUNK_SIZE
+
+        proj = Proj(self.target_def.proj_str)
+        out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
+        out_x = da.ravel(out_x)
+        out_y = da.ravel(out_y)
+        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
+                                        da.from_array(self.valid_input_index),
+                                        da.from_array(self.index_array))
+        pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners_dask(
+            in_x, in_y, out_x, out_y,
+            self.neighbours,
+            da.from_array(self.index_array))
+
+        self.assertTrue(pt_1.shape == pt_2.shape ==
+                        pt_3.shape == pt_4.shape ==
+                        (self.target_def.size, 2))
+        self.assertTrue(ia_.shape == (self.target_def.size, 4))
+
+        # Check which of the locations has four valid X/Y pairs by
+        # finding where there are non-NaN values
+        res = np.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1).compute()
+        self.assertEqual(np.sum(~np.isnan(res)), 10)
+
 
 def suite():
     """Create the test suite."""
