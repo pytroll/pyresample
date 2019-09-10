@@ -900,6 +900,30 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
 
+    def test_solve_quadratic(self):
+        """Test solving quadratic equation."""
+        from pyresample.bilinear.xarr import (_solve_quadratic_dask,
+                                              _calc_abc_dask)
+
+        res = _solve_quadratic_dask(1, 0, 0).compute()
+        self.assertEqual(res, 0.0)
+        res = _solve_quadratic_dask(1, 2, 1).compute()
+        self.assertTrue(np.isnan(res))
+        res = _solve_quadratic_dask(1, 2, 1, min_val=-2.).compute()
+        self.assertEqual(res, -1.0)
+        # Test that small adjustments work
+        pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
+        pt_1 = self.pts_vert_parallel[0].copy()
+        pt_1[0][0] += 1e-7
+        res = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
+        self.assertAlmostEqual(res[0], 0.5, 5)
+        res = _calc_abc_dask(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        res = _solve_quadratic_dask(res[0],
+                                    res[1],
+                                    res[2]).compute()
+        self.assertAlmostEqual(res[0], 0.5, 5)
+
 
 def suite():
     """Create the test suite."""
