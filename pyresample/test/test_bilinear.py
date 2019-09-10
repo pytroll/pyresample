@@ -657,6 +657,19 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(vii.size, self.source_def.size)
         KDTree.assert_called_once()
 
+    @mock.patch('pyresample.bilinear.xarr.query_no_distance')
+    def test_query_resample_kdtree(self, qnd):
+        """Test that query_no_distance is called in _query_resample_kdtree()."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        res, none = resampler._query_resample_kdtree(1, 2, 3, 4,
+                                                     reduce_data=5)
+        qnd.assert_called_with(2, 3, 4, 1, resampler.neighbours,
+                               resampler.epsilon,
+                               resampler.radius_of_influence)
+
 
 def suite():
     """Create the test suite."""
