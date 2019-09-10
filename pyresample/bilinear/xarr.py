@@ -338,8 +338,6 @@ def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
 
 def _mask_coordinates_dask(lons, lats):
     """Mask invalid coordinate values."""
-    # lons = da.ravel(lons)
-    # lats = da.ravel(lats)
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
     lons = da.where(idxs, np.nan, lons)

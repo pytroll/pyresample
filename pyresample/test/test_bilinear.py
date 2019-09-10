@@ -686,6 +686,19 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
+    def test_mask_coordinates_dask(self):
+        """Test masking of invalid coordinates."""
+        import dask.array as da
+        from pyresample.bilinear.xarr import _mask_coordinates_dask
+
+        lons, lats = _mask_coordinates_dask(
+            da.from_array([-200., 0., 0., 0., 200.]),
+            da.from_array([0., -100., 0, 100., 0.]))
+        lons, lats = da.compute(lons, lats)
+        self.assertTrue(lons[2] == lats[2] == 0.0)
+        self.assertEqual(np.sum(np.isnan(lons)), 4)
+        self.assertEqual(np.sum(np.isnan(lats)), 4)
+
 
 def suite():
     """Create the test suite."""
