@@ -969,6 +969,17 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(vii.shape, (self.source_def.size,))
         self.assertTrue(vii.dtype == np.bool)
 
+    def test_lonlat2xyz(self):
+        """Test conversion from geographic to cartesian 3D coordinates."""
+        from pyresample.bilinear.xarr import lonlat2xyz
+        from pyresample import CHUNK_SIZE
+
+        lons, lats = self.target_def.get_lonlats(chunks=CHUNK_SIZE)
+        res = lonlat2xyz(lons, lats)
+        self.assertEqual(res.shape, (self.target_def.size, 3))
+        vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
+        self.assertTrue(np.allclose(res.compute()[0, :], vals))
+
 
 def suite():
     """Create the test suite."""
