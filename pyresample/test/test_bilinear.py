@@ -860,6 +860,18 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
+    def test_get_ts_uprights_parallel(self):
+        """Test calculation when uprights are parallel."""
+        from pyresample.bilinear import _get_ts_uprights_parallel
+
+        res = _get_ts_uprights_parallel(self.pts_vert_parallel[0],
+                                        self.pts_vert_parallel[1],
+                                        self.pts_vert_parallel[2],
+                                        self.pts_vert_parallel[3],
+                                        0., 0.)
+        self.assertEqual(res[0], 0.5)
+        self.assertEqual(res[1], 0.5)
+
 
 def suite():
     """Create the test suite."""
