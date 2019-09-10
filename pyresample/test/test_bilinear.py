@@ -670,6 +670,22 @@ class TestXarrayBilinear(unittest.TestCase):
                                resampler.epsilon,
                                resampler.radius_of_influence)
 
+    def test_get_input_xy_dask(self):
+        """Test computation of input X and Y coordinates in target proj."""
+        import dask.array as da
+        from pyresample.bilinear.xarr import _get_input_xy_dask
+        from pyresample._spatial_mp import Proj
+
+        proj = Proj(self.target_def.proj_str)
+        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
+                                        da.from_array(self.valid_input_index),
+                                        da.from_array(self.index_array))
+
+        self.assertTrue(in_x.shape, (self.target_def.size, 32))
+        self.assertTrue(in_y.shape, (self.target_def.size, 32))
+        self.assertTrue(in_x.all())
+        self.assertTrue(in_y.all())
+
 
 def suite():
     """Create the test suite."""
