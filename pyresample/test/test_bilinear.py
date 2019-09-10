@@ -936,6 +936,26 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res, 2)
         kdtree.query.assert_called_once()
 
+    def test_get_valid_input_index_dask(self):
+        """Test finding valid indices for reduced input data."""
+        from pyresample.bilinear.xarr import _get_valid_input_index_dask
+
+        # Do not reduce data
+        vii, lons, lats = _get_valid_input_index_dask(self.source_def,
+                                                      self.target_def,
+                                                      False, self.radius)
+        self.assertEqual(vii.shape, (self.source_def.size, ))
+        self.assertTrue(vii.dtype == np.bool)
+        # No data has been reduced, whole input is used
+        self.assertTrue(vii.compute().all())
+
+        # Reduce data
+        vii, lons, lats = _get_valid_input_index_dask(self.source_def,
+                                                      self.target_def,
+                                                      True, self.radius)
+        # 2700 valid input points
+        self.assertEqual(vii.compute().sum(), 2700)
+
 
 def suite():
     """Create the test suite."""
