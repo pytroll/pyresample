@@ -644,6 +644,19 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler._get_slices()
         self.assertTrue(np.all(resampler.mask_slices))
 
+    @mock.patch('pyresample.bilinear.xarr.KDTree')
+    def test_create_resample_kdtree(self, KDTree):
+        """Test that KDTree creation is called."""
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+
+        vii, kdtree = resampler._create_resample_kdtree()
+        self.assertEqual(np.sum(vii), 2700)
+        self.assertEqual(vii.size, self.source_def.size)
+        KDTree.assert_called_once()
+
 
 def suite():
     """Create the test suite."""
