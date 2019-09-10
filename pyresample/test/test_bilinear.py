@@ -919,9 +919,7 @@ class TestXarrayBilinear(unittest.TestCase):
         res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
         res = _calc_abc_dask(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
-        res = _solve_quadratic_dask(res[0],
-                                    res[1],
-                                    res[2]).compute()
+        res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
 
 
