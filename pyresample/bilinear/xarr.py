@@ -336,10 +336,6 @@ def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     return in_x, in_y
 
 
-def _run_proj(proj, lons, lats):
-    return da.dstack(proj(lons, lats))
-
-
 def _mask_coordinates_dask(lons, lats):
     """Mask invalid coordinate values."""
     # lons = da.ravel(lons)
