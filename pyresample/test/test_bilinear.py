@@ -922,6 +922,20 @@ class TestXarrayBilinear(unittest.TestCase):
         res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
 
+    def test_query_no_distance(self):
+        """Test KDTree querying."""
+        from pyresample.bilinear.xarr import query_no_distance
+
+        kdtree = mock.MagicMock()
+        kdtree.query.return_value = (1, 2)
+        lons, lats = self.target_def.get_lonlats()
+        voi = (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90)
+        res = query_no_distance(lons, lats, voi, kdtree, self.neighbours,
+                                0., self.radius)
+        # Only the second value from the query is returned
+        self.assertEqual(res, 2)
+        kdtree.query.assert_called_once()
+
 
 def suite():
     """Create the test suite."""
