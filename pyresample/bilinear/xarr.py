@@ -131,7 +131,9 @@ class XArrayResamplerBilinear(object):
         proj = Proj(self.target_geo_def.proj_str)
 
         # Get output x/y coordinates
-        out_x, out_y = _get_output_xy_dask(self.target_geo_def, proj)
+        out_x, out_y = self.target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
+        out_x = da.ravel(out_x)
+        out_y = da.ravel(out_y)
 
         # Get input x/y coordinates
         in_x, in_y = _get_input_xy_dask(self.source_geo_def, proj,
@@ -303,22 +305,6 @@ class XArrayResamplerBilinear(object):
                                 self.neighbours, self.epsilon,
                                 self.radius_of_influence)
         return res, None
-
-
-def _get_output_xy_dask(target_geo_def, proj):
-    """Get x/y coordinates of the target grid."""
-    # Read output coordinates
-    out_lons, out_lats = target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-
-    # Mask invalid coordinates
-    out_lons, out_lats = _mask_coordinates_dask(out_lons, out_lats)
-
-    # Convert coordinates to output projection x/y space
-    res = da.dstack(proj(out_lons.compute(), out_lats.compute()))
-    out_x = da.ravel(res[:, :, 0])
-    out_y = da.ravel(res[:, :, 1])
-
-    return out_x, out_y
 
 
 def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
