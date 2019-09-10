@@ -77,13 +77,16 @@ def _gradient_resample_2d_data(src_data, src_coords, src_gradient_xl, src_gradie
     except ZeroDivisionError:
         return da.full_like(dst_coords[0].squeeze(), np.nan, dtype=np.float)[:, :, np.newaxis]
 
+
 def vsplit(arr, n):
     res = arr.reshape((n, -1) + arr.shape[1:])
     return [np.take(res, x, axis=0) for x in range(n)]
 
+
 def hsplit(arr, n):
     res = arr.reshape((arr.shape[0], n, -1) + arr.shape[2:])
     return [np.take(res, x, axis=1) for x in range(n)]
+
 
 def dsplit(arr, n):
     res = arr.reshape((arr.shape[:2]) + (n, -1) + arr.shape[3:])
