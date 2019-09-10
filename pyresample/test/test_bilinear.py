@@ -883,6 +883,23 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
+    def test_calc_abc(self):
+        """Test calculation of quadratic coefficients."""
+        from pyresample.bilinear.xarr import _calc_abc_dask
+
+        # No np.nan inputs
+        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
+        res = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        self.assertFalse(np.isnan(res[0]))
+        self.assertFalse(np.isnan(res[1]))
+        self.assertFalse(np.isnan(res[2]))
+        # np.nan input -> np.nan output
+        res = _calc_abc_dask(np.array([[np.nan, np.nan]]),
+                             pt_2, pt_3, pt_4, 0.0, 0.0)
+        self.assertTrue(np.isnan(res[0]))
+        self.assertTrue(np.isnan(res[1]))
+        self.assertTrue(np.isnan(res[2]))
+
 
 def suite():
     """Create the test suite."""
