@@ -585,22 +585,6 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
     return t__, s__
 
 
-def _check_data_shape_dask(data, valid_input_index):
-    """Check data shape and adjust if necessary."""
-    # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == valid_input_index.shape[0]:
-        data = da.reshape(data, data.shape[0] * data.shape[1], data.shape[2])
-    # Also ravel single dataset
-    elif data.shape[0] != valid_input_index.size:
-        data = da.ravel(data)
-
-    # Ensure two dimensions
-    if data.ndim == 1:
-        data = da.reshape(data, (data.size, 1))
-
-    return data
-
-
 def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
