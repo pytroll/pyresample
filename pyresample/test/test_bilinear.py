@@ -841,6 +841,25 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
         self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
 
+    def test_get_ts_irregular_dask(self):
+        """Test calculations for irregular corner locations."""
+        from pyresample.bilinear.xarr import _get_ts_irregular_dask
+
+        res = _get_ts_irregular_dask(self.pts_irregular[0],
+                                     self.pts_irregular[1],
+                                     self.pts_irregular[2],
+                                     self.pts_irregular[3],
+                                     0., 0.)
+        self.assertEqual(res[0], 0.375)
+        self.assertEqual(res[1], 0.5)
+        res = _get_ts_irregular_dask(self.pts_vert_parallel[0],
+                                     self.pts_vert_parallel[1],
+                                     self.pts_vert_parallel[2],
+                                     self.pts_vert_parallel[3],
+                                     0., 0.)
+        self.assertTrue(np.isnan(res[0]))
+        self.assertTrue(np.isnan(res[1]))
+
 
 def suite():
     """Create the test suite."""
