@@ -607,7 +607,7 @@ def _get_valid_input_index_dask(source_geo_def,
                                 target_geo_def,
                                 reduce_data,
                                 radius_of_influence):
-    """Find indices of reduced inputput data."""
+    """Find indices of reduced input data."""
     source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
     source_lons = da.ravel(source_lons)
     source_lats = da.ravel(source_lats)
