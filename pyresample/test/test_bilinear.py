@@ -729,6 +729,42 @@ class TestXarrayBilinear(unittest.TestCase):
         res = np.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1).compute()
         self.assertEqual(np.sum(~np.isnan(res)), 10)
 
+    def test_get_corner_dask(self):
+        """Test finding the closest corners."""
+        import dask.array as da
+        from pyresample.bilinear.xarr import (_get_corner_dask,
+                                              _get_input_xy_dask)
+        from pyresample import CHUNK_SIZE
+        from pyresample._spatial_mp import Proj
+
+        proj = Proj(self.target_def.proj_str)
+        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
+                                        da.from_array(self.valid_input_index),
+                                        da.from_array(self.index_array))
+        out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
+        out_x = da.ravel(out_x)
+        out_y = da.ravel(out_y)
+
+        # Some copy&paste from the code to get the input
+        out_x_tile = np.reshape(np.tile(out_x, self.neighbours),
+                                (self.neighbours, out_x.size)).T
+        out_y_tile = np.reshape(np.tile(out_y, self.neighbours),
+                                (self.neighbours, out_y.size)).T
+        x_diff = out_x_tile - in_x
+        y_diff = out_y_tile - in_y
+        stride = np.arange(x_diff.shape[0])
+
+        # Use lower left source pixels for testing
+        valid = (x_diff > 0) & (y_diff > 0)
+        x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y,
+                                           da.from_array(self.index_array))
+
+        self.assertTrue(x_3.shape == y_3.shape == idx_3.shape ==
+                        (self.target_def.size, ))
+        # Four locations have no data to the lower left of them (the
+        # bottom row of the area
+        self.assertEqual(np.sum(np.isnan(x_3.compute())), 4)
+
 
 def suite():
     """Create the test suite."""
