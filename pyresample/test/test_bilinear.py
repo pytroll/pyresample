@@ -540,7 +540,7 @@ class TestXarrayBilinear(unittest.TestCase):
         data = DataArray(da.ones((3, 10, 10)), dims=('bands', 'y', 'x'),
                          coords={'bands': bands,
                                  'y': np.arange(10), 'x': np.arange(10)})
-        resampler._update_coordinates(data)
+        resampler._add_missing_coordinates(data)
         # X and Y coordinates should not change
         self.assertIsNone(resampler.out_coords_x)
         self.assertIsNone(resampler.out_coords_y)
