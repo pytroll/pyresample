@@ -305,18 +305,6 @@ class XArrayResamplerBilinear(object):
         return res, None
 
 
-def _get_fill_mask_value(data_dtype):
-    """Return the maximum value of dtype."""
-    if issubclass(data_dtype.type, np.floating):
-        fill_value = np.finfo(data_dtype.type).max
-    elif issubclass(data_dtype.type, np.integer):
-        fill_value = np.iinfo(data_dtype.type).max
-    else:
-        raise TypeError('Type %s is unsupported for masked fill values' %
-                        data_dtype.type)
-    return fill_value
-
-
 def _get_output_xy_dask(target_geo_def, proj):
     """Get x/y coordinates of the target grid."""
     # Read output coordinates
