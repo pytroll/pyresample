@@ -792,6 +792,7 @@ class DynamicAreaDefinition(object):
         self.description = description
         self.width = width
         self.height = height
+        self.shape = (self.height, self.width)
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
         if isinstance(resolution, (int, float)):
