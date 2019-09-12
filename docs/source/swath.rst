@@ -464,6 +464,7 @@ pyresample.bucket
 -----------------
 
 .. autoclass:: pyresample.bucket.BucketResampler
+    :noindex:
 
 See :class:`~pyresample.bucket.BucketResampler` API documentation for
 the details of method parameters.

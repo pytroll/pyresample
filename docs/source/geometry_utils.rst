@@ -97,6 +97,25 @@ the mercator projection with radius and resolution defined in degrees.
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+The area definition corresponding to a given lat-lon grid (defined by area extent and resolution)
+can be obtained as follows:
+
+.. doctest::
+
+ >>> area_def = create_area_def('my_area',
+ ...                            {'proj': 'latlong', 'lon_0': 0},
+ ...                            area_extent=[-180, -90, 180, 90],
+ ...                            resolution=1,
+ ...                            units='degrees',
+ ...                            description='Global 1x1 degree lat-lon grid')
+ >>> print(area_def)
+ Area ID: my_area
+ Description: Global 1x1 degree lat-lon grid
+ Projection: {'lon_0': '0', 'proj': 'latlong', 'type': 'crs'}
+ Number of columns: 360
+ Number of rows: 180
+ Area extent: (-180.0, -90.0, 180.0, 90.0)
+
 If only one of **area_extent** or **shape** can be computed from the
 information provided by the user, a
 :class:`~pyresample.geometry.DynamicAreaDefinition` object is returned:
