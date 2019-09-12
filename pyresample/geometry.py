@@ -22,7 +22,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Classes for geometry operations"""
+"""Classes for geometry operations."""
 
 import hashlib
 import warnings
@@ -53,11 +53,15 @@ logger = getLogger(__name__)
 
 
 class DimensionError(ValueError):
+    """Wrap ValueError."""
+
     pass
 
 
 class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
+
+    pass
 
 
 class BaseDefinition(object):
@@ -74,6 +78,7 @@ class BaseDefinition(object):
     """
 
     def __init__(self, lons=None, lats=None, nprocs=1):
+        """Initialize BaseDefinition."""
         if type(lons) != type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
@@ -106,7 +111,7 @@ class BaseDefinition(object):
         return self.hash
 
     def __eq__(self, other):
-        """Test for approximate equality"""
+        """Test for approximate equality."""
         if self is other:
             return True
         if other.lons is None or other.lats is None:
@@ -140,12 +145,11 @@ class BaseDefinition(object):
             return False
 
     def __ne__(self, other):
-        """Test for approximate equality"""
-
+        """Test for approximate equality."""
         return not self.__eq__(other)
 
     def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
-        """Calculate extent for a subdomain of this area
+        """Calculate extent for a subdomain of this area.
 
         Rows are counted from upper left to lower left and columns are
         counted from upper left to upper right.
@@ -164,7 +168,6 @@ class BaseDefinition(object):
             Ulrich Hamann
 
         """
-
         (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
         a = a - 0.5 * self.pixel_size_x
         b = b - 0.5 * self.pixel_size_y
@@ -175,7 +178,7 @@ class BaseDefinition(object):
         return a, b, c, d
 
     def get_lonlat(self, row, col):
-        """Retrieve lon and lat of single pixel
+        """Retrieve lon and lat of single pixel.
 
         Parameters
         ----------
@@ -185,8 +188,8 @@ class BaseDefinition(object):
         Returns
         -------
         (lon, lat) : tuple of floats
-        """
 
+        """
         if self.ndim != 2:
             raise DimensionError(('operation undefined '
                                   'for %sD geometry ') % self.ndim)
@@ -247,8 +250,7 @@ class BaseDefinition(object):
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
     def get_bbox_lonlats(self):
-        """Returns the bounding box lons and lats"""
-
+        """Return the bounding box lons and lats."""
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
         s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
         s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
@@ -259,7 +261,7 @@ class BaseDefinition(object):
                      (s4_lon.squeeze(), s4_lat.squeeze())])
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
-        """Retrieve cartesian coordinates of geometry definition
+        """Retrieve cartesian coordinates of geometry definition.
 
         Parameters
         ----------
@@ -274,6 +276,7 @@ class BaseDefinition(object):
         Returns
         -------
         cartesian_coords : numpy array
+
         """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
@@ -313,8 +316,7 @@ class BaseDefinition(object):
 
     @property
     def corners(self):
-        """Returns the corners of the current area.
-        """
+        """Return the corners of the current area."""
         from pyresample.spherical_geometry import Coordinate
         return [Coordinate(*self.get_lonlat(0, 0)),
                 Coordinate(*self.get_lonlat(0, -1)),
@@ -322,8 +324,10 @@ class BaseDefinition(object):
                 Coordinate(*self.get_lonlat(-1, 0))]
 
     def __contains__(self, point):
-        """Is a point inside the 4 corners of the current area? This uses
-        great circle arcs as area boundaries.
+        """Check if a point is inside the 4 corners of the current area.
+
+        This uses great circle arcs as area boundaries.
+
         """
         from pyresample.spherical_geometry import point_inside, Coordinate
         corners = self.corners
@@ -334,9 +338,10 @@ class BaseDefinition(object):
             return point_inside(point, corners)
 
     def overlaps(self, other):
-        """Tests if the current area overlaps the *other* area. This is based
-        solely on the corners of areas, assuming the boundaries to be great
-        circles.
+        """Test if the current area overlaps the *other* area.
+
+        This is based solely on the corners of areas, assuming the
+        boundaries to be great circles.
 
         Parameters
         ----------
@@ -346,8 +351,8 @@ class BaseDefinition(object):
         Returns
         -------
         overlaps : bool
-        """
 
+        """
         from pyresample.spherical_geometry import Arc
 
         self_corners = self.corners
@@ -378,16 +383,13 @@ class BaseDefinition(object):
         return False
 
     def get_area(self):
-        """Get the area of the convex area defined by the corners of the current
-        area.
-        """
+        """Get the area of the convex area defined by the corners of the curren area."""
         from pyresample.spherical_geometry import get_polygon_area
 
         return get_polygon_area(self.corners)
 
     def intersection(self, other):
-        """Returns the corners of the intersection polygon of the current area
-        with *other*.
+        """Return the corners of the intersection polygon of the current area with *other*.
 
         Parameters
         ----------
@@ -397,6 +399,7 @@ class BaseDefinition(object):
         Returns
         -------
         (corner1, corner2, corner3, corner4) : tuple of points
+
         """
         from pyresample.spherical_geometry import intersection_polygon
         return intersection_polygon(self.corners, other.corners)
@@ -412,8 +415,8 @@ class BaseDefinition(object):
         Returns
         -------
         overlap_rate : float
-        """
 
+        """
         from pyresample.spherical_geometry import get_polygon_area
         other_area = other.get_area()
         inter_area = get_polygon_area(self.intersection(other))
@@ -425,9 +428,10 @@ class BaseDefinition(object):
 
 
 class CoordinateDefinition(BaseDefinition):
-    """Base class for geometry definitions defined by lons and lats only"""
+    """Base class for geometry definitions defined by lons and lats only."""
 
     def __init__(self, lons, lats, nprocs=1):
+        """Initialize CoordinateDefinition."""
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
@@ -443,6 +447,7 @@ class CoordinateDefinition(BaseDefinition):
                              self.__class__.__name__)
 
     def concatenate(self, other):
+        """Concatenate coordinate definitions."""
         if self.ndim != other.ndim:
             raise DimensionError(('Unable to concatenate %sD and %sD '
                                   'geometries') % (self.ndim, other.ndim))
@@ -453,6 +458,7 @@ class CoordinateDefinition(BaseDefinition):
         return klass(lons, lats, nprocs=nprocs)
 
     def append(self, other):
+        """Append another coordinate definition to existing one."""
         if self.ndim != other.ndim:
             raise DimensionError(('Unable to append %sD and %sD '
                                   'geometries') % (self.ndim, other.ndim))
@@ -462,6 +468,7 @@ class CoordinateDefinition(BaseDefinition):
         self.size = self.lons.size
 
     def __str__(self):
+        """Return string representation of the coordinate definition."""
         # Rely on numpy's object printing
         return ('Shape: %s\nLons: %s\nLats: %s') % (str(self.shape),
                                                     str(self.lons),
@@ -469,7 +476,7 @@ class CoordinateDefinition(BaseDefinition):
 
 
 class GridDefinition(CoordinateDefinition):
-    """Grid defined by lons and lats
+    """Grid defined by lons and lats.
 
     Parameters
     ----------
@@ -490,9 +497,11 @@ class GridDefinition(CoordinateDefinition):
         Grid lats
     cartesian_coords : object
         Grid cartesian coordinates
+
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        """Initialize GridDefinition."""
         super(GridDefinition, self).__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
@@ -543,6 +552,7 @@ class SwathDefinition(CoordinateDefinition):
     """
 
     def __init__(self, lons, lats, nprocs=1):
+        """Initialize SwathDefinition."""
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
@@ -558,7 +568,7 @@ class SwathDefinition(CoordinateDefinition):
 
     @staticmethod
     def _do_transform(src, dst, lons, lats, alt):
-        """Helper for 'aggregate' method."""
+        """Run pyproj.transform and stack the results."""
         x, y, z = transform(src, dst, lons, lats, alt)
         return np.dstack((x, y, z))
 
@@ -602,6 +612,7 @@ class SwathDefinition(CoordinateDefinition):
         return self.hash
 
     def update_hash(self, the_hash=None):
+        """Update the hash."""
         if the_hash is None:
             the_hash = hashlib.sha1()
         the_hash.update(get_array_hashable(self.lons))
@@ -673,6 +684,7 @@ class SwathDefinition(CoordinateDefinition):
         return blons, blats
 
     def compute_bb_proj_params(self, proj_dict):
+        """Compute BB projection parameters."""
         projection = proj_dict['proj']
         ellipsoid = proj_dict.get('ellps', 'WGS84')
         if projection == 'omerc':
@@ -780,6 +792,7 @@ class DynamicAreaDefinition(object):
         self.description = description
         self.width = width
         self.height = height
+        self.shape = (self.height, self.width)
         self.area_extent = area_extent
         self.optimize_projection = optimize_projection
         if isinstance(resolution, (int, float)):
@@ -819,17 +832,15 @@ class DynamicAreaDefinition(object):
         return proj_dict
 
     @property
-    def shape(self):
-        return self.height, self.width
-
-    @property
     def pixel_size_x(self):
+        """Return pixel size in X direction."""
         if self.resolution is None:
             return None
         return self.resolution[0]
 
     @property
     def pixel_size_y(self):
+        """Return pixel size in Y direction."""
         if self.resolution is None:
             return None
         return self.resolution[1]
@@ -884,6 +895,7 @@ class DynamicAreaDefinition(object):
 
         Resolution and shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
+
         """
         proj_dict = self._get_proj_dict()
         projection = self._projection
@@ -1003,6 +1015,7 @@ class AreaDefinition(BaseDefinition):
     def __init__(self, area_id, description, proj_id, projection, width, height,
                  area_extent, rotation=None, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
+        """Initialize AreaDefinition."""
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
         self.area_id = area_id
         self.description = description
@@ -1062,6 +1075,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_dict(self):
+        """Return the projection dictionary."""
         if self._proj_dict is None and hasattr(self, 'crs'):
             if hasattr(self.crs, 'to_dict'):
                 # pyproj 2.2+
@@ -1094,30 +1108,35 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def shape(self):
+        """Return area shape."""
         return self.height, self.width
 
     @property
     def resolution(self):
+        """Return area resolution in X and Y direction."""
         return self.pixel_size_x, self.pixel_size_y
 
     @property
     def name(self):
+        """Return area name."""
         warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning)
         return self.description
 
     @property
     def x_size(self):
+        """Return area width."""
         warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
         return self.width
 
     @property
     def y_size(self):
+        """Return area height."""
         warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
         return self.height
 
     @classmethod
     def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
-        """Creates an AreaDefinition object from area_extent and shape.
+        """Create an AreaDefinition object from area_extent and shape.
 
         Parameters
         ----------
@@ -1157,12 +1176,13 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
+
         """
         return create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
     @classmethod
     def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
-        """Creates an AreaDefinition object from center, radius, and shape or from center, radius, and resolution.
+        """Create an AreaDefinition from center, radius, and shape or from center, radius, and resolution.
 
         Parameters
         ----------
@@ -1214,13 +1234,14 @@ class AreaDefinition(BaseDefinition):
         Notes
         -----
         * ``resolution`` and ``radius`` can be specified with one value if dx == dy
+
         """
         return create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
                                resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_area_of_interest(cls, area_id, projection, shape, center, resolution, units=None, **kwargs):
-        """Creates an AreaDefinition object from center, resolution, and shape.
+        """Create an AreaDefinition from center, resolution, and shape.
 
         Parameters
         ----------
@@ -1262,13 +1283,14 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
+
         """
         return create_area_def(area_id, projection, shape=shape, center=center,
                                resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
-        """Creates an AreaDefinition object from upper_left_extent, resolution, and shape.
+        """Create an AreaDefinition object from upper_left_extent, resolution, and shape.
 
         Parameters
         ----------
@@ -1310,6 +1332,7 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
+
         """
         return create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
                                resolution=resolution, units=units, **kwargs)
@@ -1322,9 +1345,11 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_str(self):
+        """Return PROJ projection string."""
         return proj4_dict_to_str(self.proj_dict, sort=True)
 
     def __str__(self):
+        """Return string representation of the AreaDefinition."""
         # We need a sorted dictionary for a unique hash of str(self)
         proj_dict = self.proj_dict
         proj_str = ('{' +
@@ -1344,6 +1369,7 @@ class AreaDefinition(BaseDefinition):
     __repr__ = __str__
 
     def to_cartopy_crs(self):
+        """Convert projection to cartopy CRS object."""
         from pyresample._cartopy import from_proj
         bounds = (self.area_extent[0],
                   self.area_extent[2],
@@ -1381,6 +1407,7 @@ class AreaDefinition(BaseDefinition):
         return ordered_dump(OrderedDict([(self.area_id, res)]))
 
     def create_areas_def_legacy(self):
+        """Create area definition in legacy format."""
         proj_dict = self.proj_dict
         proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k]))
                              for k in sorted(proj_dict.keys())])
@@ -1400,8 +1427,7 @@ class AreaDefinition(BaseDefinition):
         return area_def_str
 
     def __eq__(self, other):
-        """Test for equality"""
-
+        """Test for equality."""
         try:
             return ((self.proj_str == other.proj_str) and
                     (self.shape == other.shape) and
@@ -1410,8 +1436,7 @@ class AreaDefinition(BaseDefinition):
             return super(AreaDefinition, self).__eq__(other)
 
     def __ne__(self, other):
-        """Test for equality"""
-
+        """Test for equality."""
         return not self.__eq__(other)
 
     def update_hash(self, the_hash=None):
@@ -1424,11 +1449,11 @@ class AreaDefinition(BaseDefinition):
         return the_hash
 
     def colrow2lonlat(self, cols, rows):
-        """
-        Return longitudes and latitudes for the given image columns
-        and rows. Both scalars and arrays are supported.
-        To be used with scarse data points instead of slices
-        (see get_lonlats).
+        """Return lons and lats for the given image columns and rows.
+
+        Both scalars and arrays are supported. To be used with scarse
+        data points instead of slices (see get_lonlats).
+
         """
         p = Proj(self.proj_str)
         x = self.projection_x_coords
@@ -1436,15 +1461,18 @@ class AreaDefinition(BaseDefinition):
         return p(y[y.size - cols], x[x.size - rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
-        """
-        Return image columns and rows for the given longitudes
-        and latitudes. Both scalars and arrays are supported.
-        Same as get_xy_from_lonlat, renamed for convenience.
+        """Return image columns and rows for the given lons and lats.
+
+        Both scalars and arrays are supported.  Same as
+        get_xy_from_lonlat, renamed for convenience.
+
         """
         return self.get_xy_from_lonlat(lons, lats)
 
     def get_xy_from_lonlat(self, lon, lat):
-        """Retrieve closest x and y coordinates (column, row indices) for the
+        """Retrieve closest x and y coordinates.
+
+        Retrieve closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
         lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
@@ -1458,8 +1486,8 @@ class AreaDefinition(BaseDefinition):
         :Returns:
 
         (x, y) : tuple of integer points/arrays
-        """
 
+        """
         if isinstance(lon, list):
             lon = np.array(lon)
         if isinstance(lat, list):
@@ -1498,7 +1526,6 @@ class AreaDefinition(BaseDefinition):
             ValueError: if the return point is outside the area domain
 
         """
-
         if isinstance(xm, list):
             xm = np.array(xm)
         if isinstance(ym, list):
@@ -1539,7 +1566,7 @@ class AreaDefinition(BaseDefinition):
             return int(x__), int(y__)
 
     def get_lonlat(self, row, col):
-        """Retrieves lon and lat values of single point in area grid
+        """Retrieve lon and lat values of single point in area grid.
 
         Parameters
         ----------
@@ -1549,14 +1576,14 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         (lon, lat) : tuple of floats
-        """
 
+        """
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return np.asscalar(lon), np.asscalar(lat)
 
     @staticmethod
     def _do_rotation(xspan, yspan, rot_deg=0):
-        """Helper method to apply a rotation factor to a matrix of points."""
+        """Apply a rotation factor to a matrix of points."""
         if hasattr(xspan, 'chunks'):
             # we were given dask arrays, use dask functions
             import dask.array as numpy
@@ -1568,6 +1595,7 @@ class AreaDefinition(BaseDefinition):
         return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
 
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
+        """Get projection vectors."""
         warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
                       "'get_proj_vectors' with the 'chunks' keyword argument specified.", DeprecationWarning)
         if chunks is None:
@@ -1575,7 +1603,7 @@ class AreaDefinition(BaseDefinition):
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
 
     def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
-        """Helper for getting 1D projection coordinates."""
+        """Get 1D projection coordinates."""
         x_kwargs = {}
         y_kwargs = {}
 
@@ -1627,6 +1655,7 @@ class AreaDefinition(BaseDefinition):
         return self._get_proj_vectors(dtype=dtype, chunks=chunks)
 
     def get_proj_coords_dask(self, chunks=None, dtype=None):
+        """Get projection coordinates."""
         warnings.warn("'get_proj_coords_dask' is deprecated, please use "
                       "'get_proj_coords' with the 'chunks' keyword argument specified.", DeprecationWarning)
         if chunks is None:
@@ -1676,6 +1705,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def projection_x_coords(self):
+        """Return projection X coordinates."""
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
@@ -1683,6 +1713,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def projection_y_coords(self):
+        """Return projection Y coordinates."""
         if self.rotation != 0:
             # rotation is only supported in 'get_proj_coords' right now
             return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
@@ -1705,6 +1736,7 @@ class AreaDefinition(BaseDefinition):
                 Coordinate(corner_lons[3], corner_lats[3])]
 
     def get_lonlats_dask(self, chunks=None, dtype=None):
+        """Get longitudes and latitudes."""
         warnings.warn("'get_lonlats_dask' is deprecated, please use "
                       "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
         if chunks is None:
@@ -1732,8 +1764,8 @@ class AreaDefinition(BaseDefinition):
         -------
         (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
-        """
 
+        """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
                           "future and data will not be cached.", PendingDeprecationWarning)
@@ -1871,7 +1903,6 @@ class AreaDefinition(BaseDefinition):
 
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
-
     # get some projection parameters
     req = geos_area.proj_dict['a'] / 1000.0
     rp = geos_area.proj_dict['b'] / 1000.0
@@ -1893,6 +1924,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     Args:
       nb_points: Number of points on the polygon
+
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
 
@@ -1961,9 +1993,10 @@ class StackedAreaDefinition(BaseDefinition):
     """Definition based on muliple vertically stacked AreaDefinitions."""
 
     def __init__(self, *definitions, **kwargs):
-        """Base this instance on *definitions*.
+        """Initialize StackedAreaDefinition based on *definitions*.
 
         *kwargs* used here are `nprocs` and `dtype` (see AreaDefinition).
+
         """
         nprocs = kwargs.get('nprocs', 1)
         super(StackedAreaDefinition, self).__init__(nprocs=nprocs)
@@ -1975,25 +2008,35 @@ class StackedAreaDefinition(BaseDefinition):
 
     @property
     def width(self):
+        """Return width of the area definition."""
         return self.defs[0].width
 
     @property
     def x_size(self):
+        """Return width of the area definition."""
         warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
         return self.width
 
     @property
     def height(self):
+        """Return height of the area definition."""
         return sum(definition.height for definition in self.defs)
 
     @property
     def y_size(self):
+        """Return height of the area definition."""
         warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
         return self.height
 
     @property
     def size(self):
+        """Return size of the area definition."""
         return self.height * self.width
+
+    @property
+    def shape(self):
+        """Return shape of the area definition."""
+        return (self.height, self.width)
 
     def append(self, definition):
         """Append another definition to the area."""
@@ -2015,7 +2058,6 @@ class StackedAreaDefinition(BaseDefinition):
 
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of the area."""
-
         if chunks is not None:
             from dask.array import vstack
         else:
@@ -2046,9 +2088,10 @@ class StackedAreaDefinition(BaseDefinition):
         return self.lons, self.lats
 
     def get_lonlats_dask(self, chunks=None, dtype=None):
-        """"Return lon and lat dask arrays of the area."""
+        """Return lon and lat dask arrays of the area."""
         warnings.warn("'get_lonlats_dask' is deprecated, please use "
-                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+                      "'get_lonlats' with the 'chunks' keyword argument specified.",
+                      DeprecationWarning)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_lonlats(chunks=chunks, dtype=dtype)
@@ -2062,25 +2105,25 @@ class StackedAreaDefinition(BaseDefinition):
 
     @property
     def proj4_string(self):
-        """Returns projection definition as Proj.4 string"""
+        """Return projection definition as Proj.4 string."""
         warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
                       "instead.", DeprecationWarning)
         return self.defs[0].proj_str
 
     @property
     def proj_str(self):
-        """Returns projection definition as Proj.4 string"""
+        """Return projection definition as Proj.4 string."""
         return self.defs[0].proj_str
 
     def update_hash(self, the_hash=None):
+        """Update the hash."""
         for areadef in self.defs:
             the_hash = areadef.update_hash(the_hash)
         return the_hash
 
 
 def _get_slice(segments, shape):
-    """Generator for segmenting a 1D or 2D array"""
-
+    """Segment a 1D or 2D array."""
     if not (1 <= len(shape) <= 2):
         raise ValueError('Cannot segment array of shape: %s' % str(shape))
     else:
@@ -2098,8 +2141,7 @@ def _get_slice(segments, shape):
 
 
 def _flatten_cartesian_coords(cartesian_coords):
-    """Flatten array to (n, 3) shape"""
-
+    """Flatten array to (n, 3) shape."""
     shape = cartesian_coords.shape
     if len(shape) > 2:
         cartesian_coords = cartesian_coords.reshape(shape[0] *
@@ -2123,6 +2165,7 @@ def _get_highest_level_class(obj1, obj2):
 
 
 def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
+    """Dump the data to YAML in ordered fashion."""
     class OrderedDumper(Dumper):
         pass
 

@@ -16,6 +16,14 @@ from pyresample._spatial_mp import Proj
 from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry, CHUNK_SIZE
 
+CACHE_INDICES = ['bilinear_s',
+                 'bilinear_t',
+                 'slices_x',
+                 'slices_y',
+                 'mask_slices',
+                 'out_coords_x',
+                 'out_coords_y']
+
 
 class XArrayResamplerBilinear(object):
     """Bilinear interpolation using XArray."""
@@ -26,8 +34,7 @@ class XArrayResamplerBilinear(object):
                  radius_of_influence,
                  neighbours=32,
                  epsilon=0,
-                 reduce_data=True,
-                 segments=None):
+                 reduce_data=True):
         """
         Initialize resampler.
 
@@ -47,9 +54,6 @@ class XArrayResamplerBilinear(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-        segments : int or None
-            Number of segments to use when resampling.
-            If set to None an estimate will be calculated
 
         """
         if da is None:
@@ -61,10 +65,16 @@ class XArrayResamplerBilinear(object):
         self.distance_array = None
         self.bilinear_t = None
         self.bilinear_s = None
+        self.slices_x = None
+        self.slices_y = None
+        self.slices = {'x': self.slices_x, 'y': self.slices_y}
+        self.mask_slices = None
+        self.out_coords_x = None
+        self.out_coords_y = None
+        self.out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
-        self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
         self.radius_of_influence = radius_of_influence
@@ -78,9 +88,9 @@ class XArrayResamplerBilinear(object):
             Vertical fractional distances from corner to the new points
         s__ : numpy array
             Horizontal fractional distances from corner to the new points
-        input_idxs : numpy array
+        valid_input_index : numpy array
             Valid indices in the input data
-        idx_arr : numpy array
+        index_array : numpy array
             Mapping array from valid source points to target points
 
         """
@@ -89,9 +99,9 @@ class XArrayResamplerBilinear(object):
                           (self.neighbours, self.source_geo_def.size))
 
         # Create kd-tree
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree()
+        valid_input_index, resample_kdtree = self._create_resample_kdtree()
         # This is a numpy array
-        self.valid_input_index = valid_input_idx
+        self.valid_input_index = valid_input_index
 
         if resample_kdtree.n == 0:
             # Handle if all input data is reduced away
@@ -100,7 +110,7 @@ class XArrayResamplerBilinear(object):
                                        self.target_geo_def)
             self.bilinear_t = bilinear_t
             self.bilinear_s = bilinear_s
-            self.valid_input_index = valid_input_idx
+            self.valid_input_index = valid_input_index
             self.index_array = index_array
 
             return bilinear_t, bilinear_s, valid_input_index, index_array
@@ -121,7 +131,9 @@ class XArrayResamplerBilinear(object):
         proj = Proj(self.target_geo_def.proj_str)
 
         # Get output x/y coordinates
-        out_x, out_y = _get_output_xy_dask(self.target_geo_def, proj)
+        out_x, out_y = self.target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
+        out_x = da.ravel(out_x)
+        out_y = da.ravel(out_y)
 
         # Get input x/y coordinates
         in_x, in_y = _get_input_xy_dask(self.source_geo_def, proj,
@@ -140,82 +152,23 @@ class XArrayResamplerBilinear(object):
         self.index_array = index_array
         self.distance_array = distance_array
 
-        return (self.bilinear_t, self.bilinear_s, self.valid_input_index,
-                self.index_array)
+        self._get_slices()
 
-    def get_sample_from_bil_info(self, data, fill_value=np.nan,
+        return (self.bilinear_t, self.bilinear_s,
+                self.slices, self.mask_slices,
+                self.out_coords)
+
+    def get_sample_from_bil_info(self, data, fill_value=None,
                                  output_shape=None):
         """Resample using pre-computed resampling LUTs."""
+        del output_shape
         if fill_value is None:
-            fill_value = np.nan
-        # FIXME: can be this made into a dask construct ?
-        cols, lines = np.meshgrid(np.arange(data['x'].size),
-                                  np.arange(data['y'].size))
-        cols = da.ravel(cols)
-        lines = da.ravel(lines)
-        try:
-            self.valid_input_index = self.valid_input_index.compute()
-        except AttributeError:
-            pass
-        vii = self.valid_input_index.squeeze()
-        try:
-            self.index_array = self.index_array.compute()
-        except AttributeError:
-            pass
-
-        # ia contains reduced (valid) indices of the source array, and has the
-        # shape of the destination array
-        ia = self.index_array
-        rlines = lines[vii][ia]
-        rcols = cols[vii][ia]
-
-        slices = []
-        mask_slices = []
-        mask_2d_added = False
-        coords = {}
-        try:
-            # FIXME: Use same chunk size as input data
-            coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
-        except AttributeError:
-            coord_x, coord_y = None, None
-
-        for _, dim in enumerate(data.dims):
-            if dim == 'y':
-                slices.append(rlines)
-                if not mask_2d_added:
-                    mask_slices.append(ia >= self.source_geo_def.size)
-                    mask_2d_added = True
-                if coord_y is not None:
-                    coords[dim] = coord_y
-            elif dim == 'x':
-                slices.append(rcols)
-                if not mask_2d_added:
-                    mask_slices.append(ia >= self.source_geo_def.size)
-                    mask_2d_added = True
-                if coord_x is not None:
-                    coords[dim] = coord_x
+            if np.issubdtype(data.dtype, np.integer):
+                fill_value = 0
             else:
-                slices.append(slice(None))
-                mask_slices.append(slice(None))
-                try:
-                    coords[dim] = data.coords[dim]
-                except KeyError:
-                    pass
+                fill_value = np.nan
 
-        res = data.values[tuple(slices)]
-        res[tuple(mask_slices)] = fill_value
-
-        try:
-            p_1 = res[:, :, 0]
-            p_2 = res[:, :, 1]
-            p_3 = res[:, :, 2]
-            p_4 = res[:, :, 3]
-        except IndexError:
-            p_1 = res[:, 0]
-            p_2 = res[:, 1]
-            p_3 = res[:, 2]
-            p_4 = res[:, 3]
-
+        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
         s__, t__ = self.bilinear_s, self.bilinear_t
 
         res = (p_1 * (1 - s__) * (1 - t__) +
@@ -229,14 +182,98 @@ class XArrayResamplerBilinear(object):
 
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
+        res = da.where(np.isnan(res), fill_value, res)
         shp = self.target_geo_def.shape
         if data.ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
             res = da.reshape(res, (shp[0], shp[1]))
-        res = DataArray(res, dims=data.dims, coords=coords)
+
+        # Add missing coordinates
+        self._add_missing_coordinates(data)
+
+        res = DataArray(res, dims=data.dims, coords=self.out_coords)
 
         return res
+
+    def _compute_indices(self):
+        for idx in CACHE_INDICES:
+            var = getattr(self, idx)
+            try:
+                var = var.compute()
+                setattr(self, idx, var)
+            except AttributeError:
+                continue
+
+    def _add_missing_coordinates(self, data):
+        if self.out_coords['x'] is None and self.out_coords_x is not None:
+            self.out_coords['x'] = self.out_coords_x
+            self.out_coords['y'] = self.out_coords_y
+        for _, dim in enumerate(data.dims):
+            if dim not in self.out_coords:
+                try:
+                    self.out_coords[dim] = data.coords[dim]
+                except KeyError:
+                    pass
+
+    def _slice_data(self, data, fill_value):
+
+        def _slicer(values, sl_x, sl_y, mask, fill_value):
+            if values.ndim == 2:
+                arr = values[(sl_y, sl_x)]
+                arr[(mask, )] = fill_value
+                p_1 = arr[:, 0]
+                p_2 = arr[:, 1]
+                p_3 = arr[:, 2]
+                p_4 = arr[:, 3]
+            elif values.ndim == 3:
+                arr = values[(slice(None), sl_y, sl_x)]
+                arr[(slice(None), mask)] = fill_value
+                p_1 = arr[:, :, 0]
+                p_2 = arr[:, :, 1]
+                p_3 = arr[:, :, 2]
+                p_4 = arr[:, :, 3]
+            else:
+                raise ValueError
+
+            return p_1, p_2, p_3, p_4
+
+        values = data.values
+        sl_y = self.slices_y
+        sl_x = self.slices_x
+        mask = self.mask_slices
+
+        return _slicer(values, sl_x, sl_y, mask, fill_value)
+
+    def _get_slices(self):
+        shp = self.source_geo_def.shape
+        cols, lines = np.meshgrid(np.arange(shp[1]),
+                                  np.arange(shp[0]))
+        cols = np.ravel(cols)
+        lines = np.ravel(lines)
+
+        vii = self.valid_input_index
+        ia_ = self.index_array
+
+        # ia_ contains reduced (valid) indices of the source array, and has the
+        # shape of the destination array
+        rlines = lines[vii][ia_]
+        rcols = cols[vii][ia_]
+
+        try:
+            coord_x, coord_y = self.target_geo_def.get_proj_vectors()
+            self.out_coords['y'] = coord_y
+            self.out_coords['x'] = coord_x
+            self.out_coords_y = self.out_coords['y']
+            self.out_coords_x = self.out_coords['x']
+        except AttributeError:
+            pass
+
+        self.mask_slices = ia_ >= self.source_geo_def.size
+        self.slices['y'] = rlines
+        self.slices['x'] = rcols
+        self.slices_y = self.slices['y']
+        self.slices_x = self.slices['x']
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input."""
@@ -273,35 +310,7 @@ class XArrayResamplerBilinear(object):
         return res, None
 
 
-def _get_fill_mask_value(data_dtype):
-    """Return the maximum value of dtype."""
-    if issubclass(data_dtype.type, np.floating):
-        fill_value = np.finfo(data_dtype.type).max
-    elif issubclass(data_dtype.type, np.integer):
-        fill_value = np.iinfo(data_dtype.type).max
-    else:
-        raise TypeError('Type %s is unsupported for masked fill values' %
-                        data_dtype.type)
-    return fill_value
-
-
-def _get_output_xy_dask(target_geo_def, proj):
-    """Get x/y coordinates of the target grid."""
-    # Read output coordinates
-    out_lons, out_lats = target_geo_def.get_lonlats_dask()
-
-    # Mask invalid coordinates
-    out_lons, out_lats = _mask_coordinates_dask(out_lons, out_lats)
-
-    # Convert coordinates to output projection x/y space
-    res = da.dstack(proj(out_lons.compute(), out_lats.compute()))
-    out_x = da.ravel(res[:, :, 0])
-    out_y = da.ravel(res[:, :, 1])
-
-    return out_x, out_y
-
-
-def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
+def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
     in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
@@ -314,16 +323,15 @@ def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
 
     in_lons = da.ravel(in_lons)
     in_lons = in_lons.compute()
-    in_lons = in_lons[input_idxs]
+    in_lons = in_lons[valid_input_index]
     in_lats = da.ravel(in_lats)
     in_lats = in_lats.compute()
-    in_lats = in_lats[input_idxs]
+    in_lats = in_lats[valid_input_index]
+    index_array = index_array.compute()
 
     # Expand input coordinates for each output location
-    # in_lons = in_lons.compute()
-    in_lons = in_lons[idx_ref]
-    # in_lats = in_lats.compute()
-    in_lats = in_lats[idx_ref]
+    in_lons = in_lons[index_array]
+    in_lats = in_lats[index_array]
 
     # Convert coordinates to output projection x/y space
     in_x, in_y = proj(in_lons, in_lats)
@@ -331,14 +339,8 @@ def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
     return in_x, in_y
 
 
-def _run_proj(proj, lons, lats):
-    return da.dstack(proj(lons, lats))
-
-
 def _mask_coordinates_dask(lons, lats):
     """Mask invalid coordinate values."""
-    # lons = da.ravel(lons)
-    # lats = da.ravel(lats)
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
     lons = da.where(idxs, np.nan, lons)
@@ -347,7 +349,7 @@ def _mask_coordinates_dask(lons, lats):
     return lons, lats
 
 
-def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
+def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array):
     """Get bounding corners.
 
     Get four closest locations from (in_x, in_y) so that they form a
@@ -373,31 +375,31 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
     # Upper left source pixel
     valid = (x_diff > 0) & (y_diff < 0)
-    x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Upper right source pixel
     valid = (x_diff < 0) & (y_diff < 0)
-    x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Lower left source pixel
     valid = (x_diff > 0) & (y_diff > 0)
-    x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
     # Lower right source pixel
     valid = (x_diff < 0) & (y_diff > 0)
-    x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, idx_ref)
+    x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
 
-    # Combine sorted indices to idx_ref
-    idx_ref = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
+    # Combine sorted indices to index_array
+    index_array = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
 
     return (np.transpose(np.vstack((x_1, y_1))),
             np.transpose(np.vstack((x_2, y_2))),
             np.transpose(np.vstack((x_3, y_3))),
             np.transpose(np.vstack((x_4, y_4))),
-            idx_ref)
+            index_array)
 
 
-def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
+def _get_corner_dask(stride, valid, in_x, in_y, index_array):
     """Get closest set of coordinates from the *valid* locations."""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
@@ -405,23 +407,32 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
     invalid = np.invert(np.max(valid, axis=1))
 
     # idxs = idxs.compute()
-    idx_ref = idx_ref.compute()
+    index_array = index_array.compute()
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify
-    x__ = np.where(invalid, np.nan, x__)
+    x__ = da.where(invalid, np.nan, x__)
     y__ = in_y[stride, idxs]  # TODO: daskify
-    y__ = np.where(invalid, np.nan, y__)
+    y__ = da.where(invalid, np.nan, y__)
 
-    idx = idx_ref[stride, idxs]  # TODO: daskify
+    idx = index_array[stride, idxs]  # TODO: daskify
 
     return x__, y__, idx
 
 
 def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
+    def invalid_to_nan(t__, s__):
+        idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
+        t__ = da.where(idxs, np.nan, t__)
+        s__ = da.where(idxs, np.nan, s__)
+        return t__, s__
+
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     # Cases where verticals are parallel
     idxs = da.isnan(t__) | da.isnan(s__)
@@ -432,9 +443,11 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t_new, s_new = _get_ts_uprights_parallel_dask(pt_1, pt_2,
                                                       pt_3, pt_4,
                                                       out_y, out_x)
-
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
+
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     # Cases where both verticals and horizontals are parallel
     idxs = da.isnan(t__) | da.isnan(s__)
@@ -446,9 +459,8 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
-    idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
-    t__ = da.where(idxs, np.nan, t__)
-    s__ = da.where(idxs, np.nan, s__)
+    # Replace invalid values with NaNs
+    t__, s__ = invalid_to_nan(t__, s__)
 
     return t__, s__
 
@@ -576,22 +588,6 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
     return t__, s__
 
 
-def _check_data_shape_dask(data, input_idxs):
-    """Check data shape and adjust if necessary."""
-    # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
-        data = da.reshape(data, data.shape[0] * data.shape[1], data.shape[2])
-    # Also ravel single dataset
-    elif data.shape[0] != input_idxs.size:
-        data = da.ravel(data)
-
-    # Ensure two dimensions
-    if data.ndim == 1:
-        data = da.reshape(data, (data.size, 1))
-
-    return data
-
-
 def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
@@ -614,7 +610,7 @@ def _get_valid_input_index_dask(source_geo_def,
                                 target_geo_def,
                                 reduce_data,
                                 radius_of_influence):
-    """Find indices of reduced inputput data."""
+    """Find indices of reduced input data."""
     source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
     source_lons = da.ravel(source_lons)
     source_lats = da.ravel(source_lats)
