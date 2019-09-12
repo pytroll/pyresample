@@ -364,6 +364,7 @@ def main():
     use_mask = False
     parallel = True
 
+    tic = datetime.now()
     filenames = sorted(sys.argv[1:])
     glbl = Scene(
         filenames=filenames,
@@ -374,7 +375,6 @@ def main():
 
     area = get_area_def("euron1")
 
-    tic = datetime.now()
     lons, lats = glbl[band].area.get_lonlats(chunks=CHUNK_SIZE)
     data = glbl[band]
 
@@ -401,7 +401,7 @@ def main():
     image = da.where(image == 0, np.nan, image)
 
     glbl['image'] = xr.DataArray(image.compute())
-    glbl.save_dataset('image', '/tmp/gradient.png')
+    glbl.save_dataset('image', '/tmp/gradient.tif')
     del glbl['image']
 
     toc = datetime.now()
