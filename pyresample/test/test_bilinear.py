@@ -506,6 +506,14 @@ class TestXarrayBilinear(unittest.TestCase):
         res = res.compute()
         self.assertEqual(np.nanmin(res.values), -1.)
 
+        # Sample from integer data
+        res = resampler.get_sample_from_bil_info(self.data1.astype(np.uint8),
+                                                 fill_value=None)
+        res = res.compute()
+        # Five values should be filled with zeros, which is the
+        # default fill_value for integer data
+        self.assertEqual(np.sum(res == 0), 6)
+
     @mock.patch('pyresample.bilinear.xarr.setattr')
     def test_compute_indices(self, mock_setattr):
         """Test running .compute() for indices."""
@@ -565,14 +573,14 @@ class TestXarrayBilinear(unittest.TestCase):
         # Too many dimensions
         data = DataArray(da.ones((1, 3, 10, 10)))
         with self.assertRaises(ValueError):
-            _ = resampler._slice_data(data)
+            _ = resampler._slice_data(data, np.nan)
 
         # 2D data
         data = DataArray(da.ones((10, 10)))
         resampler.slices_x = np.random.randint(0, 10, (100, 4))
         resampler.slices_y = np.random.randint(0, 10, (100, 4))
         resampler.mask_slices = np.zeros((100, 4), dtype=np.bool)
-        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
         self.assertEqual(p_1.shape, (100, ))
         self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
         self.assertTrue(np.all(p_1 == 1.0) and np.all(p_2 == 1.0) and
@@ -580,7 +588,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # 2D data with masking
         resampler.mask_slices = np.ones((100, 4), dtype=np.bool)
-        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
         self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
                         np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
 
@@ -589,13 +597,13 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler.slices_x = np.random.randint(0, 10, (100, 4))
         resampler.slices_y = np.random.randint(0, 10, (100, 4))
         resampler.mask_slices = np.zeros((100, 4), dtype=np.bool)
-        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
         self.assertEqual(p_1.shape, (3, 100))
         self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
 
         # 3D data with masking
         resampler.mask_slices = np.ones((100, 4), dtype=np.bool)
-        p_1, p_2, p_3, p_4 = resampler._slice_data(data)
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
         self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
                         np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
 

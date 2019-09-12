@@ -158,14 +158,17 @@ class XArrayResamplerBilinear(object):
                 self.slices, self.mask_slices,
                 self.out_coords)
 
-    def get_sample_from_bil_info(self, data, fill_value=np.nan,
+    def get_sample_from_bil_info(self, data, fill_value=None,
                                  output_shape=None):
         """Resample using pre-computed resampling LUTs."""
         del output_shape
         if fill_value is None:
-            fill_value = np.nan
+            if np.issubdtype(data.dtype, np.integer):
+                fill_value = 0
+            else:
+                fill_value = np.nan
 
-        p_1, p_2, p_3, p_4 = self._slice_data(data)
+        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
         s__, t__ = self.bilinear_s, self.bilinear_t
 
         res = (p_1 * (1 - s__) * (1 - t__) +
@@ -213,19 +216,19 @@ class XArrayResamplerBilinear(object):
                 except KeyError:
                     pass
 
-    def _slice_data(self, data):
+    def _slice_data(self, data, fill_value):
 
-        def _slicer(values, sl_x, sl_y, mask):
+        def _slicer(values, sl_x, sl_y, mask, fill_value):
             if values.ndim == 2:
                 arr = values[(sl_y, sl_x)]
-                arr[(mask, )] = np.nan
+                arr[(mask, )] = fill_value
                 p_1 = arr[:, 0]
                 p_2 = arr[:, 1]
                 p_3 = arr[:, 2]
                 p_4 = arr[:, 3]
             elif values.ndim == 3:
                 arr = values[(slice(None), sl_y, sl_x)]
-                arr[(slice(None), mask)] = np.nan
+                arr[(slice(None), mask)] = fill_value
                 p_1 = arr[:, :, 0]
                 p_2 = arr[:, :, 1]
                 p_3 = arr[:, :, 2]
@@ -240,7 +243,7 @@ class XArrayResamplerBilinear(object):
         sl_x = self.slices_x
         mask = self.mask_slices
 
-        return _slicer(values, sl_x, sl_y, mask)
+        return _slicer(values, sl_x, sl_y, mask, fill_value)
 
     def _get_slices(self):
         shp = self.source_geo_def.shape
