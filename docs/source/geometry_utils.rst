@@ -111,7 +111,7 @@ can be obtained as follows:
  >>> print(area_def)
  Area ID: my_area
  Description: Global 1x1 degree lat-lon grid
- Projection: {'lon_0': '0.0', 'proj': 'latlong'}
+ Projection: {'lon_0': '0', 'proj': 'latlong', 'type': 'crs'}
  Number of columns: 360
  Number of rows: 180
  Area extent: (-180.0, -90.0, 180.0, 90.0)
