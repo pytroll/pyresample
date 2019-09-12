@@ -1827,7 +1827,8 @@ class AreaDefinition(BaseDefinition):
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
         if intersection is None:
-            logger.debug('Cannot determine appropriate slicing.')
+            logger.debug('Cannot determine appropriate slicing. '
+                         "Data and projection area do not overlap.")
             raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
