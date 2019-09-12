@@ -24,8 +24,11 @@ class Test(unittest.TestCase):
                            'proj': 'stere'}, 2560, 2048,
                           (-3780000.0, -7644000.0, 3900000.0, -1500000.0))
 
-    lons = da.from_array(np.array([[25., 25.], [25., 25.]]))
-    lats = da.from_array(np.array([[60., 60.00001], [60.2, 60.3]]))
+    chunks = 2
+    lons = da.from_array(np.array([[25., 25.], [25., 25.]]),
+                         chunks=chunks)
+    lats = da.from_array(np.array([[60., 60.00001], [60.2, 60.3]]),
+                         chunks=chunks)
 
     def setUp(self):
         self.resampler = bucket.BucketResampler(self.adef, self.lons, self.lats)
@@ -92,7 +95,8 @@ class Test(unittest.TestCase):
 
     def test_get_sum(self):
         """Test drop-in-a-bucket sum."""
-        data = da.from_array(np.array([[2., 2.], [2., 2.]]))
+        data = da.from_array(np.array([[2., 2.], [2., 2.]]),
+                             chunks=self.chunks)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_sum(data)
 
@@ -118,7 +122,8 @@ class Test(unittest.TestCase):
         self.assertEqual(result.shape, self.adef.shape)
 
         # Test masking all-NaN bins
-        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_sum(data, mask_all_nan=True)
         self.assertTrue(np.all(np.isnan(result)))
@@ -139,7 +144,8 @@ class Test(unittest.TestCase):
 
     def test_get_average(self):
         """Test averaging bucket resampling."""
-        data = da.from_array(np.array([[2., 4.], [2., 2.]]))
+        data = da.from_array(np.array([[2., 4.], [3., np.nan]]),
+                             chunks=self.chunks)
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_average(data)
@@ -155,18 +161,20 @@ class Test(unittest.TestCase):
         self.assertFalse(np.any(np.isnan(result)))
 
         # Test masking all-NaN bins
-        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_average(data, mask_all_nan=True)
         self.assertTrue(np.all(np.isnan(result)))
-        # By default all-NaN bins have a value of 0.0
+        # By default all-NaN bins have a value of NaN
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_average(data)
-        self.assertEqual(np.nanmax(result), 0.0)
+        self.assertTrue(np.all(np.isnan(result)))
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
-        data = da.from_array(np.array([[2, 4], [2, 2]]))
+        data = da.from_array(np.array([[2, 4], [2, 2]]),
+                             chunks=self.chunks)
         categories = [1, 2, 3, 4]
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
             result = self.resampler.get_fractions(data, categories=categories)

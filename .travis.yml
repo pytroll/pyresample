@@ -1,7 +1,7 @@
 language: python
 env:
   global:
-  - PYTHON_VERSION=$PYTHON_VERSION
+  - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
   - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio pillow matplotlib
@@ -10,7 +10,7 @@ env:
   - EVENT_TYPE='push pull_request'
   - SETUP_CMD='test'
   - CONDA_CHANNELS='conda-forge'
-  - CONDA_CHANNEL_PRIORITY='True'
+  - CONDA_CHANNEL_PRIORITY='strict'
 matrix:
   include:
   - env: PYTHON_VERSION=2.7
@@ -18,19 +18,25 @@ matrix:
   - env: PYTHON_VERSION=2.7
     os: osx
     language: generic
-  - env: PYTHON_VERSION=3.6
+  - env: PYTHON_VERSION=3.7
     os: linux
-  - env: PYTHON_VERSION=3.6
+  - env: PYTHON_VERSION=3.7
     os: osx
     language: generic
+  - env: PYTHON_VERSION=3.7
+    os: windows
+    language: c
+  allow_failures:
+  - os: windows
 install:
-- git clone --depth 1 git://github.com/astropy/ci-helpers.git
+# - git clone --depth 1 git://github.com/astropy/ci-helpers.git
+- git clone --depth 1 -b all-the-fixes git://github.com/djhoese/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
 script:
 - coverage run --source=pyresample setup.py test
 - cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 after_success:
-- if [[ $PYTHON_VERSION == 3.6 ]]; then coveralls; codecov; fi
+- if [[ $PYTHON_VERSION == 3.7 ]]; then coveralls; codecov; fi
 deploy:
   - provider: pypi
     user: dhoese

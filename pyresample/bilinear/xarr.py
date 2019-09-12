@@ -1,3 +1,4 @@
+"""XArray version of bilinear interpolation."""
 
 import warnings
 
@@ -17,6 +18,7 @@ from pyresample import data_reduce, geometry, CHUNK_SIZE
 
 
 class XArrayResamplerBilinear(object):
+    """Bilinear interpolation using XArray."""
 
     def __init__(self,
                  source_geo_def,
@@ -25,9 +27,10 @@ class XArrayResamplerBilinear(object):
                  neighbours=32,
                  epsilon=0,
                  reduce_data=True,
-                 nprocs=1,
                  segments=None):
         """
+        Initialize resampler.
+
         Parameters
         ----------
         source_geo_def : object
@@ -44,11 +47,10 @@ class XArrayResamplerBilinear(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-        nprocs : int, optional
-            Number of processor cores to be used
         segments : int or None
             Number of segments to use when resampling.
             If set to None an estimate will be calculated
+
         """
         if da is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
@@ -62,7 +64,6 @@ class XArrayResamplerBilinear(object):
         self.neighbours = neighbours
         self.epsilon = epsilon
         self.reduce_data = reduce_data
-        self.nprocs = nprocs
         self.segments = segments
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
@@ -144,6 +145,7 @@ class XArrayResamplerBilinear(object):
 
     def get_sample_from_bil_info(self, data, fill_value=np.nan,
                                  output_shape=None):
+        """Resample using pre-computed resampling LUTs."""
         if fill_value is None:
             fill_value = np.nan
         # FIXME: can be this made into a dask construct ?
@@ -181,14 +183,14 @@ class XArrayResamplerBilinear(object):
             if dim == 'y':
                 slices.append(rlines)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_y is not None:
                     coords[dim] = coord_y
             elif dim == 'x':
                 slices.append(rcols)
                 if not mask_2d_added:
-                    mask_slices.append(ia >= self.target_geo_def.size)
+                    mask_slices.append(ia >= self.source_geo_def.size)
                     mask_2d_added = True
                 if coord_x is not None:
                     coords[dim] = coord_x
@@ -200,8 +202,8 @@ class XArrayResamplerBilinear(object):
                 except KeyError:
                     pass
 
-        res = data.values[slices]
-        res[mask_slices] = fill_value
+        res = data.values[tuple(slices)]
+        res[tuple(mask_slices)] = fill_value
 
         try:
             p_1 = res[:, :, 0]
@@ -232,20 +234,18 @@ class XArrayResamplerBilinear(object):
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
             res = da.reshape(res, (shp[0], shp[1]))
-        res = DataArray(da.from_array(res, chunks=CHUNK_SIZE),
-                        dims=data.dims, coords=coords)
+        res = DataArray(res, dims=data.dims, coords=coords)
 
         return res
 
     def _create_resample_kdtree(self):
-        """Set up kd tree on input"""
+        """Set up kd tree on input."""
         # Get input information
         valid_input_index, source_lons, source_lats = \
             _get_valid_input_index_dask(self.source_geo_def,
                                         self.target_geo_def,
                                         self.reduce_data,
-                                        self.radius_of_influence,
-                                        nprocs=self.nprocs)
+                                        self.radius_of_influence)
 
         # FIXME: Is dask smart enough to only compute the pixels we end up
         #        using even with this complicated indexing
@@ -266,11 +266,6 @@ class XArrayResamplerBilinear(object):
                                valid_oi,
                                reduce_data=True):
         """Query kd-tree on slice of target coordinates."""
-
-#        res = da.map_blocks(query_no_distance, tlons, tlats,
-#                            valid_oi, dtype=np.int, kdtree=resample_kdtree,
-#                            neighbours=self.neighbours, epsilon=self.epsilon,
-#                            radius=self.radius_of_influence)
         res = query_no_distance(tlons, tlats,
                                 valid_oi, resample_kdtree,
                                 self.neighbours, self.epsilon,
@@ -279,7 +274,7 @@ class XArrayResamplerBilinear(object):
 
 
 def _get_fill_mask_value(data_dtype):
-    """Returns the maximum value of dtype"""
+    """Return the maximum value of dtype."""
     if issubclass(data_dtype.type, np.floating):
         fill_value = np.finfo(data_dtype.type).max
     elif issubclass(data_dtype.type, np.integer):
@@ -300,10 +295,6 @@ def _get_output_xy_dask(target_geo_def, proj):
 
     # Convert coordinates to output projection x/y space
     res = da.dstack(proj(out_lons.compute(), out_lats.compute()))
-    # _run_proj(proj, out_lons, out_lats)
-    #,
-    #                    chunks=(out_lons.chunks[0], out_lons.chunks[1], 2),
-    #                    new_axis=[2])
     out_x = da.ravel(res[:, :, 0])
     out_y = da.ravel(res[:, :, 1])
 
@@ -312,7 +303,7 @@ def _get_output_xy_dask(target_geo_def, proj):
 
 def _get_input_xy_dask(source_geo_def, proj, input_idxs, idx_ref):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = source_geo_def.get_lonlats_dask()
+    in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
     # Mask invalid values
     in_lons, in_lats = _mask_coordinates_dask(in_lons, in_lats)
@@ -345,7 +336,7 @@ def _run_proj(proj, lons, lats):
 
 
 def _mask_coordinates_dask(lons, lats):
-    """Mask invalid coordinate values"""
+    """Mask invalid coordinate values."""
     # lons = da.ravel(lons)
     # lats = da.ravel(lats)
     idxs = ((lons < -180.) | (lons > 180.) |
@@ -357,18 +348,22 @@ def _mask_coordinates_dask(lons, lats):
 
 
 def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
-    """Get four closest locations from (in_x, in_y) so that they form a
+    """Get bounding corners.
+
+    Get four closest locations from (in_x, in_y) so that they form a
     bounding rectangle around the requested location given by (out_x,
     out_y).
-    """
 
+    """
     # Find four closest pixels around the target location
 
     # FIXME: how to daskify?
     # Tile output coordinates to same shape as neighbour info
     # Replacing with da.transpose and da.tile doesn't work
-    out_x_tile = np.transpose(np.tile(out_x, (neighbours, 1)))
-    out_y_tile = np.transpose(np.tile(out_y, (neighbours, 1)))
+    out_x_tile = np.reshape(np.tile(out_x, neighbours),
+                            (neighbours, out_x.size)).T
+    out_y_tile = np.reshape(np.tile(out_y, neighbours),
+                            (neighbours, out_y.size)).T
 
     # Get differences in both directions
     x_diff = out_x_tile - in_x
@@ -403,7 +398,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
 
 def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
-    """Get closest set of coordinates from the *valid* locations"""
+    """Get closest set of coordinates from the *valid* locations."""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
     # Check which of these were actually valid
@@ -424,8 +419,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, idx_ref):
 
 
 def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
-    """Calculate vertical and horizontal fractional distances t and s"""
-
+    """Calculate vertical and horizontal fractional distances t and s."""
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
@@ -461,7 +455,6 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
 
 def _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
-
     # Get parameters for the quadratic equation
     # TODO: check if needs daskifying
     a__, b__, c__ = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
@@ -478,9 +471,12 @@ def _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 # Might not need daskifying
 def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
-    """Calculate coefficients for quadratic equation for
-    _get_ts_irregular() and _get_ts_uprights().  For _get_ts_uprights
-    switch order of pt_2 and pt_3.
+    """Calculate coefficients for quadratic equation.
+
+    In this order of arguments used for _get_ts_irregular() and
+    _get_ts_uprights().  For _get_ts_uprights switch order of pt_2 and
+    pt_3.
+
     """
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -503,11 +499,12 @@ def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 
 def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
-    """Solve quadratic equation and return the valid roots from interval
-    [*min_val*, *max_val*]
+    """Solve quadratic equation.
+
+    Solve quadratic equation and return the valid roots from interval
+    [*min_val*, *max_val*].
 
     """
-
     discriminant = b__ * b__ - 4 * a__ * c__
 
     # Solve the quadratic polynomial
@@ -525,8 +522,10 @@ def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
 
 
 def _solve_another_fractional_distance_dask(f__, y_1, y_2, y_3, y_4, out_y):
-    """Solve parameter t__ from s__, or vice versa.  For solving s__,
-    switch order of y_2 and y_3."""
+    """Solve parameter t__ from s__, or vice versa.
+
+    For solving s__, switch order of y_2 and y_3.
+    """
     y_21 = y_2 - y_1
     y_43 = y_4 - y_3
 
@@ -541,8 +540,7 @@ def _solve_another_fractional_distance_dask(f__, y_1, y_2, y_3, y_4, out_y):
 
 
 def _get_ts_uprights_parallel_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
-    """Get parameters for the case where uprights are parallel"""
-
+    """Get parameters for the case where uprights are parallel."""
     # Get parameters for the quadratic equation
     a__, b__, c__ = _calc_abc_dask(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
 
@@ -557,8 +555,7 @@ def _get_ts_uprights_parallel_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 
 def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
-    """Get parameters for the case where uprights are parallel"""
-
+    """Get parameters for the case where uprights are parallel."""
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
     x_31 = pt_3[:, 0] - pt_1[:, 0]
@@ -599,7 +596,6 @@ def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
     voi = valid_output_index
-    shape = voi.shape
     voir = da.ravel(voi)
     target_lons_valid = da.ravel(target_lons)[voir]
     target_lats_valid = da.ravel(target_lats)[voir]
@@ -617,11 +613,9 @@ def query_no_distance(target_lons, target_lats,
 def _get_valid_input_index_dask(source_geo_def,
                                 target_geo_def,
                                 reduce_data,
-                                radius_of_influence,
-                                nprocs=1):
-    """Find indices of reduced inputput data"""
-
-    source_lons, source_lats = source_geo_def.get_lonlats_dask()
+                                radius_of_influence):
+    """Find indices of reduced inputput data."""
+    source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
     source_lons = da.ravel(source_lons)
     source_lats = da.ravel(source_lats)
 
@@ -663,7 +657,7 @@ def _get_valid_input_index_dask(source_geo_def,
 
 
 def lonlat2xyz(lons, lats):
-
+    """Convert geographic coordinates to cartesian 3D coordinates."""
     R = 6370997.0
     x_coords = R * da.cos(da.deg2rad(lats)) * da.cos(da.deg2rad(lons))
     y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
@@ -674,8 +668,7 @@ def lonlat2xyz(lons, lats):
 
 
 def _create_empty_bil_info(source_geo_def, target_geo_def):
-    """Creates dummy info for empty result set"""
-
+    """Create dummy info for empty result set."""
     valid_input_index = np.ones(source_geo_def.size, dtype=np.bool)
     index_array = np.ones((target_geo_def.size, 4), dtype=np.int32)
     bilinear_s = np.nan * np.zeros(target_geo_def.size)

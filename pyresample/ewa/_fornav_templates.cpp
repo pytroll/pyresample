@@ -234,7 +234,7 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || npy_isnan(v0)) {
+      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
         continue;
       }
 
