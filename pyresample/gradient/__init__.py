@@ -30,7 +30,7 @@ from datetime import datetime
 import numpy as np
 import pyproj
 from satpy.utils import debug_on
-from satpy import CHUNK_SIZE
+from pyresample import CHUNK_SIZE
 pyximport.install(setup_args={'include_dirs': np.get_include()})
 debug_on()
 
