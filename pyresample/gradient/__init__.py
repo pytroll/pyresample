@@ -166,26 +166,25 @@ def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None,
 
         red_lons = lons[linesmin:linesmax, colsmin:colsmax]
         red_lats = lats[linesmin:linesmax, colsmin:colsmax]
-        result = da.map_blocks(_get_proj_coordinates,
-                               red_lons,
-                               red_lats, prj, new_axis=0,
-                               chunks=(2,) + red_lons.chunks)
+        src_coords = da.map_blocks(_get_proj_coordinates,
+                                   red_lons,
+                                   red_lats, prj, new_axis=0,
+                                   chunks=(2,) + red_lons.chunks)
         idxs = ((red_lons > 180.0) | (red_lons < -180.0) |
                 (red_lats > 90.0) | (red_lats < -90.0))
-        projection_x_coords = da.where(idxs, np.nan, result[0, :])
-        projection_y_coords = da.where(idxs, np.nan, result[1, :])
-        result = da.stack((projection_x_coords, projection_y_coords), axis=0)
+        projection_x_coords = da.where(idxs, np.nan, src_coords[0, :])
+        projection_y_coords = da.where(idxs, np.nan, src_coords[1, :])
         data = data[linesmin:linesmax, colsmin:colsmax]
 
     else:
-        result = da.map_blocks(_get_proj_coordinates,
-                               lons,
-                               lats, prj, new_axis=0,
-                               chunks=(2,) + lons.chunks)
+        src_coords = da.map_blocks(_get_proj_coordinates,
+                                   lons, lats, prj, new_axis=0,
+                                   chunks=(2,) + lons.chunks)
         idxs = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
-        projection_x_coords = da.where(idxs, np.nan, result[0, :])
-        projection_y_coords = da.where(idxs, np.nan, result[1, :])
-        result = da.stack((projection_x_coords, projection_y_coords), axis=0)
+        projection_x_coords = da.where(idxs, np.nan, src_coords[0, :])
+        projection_y_coords = da.where(idxs, np.nan, src_coords[1, :])
+
+    src_coords = da.stack((projection_x_coords, projection_y_coords), axis=0)
 
     toc3 = datetime.now()
 
@@ -197,7 +196,7 @@ def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None,
     if chunk_size == 0:
         chunk_size = CHUNK_SIZE
 
-    image = blockwise_gradient_resample(data, result, area.get_proj_coords(chunks=CHUNK_SIZE))
+    image = blockwise_gradient_resample(data, src_coords, area.get_proj_coords(chunks=CHUNK_SIZE))
 
     toc = datetime.now()
 
@@ -233,23 +232,21 @@ def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
         red_lons = lons[linesmin:linesmax, colsmin:colsmax]
         red_lats = lats[linesmin:linesmax, colsmin:colsmax]
-        result = da.map_blocks(_get_proj_coordinates,
-                               red_lons,
-                               red_lats, prj, new_axis=0,
+        src_coords = da.map_blocks(_get_proj_coordinates,
+                               red_lons, red_lats, prj, new_axis=0,
                                chunks=(2,) + red_lons.chunks)
         idxs = ((red_lons > 180.0) | (red_lons < -180.0) |
                 (red_lats > 90.0) | (red_lats < -90.0))
-        projection_x_coords = da.where(idxs, np.nan, result[0, :])
-        projection_y_coords = da.where(idxs, np.nan, result[1, :])
+        projection_x_coords = da.where(idxs, np.nan, src_coords[0, :])
+        projection_y_coords = da.where(idxs, np.nan, src_coords[1, :])
 
     else:
-        result = da.map_blocks(_get_proj_coordinates,
-                               lons,
-                               lats, prj, new_axis=0,
+        src_coords = da.map_blocks(_get_proj_coordinates,
+                               lons, lats, prj, new_axis=0,
                                chunks=(2,) + lons.chunks)
         idxs = (lons > 180.0) | (lons < -180.0) | (lats > 90.0) | (lats < -90.0)
-        projection_x_coords = da.where(idxs, np.nan, result[0, :])
-        projection_y_coords = da.where(idxs, np.nan, result[1, :])
+        projection_x_coords = da.where(idxs, np.nan, src_coords[0, :])
+        projection_y_coords = da.where(idxs, np.nan, src_coords[1, :])
         linesmin = 0
         linesmax, colsmax = lons.shape
         colsmin = 0
