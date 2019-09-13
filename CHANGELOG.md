@@ -1,3 +1,40 @@
+## Version 1.13.0 (2019/09/13)
+
+### Issues Closed
+
+* [Issue 210](https://github.com/pytroll/pyresample/issues/210) - Incompatibility with new proj/pyproj versions
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 213](https://github.com/pytroll/pyresample/pull/213) - Remove extra conversion to dask array
+* [PR 208](https://github.com/pytroll/pyresample/pull/208) - Bugfix bilinear resampler masking ([735](https://github.com/pytroll/satpy/issues/735))
+* [PR 207](https://github.com/pytroll/pyresample/pull/207) - Make output index tiling in bilinear interpolation work with dask
+* [PR 205](https://github.com/pytroll/pyresample/pull/205) - Exclude NaNs from Bucket Average
+* [PR 197](https://github.com/pytroll/pyresample/pull/197) - Fix to_cartopy_crs for latlong projections
+* [PR 196](https://github.com/pytroll/pyresample/pull/196) - Improve handling of EPSG codes with pyproj 2.0+
+
+#### Features added
+
+* [PR 212](https://github.com/pytroll/pyresample/pull/212) - Use slices in bilinear resampler
+* [PR 203](https://github.com/pytroll/pyresample/pull/203) - Add Numpy version limitation for Python 2
+* [PR 198](https://github.com/pytroll/pyresample/pull/198) - Clarify warning if no overlap data and projection
+* [PR 196](https://github.com/pytroll/pyresample/pull/196) - Improve handling of EPSG codes with pyproj 2.0+
+* [PR 192](https://github.com/pytroll/pyresample/pull/192) - Add bucket resampling
+
+#### Documentation changes
+
+* [PR 204](https://github.com/pytroll/pyresample/pull/204) - Add Example for Regular Lat-Lon Grid
+* [PR 201](https://github.com/pytroll/pyresample/pull/201) - fix bug in plot example code
+* [PR 198](https://github.com/pytroll/pyresample/pull/198) - Clarify warning if no overlap data and projection
+* [PR 195](https://github.com/pytroll/pyresample/pull/195) - Update docs for create_area_def and improve AreaDefinition property consistency
+
+In this release 15 pull requests were closed.
+
+
 ## Version 1.12.3 (2019/05/17)
 
 ### Pull Requests Merged
