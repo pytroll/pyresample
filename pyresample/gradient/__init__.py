@@ -141,12 +141,11 @@ def blockwise_gradient_resample(src_data, src_coords, dst_coords):
     return np.nanmax(res, axis=2)
 
 
-def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
+def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None,
+                             reduce_data=True):
     """Run gradient search."""
     tic = datetime.now()
     prj = pyproj.Proj(**area.proj_dict)
-
-    reduce_data = False
 
     if reduce_data:
         lon_bound, lat_bound = area.get_boundary_lonlats()
@@ -175,6 +174,7 @@ def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
                 (red_lats > 90.0) | (red_lats < -90.0))
         projection_x_coords = da.where(idxs, np.nan, result[0, :])
         projection_y_coords = da.where(idxs, np.nan, result[1, :])
+        data = data[linesmin:linesmax, colsmin:colsmax]
 
     else:
         result = da.map_blocks(_get_proj_coordinates,
@@ -192,36 +192,17 @@ def parallel_gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
 
     tic2 = datetime.now()
 
-    # x_min, y_min, x_max, y_max = area.area_extent
-    # y_size, x_size = area.shape
-    # x_inc = (x_max - x_min) / x_size
-    # x_1d = da.arange(x_min + x_inc / 2, x_max, x_inc, chunks=CHUNK_SIZE)
-    # Y dimension is upside-down
-    # y_inc = (y_min - y_max) / y_size
-    # y_1d = da.arange(y_max - y_inc / 2, y_min, y_inc, chunks=CHUNK_SIZE)
-
-    indices = None
-    image = None
     if chunk_size == 0:
-        image = blockwise_gradient_resample(data, result, area.get_proj_coords(chunks=CHUNK_SIZE))
-        # image = fast_gradient_search(
-        #     data[linesmin:linesmax,
-        #          colsmin:colsmax].astype(np.float),
-        #     projection_x_coords.compute(),
-        #     projection_y_coords.compute(),
-        #     area.area_extent,
-        #     area.shape)
+        chunk_size = CHUNK_SIZE
+
+    image = blockwise_gradient_resample(data, result, area.get_proj_coords(chunks=CHUNK_SIZE))
 
     toc = datetime.now()
 
     logger.debug("resampling took %s", str(toc - tic))
     logger.debug("from which gradient search took %s", str(toc - tic2))
-    if indices is None:
-        return image
-    if reduce_data:
-        return indices, data[linesmin:linesmax, colsmin:colsmax]
-    else:
-        return indices, data
+
+    return image
 
 
 def gradient_search(data, lons, lats, area, chunk_size=0, mask=None):
@@ -395,7 +376,9 @@ def main():
         image = parallel_gradient_search(data,
                                          lons,
                                          lats,
-                                         area)
+                                         area,
+                                         chunk_size=CHUNK_SIZE,
+                                         reduce_data=True)
 
     import xarray as xr
     image = da.where(image == 0, np.nan, image)
