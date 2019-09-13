@@ -29,10 +29,8 @@ import pyximport
 from datetime import datetime
 import numpy as np
 import pyproj
-from satpy.utils import debug_on
 from pyresample import CHUNK_SIZE
 pyximport.install(setup_args={'include_dirs': np.get_include()})
-debug_on()
 
 from _gradient_search import (two_step_fast_gradient_search,
                               two_step_fast_gradient_search_with_mask,
@@ -340,6 +338,8 @@ def main():
 
     from satpy import Scene
     from satpy.resample import get_area_def
+    from satpy.utils import debug_on
+    debug_on()
 
     use_mask = False
     parallel = True
