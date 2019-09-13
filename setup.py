@@ -22,6 +22,7 @@ import versioneer
 import os
 import sys
 
+import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -54,7 +55,9 @@ extensions = [
     Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx",
                                                  "pyresample/ewa/_fornav_templates.cpp"],
               language="c++", extra_compile_args=extra_compile_args,
-              depends=["pyresample/ewa/_fornav_templates.h"])
+              depends=["pyresample/ewa/_fornav_templates.h"]),
+    Extension("pyresample._gradient_search", sources=["pyresample/gradient/_gradient_search.pyx"],
+              extra_compile_args=extra_compile_args),
 ]
 
 try:

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Resample image from one projection to another 
+"""Resample image from one projection to another
 using nearest neighbour method in cartesian projection coordinate systems"""
 
 from __future__ import absolute_import
@@ -38,19 +38,19 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     ----------
     row_indices : numpy array
         Row indices. Dimensions must match col_indices
-    col_indices : numpy array 
+    col_indices : numpy array
         Col indices. Dimensions must match row_indices
-    source_image : numpy array 
+    source_image : numpy array
         Source image
     fill_value : int or None, optional
             Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
+            If fill_value is None a masked array is returned
             with undetermined pixels masked
 
     Returns
     -------
     image_data : numpy array
-        Resampled image 
+        Resampled image
     """
 
     # mask out non valid row and col indices
@@ -101,11 +101,11 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
     ----------
     lons : numpy array
         Lons. Dimensions must match lats
-    lats : numpy array   
+    lats : numpy array
         Lats. Dimensions must match lons
-    source_area_def : object 
+    source_area_def : object
         Source definition as AreaDefinition object
-    nprocs : int, optional 
+    nprocs : int, optional
         Number of processor cores to be used
 
     Returns
@@ -135,24 +135,24 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
 
 def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
                            fill_value=0, nprocs=1):
-    """Samples from image based on lon lat arrays 
+    """Samples from image based on lon lat arrays
     using nearest neighbour method in cartesian projection coordinate systems.
 
     Parameters
     ----------
     lons : numpy array
         Lons. Dimensions must match lats
-    lats : numpy array   
+    lats : numpy array
         Lats. Dimensions must match lons
-    source_area_def : object 
+    source_area_def : object
         Source definition as AreaDefinition object
-    source_image_data : numpy array 
+    source_image_data : numpy array
         Source image data
     fill_value : int or None, optional
             Set undetermined pixels to this value.
-            If fill_value is None a masked array is returned 
-            with undetermined pixels masked    
-    nprocs : int, optional 
+            If fill_value is None a masked array is returned
+            with undetermined pixels masked
+    nprocs : int, optional
         Number of processor cores to be used
 
     Returns
@@ -172,31 +172,31 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
 
 def get_resampled_image(target_area_def, source_area_def, source_image_data,
                         fill_value=0, nprocs=1, segments=None):
-    """Resamples image using nearest neighbour method in cartesian 
+    """Resamples image using nearest neighbour method in cartesian
     projection coordinate systems.
 
     Parameters
     ----------
     target_area_def : object
         Target definition as AreaDefinition object
-    source_area_def : object 
+    source_area_def : object
         Source definition as AreaDefinition object
-    source_image_data : numpy array 
+    source_image_data : numpy array
         Source image data
-    fill_value : {int, None} optional 
+    fill_value : {int, None} optional
         Set undetermined pixels to this value.
-        If fill_value is None a masked array is returned 
-        with undetermined pixels masked    
-    nprocs : int, optional 
+        If fill_value is None a masked array is returned
+        with undetermined pixels masked
+    nprocs : int, optional
         Number of processor cores to be used
     segments : {int, None} optional
         Number of segments to use when resampling.
-        If set to None an estimate will be calculated. 
+        If set to None an estimate will be calculated.
 
     Returns
     -------
-    image_data : numpy array 
-        Resampled image data    
+    image_data : numpy array
+        Resampled image data
     """
 
     if not isinstance(target_area_def, geometry.AreaDefinition):
