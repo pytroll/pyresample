@@ -32,12 +32,12 @@ import pyproj
 from pyresample import CHUNK_SIZE
 pyximport.install(setup_args={'include_dirs': np.get_include()})
 
-from _gradient_search import (two_step_fast_gradient_search,
-                              two_step_fast_gradient_search_with_mask,
-                              fast_gradient_search_with_mask,
-                              fast_gradient_search_pg,
-                              fast_gradient_search,
-                              fast_gradient_indices)  # noqa: E402
+from pyresample.gradient._gradient_search import (two_step_fast_gradient_search,
+                                                  two_step_fast_gradient_search_with_mask,
+                                                  fast_gradient_search_with_mask,
+                                                  fast_gradient_search_pg,
+                                                  fast_gradient_search,
+                                                  fast_gradient_indices)  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
