@@ -359,8 +359,8 @@ class TestMisc(unittest.TestCase):
         a, b = utils._proj4.proj4_radius_parameters(
             '+proj=stere +a=6378273 +b=6378273',
         )
-        np.testing.assert_almost_equal(a, 6378137.)
-        np.testing.assert_almost_equal(b, 6378137.)
+        np.testing.assert_almost_equal(a, 6378273.)
+        np.testing.assert_almost_equal(b, 6378273.)
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
