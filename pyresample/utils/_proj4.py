@@ -113,6 +113,9 @@ def proj4_radius_parameters(proj4_dict):
             new_info['b'] = float(new_info['a']) * (1 - float(new_info['f']))
         elif 'b' in new_info and 'f' in new_info:
             new_info['a'] = float(new_info['b']) / (1 - float(new_info['f']))
+        elif 'R' in new_info:
+            new_info['a'] = new_info['R']
+            new_info['b'] = new_info['R']
         else:
             geod = Geod(**{'ellps': 'WGS84'})
             new_info['a'] = geod.a
