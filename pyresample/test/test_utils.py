@@ -354,6 +354,14 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
+    def test_proj4_radius_parameters_spherical(self):
+        from pyresample import utils
+        a, b = utils._proj4.proj4_radius_parameters(
+            '+proj=stere +a=6378273 +b=6378273',
+        )
+        np.testing.assert_almost_equal(a, 6378137.)
+        np.testing.assert_almost_equal(b, 6378137.)
+
     def test_convert_proj_floats(self):
         from collections import OrderedDict
         import pyresample.utils as utils
