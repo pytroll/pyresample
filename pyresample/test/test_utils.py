@@ -330,6 +330,7 @@ class TestMisc(unittest.TestCase):
                            1000, 1000, (-1000, -1000, 1000, 1000))
 
     def test_proj4_radius_parameters_provided(self):
+        """Test proj4_radius_parameters with a/b."""
         from pyresample import utils
         a, b = utils._proj4.proj4_radius_parameters(
             '+proj=stere +a=6378273 +b=6356889.44891',
@@ -338,6 +339,7 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(b, 6356889.44891)
 
     def test_proj4_radius_parameters_ellps(self):
+        """Test proj4_radius_parameters with ellps."""
         from pyresample import utils
         a, b = utils._proj4.proj4_radius_parameters(
             '+proj=stere +ellps=WGS84',
@@ -346,6 +348,7 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
     def test_proj4_radius_parameters_default(self):
+        """Test proj4_radius_parameters with default parameters."""
         from pyresample import utils
         a, b = utils._proj4.proj4_radius_parameters(
             '+proj=lcc',
@@ -353,6 +356,15 @@ class TestMisc(unittest.TestCase):
         # WGS84
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
+
+    def test_proj4_radius_parameters_spherical(self):
+        """Test proj4_radius_parameters in case of a spherical earth."""
+        from pyresample import utils
+        a, b = utils._proj4.proj4_radius_parameters(
+            '+proj=stere +R=6378273',
+        )
+        np.testing.assert_almost_equal(a, 6378273.)
+        np.testing.assert_almost_equal(b, 6378273.)
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
