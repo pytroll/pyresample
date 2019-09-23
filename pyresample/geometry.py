@@ -1904,8 +1904,10 @@ class AreaDefinition(BaseDefinition):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    req = geos_area.proj_dict['a'] / 1000.0
-    rp = geos_area.proj_dict['b'] / 1000.0
+    from pyresample.utils import proj4_radius_parameters
+    a, b = proj4_radius_parameters(geos_area.proj_dict)
+    req = a / 1000.0
+    rp = b / 1000.0
     h = geos_area.proj_dict['h'] / 1000.0 + req
 
     # compute some constants

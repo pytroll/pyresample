@@ -1870,6 +1870,13 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
+        geos_area.proj_dict = {'ellps': 'GRS80',
+                               'h': 35785831.00}
+        expected = (0.15185277703584374, 0.15133971368991794)
+
+        np.testing.assert_allclose(expected,
+                                   geometry.get_geostationary_angle_extent(geos_area))
+
         geos_area.proj_dict = {'a': 1000.0,
                                'b': 1000.0,
                                'h': np.sqrt(2) * 1000.0 - 1000.0}
