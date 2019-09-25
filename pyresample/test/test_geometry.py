@@ -1133,6 +1133,37 @@ class Test(unittest.TestCase):
                 area_extent=[-40000., -40000., 40000., 40000.])
             self.assertEqual(area.proj_str, expected_proj)
 
+        # CRS with towgs84 in it
+        # we remove towgs84 if they are all 0s
+        projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
+                      'ellps': 'GRS80', 'towgs84': '0,0,0,0,0,0,0', 'units': 'm', 'no_defs': True}
+        area = geometry.AreaDefinition(
+            area_id='test_towgs84',
+            description='',
+            proj_id='',
+            projection=projection,
+            width=123, height=123,
+            area_extent=[-40000., -40000., 40000., 40000.])
+        self.assertEqual(area.proj_str,
+                         '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                         # '+towgs84=0.0,0.0,0.0,0.0,0.0,0.0,0.0 '
+                         '+type=crs +units=m '
+                         '+x_0=4321000 +y_0=3210000')
+        projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
+                      'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
+        area = geometry.AreaDefinition(
+            area_id='test_towgs84',
+            description='',
+            proj_id='',
+            projection=projection,
+            width=123, height=123,
+            area_extent=[-40000., -40000., 40000., 40000.])
+        self.assertEqual(area.proj_str,
+                         '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                         '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
+                         '+type=crs +units=m '
+                         '+x_0=4321000 +y_0=3210000')
+
     def test_striding(self):
         """Test striding AreaDefinitions."""
         from pyresample import utils
