@@ -36,7 +36,8 @@ from pyproj import Geod, transform
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import proj4_str_to_dict, proj4_dict_to_str, convert_proj_floats
+from pyresample.utils import (proj4_str_to_dict, proj4_dict_to_str,
+                              convert_proj_floats, proj4_radius_parameters)
 from pyresample.area_config import create_area_def
 
 try:
@@ -1904,7 +1905,6 @@ class AreaDefinition(BaseDefinition):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    from pyresample.utils import proj4_radius_parameters
     a, b = proj4_radius_parameters(geos_area.proj_dict)
     req = a / 1000.0
     rp = b / 1000.0
