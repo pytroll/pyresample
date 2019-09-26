@@ -1,3 +1,15 @@
+## Version 1.13.1 (2019/09/26)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 218](https://github.com/pytroll/pyresample/pull/218) - Fix proj_str returning invalid PROJ strings when towgs84 was included
+* [PR 217](https://github.com/pytroll/pyresample/pull/217) - Fix get_geostationary_angle_extent assuming a/b definitions
+* [PR 216](https://github.com/pytroll/pyresample/pull/216) - Fix proj4 radius parameters for spherical cases
+
+In this release 3 pull requests were closed.
+
 ## Version 1.13.0 (2019/09/13)
 
 ### Issues Closed
