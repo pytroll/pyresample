@@ -1347,7 +1347,17 @@ class AreaDefinition(BaseDefinition):
     @property
     def proj_str(self):
         """Return PROJ projection string."""
-        return proj4_dict_to_str(self.proj_dict, sort=True)
+        proj_dict = self.proj_dict.copy()
+        if 'towgs84' in proj_dict and isinstance(proj_dict['towgs84'], list):
+            # pyproj 2+ creates a list in the dictionary
+            # but the string should be comma-separated
+            if all(x == 0 for x in proj_dict['towgs84']):
+                # all 0s in towgs84 are technically equal to not having them
+                # specified, but PROJ considers them different
+                proj_dict.pop('towgs84')
+            else:
+                proj_dict['towgs84'] = ','.join(str(x) for x in proj_dict['towgs84'])
+        return proj4_dict_to_str(proj_dict, sort=True)
 
     def __str__(self):
         """Return string representation of the AreaDefinition."""
