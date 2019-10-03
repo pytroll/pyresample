@@ -19,8 +19,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test the EWA ll2cr code.
-"""
+"""Test the EWA ll2cr code."""
 import sys
 import logging
 import numpy as np
@@ -191,8 +190,7 @@ class TestLL2CRWrapper(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRStatic))

@@ -35,8 +35,7 @@ class XArrayResamplerBilinear(object):
                  neighbours=32,
                  epsilon=0,
                  reduce_data=True):
-        """
-        Initialize resampler.
+        """Initialize resampler.
 
         Parameters
         ----------
@@ -54,7 +53,6 @@ class XArrayResamplerBilinear(object):
         reduce_data : bool, optional
             Perform initial coarse reduction of source dataset in order
             to reduce execution time
-
         """
         if da is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
@@ -92,7 +90,6 @@ class XArrayResamplerBilinear(object):
             Valid indices in the input data
         index_array : numpy array
             Mapping array from valid source points to target points
-
         """
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
@@ -355,7 +352,6 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array
     Get four closest locations from (in_x, in_y) so that they form a
     bounding rectangle around the requested location given by (out_x,
     out_y).
-
     """
     # Find four closest pixels around the target location
 
@@ -488,7 +484,6 @@ def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     In this order of arguments used for _get_ts_irregular() and
     _get_ts_uprights().  For _get_ts_uprights switch order of pt_2 and
     pt_3.
-
     """
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -515,7 +510,6 @@ def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
 
     Solve quadratic equation and return the valid roots from interval
     [*min_val*, *max_val*].
-
     """
     discriminant = b__ * b__ - 4 * a__ * c__
 
@@ -590,7 +584,10 @@ def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
 
 def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
-    """Query the kdtree. No distances are returned."""
+    """Query the kdtree.
+
+    No distances are returned.
+    """
     voi = valid_output_index
     voir = da.ravel(voi)
     target_lons_valid = da.ravel(target_lons)[voir]

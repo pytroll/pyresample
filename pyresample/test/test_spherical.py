@@ -20,8 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test cases for spherical geometry.
-"""
+"""Test cases for spherical geometry."""
 
 from pyresample.spherical import SphPolygon, Arc, SCoordinate, CCoordinate
 import unittest
@@ -30,94 +29,79 @@ import numpy as np
 
 class TestSCoordinate(unittest.TestCase):
 
-    """Test SCoordinates.
-    """
+    """Test SCoordinates."""
 
     def test_distance(self):
-        """Test Vincenty formula
-        """
+        """Test Vincenty formula."""
         d = SCoordinate(0, 0).distance(SCoordinate(1, 1))
         self.assertEquals(d, 1.2745557823062943)
 
     def test_hdistance(self):
-        """Test Haversine formula
-        """
+        """Test Haversine formula."""
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
         self.assertTrue(np.allclose(d, 1.2745557823062943))
 
     def test_str(self):
-        """Check the string representation
-        """
+        """Check the string representation."""
         d = SCoordinate(0, 0)
         self.assertEqual(str(d), "(0.0, 0.0)")
 
     def test_repr(self):
-        """Check the representation
-        """
+        """Check the representation."""
         d = SCoordinate(0, 0)
         self.assertEqual(repr(d), "(0.0, 0.0)")
 
 
 class TestCCoordinate(unittest.TestCase):
 
-    """Test SCoordinates.
-    """
+    """Test SCoordinates."""
 
     def test_str(self):
-        """Check the string representation
-        """
+        """Check the string representation."""
         d = CCoordinate((0, 0, 0))
         self.assertEqual(str(d), "[0 0 0]")
 
     def test_repr(self):
-        """Check the representation
-        """
+        """Check the representation."""
         d = CCoordinate((0, 0, 0))
         self.assertEqual(repr(d), "[0 0 0]")
 
     def test_norm(self):
-        """Euclidean norm of a cartesian vector
-        """
+        """Euclidean norm of a cartesian vector."""
         d = CCoordinate((1, 0, 0))
         self.assertEqual(d.norm(), 1.0)
 
     def test_normalize(self):
-        """Normalize a cartesian vector
-        """
+        """Normalize a cartesian vector."""
         d = CCoordinate((2., 0., 0.))
         self.assertTrue(np.allclose(d.normalize().cart, [1, 0, 0]))
 
     def test_cross(self):
-        """Test cross product in cartesian coordinates
-        """
+        """Test cross product in cartesian coordinates."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         self.assertTrue(np.allclose(d.cross(c).cart, [0., 0., 1.]))
 
     def test_dot(self):
-        """Test the dot product of two cartesian vectors.
-        """
+        """Test the dot product of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         self.assertEqual(d.dot(c), 0)
 
     def test_ne(self):
-        """Test inequality of two cartesian vectors.
-        """
+        """Test inequality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         self.assertTrue(c != d)
 
     def test_eq(self):
-        """Test equality of two cartesian vectors.
-        """
+        """Test equality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         self.assertFalse(c == d)
 
     def test_add(self):
-        """Test adding cartesian vectors.
-        """
+        """Test adding cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((1., 1., 0.))
@@ -128,8 +112,7 @@ class TestCCoordinate(unittest.TestCase):
         self.assertTrue(np.allclose(((0, 1, 0) + d).cart, b.cart))
 
     def test_mul(self):
-        """Test multiplying (element-wise) cartesian vectors.
-        """
+        """Test multiplying (element-wise) cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((0., 0., 0.))
@@ -139,8 +122,7 @@ class TestCCoordinate(unittest.TestCase):
         self.assertTrue(np.allclose(((0, 1, 0) * d).cart, b.cart))
 
     def test_to_spherical(self):
-        """Test converting to spherical coordinates.
-        """
+        """Test converting to spherical coordinates."""
         d = CCoordinate((1., 0., 0.))
         c = SCoordinate(0, 0)
         self.assertEqual(d.to_spherical(), c)
@@ -148,8 +130,7 @@ class TestCCoordinate(unittest.TestCase):
 
 class TestArc(unittest.TestCase):
 
-    """Test arcs
-    """
+    """Test arcs."""
 
     def test_eq(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -254,12 +235,10 @@ class TestArc(unittest.TestCase):
 
 class TestSphericalPolygon(unittest.TestCase):
 
-    """Test the spherical polygon.
-    """
+    """Test the spherical polygon."""
 
     def test_area(self):
-        """Test the area function
-        """
+        """Test the area function."""
         vertices = np.array([[1, 2, 3, 4, 3, 2],
                              [3, 4, 3, 2, 1, 2]]).T
         polygon = SphPolygon(np.deg2rad(vertices))
@@ -315,8 +294,7 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertAlmostEqual(0.000609265770322, polygon.area())
 
     def test_is_inside(self):
-        """Test checking if a polygon is inside of another.
-        """
+        """Test checking if a polygon is inside of another."""
 
         vertices = np.array([[1, 1, 20, 20],
                              [1, 20, 20, 1]]).T
@@ -449,8 +427,7 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertFalse(polygon1._is_inside(polygon2))
 
     def test_bool(self):
-        """Test the intersection and union functions.
-        """
+        """Test the intersection and union functions."""
         vertices = np.array([[180, 90, 0, -90],
                              [89, 89, 89, 89]]).T
         poly1 = SphPolygon(np.deg2rad(vertices))
@@ -558,8 +535,7 @@ class TestSphericalPolygon(unittest.TestCase):
 
 
 def suite():
-    """The suite for test_spherical
-    """
+    """The suite for test_spherical."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestSCoordinate))

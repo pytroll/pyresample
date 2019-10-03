@@ -25,7 +25,6 @@
 The algorithm is taken from
 
 http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf
-
 """
 
 import numpy as np
@@ -260,7 +259,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
 
 
 def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
-    """Calculate vertical and horizontal fractional distances t and s"""
+    """Calculate vertical and horizontal fractional distances t and s."""
 
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
@@ -310,7 +309,7 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 
 def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
-    """Get parameters for the case where uprights are parallel"""
+    """Get parameters for the case where uprights are parallel."""
 
     # Get parameters for the quadratic equation
     a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
@@ -326,7 +325,7 @@ def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 
 def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
-    """Get parameters for the case where uprights are parallel"""
+    """Get parameters for the case where uprights are parallel."""
 
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -352,8 +351,10 @@ def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 
 
 def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
-    """Solve parameter t__ from s__, or vice versa.  For solving s__,
-    switch order of y_2 and y_3."""
+    """Solve parameter t__ from s__, or vice versa.
+
+    For solving s__, switch order of y_2 and y_3.
+    """
     y_21 = y_2 - y_1
     y_43 = y_4 - y_3
 
@@ -370,9 +371,10 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
 
 
 def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
-    """Calculate coefficients for quadratic equation for
-    _get_ts_irregular() and _get_ts_uprights().  For _get_ts_uprights
-    switch order of pt_2 and pt_3.
+    """Calculate coefficients for quadratic equation for _get_ts_irregular()
+    and _get_ts_uprights().
+
+    For _get_ts_uprights switch order of pt_2 and pt_3.
     """
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -395,7 +397,7 @@ def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 
 
 def _mask_coordinates(lons, lats):
-    """Mask invalid coordinate values"""
+    """Mask invalid coordinate values."""
     lons = lons.ravel()
     lats = lats.ravel()
     idxs = ((lons < -180.) | (lons > 180.) |
@@ -413,7 +415,7 @@ def _mask_coordinates(lons, lats):
 
 
 def _get_corner(stride, valid, in_x, in_y, idx_ref):
-    """Get closest set of coordinates from the *valid* locations"""
+    """Get closest set of coordinates from the *valid* locations."""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
     # Check which of these were actually valid
@@ -432,8 +434,7 @@ def _get_corner(stride, valid, in_x, in_y, idx_ref):
 def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
     """Get four closest locations from (in_x, in_y) so that they form a
     bounding rectangle around the requested location given by (out_x,
-    out_y).
-    """
+    out_y)."""
 
     # Find four closest pixels around the target location
 
@@ -471,9 +472,9 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref):
 
 
 def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
-    """Solve quadratic equation and return the valid roots from interval
-    [*min_val*, *max_val*]
+    """Solve quadratic equation and return the valid roots from interval.
 
+    [*min_val*, *max_val*]
     """
 
     def int_and_float_to_numpy(val):
@@ -551,7 +552,7 @@ def _get_input_xy(source_geo_def, proj, input_idxs, idx_ref):
 
 
 def _convert_masks_to_nans(arr):
-    """Remove masked array masks and replace corresponding values with nans"""
+    """Remove masked array masks and replace corresponding values with nans."""
     if hasattr(arr, 'mask'):
         mask = arr.mask
         arr = arr.data

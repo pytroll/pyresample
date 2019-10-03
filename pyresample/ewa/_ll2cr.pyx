@@ -19,8 +19,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Map longitude/latitude points to column/rows of a grid.
-"""
+"""Map longitude/latitude points to column/rows of a grid."""
 __docformat__ = "restructuredtext en"
 
 from pyproj import _proj
@@ -42,10 +41,12 @@ cdef extern from "numpy/npy_math.h":
 
 
 class MyProj(BaseProj):
-    """Custom class to make ll2cr projection work faster without compiling against the PROJ.4 library itself.
+    """Custom class to make ll2cr projection work faster without compiling
+    against the PROJ.4 library itself.
 
-    THIS SHOULD NOT BE USED OUTSIDE OF LL2CR! It makes assumptions and has requirements that may not make sense outside
-    of the ll2cr modules.
+    THIS SHOULD NOT BE USED OUTSIDE OF LL2CR! It makes assumptions and
+    has requirements that may not make sense outside of the ll2cr
+    modules.
     """
     def __call__(self, lons, lats, **kwargs):
         if self.is_latlong():
@@ -66,10 +67,11 @@ class MyProj(BaseProj):
 
 
 def projection_circumference(p):
-    """Return the projection circumference if the projection is cylindrical. None is returned otherwise.
+    """Return the projection circumference if the projection is cylindrical.
+    None is returned otherwise.
 
-    Projections that are not cylindrical and centered on the globes axis can not easily have data cross the antimeridian
-    of the projection.
+    Projections that are not cylindrical and centered on the globes axis
+    can not easily have data cross the antimeridian of the projection.
     """
     lon0, lat0 = p(0, 0, inverse=True)
     lon1 = lon0 + 180.0
@@ -90,7 +92,8 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
                   double cell_width, double cell_height,
                   width=None, height=None,
                   origin_x=None, origin_y=None):
-    """Project longitude and latitude points to column rows in the specified grid in place
+    """Project longitude and latitude points to column rows in the specified
+    grid in place.
 
     This function is meant to operate on dynamic grids and is theoretically
     slower than the `ll2cr_static` function. Dynamic grids are those that
@@ -232,7 +235,8 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
                       double cell_width, double cell_height,
                       unsigned int width, unsigned int height,
                       double origin_x, double origin_y):
-    """Project longitude and latitude points to column rows in the specified grid in place
+    """Project longitude and latitude points to column rows in the specified
+    grid in place.
 
     :param lon_arr: Numpy array of longitude floats
     :param lat_arr: Numpy array of latitude floats
@@ -252,7 +256,6 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
 
     Note longitude and latitude arrays are limited to 64-bit floats because
     of limitations in pyproj.
-
     """
     # pure python stuff for now
     p = MyProj(proj4_definition)

@@ -25,7 +25,7 @@ import numpy as np
 
 
 def ellps2axis(ellps_name):
-    """Get semi-major and semi-minor axis from ellipsis definition
+    """Get semi-major and semi-minor axis from ellipsis definition.
 
     Parameters
     ---------
@@ -90,7 +90,7 @@ def ellps2axis(ellps_name):
 
 
 def area_def2basemap(area_def, **kwargs):
-    """Get Basemap object from AreaDefinition
+    """Get Basemap object from AreaDefinition.
 
     Parameters
     ---------
@@ -237,7 +237,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', cmap='jet'):
-    """Display default quicklook plot
+    """Display default quicklook plot.
 
     Parameters
     ---------
@@ -275,7 +275,7 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', backend='AGG',
                    cmap='jet'):
-    """Display default quicklook plot
+    """Display default quicklook plot.
 
     Parameters
     ----------

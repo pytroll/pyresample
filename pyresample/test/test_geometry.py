@@ -26,7 +26,7 @@ else:
 
 class Test(unittest.TestCase):
 
-    """Unit testing the geometry and geo_filter modules"""
+    """Unit testing the geometry and geo_filter modules."""
 
     def test_lonlat_precomp(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -69,7 +69,7 @@ class Test(unittest.TestCase):
                         msg='Calculation of cartesian coordinates failed')
 
     def test_cartopy_crs(self):
-        """Test conversion from area definition to cartopy crs"""
+        """Test conversion from area definition to cartopy crs."""
         from pyresample import utils
 
         europe = geometry.AreaDefinition(area_id='areaD',
@@ -874,7 +874,7 @@ class Test(unittest.TestCase):
                                               7500.])))
 
     def test_get_xy_from_lonlat(self):
-        """Test the function get_xy_from_lonlat"""
+        """Test the function get_xy_from_lonlat."""
         from pyresample import utils
         area_id = 'test'
         area_name = 'Test area with 2x2 pixels'
@@ -1656,7 +1656,8 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                      area1.proj_dict, area1.width, y_size, area_extent)
 
     def test_create_area_def(self):
-        """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
+        """Test create_area_def and the four sub-methods that call it in
+        AreaDefinition."""
         from pyresample.geometry import AreaDefinition
         from pyresample.geometry import DynamicAreaDefinition
         from pyresample.area_config import DataArray
@@ -1962,8 +1963,7 @@ class TestCrop(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(Test))

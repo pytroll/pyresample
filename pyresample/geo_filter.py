@@ -6,7 +6,7 @@ from . import geometry
 
 class GridFilter(object):
 
-    """Geographic filter from a grid
+    """Geographic filter from a grid.
 
     :Parameters:
     grid_ll_x : float
@@ -15,12 +15,11 @@ class GridFilter(object):
         Projection y coordinate of lower left corner of lower left pixel
     grid_ur_x : float
         Projection x coordinate of upper right corner of upper right pixel
-    grid_ur_y : float 
-        Projection y coordinate of upper right corner of upper right pixel 
-    proj4_string : string 
+    grid_ur_y : float
+        Projection y coordinate of upper right corner of upper right pixel
+    proj4_string : string
     mask : numpy array
         Mask as boolean numpy array
-
     """
 
     def __init__(self, area_def, filter, nprocs=1):
@@ -29,7 +28,7 @@ class GridFilter(object):
         self.nprocs = nprocs
 
     def get_valid_index(self, geometry_def):
-        """Calculates valid_index array  based on lons and lats
+        """Calculates valid_index array  based on lons and lats.
 
         :Parameters:
         lons : numpy array
@@ -37,7 +36,6 @@ class GridFilter(object):
 
         :Returns:
             Boolean numpy array of same shape as lons and lats
-
         """
 
         lons = geometry_def.lons[:]

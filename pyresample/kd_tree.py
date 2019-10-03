@@ -15,8 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Handles reprojection of geolocated data. Several types of resampling are
-supported"""
+"""Handles reprojection of geolocated data.
+
+Several types of resampling are supported
+"""
 
 from __future__ import absolute_import
 
@@ -63,7 +65,7 @@ def resample_nearest(source_geo_def,
                      reduce_data=True,
                      nprocs=1,
                      segments=None):
-    """Resamples data using kd-tree nearest neighbour approach
+    """Resamples data using kd-tree nearest neighbour approach.
 
     Parameters
     ----------
@@ -153,7 +155,6 @@ def resample_gauss(source_geo_def, data, target_geo_def,
         Source data resampled to target geometry.
         Weighted standard devaition for all pixels having more than one source value
         Counts of number of source values used in weighting per pixel
-
     """
     def gauss(sigma):
         # Return gauss function object
@@ -188,7 +189,7 @@ def resample_custom(source_geo_def, data, target_geo_def,
                     radius_of_influence, weight_funcs, neighbours=8,
                     epsilon=0, fill_value=0, reduce_data=True, nprocs=1,
                     segments=None, with_uncert=False):
-    """Resamples data using kd-tree custom radial weighting neighbour approach
+    """Resamples data using kd-tree custom radial weighting neighbour approach.
 
     Parameters
     ----------
@@ -252,7 +253,7 @@ def resample_custom(source_geo_def, data, target_geo_def,
 def _resample(source_geo_def, data, target_geo_def, resample_type,
               radius_of_influence, neighbours=8, epsilon=0, weight_funcs=None,
               fill_value=0, reduce_data=True, nprocs=1, segments=None, with_uncert=False):
-    """Resamples swath using kd-tree approach"""
+    """Resamples swath using kd-tree approach."""
 
     valid_input_index, valid_output_index, index_array, distance_array = \
         get_neighbour_info(source_geo_def,
@@ -278,7 +279,7 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                        neighbours=8, epsilon=0, reduce_data=True,
                        nprocs=1, segments=None):
-    """Returns neighbour info
+    """Returns neighbour info.
 
     Parameters
     ----------
@@ -394,7 +395,7 @@ def _get_valid_input_index(source_geo_def,
                            reduce_data,
                            radius_of_influence,
                            nprocs=1):
-    """Find indices of reduced inputput data"""
+    """Find indices of reduced inputput data."""
 
     source_lons, source_lats = source_geo_def.get_lonlats(nprocs=nprocs)
     source_lons = np.asanyarray(source_lons).ravel()
@@ -439,7 +440,7 @@ def _get_valid_input_index(source_geo_def,
 
 def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                             target_lats, reduce_data, radius_of_influence):
-    """Find indices of reduced output data"""
+    """Find indices of reduced output data."""
 
     valid_output_index = np.ones(target_lons.size, dtype=np.bool)
 
@@ -474,7 +475,7 @@ def _create_resample_kdtree(source_lons,
                             source_lats,
                             valid_input_index,
                             nprocs=1):
-    """Set up kd tree on input"""
+    """Set up kd tree on input."""
     """
     if not isinstance(source_geo_def, geometry.BaseDefinition):
         raise TypeError('source_geo_def must be of geometry type')
@@ -517,7 +518,7 @@ def _query_resample_kdtree(resample_kdtree,
                            epsilon=0,
                            reduce_data=True,
                            nprocs=1):
-    """Query kd-tree on slice of target coordinates"""
+    """Query kd-tree on slice of target coordinates."""
 
     # Check validity of input
     if not isinstance(target_geo_def, geometry.BaseDefinition):
@@ -571,7 +572,7 @@ def _query_resample_kdtree(resample_kdtree,
 
 
 def _create_empty_info(source_geo_def, target_geo_def, neighbours):
-    """Creates dummy info for empty result set"""
+    """Creates dummy info for empty result set."""
 
     valid_output_index = np.ones(target_geo_def.size, dtype=np.bool)
     if neighbours > 1:
@@ -591,7 +592,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
                                    index_array, distance_array=None,
                                    weight_funcs=None, fill_value=0,
                                    with_uncert=False):
-    """Resamples swath based on neighbour info
+    """Resamples swath based on neighbour info.
 
     Parameters
     ----------
@@ -910,7 +911,6 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
 
     NOTE: Dask array arguments must always come before other keyword arguments
           for `da.blockwise` arguments to work.
-
     """
     voi = valid_output_index
     shape = voi.shape + (neighbours,)
@@ -1002,7 +1002,7 @@ class XArrayResamplerNN(object):
             "Target area definition must be 2 dimensions"
 
     def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
-        """Set up kd tree on input"""
+        """Set up kd tree on input."""
         source_lons, source_lats = self.source_geo_def.get_lonlats_dask(
             chunks=chunks)
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
@@ -1045,7 +1045,6 @@ class XArrayResamplerNN(object):
         (valid_input_index, valid_output_index,
         index_array, distance_array) : tuple of numpy arrays
             Neighbour resampling info
-
         """
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
@@ -1228,7 +1227,7 @@ def _get_fill_mask_value(data_dtype):
 
 
 def _remask_data(data, is_to_be_masked=True):
-    """Interprets half the array as mask for the other half"""
+    """Interprets half the array as mask for the other half."""
 
     channels = data.shape[-1]
     if is_to_be_masked:

@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Testing the _spatial_mp module"""
+"""Testing the _spatial_mp module."""
 
 
 try:
@@ -50,8 +50,7 @@ from pyresample._spatial_mp import BaseProj
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     # loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     # mysuite.addTest(loader.loadTestsFromTestCase(SpatialMPTest))

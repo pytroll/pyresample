@@ -251,8 +251,7 @@ class Test(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(Test))

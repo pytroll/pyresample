@@ -79,7 +79,7 @@ def load_area(area_file_name, *regions):
 
 
 def parse_area_file(area_file_name, *regions):
-    """Parse area information from area file
+    """Parse area information from area file.
 
     Parameters
     -----------
@@ -159,7 +159,8 @@ def _parse_yaml_area_file(area_file_name, *regions):
 
 
 def _capture_subarguments(params, arg_name, sub_arg_list):
-    """Captures :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
+    """Captures :func:`~pyresample.utils.create_area_def` sub-arguments (i.e.
+    units, height, dx, etc) from a yaml file.
 
     Example:
         resolution:
@@ -265,7 +266,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
 
 
 def _create_area(area_id, area_content):
-    """Parse area configuration"""
+    """Parse area configuration."""
     from configobj import ConfigObj
     config_obj = area_content.replace('{', '').replace('};', '')
     config_obj = ConfigObj([line.replace(':', '=', 1)
@@ -299,7 +300,7 @@ def _create_area(area_id, area_content):
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_extent, rotation=0):
-    """Construct AreaDefinition object from arguments
+    """Construct AreaDefinition object from arguments.
 
     Parameters
     -----------
@@ -345,7 +346,8 @@ def _get_proj4_args(proj4_args):
 
 def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
                     center=None, resolution=None, radius=None, units=None, **kwargs):
-    """Takes data the user knows and tries to make an area definition from what can be found.
+    """Takes data the user knows and tries to make an area definition from what
+    can be found.
 
     Parameters
     ----------
@@ -488,7 +490,8 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
 
 
 def _get_proj_data(projection):
-    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function.
+    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj
+    function.
 
     There is special handling for the "EPSG:XXXX" case where "XXXX" is an
     EPSG number code. It can be provided as a string `"EPSG:XXXX"` or as a
@@ -500,7 +503,6 @@ def _get_proj_data(projection):
     is installed then the string ``+init=EPSG:XXXX`` is passed to
     ``proj4_str_to_dict`` which provides limited information to area
     config operations.
-
     """
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
@@ -519,7 +521,6 @@ def _sign(num):
 
     Returns:
         1 if number is greater than 0, -1 otherwise
-
     """
     return -1 if num < 0 else 1
 
@@ -528,7 +529,6 @@ def _round_poles(center, units, p):
     """Round center to the nearest pole if it is extremely close to said pole.
 
     Used to work around floating point precision issues .
-
     """
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
@@ -572,7 +572,6 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     """Converts units from lon/lat to projection coordinates (meters).
 
     If `inverse` it True then the inverse calculation is done.
-
     """
     from pyproj import transform
     from pyresample._spatial_mp import Proj
@@ -618,9 +617,8 @@ def _round_shape(shape, radius=None, resolution=None):
     """Make sure shape is an integer.
 
     Rounds down if shape is less than .01 above nearest whole number to
-    handle floating point precision issues. Otherwise the number is round
-    up.
-
+    handle floating point precision issues. Otherwise the number is
+    round up.
     """
     # Used for area definition to prevent indexing None.
     if shape is None:
@@ -654,7 +652,6 @@ def _validate_variable(var, new_var, var_name, input_list):
 
     If a variable that was given by the user contradicts other data provided, an exception is raised.
     Example: upper_left_extent is (-10, 10), but area_extent is (-20, -20, 20, 20).
-
     """
     if var is not None and not np.allclose(np.array(var, dtype=float), np.array(new_var, dtype=float), equal_nan=True):
         raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
@@ -678,7 +675,6 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
     4. resolution and shape
     5. radius and center
     6. upper_left_extent and radius
-
     """
     # Input unaffected by data below: When area extent is calculated, it's either with
     # shape (giving you an area definition) or with center/radius/upper_left_extent (which this produces).
@@ -730,7 +726,8 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
 
 
 def _format_list(var, name):
-    """Used to let resolution and radius be single numbers if their elements are equal.
+    """Used to let resolution and radius be single numbers if their elements
+    are equal.
 
     Also makes sure that data is list-like and contains only numbers.
     """
@@ -745,7 +742,8 @@ def _format_list(var, name):
 
 
 def _verify_list(name, var, length):
-    """Checks that list-like variables are list-like, shapes are accurate, and values are numbers."""
+    """Checks that list-like variables are list-like, shapes are accurate, and
+    values are numbers."""
     # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
     if var is None:
         return None

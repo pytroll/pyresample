@@ -19,8 +19,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test EWA fornav module.
-"""
+"""Test EWA fornav module."""
 import sys
 import logging
 import numpy as np
@@ -34,8 +33,8 @@ LOG = logging.getLogger(__name__)
 
 class TestFornav(unittest.TestCase):
     def test_fornav_swath_larger(self):
-        """Test that a swath larger than the output grid fills the entire grid.
-        """
+        """Test that a swath larger than the output grid fills the entire
+        grid."""
         from pyresample.ewa import _fornav
         swath_shape = (1600, 3200)
         data_type = np.float32
@@ -62,8 +61,7 @@ class TestFornav(unittest.TestCase):
                          msg="Unexpected interpolation values were returned")
 
     def test_fornav_swath_smaller(self):
-        """Test that a swath smaller than the output grid is entirely used.
-        """
+        """Test that a swath smaller than the output grid is entirely used."""
         from pyresample.ewa import _fornav
         swath_shape = (1600, 3200)
         data_type = np.float32
@@ -90,8 +88,7 @@ class TestFornav(unittest.TestCase):
                         msg="Unexpected interpolation values were returned")
 
     def test_fornav_swath_smaller_int8(self):
-        """Test that a swath smaller than the output grid is entirely used.
-        """
+        """Test that a swath smaller than the output grid is entirely used."""
         from pyresample.ewa import _fornav
         swath_shape = (1600, 3200)
         data_type = np.int8
@@ -122,8 +119,8 @@ class TestFornav(unittest.TestCase):
 class TestFornavWrapper(unittest.TestCase):
     """Test the function wrapping the lower-level fornav code."""
     def test_fornav_swath_larger_float32(self):
-        """Test that a swath larger than the output grid fills the entire grid.
-        """
+        """Test that a swath larger than the output grid fills the entire
+        grid."""
         from pyresample.ewa import fornav
         swath_shape = (1600, 3200)
         data_type = np.float32
@@ -152,8 +149,7 @@ class TestFornavWrapper(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestFornav))

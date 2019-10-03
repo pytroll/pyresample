@@ -75,7 +75,6 @@ class BaseDefinition(object):
         arrays are expected to be between -180 and 180 degrees, latitude -90
         to 90 degrees. Use :func:`~pyresample.utils.check_and_wrap` to preprocess
         your arrays.
-
     """
 
     def __init__(self, lons=None, lats=None, nprocs=1):
@@ -167,7 +166,6 @@ class BaseDefinition(object):
 
         Author:
             Ulrich Hamann
-
         """
         (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
         a = a - 0.5 * self.pixel_size_x
@@ -189,7 +187,6 @@ class BaseDefinition(object):
         Returns
         -------
         (lon, lat) : tuple of floats
-
         """
         if self.ndim != 2:
             raise DimensionError(('operation undefined '
@@ -208,7 +205,6 @@ class BaseDefinition(object):
             with the provided chunk size. If `chunks` is not provided then
             the returned arrays are the same as the internal data types
             of this geometry object (numpy or dask).
-
         """
         lons = self.lons
         lats = self.lats
@@ -277,7 +273,6 @@ class BaseDefinition(object):
         Returns
         -------
         cartesian_coords : numpy array
-
         """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
@@ -328,7 +323,6 @@ class BaseDefinition(object):
         """Check if a point is inside the 4 corners of the current area.
 
         This uses great circle arcs as area boundaries.
-
         """
         from pyresample.spherical_geometry import point_inside, Coordinate
         corners = self.corners
@@ -352,7 +346,6 @@ class BaseDefinition(object):
         Returns
         -------
         overlaps : bool
-
         """
         from pyresample.spherical_geometry import Arc
 
@@ -384,13 +377,15 @@ class BaseDefinition(object):
         return False
 
     def get_area(self):
-        """Get the area of the convex area defined by the corners of the curren area."""
+        """Get the area of the convex area defined by the corners of the curren
+        area."""
         from pyresample.spherical_geometry import get_polygon_area
 
         return get_polygon_area(self.corners)
 
     def intersection(self, other):
-        """Return the corners of the intersection polygon of the current area with *other*.
+        """Return the corners of the intersection polygon of the current area
+        with *other*.
 
         Parameters
         ----------
@@ -400,7 +395,6 @@ class BaseDefinition(object):
         Returns
         -------
         (corner1, corner2, corner3, corner4) : tuple of points
-
         """
         from pyresample.spherical_geometry import intersection_polygon
         return intersection_polygon(self.corners, other.corners)
@@ -416,7 +410,6 @@ class BaseDefinition(object):
         Returns
         -------
         overlap_rate : float
-
         """
         from pyresample.spherical_geometry import get_polygon_area
         other_area = other.get_area()
@@ -498,7 +491,6 @@ class GridDefinition(CoordinateDefinition):
         Grid lats
     cartesian_coords : object
         Grid cartesian coordinates
-
     """
 
     def __init__(self, lons, lats, nprocs=1):
@@ -549,7 +541,6 @@ class SwathDefinition(CoordinateDefinition):
         Swath lats
     cartesian_coords : object
         Swath cartesian coordinates
-
     """
 
     def __init__(self, lons, lats, nprocs=1):
@@ -576,8 +567,8 @@ class SwathDefinition(CoordinateDefinition):
     def aggregate(self, **dims):
         """Aggregate the current swath definition by averaging.
 
-        For example, averaging over 2x2 windows:
-        `sd.aggregate(x=2, y=2)`
+        For example, averaging over 2x2 windows: `sd.aggregate(x=2,
+        y=2)`
         """
         import pyproj
         import dask.array as da
@@ -696,7 +687,8 @@ class SwathDefinition(CoordinateDefinition):
             return new_proj
 
     def _compute_uniform_shape(self):
-        """Compute the height and width of a domain to have uniform resolution across dimensions."""
+        """Compute the height and width of a domain to have uniform resolution
+        across dimensions."""
         g = Geod(ellps='WGS84')
         leftlons = self.lons[:, 0]
         leftlons = leftlons.where(leftlons.notnull(), drop=True)
@@ -723,7 +715,8 @@ class SwathDefinition(CoordinateDefinition):
         return height, width
 
     def compute_optimal_bb_area(self, proj_dict=None):
-        """Compute the "best" bounding box area for this swath with `proj_dict`.
+        """Compute the "best" bounding box area for this swath with
+        `proj_dict`.
 
         By default, the projection is Oblique Mercator (`omerc` in proj.4), in
         which case the right projection angle `alpha` is computed from the
@@ -749,9 +742,10 @@ class SwathDefinition(CoordinateDefinition):
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
 
-    The purpose of this class is to be able to adapt the area extent and shape
-    of the area to a given set of longitudes and latitudes, such that e.g.
-    polar satellite granules can be resampled optimaly to a give projection.
+    The purpose of this class is to be able to adapt the area extent and
+    shape of the area to a given set of longitudes and latitudes, such
+    that e.g. polar satellite granules can be resampled optimaly to a
+    give projection.
     """
 
     def __init__(self, area_id=None, description=None, projection=None,
@@ -787,7 +781,6 @@ class DynamicAreaDefinition(object):
           Whether the projection parameters have to be optimized.
         rotation:
           Rotation in degrees (negative is cw)
-
         """
         self.area_id = area_id
         self.description = description
@@ -847,13 +840,13 @@ class DynamicAreaDefinition(object):
         return self.resolution[1]
 
     def compute_domain(self, corners, resolution=None, shape=None):
-        """Compute shape and area_extent from corners and [shape or resolution] info.
+        """Compute shape and area_extent from corners and [shape or resolution]
+        info.
 
         Corners represents the center of pixels, while area_extent represents the edge of pixels.
 
         Note that ``shape`` is (rows, columns) and ``resolution`` is
         (x_size, y_size); the dimensions are flipped.
-
         """
         if resolution is not None and shape is not None:
             raise ValueError("Both resolution and shape can't be provided.")
@@ -880,7 +873,8 @@ class DynamicAreaDefinition(object):
         return area_extent, width, height
 
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
-        """Create an AreaDefinition from this area with help of some extra info.
+        """Create an AreaDefinition from this area with help of some extra
+        info.
 
         Parameters
         ----------
@@ -896,7 +890,6 @@ class DynamicAreaDefinition(object):
 
         Resolution and shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
-
         """
         proj_dict = self._get_proj_dict()
         projection = self._projection
@@ -1010,7 +1003,6 @@ class AreaDefinition(BaseDefinition):
         Grid projection x coordinate
     projection_y_coords : object
         Grid projection y coordinate
-
     """
 
     def __init__(self, area_id, description, proj_id, projection, width, height,
@@ -1088,7 +1080,8 @@ class AreaDefinition(BaseDefinition):
     def copy(self, **override_kwargs):
         """Make a copy of the current area.
 
-        This replaces the current values with anything in *override_kwargs*.
+        This replaces the current values with anything in
+        *override_kwargs*.
         """
         kwargs = {'area_id': self.area_id,
                   'description': self.description,
@@ -1177,13 +1170,13 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
         """
         return create_area_def(area_id, projection, shape=shape, area_extent=area_extent, units=units, **kwargs)
 
     @classmethod
     def from_circle(cls, area_id, projection, center, radius, shape=None, resolution=None, units=None, **kwargs):
-        """Create an AreaDefinition from center, radius, and shape or from center, radius, and resolution.
+        """Create an AreaDefinition from center, radius, and shape or from
+        center, radius, and resolution.
 
         Parameters
         ----------
@@ -1235,7 +1228,6 @@ class AreaDefinition(BaseDefinition):
         Notes
         -----
         * ``resolution`` and ``radius`` can be specified with one value if dx == dy
-
         """
         return create_area_def(area_id, projection, shape=shape, center=center, radius=radius,
                                resolution=resolution, units=units, **kwargs)
@@ -1284,14 +1276,14 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
         """
         return create_area_def(area_id, projection, shape=shape, center=center,
                                resolution=resolution, units=units, **kwargs)
 
     @classmethod
     def from_ul_corner(cls, area_id, projection, shape, upper_left_extent, resolution, units=None, **kwargs):
-        """Create an AreaDefinition object from upper_left_extent, resolution, and shape.
+        """Create an AreaDefinition object from upper_left_extent, resolution,
+        and shape.
 
         Parameters
         ----------
@@ -1333,7 +1325,6 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         AreaDefinition : AreaDefinition
-
         """
         return create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
                                resolution=resolution, units=units, **kwargs)
@@ -1464,7 +1455,6 @@ class AreaDefinition(BaseDefinition):
 
         Both scalars and arrays are supported. To be used with scarse
         data points instead of slices (see get_lonlats).
-
         """
         p = Proj(self.proj_str)
         x = self.projection_x_coords
@@ -1476,7 +1466,6 @@ class AreaDefinition(BaseDefinition):
 
         Both scalars and arrays are supported.  Same as
         get_xy_from_lonlat, renamed for convenience.
-
         """
         return self.get_xy_from_lonlat(lons, lats)
 
@@ -1497,7 +1486,6 @@ class AreaDefinition(BaseDefinition):
         :Returns:
 
         (x, y) : tuple of integer points/arrays
-
         """
         if isinstance(lon, list):
             lon = np.array(lon)
@@ -1535,7 +1523,6 @@ class AreaDefinition(BaseDefinition):
 
         Raises:
             ValueError: if the return point is outside the area domain
-
         """
         if isinstance(xm, list):
             xm = np.array(xm)
@@ -1587,7 +1574,6 @@ class AreaDefinition(BaseDefinition):
         Returns
         -------
         (lon, lat) : tuple of floats
-
         """
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return np.asscalar(lon), np.asscalar(lat)
@@ -1661,7 +1647,6 @@ class AreaDefinition(BaseDefinition):
         The data type of the returned arrays can be controlled with the
         `dtype` keyword argument. If `chunks` is provided then dask arrays
         are returned instead.
-
         """
         return self._get_proj_vectors(dtype=dtype, chunks=chunks)
 
@@ -1694,7 +1679,6 @@ class AreaDefinition(BaseDefinition):
 
             Removed 'cache' keyword argument and add 'chunks' for creating
             dask arrays.
-
         """
         target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
         if data_slice is not None and isinstance(data_slice, slice):
@@ -1775,7 +1759,6 @@ class AreaDefinition(BaseDefinition):
         -------
         (lons, lats) : tuple of numpy arrays
             Grids of area lons and and lats
-
         """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
@@ -1936,7 +1919,6 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     Args:
       nb_points: Number of points on the polygon
-
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
 
@@ -2008,7 +1990,6 @@ class StackedAreaDefinition(BaseDefinition):
         """Initialize StackedAreaDefinition based on *definitions*.
 
         *kwargs* used here are `nprocs` and `dtype` (see AreaDefinition).
-
         """
         nprocs = kwargs.get('nprocs', 1)
         super(StackedAreaDefinition, self).__init__(nprocs=nprocs)

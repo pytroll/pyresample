@@ -80,7 +80,6 @@ class build_ext(_build_ext):
     Copied from:
 
         http://stackoverflow.com/questions/19919905/how-to-bootstrap-numpy-installation-in-setup-py
-
     """
 
     def finalize_options(self):
@@ -99,7 +98,8 @@ if __name__ == "__main__":
             "Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
 
         def cythonize(extensions, **_ignore):
-            """Fake function to compile from C/C++ files instead of compiling .pyx files with cython."""
+            """Fake function to compile from C/C++ files instead of compiling
+            .pyx files with cython."""
             for extension in extensions:
                 sources = []
                 for sfile in extension.sources:

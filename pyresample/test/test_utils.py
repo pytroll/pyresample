@@ -322,8 +322,7 @@ class TestMisc(unittest.TestCase):
         self.assertRaises(ValueError, utils.check_and_wrap, lons1, lats2)
 
     def test_unicode_proj4_string(self):
-        """Test that unicode is accepted for area creation.
-        """
+        """Test that unicode is accepted for area creation."""
         from pyresample import utils
         utils.get_area_def(u"eurol", u"eurol", u"bla",
                            u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
@@ -599,8 +598,7 @@ class TestProjRotation(unittest.TestCase):
 
 
 def suite():
-    """The test suite.
-    """
+    """The test suite."""
     loader = unittest.TestLoader()
     mysuite = unittest.TestSuite()
     mysuite.addTest(loader.loadTestsFromTestCase(TestLegacyAreaParser))

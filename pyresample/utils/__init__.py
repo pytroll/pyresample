@@ -56,7 +56,7 @@ def parse_area_file(*args, **kwargs):
 
 
 def generate_quick_linesample_arrays(source_area_def, target_area_def, nprocs=1):
-    """Generate linesample arrays for quick grid resampling
+    """Generate linesample arrays for quick grid resampling.
 
     Parameters
     -----------
@@ -90,7 +90,7 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def,
                                                  target_area_def,
                                                  radius_of_influence,
                                                  nprocs=1):
-    """Generate linesample arrays for nearest neighbour grid resampling
+    """Generate linesample arrays for nearest neighbour grid resampling.
 
     Parameters
     -----------
@@ -158,15 +158,13 @@ def fwhm2sigma(fwhm):
     -------
     sigma : float
         sigma for use in resampling gauss function
-
     """
 
     return fwhm / (2 * np.sqrt(np.log(2)))
 
 
 def _downcast_index_array(index_array, size):
-    """Try to downcast array to uint16
-    """
+    """Try to downcast array to uint16."""
 
     if size <= np.iinfo(np.uint16).max:
         mask = (index_array < 0) | (index_array >= size)
@@ -187,7 +185,6 @@ def wrap_longitudes(lons):
     -------
     lons : numpy array
         Longitudes wrapped into [-180:+180[ validity range
-
     """
     return (lons + 180) % 360 - 180
 
@@ -205,7 +202,6 @@ def check_and_wrap(lons, lats):
 
     Raises:
         ValueError: If latitude array is not between -90 and 90
-
     """
     # check the latitutes
     if lats.min() < -90. or lats.max() > 90.:
@@ -221,12 +217,11 @@ def check_and_wrap(lons, lats):
 
 
 def recursive_dict_update(d, u):
-    """Recursive dictionary update using
+    """Recursive dictionary update using.
 
     Copied from:
 
         http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-
     """
     for k, v in u.items():
         if isinstance(v, Mapping):
@@ -238,5 +233,5 @@ def recursive_dict_update(d, u):
 
 
 def is_pyproj2():
-    """Determine whether the current pyproj version is >= 2.0"""
+    """Determine whether the current pyproj version is >= 2.0."""
     return pyproj.__version__ >= '2'

@@ -40,18 +40,18 @@ R = 6370997.0
 
 class cKDTree_MP(object):
 
-    ''' Multiprocessing cKDTree subclass, shared memory '''
+    """Multiprocessing cKDTree subclass, shared memory."""
 
     def __init__(self, data, leafsize=10, nprocs=2, chunk=None,
                  schedule='guided'):
-        '''
-        Same as cKDTree.__init__ except that an internal copy
-        of data to shared memory is made.
+        """Same as cKDTree.__init__ except that an internal copy of data to
+        shared memory is made.
+
         Extra keyword arguments:
         chunk : Minimum chunk size for the load balancer.
         schedule: Strategy for balancing work load
         ('static', 'dynamic' or 'guided').
-        '''
+        """
 
         self.n, self.m = data.shape
         # Allocate shared memory for data
@@ -72,10 +72,8 @@ class cKDTree_MP(object):
         self._schedule = schedule
 
     def query(self, x, k=1, eps=0, p=2, distance_upper_bound=np.inf):
-        '''
-        Same as cKDTree.query except parallelized with multiple
-        processes and shared memory.        
-        '''
+        """Same as cKDTree.query except parallelized with multiple processes
+        and shared memory."""
 
         # allocate shared memory for x and result
         nx = x.shape[0]
@@ -203,8 +201,7 @@ Cartesian_MP = Cartesian
 
 
 def _run_jobs(target, args, nprocs):
-    """Run process pool
-    """
+    """Run process pool."""
 
     # return status in shared memory
     # access to these values are serialized automatically

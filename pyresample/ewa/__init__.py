@@ -64,7 +64,6 @@ are determined at run time.
 
 For more information on these steps see the documentation for the
 corresponding modules.
-
 """
 
 import logging
@@ -102,7 +101,6 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
         ll2cr uses the pyproj library which is limited to 64-bit float
         navigation arrays in order to not do additional copying or casting
         of data types.
-
     """
     lons, lats = swath_def.get_lonlats()
     # ll2cr requires 64-bit floats due to pyproj limitations
