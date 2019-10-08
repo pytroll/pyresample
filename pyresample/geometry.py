@@ -702,8 +702,7 @@ class SwathDefinition(CoordinateDefinition):
         def notnull(arr):
             if isinstance(arr, DataArray):
                 return arr.where(arr.notnull(), drop=True)
-            else:
-                return arr[np.isfinite(arr)]
+            return arr[np.isfinite(arr)]
 
         leftlons = notnull(self.lons[:, 0])
         rightlons = notnull(self.lons[:, -1])
