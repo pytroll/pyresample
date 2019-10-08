@@ -1430,14 +1430,14 @@ class TestSwathDefinition(unittest.TestCase):
         """Test computing the bb area."""
         from pyresample.utils import is_pyproj2
         import xarray as xr
-        lats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
-                         [80.84000396728516, 60.74200439453125, 34.08500289916992],
-                         [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
-        lats = xr.DataArray(lats)
-        lons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
-                         [79.11000061035156, 7.284000396728516, -5.107000350952148],
-                         [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
-        lons = xr.DataArray(lons)
+        nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                           [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                           [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+        lats = xr.DataArray(nplats)
+        nplons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                           [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                           [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+        lons = xr.DataArray(nplons)
 
         area = geometry.SwathDefinition(lons, lats)
 
@@ -1455,6 +1455,26 @@ class TestSwathDefinition(unittest.TestCase):
                               'no_defs': None, 'type': 'crs'})
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
+
+        area = geometry.SwathDefinition(nplons, nplats)
+
+        res = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'})
+
+        np.testing.assert_allclose(res.area_extent, [-2348379.728104, 3228086.496211,
+                                                     2432121.058435, 10775774.254169])
+        proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
+                     'ellps': 'WGS84', 'proj': 'omerc',
+                     'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
+        if is_pyproj2():
+            # pyproj2 adds some extra defaults
+            proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
+                              'k': 1, 'gamma': 0,
+                              'no_defs': None, 'type': 'crs'})
+        assert_np_dict_allclose(res.proj_dict, proj_dict)
+        self.assertEqual(res.shape, (6, 3))
+
+
+
 
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
