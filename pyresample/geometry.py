@@ -698,18 +698,19 @@ class SwathDefinition(CoordinateDefinition):
     def _compute_uniform_shape(self):
         """Compute the height and width of a domain to have uniform resolution across dimensions."""
         g = Geod(ellps='WGS84')
-        leftlons = self.lons[:, 0]
-        leftlons = leftlons.where(leftlons.notnull(), drop=True)
-        rightlons = self.lons[:, -1]
-        rightlons = rightlons.where(rightlons.notnull(), drop=True)
-        middlelons = self.lons[:, int(self.lons.shape[1] / 2)]
-        middlelons = middlelons.where(middlelons.notnull(), drop=True)
-        leftlats = self.lats[:, 0]
-        leftlats = leftlats.where(leftlats.notnull(), drop=True)
-        rightlats = self.lats[:, -1]
-        rightlats = rightlats.where(rightlats.notnull(), drop=True)
-        middlelats = self.lats[:, int(self.lats.shape[1] / 2)]
-        middlelats = middlelats.where(middlelats.notnull(), drop=True)
+
+        def notnull(arr):
+            try:
+                return arr.where(arr.notnull(), drop=True)
+            except AttributeError:
+                return arr[np.isfinite(arr)]
+
+        leftlons = notnull(self.lons[:, 0])
+        rightlons = notnull(self.lons[:, -1])
+        middlelons = notnull(self.lons[:, int(self.lons.shape[1] / 2)])
+        leftlats = notnull(self.lats[:, 0])
+        rightlats = notnull(self.lats[:, -1])
+        middlelats = notnull(self.lats[:, int(self.lats.shape[1] / 2)])
 
         az1, az2, width1 = g.inv(leftlons[0], leftlats[0], rightlons[0], rightlats[0])
         az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
