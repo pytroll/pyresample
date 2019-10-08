@@ -700,9 +700,10 @@ class SwathDefinition(CoordinateDefinition):
         g = Geod(ellps='WGS84')
 
         def notnull(arr):
-            if isinstance(arr, DataArray):
+            try:
                 return arr.where(arr.notnull(), drop=True)
-            return arr[np.isfinite(arr)]
+            except AttributeError:
+                return arr[np.isfinite(arr)]
 
         leftlons = notnull(self.lons[:, 0])
         rightlons = notnull(self.lons[:, -1])
