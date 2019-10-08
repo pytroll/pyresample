@@ -1,3 +1,22 @@
+## Version 1.13.2 (2019/10/08)
+
+### Issues Closed
+
+* [Issue 220](https://github.com/pytroll/pyresample/issues/220) - Problem with dynamic areas on numpy arrays with newest pyresample ([PR 221](https://github.com/pytroll/pyresample/pull/221))
+* [Issue 148](https://github.com/pytroll/pyresample/issues/148) - Complete dask conversion of XArrayResamplerBilinear
+* [Issue 10](https://github.com/pytroll/pyresample/issues/10) - Computing density_of_x (alternatively "counting number of x)" while re-gridding
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 221](https://github.com/pytroll/pyresample/pull/221) - Make optimal bb computation work with numpy arrays ([220](https://github.com/pytroll/pyresample/issues/220))
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.13.1 (2019/09/26)
 
 ### Pull Requests Merged
