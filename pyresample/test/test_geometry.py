@@ -1473,9 +1473,6 @@ class TestSwathDefinition(unittest.TestCase):
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
 
-
-
-
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
         if (sys.version_info < (3, 0)):
