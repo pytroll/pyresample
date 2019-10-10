@@ -704,13 +704,26 @@ class SwathDefinition(CoordinateDefinition):
                 return arr.where(arr.notnull(), drop=True)
             except AttributeError:
                 return arr[np.isfinite(arr)]
-
-        leftlons = notnull(self.lons[:, 0])
-        rightlons = notnull(self.lons[:, -1])
-        middlelons = notnull(self.lons[:, int(self.lons.shape[1] / 2)])
-        leftlats = notnull(self.lats[:, 0])
-        rightlats = notnull(self.lats[:, -1])
-        middlelats = notnull(self.lats[:, int(self.lats.shape[1] / 2)])
+        leftlons = self.lons[:, 0]
+        rightlons = self.lons[:, -1]
+        middlelons = self.lons[:, int(self.lons.shape[1] / 2)]
+        leftlats = self.lats[:, 0]
+        rightlats = self.lats[:, -1]
+        middlelats = self.lats[:, int(self.lats.shape[1] / 2)]
+        try:
+            import dask.array as da
+        except ImportError:
+            pass
+        else:
+            leftlons, rightlons, middlelons, leftlats, rightlats, middlelats = da.compute(leftlons, rightlons,
+                                                                                          middlelons, leftlats,
+                                                                                          rightlats, middlelats)
+        leftlons = notnull(leftlons)
+        rightlons = notnull(rightlons)
+        middlelons = notnull(middlelons)
+        leftlats = notnull(leftlats)
+        rightlats = notnull(rightlats)
+        middlelats = notnull(middlelats)
 
         az1, az2, width1 = g.inv(leftlons[0], leftlats[0], rightlons[0], rightlats[0])
         az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
