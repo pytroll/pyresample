@@ -1,3 +1,71 @@
+## Version 1.13.2 (2019/10/08)
+
+### Issues Closed
+
+* [Issue 220](https://github.com/pytroll/pyresample/issues/220) - Problem with dynamic areas on numpy arrays with newest pyresample ([PR 221](https://github.com/pytroll/pyresample/pull/221))
+* [Issue 148](https://github.com/pytroll/pyresample/issues/148) - Complete dask conversion of XArrayResamplerBilinear
+* [Issue 10](https://github.com/pytroll/pyresample/issues/10) - Computing density_of_x (alternatively "counting number of x)" while re-gridding
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 221](https://github.com/pytroll/pyresample/pull/221) - Make optimal bb computation work with numpy arrays ([220](https://github.com/pytroll/pyresample/issues/220))
+
+In this release 1 pull request was closed.
+
+
+## Version 1.13.1 (2019/09/26)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 218](https://github.com/pytroll/pyresample/pull/218) - Fix proj_str returning invalid PROJ strings when towgs84 was included
+* [PR 217](https://github.com/pytroll/pyresample/pull/217) - Fix get_geostationary_angle_extent assuming a/b definitions
+* [PR 216](https://github.com/pytroll/pyresample/pull/216) - Fix proj4 radius parameters for spherical cases
+
+In this release 3 pull requests were closed.
+
+## Version 1.13.0 (2019/09/13)
+
+### Issues Closed
+
+* [Issue 210](https://github.com/pytroll/pyresample/issues/210) - Incompatibility with new proj/pyproj versions
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 213](https://github.com/pytroll/pyresample/pull/213) - Remove extra conversion to dask array
+* [PR 208](https://github.com/pytroll/pyresample/pull/208) - Bugfix bilinear resampler masking ([735](https://github.com/pytroll/satpy/issues/735))
+* [PR 207](https://github.com/pytroll/pyresample/pull/207) - Make output index tiling in bilinear interpolation work with dask
+* [PR 205](https://github.com/pytroll/pyresample/pull/205) - Exclude NaNs from Bucket Average
+* [PR 197](https://github.com/pytroll/pyresample/pull/197) - Fix to_cartopy_crs for latlong projections
+* [PR 196](https://github.com/pytroll/pyresample/pull/196) - Improve handling of EPSG codes with pyproj 2.0+
+
+#### Features added
+
+* [PR 212](https://github.com/pytroll/pyresample/pull/212) - Use slices in bilinear resampler
+* [PR 203](https://github.com/pytroll/pyresample/pull/203) - Add Numpy version limitation for Python 2
+* [PR 198](https://github.com/pytroll/pyresample/pull/198) - Clarify warning if no overlap data and projection
+* [PR 196](https://github.com/pytroll/pyresample/pull/196) - Improve handling of EPSG codes with pyproj 2.0+
+* [PR 192](https://github.com/pytroll/pyresample/pull/192) - Add bucket resampling
+
+#### Documentation changes
+
+* [PR 204](https://github.com/pytroll/pyresample/pull/204) - Add Example for Regular Lat-Lon Grid
+* [PR 201](https://github.com/pytroll/pyresample/pull/201) - fix bug in plot example code
+* [PR 198](https://github.com/pytroll/pyresample/pull/198) - Clarify warning if no overlap data and projection
+* [PR 195](https://github.com/pytroll/pyresample/pull/195) - Update docs for create_area_def and improve AreaDefinition property consistency
+
+In this release 15 pull requests were closed.
+
+
 ## Version 1.12.3 (2019/05/17)
 
 ### Pull Requests Merged

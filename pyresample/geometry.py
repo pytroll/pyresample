@@ -36,7 +36,8 @@ from pyproj import Geod, transform
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import proj4_str_to_dict, proj4_dict_to_str, convert_proj_floats
+from pyresample.utils import (proj4_str_to_dict, proj4_dict_to_str,
+                              convert_proj_floats, proj4_radius_parameters)
 from pyresample.area_config import create_area_def
 
 try:
@@ -697,18 +698,32 @@ class SwathDefinition(CoordinateDefinition):
     def _compute_uniform_shape(self):
         """Compute the height and width of a domain to have uniform resolution across dimensions."""
         g = Geod(ellps='WGS84')
+
+        def notnull(arr):
+            try:
+                return arr.where(arr.notnull(), drop=True)
+            except AttributeError:
+                return arr[np.isfinite(arr)]
         leftlons = self.lons[:, 0]
-        leftlons = leftlons.where(leftlons.notnull(), drop=True)
         rightlons = self.lons[:, -1]
-        rightlons = rightlons.where(rightlons.notnull(), drop=True)
         middlelons = self.lons[:, int(self.lons.shape[1] / 2)]
-        middlelons = middlelons.where(middlelons.notnull(), drop=True)
         leftlats = self.lats[:, 0]
-        leftlats = leftlats.where(leftlats.notnull(), drop=True)
         rightlats = self.lats[:, -1]
-        rightlats = rightlats.where(rightlats.notnull(), drop=True)
         middlelats = self.lats[:, int(self.lats.shape[1] / 2)]
-        middlelats = middlelats.where(middlelats.notnull(), drop=True)
+        try:
+            import dask.array as da
+        except ImportError:
+            pass
+        else:
+            leftlons, rightlons, middlelons, leftlats, rightlats, middlelats = da.compute(leftlons, rightlons,
+                                                                                          middlelons, leftlats,
+                                                                                          rightlats, middlelats)
+        leftlons = notnull(leftlons)
+        rightlons = notnull(rightlons)
+        middlelons = notnull(middlelons)
+        leftlats = notnull(leftlats)
+        rightlats = notnull(rightlats)
+        middlelats = notnull(middlelats)
 
         az1, az2, width1 = g.inv(leftlons[0], leftlats[0], rightlons[0], rightlats[0])
         az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
@@ -1346,7 +1361,17 @@ class AreaDefinition(BaseDefinition):
     @property
     def proj_str(self):
         """Return PROJ projection string."""
-        return proj4_dict_to_str(self.proj_dict, sort=True)
+        proj_dict = self.proj_dict.copy()
+        if 'towgs84' in proj_dict and isinstance(proj_dict['towgs84'], list):
+            # pyproj 2+ creates a list in the dictionary
+            # but the string should be comma-separated
+            if all(x == 0 for x in proj_dict['towgs84']):
+                # all 0s in towgs84 are technically equal to not having them
+                # specified, but PROJ considers them different
+                proj_dict.pop('towgs84')
+            else:
+                proj_dict['towgs84'] = ','.join(str(x) for x in proj_dict['towgs84'])
+        return proj4_dict_to_str(proj_dict, sort=True)
 
     def __str__(self):
         """Return string representation of the AreaDefinition."""
@@ -1904,8 +1929,9 @@ class AreaDefinition(BaseDefinition):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    req = geos_area.proj_dict['a'] / 1000.0
-    rp = geos_area.proj_dict['b'] / 1000.0
+    a, b = proj4_radius_parameters(geos_area.proj_dict)
+    req = a / 1000.0
+    rp = b / 1000.0
     h = geos_area.proj_dict['h'] / 1000.0 + req
 
     # compute some constants
