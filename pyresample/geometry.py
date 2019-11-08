@@ -475,6 +475,57 @@ class CoordinateDefinition(BaseDefinition):
                                                     str(self.lons),
                                                     str(self.lats))
 
+    def geocentric_resolution(self, ellps='WGS84', radius=None, nadir_factor=2):
+        """Calculate maximum geocentric pixel resolution.
+
+        If `lons` is a :class:`xarray.DataArray` object with a `resolution`
+        attribute, this will be used instead of loading the longitude and
+        latitude data. In this case the resolution attribute is assumed to
+        mean the nadir resolution of a swath and will be multiplied by the
+        `nadir_factor` to adjust for increases in the spatial resolution
+        towards the limb of the swath.
+
+        Args:
+            ellps (str): PROJ Ellipsoid for the Cartographic projection
+                used as the target geocentric coordinate reference system.
+                Default: 'WGS84'. Ignored if `radius` is provided.
+            radius (float): Spherical radius of the Earth to use instead of
+                the definitions in `ellps`.
+            nadir_factor (int): Number to multiply the nadir resolution
+                attribute by to reflect pixel size on the limb of the swath.
+
+        Returns: Estimated maximum pixel size in meters on a geocentric
+            coordinate system (X, Y, Z) representing the Earth.
+
+        Raises: RuntimeError if a simple search for valid longitude/latitude
+            data points found no valid data points.
+
+        """
+        if hasattr(self.lons, 'attrs') and 'resolution' in self.lons.attrs:
+            return self.lons.attrs['resolution'] * nadir_factor
+
+        from pyproj import transform
+        rows, cols = self.shape
+        start_row = rows // 2  # middle row
+        src = Proj('+proj=latlong +datum=WGS84')
+        if radius:
+            dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
+        else:
+            dst = Proj("+proj=cart +ellps={}".format(ellps))
+        # simply take the first two columns of the middle of the swath
+        lons = self.lons[start_row: start_row + 1, :2]
+        lats = self.lats[start_row: start_row + 1, :2]
+        if hasattr(lons.data, 'compute'):
+            # dask arrays, compute them together
+            import dask.array as da
+            lons, lats = da.compute(lons, lats)
+        xyz = np.stack(transform(src, dst, lons, lats, [0, 0]), axis=1)
+        dist = np.linalg.norm(xyz[1] - xyz[0])
+        dist = dist[np.isfinite(dist)]
+        if not dist.size:
+            raise RuntimeError("Could not calculate geocentric resolution")
+        return np.max(dist)
+
 
 class GridDefinition(CoordinateDefinition):
     """Grid defined by lons and lats.
@@ -1924,6 +1975,32 @@ class AreaDefinition(BaseDefinition):
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
         return new_area
+
+    def geocentric_resolution(self, ellps='WGS84', radius=None):
+        """Geocentric resolution."""
+        from pyproj import transform
+        rows, cols = self.shape
+        mid_row = rows // 2
+        mid_col = cols // 2
+        x, y = self.get_proj_vectors()
+        mid_col_x = np.repeat(x[mid_col], y.size)
+        mid_row_y = np.repeat(y[mid_row], x.size)
+        src = Proj(getattr(self, 'crs', self.proj_dict))
+        if radius:
+            dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
+        else:
+            dst = Proj("+proj=cart +ellps={}".format(ellps))
+        alt_x = np.zeros(x.size)
+        alt_y = np.zeros(y.size)
+        hor_xyz = np.stack(transform(src, dst, x, mid_row_y, alt_x), axis=1)
+        vert_xyz = np.stack(transform(src, dst, mid_col_x, y, alt_y), axis=1)
+        hor_dist = np.linalg.norm(np.diff(hor_xyz, axis=0), axis=1)
+        vert_dist = np.linalg.norm(np.diff(vert_xyz, axis=0), axis=1)
+        dist = np.concatenate((hor_dist, vert_dist))
+        dist = dist[np.isfinite(dist)]
+        if not dist.size:
+            raise RuntimeError("Could not calculate geocentric resolution")
+        return np.max(dist)
 
 
 def get_geostationary_angle_extent(geos_area):
