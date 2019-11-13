@@ -359,7 +359,7 @@ class SphPolygon(object):
 
     def inverse(self):
         """Return an inverse of the polygon."""
-        return SphPolygon(np.flipud(self.vertices))
+        return SphPolygon(np.flipud(self.vertices), radius=self.radius)
 
     def aedges(self):
         """Iterator over the edges, in arcs of Coordinates."""
@@ -483,8 +483,7 @@ class SphPolygon(object):
                 break
             if inter == nodes[0]:
                 break
-
-        return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]))
+        return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]), radius=self.radius)
 
     def union(self, other):
         """Return the union of this and `other` polygon."""
