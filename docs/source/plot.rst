@@ -24,7 +24,7 @@ supported by Satpy_. All you need are a set of geo-referenced values
 First we read in the data with Satpy_:
 
  >>> from satpy.scene import Scene
- >>> SCENE_FILES = glob("/home/a000680/Satsa/amsr2/level1b/GW1AM2_20191125????_186*h5")
+ >>> SCENE_FILES = glob("/home/a000680/Satsa/amsr2/level1b/GW1AM2_20191122????_156*h5")
  >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES)
  >>> scn.load(["btemp_36.5v"])
  >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
@@ -39,7 +39,7 @@ First we read in the data with Satpy_:
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.cfg', 'ease_sh')
+ >>> area_def = load_area('areas.yaml', 'ease_sh')
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
@@ -47,25 +47,32 @@ First we read in the data with Satpy_:
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
 the above Satpy_ example) the result might look something like this:
+
   .. image:: _static/images/tb37v_quick.png
   
 The data passed to the functions is a 2D array matching the AreaDefinition.
 
 The Plate Carree projection
 +++++++++++++++++++++++++++
-The Plate Carree projection (regular lon/lat grid) is named **eqc** in Proj.4 and **cyl** in Basemap. pyresample uses the Proj.4 name.
-Assuming the file **areas.cfg** has the following area definition:
+The Plate Carree projection (regular lon/lat grid) is named **eqc** in
+Proj.4. Pyresample uses the Proj.4 nameing.
+
+Assuming the file **areas.yaml** has the following area definition:
 
 .. code-block:: bash
 
- REGION: pc_world {
-    NAME:    Plate Carree world map
-    PCS_ID:  pc_world
-    PCS_DEF: proj=eqc
-    XSIZE: 640
-    YSIZE: 480
-    AREA_EXTENT:  (-20037508.34, -10018754.17, 20037508.34, 10018754.17)
- };
+  pc_world:
+    description: Plate Carree world map
+    projection:
+      proj: eqc
+      ellps: WGS84
+    shape:
+      height: 480
+      width: 640
+    area_extent:
+      lower_left_xy: [-20037508.34, -10018754.17]
+      upper_right_xy: [20037508.34, 10018754.17]
+
 
 **Example usage:**
 
@@ -75,7 +82,7 @@ Assuming the file **areas.cfg** has the following area definition:
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.cfg', 'pc_world')
+ >>> area_def = load_area('areas.yaml', 'pc_world')
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
