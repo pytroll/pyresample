@@ -15,6 +15,22 @@ of a dataset for a specified AreaDefinition. The function
 
 **Example usage:**
 
+In this simple example below we use GCOM-W1 AMSR-2 data loaded using Satpy_. Of
+course Satpy_ facilitates the handling of these data in an even easier way, but
+the below example can be useful if you have some data that are yet not
+supported by Satpy_. All you need are a set of geo-referenced values
+(longitudes and latitudes and corresponding geophysical values).
+
+First we read in the data with Satpy_:
+
+ >>> from satpy.scene import Scene
+ >>> SCENE_FILES = glob("/home/a000680/Satsa/amsr2/level1b/GW1AM2_20191125????_186*h5")
+ >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES)
+ >>> scn.load(["btemp_36.5v"])
+ >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
+ >>> tb37v = scn["btemp_36.5v"].data.compute()
+
+ 
 .. doctest::
 
  >>> import numpy as np
@@ -29,7 +45,8 @@ of a dataset for a specified AreaDefinition. The function
  ...                           radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
 
-Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
+Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
+the above Satpy_ example) the result might look something like this:
   .. image:: _static/images/tb37v_quick.png
   
 The data passed to the functions is a 2D array matching the AreaDefinition.
@@ -175,3 +192,6 @@ Any keyword arguments (not concerning the projection) passed to **plot.area_def2
 directly to the Basemap initialization.
 
 For more information on how to plot with Basemap please refer to the Basemap and matplotlib documentation.
+
+
+.. _Satpy: http://www.github.com/pytroll/satpy
