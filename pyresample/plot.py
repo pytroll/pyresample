@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf8
 #
-# Copyright (C) 2010-2018
+# Copyright (C) 2010-2019 Pytroll
 #
 # Authors:
 #    Esben S. Nielsen
 #    Thomas Lavergne
+#    Adam Dybbroe <adam.dybbroe@smhi.se>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -161,7 +162,7 @@ def area_def2basemap(area_def, **kwargs):
 
 def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
                            label='Variable (units)', num_meridians=45,
-                           num_parallels=10, coast_res='110m', cmap='jet'):
+                           num_parallels=10, coast_res='110m', cmap='RdBu_r'):
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
@@ -180,7 +181,7 @@ def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
 
 def _get_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', cmap='jet'):
+                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
     """Get default cartopy matplotlib plot."""
     bmap_to_cartopy_res = {
         'c': '110m',
@@ -236,7 +237,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
 
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', cmap='jet'):
+                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
     """Display default quicklook plot
 
     Parameters
@@ -274,7 +275,7 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', backend='AGG',
-                   cmap='jet'):
+                   cmap='RdBu_r'):
     """Display default quicklook plot
 
     Parameters
@@ -305,6 +306,7 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
     matplotlib.use(backend, warn=False)
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
-                         num_parallels=num_parallels, coast_res=coast_res)
+                         num_parallels=num_parallels, coast_res=coast_res,
+                         cmap=cmap)
     plt.savefig(filename, bbox_inches='tight')
     plt.close()
