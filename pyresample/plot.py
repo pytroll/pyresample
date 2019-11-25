@@ -227,7 +227,9 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
         xlocs = np.arange(-180, 180, num_meridians)
     if num_parallels:
         ylocs = np.arange(-90, 90, num_parallels)
-    ax.gridlines(xlocs=xlocs, ylocs=ylocs)
+    if xlocs is not None or ylocs is not None:
+        ax.gridlines(xlocs=xlocs, ylocs=ylocs)
+
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
         col = ax.imshow(data, transform=crs, extent=crs.bounds,
                         origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
