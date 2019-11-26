@@ -31,6 +31,7 @@ First we read in the data with Satpy_:
  >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
  >>> tb37v = scn["btemp_36.5v"].data.compute()
 
+Data for this example can be downloaded from zenodo_.
  
 .. doctest::
 
@@ -102,7 +103,7 @@ The Globe projections
 
 From v0.7.12 pyresample can use the geos, ortho and nsper projections with
 Basemap. Starting with v1.9.0 quicklooks are now generated with Cartopy which
-should also work with these projections. Assuming the file **areas.cfg** has
+should also work with these projections. Assuming the file **areas.yaml** has
 the following area definition for an ortho projection area:
 
 .. code-block:: bash
@@ -147,13 +148,11 @@ Getting a Cartopy CRS
 ---------------------
 
 To make more advanced plots than the preconfigured quicklooks Cartopy can be
-used to work with mapped data alongside matplotlib. The below code is based
-on
-`this <http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html>`_
-Cartopy example. Pyresample allows any `AreaDefinition` to be converted to a
-Cartopy CRS as long as Cartopy can represent the projection. Once an
-AreaDefinition is converted to a CRS object it can be used like any other
-Cartopy CRS object.
+used to work with mapped data alongside matplotlib. The below code is based on
+this `Cartopy gallery example`_. Pyresample allows any `AreaDefinition` to be
+converted to a Cartopy CRS as long as Cartopy can represent the
+projection. Once an `AreaDefinition` is converted to a CRS object it can be
+used like any other Cartopy CRS object.
 
 .. doctest::
 
@@ -238,8 +237,8 @@ Adding background maps with Cartopy
 As mentioned in the above warning Cartopy should be used rather than Basemap as
 the letter is not maintained anymore.
 
-The above image can be generated using Cartopy instead by utilizing the method `to_cartopy_crs` of the
-`AreaDefinition` object.
+The above image can be generated using Cartopy instead by utilizing the method
+`to_cartopy_crs` of the `AreaDefinition` object.
 
 **Example usage:**
 
@@ -271,6 +270,7 @@ With real data (same AMSR-2 as above) this might look like this:
  
   .. image:: _static/images/tb37v_bmng_cartopy.png
 
-
              
 .. _Satpy: http://www.github.com/pytroll/satpy
+.. _zenodo: https://doi.org/10.5281/zenodo.3553696
+.. _`Cartopy gallery example`: http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html
