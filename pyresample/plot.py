@@ -216,19 +216,23 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
     import matplotlib.pyplot as plt
+    import matplotlib.ticker as mticker
+
     crs = area_def.to_cartopy_crs()
     ax = plt.axes(projection=crs)
     ax.coastlines(resolution=coast_res)
     ax.set_global()
 
-    xlocs = None
-    ylocs = None
-    if num_meridians:
-        xlocs = np.arange(-180, 180, num_meridians)
-    if num_parallels:
-        ylocs = np.arange(-90, 90, num_parallels)
-    if xlocs is not None or ylocs is not None:
-        ax.gridlines(xlocs=xlocs, ylocs=ylocs)
+    if num_meridians or num_parallels:
+        gl = ax.gridlines()
+        if num_meridians:
+            gl.xlocator = mticker.FixedLocator(np.arange(-180, 180+num_meridians, num_meridians))
+        else:
+            gl.xlines = False
+        if num_parallels:
+            gl.ylocator = mticker.FixedLocator(np.arange(-90, 90+num_parallels, num_parallels))
+        else:
+            gl.ylines = False
 
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
         col = ax.imshow(data, transform=crs, extent=crs.bounds,

@@ -24,7 +24,7 @@ supported by Satpy_. All you need are a set of geo-referenced values
 First we read in the data with Satpy_:
 
  >>> from satpy.scene import Scene
- >>> SCENE_FILES = glob("/home/a000680/Satsa/amsr2/level1b/GW1AM2_20191122????_156*h5")
+ >>> SCENE_FILES = glob("./GW1AM2_20191122????_156*h5")
  >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES)
  >>> scn.load(["btemp_36.5v"])
  >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
@@ -85,7 +85,7 @@ Assuming the file **areas.yaml** has the following area definition:
  >>> area_def = load_area('areas.yaml', 'pc_world')
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+ >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
 above we use AMSR-2 data in this example) the result might look something like
@@ -129,7 +129,7 @@ the following area definition for an ortho projection area:
  >>> area_def = load_area('areas.yaml', 'ortho')
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=0, num_parallels=0, label='Tb 37v (K)')
+ >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data, like
 in the above examples, the result might look something like this:
@@ -194,16 +194,18 @@ AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.cfg', 'ease_sh')
+ >>> area_def = load_area('areas.yaml', 'ease_sh')
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
  >>> bmap = area_def2basemap(area_def)
  >>> bmng = bmap.bluemarble()
- >>> col = bmap.imshow(result, origin='upper')
+ >>> col = bmap.imshow(result, origin='upper', cmap='RdBu_r')
  >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')
 
-Assuming **lons**, **lats** and **tb37v** are initialized with real data the result might look something like this:
+Assuming **lons**, **lats** and **tb37v** are initialized with real data as in
+the previous examples the result might look something like this:
+
   .. image:: _static/images/tb37v_bmng.png
   
 Any keyword arguments (not concerning the projection) passed to **plot.area_def2basemap** will be passed
@@ -211,5 +213,42 @@ directly to the Basemap initialization.
 
 For more information on how to plot with Basemap please refer to the Basemap and matplotlib documentation.
 
+
+Adding background maps with Cartopy
+-----------------------------------
+
+As mentioned in the above warning Cartopy should be used rather than Basemap as
+the letter is not maintained anymore.
+
+The above image can be generated using Cartopy instead by utilizing the method `to_cartopy_crs` of the
+`AreaDefinition` object.
+
+**Example usage:**
+
+ >>> import numpy as np
+ >>> import matplotlib.pyplot as plt
+ >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
+ >>> lons = np.zeros(1000)
+ >>> lats = np.arange(-80, -90, -0.01)
+ >>> tb37v = np.arange(1000)
+ >>> area_def = load_area('areas.yaml', 'ease_sh')
+ >>> swath_def = SwathDefinition(lons, lats)
+ >>> result = resample_nearest(swath_def, tb37v, area_def,
+ ...                           radius_of_influence=20000, fill_value=None)
+ >>>  import matplotlib.pyplot as plt
+ >>> crs = area_def.to_cartopy_crs()
+ >>> ax = plt.axes(projection=crs)
+ >>> ax.background_img(name='BM')
+ >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper', cmap='RdBu_r')
+ >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')
+
+ The above provides you have the Bluemarble background data available in the
+ Cartopy standard place or in a directory pointed to by the environment
+ parameter `CARTOPY_USER_BACKGROUNDS`.
+
+ With real data (same AMSR-2 as above) this might look like this:
+ 
+   .. image:: _static/images/tb37v_bmng.png
 
 .. _Satpy: http://www.github.com/pytroll/satpy
