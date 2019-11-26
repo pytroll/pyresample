@@ -3,8 +3,7 @@
 Plotting with pyresample and Cartopy
 ====================================
 
-Pyresample supports basic integration with Cartopy
-(http://scitools.org.uk/cartopy/).
+Pyresample supports basic integration with Cartopy_.
 
 Displaying data quickly
 -----------------------
@@ -274,3 +273,4 @@ With real data (same AMSR-2 as above) this might look like this:
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _zenodo: https://doi.org/10.5281/zenodo.3553696
 .. _`Cartopy gallery example`: http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html
+.. _Cartopy: http://scitools.org.uk/cartopy/
