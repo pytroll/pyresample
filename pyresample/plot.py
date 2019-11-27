@@ -20,13 +20,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Utility functions for quick and easy display."""
 
 from __future__ import absolute_import
 import numpy as np
 
 
 def ellps2axis(ellps_name):
-    """Get semi-major and semi-minor axis from ellipsis definition
+    """Get semi-major and semi-minor axis from ellipsis definition.
 
     Parameters
     ---------
@@ -36,8 +37,8 @@ def ellps2axis(ellps_name):
     Returns
     -------
     (a, b) : semi-major and semi-minor axis
-    """
 
+    """
     ellps = {'helmert': {'a': 6378200.0, 'b': 6356818.1696278909},
              'intl': {'a': 6378388.0, 'b': 6356911.9461279465},
              'merit': {'a': 6378137.0, 'b': 6356752.2982159676},
@@ -84,27 +85,27 @@ def ellps2axis(ellps_name):
         ellps_axis = ellps[ellps_name.lower()]
         a = ellps_axis['a']
         b = ellps_axis['b']
-    except KeyError as e:
+    except KeyError:
         raise ValueError(('Could not determine semi-major and semi-minor axis '
                           'of specified ellipsis %s') % ellps_name)
     return a, b
 
 
 def area_def2basemap(area_def, **kwargs):
-    """Get Basemap object from AreaDefinition
+    """Get Basemap object from an AreaDefinition object.
 
     Parameters
     ---------
     area_def : object
         geometry.AreaDefinition object
-    \*\*kwargs: Keyword arguments
+    **kwargs: Keyword arguments
         Additional initialization arguments for Basemap
 
     Returns
     -------
     bmap : Basemap object
-    """
 
+    """
     import warnings
     warnings.warn("Basemap is no longer maintained. Please switch to cartopy "
                   "by using 'area_def.to_cartopy_crs()'. See the pyresample "
@@ -163,6 +164,7 @@ def area_def2basemap(area_def, **kwargs):
 def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
                            label='Variable (units)', num_meridians=45,
                            num_parallels=10, coast_res='110m', cmap='RdBu_r'):
+    """Doing quicklook image plots with Basemap."""
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
@@ -179,10 +181,8 @@ def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
     return plt
 
 
-def _get_quicklook(area_def, data, vmin=None, vmax=None,
-                   label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
-    """Get default cartopy matplotlib plot."""
+def _translate_coast_resolution_to_cartopy(coast_res):
+    """Translate the coast resolution argument between cartopy and basemap notation."""
     bmap_to_cartopy_res = {
         'c': '110m',
         'l': '110m',
@@ -197,9 +197,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
         if coast_res.endswith('m'):
             _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}
             coast_res = _rev_map[coast_res]
-        return _basemap_get_quicklook(
-            area_def, data, vmin, vmax, label, num_meridians,
-            num_parallels, coast_res=coast_res, cmap=cmap)
+        return coast_res, False
 
     if coast_res and coast_res not in ['110m', '50m', '10m']:
         import warnings
@@ -212,11 +210,41 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
             'f': '10m'
         }[coast_res]
 
+    return coast_res, True
+
+
+def _add_gridlines(axes, nmeridians, nparallels):
+    """Add gridlines: meridians and parallels onto the plot."""
+    from matplotlib import ticker as mticker
+
+    gl = axes.gridlines()
+    if nmeridians:
+        gl.xlocator = mticker.FixedLocator(np.arange(-180, 180+nmeridians, nmeridians))
+    else:
+        gl.xlines = False
+    if nparallels:
+        gl.ylocator = mticker.FixedLocator(np.arange(-90, 90+nparallels, nparallels))
+    else:
+        gl.ylines = False
+
+    return gl
+
+
+def _get_quicklook(area_def, data, vmin=None, vmax=None,
+                   label='Variable (units)', num_meridians=45,
+                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
+    """Get default cartopy matplotlib plot."""
+    import matplotlib.pyplot as plt
+
+    coast_res, is_cartopy = _translate_coast_resolution_to_cartopy(coast_res)
+    if not is_cartopy:
+        return _basemap_get_quicklook(
+            area_def, data, vmin, vmax, label, num_meridians,
+            num_parallels, coast_res=coast_res, cmap=cmap)
+
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
-    import matplotlib.pyplot as plt
-    import matplotlib.ticker as mticker
 
     crs = area_def.to_cartopy_crs()
     ax = plt.axes(projection=crs)
@@ -224,15 +252,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
     ax.set_global()
 
     if num_meridians or num_parallels:
-        gl = ax.gridlines()
-        if num_meridians:
-            gl.xlocator = mticker.FixedLocator(np.arange(-180, 180+num_meridians, num_meridians))
-        else:
-            gl.xlines = False
-        if num_parallels:
-            gl.ylocator = mticker.FixedLocator(np.arange(-90, 90+num_parallels, num_parallels))
-        else:
-            gl.ylines = False
+        _ = _add_gridlines(ax, num_meridians, num_parallels)
 
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
         col = ax.imshow(data, transform=crs, extent=crs.bounds,
@@ -244,7 +264,7 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', cmap='RdBu_r'):
-    """Display default quicklook plot
+    """Display default quicklook plot.
 
     Parameters
     ---------
@@ -268,8 +288,8 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
     Returns
     -------
     bmap : Basemap object
-    """
 
+    """
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
                          num_parallels=num_parallels, coast_res=coast_res,
@@ -282,7 +302,7 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', backend='AGG',
                    cmap='RdBu_r'):
-    """Display default quicklook plot
+    """Display and save default quicklook plot.
 
     Parameters
     ----------
@@ -306,8 +326,8 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
         Resolution of coastlines
     backend : str, optional
         matplotlib backend to use'
-    """
 
+    """
     import matplotlib
     matplotlib.use(backend, warn=False)
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,

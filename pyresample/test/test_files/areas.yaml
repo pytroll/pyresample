@@ -241,7 +241,7 @@ test_dynamic_resolution_ll:
     dy: 1
     dx: 1
     units: deg
-    
+
 pc_world:
   description: Plate Carree world map
   projection:
