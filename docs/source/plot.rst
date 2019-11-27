@@ -56,7 +56,7 @@ The data passed to the functions is a 2D array matching the AreaDefinition.
 The Plate Carree projection
 +++++++++++++++++++++++++++
 The Plate Carree projection (regular lon/lat grid) is named **eqc** in
-Proj.4. Pyresample uses the Proj.4 nameing.
+Proj.4. Pyresample uses the Proj.4 naming.
 
 Assuming the file **areas.yaml** has the following area definition:
 
@@ -234,7 +234,7 @@ Adding background maps with Cartopy
 -----------------------------------
 
 As mentioned in the above warning Cartopy should be used rather than Basemap as
-the letter is not maintained anymore.
+the latter is not maintained anymore.
 
 The above image can be generated using Cartopy instead by utilizing the method
 `to_cartopy_crs` of the `AreaDefinition` object.
