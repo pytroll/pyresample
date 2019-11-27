@@ -234,7 +234,7 @@ Adding background maps with Cartopy
 -----------------------------------
 
 As mentioned in the above warning Cartopy should be used rather than Basemap as
-the letter is not maintained anymore.
+the latter is not maintained anymore.
 
 The above image can be generated using Cartopy instead by utilizing the method
 `to_cartopy_crs` of the `AreaDefinition` object.
