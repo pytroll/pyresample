@@ -56,7 +56,7 @@ The data passed to the functions is a 2D array matching the AreaDefinition.
 The Plate Carree projection
 +++++++++++++++++++++++++++
 The Plate Carree projection (regular lon/lat grid) is named **eqc** in
-Proj.4. Pyresample uses the Proj.4 nameing.
+Proj.4. Pyresample uses the Proj.4 naming.
 
 Assuming the file **areas.yaml** has the following area definition:
 
