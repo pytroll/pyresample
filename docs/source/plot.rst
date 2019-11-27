@@ -241,8 +241,6 @@ The above image can be generated using Cartopy instead by utilizing the method
 
 **Example usage:**
 
-.. doctest::
-
  >>> import numpy as np
  >>> import matplotlib.pyplot as plt
  >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
@@ -268,7 +266,6 @@ parameter `CARTOPY_USER_BACKGROUNDS`.
 With real data (same AMSR-2 as above) this might look like this:
  
   .. image:: _static/images/tb37v_bmng_cartopy.png
-
              
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _zenodo: https://doi.org/10.5281/zenodo.3553696
