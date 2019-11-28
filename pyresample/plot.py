@@ -25,6 +25,12 @@
 from __future__ import absolute_import
 import numpy as np
 
+try:
+    from pyresample import _cartopy  # noqa
+    BASEMAP_NOT_CARTOPY = False
+except ImportError:
+    BASEMAP_NOT_CARTOPY = True
+
 
 def ellps2axis(ellps_name):
     """Get semi-major and semi-minor axis from ellipsis definition.
@@ -191,9 +197,7 @@ def _translate_coast_resolution_to_cartopy(coast_res):
         'f': '10m'
     }
 
-    try:
-        from pyresample import _cartopy  # noqa
-    except ImportError:
+    if BASEMAP_NOT_CARTOPY:
         if coast_res.endswith('m'):
             _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}
             coast_res = _rev_map[coast_res]

@@ -129,25 +129,38 @@ class Test(unittest.TestCase):
     def test_translate_coast_res(self):
         """Test the translation of coast resolution arguments from old basemap notation to cartopy."""
         from pyresample.plot import _translate_coast_resolution_to_cartopy
-
-        retv, _ = _translate_coast_resolution_to_cartopy('c')
-        self.assertEqual(retv, '110m')
-        retv, _ = _translate_coast_resolution_to_cartopy('l')
-        self.assertEqual(retv, '110m')
-        retv, _ = _translate_coast_resolution_to_cartopy('i')
-        self.assertEqual(retv, '50m')
-        retv, _ = _translate_coast_resolution_to_cartopy('h')
-        self.assertEqual(retv, '10m')
-        retv, _ = _translate_coast_resolution_to_cartopy('f')
-        self.assertEqual(retv, '10m')
-        retv, _ = _translate_coast_resolution_to_cartopy('110m')
-        self.assertEqual(retv, '110m')
-        retv, _ = _translate_coast_resolution_to_cartopy('10m')
-        self.assertEqual(retv, '10m')
+        from pyresample.plot import BASEMAP_NOT_CARTOPY
 
         with self.assertRaises(KeyError) as raises:
-            self.assertEqual(raises.msg, None)
+            if sys.version_info > (3,):
+                self.assertEqual(raises.msg, None)
             retv, _ = _translate_coast_resolution_to_cartopy('200m')
+
+        if BASEMAP_NOT_CARTOPY:
+            retv, _ = _translate_coast_resolution_to_cartopy('c')
+            self.assertEqual(retv, 'c')
+            retv, _ = _translate_coast_resolution_to_cartopy('110m')
+            self.assertEqual(retv, 'l')
+            retv, _ = _translate_coast_resolution_to_cartopy('10m')
+            self.assertEqual(retv, 'f')
+            retv, _ = _translate_coast_resolution_to_cartopy('50m')
+            self.assertEqual(retv, 'i')
+
+        if not BASEMAP_NOT_CARTOPY:
+            retv, _ = _translate_coast_resolution_to_cartopy('c')
+            self.assertEqual(retv, '110m')
+            retv, _ = _translate_coast_resolution_to_cartopy('l')
+            self.assertEqual(retv, '110m')
+            retv, _ = _translate_coast_resolution_to_cartopy('i')
+            self.assertEqual(retv, '50m')
+            retv, _ = _translate_coast_resolution_to_cartopy('h')
+            self.assertEqual(retv, '10m')
+            retv, _ = _translate_coast_resolution_to_cartopy('f')
+            self.assertEqual(retv, '10m')
+            retv, _ = _translate_coast_resolution_to_cartopy('110m')
+            self.assertEqual(retv, '110m')
+            retv, _ = _translate_coast_resolution_to_cartopy('10m')
+            self.assertEqual(retv, '10m')
 
     def test_plate_carreeplot(self):
         """Test the Plate Caree plotting functionality."""
