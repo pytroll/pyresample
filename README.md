@@ -1,12 +1,13 @@
 [![Build Status](https://travis-ci.org/pytroll/pyresample.svg?branch=master)](https://travis-ci.org/pytroll/pyresample)
 [![Build status](https://ci.appveyor.com/api/projects/status/a34o4utf8dqjsob1/branch/master?svg=true)](https://ci.appveyor.com/project/pytroll/pyresample/branch/master)
-[![codebeat badge](https://codebeat.co/badges/2b9f14bc-758c-4fe1-967d-85b11e934983)](https://codebeat.co/projects/github-com-pytroll-pyresample-master)
+[![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=master)](https://coveralls.io/github/pytroll/pyresample?branch=master)
+
 
 Pyresample
 ----------
 
 Pyresample is a python package for resampling geospatial image data. It is the
-primary method for resampling in the [SatPy](https://github.com/pytroll/satpy)
+primary method for resampling in the [Satpy](https://github.com/pytroll/satpy)
 library, but can also be used as a standalone library. Resampling or
 reprojection is the process of mapping input geolocated data points to a
 new target geographic projection and area.
