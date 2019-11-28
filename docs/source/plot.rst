@@ -153,8 +153,6 @@ converted to a Cartopy CRS as long as Cartopy can represent the
 projection. Once an `AreaDefinition` is converted to a CRS object it can be
 used like any other Cartopy CRS object.
 
-.. doctest::
-
  >>> import numpy as np
  >>> import matplotlib.pyplot as plt
  >>> from pyresample import load_area, SwathDefinition
