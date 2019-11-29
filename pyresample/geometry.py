@@ -599,7 +599,7 @@ class SwathDefinition(CoordinateDefinition):
         lats = DataArray(lonlatalt[:, :, 1], dims=self.lons.dims,
                          coords=res.coords, attrs=self.lons.attrs.copy())
         try:
-            resolution = lons.attrs['resolution'] / ((dims.get('x', 1) + dims.get('y', 1)) / 2)
+            resolution = lons.attrs['resolution'] * ((dims.get('x', 1) + dims.get('y', 1)) / 2)
             lons.attrs['resolution'] = resolution
             lats.attrs['resolution'] = resolution
         except KeyError:
