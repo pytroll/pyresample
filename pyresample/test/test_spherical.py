@@ -556,6 +556,16 @@ class TestSphericalPolygon(unittest.TestCase):
         self.assertTrue(np.allclose(poly_inter.vertices,
                                     np.deg2rad(res)))
 
+    def test_consistent_radius(self):
+        poly1 = np.array([(-50, 69), (-36, 69), (-36, 64), (-50, 64)])
+        poly2 = np.array([(-46, 68), (-40, 68), (-40, 65), (-45, 65)])
+        poly_outer = SphPolygon(np.deg2rad(poly1), radius=6371)
+        poly_inner = SphPolygon(np.deg2rad(poly2), radius=6371)
+        poly_inter = poly_outer.intersection(poly_inner)
+        self.assertAlmostEqual(poly_inter.radius, poly_inner.radius)
+        # Well, now when we are at it.
+        self.assertAlmostEqual(poly_inter.area(), poly_inner.area())
+
 
 def suite():
     """The suite for test_spherical
