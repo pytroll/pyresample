@@ -948,7 +948,7 @@ class DynamicAreaDefinition(object):
 def invproj(data_x, data_y, proj_dict):
     """Perform inverse projection."""
     # XXX: does pyproj copy arrays? What can we do so it doesn't?
-    target_proj = Proj(**proj_dict)
+    target_proj = Proj(proj_dict)
     return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
@@ -1816,18 +1816,19 @@ class AreaDefinition(BaseDefinition):
             raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
         # Proj.4 definition of target area projection
+        proj_def = self.crs if hasattr(self, 'crs') else self.proj_dict
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
             res = map_blocks(invproj, target_x, target_y,
                              chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                             new_axis=[2], proj_dict=self.proj_dict)
+                             new_axis=[2], proj_dict=proj_def)
             return res[:, :, 0], res[:, :, 1]
 
         if nprocs > 1:
-            target_proj = Proj_MP(**self.proj_dict)
+            target_proj = Proj_MP(proj_def)
         else:
-            target_proj = Proj(**self.proj_dict)
+            target_proj = Proj(proj_def)
 
         # Get corresponding longitude and latitude values
         lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
@@ -1854,10 +1855,12 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
         # Intersection only required for two different projections
-        if area_to_cover.proj_str == self.proj_str:
+        proj_def_to_cover = area_to_cover.crs if hasattr(area_to_cover, 'crs') else area_to_cover.proj_str
+        proj_def = self.crs if hasattr(self, 'crs') else self.proj_str
+        if proj_def_to_cover == proj_def:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s',
-                         area_to_cover.proj_dict.get('proj', area_to_cover.proj_dict.get('init')))
+                         proj_def_to_cover)
             # Get xy coordinates
             llx, lly, urx, ury = area_to_cover.area_extent
             x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])

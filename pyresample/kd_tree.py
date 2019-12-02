@@ -430,7 +430,7 @@ def _get_valid_input_index(source_geo_def,
                     source_lons, source_lats,
                     radius_of_influence)
 
-    if (isinstance(valid_input_index, np.ma.core.MaskedArray)):
+    if isinstance(valid_input_index, np.ma.core.MaskedArray):
         # Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
 
