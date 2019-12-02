@@ -61,9 +61,11 @@ class SpatialMPTest(unittest.TestCase):
         my_cartesian = Cartesian()
         coords_int = my_cartesian.transform_lonlats(lon, lat)
         coords_float = my_cartesian.transform_lonlats(lon.astype(np.float64), lat.astype(np.float64))
-
+        coords_float32 = my_cartesian.transform_lonlats(lon.astype(np.float32), lat.astype(np.float32))
         np.testing.assert_almost_equal(coords_float, exp_coords, decimal=3)
         np.testing.assert_almost_equal(coords_int, coords_float, decimal=0)
+        self.assertIs(type(coords_float32[0, 0]), np.float32)
+        self.assertIs(type(coords_float[0, 0]), np.float64)
 
 
 def suite():
