@@ -188,8 +188,8 @@ class Cartesian(object):
     def transform_lonlats(self, lons, lats):
 
         coords = np.zeros((lons.size, 3), dtype=lons.dtype)
-        deg2rad = lons.dtype.type(np.pi / 180)
-        if ne and deg2rad > 0:
+        if ne:
+            deg2rad = np.pi / 180
             coords[:, 0] = ne.evaluate("R*cos(lats*deg2rad)*cos(lons*deg2rad)")
             coords[:, 1] = ne.evaluate("R*cos(lats*deg2rad)*sin(lons*deg2rad)")
             coords[:, 2] = ne.evaluate("R*sin(lats*deg2rad)")
