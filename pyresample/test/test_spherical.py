@@ -37,7 +37,7 @@ class TestSCoordinate(unittest.TestCase):
         """Test Vincenty formula
         """
         d = SCoordinate(0, 0).distance(SCoordinate(1, 1))
-        self.assertEquals(d, 1.2745557823062943)
+        self.assertEqual(d, 1.2745557823062943)
 
     def test_hdistance(self):
         """Test Haversine formula
@@ -185,7 +185,7 @@ class TestArc(unittest.TestCase):
         lon, lat = arc1.intersection(arc2)
 
         self.assertTrue(np.allclose(np.rad2deg(lon), 5))
-        self.assertEquals(np.rad2deg(lat).round(7), round(5.0575148968282093, 7))
+        self.assertEqual(np.rad2deg(lat).round(7), round(5.0575148968282093, 7))
 
         arc1 = Arc(SCoordinate(0, 0),
                    SCoordinate(np.deg2rad(10), np.deg2rad(10)))
@@ -202,7 +202,7 @@ class TestArc(unittest.TestCase):
                                np.deg2rad(50.935830837274324)))
         inter = SCoordinate(np.deg2rad(20.165957021925202),
                             np.deg2rad(46.177022633103398))
-        self.assertEquals(arc1.intersection(arc2), inter)
+        self.assertEqual(arc1.intersection(arc2), inter)
 
         arc1 = Arc(SCoordinate(np.deg2rad(-2.4982818108326734),
                                np.deg2rad(48.596644847869655)),

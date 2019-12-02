@@ -1604,7 +1604,7 @@ class AreaDefinition(BaseDefinition):
 
         """
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
-        return np.asscalar(lon), np.asscalar(lat)
+        return lon.item(), lat.item()
 
     @staticmethod
     def _do_rotation(xspan, yspan, rot_deg=0):

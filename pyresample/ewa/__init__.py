@@ -119,8 +119,8 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
     cw = area_def.pixel_size_x
     # cell height must be negative for this to work as expected
     ch = -abs(area_def.pixel_size_y)
-    w = area_def.x_size
-    h = area_def.y_size
+    w = area_def.width
+    h = area_def.height
     ox = area_def.area_extent[0] + cw / 2.
     oy = area_def.area_extent[3] + ch / 2.
     swath_points_in_grid = _ll2cr.ll2cr_static(lons, lats, fill,
