@@ -159,13 +159,13 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
                 continue
             elif x_tmp < xmin or npy_isnan(xmin):
                 xmin = x_tmp
-            elif x_tmp > xmax or npy_isnan(xmax) or xmax == 1e30:
+            elif x_tmp > xmax or npy_isnan(xmax) or xmax >= 1e30:
                 # Note: technically 2 valid points are required to get here if there are a lot of NaNs
                 xmax = x_tmp
 
             if y_tmp < ymin or npy_isnan(ymin):
                 ymin = y_tmp
-            elif y_tmp > ymax or npy_isnan(ymax) or ymax == 1e30:
+            elif y_tmp > ymax or npy_isnan(ymax) or ymax >= 1e30:
                 # Note: technically 2 valid points are required to get here if there are a lot of NaNs
                 ymax = y_tmp
 
