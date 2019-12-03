@@ -430,7 +430,7 @@ def _get_valid_input_index(source_geo_def,
                     source_lons, source_lats,
                     radius_of_influence)
 
-    if (isinstance(valid_input_index, np.ma.core.MaskedArray)):
+    if isinstance(valid_input_index, np.ma.core.MaskedArray):
         # Make sure valid_input_index is not a masked array
         valid_input_index = valid_input_index.filled(False)
 
@@ -1003,7 +1003,7 @@ class XArrayResamplerNN(object):
 
     def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
         """Set up kd tree on input"""
-        source_lons, source_lats = self.source_geo_def.get_lonlats_dask(
+        source_lons, source_lats = self.source_geo_def.get_lonlats(
             chunks=chunks)
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
                            (source_lats <= 90) & (source_lats >= -90))
@@ -1058,7 +1058,8 @@ class XArrayResamplerNN(object):
         self.valid_input_index = valid_input_idx
         self.delayed_kdtree = resample_kdtree
 
-        target_lons, target_lats = self.target_geo_def.get_lonlats_dask()
+        # TODO: Add 'chunks' keyword argument to this method and use it
+        target_lons, target_lats = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
@@ -1094,7 +1095,7 @@ class XArrayResamplerNN(object):
         and/or pykdtree.
 
         Args:
-            data (dask.array.Array): Source data pixels to sample
+            data (xarray.DataArray): Source data pixels to sample
             fill_value (float): Output fill value when no source data is
                 near the target pixel. When omitted, if the input data is an
                 integer array then the maximum value for that integer type is
@@ -1147,7 +1148,8 @@ class XArrayResamplerNN(object):
         coords = {c: c_var for c, c_var in data.coords.items()
                   if not contain_coords(c_var, src_geo_dims + dst_geo_dims)}
         try:
-            coord_x, coord_y = self.target_geo_def.get_proj_vectors_dask()
+            # TODO: Add 'chunks' kwarg
+            coord_x, coord_y = self.target_geo_def.get_proj_vectors(chunks=CHUNK_SIZE)
             coords['y'] = coord_y
             coords['x'] = coord_x
         except AttributeError:

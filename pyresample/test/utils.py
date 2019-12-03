@@ -107,7 +107,7 @@ def treat_deprecations_as_exceptions():
         warnings.filterwarnings(
             "ignore",
             r"This module will be removed in pyresample 2\.0\, please use the"
-            r"\`pyresample.spherical\` module functions and classe instead\.",
+            r"\`pyresample.spherical\` module functions and class instead\.",
             DeprecationWarning)
 
     if sys.version_info[:2] >= (3, 5):
