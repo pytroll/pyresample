@@ -1480,15 +1480,21 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import xarray as xr
         import numpy as np
+        window_size = 2
+        resolution = 3
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
-        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
-        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'],
+                             attrs={'resolution': resolution})
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'],
+                             attrs={'resolution': resolution})
         from pyresample.geometry import SwathDefinition
         sd = SwathDefinition(xlons, xlats)
-        res = sd.aggregate(y=2, x=2)
+        res = sd.aggregate(y=window_size, x=window_size)
         np.testing.assert_allclose(res.lons, [[179, -179]])
         np.testing.assert_allclose(res.lats, [[0.5, 0.5]], atol=2e-5)
+        self.assertAlmostEqual(res.lons.resolution, window_size * resolution)
+        self.assertAlmostEqual(res.lats.resolution, window_size * resolution)
 
     def test_striding(self):
         """Test striding."""
