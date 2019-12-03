@@ -54,8 +54,8 @@ def load_area(area_file_name, *regions):
 
     Parameters
     ----------
-    area_file_name : str
-        Path to area definition file
+    area_file_name : str or list
+        One or more paths to area definition files
     regions : str argument list
         Regions to parse. If no regions are specified all
         regions in the file are returned
@@ -83,8 +83,8 @@ def parse_area_file(area_file_name, *regions):
 
     Parameters
     -----------
-    area_file_name : str
-        Path to area definition file
+    area_file_name : str or list
+        One or more paths to area definition files
     regions : str argument list
         Regions to parse. If no regions are specified all
         regions in the file are returned
