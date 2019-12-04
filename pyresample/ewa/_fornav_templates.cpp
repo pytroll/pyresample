@@ -145,17 +145,14 @@ int compute_ewa_parameters(size_t swath_cols, size_t swath_rows, CR_TYPE *uimg, 
     vy = ((vimg[col + rowsm1 * swath_cols] - vimg[col]) / rowsm1) * distance_max;
 
     // Handle geolocation being bad with a little bit of grace
-    if (__isnan(ux)) {
-        ux = distance_max;
-    }
-    if (__isnan(vx)) {
-        vx = distance_max;
-    }
-    if (__isnan(uy)) {
-        uy = distance_max;
-    }
-    if (__isnan(vy)) {
-        vy = distance_max;
+    if (__isnan(ux) | __isnan(vx) | __isnan(uy) || __isnan(vy)) {
+        this_ewap->a = 0;
+        this_ewap->b = 0;
+        this_ewap->c = 0;
+        this_ewap->f = qmax;
+        this_ewap->u_del = distance_max;
+        this_ewap->v_del = distance_max;
+        continue;
     }
 
     f_scale = ux * vy - uy * vx;
