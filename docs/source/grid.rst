@@ -139,7 +139,7 @@ The full list of constructor arguments:
  **ImageContainerQuick**:
  
 * image_data : Dataset. Masked arrays can be used.
-* image_data : Geometry definition.
+* geo_def : Geometry definition.
 * fill_value (optional) : Fill value for undefined pixels. Defaults to 0. If set to **None** they will be masked out.
 * nprocs (optional) : Number of processor cores to use. Defaults to 1.
 * segments (optional) : Number of segments to split resampling in. Defaults to auto estimation.
@@ -147,7 +147,7 @@ The full list of constructor arguments:
  **ImageContainerNearest**:
 
 * image_data : Dataset. Masked arrays can be used.
-* image_data : Geometry definition.
+* geo_def : Geometry definition.
 * radius_of_influence : Cut off radius in meters when considering neighbour pixels.
 * epsilon (optional) : The distance to a found value is guaranteed to be no further than (1 + eps) times the distance to the correct neighbour.
 * fill_value (optional) : Fill value for undefined pixels. Defaults to 0. If set to **None** they will be masked out.
