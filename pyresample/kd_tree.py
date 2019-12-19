@@ -975,8 +975,10 @@ class XArrayResamplerNN(object):
             Geometry definition of source
         target_geo_def : object
             Geometry definition of target
-        radius_of_influence : float
-            Cut off distance in meters
+        radius_of_influence : float, optional
+            Cut off distance in geocentric meters.
+            If not provided this will be estimated based on the source
+            and target geometry definition.
         neighbours : int, optional
             The number of neigbours to consider for each grid point.
             Default 1. Currently 1 is the only supported number.
