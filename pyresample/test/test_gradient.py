@@ -119,6 +119,7 @@ class TestBlockFunctions(unittest.TestCase):
         assert(res.shape == (3, 4, 6, 6))
 
     def test_split(self):
+        """Test splitting the arrays."""
         from pyresample.gradient import split
         data = da.arange(180).reshape((3, 6, 10)).rechunk((3, 3, 5))
         res = split(data, 2, 1)
@@ -176,7 +177,7 @@ class TestBlockFunctions(unittest.TestCase):
 
         def fake_gradient_resample_data(*args, **kwargs):
             assert(kwargs['method'] == 'bilinear')
-            args[0].shape == (1, 25, 50)
+            assert(args[0].shape == (1, 25, 50))
             for arg in args[1:7]:
                 assert(arg.shape == (25, 50))
             for arg in args[7:]:
@@ -191,7 +192,7 @@ class TestBlockFunctions(unittest.TestCase):
 
         def fake_gradient_resample_data(*args, **kwargs):
             assert(kwargs['method'] == 'bilinear')
-            args[0].shape == (3, 25, 50)
+            assert(args[0].shape == (3, 25, 50))
             for arg in args[1:7]:
                 assert(arg.shape == (25, 50))
             for arg in args[7:]:
