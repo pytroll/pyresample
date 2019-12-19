@@ -56,7 +56,7 @@ extensions = [
                                                  "pyresample/ewa/_fornav_templates.cpp"],
               language="c++", extra_compile_args=extra_compile_args,
               depends=["pyresample/ewa/_fornav_templates.h"]),
-    Extension("pyresample._gradient_search", sources=["pyresample/gradient/_gradient_search.pyx"],
+    Extension("pyresample.gradient._gradient_search", sources=["pyresample/gradient/_gradient_search.pyx"],
               extra_compile_args=extra_compile_args),
 ]
 
