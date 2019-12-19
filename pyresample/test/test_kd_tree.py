@@ -903,7 +903,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
         # pretend the resolutions can't be determined
         with mock.patch.object(self.src_area_2d, 'geocentric_resolution') as sgr, \
-             mock.patch.object(self.area_def, 'geocentric_resolution') as dgr:
+                mock.patch.object(self.area_def, 'geocentric_resolution') as dgr:
             sgr.side_effect = RuntimeError
             dgr.side_effect = RuntimeError
             resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
