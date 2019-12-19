@@ -186,18 +186,21 @@ class Cartesian(object):
         pass
 
     def transform_lonlats(self, lons, lats):
-
+        """Transform longitudes and latitues to cartesian coordinates."""
+        if np.issubdtype(lons.dtype, np.integer):
+            lons = lons.astype(np.float)
         coords = np.zeros((lons.size, 3), dtype=lons.dtype)
-        deg2rad = lons.dtype.type(np.pi / 180)
         if ne:
+            deg2rad = np.pi / 180  # noqa: F841
             coords[:, 0] = ne.evaluate("R*cos(lats*deg2rad)*cos(lons*deg2rad)")
             coords[:, 1] = ne.evaluate("R*cos(lats*deg2rad)*sin(lons*deg2rad)")
             coords[:, 2] = ne.evaluate("R*sin(lats*deg2rad)")
         else:
-            coords[:, 0] = R * np.cos(lats * deg2rad) * np.cos(lons * deg2rad)
-            coords[:, 1] = R * np.cos(lats * deg2rad) * np.sin(lons * deg2rad)
-            coords[:, 2] = R * np.sin(lats * deg2rad)
+            coords[:, 0] = R * np.cos(np.deg2rad(lats)) * np.cos(np.deg2rad(lons))
+            coords[:, 1] = R * np.cos(np.deg2rad(lats)) * np.sin(np.deg2rad(lons))
+            coords[:, 2] = R * np.sin(np.deg2rad(lats))
         return coords
+
 
 Cartesian_MP = Cartesian
 

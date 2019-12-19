@@ -324,10 +324,10 @@ class TestMisc(unittest.TestCase):
     def test_unicode_proj4_string(self):
         """Test that unicode is accepted for area creation.
         """
-        from pyresample import utils
-        utils.get_area_def(u"eurol", u"eurol", u"bla",
-                           u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
-                           1000, 1000, (-1000, -1000, 1000, 1000))
+        from pyresample import get_area_def
+        get_area_def(u"eurol", u"eurol", u"bla",
+                     u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
+                     1000, 1000, (-1000, -1000, 1000, 1000))
 
     def test_proj4_radius_parameters_provided(self):
         """Test proj4_radius_parameters with a/b."""

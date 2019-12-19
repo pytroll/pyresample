@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf8
 #
-# Copyright (C) 2010-2018
+# Copyright (C) 2010-2019 Pytroll
 #
 # Authors:
 #    Esben S. Nielsen
 #    Thomas Lavergne
+#    Adam Dybbroe <adam.dybbroe@smhi.se>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -19,13 +20,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Utility functions for quick and easy display."""
 
 from __future__ import absolute_import
 import numpy as np
 
+try:
+    from pyresample import _cartopy  # noqa
+    BASEMAP_NOT_CARTOPY = False
+except ImportError:
+    BASEMAP_NOT_CARTOPY = True
+
 
 def ellps2axis(ellps_name):
-    """Get semi-major and semi-minor axis from ellipsis definition
+    """Get semi-major and semi-minor axis from ellipsis definition.
 
     Parameters
     ---------
@@ -35,8 +43,8 @@ def ellps2axis(ellps_name):
     Returns
     -------
     (a, b) : semi-major and semi-minor axis
-    """
 
+    """
     ellps = {'helmert': {'a': 6378200.0, 'b': 6356818.1696278909},
              'intl': {'a': 6378388.0, 'b': 6356911.9461279465},
              'merit': {'a': 6378137.0, 'b': 6356752.2982159676},
@@ -83,27 +91,27 @@ def ellps2axis(ellps_name):
         ellps_axis = ellps[ellps_name.lower()]
         a = ellps_axis['a']
         b = ellps_axis['b']
-    except KeyError as e:
+    except KeyError:
         raise ValueError(('Could not determine semi-major and semi-minor axis '
                           'of specified ellipsis %s') % ellps_name)
     return a, b
 
 
 def area_def2basemap(area_def, **kwargs):
-    """Get Basemap object from AreaDefinition
+    """Get Basemap object from an AreaDefinition object.
 
     Parameters
     ---------
     area_def : object
         geometry.AreaDefinition object
-    \*\*kwargs: Keyword arguments
+    **kwargs: Keyword arguments
         Additional initialization arguments for Basemap
 
     Returns
     -------
     bmap : Basemap object
-    """
 
+    """
     import warnings
     warnings.warn("Basemap is no longer maintained. Please switch to cartopy "
                   "by using 'area_def.to_cartopy_crs()'. See the pyresample "
@@ -161,7 +169,8 @@ def area_def2basemap(area_def, **kwargs):
 
 def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
                            label='Variable (units)', num_meridians=45,
-                           num_parallels=10, coast_res='110m', cmap='jet'):
+                           num_parallels=10, coast_res='110m', cmap='RdBu_r'):
+    """Doing quicklook image plots with Basemap."""
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
@@ -178,10 +187,8 @@ def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,
     return plt
 
 
-def _get_quicklook(area_def, data, vmin=None, vmax=None,
-                   label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', cmap='jet'):
-    """Get default cartopy matplotlib plot."""
+def _translate_coast_resolution_to_cartopy(coast_res):
+    """Translate the coast resolution argument between cartopy and basemap notation."""
     bmap_to_cartopy_res = {
         'c': '110m',
         'l': '110m',
@@ -190,15 +197,11 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
         'f': '10m'
     }
 
-    try:
-        from pyresample import _cartopy  # noqa
-    except ImportError:
+    if BASEMAP_NOT_CARTOPY:
         if coast_res.endswith('m'):
             _rev_map = {v: k for k, v in bmap_to_cartopy_res.items()}
             coast_res = _rev_map[coast_res]
-        return _basemap_get_quicklook(
-            area_def, data, vmin, vmax, label, num_meridians,
-            num_parallels, coast_res=coast_res, cmap=cmap)
+        return coast_res, False
 
     if coast_res and coast_res not in ['110m', '50m', '10m']:
         import warnings
@@ -211,22 +214,50 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
             'f': '10m'
         }[coast_res]
 
+    return coast_res, True
+
+
+def _add_gridlines(axes, nmeridians, nparallels):
+    """Add gridlines: meridians and parallels onto the plot."""
+    from matplotlib import ticker as mticker
+
+    gl = axes.gridlines()
+    if nmeridians:
+        gl.xlocator = mticker.FixedLocator(np.arange(-180, 180+nmeridians, nmeridians))
+    else:
+        gl.xlines = False
+    if nparallels:
+        gl.ylocator = mticker.FixedLocator(np.arange(-90, 90+nparallels, nparallels))
+    else:
+        gl.ylines = False
+
+    return gl
+
+
+def _get_quicklook(area_def, data, vmin=None, vmax=None,
+                   label='Variable (units)', num_meridians=45,
+                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
+    """Get default cartopy matplotlib plot."""
+    import matplotlib.pyplot as plt
+
+    coast_res, is_cartopy = _translate_coast_resolution_to_cartopy(coast_res)
+    if not is_cartopy:
+        return _basemap_get_quicklook(
+            area_def, data, vmin, vmax, label, num_meridians,
+            num_parallels, coast_res=coast_res, cmap=cmap)
+
     if area_def.shape != data.shape:
         raise ValueError('area_def shape %s does not match data shape %s' %
                          (list(area_def.shape), list(data.shape)))
-    import matplotlib.pyplot as plt
+
     crs = area_def.to_cartopy_crs()
     ax = plt.axes(projection=crs)
     ax.coastlines(resolution=coast_res)
     ax.set_global()
 
-    xlocs = None
-    ylocs = None
-    if num_meridians:
-        xlocs = np.arange(-180, 180, num_meridians)
-    if num_parallels:
-        ylocs = np.arange(-90, 90, num_parallels)
-    ax.gridlines(xlocs=xlocs, ylocs=ylocs)
+    if num_meridians or num_parallels:
+        _ = _add_gridlines(ax, num_meridians, num_parallels)
+
     if not (np.ma.isMaskedArray(data) and data.mask.all()):
         col = ax.imshow(data, transform=crs, extent=crs.bounds,
                         origin='upper', vmin=vmin, vmax=vmax, cmap=cmap)
@@ -236,8 +267,8 @@ def _get_quicklook(area_def, data, vmin=None, vmax=None,
 
 def show_quicklook(area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', cmap='jet'):
-    """Display default quicklook plot
+                   num_parallels=10, coast_res='110m', cmap='RdBu_r'):
+    """Display default quicklook plot.
 
     Parameters
     ---------
@@ -261,8 +292,8 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
     Returns
     -------
     bmap : Basemap object
-    """
 
+    """
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
                          num_parallels=num_parallels, coast_res=coast_res,
@@ -274,8 +305,8 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
                    num_parallels=10, coast_res='110m', backend='AGG',
-                   cmap='jet'):
-    """Display default quicklook plot
+                   cmap='RdBu_r'):
+    """Display and save default quicklook plot.
 
     Parameters
     ----------
@@ -299,12 +330,13 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
         Resolution of coastlines
     backend : str, optional
         matplotlib backend to use'
-    """
 
+    """
     import matplotlib
     matplotlib.use(backend, warn=False)
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
-                         num_parallels=num_parallels, coast_res=coast_res)
+                         num_parallels=num_parallels, coast_res=coast_res,
+                         cmap=cmap)
     plt.savefig(filename, bbox_inches='tight')
     plt.close()

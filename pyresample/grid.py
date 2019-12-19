@@ -210,7 +210,7 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
 
     # Calculate number of segments if needed
     if segments is None:
-        rows = target_area_def.y_size
+        rows = target_area_def.height
         cut_off = 500
         if rows > cut_off:
             segments = int(rows / cut_off)

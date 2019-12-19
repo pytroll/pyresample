@@ -241,3 +241,29 @@ test_dynamic_resolution_ll:
     dy: 1
     dx: 1
     units: deg
+
+pc_world:
+  description: Plate Carree world map
+  projection:
+    proj: eqc
+    ellps: WGS84
+  shape:
+    height: 480
+    width: 640
+  area_extent:
+    lower_left_xy: [-20037508.34, -10018754.17]
+    upper_right_xy: [20037508.34, 10018754.17]
+
+ortho:
+  description: Ortho globe
+  projection:
+    proj: ortho
+    lon_0: 40.
+    lat_0: -40.
+    a: 6370997.0
+  shape:
+    height: 480
+    width: 640
+  area_extent:
+    lower_left_xy: [-10000000, -10000000]
+    upper_right_xy: [10000000, 10000000]

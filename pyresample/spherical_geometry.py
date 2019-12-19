@@ -24,7 +24,7 @@ import numpy as np
 import warnings
 
 warnings.warn("This module will be removed in pyresample 2.0, please use the "
-              "`pyresample.spherical` module functions and classe instead.",
+              "`pyresample.spherical` module functions and class instead.",
               DeprecationWarning)
 
 try:

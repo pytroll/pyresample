@@ -837,7 +837,7 @@ class Test(unittest.TestCase):
 
     def test_get_proj_coords_dask(self):
         """Test get_proj_coords usage with dask arrays."""
-        from pyresample import utils
+        from pyresample import get_area_def
         area_id = 'test'
         area_name = 'Test area with 2x2 pixels'
         proj_id = 'test'
@@ -845,9 +845,9 @@ class Test(unittest.TestCase):
         y_size = 10
         area_extent = [1000000, 0, 1050000, 50000]
         proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
-        area_def = utils.get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
+        area_def = get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
 
-        xcoord, ycoord = area_def.get_proj_coords_dask()
+        xcoord, ycoord = area_def.get_proj_coords(chunks=4096)
         xcoord = xcoord.compute()
         ycoord = ycoord.compute()
         self.assertTrue(np.allclose(xcoord[0, :],
@@ -1480,15 +1480,21 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import xarray as xr
         import numpy as np
+        window_size = 2
+        resolution = 3
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
-        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
-        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'],
+                             attrs={'resolution': resolution})
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'],
+                             attrs={'resolution': resolution})
         from pyresample.geometry import SwathDefinition
         sd = SwathDefinition(xlons, xlats)
-        res = sd.aggregate(y=2, x=2)
+        res = sd.aggregate(y=window_size, x=window_size)
         np.testing.assert_allclose(res.lons, [[179, -179]])
         np.testing.assert_allclose(res.lats, [[0.5, 0.5]], atol=2e-5)
+        self.assertAlmostEqual(res.lons.resolution, window_size * resolution)
+        self.assertAlmostEqual(res.lats.resolution, window_size * resolution)
 
     def test_striding(self):
         """Test striding."""
@@ -1569,7 +1575,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                               (5567747.7409681147, 2787374.2399544837,
                                -1000.3358822065015, 2323311.9002169576))
 
-        self.assertEqual(adef.y_size, 4 * 464)
+        self.assertEqual(adef.height, 4 * 464)
         self.assertIsInstance(adef.squeeze(), geometry.StackedAreaDefinition)
 
         adef2 = geometry.StackedAreaDefinition()
@@ -1581,7 +1587,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                               (5567747.7409681147, 2787374.2399544837,
                                -1000.3358822065015, 2323311.9002169576))
 
-        self.assertEqual(adef2.y_size, 4 * 464)
+        self.assertEqual(adef2.height, 4 * 464)
 
     def test_get_lonlats(self):
         """Test get_lonlats on StackedAreaDefinition."""
@@ -1640,12 +1646,12 @@ class TestStackedAreaDefinition(unittest.TestCase):
         """Fail appending areas."""
         area1 = MagicMock()
         area1.proj_dict = {"proj": 'A'}
-        area1.x_size = 4
-        area1.y_size = 5
+        area1.width = 4
+        area1.height = 5
         area2 = MagicMock()
         area2.proj_dict = {'proj': 'B'}
-        area2.x_size = 4
-        area2.y_size = 6
+        area2.width = 4
+        area2.height = 6
         # res = combine_area_extents_vertical(area1, area2)
         self.assertRaises(IncompatibleAreas,
                           concatenate_area_defs, area1, area2)
@@ -1831,8 +1837,8 @@ class TestDynamicAreaDefinition(unittest.TestCase):
         np.testing.assert_allclose(result.area_extent,
                                    [-336277.698941, 5513145.392745,
                                     192456.651909, 7749649.63914])
-        self.assertEqual(result.x_size, 4)
-        self.assertEqual(result.y_size, 18)
+        self.assertEqual(result.width, 4)
+        self.assertEqual(result.height, 18)
         # Test for properties and shape usage in freeze.
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
                                               width=4, height=18)
