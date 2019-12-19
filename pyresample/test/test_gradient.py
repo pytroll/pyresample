@@ -50,7 +50,6 @@ class TestGradientResampler(unittest.TestCase):
         self.resampler = GradientSearchResampler(self.src_area, self.dst_area)
         self.swath_resampler = GradientSearchResampler(self.src_swath, self.dst_area)
 
-
     @mock.patch('pyresample.gradient.parallel_gradient_search_on_input_coords')
     def test_coords_initialization(self, pgsoic):
         """Check that the coordinates get initialized correctly."""
@@ -78,7 +77,8 @@ class TestGradientResampler(unittest.TestCase):
         assert(not np.all(np.isnan(res)))
 
     def test_resample_area_to_area_3d(self):
-        data = xr.DataArray(da.ones((3, 100, 100), dtype=np.float64) * np.array([1, 2, 3])[:, np.newaxis, np.newaxis], dims=['bands', 'y', 'x'])
+        data = xr.DataArray(da.ones((3, 100, 100), dtype=np.float64) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis], dims=['bands', 'y', 'x'])
         res = self.resampler.compute(data, meth='bil').compute(scheduler='single-threaded')
         assert(res.shape == (3, ) + self.dst_area.shape)
         assert(not np.all(np.isnan(res)))
@@ -117,7 +117,6 @@ class TestBlockFunctions(unittest.TestCase):
         res = split(data, 2, -1)
         assert(len(res) == 2)
         assert(res[0].shape == (3, 6, 5))
-
 
     @mock.patch('pyresample.gradient.da.blockwise')
     def test_parallel_resampling_no_blockwise(self, blockwise):

@@ -89,7 +89,7 @@ class GradientSearchResampler(BaseResampler):
                 self.src_x, self.src_y = transform(self.src_x, self.src_y, src_prj=self.src_prj, dst_prj=self.dst_prj)
 
         res = parallel_gradient_search(data.data, self.src_x, self.src_y, self.dst_x, self.dst_y,
-                                        **kwargs)
+                                       **kwargs)
         # TODO: this will crash wen the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
