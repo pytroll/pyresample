@@ -17,12 +17,12 @@
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 # remove when python 2 support is dropped
+"""The setup module."""
 import multiprocessing  # noqa: F401
 import versioneer
 import os
 import sys
 
-import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -67,6 +67,7 @@ except ImportError:
 
 
 def set_builtin(name, value):
+    """Set builtin."""
     if isinstance(__builtins__, dict):
         __builtins__[name] = value
     else:
@@ -87,6 +88,7 @@ class build_ext(_build_ext):
     """
 
     def finalize_options(self):
+        """Finalize options."""
         versioneer_build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process:
         set_builtin('__NUMPY_SETUP__', False)
