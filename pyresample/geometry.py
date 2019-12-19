@@ -1822,7 +1822,7 @@ class AreaDefinition(BaseDefinition):
             from dask.array import map_blocks
             res = map_blocks(invproj, target_x, target_y,
                              chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                             new_axis=[2], proj_dict=proj_def)
+                             new_axis=[2], proj_dict=proj_def).astype(dtype)
             return res[:, :, 0], res[:, :, 1]
 
         if nprocs > 1:

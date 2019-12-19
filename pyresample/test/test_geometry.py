@@ -1191,6 +1191,37 @@ class Test(unittest.TestCase):
                                                               area_extent[3]))
         self.assertEqual(reduced_area.shape, (928, 928))
 
+    def test_get_lonlats_options(self):
+        """Test that lotlat options are respected
+        """
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+        (lon, _) = area_def.get_lonlats(dtype="f4")
+        self.assertEqual(lon.dtype, np.dtype("f4"))
+
+        (lon, _) = area_def.get_lonlats(dtype="f8")
+        self.assertEqual(lon.dtype, np.dtype("f8"))
+
+        from dask.array.core import Array as dask_array
+        (lon, _) = area_def.get_lonlats(dtype="f4", chunks=4)
+        self.assertEqual(lon.dtype, np.dtype("f4"))
+        self.assertIsInstance(lon, dask_array)
+
+        (lon, _) = area_def.get_lonlats(dtype="f8", chunks=4)
+        self.assertEqual(lon.dtype, np.dtype("f8"))
+        self.assertIsInstance(lon, dask_array)
+
 
 def assert_np_dict_allclose(dict1, dict2):
 
