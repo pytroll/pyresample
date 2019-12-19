@@ -1226,7 +1226,6 @@ def assert_np_dict_allclose(dict1, dict2):
 
 
 class TestSwathDefinition(unittest.TestCase):
-
     """Test the SwathDefinition."""
 
     def test_swath(self):
@@ -1534,6 +1533,21 @@ class TestSwathDefinition(unittest.TestCase):
         np.testing.assert_allclose(res.lons, [[178.5, -179.5]])
         np.testing.assert_allclose(res.lats, [[0, 0]], atol=2e-5)
 
+    def test_swath_def_geocentric_resolution(self):
+        """Test the SwathDefinition.geocentric_resolution method."""
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        sd = SwathDefinition(xlons, xlats)
+        geo_res = sd.geocentric_resolution()
+        # google says 1 degrees of longitude is about ~111.321km
+        # so this seems good
+        np.testing.assert_allclose(111301.237078, geo_res)
 
 
 class TestStackedAreaDefinition(unittest.TestCase):

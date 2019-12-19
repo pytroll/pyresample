@@ -519,7 +519,15 @@ class CoordinateDefinition(BaseDefinition):
             # dask arrays, compute them together
             import dask.array as da
             lons, lats = da.compute(lons, lats)
-        xyz = np.stack(transform(src, dst, lons, lats, [0, 0]), axis=1)
+        if hasattr(lons, 'values'):
+            # convert xarray to numpy array
+            lons = lons.values
+            lats = lats.values
+        lons = lons.ravel()
+        lats = lats.ravel()
+        alt = np.zeros_like(lons)
+
+        xyz = np.stack(transform(src, dst, lons, lats, alt), axis=1)
         dist = np.linalg.norm(xyz[1] - xyz[0])
         dist = dist[np.isfinite(dist)]
         if not dist.size:
