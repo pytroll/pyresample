@@ -25,8 +25,7 @@ else:
 
 
 class Test(unittest.TestCase):
-
-    """Unit testing the geometry and geo_filter modules"""
+    """Unit testing the geometry and geo_filter modules."""
 
     def test_lonlat_precomp(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -1190,6 +1189,30 @@ class Test(unittest.TestCase):
                                                               area_extent[2] - 3 * area_def.pixel_size_x,
                                                               area_extent[3]))
         self.assertEqual(reduced_area.shape, (928, 928))
+
+    def test_area_def_geocentric_resolution(self):
+        """Test the AreaDefinition.geocentric_resolution method."""
+        from pyresample import get_area_def
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        # metered projection
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                3712, 3712,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(10646.562531, geo_res)
+
+        # lon/lat
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                3712, 3712,
+                                [-130, 30, -120, 40],
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(248.594116, geo_res)
 
 
 def assert_np_dict_allclose(dict1, dict2):

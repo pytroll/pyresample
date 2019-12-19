@@ -1980,7 +1980,7 @@ class AreaDefinition(BaseDefinition):
         return new_area
 
     def geocentric_resolution(self, ellps='WGS84', radius=None):
-        """Geocentric resolution."""
+        """Find best estimate for overall geocentric resolution."""
         from pyproj import transform
         rows, cols = self.shape
         mid_row = rows // 2
@@ -2003,7 +2003,10 @@ class AreaDefinition(BaseDefinition):
         dist = dist[np.isfinite(dist)]
         if not dist.size:
             raise RuntimeError("Could not calculate geocentric resolution")
-        return np.max(dist)
+        # return np.max(dist)  # alternative to histogram
+        # use the average of the largest histogram bin to avoid
+        # outliers and really large values
+        return np.mean(np.histogram_bin_edges(dist)[:2])
 
 
 def get_geostationary_angle_extent(geos_area):
