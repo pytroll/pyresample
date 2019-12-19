@@ -50,7 +50,6 @@ class TestGradientResampler(unittest.TestCase):
         self.resampler = GradientSearchResampler(self.src_area, self.dst_area)
         self.swath_resampler = GradientSearchResampler(self.src_swath, self.dst_area)
 
-
     @mock.patch('pyresample.gradient.parallel_gradient_search')
     def test_coords_initialization(self, pgsoic):
         """Check that the coordinates get initialized correctly."""
