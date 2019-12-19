@@ -50,7 +50,8 @@ class TestGradientResampler(unittest.TestCase):
         self.resampler = GradientSearchResampler(self.src_area, self.dst_area)
         self.swath_resampler = GradientSearchResampler(self.src_swath, self.dst_area)
 
-    @mock.patch('pyresample.gradient.parallel_gradient_search_on_input_coords')
+
+    @mock.patch('pyresample.gradient.parallel_gradient_search')
     def test_coords_initialization(self, pgsoic):
         """Check that the coordinates get initialized correctly."""
         data = xr.DataArray(da.ones((100, 100), dtype=np.float64), dims=['y', 'x'])
@@ -71,12 +72,14 @@ class TestGradientResampler(unittest.TestCase):
                                        meth='bil')
 
     def test_resample_area_to_area_2d(self):
+        """Resample area to area, 2d."""
         data = xr.DataArray(da.ones((100, 100), dtype=np.float64), dims=['y', 'x'])
         res = self.resampler.compute(data, meth='bil').compute(scheduler='single-threaded')
         assert(res.shape == self.dst_area.shape)
         assert(not np.all(np.isnan(res)))
 
     def test_resample_area_to_area_3d(self):
+        """Resample area to area, 3d."""
         data = xr.DataArray(da.ones((3, 100, 100), dtype=np.float64) *
                             np.array([1, 2, 3])[:, np.newaxis, np.newaxis], dims=['bands', 'y', 'x'])
         res = self.resampler.compute(data, meth='bil').compute(scheduler='single-threaded')
@@ -84,9 +87,18 @@ class TestGradientResampler(unittest.TestCase):
         assert(not np.all(np.isnan(res)))
 
     def test_resample_swath_to_area_2d(self):
+        """Resample swath to area, 2d."""
         data = xr.DataArray(da.ones((100, 100), dtype=np.float64), dims=['y', 'x'])
         res = self.swath_resampler.compute(data, meth='bil').compute(scheduler='single-threaded')
         assert(res.shape == self.dst_area.shape)
+        assert(not np.all(np.isnan(res)))
+
+    def test_resample_swath_to_area_3d(self):
+        """Resample area to area, 3d."""
+        data = xr.DataArray(da.ones((3, 100, 100), dtype=np.float64) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis], dims=['bands', 'y', 'x'])
+        res = self.swath_resampler.compute(data, meth='bil').compute(scheduler='single-threaded')
+        assert(res.shape == (3, ) + self.dst_area.shape)
         assert(not np.all(np.isnan(res)))
 
 
@@ -121,7 +133,7 @@ class TestBlockFunctions(unittest.TestCase):
     @mock.patch('pyresample.gradient.da.blockwise')
     def test_parallel_resampling_no_blockwise(self, blockwise):
         """Test the parallel resampling until the blockwise call."""
-        from pyresample.gradient import parallel_gradient_search_on_input_coords as pgs
+        from pyresample.gradient import parallel_gradient_search as pgs
         data = da.ones((100, 100), chunks=(25, 50))
         src_x = da.ones((100, 100), chunks=(25, 50))
         src_y = da.ones((100, 100), chunks=(25, 50))
@@ -138,7 +150,7 @@ class TestBlockFunctions(unittest.TestCase):
     @mock.patch('pyresample.gradient._gradient_resample_data')
     def test_parallel_search_no_blocks(self, grd):
         """Test the parallel resampling until the blocked calls."""
-        from pyresample.gradient import parallel_gradient_search_on_input_coords as pgs
+        from pyresample.gradient import parallel_gradient_search as pgs
         data = da.ones((100, 100), chunks=(25, 50))
         src_x = da.ones((100, 100), chunks=(25, 50))
         src_y = da.ones((100, 100), chunks=(25, 50))
@@ -156,7 +168,7 @@ class TestBlockFunctions(unittest.TestCase):
     @mock.patch('pyresample.gradient.one_step_gradient_search')
     def test_parallel_search_no_cython(self, osgs):
         """Test the parallel resampling until the cython calls."""
-        from pyresample.gradient import parallel_gradient_search_on_input_coords as pgs
+        from pyresample.gradient import parallel_gradient_search as pgs
         data = da.ones((100, 100), chunks=(25, 50))
         src_x = da.ones((100, 100), chunks=(25, 50))
         src_y = da.ones((100, 100), chunks=(25, 50))
@@ -186,3 +198,13 @@ class TestBlockFunctions(unittest.TestCase):
             for arg in args[7:]:
                 assert(arg.shape == (90, 90))
             return args[7][np.newaxis, :, :]
+
+
+def suite():
+    """Test suite."""
+    loader = unittest.TestLoader()
+    mysuite = unittest.TestSuite()
+    mysuite.addTest(loader.loadTestsFromTestCase(TestBlockFunctions))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestGradientResampler))
+
+    return mysuite
