@@ -20,7 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Test the Trishchenko algorithm."""
+"""Implementation of the gradient search algorithm as described by Trishchenko."""
 
 import logging
 
@@ -123,17 +123,19 @@ def _gradient_resample_data(src_data, src_x, src_y,
 
 
 def vsplit(arr, n):
+    """Split the array vertically."""
     res = arr.reshape((n, -1) + arr.shape[1:])
     return [np.take(res, x, axis=0) for x in range(n)]
 
 
 def hsplit(arr, n):
+    """Split the array horizontally."""
     res = arr.reshape((arr.shape[0], n, -1) + arr.shape[2:])
     return [np.take(res, x, axis=1) for x in range(n)]
 
 
 def split(arr, n, axis):
-    """split an array in n pieces along axis."""
+    """Split an array in n pieces along axis."""
     shape = arr.shape
     ax_shape = shape[axis]
     if axis < 0:
@@ -143,11 +145,6 @@ def split(arr, n, axis):
     new_shape = shape[:axis] + (n, int(ax_shape / n)) + shape[rest_idx:]
     res = arr.reshape(new_shape)
     return [np.take(res, x, axis=rest_idx - 1) for x in range(n)]
-
-
-def dsplit(arr, n):
-    res = arr.reshape((arr.shape[:2]) + (n, -1) + arr.shape[3:])
-    return [np.take(res, x, axis=2) for x in range(n)]
 
 
 def reshape_arrays_in_stacked_chunks(arrays, chunks):
