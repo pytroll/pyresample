@@ -9,10 +9,13 @@ import numpy as np
 from pyresample import geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
+
+try:
+    from unittest import mock
+except ImportError:
+    # python 2.7
+    import mock
 
 
 class Test(unittest.TestCase):
@@ -897,6 +900,22 @@ class TestXArrayResamplerNN(unittest.TestCase):
         cross_sum = np.nansum(res)
         expected = 32114793.0
         self.assertEqual(cross_sum, expected)
+
+        # pretend the resolutions can't be determined
+        with mock.patch.object(self.src_area_2d, 'geocentric_resolution') as sgr, \
+             mock.patch.object(self.area_def, 'geocentric_resolution') as dgr:
+            sgr.side_effect = RuntimeError
+            dgr.side_effect = RuntimeError
+            resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+                                          neighbours=1)
+            resampler.get_neighbour_info()
+            res = resampler.get_sample_from_neighbour_info(data)
+            self.assertIsInstance(res, xr.DataArray)
+            self.assertIsInstance(res.data, da.Array)
+            res = res.values
+            cross_sum = np.nansum(res)
+            expected = 1855928.0
+            self.assertEqual(cross_sum, expected)
 
     def test_nearest_area_2d_to_area_1n_3d_data(self):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
