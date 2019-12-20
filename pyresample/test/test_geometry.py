@@ -2018,6 +2018,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestMakeSliceDivisible))
 
     return mysuite
 
