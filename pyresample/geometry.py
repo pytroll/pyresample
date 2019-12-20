@@ -1848,7 +1848,7 @@ class AreaDefinition(BaseDefinition):
                       "instead.", DeprecationWarning)
         return proj4_dict_to_str(self.proj_dict)
 
-    def get_area_slices(self, area_to_cover):
+    def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
         if not isinstance(area_to_cover, AreaDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
@@ -1890,8 +1890,16 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
 
-        return (slice(np.ma.min(x), np.ma.max(x) + 1),
-                slice(np.ma.min(y), np.ma.max(y) + 1))
+        x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
+        y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+        if shape_divisible_by is not None:
+            x_slice = _make_slice_divisible(x_slice, self.width,
+                                            factor=shape_divisible_by)
+            y_slice = _make_slice_divisible(y_slice, self.height,
+                                            factor=shape_divisible_by)
+
+        return (x_slice, y_slice)
+
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -1924,6 +1932,21 @@ class AreaDefinition(BaseDefinition):
         new_area.crop_offset = (self.crop_offset[0] + yslice.start,
                                 self.crop_offset[1] + xslice.start)
         return new_area
+
+
+def _make_slice_divisible(sli, max_size, factor=2):
+    """Make the given slice even in size."""
+    rem = (sli.stop - sli.start) % factor
+    if rem != 0:
+        adj = factor - rem
+        if sli.stop + 1 + rem < max_size:
+            sli = slice(sli.start, sli.stop + adj)
+        elif sli.start > 0:
+            sli = slice(sli.start - adj, sli.stop)
+        else:
+            sli = slice(sli.start, sli.stop - rem)
+
+    return sli
 
 
 def get_geostationary_angle_extent(geos_area):
