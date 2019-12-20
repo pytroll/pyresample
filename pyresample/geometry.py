@@ -534,7 +534,7 @@ class CoordinateDefinition(BaseDefinition):
         dist = dist[np.isfinite(dist)]
         if not dist.size:
             raise RuntimeError("Could not calculate geocentric resolution")
-        return np.max(dist)
+        return dist[0]
 
 
 class GridDefinition(CoordinateDefinition):
