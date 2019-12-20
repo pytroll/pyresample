@@ -1580,6 +1580,12 @@ class TestSwathDefinition(unittest.TestCase):
         # so this seems good
         np.testing.assert_allclose(111301.237078, geo_res)
 
+        # 1D
+        xlats = xr.DataArray(da.from_array(lats.ravel(), chunks=2), dims=['y'])
+        xlons = xr.DataArray(da.from_array(lons.ravel(), chunks=2), dims=['y'])
+        sd = SwathDefinition(xlons, xlats)
+        self.assertRaises(RuntimeError, sd.geocentric_resolution)
+
 
 class TestStackedAreaDefinition(unittest.TestCase):
 

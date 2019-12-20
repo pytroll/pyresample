@@ -503,9 +503,11 @@ class CoordinateDefinition(BaseDefinition):
         """
         if hasattr(self.lons, 'attrs') and 'resolution' in self.lons.attrs:
             return self.lons.attrs['resolution'] * nadir_factor
-
+        if self.ndim == 1:
+            raise RuntimeError("Can't confidently determine geocentric "
+                               "resolution for 1D swath.")
         from pyproj import transform
-        rows, cols = self.shape
+        rows = self.shape[0]
         start_row = rows // 2  # middle row
         src = Proj('+proj=latlong +datum=WGS84')
         if radius:
