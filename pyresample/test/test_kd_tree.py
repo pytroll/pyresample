@@ -414,8 +414,22 @@ class Test(unittest.TestCase):
         with catch_warnings(UserWarning) as w:
             res = kd_tree.resample_custom(swath_def, data.ravel(),
                                           self.area_def, 50000, wf, segments=1)
-            self.assertFalse(len(w) != 1)
-            self.assertFalse(('Possible more' not in str(w[0].message)))
+            # PyProj proj/CRS and "more than 8 neighbours" are warned about
+            self.assertFalse(len(w) > 2)
+            neighbour_warn = False
+            for warn in w:
+                if 'Possible more' in str(warn.message):
+                    neighbour_warn = True
+                    break
+            self.assertTrue(neighbour_warn)
+            if len(w) == 2:
+                proj_crs_warn = False
+                for warn in w:
+                    if 'important projection information' in str(warn.message):
+                        proj_crs_warn = True
+                        break
+                self.assertTrue(proj_crs_warn)
+
         cross_sum = res.sum()
         expected = 4872.8100347930776
         self.assertAlmostEqual(cross_sum, expected)
