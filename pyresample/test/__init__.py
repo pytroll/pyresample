@@ -38,7 +38,8 @@ from pyresample.test import (
     test_bilinear,
     test_data_reduce,
     test_spatial_mp,
-    test_bucket
+    test_bucket,
+    test_gradient
 )
 
 import unittest
@@ -63,6 +64,7 @@ def suite():
     mysuite.addTests(test_data_reduce.suite())
     mysuite.addTests(test_spatial_mp.suite())
     mysuite.addTests(test_bucket.suite())
+    mysuite.addTests(test_gradient.suite())
     return mysuite
 
 
