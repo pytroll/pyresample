@@ -17,6 +17,7 @@
 
 # workaround python bug: http://bugs.python.org/issue15881#msg170215
 # remove when python 2 support is dropped
+"""The setup module."""
 import multiprocessing  # noqa: F401
 import versioneer
 import os
@@ -54,7 +55,9 @@ extensions = [
     Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx",
                                                  "pyresample/ewa/_fornav_templates.cpp"],
               language="c++", extra_compile_args=extra_compile_args,
-              depends=["pyresample/ewa/_fornav_templates.h"])
+              depends=["pyresample/ewa/_fornav_templates.h"]),
+    Extension("pyresample.gradient._gradient_search", sources=["pyresample/gradient/_gradient_search.pyx"],
+              extra_compile_args=extra_compile_args),
 ]
 
 try:
@@ -64,6 +67,7 @@ except ImportError:
 
 
 def set_builtin(name, value):
+    """Set builtin."""
     if isinstance(__builtins__, dict):
         __builtins__[name] = value
     else:
@@ -84,6 +88,7 @@ class build_ext(_build_ext):
     """
 
     def finalize_options(self):
+        """Finalize options."""
         versioneer_build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process:
         set_builtin('__NUMPY_SETUP__', False)

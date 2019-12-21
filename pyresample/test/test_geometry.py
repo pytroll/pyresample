@@ -1223,6 +1223,36 @@ class Test(unittest.TestCase):
         self.assertIsInstance(lon, dask_array)
 
 
+class TestMakeSliceDivisible(unittest.TestCase):
+
+    """Test the _make_slice_divisible."""
+
+    def test_make_slice_divisible(self):
+        """Test that making area shape divisible by a given factor works."""
+        from pyresample.geometry import _make_slice_divisible
+
+        # Divisible by 2
+        sli = slice(10, 21)
+        factor = 2
+        self.assertNotEqual((sli.stop - sli.start) % factor, 0)
+        res = _make_slice_divisible(sli, 1000, factor=factor)
+        self.assertEqual((res.stop - res.start) % factor, 0)
+
+        # Divisible by 3
+        sli = slice(10, 23)
+        factor = 3
+        self.assertNotEqual((sli.stop - sli.start) % factor, 0)
+        res = _make_slice_divisible(sli, 1000, factor=factor)
+        self.assertEqual((res.stop - res.start) % factor, 0)
+
+        # Divisible by 5
+        sli = slice(10, 23)
+        factor = 5
+        self.assertNotEqual((sli.stop - sli.start) % factor, 0)
+        res = _make_slice_divisible(sli, 1000, factor=factor)
+        self.assertEqual((res.stop - res.start) % factor, 0)
+
+
 def assert_np_dict_allclose(dict1, dict2):
 
     assert set(dict1.keys()) == set(dict2.keys())
@@ -2025,6 +2055,7 @@ def suite():
     mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
     mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
+    mysuite.addTest(loader.loadTestsFromTestCase(TestMakeSliceDivisible))
 
     return mysuite
 
