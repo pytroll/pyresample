@@ -203,4 +203,4 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
                        dst_x, 'mn', dst_y, 'mn',
                        dtype=np.float64,
                        method=kwargs.get('method', 'bilinear'))
-    return np.nanmax(res, axis=-1).squeeze()
+    return da.nanmax(res, axis=-1).squeeze()
