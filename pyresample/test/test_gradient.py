@@ -162,7 +162,7 @@ class TestBlockFunctions(unittest.TestCase):
             return args[7][np.newaxis, :, :, np.newaxis]
         grd.side_effect = fake_gradient_resample_data
         res = pgs(data, src_x, src_y, dst_x, dst_y)
-        res = da.compute(res, scheduler='single-threaded')[0]
+        res = res.compute(scheduler='single-threaded')
         assert(res.shape == (180, 360))
 
     @mock.patch('pyresample.gradient.one_step_gradient_search')
@@ -185,7 +185,7 @@ class TestBlockFunctions(unittest.TestCase):
             return args[7][np.newaxis, :, :]
         osgs.side_effect = fake_gradient_resample_data
         res = pgs(data, src_x, src_y, dst_x, dst_y)
-        res = da.compute(res, scheduler='single-threaded')[0]
+        res = res.compute(scheduler='single-threaded')
         assert(res.shape == (180, 360))
 
         data = da.ones((3, 100, 100), chunks=(3, 25, 50))
