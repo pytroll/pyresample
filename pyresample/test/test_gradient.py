@@ -22,7 +22,11 @@
 """Tests for the gradien search resampling."""
 
 import unittest
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    # separate mock package py<3.3
+    import mock
 from pyresample.geometry import AreaDefinition, SwathDefinition
 import numpy as np
 import dask.array as da
