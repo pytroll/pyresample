@@ -964,7 +964,7 @@ class XArrayResamplerNN(object):
     def __init__(self,
                  source_geo_def,
                  target_geo_def,
-                 radius_of_influence,
+                 radius_of_influence=None,
                  neighbours=1,
                  epsilon=0):
         """
@@ -975,8 +975,10 @@ class XArrayResamplerNN(object):
             Geometry definition of source
         target_geo_def : object
             Geometry definition of target
-        radius_of_influence : float
-            Cut off distance in meters
+        radius_of_influence : float, optional
+            Cut off distance in geocentric meters.
+            If not provided this will be estimated based on the source
+            and target geometry definition.
         neighbours : int, optional
             The number of neigbours to consider for each grid point.
             Default 1. Currently 1 is the only supported number.
@@ -997,9 +999,32 @@ class XArrayResamplerNN(object):
         self.epsilon = epsilon
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
+        if radius_of_influence is None:
+            radius_of_influence = self._compute_radius_of_influence()
         self.radius_of_influence = radius_of_influence
         assert (self.target_geo_def.ndim == 2), \
             "Target area definition must be 2 dimensions"
+
+    def _compute_radius_of_influence(self):
+        """Estimate a good default radius_of_influence."""
+        try:
+            src_res = self.source_geo_def.geocentric_resolution()
+        except RuntimeError:
+            logger.warning("Could not calculate source definition resolution")
+            src_res = np.nan
+        try:
+            dst_res = self.target_geo_def.geocentric_resolution()
+        except RuntimeError:
+            logger.warning("Could not calculate destination definition "
+                           "resolution")
+            dst_res = np.nan
+        radius_of_influence = np.nanmax([src_res, dst_res])
+        if np.isnan(radius_of_influence):
+            logger.warning("Could not calculate radius_of_influence, falling "
+                           "back to 10000 meters. This may produce lower "
+                           "quality results than expected.")
+            radius_of_influence = 10000
+        return radius_of_influence
 
     def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
         """Set up kd tree on input"""

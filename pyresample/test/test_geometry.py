@@ -25,8 +25,7 @@ else:
 
 
 class Test(unittest.TestCase):
-
-    """Unit testing the geometry and geo_filter modules"""
+    """Unit testing the geometry and geo_filter modules."""
 
     def test_lonlat_precomp(self):
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -1222,6 +1221,30 @@ class Test(unittest.TestCase):
         self.assertEqual(lon.dtype, np.dtype("f8"))
         self.assertIsInstance(lon, dask_array)
 
+    def test_area_def_geocentric_resolution(self):
+        """Test the AreaDefinition.geocentric_resolution method."""
+        from pyresample import get_area_def
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        # metered projection
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                3712, 3712,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(10646.562531, geo_res)
+
+        # lon/lat
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                3712, 3712,
+                                [-130, 30, -120, 40],
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(248.594116, geo_res)
+
 
 class TestMakeSliceDivisible(unittest.TestCase):
 
@@ -1264,7 +1287,6 @@ def assert_np_dict_allclose(dict1, dict2):
 
 
 class TestSwathDefinition(unittest.TestCase):
-
     """Test the SwathDefinition."""
 
     def test_swath(self):
@@ -1572,6 +1594,27 @@ class TestSwathDefinition(unittest.TestCase):
         np.testing.assert_allclose(res.lons, [[178.5, -179.5]])
         np.testing.assert_allclose(res.lats, [[0, 0]], atol=2e-5)
 
+    def test_swath_def_geocentric_resolution(self):
+        """Test the SwathDefinition.geocentric_resolution method."""
+        import dask.array as da
+        import xarray as xr
+        import numpy as np
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
+        xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
+        sd = SwathDefinition(xlons, xlats)
+        geo_res = sd.geocentric_resolution()
+        # google says 1 degrees of longitude is about ~111.321km
+        # so this seems good
+        np.testing.assert_allclose(111301.237078, geo_res)
+
+        # 1D
+        xlats = xr.DataArray(da.from_array(lats.ravel(), chunks=2), dims=['y'])
+        xlons = xr.DataArray(da.from_array(lons.ravel(), chunks=2), dims=['y'])
+        sd = SwathDefinition(xlons, xlats)
+        self.assertRaises(RuntimeError, sd.geocentric_resolution)
 
 
 class TestStackedAreaDefinition(unittest.TestCase):
