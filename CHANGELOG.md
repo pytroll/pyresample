@@ -1,3 +1,41 @@
+## Version v1.14.0 (2019/12/22)
+
+### Issues Closed
+
+* [Issue 242](https://github.com/pytroll/pyresample/issues/242) - AreaDefinition.get_lonlats ignores dtype option ([PR 243](https://github.com/pytroll/pyresample/pull/243))
+* [Issue 233](https://github.com/pytroll/pyresample/issues/233) - get_neighbour_info can not handle SwathDefinitions with lat lon of type integers ([PR 235](https://github.com/pytroll/pyresample/pull/235))
+* [Issue 229](https://github.com/pytroll/pyresample/issues/229) - Update old documentation on easy quicklook display (stop using rainbow color map!) ([PR 230](https://github.com/pytroll/pyresample/pull/230))
+* [Issue 228](https://github.com/pytroll/pyresample/issues/228) - Area definition boundaries where space pixels are excluded
+
+In this release 4 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 245](https://github.com/pytroll/pyresample/pull/245) - Remove pyximports from gradient search
+* [PR 243](https://github.com/pytroll/pyresample/pull/243) - Respect dtype when get_lonlats provide dask array ([242](https://github.com/pytroll/pyresample/issues/242))
+* [PR 241](https://github.com/pytroll/pyresample/pull/241) - Fix typo in ImageContainerQuick and ImageContainerNearest docs
+* [PR 236](https://github.com/pytroll/pyresample/pull/236) - Fix compatibility with pyproj 2.4.2
+* [PR 227](https://github.com/pytroll/pyresample/pull/227) - Fix EWA resampling hanging when geolocation had a lot of NaNs
+* [PR 224](https://github.com/pytroll/pyresample/pull/224) - Fix deprecation warning for abc classes
+
+#### Features added
+
+* [PR 230](https://github.com/pytroll/pyresample/pull/230) - No rainbow update documentation ([229](https://github.com/pytroll/pyresample/issues/229))
+* [PR 225](https://github.com/pytroll/pyresample/pull/225) - Add smarter default radius_of_influence to XArrayResamplerNN resampling
+* [PR 222](https://github.com/pytroll/pyresample/pull/222) - Make the uniform shape computation more effective for dask arrays
+* [PR 191](https://github.com/pytroll/pyresample/pull/191) - Implement gradient search resampling method
+
+#### Documentation changes
+
+* [PR 241](https://github.com/pytroll/pyresample/pull/241) - Fix typo in ImageContainerQuick and ImageContainerNearest docs
+* [PR 238](https://github.com/pytroll/pyresample/pull/238) - Update load_area docstring to mention that multiple files are allowed
+* [PR 230](https://github.com/pytroll/pyresample/pull/230) - No rainbow update documentation ([229](https://github.com/pytroll/pyresample/issues/229))
+
+In this release 13 pull requests were closed.
+
+
 ## Version 1.13.2 (2019/10/08)
 
 ### Issues Closed
