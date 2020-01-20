@@ -84,8 +84,24 @@ class GradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = transform(self.dst_x, self.dst_y, src_prj=self.dst_prj, dst_prj=self.src_prj)
             else:
                 self.src_x, self.src_y = transform(self.src_x, self.src_y, src_prj=self.src_prj, dst_prj=self.dst_prj)
+        pads = []
+        for chunk in datachunks:
+            num_chunks = len(set(chunk))
+            if num_chunks == 1:
+                pads.append((0, 0))
+            elif num_chunks == 2 and len(set(chunk[:-1])) == 1:
+                pads.append((0, chunk[-2] - chunk[-1]))
+            else:
+                raise NotImplementedError("Don't know how to uniformize array")
 
-        res = parallel_gradient_search(data.data, self.src_x, self.src_y, self.dst_x, self.dst_y,
+        src_x = np.pad(self.src_x, pads, 'constant', constant_values=np.nan).rechunk(self.src_x.chunksize)
+        src_y = np.pad(self.src_y, pads, 'constant', constant_values=np.nan).rechunk(self.src_y.chunksize)
+        if 'bands' in data.dims:
+            pads = [(0, 0)] + pads
+        corr_data = np.pad(data.data, pads, 'constant',
+                           constant_values=data.attrs.get('_FillValue', np.nan)).rechunk(data.data.chunksize)
+
+        res = parallel_gradient_search(corr_data, src_x, src_y, self.dst_x, self.dst_y,
                                        **kwargs)
         # TODO: this will crash wen the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
