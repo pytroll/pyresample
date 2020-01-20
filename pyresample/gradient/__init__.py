@@ -178,6 +178,12 @@ def reshape_to_stacked_3d(array):
     return np.stack(layers, axis=-1)
 
 
+def _fix_overlapping_gradient(arr, scan_size=0):
+    arr[::scan_size] = arr[1::scan_size]
+    arr[scan_size - 1::scan_size] = arr[scan_size - 2::scan_size]
+    return arr
+
+
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
     """Run gradient search in parallel in input area coordinates."""
     if data.ndim not in [2, 3]:
@@ -185,8 +191,21 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
     if data.ndim == 2:
         data = data[np.newaxis, :, :]
     # TODO: Make sure the data is uniformly chunked.
+    scan_size = kwargs.get('scan_size', 0)
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+    if scan_size > 0:
+        new_chunks = (scan_size, src_gradient_xl.shape[1])
+        old_chunks = src_gradient_xl.chunks
+        src_gradient_xl = src_gradient_xl.rechunk(new_chunks)
+        src_gradient_yl = src_gradient_yl.rechunk(new_chunks)
+        src_gradient_xl = da.map_blocks(_fix_overlapping_gradient, src_gradient_xl,
+                                        dtype=src_gradient_xl.dtype, can_size=scan_size)
+        src_gradient_yl = da.map_blocks(_fix_overlapping_gradient, src_gradient_yl,
+                                        dtype=src_gradient_yl.dtype, scan_size=scan_size)
+        src_gradient_xl = src_gradient_xl.rechunk(old_chunks)
+        src_gradient_yl = src_gradient_yl.rechunk(old_chunks)
+
     arrays = reshape_arrays_in_stacked_chunks((src_x, src_y,
                                                src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp),
                                               src_x.chunks)
