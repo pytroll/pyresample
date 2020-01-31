@@ -5,6 +5,7 @@ import dask
 import xarray as xr
 from unittest.mock import MagicMock, patch
 
+from pyresample import create_area_def
 from pyresample.geometry import AreaDefinition
 from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
@@ -19,7 +20,6 @@ class Test(unittest.TestCase):
                            'lon_0': '0.0',
                            'proj': 'stere'}, 2560, 2048,
                           (-3780000.0, -7644000.0, 3900000.0, -1500000.0))
-
     chunks = 2
     lons = da.from_array(np.array([[25., 25.], [25., 25.]]),
                          chunks=chunks)
@@ -70,14 +70,12 @@ class Test(unittest.TestCase):
         prj.return_value = ([3.1, 3.1, 3.1], [4.8, 4.8, 4.8])
         lons = [1., 1., 1.]
         lats = [2., 2., 2.]
-        x_res, y_res = 0.5, 0.5
         self.resampler.prj = prj
-        result = self.resampler._get_proj_coordinates(lons, lats, x_res, y_res)
+        result = self.resampler._get_proj_coordinates(lons, lats)
         prj.assert_called_once_with(lons, lats)
         self.assertTrue(isinstance(result, np.ndarray))
-        self.assertEqual(result.shape, (2, 3))
-        self.assertTrue(np.all(result == np.array([[3., 3., 3.],
-                                                   [5., 5., 5.]])))
+        np.testing.assert_equal(result, np.array([[3.1, 3.1, 3.1],
+                                                  [4.8, 4.8, 4.8]]))
 
     def test_get_bucket_indices(self):
         """Test calculation of array indices."""
@@ -86,8 +84,28 @@ class Test(unittest.TestCase):
             self.resampler._get_indices()
         x_idxs, y_idxs = da.compute(self.resampler.x_idxs,
                                     self.resampler.y_idxs)
-        self.assertTrue(np.all(x_idxs == np.array([1709, 1709, 1706, 1705])))
-        self.assertTrue(np.all(y_idxs == np.array([465, 465, 458, 455])))
+        np.testing.assert_equal(x_idxs, np.array([1710, 1710, 1707, 1705]))
+        np.testing.assert_equal(y_idxs, np.array([465, 465, 459, 455]))
+
+        # Additional small test case
+        adef = create_area_def(
+            area_id='test',
+            projection={'proj': 'latlong'},
+            width=4, height=4,
+            center=(0, 0),
+            resolution=10)
+        lons = da.from_array(
+            np.array([-20.0, -19.9, -10.1, -10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, 19.9, 20.0]),
+            chunks=2)
+        lats = da.from_array(
+            np.array([-20.0, -19.9, -10.1, -10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, 19.9, 20.0]),
+            chunks=2)
+        resampler = bucket.BucketResampler(source_lats=lats,
+                                           source_lons=lons,
+                                           target_area=adef)
+        resampler._get_indices()
+        np.testing.assert_equal(resampler.x_idxs, np.array([-1, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, -1]))
+        np.testing.assert_equal(resampler.y_idxs, np.array([-1, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, -1]))
 
     def test_get_sum(self):
         """Test drop-in-a-bucket sum."""
