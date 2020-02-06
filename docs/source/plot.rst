@@ -148,6 +148,8 @@ the following area definition for an ortho projection area:
 
 .. doctest::
    :hide:
+ >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
  >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ortho'
  >>> description = 'Ortho globe'
@@ -159,7 +161,7 @@ the following area definition for an ortho projection area:
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
 
-
+ >>> swath_def = SwathDefinition(lons, lats)
  >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
@@ -223,6 +225,7 @@ AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
 .. doctest::
    :hide:
+ >>> from pyresample.kd_tree import resample_nearest
  >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
@@ -269,6 +272,7 @@ The above image can be generated using Cartopy instead by utilizing the method
 
 **Example usage:**
 
+ >>> from pyresample.kd_tree import resample_nearest
  >>> import matplotlib.pyplot as plt # doctest: +SKIP
  >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def,
