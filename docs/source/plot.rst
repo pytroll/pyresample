@@ -270,8 +270,9 @@ The above image can be generated using Cartopy instead by utilizing the method
 **Example usage:**
 
  >>> import matplotlib.pyplot as plt # doctest: +SKIP
+ >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def,
- ...                           radius_of_influence=20000, fill_value=None)
+ ...                           radius_of_influence=20000, fill_value=None) # doctest: +SKIP
  >>> crs = area_def.to_cartopy_crs() # doctest: +SKIP
  >>> ax = plt.axes(projection=crs) # doctest: +SKIP
  >>> ax.background_img(name='BM') # doctest: +SKIP
