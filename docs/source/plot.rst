@@ -22,30 +22,48 @@ supported by Satpy_. All you need are a set of geo-referenced values
 
 First we read in the data with Satpy_:
 
- >>> from satpy.scene import Scene
- >>> from glob import glob
- >>> SCENE_FILES = glob("./GW1AM2_20191122????_156*h5")
- >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES)
- >>> scn.load(["btemp_36.5v"])
- >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
- >>> tb37v = scn["btemp_36.5v"].data.compute()
+ >>> from satpy.scene import Scene # doctest: +SKIP
+ >>> from glob import glob # doctest: +SKIP
+ >>> SCENE_FILES = glob("./GW1AM2_20191122????_156*h5") # doctest: +SKIP
+ >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES) # doctest: +SKIP
+ >>> scn.load(["btemp_36.5v"]) # doctest: +SKIP
+ >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats() # doctest: +SKIP
+ >>> tb37v = scn["btemp_36.5v"].data.compute() # doctest: +SKIP
 
 Data for this example can be downloaded from zenodo_.
- 
+If you have your own data, or just want to see that the example code here runs, you can
+set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e.g.:
+
 .. doctest::
+   :hide:
+ >>> from pyresample.geometry import AreaDefinition
+ >>> area_id = 'ease_sh'
+ >>> description = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> width = 425
+ >>> height = 425
+ >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
 
  >>> import numpy as np
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
  >>> lons = np.zeros(1000)
  >>> lats = np.arange(-80, -90, -0.01)
  >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.yaml', 'ease_sh')
+
+But here we go on with the loaded AMSR-2 data. Make sure you have an :code:`areas.yaml`
+file that defines the :code:`ease_sh` area. Or see
+:ref:`the area definition section<area-definitions>` on how to define one.
+
+ >>> from pyresample import load_area, save_quicklook, SwathDefinition
+ >>> from pyresample.kd_tree import resample_nearest
+ >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
  >>> swath_def = SwathDefinition(lons, lats)
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
-
+ 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
 the above Satpy_ example) the result might look something like this:
 
@@ -78,17 +96,22 @@ Assuming the file **areas.yaml** has the following area definition:
 **Example usage:**
 
 .. doctest::
+   :hide:
+ >>> from pyresample.geometry import AreaDefinition
+ >>> area_id = 'pc_world'
+ >>> description = 'Plate Carree world map'
+ >>> proj_id = 'eqc'
+ >>> projection = {'proj': 'eqc', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'}
+ >>> width = 640
+ >>> height = 480
+ >>> area_extent = (-20037508.34, -10018754.17, 20037508.34, 10018754.17)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
 
- >>> import numpy as np 
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.yaml', 'pc_world')
- >>> swath_def = SwathDefinition(lons, lats)
+ >>> area_def = load_area('areas.yaml', 'pc_world') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
 above we use AMSR-2 data in this example) the result might look something like
@@ -124,15 +147,20 @@ the following area definition for an ortho projection area:
 **Example usage:**
 
 .. doctest::
+   :hide:
+ >>> from pyresample.geometry import AreaDefinition
+ >>> area_id = 'ortho'
+ >>> description = 'Ortho globe'
+ >>> proj_id = 'ortho'
+ >>> projection = {'proj': 'ortho', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'}
+ >>> width = 640
+ >>> height = 480
+ >>> area_extent = (-10000000, -10000000, 10000000, 10000000)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
 
- >>> import numpy as np 
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.yaml', 'ortho')
- >>> swath_def = SwathDefinition(lons, lats)
+
+ >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
 
@@ -153,15 +181,7 @@ converted to a Cartopy CRS as long as Cartopy can represent the
 projection. Once an `AreaDefinition` is converted to a CRS object it can be
 used like any other Cartopy CRS object.
 
- >>> import numpy as np
- >>> import matplotlib.pyplot as plt
- >>> from pyresample import load_area, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> from pyresample.geometry import AreaDefinition
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
- >>> swath_def = SwathDefinition(lons, lats)
+ >>> import matplotlib.pyplot as plt # doctest: +SKIP
  >>> area_id = 'alaska'
  >>> description = 'Alaska Lambert Equal Area grid'
  >>> proj_id = 'alaska'
@@ -169,17 +189,19 @@ used like any other Cartopy CRS object.
  >>> width = 2019
  >>> height = 1463
  >>> area_extent = (-757214.993104, -485904.321517, 757214.993104, 611533.818622)
+ >>> from pyresample.geometry import AreaDefinition 
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
- >>> crs = area_def.to_cartopy_crs()
- >>> ax = plt.axes(projection=crs)
- >>> ax.coastlines()
- >>> ax.set_global()
- >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper')
- >>> plt.colorbar()
- >>> plt.savefig('amsr2_tb37v_cartopy.png')
+ >>> crs = area_def.to_cartopy_crs() # doctest: +SKIP
+ >>> ax = plt.axes(projection=crs) # doctest: +SKIP
+ >>> ax.coastlines() # doctest: +SKIP
+ >>> ax.set_global() # doctest: +SKIP
+ >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper') # doctest: +SKIP
+ >>> plt.colorbar() # doctest: +SKIP
+ >>> plt.savefig('amsr2_tb37v_cartopy.png') # doctest: +SKIP
+
 
 Assuming **lons**, **lats**, and **i04_data** are initialized with real data
 the result might look something like this:
@@ -199,21 +221,29 @@ AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
 **Example usage:**
 
- >>> import numpy as np
- >>> import matplotlib.pyplot as plt
- >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.yaml', 'ease_sh')
- >>> swath_def = SwathDefinition(lons, lats)
+.. doctest::
+   :hide:
+ >>> from pyresample.geometry import AreaDefinition
+ >>> area_id = 'ease_sh'
+ >>> description = 'Antarctic EASE grid'
+ >>> proj_id = 'ease_sh'
+ >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> width = 425
+ >>> height = 425
+ >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+ >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+ ...                           width, height, area_extent)
+
+ >>> import matplotlib.pyplot as plt # doctest: +SKIP
+ >>> from pyresample import area_def2basemap # doctest: +SKIP
+ >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
- >>> bmap = area_def2basemap(area_def)
- >>> bmng = bmap.bluemarble()
- >>> col = bmap.imshow(result, origin='upper', cmap='RdBu_r')
- >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')
+ >>> bmap = area_def2basemap(area_def) # doctest: +SKIP
+ >>> bmng = bmap.bluemarble() # doctest: +SKIP
+ >>> col = bmap.imshow(result, origin='upper', cmap='RdBu_r') # doctest: +SKIP
+ >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight') # doctest: +SKIP
+
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data as in
 the previous examples the result might look something like this:
@@ -239,24 +269,16 @@ The above image can be generated using Cartopy instead by utilizing the method
 
 **Example usage:**
 
- >>> import numpy as np
- >>> import matplotlib.pyplot as plt
- >>> from pyresample import load_area, save_quicklook, area_def2basemap, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
- >>> area_def = load_area('areas.yaml', 'ease_sh')
- >>> swath_def = SwathDefinition(lons, lats)
+ >>> import matplotlib.pyplot as plt # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
- >>> import matplotlib.pyplot as plt
- >>> crs = area_def.to_cartopy_crs()
- >>> ax = plt.axes(projection=crs)
- >>> ax.background_img(name='BM')
- >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper', cmap='RdBu_r')
- >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')
+ >>> crs = area_def.to_cartopy_crs() # doctest: +SKIP
+ >>> ax = plt.axes(projection=crs) # doctest: +SKIP
+ >>> ax.background_img(name='BM') # doctest: +SKIP
+ >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper', cmap='RdBu_r') # doctest: +SKIP
+ >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight') # doctest: +SKIP
 
+ 
 The above provides you have the Bluemarble background data available in the
 Cartopy standard place or in a directory pointed to by the environment
 parameter `CARTOPY_USER_BACKGROUNDS`.

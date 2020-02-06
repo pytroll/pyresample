@@ -24,6 +24,8 @@ classes must be in degrees. Additionally, longitudes must be in the
 AreaDefinition
 --------------
 
+.. _area-definitions:
+
 An :class:`~pyresample.geometry.AreaDefinition`, or ``area``, is the primary
 way of specifying a uniformly spaced geographic region in pyresample. It is
 also one of the only geometry objects that understands geographic projections.
