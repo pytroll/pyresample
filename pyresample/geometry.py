@@ -748,10 +748,11 @@ class SwathDefinition(CoordinateDefinition):
     def compute_bb_proj_params(self, proj_dict):
         """Compute BB projection parameters."""
         projection = proj_dict['proj']
-        ellipsoid = proj_dict.get('ellps', 'WGS84')
         if projection == 'omerc':
+            ellipsoid = proj_dict.get('ellps', 'sphere')
             return self._compute_omerc_parameters(ellipsoid)
         else:
+            ellipsoid = proj_dict.get('ellps', 'WGS84')
             new_proj = self._compute_generic_parameters(projection, ellipsoid)
             new_proj.update(proj_dict)
             return new_proj
@@ -884,7 +885,6 @@ class DynamicAreaDefinition(object):
 
     def _get_proj_dict(self):
         projection = self._projection
-
         if CRS is not None:
             try:
                 crs = CRS(projection)
@@ -1963,7 +1963,6 @@ class AreaDefinition(BaseDefinition):
                                             factor=shape_divisible_by)
 
         return (x_slice, y_slice)
-
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
