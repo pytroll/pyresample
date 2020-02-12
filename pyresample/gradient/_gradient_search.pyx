@@ -34,7 +34,7 @@ from libc.math cimport isinf
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void nn(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -54,7 +54,7 @@ cdef inline void nn(DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void bil(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
     cdef int l_a, l_b, p_a, p_b
     cdef double w_l, w_p
     cdef size_t z_size = res.shape[0]
@@ -81,7 +81,7 @@ cdef inline void bil(DTYPE_t [:, :, :] data, int l0, int p0, double dl, double d
                   w_l * (1 - w_p) * data[i, l_b, p_a] +
                   w_l * w_p * data[i, l_b, p_b])
 
-ctypedef void (*FN)(DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil
+ctypedef void (*FN)(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -111,10 +111,7 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
 
     # output image array --> needs to be (lines, pixels) --> y,x
     cdef np.ndarray[DTYPE_t, ndim = 3] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
-    src_x.setflags(write=True)
-    src_y.setflags(write=True)
-    dst_x.setflags(write=True)
-    dst_y.setflags(write=True)
+    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
 
     one_step_gradient_search_no_gil(data,
                                     src_x, src_y,
@@ -122,22 +119,23 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
                                     dst_x, dst_y,
                                     x_size, y_size,
                                     fun, image,
-                                    np.arange(x_size, dtype=np.uintp))
+                                    elements)
     # return the output image
     return image
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef void one_step_gradient_search_no_gil(DTYPE_t [:, :, :] data,
-                                          DTYPE_t [:, :] src_x,
-                                          DTYPE_t [:, :] src_y,
-                                          DTYPE_t [:, :] xl,
-                                          DTYPE_t [:, :] xp,
-                                          DTYPE_t [:, :] yl,
-                                          DTYPE_t [:, :] yp,
-                                          DTYPE_t [:, :] dst_x,
-                                          DTYPE_t [:, :] dst_y,
-                                          size_t x_size, size_t y_size,
+cdef void one_step_gradient_search_no_gil(const DTYPE_t [:, :, :] data,
+                                          const DTYPE_t [:, :] src_x,
+                                          const DTYPE_t [:, :] src_y,
+                                          const DTYPE_t [:, :] xl,
+                                          const DTYPE_t [:, :] xp,
+                                          const DTYPE_t [:, :] yl,
+                                          const DTYPE_t [:, :] yp,
+                                          const DTYPE_t [:, :] dst_x,
+                                          const DTYPE_t [:, :] dst_y,
+                                          const size_t x_size, const size_t y_size,
                                           FN fun,
                                           DTYPE_t [:, :, :] image,
                                           size_t [:] elements) nogil:
@@ -611,10 +609,10 @@ def two_step_fast_gradient_search(np.ndarray[DTYPE_t, ndim=2] data, np.ndarray[D
     cdef np.ndarray[DTYPE_t, ndim = 2] reduced_x, reduced_y
     # reduced_x = (src_x[4::chunk_size, :] + src_x[5::chunk_size]) / 2.0
     # reduced_y = (src_y[4::chunk_size, :] + src_y[5::chunk_size]) / 2.0
-    reduced_x = (src_x[::chunk_size, :] + src_x[1::chunk_size] + src_x[2::chunk_size, :] + src_x[3::chunk_size] + src_x[4::chunk_size,
-                                                                                                                                       :] + src_x[5::chunk_size] + src_x[6::chunk_size, :] + src_x[7::chunk_size] + src_x[8::chunk_size, :] + src_x[9::chunk_size]) / chunk_size
-    reduced_y = (src_y[::chunk_size, :] + src_y[1::chunk_size] + src_y[2::chunk_size, :] + src_y[3::chunk_size] + src_y[4::chunk_size,
-                                                                                                                                       :] + src_y[5::chunk_size] + src_y[6::chunk_size, :] + src_y[7::chunk_size] + src_y[8::chunk_size, :] + src_y[9::chunk_size]) / chunk_size
+    reduced_x = (src_x[::chunk_size, :] + src_x[1::chunk_size] + src_x[2::chunk_size, :] + src_x[3::chunk_size] + src_x[4::chunk_size, :] +
+                 src_x[5::chunk_size] + src_x[6::chunk_size, :] + src_x[7::chunk_size] + src_x[8::chunk_size, :] + src_x[9::chunk_size]) / chunk_size
+    reduced_y = (src_y[::chunk_size, :] + src_y[1::chunk_size] + src_y[2::chunk_size, :] + src_y[3::chunk_size] + src_y[4::chunk_size, :] +
+                 src_y[5::chunk_size] + src_y[6::chunk_size, :] + src_y[7::chunk_size] + src_y[8::chunk_size, :] + src_y[9::chunk_size]) / chunk_size
     cdef np.ndarray[DTYPE_t, ndim = 2] ryp, ryl
     ryp, ryl = np.gradient(reduced_y)
     cdef np.ndarray[DTYPE_t, ndim = 2] rxp, rxl
