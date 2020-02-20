@@ -3,11 +3,7 @@ import numpy as np
 import dask.array as da
 import dask
 import xarray as xr
-try:
-    from unittest.mock import MagicMock, patch
-except ImportError:
-    # separate mock package py<3.3
-    from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from pyresample.geometry import AreaDefinition
 from pyresample import bucket
@@ -207,13 +203,3 @@ class Test(unittest.TestCase):
         # the categories
         with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
             result = self.resampler.get_fractions(data, categories=None)
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

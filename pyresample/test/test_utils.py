@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2015-2019 Pyresample developers
+# Copyright (c) 2015-2020 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -596,21 +596,3 @@ class TestProjRotation(unittest.TestCase):
         test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestLegacyAreaParser))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestYAMLAreaParser))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestPreprocessing))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestMisc))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestProjRotation))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

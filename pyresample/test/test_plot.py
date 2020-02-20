@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf8
 #
-# Copyright (C) 2014-2019 PyTroll developers
+# Copyright (C) 2014-2020 PyTroll developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -20,17 +20,8 @@
 import os
 import numpy as np
 import sys
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
-if sys.version_info < (3,):
-    from mock import patch
-    import mock
-else:
-    from unittest.mock import patch
-    from unittest import mock
+import unittest
+from unittest import mock
 
 try:
     import matplotlib
@@ -93,8 +84,8 @@ class Test(unittest.TestCase):
         self.assertTrue(bmap.rmajor == bmap.rminor and bmap.rmajor == 6371228.0,
                         'Failed to create Basemap object')
 
-    @patch('matplotlib.ticker.FixedLocator')
-    @patch('matplotlib.pyplot.axes')
+    @mock.patch('matplotlib.ticker.FixedLocator')
+    @mock.patch('matplotlib.pyplot.axes')
     def test_add_gridlines(self, axes, fx_locator):
         """Test the adding of gridlines to matplotlib plotting."""
         from pyresample.plot import _add_gridlines
@@ -197,12 +188,3 @@ class Test(unittest.TestCase):
                                           radius_of_influence=20000,
                                           fill_value=None)
         plot._get_quicklook(area_def, result)
-
-
-def suite():
-    """Test the pyresample easy quicklook plotting functions."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

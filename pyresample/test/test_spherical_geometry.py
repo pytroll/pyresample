@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import numpy as np
 import unittest
 import math
@@ -409,18 +407,3 @@ class TestSphereGeometry(unittest.TestCase):
         self.assertFalse(arc45.intersects(arc02))
 
         self.assertTrue(arc35.intersects(arc24))
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestOverlap))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestSphereGeometry))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -22,11 +22,7 @@
 """Tests for the gradien search resampling."""
 
 import unittest
-try:
-    from unittest import mock
-except ImportError:
-    # separate mock package py<3.3
-    import mock
+from unittest import mock
 from pyresample.geometry import AreaDefinition, SwathDefinition
 import numpy as np
 import dask.array as da
@@ -203,12 +199,3 @@ class TestBlockFunctions(unittest.TestCase):
                 assert(arg.shape == (90, 90))
             return args[7][np.newaxis, :, :]
 
-
-def suite():
-    """Test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestBlockFunctions))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestGradientResampler))
-
-    return mysuite

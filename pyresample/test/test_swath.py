@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import os
 import sys
 import unittest
@@ -9,11 +7,6 @@ warnings.simplefilter("always")
 import numpy as np
 from pyresample.test.utils import catch_warnings
 from pyresample import kd_tree, geometry
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 
 class Test(unittest.TestCase):

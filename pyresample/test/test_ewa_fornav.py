@@ -15,9 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test EWA fornav module.
-"""
-import sys
+"""Test EWA fornav module."""
 import logging
 import numpy as np
 import unittest
@@ -139,6 +137,7 @@ class TestFornav(unittest.TestCase):
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
                         msg="Unexpected interpolation values were returned")
 
+
 class TestFornavWrapper(unittest.TestCase):
     """Test the function wrapping the lower-level fornav code."""
 
@@ -170,17 +169,3 @@ class TestFornavWrapper(unittest.TestCase):
         # output except outside the swath
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
                         msg="Unexpected interpolation values were returned")
-
-
-def suite():
-    """The test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestFornav))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestFornavWrapper))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()
