@@ -28,7 +28,7 @@ install:
 - source ci-helpers/travis/setup_conda.sh
 - pip install --no-deps -e .
 script:
-- pytest --cov=trollsift pyresample/test
+- pytest --cov=pyresample pyresample/test
 - cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 after_success:
 - if [[ $PYTHON_VERSION == 3.7 ]]; then coveralls; codecov; fi
