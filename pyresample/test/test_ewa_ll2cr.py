@@ -24,7 +24,7 @@
 import logging
 import numpy as np
 from pyresample.test.utils import create_test_longitude, create_test_latitude
-import unittest2 as unittest
+import unittest
 
 LOG = logging.getLogger(__name__)
 
