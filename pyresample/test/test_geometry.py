@@ -1610,12 +1610,25 @@ class TestSwathDefinition(unittest.TestCase):
         # so this seems good
         np.testing.assert_allclose(111301.237078, geo_res)
 
+        # with a resolution attribute that is None
+        xlons.attrs['resolution'] = None
+        xlats.attrs['resolution'] = None
+        sd = SwathDefinition(xlons, xlats)
+        geo_res = sd.geocentric_resolution()
+        np.testing.assert_allclose(111301.237078, geo_res)
+
+        # with a resolution attribute that is a number
+        xlons.attrs['resolution'] = 111301.237078 / 2
+        xlats.attrs['resolution'] = 111301.237078 / 2
+        sd = SwathDefinition(xlons, xlats)
+        geo_res = sd.geocentric_resolution()
+        np.testing.assert_allclose(111301.237078, geo_res)
+
         # 1D
         xlats = xr.DataArray(da.from_array(lats.ravel(), chunks=2), dims=['y'])
         xlons = xr.DataArray(da.from_array(lons.ravel(), chunks=2), dims=['y'])
         sd = SwathDefinition(xlons, xlats)
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
-
 
 class TestStackedAreaDefinition(unittest.TestCase):
 
