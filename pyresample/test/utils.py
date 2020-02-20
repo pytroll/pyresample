@@ -21,7 +21,6 @@
 This mostly takes from astropy's method for checking warnings during tests.
 """
 import sys
-import six
 import types
 import warnings
 
@@ -44,7 +43,7 @@ def treat_deprecations_as_exceptions():
     warning state.
     """
     # First, totally reset the warning state
-    for module in list(six.itervalues(sys.modules)):
+    for module in sys.modules.values():
         # We don't want to deal with six.MovedModules, only "real"
         # modules.
         if (isinstance(module, types.ModuleType) and
