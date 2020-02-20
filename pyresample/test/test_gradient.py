@@ -198,4 +198,3 @@ class TestBlockFunctions(unittest.TestCase):
             for arg in args[7:]:
                 assert(arg.shape == (90, 90))
             return args[7][np.newaxis, :, :]
-
