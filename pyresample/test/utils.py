@@ -21,7 +21,6 @@
 This mostly takes from astropy's method for checking warnings during tests.
 """
 import sys
-import six
 import types
 import warnings
 
@@ -44,7 +43,7 @@ def treat_deprecations_as_exceptions():
     warning state.
     """
     # First, totally reset the warning state
-    for module in list(six.itervalues(sys.modules)):
+    for module in sys.modules.values():
         # We don't want to deal with six.MovedModules, only "real"
         # modules.
         if (isinstance(module, types.ModuleType) and
@@ -84,31 +83,30 @@ def treat_deprecations_as_exceptions():
         warnings.filterwarnings("error", ".*", AstropyDeprecationWarning)
         warnings.filterwarnings("error", ".*", AstropyPendingDeprecationWarning)
 
-    if sys.version_info[:2] >= (3, 4):
-        # py.test reads files with the 'U' flag, which is now
-        # deprecated in Python 3.4.
-        warnings.filterwarnings(
-            "ignore",
-            r"'U' mode is deprecated",
-            DeprecationWarning)
+    # py.test reads files with the 'U' flag, which is now
+    # deprecated in Python 3.4.
+    warnings.filterwarnings(
+        "ignore",
+        r"'U' mode is deprecated",
+        DeprecationWarning)
 
-        # BeautifulSoup4 triggers a DeprecationWarning in stdlib's
-        # html module.x
-        warnings.filterwarnings(
-            "ignore",
-            r"The strict argument and mode are deprecated\.",
-            DeprecationWarning)
-        warnings.filterwarnings(
-            "ignore",
-            r"The value of convert_charrefs will become True in 3\.5\. "
-            r"You are encouraged to set the value explicitly\.",
-            DeprecationWarning)
-        # Filter out pyresample's deprecation warnings.
-        warnings.filterwarnings(
-            "ignore",
-            r"This module will be removed in pyresample 2\.0\, please use the"
-            r"\`pyresample.spherical\` module functions and class instead\.",
-            DeprecationWarning)
+    # BeautifulSoup4 triggers a DeprecationWarning in stdlib's
+    # html module.x
+    warnings.filterwarnings(
+        "ignore",
+        r"The strict argument and mode are deprecated\.",
+        DeprecationWarning)
+    warnings.filterwarnings(
+        "ignore",
+        r"The value of convert_charrefs will become True in 3\.5\. "
+        r"You are encouraged to set the value explicitly\.",
+        DeprecationWarning)
+    # Filter out pyresample's deprecation warnings.
+    warnings.filterwarnings(
+        "ignore",
+        r"This module will be removed in pyresample 2\.0\, please use the"
+        r"\`pyresample.spherical\` module functions and class instead\.",
+        DeprecationWarning)
 
     if sys.version_info[:2] >= (3, 5):
         # py.test raises this warning on Python 3.5.

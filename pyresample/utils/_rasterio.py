@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-import six
 from . import proj4_str_to_dict
 
 
@@ -104,7 +103,7 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
             raise ImportError('Either rasterio or gdal must be available')
 
     cleanup_gdal = cleanup_rasterio = None
-    if isinstance(source, (str, six.text_type)):
+    if isinstance(source, str):
         if rasterio is not None:
             source = rasterio.open(source)
             cleanup_rasterio = True

@@ -19,11 +19,7 @@
 """Testing the _spatial_mp module."""
 
 
-# try:
-#     from unittest import mock
-# except ImportError:
-#     # separate mock package py<3.3
-#     import mock
+# from unittest import mock
 import unittest
 import numpy as np
 
@@ -87,15 +83,3 @@ class SpatialMPTest(unittest.TestCase):
         self.assertIs(type(coords_float32[0, 0]), np.float32)
         self.assertIs(type(coords_float[0, 0]), np.float64)
         self.assertTrue(np.issubdtype(coords_int.dtype, np.floating))
-
-
-def suite():
-    """Test suite for _spatial_mp."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(SpatialMPTest))
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

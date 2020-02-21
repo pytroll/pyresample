@@ -155,17 +155,3 @@ class Test(unittest.TestCase):
         cross_sum = data.sum()
         expected = 999000000.0
         self.assertAlmostEqual(cross_sum, expected)
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

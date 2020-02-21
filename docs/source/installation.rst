@@ -1,7 +1,7 @@
 Installing Pyresample
 =====================
 
-Pyresample depends on pyproj, numpy(>= 1.10), pyyaml, configobj, six,
+Pyresample depends on pyproj, numpy(>= 1.10), pyyaml, configobj,
 and pykdtree (>= 1.1.1).
 
 In order to use the pyresample plotting functionality Cartopy and

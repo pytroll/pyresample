@@ -5,7 +5,7 @@ env:
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
   - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio pillow matplotlib
-    pyyaml pyproj coveralls configobj coverage codecov'
+    pyyaml pyproj coveralls configobj coverage codecov pytest pytest-cov'
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request'
   - SETUP_CMD='test'
@@ -13,11 +13,6 @@ env:
   - CONDA_CHANNEL_PRIORITY='strict'
 matrix:
   include:
-  - env: PYTHON_VERSION=2.7
-    os: linux
-  - env: PYTHON_VERSION=2.7
-    os: osx
-    language: generic
   - env: PYTHON_VERSION=3.7
     os: linux
   - env: PYTHON_VERSION=3.7
@@ -29,11 +24,11 @@ matrix:
   allow_failures:
   - os: windows
 install:
-# - git clone --depth 1 git://github.com/astropy/ci-helpers.git
-- git clone --depth 1 -b all-the-fixes git://github.com/djhoese/ci-helpers.git
+- git clone --depth 1 git://github.com/astropy/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
+- pip install --no-deps -e .
 script:
-- coverage run --source=pyresample setup.py test
+- pytest --cov=pyresample pyresample/test
 - cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 after_success:
 - if [[ $PYTHON_VERSION == 3.7 ]]; then coveralls; codecov; fi

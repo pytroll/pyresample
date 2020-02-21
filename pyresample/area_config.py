@@ -20,7 +20,6 @@ import math
 import os
 
 import numpy as np
-import six
 import yaml
 from pyresample.utils import proj4_str_to_dict
 
@@ -109,12 +108,12 @@ def parse_area_file(area_file_name, *regions):
 def _read_yaml_area_file_content(area_file_name):
     """Read one or more area files in to a single dict object."""
     from pyresample.utils import recursive_dict_update
-    if isinstance(area_file_name, (str, six.text_type)):
+    if isinstance(area_file_name, str):
         area_file_name = [area_file_name]
 
     area_dict = {}
     for area_file_obj in area_file_name:
-        if (isinstance(area_file_obj, (str, six.text_type)) and
+        if (isinstance(area_file_obj, str) and
                 os.path.isfile(area_file_obj)):
             with open(area_file_obj) as area_file_obj:
                 tmp_dict = yaml.safe_load(area_file_obj)
@@ -204,17 +203,17 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
 
 
 def _read_legacy_area_file_lines(area_file_name):
-    if isinstance(area_file_name, (str, six.text_type)):
+    if isinstance(area_file_name, str):
         area_file_name = [area_file_name]
 
     for area_file_obj in area_file_name:
-        if (isinstance(area_file_obj, (str, six.text_type)) and
+        if (isinstance(area_file_obj, str) and
            not os.path.isfile(area_file_obj)):
             # file content string
             for line in area_file_obj.splitlines():
                 yield line
             continue
-        elif isinstance(area_file_obj, (str, six.text_type)):
+        elif isinstance(area_file_obj, str):
             # filename
             with open(area_file_obj, 'r') as area_file:
                 for line in area_file.readlines():
@@ -334,7 +333,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
 def _get_proj4_args(proj4_args):
     """Create dict from proj4 args."""
     from pyresample.utils._proj4 import convert_proj_floats
-    if isinstance(proj4_args, (str, six.text_type)):
+    if isinstance(proj4_args, str):
         # float conversion is done in `proj4_str_to_dict` already
         return proj4_str_to_dict(str(proj4_args))
 

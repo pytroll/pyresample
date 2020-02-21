@@ -1,10 +1,7 @@
 """Test bilinear interpolation."""
 import unittest
 import numpy as np
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 
 class TestNumpyBilinear(unittest.TestCase):
@@ -987,13 +984,3 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res.shape, (self.target_def.size, 3))
         vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
         self.assertTrue(np.allclose(res.compute()[0, :], vals))
-
-
-def suite():
-    """Create the test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestNumpyBilinear))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestXarrayBilinear))
-
-    return mysuite

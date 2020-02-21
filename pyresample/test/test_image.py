@@ -3,7 +3,7 @@ import unittest
 
 import numpy
 
-from pyresample import image, geometry, grid, utils
+from pyresample import image, geometry, utils
 
 
 def mask(f):
@@ -248,13 +248,3 @@ class Test(unittest.TestCase):
         cross_sum = res.sum()
         expected = 16852120.789503865
         self.assertAlmostEqual(cross_sum, expected)
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

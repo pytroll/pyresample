@@ -21,14 +21,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the EWA ll2cr code.
 """
-import sys
 import logging
 import numpy as np
 from pyresample.test.utils import create_test_longitude, create_test_latitude
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 
 LOG = logging.getLogger(__name__)
 
@@ -188,19 +184,3 @@ class TestLL2CRWrapper(unittest.TestCase):
         self.assertIs(lon_arr, lon_res)
         self.assertIs(lat_arr, lat_res)
         self.assertEqual(points_in_grid, lon_arr.size, "all these test points should fall in this grid")
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRStatic))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRDynamic))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestLL2CRWrapper))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

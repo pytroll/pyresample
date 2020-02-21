@@ -26,8 +26,9 @@ XArray objects (including dask array support) are provided in separate
 Resampler class interfaces and are in active development.
 Utility functions are available to easily plot data using Cartopy.
 
-Pyresample is tested with Python 2.7 and 3.6, but should additionally work
-on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
+.. versionchanged:: 1.15
+
+    Dropped Python 2 and Python <3.4 support.
 
 Documentation
 -------------

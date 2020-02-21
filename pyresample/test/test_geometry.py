@@ -22,8 +22,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the geometry objects."""
-from __future__ import with_statement
-
 import random
 import sys
 
@@ -35,16 +33,8 @@ from pyresample.geometry import (IncompatibleAreas,
                                  concatenate_area_defs)
 from pyresample.test.utils import catch_warnings
 
-try:
-    from unittest.mock import MagicMock, patch
-except ImportError:
-    # separate mock package py<3.3
-    from mock import MagicMock, patch
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+from unittest.mock import MagicMock, patch
+import unittest
 
 
 class Test(unittest.TestCase):
@@ -1603,8 +1593,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
-        if (sys.version_info < (3, 0)):
-            self.skipTest("Not implemented in python 2 (xarray).")
         import dask.array as da
         import xarray as xr
         import numpy as np
@@ -2141,21 +2129,3 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         self.assertEqual(res.shape[0], area.shape[0] / 2)
         self.assertEqual(res.shape[1], area.shape[1] / 4)
-
-
-def suite():
-    """Test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestStackedAreaDefinition))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestDynamicAreaDefinition))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestSwathDefinition))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestCrop))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestMakeSliceDivisible))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()
