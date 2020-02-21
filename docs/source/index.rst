@@ -28,7 +28,7 @@ Utility functions are available to easily plot data using Cartopy.
 
 .. versionchanged:: 1.15
 
-    Dropped Python 2 and Python <3.3 support.
+    Dropped Python 2 and Python <3.4 support.
 
 Documentation
 -------------
