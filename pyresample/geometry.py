@@ -501,7 +501,8 @@ class CoordinateDefinition(BaseDefinition):
             data points found no valid data points.
 
         """
-        if hasattr(self.lons, 'attrs') and 'resolution' in self.lons.attrs:
+        if hasattr(self.lons, 'attrs') and \
+                self.lons.attrs.get('resolution') is not None:
             return self.lons.attrs['resolution'] * nadir_factor
         if self.ndim == 1:
             raise RuntimeError("Can't confidently determine geocentric "
@@ -748,10 +749,11 @@ class SwathDefinition(CoordinateDefinition):
     def compute_bb_proj_params(self, proj_dict):
         """Compute BB projection parameters."""
         projection = proj_dict['proj']
-        ellipsoid = proj_dict.get('ellps', 'WGS84')
         if projection == 'omerc':
+            ellipsoid = proj_dict.get('ellps', 'sphere')
             return self._compute_omerc_parameters(ellipsoid)
         else:
+            ellipsoid = proj_dict.get('ellps', 'WGS84')
             new_proj = self._compute_generic_parameters(projection, ellipsoid)
             new_proj.update(proj_dict)
             return new_proj
@@ -826,44 +828,43 @@ class DynamicAreaDefinition(object):
 
     The purpose of this class is to be able to adapt the area extent and shape
     of the area to a given set of longitudes and latitudes, such that e.g.
-    polar satellite granules can be resampled optimaly to a give projection.
+    polar satellite granules can be resampled optimally to a given projection.
+
+    Parameters
+    ----------
+    area_id:
+        The name of the area.
+    description:
+        The description of the area.
+    projection:
+        The dictionary or string of projection parameters. Doesn't have to
+        be complete. If not complete, ``proj_info`` must be provided to
+        ``freeze`` to "fill in" any missing parameters.
+    width:
+        x dimension in number of pixels, aka number of grid columns
+    height:
+        y dimension in number of pixels, aka number of grid rows
+    shape:
+        Corresponding array shape as (height, width)
+    area_extent:
+        The area extent of the area.
+    pixel_size_x:
+        Pixel width in projection units
+    pixel_size_y:
+        Pixel height in projection units
+    resolution:
+        Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
+    optimize_projection:
+        Whether the projection parameters have to be optimized.
+    rotation:
+        Rotation in degrees (negative is cw)
+
     """
 
     def __init__(self, area_id=None, description=None, projection=None,
                  width=None, height=None, area_extent=None,
                  resolution=None, optimize_projection=False, rotation=None):
-        """Initialize the DynamicAreaDefinition.
-
-        Attributes
-        ----------
-        area_id:
-          The name of the area.
-        description:
-          The description of the area.
-        projection:
-          The dictionary or string of projection parameters. Doesn't have to
-          be complete. If not complete, ``proj_info`` must be provided to
-          ``freeze`` to "fill in" any missing parameters.
-        width:
-            x dimension in number of pixels, aka number of grid columns
-        height:
-            y dimension in number of pixels, aka number of grid rows
-        shape:
-            Corresponding array shape as (height, width)
-        area_extent:
-          The area extent of the area.
-        pixel_size_x:
-            Pixel width in projection units
-        pixel_size_y:
-            Pixel height in projection units
-        resolution:
-          Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
-        optimize_projection:
-          Whether the projection parameters have to be optimized.
-        rotation:
-          Rotation in degrees (negative is cw)
-
-        """
+        """Initialize the DynamicAreaDefinition."""
         self.area_id = area_id
         self.description = description
         self.width = width
@@ -884,7 +885,6 @@ class DynamicAreaDefinition(object):
 
     def _get_proj_dict(self):
         projection = self._projection
-
         if CRS is not None:
             try:
                 crs = CRS(projection)
@@ -1963,7 +1963,6 @@ class AreaDefinition(BaseDefinition):
                                             factor=shape_divisible_by)
 
         return (x_slice, y_slice)
-
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
