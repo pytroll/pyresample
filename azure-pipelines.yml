@@ -7,11 +7,12 @@ trigger:
       - v*
 variables:
   CIBW_BUILDING: "true"
-  CIBW_SKIP: "cp27-* cp34-* cp35-*"
+  CIBW_SKIP: "cp27-* cp34-* cp35-* pp27-*"
   CIBW_TEST_REQUIRES: "pytest pytest-sugar"
   CIBW_TEST_COMMAND: "python -c \"import pyresample; from pyresample.ewa import *\""
   CIBW_BUILD_VERBOSITY: "2"
   CIBW_BEFORE_BUILD: "pip install -U numpy Cython pip setuptools"
+  CIBW_ENVIRONMENT: "USE_CYTHON=True"
   # needed until pykdtree auto-detects this
   CIBW_ENVIRONMENT_MACOS: "USE_OMP=0"
 jobs:
