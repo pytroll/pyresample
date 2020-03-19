@@ -105,7 +105,7 @@ def load_area_from_string(area_strs, *regions):
     if isinstance(area_strs, str):
         area_strs = [area_strs]
     return load_area([io.StringIO(area_str) for area_str in area_strs],
-                          *regions)
+                     *regions)
 
 
 def parse_area_file(area_file_name, *regions):
