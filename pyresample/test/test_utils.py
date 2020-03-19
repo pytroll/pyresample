@@ -210,6 +210,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
+        from pyresample.area_config import load_area_from_string
         area_list = ["""ease_sh:
   description: Antarctic EASE grid
   projection:
@@ -248,7 +249,9 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         self.assertIn(results[0].area_id, ('ease_sh', 'ease_sh2'))
         self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
         results2 = parse_area_file([io.StringIO(ar) for ar in area_list])
+        results3 = load_area_from_string(area_list)
         self.assertEqual(results, results2)
+        self.assertEqual(results, results3)
 
 
 class TestPreprocessing(unittest.TestCase):

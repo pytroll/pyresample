@@ -59,7 +59,8 @@ def load_area(area_file_name, *regions):
     area_file_name : str, pathlib.Path, stream, or list thereof
         List of paths or streams.  Any str or pathlib.Path will be
         interpreted as a path to a file.  Any stream will be interpreted
-        as containing a yaml definition.
+        as containing a yaml definition.  To read directly from a string,
+        use :func:`load_area_from_string`.
     regions : str argument list
         Regions to parse. If no regions are specified all
         regions in the file are returned
@@ -80,6 +81,31 @@ def load_area(area_file_name, *regions):
     if len(area_list) == 1:
         return area_list[0]
     return area_list
+
+
+def load_area_from_string(area_strs, *regions):
+    """Load area(s) from area strings.
+
+    Like :func:`~pyresample.area_config.load_area`, but load from string
+    directly.
+
+    Parameters
+    ----------
+    area_strs : str or List[str]
+        Strings containing yaml definitions.
+    regions : str
+        Regions to parse.
+
+    Returns
+    -------
+    area_defs : AreaDefinition or list
+        If one area name is specified a single AreaDefinition object is returned.
+        If several area names are specified a list of AreaDefinition objects is returned
+    """
+    if isinstance(area_strs, str):
+        area_strs = [area_strs]
+    return load_area([io.StringIO(area_str) for area_str in area_strs],
+                          *regions)
 
 
 def parse_area_file(area_file_name, *regions):
@@ -129,8 +155,9 @@ def _read_yaml_area_file_content(area_file_name):
             if isinstance(area_file_obj, str) and "\n" in area_file_obj:
                 warnings.warn("It looks like you passed a YAML string "
                               "directly.  This is deprecated since pyresample "
-                              "1.14.1, please pass a stream or a path to a "
-                              "file instead", DeprecationWarning)
+                              "1.14.1, please use load_area_from_string or "
+                              "pass a stream or a path to a file instead",
+                              DeprecationWarning)
                 tmp_dict = yaml.safe_load(area_file_obj)
             else:
                 with open(area_file_obj) as area_file_obj:
