@@ -18,6 +18,9 @@
 import logging
 import math
 import os
+import io
+import warnings
+import pathlib
 
 import numpy as np
 import yaml
@@ -53,8 +56,10 @@ def load_area(area_file_name, *regions):
 
     Parameters
     ----------
-    area_file_name : str or list
-        One or more paths to area definition files
+    area_file_name : str, pathlib.Path, stream, or list thereof
+        List of paths or streams.  Any str or pathlib.Path will be
+        interpreted as a path to a file.  Any stream will be interpreted
+        as containing a yaml definition.
     regions : str argument list
         Regions to parse. If no regions are specified all
         regions in the file are returned
@@ -108,17 +113,28 @@ def parse_area_file(area_file_name, *regions):
 def _read_yaml_area_file_content(area_file_name):
     """Read one or more area files in to a single dict object."""
     from pyresample.utils import recursive_dict_update
-    if isinstance(area_file_name, str):
+
+    if isinstance(area_file_name, (str, pathlib.Path)):
         area_file_name = [area_file_name]
 
     area_dict = {}
     for area_file_obj in area_file_name:
-        if (isinstance(area_file_obj, str) and
-                os.path.isfile(area_file_obj)):
-            with open(area_file_obj) as area_file_obj:
-                tmp_dict = yaml.safe_load(area_file_obj)
-        else:
+        if isinstance(area_file_obj, io.IOBase):
+            # already a stream
             tmp_dict = yaml.safe_load(area_file_obj)
+        else:
+            # hopefully a path to a file, but in the past a yaml string could
+            # be passed directly, assume any string with a newline must be
+            # a yaml file and not a path
+            if isinstance(area_file_obj, str) and "\n" in area_file_obj:
+                warnings.warn("It looks like you passed a YAML string "
+                              "directly.  This is deprecated since pyresample "
+                              "1.14.1, please pass a stream or a path to a "
+                              "file instead", DeprecationWarning)
+                tmp_dict = yaml.safe_load(area_file_obj)
+            else:
+                with open(area_file_obj) as area_file_obj:
+                    tmp_dict = yaml.safe_load(area_file_obj)
         area_dict = recursive_dict_update(area_dict, tmp_dict)
 
     return area_dict
