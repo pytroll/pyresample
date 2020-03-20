@@ -26,21 +26,12 @@ matrix:
 install:
 - git clone --depth 1 git://github.com/astropy/ci-helpers.git
 - source ci-helpers/travis/setup_conda.sh
+- conda install -y "libtiff<4.1"
 - pip install --no-deps -e .
 script:
 - pytest --cov=pyresample pyresample/test
 - cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 after_success:
 - if [[ $PYTHON_VERSION == 3.7 ]]; then coveralls; codecov; fi
-deploy:
-  - provider: pypi
-    user: dhoese
-    password:
-      secure: efysRf+1NddbJF6lnDYMHRm+qKXROWOTzcP7A+GJ/BGlkpZHQjf5gmE50C+9yHYigRLdVFX/x0aymiNMD1TFiZgA6a05ko+oFqGdEWV1ix/H1c4goTcIwdR0QVxd6MDmZiyyvmfOBWlKBGKv8ojtXbF+y1fxv+ly1AEeVvn1mqY=
-    distributions: sdist
-    skip_existing: true
-    on:
-      tags: true
-      repo: pytroll/pyresample
 notifications:
   slack: pytroll:96mNSYSI1dBjGyzVXkBT6qFt
