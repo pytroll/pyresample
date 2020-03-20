@@ -19,6 +19,8 @@
 
 import os
 import unittest
+import io
+import pathlib
 from tempfile import NamedTemporaryFile
 
 import numpy as np
@@ -100,6 +102,13 @@ Number of columns: 425
 Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(nh_str, ease_nh.__str__())
+
+    def test_area_file_not_found_exception(self):
+        from pyresample.area_config import load_area
+        self.assertRaises(FileNotFoundError, load_area,
+                          "/this/file/does/not/exist.yaml")
+        self.assertRaises(FileNotFoundError, load_area,
+                          pathlib.Path("/this/file/does/not/exist.yaml"))
 
     def test_not_found_exception(self):
         from pyresample.area_config import AreaNotFound, parse_area_file
@@ -201,6 +210,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
+        from pyresample.area_config import load_area_from_string
         area_list = ["""ease_sh:
   description: Antarctic EASE grid
   projection:
@@ -233,10 +243,15 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
     upper_right_xy: [5326849.0625, 5326849.0625]
     units: m
 """]
-        results = parse_area_file(area_list)
+        with self.assertWarns(DeprecationWarning):
+            results = parse_area_file(area_list)
         self.assertEqual(len(results), 2)
         self.assertIn(results[0].area_id, ('ease_sh', 'ease_sh2'))
         self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
+        results2 = parse_area_file([io.StringIO(ar) for ar in area_list])
+        results3 = load_area_from_string(area_list)
+        self.assertEqual(results, results2)
+        self.assertEqual(results, results3)
 
 
 class TestPreprocessing(unittest.TestCase):
