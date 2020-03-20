@@ -6,8 +6,12 @@
 4. run `loghub` and update the `CHANGELOG.md` file:
 
 ```
-loghub pytroll/pyresample -u <username> -st v0.8.0 -plg bug "Bugs fixed" -plg enhancement "Features added" -plg documentation "Documentation changes"
+loghub pytroll/pyresample --token $LOGHUB_GITHUB_TOKEN -st v0.8.0 -plg bug "Bugs fixed" -plg enhancement "Features added" -plg documentation "Documentation changes"
 ```
+
+This uses a `LOGHUB_GITHUB_TOKEN` environment variable. This must be created
+on GitHub and it is recommended that you add it to your `.bashrc` or
+`.bash_profile` or equivalent.
 
 Don't forget to commit!
 
