@@ -1030,10 +1030,10 @@ class AreaDefinition(BaseDefinition):
         x dimension in number of pixels, aka number of grid columns
     height : int
         y dimension in number of pixels, aka number of grid rows
-    rotation: float
-        rotation in degrees (negative is cw)
     area_extent : list
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+    rotation: float, optional
+        rotation in degrees (negative is clockwise)
     nprocs : int, optional
         Number of processor cores to be used for certain calculations
 
