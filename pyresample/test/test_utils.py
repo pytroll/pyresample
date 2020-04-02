@@ -173,9 +173,12 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
 
         if is_pyproj2():
             # pyproj 2.0+ adds some extra parameters
-            projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
-                          "'lon_0': '-81.36', 'proj': 'longlat', "
-                          "'type': 'crs'}")
+            # FIXME: See https://github.com/pyproj4/pyproj/issues/592
+            # projection = ("{'ellps': 'WGS84', 'no_defs': 'None', 'lat_0': '27.12', "
+            #               "'lon_0': '-81.36', 'proj': 'longlat', "
+            #               "'type': 'crs'}")
+            projection = ("{'ellps': 'WGS84', 'no_defs': 'None', "
+                          "'proj': 'longlat', 'type': 'crs'}")
         else:
             projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
                           "'lon_0': '-81.36', 'proj': 'longlat'}")
@@ -366,7 +369,7 @@ class TestMisc(unittest.TestCase):
         """Test proj4_radius_parameters with default parameters."""
         from pyresample import utils
         a, b = utils._proj4.proj4_radius_parameters(
-            '+proj=lcc',
+            '+proj=lcc +lat_0=10 +lat_1=10',
         )
         # WGS84
         np.testing.assert_almost_equal(a, 6378137.)

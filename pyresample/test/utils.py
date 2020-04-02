@@ -26,6 +26,11 @@ import warnings
 
 import numpy as np
 
+try:
+    from pyproj import CRS
+except ImportError:
+    CRS = None
+
 _deprecations_as_exceptions = False
 _include_astropy_deprecations = False
 AstropyDeprecationWarning = None
@@ -194,3 +199,39 @@ class CustomScheduler(object):
             raise RuntimeError("Too many dask computations were scheduled: "
                                "{}".format(self.total_computes))
         return dask.get(dsk, keys, **kwargs)
+
+
+def friendly_crs_equal(expected, actual, keys=None, use_obj=True, use_wkt=True):
+    """Test if two projection definitions are equal.
+
+    The main purpose of this function is to help manage differences
+    between pyproj versions. Depending on the version installed and used
+    pyresample may provide a different `proj_dict` or other similar
+    CRS definition.
+
+    Args:
+        expected (dict, str, pyproj.crs.CRS): Expected CRS definition as
+            a PROJ dictionary or string or CRS object.
+        actual (dict, str, pyproj.crs.CRS): Actual CRS definition
+        keys (list): Specific PROJ parameters to look for. Only takes effect
+            if `use_obj` is `False`.
+        use_obj (bool): Use pyproj's CRS object to test equivalence. Default
+            is True.
+        use_wkt (bool): Increase likely hood of making CRS objects equal by
+            converting WellKnownText before converting to the final CRS
+            object. Requires `use_obj`. Defaults to True.
+
+    """
+    if CRS is not None and use_obj:
+        if hasattr(expected, 'crs'):
+            expected = expected.crs
+        if hasattr(actual, 'crs'):
+            actual = actual.crs
+        expected_crs = CRS(expected)
+        actual_crs = CRS(actual)
+        if use_wkt:
+            expected_crs = CRS(expected_crs.to_wkt())
+            actual_crs = CRS(actual_crs.to_wkt())
+        return expected_crs == actual_crs
+    raise NotImplementedError("""TODO""")
+

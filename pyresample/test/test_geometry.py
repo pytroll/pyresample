@@ -185,7 +185,20 @@ class Test(unittest.TestCase):
                                    '    lower_left_xy: [-1370912.72, -909968.64]\n'
                                    '    upper_right_xy: [1029087.28, 1490031.36]\n'))
 
-        self.assertDictEqual(res, expected)
+        self.assertEqual(set(res.keys()), set(expected.keys()))
+        res = res['areaD']
+        expected = expected['areaD']
+        self.assertEqual(set(res.keys()), set(expected.keys()))
+        self.assertEqual(res['description'], expected['description'])
+        self.assertEqual(res['shape'], expected['shape'])
+        self.assertEqual(res['area_extent']['lower_left_xy'],
+                         expected['area_extent']['lower_left_xy'])
+        # pyproj versions may effect how the PROJ is formatted
+        # TODO: Add lat_ts. See https://github.com/pyproj4/pyproj/issues/592
+        for proj_key in ['a', 'lat_0', 'lon_0', 'proj']:
+            self.assertEqual(res['projection'][proj_key],
+                             expected['projection'][proj_key])
+
 
         # EPSG
         projections = {'+init=epsg:3006': 'init: epsg:3006'}
@@ -1112,6 +1125,7 @@ class Test(unittest.TestCase):
         """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
         from pyresample import utils
+        from pyresample.test.utils import friendly_crs_equal
 
         # pyproj 2.0+ adds a +type=crs parameter
         extra_params = ' +type=crs' if utils.is_pyproj2() else ''
@@ -1126,9 +1140,11 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 '
-                         '+lon_0=8.0 +proj=stere' + extra_params)
+        assert friendly_crs_equal(
+            '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 '
+            '+lon_0=8.0 +proj=stere' + extra_params,
+            area
+        )
         # try a omerc projection and no_rot parameters
         proj_dict['proj'] = 'omerc'
         proj_dict['alpha'] = proj_dict.pop('lat_ts')
@@ -1137,9 +1153,11 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
-                         '+lon_0=8.0 +no_rot +proj=omerc' + extra_params)
+        assert friendly_crs_equal(
+            '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
+            '+lon_0=8.0 +no_rot +proj=omerc' + extra_params,
+            area
+        )
 
         # EPSG
         if utils.is_pyproj2():
@@ -2063,28 +2081,36 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        geos_area.proj_dict = {'a': 6378169.00,
-                               'b': 6356583.80,
-                               'h': 35785831.00}
+        del geos_area.crs
+        geos_area.proj_dict = {
+            'proj': 'geos',
+            'sweep': 'x',
+            'lon_0': -89.5,
+            'a': 6378169.00,
+            'b': 6356583.80,
+            'h': 35785831.00,
+            'units': 'm'}
 
         expected = (0.15185342867090912, 0.15133555510297725)
-
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
-        geos_area.proj_dict = {'ellps': 'GRS80',
-                               'h': 35785831.00}
-        expected = (0.15185277703584374, 0.15133971368991794)
-
-        np.testing.assert_allclose(expected,
-                                   geometry.get_geostationary_angle_extent(geos_area))
-
-        geos_area.proj_dict = {'a': 1000.0,
-                               'b': 1000.0,
-                               'h': np.sqrt(2) * 1000.0 - 1000.0}
+        geos_area.proj_dict['a'] = 1000.0
+        geos_area.proj_dict['b'] = 1000.0
+        geos_area.proj_dict['h'] = np.sqrt(2) * 1000.0 - 1000.0
 
         expected = (np.deg2rad(45), np.deg2rad(45))
+        np.testing.assert_allclose(expected,
+                                   geometry.get_geostationary_angle_extent(geos_area))
 
+        geos_area.proj_dict = {
+            'proj': 'geos',
+            'sweep': 'x',
+            'lon_0': -89.5,
+            'ellps': 'GRS80',
+            'h': 35785831.00,
+            'units': 'm'}
+        expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
