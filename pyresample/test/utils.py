@@ -234,4 +234,3 @@ def friendly_crs_equal(expected, actual, keys=None, use_obj=True, use_wkt=True):
             actual_crs = CRS(actual_crs.to_wkt())
         return expected_crs == actual_crs
     raise NotImplementedError("""TODO""")
-
