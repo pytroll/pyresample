@@ -1266,15 +1266,23 @@ class Test(unittest.TestCase):
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(10646.562531, geo_res)
 
+        # non-square area non-space area
+        area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                2000, 5000,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(2397.687307, geo_res)
+
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
         area_def = get_area_def('orig', 'Test area', 'test',
                                 proj_dict,
                                 3712, 3712,
-                                [-130, 30, -120, 40],
-                                area_extent)
+                                [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(248.594116, geo_res)
+        np.testing.assert_allclose(298.647232, geo_res)
 
 
 class TestMakeSliceDivisible(unittest.TestCase):

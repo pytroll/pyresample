@@ -902,7 +902,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         self.assertIsInstance(res.data, da.Array)
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 32114793.0
+        expected = 87281406.0
         self.assertEqual(cross_sum, expected)
 
         # pretend the resolutions can't be determined
