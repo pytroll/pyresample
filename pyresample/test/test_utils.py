@@ -173,12 +173,9 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
 
         if is_pyproj2():
             # pyproj 2.0+ adds some extra parameters
-            # FIXME: See https://github.com/pyproj4/pyproj/issues/592
-            # projection = ("{'ellps': 'WGS84', 'no_defs': 'None', 'lat_0': '27.12', "
-            #               "'lon_0': '-81.36', 'proj': 'longlat', "
-            #               "'type': 'crs'}")
             projection = ("{'ellps': 'WGS84', 'no_defs': 'None', "
-                          "'proj': 'longlat', 'type': 'crs'}")
+                          "'pm': '-81.36', 'proj': 'longlat', "
+                          "'type': 'crs'}")
         else:
             projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
                           "'lon_0': '-81.36', 'proj': 'longlat'}")

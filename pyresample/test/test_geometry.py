@@ -1128,12 +1128,11 @@ class Test(unittest.TestCase):
         from pyresample.test.utils import friendly_crs_equal
 
         # pyproj 2.0+ adds a +type=crs parameter
-        extra_params = ' +type=crs' if utils.is_pyproj2() else ''
         proj_dict = OrderedDict()
         proj_dict['proj'] = 'stere'
         proj_dict['a'] = 6378144.0
         proj_dict['b'] = 6356759.0
-        proj_dict['lat_0'] = 50.00
+        proj_dict['lat_0'] = 90.00
         proj_dict['lat_ts'] = 50.00
         proj_dict['lon_0'] = 8.00
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -1141,12 +1140,13 @@ class Test(unittest.TestCase):
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
         assert friendly_crs_equal(
-            '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 '
-            '+lon_0=8.0 +proj=stere' + extra_params,
+            '+a=6378144.0 +b=6356759.0 +lat_0=90.0 +lat_ts=50.0 '
+            '+lon_0=8.0 +proj=stere',
             area
         )
         # try a omerc projection and no_rot parameters
         proj_dict['proj'] = 'omerc'
+        proj_dict['lat_0'] = 50.0
         proj_dict['alpha'] = proj_dict.pop('lat_ts')
         proj_dict['no_rot'] = ''
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -1155,7 +1155,7 @@ class Test(unittest.TestCase):
                                         1490031.36])
         assert friendly_crs_equal(
             '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
-            '+lon_0=8.0 +no_rot +proj=omerc' + extra_params,
+            '+lon_0=8.0 +no_rot +proj=omerc',
             area
         )
 
