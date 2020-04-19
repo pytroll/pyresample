@@ -112,7 +112,7 @@ can be obtained as follows:
 .. doctest::
 
  >>> area_def = create_area_def('my_area',
- ...                            {'proj': 'latlong', 'datum': 'WGS84', 'lon_0': 0},
+ ...                            {'proj': 'latlong', 'datum': 'WGS84'},
  ...                            area_extent=[-180, -90, 180, 90],
  ...                            resolution=1,
  ...                            units='degrees',
@@ -120,7 +120,7 @@ can be obtained as follows:
  >>> print(area_def)
  Area ID: my_area
  Description: Global 1x1 degree lat-lon grid
- Projection: {'datum': 'WGS84', 'no_defs': 'None', 'lon_0': '0', 'proj': 'latlong', 'type': 'crs'}
+ Projection: {'datum': 'WGS84', 'no_defs': 'None', 'proj': 'latlong', 'type': 'crs'}
  Number of columns: 360
  Number of rows: 180
  Area extent: (-180.0, -90.0, 180.0, 90.0)
