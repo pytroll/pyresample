@@ -19,6 +19,7 @@
 
 import os
 import unittest
+from unittest import mock
 import io
 import pathlib
 from tempfile import NamedTemporaryFile
@@ -353,6 +354,14 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378273)
         np.testing.assert_almost_equal(b, 6356889.44891)
 
+        # test again but force pyproj <2 behavior
+        with unittest.mock.patch.object(utils._proj4, 'CRS', None):
+            a, b = utils._proj4.proj4_radius_parameters(
+                '+proj=stere +a=6378273 +b=6356889.44891',
+            )
+            np.testing.assert_almost_equal(a, 6378273)
+            np.testing.assert_almost_equal(b, 6356889.44891)
+
     def test_proj4_radius_parameters_ellps(self):
         """Test proj4_radius_parameters with ellps."""
         from pyresample import utils
@@ -361,6 +370,14 @@ class TestMisc(unittest.TestCase):
         )
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
+
+        # test again but force pyproj <2 behavior
+        with unittest.mock.patch.object(utils._proj4, 'CRS', None):
+            a, b = utils._proj4.proj4_radius_parameters(
+                '+proj=stere +ellps=WGS84',
+            )
+            np.testing.assert_almost_equal(a, 6378137.)
+            np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
     def test_proj4_radius_parameters_default(self):
         """Test proj4_radius_parameters with default parameters."""
@@ -372,6 +389,15 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
+        # test again but force pyproj <2 behavior
+        with unittest.mock.patch.object(utils._proj4, 'CRS', None):
+            a, b = utils._proj4.proj4_radius_parameters(
+                '+proj=lcc +lat_0=10 +lat_1=10',
+            )
+            # WGS84
+            np.testing.assert_almost_equal(a, 6378137.)
+            np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
+
     def test_proj4_radius_parameters_spherical(self):
         """Test proj4_radius_parameters in case of a spherical earth."""
         from pyresample import utils
@@ -380,6 +406,14 @@ class TestMisc(unittest.TestCase):
         )
         np.testing.assert_almost_equal(a, 6378273.)
         np.testing.assert_almost_equal(b, 6378273.)
+
+        # test again but force pyproj <2 behavior
+        with unittest.mock.patch.object(utils._proj4, 'CRS', None):
+            a, b = utils._proj4.proj4_radius_parameters(
+                '+proj=stere +R=6378273',
+            )
+            np.testing.assert_almost_equal(a, 6378273.)
+            np.testing.assert_almost_equal(b, 6378273.)
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict

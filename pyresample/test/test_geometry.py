@@ -1680,6 +1680,7 @@ class TestSwathDefinition(unittest.TestCase):
         sd = SwathDefinition(xlons, xlats)
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
 
+
 class TestStackedAreaDefinition(unittest.TestCase):
     """Test the StackedAreaDefition."""
 
