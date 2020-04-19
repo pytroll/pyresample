@@ -166,7 +166,7 @@ class Test(unittest.TestCase):
                                            'areaD',
                                            {'a': '6378144.0',
                                             'b': '6356759.0',
-                                            'lat_0': '50.00',
+                                            'lat_0': '90.00',
                                             'lat_ts': '50.00',
                                             'lon_0': '8.00',
                                             'proj': 'stere'},
@@ -179,7 +179,7 @@ class Test(unittest.TestCase):
         res = yaml.safe_load(area_def.create_areas_def())
         expected = yaml.safe_load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
-                                   '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                                   '    lat_0: 90.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
                                    '    proj: stere\n  shape:\n    height: 800\n'
                                    '    width: 800\n  area_extent:\n'
                                    '    lower_left_xy: [-1370912.72, -909968.64]\n'
@@ -194,8 +194,7 @@ class Test(unittest.TestCase):
         self.assertEqual(res['area_extent']['lower_left_xy'],
                          expected['area_extent']['lower_left_xy'])
         # pyproj versions may effect how the PROJ is formatted
-        # TODO: Add lat_ts. See https://github.com/pyproj4/pyproj/issues/592
-        for proj_key in ['a', 'lat_0', 'lon_0', 'proj']:
+        for proj_key in ['a', 'lat_0', 'lon_0', 'proj', 'lat_ts']:
             self.assertEqual(res['projection'][proj_key],
                              expected['projection'][proj_key])
 
