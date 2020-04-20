@@ -1177,7 +1177,7 @@ class AreaDefinition(BaseDefinition):
 
         For backwards compatibility, we only create the `.crs` property if
         pyproj 2.0+ is installed. Users can then check
-        `hasattr(area_def 'crs')` to easily support older versions of
+        `hasattr(area_def, 'crs')` to easily support older versions of
         pyresample and pyproj.
 
         """
