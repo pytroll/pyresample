@@ -36,6 +36,11 @@ from pyresample.test.utils import catch_warnings
 from unittest.mock import MagicMock, patch
 import unittest
 
+try:
+    from pyproj import CRS
+except ImportError:
+    CRS = None
+
 
 class Test(unittest.TestCase):
     """Unit testing the geometry and geo_filter modules."""
@@ -1292,6 +1297,55 @@ class Test(unittest.TestCase):
                                 area_extent)
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(248.594116, geo_res)
+
+    @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
+    def test_area_def_init_projection(self):
+        """Test AreaDefinition with different projection definitions."""
+        proj_dict = {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '90.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        }
+        crs = CRS(CRS.from_dict(proj_dict).to_wkt())
+        # pass CRS object directly
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs,
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # PROJ dictionary
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_dict(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # PROJ string
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_string(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # WKT2
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_wkt(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # WKT1_ESRI
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_wkt(version='WKT1_ESRI'),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        # WKT1 to WKT2 has some different naming of things so this fails
+        # self.assertEqual(crs, area_def.crs)
 
 
 class TestMakeSliceDivisible(unittest.TestCase):

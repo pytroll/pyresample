@@ -1128,7 +1128,6 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self.area_extent = tuple(area_extent)
         if CRS is not None:
-            # self.crs = CRS(projection)
             self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
             self.crs = self._crs  # see _crs property for details
