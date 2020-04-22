@@ -36,21 +36,21 @@ set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e
 
 .. doctest::
    :hide:
- >>> from pyresample.geometry import AreaDefinition
- >>> area_id = 'ease_sh'
- >>> description = 'Antarctic EASE grid'
- >>> proj_id = 'ease_sh'
- >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
- >>> width = 425
- >>> height = 425
- >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
- >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
- ...                           width, height, area_extent)
+   >>> from pyresample.geometry import AreaDefinition
+   >>> area_id = 'ease_sh'
+   >>> description = 'Antarctic EASE grid'
+   >>> proj_id = 'ease_sh'
+   >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+   >>> width = 425
+   >>> height = 425
+   >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+   >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
+   ...                           width, height, area_extent)
 
- >>> import numpy as np
- >>> lons = np.zeros(1000)
- >>> lats = np.arange(-80, -90, -0.01)
- >>> tb37v = np.arange(1000)
+   >>> import numpy as np
+   >>> lons = np.zeros(1000)
+   >>> lats = np.arange(-80, -90, -0.01)
+   >>> tb37v = np.arange(1000)
 
 But here we go on with the loaded AMSR-2 data. Make sure you have an :code:`areas.yaml`
 file that defines the :code:`ease_sh` area. Or see
@@ -95,22 +95,20 @@ Assuming the file **areas.yaml** has the following area definition:
 
 **Example usage:**
 
-.. doctest::
-   :hide:
- >>> from pyresample.geometry import AreaDefinition
- >>> area_id = 'pc_world'
- >>> description = 'Plate Carree world map'
- >>> proj_id = 'eqc'
- >>> projection = {'proj': 'eqc', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'}
- >>> width = 640
- >>> height = 480
- >>> area_extent = (-20037508.34, -10018754.17, 20037508.34, 10018754.17)
+ >>> from pyresample.geometry import AreaDefinition # doctest: +SKIP
+ >>> area_id = 'pc_world' # doctest: +SKIP
+ >>> description = 'Plate Carree world map' # doctest: +SKIP
+ >>> proj_id = 'eqc' # doctest: +SKIP
+ >>> projection = {'proj': 'eqc', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'} # doctest: +SKIP
+ >>> width = 640 # doctest: +SKIP
+ >>> height = 480 # doctest: +SKIP
+ >>> area_extent = (-20037508.34, -10018754.17, 20037508.34, 10018754.17) # doctest: +SKIP
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
- ...                           width, height, area_extent)
+ ...                           width, height, area_extent) # doctest: +SKIP
 
  >>> area_def = load_area('areas.yaml', 'pc_world') # doctest: +SKIP
- >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+ >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None) # doctest: +SKIP
+ >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)') # doctest: +SKIP
 
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
@@ -146,8 +144,6 @@ the following area definition for an ortho projection area:
 
 **Example usage:**
 
-.. doctest::
-   :hide:
  >>> from pyresample import load_area, save_quicklook, SwathDefinition
  >>> from pyresample.kd_tree import resample_nearest
  >>> from pyresample.geometry import AreaDefinition
@@ -163,8 +159,8 @@ the following area definition for an ortho projection area:
 
  >>> swath_def = SwathDefinition(lons, lats)
  >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
- >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+ >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None) # doctest: +SKIP
+ >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)') # doctest: +SKIP
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data, like
 in the above examples, the result might look something like this:
@@ -223,8 +219,6 @@ AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
 
 **Example usage:**
 
-.. doctest::
-   :hide:
  >>> from pyresample.kd_tree import resample_nearest
  >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
