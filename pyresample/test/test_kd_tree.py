@@ -1,21 +1,11 @@
-from __future__ import with_statement
-
 import os
-import sys
-import six
-
 import numpy as np
 
 from pyresample import geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
 
 import unittest
-
-try:
-    from unittest import mock
-except ImportError:
-    # python 2.7
-    import mock
+from unittest import mock
 
 
 class Test(unittest.TestCase):
@@ -952,7 +942,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
-        six.assertCountEqual(self, res.coords['bands'], ['r', 'g', 'b'])
+        self.assertCountEqual(res.coords['bands'], ['r', 'g', 'b'])
         res = res.values
         cross_sum = np.nansum(res)
         expected = 83120259.0
@@ -978,17 +968,3 @@ class TestXArrayResamplerNN(unittest.TestCase):
         # actual = res.values
         # expected = TODO
         # np.testing.assert_allclose(actual, expected)
-
-
-def suite():
-    """The test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-    mysuite.addTest(loader.loadTestsFromTestCase(TestXArrayResamplerNN))
-
-    return mysuite
-
-
-if __name__ == '__main__':
-    unittest.main()

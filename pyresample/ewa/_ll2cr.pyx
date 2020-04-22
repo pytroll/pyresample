@@ -23,7 +23,11 @@
 """
 __docformat__ = "restructuredtext en"
 
-from pyproj import _proj
+try:
+    from pyproj._proj import _Proj
+except ImportError:
+    # backward compatibility with PyProj < v2.6
+    from pyproj._proj import Proj as _Proj
 import numpy
 cimport cython
 from cpython cimport bool
@@ -56,9 +60,9 @@ class MyProj(BaseProj):
             errcheck = kwargs.get('errcheck', False)
             # call proj4 functions. inx and iny modified in place.
             if inverse:
-                _proj.Proj._inv(self, lons, lats, errcheck=errcheck)
+                _Proj._inv(self, lons, lats, errcheck=errcheck)
             else:
-                _proj.Proj._fwd(self, lons, lats, errcheck=errcheck)
+                _Proj._fwd(self, lons, lats, errcheck=errcheck)
             # if inputs were lists, tuples or floats, convert back.
             return lons, lats
         else:

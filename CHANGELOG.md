@@ -1,4 +1,35 @@
-## Version v1.14.0 (2019/12/22)
+## Version 1.15.0 (2020/03/20)
+
+### Issues Closed
+
+* [Issue 250](https://github.com/pytroll/pyresample/issues/250) - Misleading error when area file doesn't exist ([PR 259](https://github.com/pytroll/pyresample/pull/259))
+* [Issue 244](https://github.com/pytroll/pyresample/issues/244) - Release wheels for pyresample ([PR 257](https://github.com/pytroll/pyresample/pull/257))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 258](https://github.com/pytroll/pyresample/pull/258) - Compatibility with PyProj v2.6.0
+* [PR 255](https://github.com/pytroll/pyresample/pull/255) - Fix rpm building for python 3
+* [PR 253](https://github.com/pytroll/pyresample/pull/253) - Fix SwathDefinition geocentric_resolution when resolution is None
+* [PR 252](https://github.com/pytroll/pyresample/pull/252) - Make omerc bouding box use sphere as ellps ([1002](https://github.com/pytroll/satpy/issues/1002))
+
+#### Features added
+
+* [PR 259](https://github.com/pytroll/pyresample/pull/259) - Improve load_area functionality and error report ([250](https://github.com/pytroll/pyresample/issues/250), [250](https://github.com/pytroll/pyresample/issues/250))
+* [PR 257](https://github.com/pytroll/pyresample/pull/257) -  Add Azure configuration to build wheels ([244](https://github.com/pytroll/pyresample/issues/244))
+* [PR 254](https://github.com/pytroll/pyresample/pull/254) - Switch to pytest for CI and remove Python <3.4 support
+
+#### Documentation changes
+
+* [PR 253](https://github.com/pytroll/pyresample/pull/253) - Fix SwathDefinition geocentric_resolution when resolution is None
+
+In this release 8 pull requests were closed.
+
+
+## Version 1.14.0 (2019/12/22)
 
 ### Issues Closed
 

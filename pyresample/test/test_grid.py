@@ -1,4 +1,3 @@
-import copy
 import unittest
 
 import numpy as np
@@ -209,13 +208,3 @@ class Test(unittest.TestCase):
             expected_string += ' +type=crs'
         self.assertEqual(
             frozenset(proj4_string.split()), frozenset(expected_string.split()))
-
-
-def suite():
-    """The test suite.
-    """
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

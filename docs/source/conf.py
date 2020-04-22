@@ -52,7 +52,6 @@ extensions = [
 doctest_test_doctest_blocks = ''
 
 # Napoleon Settings (to support numpy style docs)
-napoleon_numpy_docstring = False
 napoleon_numpy_docstring = True
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
