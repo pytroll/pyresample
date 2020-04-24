@@ -91,21 +91,21 @@ class Test(unittest.TestCase):
         adef = create_area_def(
             area_id='test',
             projection={'proj': 'latlong'},
-            width=4, height=4,
+            width=2, height=2,
             center=(0, 0),
             resolution=10)
         lons = da.from_array(
-            np.array([-20.0, -19.9, -10.1, -10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, 19.9, 20.0]),
+            np.array([-10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, -10.1, 0]),
             chunks=2)
         lats = da.from_array(
-            np.array([-20.0, -19.9, -10.1, -10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, 19.9, 20.0]),
+            np.array([-10.0, -9.9, -0.1, 0, 0.1, 9.9, 10.0, 0, 10.1]),
             chunks=2)
         resampler = bucket.BucketResampler(source_lats=lats,
                                            source_lons=lons,
                                            target_area=adef)
         resampler._get_indices()
-        np.testing.assert_equal(resampler.x_idxs, np.array([-1, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, -1]))
-        np.testing.assert_equal(resampler.y_idxs, np.array([-1, 3, 3, 3, 2, 2, 2, 1, 1, 1, 0, -1]))
+        np.testing.assert_equal(resampler.x_idxs, np.array([-1, 0, 0, 1, 1, 1, -1, -1, -1]))
+        np.testing.assert_equal(resampler.y_idxs, np.array([-1, 1, 1, 1, 0, 0, -1, -1, -1]))
 
     def test_get_sum(self):
         """Test drop-in-a-bucket sum."""
