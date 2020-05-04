@@ -35,7 +35,6 @@ If you have your own data, or just want to see that the example code here runs, 
 set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e.g.:
 
 .. doctest::
-   :hide:
    >>> from pyresample.geometry import AreaDefinition
    >>> area_id = 'ease_sh'
    >>> description = 'Antarctic EASE grid'
@@ -53,7 +52,7 @@ set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e
    >>> tb37v = np.arange(1000)
 
 But here we go on with the loaded AMSR-2 data. Make sure you have an :code:`areas.yaml`
-file that defines the :code:`ease_sh` area. Or see
+file that defines the :code:`ease_sh` area, or see
 :ref:`the area definition section<area-definitions>` on how to define one.
 
  >>> from pyresample import load_area, save_quicklook, SwathDefinition
