@@ -612,9 +612,9 @@ class TestProjRotation(unittest.TestCase):
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
 
+
 class TestNetcdfCFAreaParser(unittest.TestCase):
     """ Test loading an area definition from netCDF/CF files """
-
 
     def test_load_cf_from_wrong_filepath(self):
         from pyresample.utils import load_cf_area
