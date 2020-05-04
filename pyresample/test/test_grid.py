@@ -205,6 +205,8 @@ class Test(unittest.TestCase):
         proj4_string = self.area_def.proj_str
         expected_string = '+a=6378144.0 +b=6356759.0 +lat_ts=50.0 +lon_0=8.0 +proj=stere +lat_0=50.0'
         if is_pyproj2():
-            expected_string += ' +type=crs'
+            expected_string = '+a=6378144 +k=1 +lat_0=50 +lon_0=8 ' \
+                              '+no_defs +proj=stere +rf=298.253168108487 ' \
+                              '+type=crs +units=m +x_0=0 +y_0=0'
         self.assertEqual(
             frozenset(proj4_string.split()), frozenset(expected_string.split()))
