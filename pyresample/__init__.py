@@ -31,7 +31,7 @@ from pyresample.geometry import (SwathDefinition,  # noqa
                                  AreaDefinition,  # noqa
                                  DynamicAreaDefinition)  # noqa
 from pyresample.area_config import load_area, create_area_def, get_area_def, \
-                                   parse_area_file, convert_def_to_yaml  # noqa
+                                   parse_area_file, convert_def_to_yaml, load_cf_area  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
 from pyresample.plot import save_quicklook, area_def2basemap  # noqa
 from .version import get_versions  # noqa

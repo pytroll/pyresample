@@ -611,3 +611,36 @@ class TestProjRotation(unittest.TestCase):
         test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
+
+class TestNetcdfCFAreaParser(unittest.TestCase):
+    """ Test loading an area definition from netCDF/CF files """
+
+
+    def test_load_cf_from_wrong_filepath(self):
+        from pyresample import load_cf_area
+
+        # wrong case #1: the path does not exist
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
+        self.assertRaises(ValueError, load_cf_area, cf_file)
+
+        # wrong case #2: the path exists, but is not a netCDF file
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        self.assertRaises(ValueError, load_cf_area, cf_file)
+
+    def test_load_cf_parameters_errors(self):
+        from pyresample import load_cf_area
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
+
+        # try to load from a variable= that does not exist
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'doesNotExist')
+
+    def test_load_cf_from_filepath(self):
+        from pyresample import load_cf_area
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
+        
+        # load using a variable= that is a valid grid_mapping container
+        adef = load_cf_area(cf_file, 'Lambert_Azimuthal_Grid')
+
+        # load using a variable= that has a :grid_mapping attribute
+        adef = load_cf_area(cf_file, 'ice_conc')
+

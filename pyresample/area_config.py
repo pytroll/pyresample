@@ -26,6 +26,7 @@ import numpy as np
 import yaml
 from pyresample.utils import proj4_str_to_dict
 
+
 try:
     from xarray import DataArray
 except ImportError:
@@ -825,3 +826,50 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
     with open(yaml_area_file, 'w') as yaml_file:
         for area in areas:
             yaml_file.write(area.create_areas_def())
+
+# ===== netCDF/CF interface
+
+def _load_crs_from_cf(nc_handle, grid_mapping_varname):
+    """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
+    from pyproj import CRS
+    # here we assume the grid_mapping_varname exists (checked by caller)
+    return CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
+
+def load_cf_area(nc_file, variable=None, y=None, x=None):
+    """ Load an area def object from a netCDF/CF file. """
+
+    from netCDF4 import Dataset
+
+    # the nc_file can be either the path to a netCDF/CF file, or directly an opened netCDF4.Dataset()
+    #   if the path to a file, open the Dataset access to it
+    if not isinstance(nc_file, Dataset):
+        try:
+            nc_file = Dataset(nc_file)
+        except FileNotFoundError:
+            raise ValueError('File not found: {}'.format(nc_file))
+        except OSError:
+            raise ValueError('File is not a netCDF file {}'.format(nc_file))
+
+    # if the variable=None, we search for a good variable
+    if variable is None:
+        variable = 'good variable'
+        raise NotImplementedError("search for a good variable is not implemented yet!")
+    else:
+        # the variable= must exist in the netCDF file
+        if variable not in nc_file.variables.keys():
+            raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
+
+    # test if the variable has a grid_mapping attribute
+    if hasattr(nc_file[variable],'grid_mapping'):
+        # good. attempt to load the grid_mapping information into a pyproj object
+        crs = _load_crs_from_cf(nc_file, nc_file[variable].grid_mapping)
+    else:
+        # the variable doesn't have a grid_mapping attribute.
+        # ... maybe it is the grid_mapping variable itself?
+        try:
+            crs = _load_crs_from_cf(nc_file, variable)
+        except Exception as ex:
+            # ... not a valid grid_mapping either
+            crs = 'a crs'
+            raise NotImplementedError("At present, the variable= provided must have a 'grid_mapping' attribute, or must be the name of a valid grid_mapping variable")
+
