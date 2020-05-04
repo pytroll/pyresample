@@ -43,7 +43,9 @@ Documentation
    swath
    multi
    preproc
-   plot
+   plot_quick_display
+   plot_projections
+   plot_cartopy_basemap
    data_reduce
    API
 
