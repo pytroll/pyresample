@@ -829,11 +829,13 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
 
 # ===== netCDF/CF interface
 
+
 def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
     from pyproj import CRS
     # here we assume the grid_mapping_varname exists (checked by caller)
     return CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
+
 
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis):
     """ check if a coord_varname is a valid CF coordinate variable """
@@ -842,10 +844,11 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis):
     coord_var = nc_handle[coord_varname]
     valid = False
     try:
-        valid = getattr(coord_var,'standard_name') == 'projection_'+axis+'_coordinate'
+        valid = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
     except AttributeError:
         valid = False
     return valid
+
 
 def _load_axis_extent(nc_handle, coord_varname):
     """ load extent for the axis held in coord_varname (min, max, len) """
@@ -860,7 +863,7 @@ def _load_axis_extent(nc_handle, coord_varname):
     # spacing
     #   TBC: a) should we check the axis has constant spacing or does CF impose this already ?
     #         b) is a single diff enough, or should we take a mean of several (rounding error) ?
-    spacing = abs( values[1] - values[0] )
+    spacing = abs(values[1] - values[0])
 
     # extent (0,5*spacing is because area_def expects corner coordinates of the corner cells,
     #     while CF stores center coords)
@@ -882,6 +885,7 @@ def _load_axis_extent(nc_handle, coord_varname):
 
     return extent_low, extent_hgh, len(values)
 
+
 def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     """ Load an area def object from a netCDF/CF file. """
 
@@ -890,7 +894,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     from pyresample import geometry
 
     # basic check on the default values of the parameters.
-    defaults = np.array([x,y,])
+    defaults = np.array([x, y, ])
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either all or none of x= and y=")
 
@@ -917,7 +921,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     # =================
     variable_is_itself_gridmapping = False
     # test if the variable has a grid_mapping attribute
-    if hasattr(nc_file[variable],'grid_mapping'):
+    if hasattr(nc_file[variable], 'grid_mapping'):
         # good. attempt to load the grid_mapping information into a pyproj object
         crs = _load_crs_from_cf(nc_file, nc_file[variable].grid_mapping)
     else:
@@ -929,7 +933,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         except Exception as ex:
             # ... not a valid grid_mapping either
             crs = 'a crs'
-            raise NotImplementedError("At present, the variable= provided must have a 'grid_mapping' attribute, or must be the name of a valid grid_mapping variable")
+            raise NotImplementedError(
+                "At present, the variable= provided must have a 'grid_mapping' attribute, or must be the name of a valid grid_mapping variable")
 
     # compute the AREA_EXTENT
     # =======================
@@ -947,12 +952,12 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         # the name of y and x are in the dimensions of the variable=
         for dim in nc_file[variable].dimensions:
             # test if each dim is a valid CF coordinate variable
-            for axis in ('x','y'):
+            for axis in ('x', 'y'):
                 if _is_valid_coordinate_variable(nc_file, dim, axis):
                     xy[axis] = dim
 
         # did we manage to guess both y= and x= ?
-        for axis in ('x','y'):
+        for axis in ('x', 'y'):
             if axis not in xy.keys():
                 raise ValueError("Cannot guess coordinate variable holding the '{}' axis".format(axis))
 
@@ -961,10 +966,10 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         #   The order is always (y,x)
         xy['y'] = y
         xy['x'] = x
-        for axis in ('x','y'):
+        for axis in ('x', 'y'):
             if not _is_valid_coordinate_variable(nc_file, xy[axis], axis):
-                raise ValueError("Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
-
+                raise ValueError(
+                    "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
     # we now have the names for the x= and y= coordinate variables: load the extent of each axis separately
     extents = dict()
@@ -973,15 +978,15 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
 
     # create the shape, and area_extent arrays in the same order as the dimensions
     #    of the variable (hence the OrderedDict for xy)
-    shape  = [-1,]*2
-    extent = [-1,]*4
+    shape = [-1, ]*2
+    extent = [-1, ]*4
     for iaxis, axis in enumerate(xy.keys()):
-        shape[iaxis]  = extents[axis][2]
+        shape[iaxis] = extents[axis][2]
         extent[iaxis] = extents[axis][0]
         extent[iaxis+2] = extents[axis][1]
 
     # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
-    proj_dict  = crs.to_dict()
+    proj_dict = crs.to_dict()
 
     # now we have all we need to create an area definition
     return geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,)
