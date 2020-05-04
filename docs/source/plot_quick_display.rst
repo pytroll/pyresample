@@ -70,6 +70,9 @@ the above Satpy_ example) the result might look something like this:
   
 The data passed to the functions is a 2D array matching the AreaDefinition.
 
+.. include:: plot_projections.rst
+.. include:: plot_cartopy_basemap.rst             
+             
              
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _zenodo: https://doi.org/10.5281/zenodo.3553696

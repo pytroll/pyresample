@@ -1,7 +1,7 @@
-.. _plot_projections:
 
 .. doctest::
    :hide:
+      
    >>> from pyresample.geometry import AreaDefinition
    >>> area_id = 'ease_sh'
    >>> description = 'Antarctic EASE grid'
@@ -17,6 +17,8 @@
    >>> lons = np.zeros(1000)
    >>> lats = np.arange(-80, -90, -0.01)
    >>> tb37v = np.arange(1000)
+   >>> from pyresample import SwathDefinition
+   >>> swath_def = SwathDefinition(lons, lats)
 
 The Plate Carree projection
 +++++++++++++++++++++++++++
@@ -42,21 +44,10 @@ Assuming the file **areas.yaml** has the following area definition:
 
 **Example usage:**
 
- >>> from pyresample.geometry import AreaDefinition # doctest: +SKIP
- >>> area_id = 'pc_world' # doctest: +SKIP
- >>> description = 'Plate Carree world map' # doctest: +SKIP
- >>> proj_id = 'eqc' # doctest: +SKIP
- >>> projection = {'proj': 'eqc', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'} # doctest: +SKIP
- >>> width = 640 # doctest: +SKIP
- >>> height = 480 # doctest: +SKIP
- >>> area_extent = (-20037508.34, -10018754.17, 20037508.34, 10018754.17) # doctest: +SKIP
- >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
- ...                           width, height, area_extent) # doctest: +SKIP
-
+ >>> from pyresample import load_area # doctest: +SKIP
  >>> area_def = load_area('areas.yaml', 'pc_world') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None) # doctest: +SKIP
  >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)') # doctest: +SKIP
-
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
 above we use AMSR-2 data in this example) the result might look something like
@@ -70,8 +61,8 @@ The Globe projections
 
 From v0.7.12 pyresample can use the geos, ortho and nsper projections with
 Basemap. Starting with v1.9.0 quicklooks are now generated with Cartopy_ which
-should also work with these projections. Assuming the file **areas.yaml** has
-the following area definition for an ortho projection area:
+should also work with these projections. Again assuming the area-config file
+**areas.yaml** has the following definition for an ortho projection area:
 
 .. code-block:: bash
 
@@ -93,19 +84,9 @@ the following area definition for an ortho projection area:
 
  >>> from pyresample import load_area, save_quicklook, SwathDefinition
  >>> from pyresample.kd_tree import resample_nearest
- >>> from pyresample.geometry import AreaDefinition
- >>> area_id = 'ortho'
- >>> description = 'Ortho globe'
- >>> proj_id = 'ortho'
- >>> projection = {'proj': 'ortho', 'lat_0': -40, 'lon_0': 40, 'a': 6370997.0, 'units': 'm'}
- >>> width = 640
- >>> height = 480
- >>> area_extent = (-10000000, -10000000, 10000000, 10000000)
- >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
- ...                           width, height, area_extent)
-
- >>> swath_def = SwathDefinition(lons, lats)
+ >>> from pyresample import load_area # doctest: +SKIP
  >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
+ >>> swath_def = SwathDefinition(lons, lats) # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None) # doctest: +SKIP
  >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)') # doctest: +SKIP
 

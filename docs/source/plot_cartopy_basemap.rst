@@ -1,6 +1,14 @@
-.. _plot_cartopy_basemap:
+.. doctest::
+   :hide:
+      
+   >>> import numpy as np
+   >>> lons = np.zeros(1000)
+   >>> lats = np.arange(-80, -90, -0.01)
+   >>> tb37v = np.arange(1000)
+   >>> from pyresample import SwathDefinition
+   >>> swath_def = SwathDefinition(lons, lats)
 
-
+   
 Getting a Cartopy CRS
 ---------------------
 
@@ -19,11 +27,11 @@ used like any other Cartopy_ CRS object.
  >>> width = 2019
  >>> height = 1463
  >>> area_extent = (-757214.993104, -485904.321517, 757214.993104, 611533.818622)
+ >>> from pyresample.kd_tree import resample_nearest
  >>> from pyresample.geometry import AreaDefinition 
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
- ...                           width, height, area_extent)
- >>> result = resample_nearest(swath_def, tb37v, area_def,
- ...                           radius_of_influence=20000, fill_value=None)
+ ...                           width, height, area_extent)     
+ >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
  >>> crs = area_def.to_cartopy_crs() # doctest: +SKIP
  >>> ax = plt.axes(projection=crs) # doctest: +SKIP
  >>> ax.coastlines() # doctest: +SKIP
@@ -62,10 +70,8 @@ AreaDefinition using the **plot.area_def2basemap(area_def, **kwargs)** function.
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
-
  >>> import matplotlib.pyplot as plt # doctest: +SKIP
  >>> from pyresample import area_def2basemap # doctest: +SKIP
- >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
  >>> result = resample_nearest(swath_def, tb37v, area_def,
  ...                           radius_of_influence=20000, fill_value=None)
  >>> bmap = area_def2basemap(area_def) # doctest: +SKIP
