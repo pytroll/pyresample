@@ -617,7 +617,7 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
 
 
     def test_load_cf_from_wrong_filepath(self):
-        from pyresample import load_cf_area
+        from pyresample.utils import load_cf_area
 
         # wrong case #1: the path does not exist
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
@@ -628,7 +628,8 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         self.assertRaises(ValueError, load_cf_area, cf_file)
 
     def test_load_cf_parameters_errors(self):
-        from pyresample import load_cf_area
+        from pyresample.utils import load_cf_area
+
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
 
         # try to load from a variable= that does not exist
@@ -641,7 +642,8 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Lambert_Azimuthal_Grid', y='time', x='xc',)
 
     def test_load_cf_from_filepath(self):
-        from pyresample import load_cf_area
+        from pyresample.utils import load_cf_area
+
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
 
         # load using a variable= that has a :grid_mapping attribute

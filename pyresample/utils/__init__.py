@@ -26,6 +26,7 @@ import warnings
 
 from ._proj4 import (proj4_dict_to_str, proj4_str_to_dict, convert_proj_floats, proj4_radius_parameters)  # noqa
 from ._rasterio import get_area_def_from_raster  # noqa
+from ._cf import load_cf_area
 
 
 def get_area_def(*args, **kwargs):
