@@ -1,4 +1,4 @@
-.. _plot_quick_display:
+.. _plot:
 
 Plotting with pyresample and Cartopy
 ====================================

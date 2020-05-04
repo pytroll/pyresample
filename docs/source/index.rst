@@ -43,7 +43,7 @@ Documentation
    swath
    multi
    preproc
-   plot_quick_display
+   plot
    data_reduce
    API
 
