@@ -36,6 +36,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis):
         valid = False
     return valid
 
+
 def _load_axis_info(nc_handle, coord_varname):
     """ load extent and length for the axis held in coord_varname (min, max, len) """
 
@@ -55,8 +56,8 @@ def _load_axis_info(nc_handle, coord_varname):
     #     while CF stores center coords)
     extent_low = values.min() - 0.5 * spacing
     extent_hgh = values.max() + 0.5 * spacing
-    
-    #print (coord_varname , values[0], spacing , extent_low, extent_hgh, unit) 
+
+    #print (coord_varname , values[0], spacing , extent_low, extent_hgh, unit)
 
     # now we take into account the units
     scalef = 1.
@@ -161,7 +162,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         axis_info[axis] = _load_axis_info(nc_file, xy[axis])
 
     # create the shape, and area_extent arrays
-    shape  = (axis_info['y'][2], axis_info['x'][2])
+    shape = (axis_info['y'][2], axis_info['x'][2])
     extent = (axis_info['x'][0], axis_info['y'][0], axis_info['x'][1], axis_info['y'][1])
 
     # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)

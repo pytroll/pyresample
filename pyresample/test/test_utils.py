@@ -645,13 +645,13 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         from pyresample.utils import load_cf_area
 
         def validate_nh25km_adef(adef):
-            self.assertEqual(adef.shape,(432,432))
+            self.assertEqual(adef.shape, (432, 432))
             xc = adef.projection_x_coords
             yc = adef.projection_y_coords
-            self.assertEqual(xc[0],-5387500.0, msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1],xc[0] + 25000.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0],5387500.0, msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1],yc[0] - 25000.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(xc[0], -5387500.0, msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], xc[0] + 25000.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], 5387500.0, msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], yc[0] - 25000.0, msg="Wrong y axis (index 1)")
 
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
 
@@ -667,13 +667,13 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_adef(adef):
-            self.assertEqual(adef.shape,(1120, 760))
+            self.assertEqual(adef.shape, (1120, 760))
             xc = adef.projection_x_coords
             yc = adef.projection_y_coords
-            self.assertEqual(xc[0],-3845000.0, msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1],xc[0] + 10000.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0],5845000.0, msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1],yc[0] - 10000.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(xc[0], -3845000.0, msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], xc[0] + 10000.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], 5845000.0, msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], yc[0] - 10000.0, msg="Wrong y axis (index 1)")
 
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
 
@@ -684,4 +684,3 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # load using a variable= that is a valid grid_mapping container
         adef_2 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
         validate_nh10km_adef(adef_2)
-
