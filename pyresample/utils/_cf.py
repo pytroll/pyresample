@@ -34,8 +34,8 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis):
         valid = False
     return valid
 
-def _load_axis_extent(nc_handle, coord_varname):
-    """ load extent for the axis held in coord_varname (min, max, len) """
+def _load_axis_info(nc_handle, coord_varname):
+    """ load extent and length for the axis held in coord_varname (min, max, len) """
 
     # this requires reading the data
     values = nc_handle[coord_varname][:]
@@ -54,17 +54,17 @@ def _load_axis_extent(nc_handle, coord_varname):
     extent_low = values.min() - 0.5 * spacing
     extent_hgh = values.max() + 0.5 * spacing
     
-    #print (coord_varname , values[0], spacing , extent_low, extent_hgh) 
+    #print (coord_varname , values[0], spacing , extent_low, extent_hgh, unit) 
 
     # now we take into account the units
     scalef = 1.
     if unit != 'default':
         if unit == 'km':
             scalef = 1000.
-        elif unit == 'm':
+        elif unit == 'm' or unit == 'meters':
             scalef = 1.
         else:
-            raise ValueError("Sorry: un-supported unit!")
+            raise ValueError("Sorry: un-supported unit: {}!".format(unit))
 
     extent_low *= scalef
     extent_hgh *= scalef
@@ -75,7 +75,6 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     """ Load an area def object from a netCDF/CF file. """
 
     from netCDF4 import Dataset
-    from collections import OrderedDict
     from pyresample import geometry
     from pyresample.utils import proj4_str_to_dict
 
@@ -127,11 +126,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     if variable_is_itself_gridmapping and (y is None or x is None):
         raise ValueError("When variable= points to the grid_mapping variable itself, y= and x= must be provided")
 
-    # if y= or x= are None, guess what they are
-
-    # we use an OrderDict to recall in which order the two axes (x and y) are specified
-    #   in the dimensions of the variable.
-    xy = OrderedDict()
+    # if y= or x= are None, guess the variable names
+    xy = dict()
     if y is None and x is None:
         # the name of y and x are in the dimensions of the variable=
         for dim in nc_file[variable].dimensions:
@@ -156,18 +152,13 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
 
 
     # we now have the names for the x= and y= coordinate variables: load the extent of each axis separately
-    extents = dict()
+    axis_info = dict()
     for axis in xy.keys():
-        extents[axis] = _load_axis_extent(nc_file, xy[axis])
+        axis_info[axis] = _load_axis_info(nc_file, xy[axis])
 
-    # create the shape, and area_extent arrays in the same order as the dimensions
-    #    of the variable (hence the OrderedDict for xy)
-    shape  = [-1,]*2
-    extent = [-1,]*4
-    for iaxis, axis in enumerate(xy.keys()):
-        shape[iaxis]  = extents[axis][2]
-        extent[iaxis] = extents[axis][0]
-        extent[iaxis+2] = extents[axis][1]
+    # create the shape, and area_extent arrays
+    shape  = (axis_info['y'][2], axis_info['x'][2])
+    extent = (axis_info['x'][0], axis_info['y'][0], axis_info['x'][1], axis_info['y'][1])
 
     # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
     proj_dict  = crs.to_dict()
