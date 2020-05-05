@@ -92,7 +92,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         try:
             nc_file = Dataset(nc_file)
         except FileNotFoundError:
-            raise ValueError('File not found: {}'.format(nc_file))
+            raise FileNotFoundError('File not found: {}'.format(nc_file))
         except OSError:
             raise ValueError('File is not a netCDF file {}'.format(nc_file))
 

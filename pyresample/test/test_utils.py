@@ -621,7 +621,7 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
 
         # wrong case #1: the path does not exist
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
-        self.assertRaises(ValueError, load_cf_area, cf_file)
+        self.assertRaises(FileNotFoundError, load_cf_area, cf_file)
 
         # wrong case #2: the path exists, but is not a netCDF file
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
