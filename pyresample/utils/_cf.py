@@ -18,6 +18,7 @@
 
 import pyproj
 
+
 def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
     # here we assume the grid_mapping_varname exists (checked by caller)
@@ -39,17 +40,17 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_v
         try:
             type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
         except AttributeError:
-            raise ValueError("Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
-            
+            raise ValueError(
+                "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
 
     coord_var = nc_handle[coord_varname]
     try:
         if type_of_grid_mapping == 'latitude_longitude':
             # specific name for the latitude_longitude grid mapping
-            valid = getattr(coord_var, 'standard_name') == {'x':'longitude','y':'latitude'}[axis]
+            valid = getattr(coord_var, 'standard_name') == {'x': 'longitude', 'y': 'latitude'}[axis]
         elif type_of_grid_mapping == 'rotated_latitude_longitude':
             # specific name for the rotated_latitude_longitude grid mapping
-            valid = getattr(coord_var, 'standard_name') == 'grid_'+{'x':'longitude','y':'latitude'}[axis]
+            valid = getattr(coord_var, 'standard_name') == 'grid_'+{'x': 'longitude', 'y': 'latitude'}[axis]
         elif type_of_grid_mapping == 'geostationary':
             # specific name for the geostationary grid mapping
             # CF-1.9 introduces projection_(x|y)_angular_coordinate for the geostationary projection
@@ -63,6 +64,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_v
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
     return valid
+
 
 def _load_axis_info(nc_handle, coord_varname):
     """ load extent and length for the axis held in coord_varname (min, max, len) """
@@ -132,7 +134,6 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         # the variable= must exist in the netCDF file
         if variable not in nc_file.variables.keys():
             raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
-
 
     # Load a CRS object
     # =================
