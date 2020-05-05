@@ -40,7 +40,7 @@ def _load_axis_extent(nc_handle, coord_varname):
     # this requires reading the data
     values = nc_handle[coord_varname][:]
     try:
-        unit = values.units
+        unit = nc_handle[coord_varname].units
     except AttributeError:
         unit = 'default'
 
@@ -51,8 +51,10 @@ def _load_axis_extent(nc_handle, coord_varname):
 
     # extent (0,5*spacing is because area_def expects corner coordinates of the corner cells,
     #     while CF stores center coords)
-    extent_low = spacing.min() - 0.5 * spacing
-    extent_hgh = spacing.max() + 0.5 * spacing
+    extent_low = values.min() - 0.5 * spacing
+    extent_hgh = values.max() + 0.5 * spacing
+    
+    #print (coord_varname , values[0], spacing , extent_low, extent_hgh) 
 
     # now we take into account the units
     scalef = 1.

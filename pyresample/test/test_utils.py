@@ -644,10 +644,21 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
     def test_load_cf_from_filepath(self):
         from pyresample.utils import load_cf_area
 
+        def validate_adef(adef):
+            self.assertEqual(adef.shape,(432,432))
+            xc, yc = adef.get_proj_vectors()
+            self.assertEqual(xc[0],-5387500.0, msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1],-5387500.0 + 25000.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0],5387500.0, msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1],5387500.0 - 25000.0, msg="Wrong y axis (index 1)")
+
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh25km.nc')
 
         # load using a variable= that has a :grid_mapping attribute
-        adef = load_cf_area(cf_file, 'ice_conc')
+        adef_1 = load_cf_area(cf_file, 'ice_conc')
+        validate_adef(adef_1)
 
         # load using a variable= that is a valid grid_mapping container
-        adef = load_cf_area(cf_file, 'Lambert_Azimuthal_Grid', y='yc', x='xc',)
+        adef_2 = load_cf_area(cf_file, 'Lambert_Azimuthal_Grid', y='yc', x='xc',)
+        validate_adef(adef_2)
+
