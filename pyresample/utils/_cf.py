@@ -16,26 +16,50 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from pyproj import CRS
 
 def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
-    from pyproj import CRS
     # here we assume the grid_mapping_varname exists (checked by caller)
     return CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
 
 
-def _is_valid_coordinate_variable(nc_handle, coord_varname, axis):
+def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_variable):
     """ check if a coord_varname is a valid CF coordinate variable """
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
+
+    # the type of grid_mapping (its grid_mapping_name) decides how the coordinate variables are named
+    if grid_mapping_variable == 'latlon_default':
+        type_of_grid_mapping = 'latitude_longitude'
+    else:
+        try:
+            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
+        except AttributeError:
+            raise ValueError("Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
+
     coord_var = nc_handle[coord_varname]
     valid = False
     try:
-        valid = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
+        if type_of_grid_mapping == 'latitude_longitude':
+            # specific name for the latitude_longitude grid mapping
+            valid = getattr(coord_var, 'standard_name') == {'x':'longitude','y':'latitude'}[axis]
+        elif type_of_grid_mapping == 'rotated_latitude_longitude':
+            # specific name for the rotated_latitude_longitude grid mapping
+            valid = getattr(coord_var, 'standard_name') == 'grid_'+{'x':'longitude','y':'latitude'}[axis]
+        elif type_of_grid_mapping == 'geostationary':
+            # specific name for the geostationary grid mapping
+            # CF-1.9 introduces projection_(x|y)_angular_coordinate for the geostationary projection
+            valid_cf19 = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_angular_coordinate'
+            valid_oldercf = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
+            valid = valid_cf19 + valid_oldercf
+        else:
+            # default and most common naming: projection_(x|y)_coordinate
+            valid = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
     except AttributeError:
+        # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
     return valid
-
 
 def _load_axis_info(nc_handle, coord_varname):
     """ load extent and length for the axis held in coord_varname (min, max, len) """
@@ -64,7 +88,8 @@ def _load_axis_info(nc_handle, coord_varname):
     if unit != 'default':
         if unit == 'km':
             scalef = 1000.
-        elif unit == 'm' or unit == 'meters':
+        elif unit == 'm' or unit == 'meters' or \
+                unit.startswith('degrees'):
             scalef = 1.
         else:
             raise ValueError("Sorry: un-supported unit: {}!".format(unit))
@@ -107,22 +132,26 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
 
     # Load a CRS object
     # =================
+    grid_mapping_variable = None
     variable_is_itself_gridmapping = False
     # test if the variable has a grid_mapping attribute
     if hasattr(nc_file[variable], 'grid_mapping'):
         # good. attempt to load the grid_mapping information into a pyproj object
-        crs = _load_crs_from_cf(nc_file, nc_file[variable].grid_mapping)
+        grid_mapping_variable = nc_file[variable].grid_mapping
+        crs = _load_crs_from_cf(nc_file, grid_mapping_variable)
     else:
         # the variable doesn't have a grid_mapping attribute.
         # ... maybe it is the grid_mapping variable itself?
         try:
+            crs = _load_crs_from_cf(nc_file, grid_mapping_variable)
             variable_is_itself_gridmapping = True
-            crs = _load_crs_from_cf(nc_file, variable)
+            grid_mapping_variable = variable
         except Exception as ex:
             # ... not a valid grid_mapping either
-            crs = 'a crs'
-            raise NotImplementedError(
-                "At present, the variable= provided must have a 'grid_mapping' attribute, or must be the name of a valid grid_mapping variable")
+            # we assume the crs is 'latitude_longitude' with a WGS84 datum. WGS84 is not a default from CF.
+            grid_mapping_variable = "latlon_default"
+            crs = CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
+            # TODO : lat/lon could be very wrong. should we issue a warning ?
 
     # compute the AREA_EXTENT
     # =======================
@@ -138,7 +167,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         for dim in nc_file[variable].dimensions:
             # test if each dim is a valid CF coordinate variable
             for axis in ('x', 'y'):
-                if _is_valid_coordinate_variable(nc_file, dim, axis):
+                if _is_valid_coordinate_variable(nc_file, dim, axis, grid_mapping_variable):
                     xy[axis] = dim
 
         # did we manage to guess both y= and x= ?
@@ -152,7 +181,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
         xy['y'] = y
         xy['x'] = x
         for axis in ('x', 'y'):
-            if not _is_valid_coordinate_variable(nc_file, xy[axis], axis):
+            if not _is_valid_coordinate_variable(nc_file, xy[axis], axis, grid_mapping_variable):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
