@@ -28,6 +28,8 @@ import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
+from shapely.geometry import Polygon
+from shapely.errors import TopologicalError
 
 from pyresample import CHUNK_SIZE
 from pyresample.gradient._gradient_search import one_step_gradient_search
@@ -178,6 +180,82 @@ def reshape_to_stacked_3d(array):
     return np.stack(layers, axis=-1)
 
 
+def get_border(x_coords, y_coords):
+    """"""
+    up_x = x_coords[0, :]
+    down_x = x_coords[-1, :]
+    left_x = x_coords[:, 0]
+    right_x = x_coords[:, -1]
+    up_y = y_coords[0, :]
+    down_y = y_coords[-1, :]
+    left_y = y_coords[:, 0]
+    right_y = y_coords[:, -1]
+    x_s = np.concatenate((up_x, right_x, down_x, left_x))
+    y_s = np.concatenate((up_y, right_y, down_y, left_y))
+
+    return x_s, y_s
+
+
+def get_boundary(x_coords, y_coords):
+    """Get boundary from 2D *x_coords* and *y_coords* arrays."""
+    x_border, y_border = get_border(x_coords, y_coords)
+    boundary = [(x_border[i], y_border[i]) for i in range(len(x_border))]
+
+    return boundary
+
+
+def get_polygon(x_coords, y_coords):
+    """Get border polygon from *x_coords* and *y_coords*."""
+    boundary = get_boundary(x_coords, y_coords)
+
+    return Polygon(boundary)
+
+
+def remove_extra_chunks(arrays, dst_x, dst_y):
+    """Remove chunks that don't cover the target area."""
+    # (data, src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl,
+    # src_gradient_yp) = arrays
+
+    # This is the slowest bit
+    # Persisting is slower
+    dst_x, dst_y = da.compute(dst_x, dst_y)
+
+    dst_polygon = get_polygon(dst_x, dst_y)
+    num_chunks = arrays[0].shape[-1]
+    src_x, src_y = da.compute(arrays[1], arrays[2])
+    src_x = np.split(src_x, num_chunks, axis=-1)
+    src_y = np.split(src_y, num_chunks, axis=-1)
+    src_polys = [get_polygon(x, y) for (x, y) in zip(src_x, src_y)]
+
+    covers = []
+    for poly in src_polys:
+        try:
+            cov = dst_polygon.intersects(poly)
+        # This happens if the target area "goes over the edge" of the
+        # GEO disk
+        except TopologicalError:
+            cov = False
+        covers.append(cov)
+
+    # import matplotlib.pyplot as plt
+    # for i in range(len(src_x)):
+    #     src_xb, src_yb = get_border(src_x[i], src_y[i])
+    #     if covers[i]:
+    #         color = 'bx'
+    #     else:
+    #         color = 'r.'
+    #     plt.plot(src_xb, src_yb, color)
+    # dst_xb, dst_yb = get_border(dst_x, dst_y)
+    # plt.plot(dst_xb, dst_yb, 'k.')
+    # plt.show()
+
+    res = []
+    for arr in arrays:
+        res.append(np.take(arr, covers, axis=-1))
+
+    return res
+
+
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
     """Run gradient search in parallel in input area coordinates."""
     if data.ndim not in [2, 3]:
@@ -192,7 +270,14 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
                                               src_x.chunks)
     # TODO: rechunk and reformat the data array
     src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = arrays
+
     data = reshape_to_stacked_3d(data)
+    arrays = remove_extra_chunks((data, src_x, src_y, src_gradient_xl,
+                                  src_gradient_xp, src_gradient_yl,
+                                  src_gradient_yp), dst_x, dst_y)
+    (data, src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl,
+     src_gradient_yp) = arrays
+
     res = da.blockwise(_gradient_resample_data, 'bmnz', data.astype(np.float64), 'bijz',
                        src_x, 'ijz', src_y, 'ijz',
                        src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
