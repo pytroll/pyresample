@@ -94,7 +94,7 @@ def _load_axis_info(nc_handle, coord_varname):
         if unit == 'km':
             scalef = 1000.
         elif unit == 'm' or unit == 'meters' or \
-                unit.startswith('degrees'):
+                unit.startswith('degree'):
             scalef = 1.
         else:
             raise ValueError("Sorry: un-supported unit: {}!".format(unit))
