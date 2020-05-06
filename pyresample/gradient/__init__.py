@@ -181,7 +181,7 @@ def reshape_to_stacked_3d(array):
 
 
 def get_border(x_coords, y_coords):
-    """"""
+    """Get the border x- and y-coordinates."""
     up_x = x_coords[0, :]
     down_x = x_coords[-1, :]
     left_x = x_coords[:, 0]
