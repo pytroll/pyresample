@@ -8,33 +8,33 @@ Pyresample supports basic integration with Cartopy_.
 Displaying data quickly
 -----------------------
 Pyresample has some convenience functions for displaying data from a single
-channel. The function **plot.show_quicklook** shows a Cartopy generated image
-of a dataset for a specified AreaDefinition. The function
-**plot.save_quicklook** saves the Cartopy image directly to file.
+channel. The :func:`show_quicklook <pyresample.plot.show_quicklook>` function
+shows a Cartopy generated image of a dataset for a specified AreaDefinition.
+The function :func:`save_quicklook <pyresample.plot.save_quicklook>` saves the Cartopy image directly to file.
 
 **Example usage:**
 
-In this simple example below we use GCOM-W1 AMSR-2 data loaded using Satpy_. Of
-course Satpy_ facilitates the handling of these data in an even easier way, but
-the below example can be useful if you have some data that are yet not
-supported by Satpy_. All you need are a set of geo-referenced values
-(longitudes and latitudes and corresponding geophysical values).
+In this simple example below we use GCOM-W1 AMSR-2 data loaded using Satpy_.
+Satpy simplifies the reading of this data, but is not necessary for using
+pyresample or plotting data.
 
 First we read in the data with Satpy_:
 
- >>> from satpy.scene import Scene # doctest: +SKIP
- >>> from glob import glob # doctest: +SKIP
- >>> SCENE_FILES = glob("./GW1AM2_20191122????_156*h5") # doctest: +SKIP
- >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES) # doctest: +SKIP
- >>> scn.load(["btemp_36.5v"]) # doctest: +SKIP
- >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats() # doctest: +SKIP
- >>> tb37v = scn["btemp_36.5v"].data.compute() # doctest: +SKIP
+ >>> from satpy.scene import Scene
+ >>> from glob import glob
+ >>> SCENE_FILES = glob("./GW1AM2_20191122????_156*h5")
+ >>> scn = Scene(reader='amsr2_l1b', filenames=SCENE_FILES)
+ >>> scn.load(["btemp_36.5v"])
+ >>> lons, lats = scn["btemp_36.5v"].area.get_lonlats()
+ >>> tb37v = scn["btemp_36.5v"].data.compute()
 
 Data for this example can be downloaded from zenodo_.
+
 If you have your own data, or just want to see that the example code here runs, you can
 set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e.g.:
 
 .. doctest::
+
    >>> from pyresample.geometry import AreaDefinition
    >>> area_id = 'ease_sh'
    >>> description = 'Antarctic EASE grid'
@@ -46,22 +46,29 @@ set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e
    >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
    ...                           width, height, area_extent)
 
-   >>> import numpy as np
-   >>> lons = np.zeros(1000)
-   >>> lats = np.arange(-80, -90, -0.01)
-   >>> tb37v = np.arange(1000)
-
 But here we go on with the loaded AMSR-2 data. Make sure you have an :code:`areas.yaml`
 file that defines the :code:`ease_sh` area, or see
 :ref:`the area definition section<area-definitions>` on how to define one.
 
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> area_def = load_area('areas.yaml', 'ease_sh') # doctest: +SKIP
- >>> swath_def = SwathDefinition(lons, lats)
- >>> result = resample_nearest(swath_def, tb37v, area_def,
- ...                           radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
+.. testsetup::
+
+   import numpy as np
+   lons = np.repeat(np.linspace(-95, -70, 100)[np.newaxis], 10, axis=0).ravel()
+   lats = np.linspace(-80, -90, 1000)
+   tb37v = np.arange(1000)
+   if plt is not None:
+       import matplotlib
+       matplotlib.use('agg')
+
+.. doctest::
+   :skipif: plt is None
+
+   >>> from pyresample import load_area, save_quicklook, SwathDefinition
+   >>> from pyresample.kd_tree import resample_nearest
+   >>> swath_def = SwathDefinition(lons, lats)
+   >>> result = resample_nearest(swath_def, tb37v, area_def,
+   ...                           radius_of_influence=20000, fill_value=None)
+   >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
  
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
 the above Satpy_ example) the result might look something like this:

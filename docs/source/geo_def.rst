@@ -21,10 +21,10 @@ classes must be in degrees. Additionally, longitudes must be in the
     and latitude arrays on initialization. Use
     :func:`~pyresample.utils.check_and_wrap` to preprocess your arrays.
 
+.. _area-definitions:
+
 AreaDefinition
 --------------
-
-.. _area-definitions:
 
 An :class:`~pyresample.geometry.AreaDefinition`, or ``area``, is the primary
 way of specifying a uniformly spaced geographic region in pyresample. It is

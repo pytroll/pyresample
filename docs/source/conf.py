@@ -49,7 +49,25 @@ extensions = [
     'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx']
 
 # DocTest Settings
+# don't run regular >>> code blocks
 doctest_test_doctest_blocks = ''
+# setup imports so we can skip certain doctests
+doctest_global_setup = '''
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
+    
+try:
+    import cartopy
+except ImportError:
+    cartopy = None
+    
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+    Basemap = None
+'''
 
 # Napoleon Settings (to support numpy style docs)
 napoleon_numpy_docstring = True
