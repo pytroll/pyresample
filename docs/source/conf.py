@@ -57,12 +57,12 @@ try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
-    
+
 try:
     import cartopy
 except ImportError:
     cartopy = None
-    
+
 try:
     from mpl_toolkits.basemap import Basemap
 except ImportError:
