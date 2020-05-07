@@ -66,27 +66,22 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_v
     return valid
 
 
-def _load_axis_info(nc_handle, coord_varname):
-    """ load extent and length for the axis held in coord_varname (min, max, len) """
+def _load_cf_axis_info(nc_handle, coord_varname):
+    """ load first value, last value, sign, spacing, and length for the axis held in coord_varname """
 
-    # this requires reading the data
-    values = nc_handle[coord_varname][:]
+    # this requires reading the data, we only read first and last
+    first = (nc_handle[coord_varname][0]).item()
+    last  = (nc_handle[coord_varname][-1]).item()
+    nb    = len(nc_handle[coord_varname])
     try:
         unit = nc_handle[coord_varname].units
     except AttributeError:
         unit = 'default'
 
-    # spacing
-    #   TBC: a) should we check the axis has constant spacing or does CF impose this already ?
-    #         b) is a single diff enough, or should we take a mean of several (rounding error) ?
-    spacing = abs(values[1] - values[0])
-
-    # extent (0,5*spacing is because area_def expects corner coordinates of the corner cells,
-    #     while CF stores center coords)
-    extent_low = values.min() - 0.5 * spacing
-    extent_hgh = values.max() + 0.5 * spacing
-
-    #print (coord_varname , values[0], spacing , extent_low, extent_hgh, unit)
+    # spacing and sign of the axis
+    delta   = float(last - first) / (nb - 1)
+    spacing = abs( delta )
+    sign    = delta / spacing
 
     # now we take into account the units
     scalef = 1.
@@ -97,13 +92,58 @@ def _load_axis_info(nc_handle, coord_varname):
                 unit.startswith('degree'):
             scalef = 1.
         else:
-            raise ValueError("Sorry: un-supported unit: {}!".format(unit))
+            raise ValueError("Sorry: {} uses un-supported unit: {}!".format(coord_varname, unit))
 
-    extent_low *= scalef
-    extent_hgh *= scalef
+    first   *= scalef
+    last    *= scalef
+    spacing *= scalef
 
-    return extent_low, extent_hgh, len(values)
+    # return in a dictionnary structure
+    ret = {'first': first, 'last': last, 'spacing': spacing, 'nb':nb, 'sign':sign}
+    #print(coord_varname, ret)
 
+
+    return ret
+
+def _get_area_extent_from_cf_axis(x, y):
+    """ combine the 'info' about x and y axis into an extent """
+
+    # find the ll: lower-left and ur: upper-right in 4 cases
+    if x['sign'] > 0 and y['sign'] > 0:
+        ll_x = x['first']
+        ll_y = y['first']
+        ur_x = x['last']
+        ur_y = y['last']
+    elif x['sign'] > 0 and y['sign'] < 0:
+        ll_x = x['first']
+        ll_y = y['last']
+        ur_x = x['last']
+        ur_y = y['first']
+    elif x['sign'] < 0 and y['sign'] > 0:
+        ll_x = x['last']
+        ll_y = y['first']
+        ur_x = x['first']
+        ur_y = y['last']
+    elif x['sign'] < 0 and y['sign'] < 0:
+        ll_x = x['last']
+        ll_y = y['last']
+        ur_x = x['first']
+        ur_y = y['first']
+    else:
+        raise ValueError("x or y sign is 0, this should not have happened.")
+
+    # handle the half-pixel offset between the center of corner cell (what we have in the axis info)
+    #   and the corner of corner cell (what AreaDefinition expects)
+    ll_x -= 0.5 * x['spacing']
+    ll_y -= 0.5 * y['spacing']
+    ur_x += 0.5 * x['spacing']
+    ur_y += 0.5 * y['spacing']
+
+    # return as tuple
+    ret = (ll_x, ll_y, ur_x, ur_y)
+    #print('extent:', ret)
+
+    return ret
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     """ Load an area def object from a netCDF/CF file. """
@@ -190,14 +230,16 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
-    # we now have the names for the x= and y= coordinate variables: load the extent of each axis separately
+    # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
     for axis in xy.keys():
-        axis_info[axis] = _load_axis_info(nc_file, xy[axis])
+        axis_info[axis] = _load_cf_axis_info(nc_file, xy[axis])
 
-    # create the shape, and area_extent arrays
-    shape = (axis_info['y'][2], axis_info['x'][2])
-    extent = (axis_info['x'][0], axis_info['y'][0], axis_info['x'][1], axis_info['y'][1])
+    # create shape
+    shape = (axis_info['y']['nb'], axis_info['x']['nb'])
+
+    # get area extent from the x and y info
+    extent = _get_area_extent_from_cf_axis(axis_info['x'], axis_info['y'])
 
     # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
     proj_dict = crs.to_dict()
