@@ -218,7 +218,8 @@ def get_boundary(x_coords, y_coords):
     """Get boundary from 2D *x_coords* and *y_coords* arrays."""
     # x_border, y_border = get_border(x_coords, y_coords)
     x_border, y_border = get_corners(x_coords, y_coords)
-    boundary = [(x_border[i], y_border[i]) for i in range(len(x_border))]
+    boundary = [(x_border[i], y_border[i]) for i in range(len(x_border))
+                if np.isfinite(x_border[i]) and np.isfinite(y_border[i])]
 
     return boundary
 
@@ -232,17 +233,9 @@ def get_polygon(x_coords, y_coords):
 
 def remove_extra_chunks(arrays, dst_x, dst_y):
     """Remove chunks that don't cover the target area."""
-    # (data, src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl,
-    # src_gradient_yp) = arrays
-
-    # This is the slowest bit
-    # Persisting is slower
-    # dst_x, dst_y = da.compute(dst_x, dst_y)
-
     dst_polygon = get_polygon(dst_x, dst_y)
     num_chunks = arrays[0].shape[-1]
     src_x, src_y = da.compute(arrays[1], arrays[2])
-    # src_x, src_y = arrays[1], arrays[2]
     src_x = np.split(src_x, num_chunks, axis=-1)
     src_y = np.split(src_y, num_chunks, axis=-1)
     src_polys = [get_polygon(x, y) for (x, y) in zip(src_x, src_y)]
@@ -250,11 +243,15 @@ def remove_extra_chunks(arrays, dst_x, dst_y):
     covers = []
     for poly in src_polys:
         try:
-            cov = dst_polygon.intersects(poly)
+            # Destination area has all corners/sides in space
+            if dst_polygon.area == 0.0:
+                cov = True
+            else:
+                cov = dst_polygon.intersects(poly)
         # This happens if the target area "goes over the edge" of the
-        # GEO disk
+        # GEO disk and the border isn't a closed curve
         except TopologicalError:
-            cov = False
+            cov = True
         covers.append(cov)
 
     # import matplotlib.pyplot as plt
@@ -307,4 +304,5 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
                        dst_x, 'mn', dst_y, 'mn',
                        dtype=np.float64,
                        method=kwargs.get('method', 'bilinear'))
+
     return da.nanmax(res, axis=-1).squeeze()
