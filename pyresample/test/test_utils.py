@@ -645,3 +645,32 @@ class TestProjRotation(unittest.TestCase):
         test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
+
+
+def test_check_slice_orientation():
+    """Test that slicing fix is doing what it should."""
+    from pyresample.utils import check_slice_orientation
+
+    # Forward slicing should not be changed
+    start, stop, step = 0, 10, None
+    slice_in = slice(start, stop, step)
+    res = check_slice_orientation(slice_in)
+    assert res is slice_in
+
+    # Reverse slicing should not be changed if the step is negative
+    start, stop, step = 10, 0, -1
+    slice_in = slice(start, stop, step)
+    res = check_slice_orientation(slice_in)
+    assert res is slice_in
+
+    # Reverse slicing should be fixed if step is positive
+    start, stop, step = 10, 0, 2
+    slice_in = slice(start, stop, step)
+    res = check_slice_orientation(slice_in)
+    assert res == slice(start, stop, -step)
+
+    # Reverse slicing should be fixed if step is None
+    start, stop, step = 10, 0, None
+    slice_in = slice(start, stop, step)
+    res = check_slice_orientation(slice_in)
+    assert res == slice(start, stop, -1)
