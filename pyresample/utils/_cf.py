@@ -71,17 +71,17 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
     # this requires reading the data, we only read first and last
     first = (nc_handle[coord_varname][0]).item()
-    last  = (nc_handle[coord_varname][-1]).item()
-    nb    = len(nc_handle[coord_varname])
+    last = (nc_handle[coord_varname][-1]).item()
+    nb = len(nc_handle[coord_varname])
     try:
         unit = nc_handle[coord_varname].units
     except AttributeError:
         unit = 'default'
 
     # spacing and sign of the axis
-    delta   = float(last - first) / (nb - 1)
-    spacing = abs( delta )
-    sign    = delta / spacing
+    delta = float(last - first) / (nb - 1)
+    spacing = abs(delta)
+    sign = delta / spacing
 
     # now we take into account the units
     scalef = 1.
@@ -94,16 +94,16 @@ def _load_cf_axis_info(nc_handle, coord_varname):
         else:
             raise ValueError("Sorry: {} uses un-supported unit: {}!".format(coord_varname, unit))
 
-    first   *= scalef
-    last    *= scalef
+    first *= scalef
+    last *= scalef
     spacing *= scalef
 
     # return in a dictionnary structure
-    ret = {'first': first, 'last': last, 'spacing': spacing, 'nb':nb, 'sign':sign}
+    ret = {'first': first, 'last': last, 'spacing': spacing, 'nb': nb, 'sign': sign}
     #print(coord_varname, ret)
 
-
     return ret
+
 
 def _get_area_extent_from_cf_axis(x, y):
     """ combine the 'info' about x and y axis into an extent """
@@ -144,6 +144,7 @@ def _get_area_extent_from_cf_axis(x, y):
     #print('extent:', ret)
 
     return ret
+
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     """ Load an area def object from a netCDF/CF file. """
