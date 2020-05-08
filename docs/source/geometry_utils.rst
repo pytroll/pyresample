@@ -385,12 +385,19 @@ an area might be specified.
 If we assume the YAML content is stored in an ``areas.yaml`` file, we can
 read a single ``AreaDefinition`` named ``corner`` by doing:
 
+.. testsetup::
+
+   import os
+   # Travis Windows currently doesn't clone symbolic links properly
+   # See https://travis-ci.community/t/git-symlinks-support/274
+   if os.getenv('TRAVIS_OS_NAME', '') == 'windows':
+       os.rm('areas.yaml')
+       os.copy('../pyresample/test/test_files/areas.yaml', 'areas.yaml')
+
 .. doctest::
 
  >>> from pyresample import load_area
  >>> import yaml
- >>> res = yaml.safe_load(open('areas.yaml', 'r'))
- >>> print(type(res), res)
  >>> area_def = load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
