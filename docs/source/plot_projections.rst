@@ -70,7 +70,7 @@ Assuming the file **areas.yaml** has the following area definition:
    >>> from pyresample.kd_tree import resample_nearest
    >>> area_def = load_area('areas.yaml', 'pc_world')  # doctest: +SKIP
    >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
-   >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+   >>> save_quicklook('tb37v_pc.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')  # doctest: +SKIP
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
 above we use AMSR-2 data in this example) the result might look something like
@@ -133,7 +133,7 @@ should also work with these projections. Again assuming the area-config file
    >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
    >>> swath_def = SwathDefinition(lons, lats)
    >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
-   >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+   >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')  # doctest: +SKIP
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data, like
 in the above examples, the result might look something like this:

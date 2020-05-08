@@ -38,7 +38,7 @@ used like any other Cartopy_ CRS object.
    >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
    >>> crs = area_def.to_cartopy_crs()
    >>> fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
-   >>> coastlines = ax.coastlines()
+   >>> coastlines = ax.coastlines()  # doctest: +SKIP
    >>> ax.set_global()
    >>> img = plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper')
    >>> cbar = plt.colorbar()
