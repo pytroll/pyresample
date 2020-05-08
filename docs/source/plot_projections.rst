@@ -63,6 +63,7 @@ Assuming the file **areas.yaml** has the following area definition:
     """, "pc_world")
 
 .. doctest::
+   :skipif: plt is None or cartopy is None
 
    >>> import matplotlib.pyplot as plt
    >>> from pyresample import load_area, save_quicklook
@@ -124,6 +125,7 @@ should also work with these projections. Again assuming the area-config file
    """, "ortho")
 
 .. doctest::
+   :skipif: plt is None or cartopy is None
 
  >>> from pyresample import load_area, save_quicklook, SwathDefinition
  >>> from pyresample.kd_tree import resample_nearest
