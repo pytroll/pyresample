@@ -388,11 +388,12 @@ read a single ``AreaDefinition`` named ``corner`` by doing:
 .. testsetup::
 
    import os
+   import shutil
    # Travis Windows currently doesn't clone symbolic links properly
    # See https://travis-ci.community/t/git-symlinks-support/274
    if os.getenv('TRAVIS_OS_NAME', '') == 'windows':
-       os.rm('areas.yaml')
-       os.copy('../pyresample/test/test_files/areas.yaml', 'areas.yaml')
+       os.remove('areas.yaml')
+       shutil.copy('../pyresample/test/test_files/areas.yaml', 'areas.yaml')
 
 .. doctest::
 
