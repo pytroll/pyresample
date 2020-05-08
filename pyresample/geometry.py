@@ -1928,9 +1928,14 @@ class AreaDefinition(BaseDefinition):
 
             xstart = 0 if x[0] is np.ma.masked else x[0]
             ystart = 0 if y[1] is np.ma.masked else y[1]
-            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
-            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
-
+            if self.area_extent[0] > self.area_extent[2]:
+                xstop = self.width if x[0] is np.ma.masked else x[0] + 1
+            else:
+                xstop = self.width if x[1] is np.ma.masked else x[1] + 1
+            if self.area_extent[1] > self.area_extent[3]:
+                ystop = self.height if y[1] is np.ma.masked else y[1] + 1
+            else:
+                ystop = self.height if y[0] is np.ma.masked else y[0] + 1
             return slice(xstart, xstop), slice(ystart, ystop)
 
         if self.proj_dict.get('proj') != 'geos':
@@ -1953,7 +1958,6 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
-
         x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
         y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
         if shape_divisible_by is not None:
