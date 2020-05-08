@@ -90,8 +90,8 @@ class BucketResampler(object):
         self._get_indices()
         self.counts = None
 
-    def _get_proj_coordinates(self, lons, lats, x_res, y_res):
-        """Calculate projection coordinates and round to resolution unit.
+    def _get_proj_coordinates(self, lons, lats):
+        """Calculate projection coordinates.
 
         Parameters
         ----------
@@ -99,15 +99,8 @@ class BucketResampler(object):
             Longitude coordinates
         lats : Numpy or Dask array
             Latitude coordinates
-        x_res : float
-            Resolution of the output in X direction
-        y_res : float
-            Resolution of the output in Y direction
         """
         proj_x, proj_y = self.prj(lons, lats)
-        proj_x = round_to_resolution(proj_x, x_res)
-        proj_y = round_to_resolution(proj_y, y_res)
-
         return np.stack((proj_x, proj_y))
 
     def _get_indices(self):
@@ -121,30 +114,20 @@ class BucketResampler(object):
             Y indices of the target grid where the data are put
         """
         LOG.info("Determine bucket resampling indices")
-        adef = self.target_area
 
+        # Transform source lons/lats to target projection coordinates x/y
         lons = self.source_lons.ravel()
         lats = self.source_lats.ravel()
-
-        # Create output grid coordinates in projection units
-        x_res = (adef.area_extent[2] - adef.area_extent[0]) / adef.width
-        y_res = (adef.area_extent[3] - adef.area_extent[1]) / adef.height
-        x_vect = da.arange(adef.area_extent[0] + x_res / 2.,
-                           adef.area_extent[2] - x_res / 2., x_res)
-        # Orient so that 0-meridian is pointing down
-        y_vect = da.arange(adef.area_extent[3] - y_res / 2.,
-                           adef.area_extent[1] + y_res / 2.,
-                           -y_res)
-
-        result = da.map_blocks(self._get_proj_coordinates, lons,
-                               lats, x_res, y_res,
+        result = da.map_blocks(self._get_proj_coordinates, lons, lats,
                                new_axis=0, chunks=(2,) + lons.chunks)
         proj_x = result[0, :]
         proj_y = result[1, :]
 
-        # Calculate array indices
-        x_idxs = ((proj_x - np.min(x_vect)) / x_res).astype(np.int)
-        y_idxs = ((np.max(y_vect) - proj_y) / y_res).astype(np.int)
+        # Calculate array indices. Orient so that 0-meridian is pointing down.
+        adef = self.target_area
+        x_res, y_res = adef.resolution
+        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int)
+        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int)
 
         # Get valid index locations
         mask = ((x_idxs >= 0) & (x_idxs < adef.width) &

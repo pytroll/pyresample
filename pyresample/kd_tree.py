@@ -79,7 +79,7 @@ def resample_nearest(source_geo_def,
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
-    fill_value : int or None, optional
+    fill_value : int, float, numpy floating, numpy integer or None, optional
             Set undetermined pixels to this value.
             If fill_value is None a masked array is returned
             with undetermined pixels masked
@@ -617,7 +617,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         If only one channel is resampled weight_funcs is
         a single function object.
         Must be supplied when using 'custom' resample type
-    fill_value : int or None, optional
+    fill_value : int, float, numpy floating, numpy integer or None, optional
         Set undetermined pixels to this value.
         If fill_value is None a masked array is returned
         with undetermined pixels masked
@@ -677,9 +677,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     if resample_type == 'custom' and weight_funcs is None:
         raise ValueError('weight_funcs must be supplied when using '
                          'custom resampling')
-
-    if not isinstance(fill_value, (long, int, float)) and fill_value is not None:
-        raise TypeError('fill_value must be number or None')
 
     if index_array.ndim == 1:
         neighbours = 1
