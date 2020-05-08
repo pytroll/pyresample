@@ -388,6 +388,9 @@ read a single ``AreaDefinition`` named ``corner`` by doing:
 .. doctest::
 
  >>> from pyresample import load_area
+ >>> import yaml
+ >>> res = yaml.safe_load(open('areas.yaml', 'r'))
+ >>> print(type(res), res)
  >>> area_def = load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
