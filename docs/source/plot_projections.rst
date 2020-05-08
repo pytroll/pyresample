@@ -127,13 +127,13 @@ should also work with these projections. Again assuming the area-config file
 .. doctest::
    :skipif: plt is None or cartopy is None
 
- >>> from pyresample import load_area, save_quicklook, SwathDefinition
- >>> from pyresample.kd_tree import resample_nearest
- >>> from pyresample import load_area
- >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
- >>> swath_def = SwathDefinition(lons, lats)
- >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
- >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
+   >>> from pyresample import load_area, save_quicklook, SwathDefinition
+   >>> from pyresample.kd_tree import resample_nearest
+   >>> from pyresample import load_area
+   >>> area_def = load_area('areas.yaml', 'ortho') # doctest: +SKIP
+   >>> swath_def = SwathDefinition(lons, lats)
+   >>> result = resample_nearest(swath_def, tb37v, area_def, radius_of_influence=20000, fill_value=None)
+   >>> save_quicklook('tb37v_ortho.png', area_def, result, num_meridians=None, num_parallels=None, label='Tb 37v (K)')
 
 Assuming **lons**, **lats** and **tb37v** are initialized with real data, like
 in the above examples, the result might look something like this:
