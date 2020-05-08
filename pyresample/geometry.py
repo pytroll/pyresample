@@ -1024,8 +1024,9 @@ class AreaDefinition(BaseDefinition):
         Human-readable description of the area
     proj_id : str
         ID of projection
-    projection: dict or str
-        Dictionary or string of Proj.4 parameters
+    projection: dict or str or pyproj.crs.CRS
+        Dictionary of PROJ parameters or string of PROJ or WKT parameters.
+        Can also be a :class:`pyproj.crs.CRS` object.
     width : int
         x dimension in number of pixels, aka number of grid columns
     height : int
@@ -1077,8 +1078,22 @@ class AreaDefinition(BaseDefinition):
     pixel_offset_y : float
         y offset between projection center and upper left corner of upper
         left pixel in units of pixels..
+    crs : pyproj.crs.CRS
+        Coordinate reference system object similar to the PROJ parameters in
+        `proj_dict` and `proj_str`. This is the preferred attribute to use
+        when working with the `pyproj` library. Note, however, that this
+        object is not thread-safe and should not be passed between threads.
+    crs_wkt : str
+        WellKnownText version of the CRS object. This is the preferred
+        way of describing CRS information as a string.
+    proj_dict : dict
+        Projection defined as a dictionary of PROJ parameters. This is no
+        longer the preferred way of describing CRS information. Switch to
+        the `crs` or `crs_wkt` properties for the most flexibility.
     proj_str : str
-        Projection defined as Proj.4 string
+        Projection defined as a PROJ string. This is no
+        longer the preferred way of describing CRS information. Switch to
+        the `crs` or `crs_wkt` properties for the most flexibility.
     cartesian_coords : object
         Grid cartesian coordinates
     projection_x_coords : object
@@ -1113,8 +1128,9 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self.area_extent = tuple(area_extent)
         if CRS is not None:
-            self.crs = CRS(projection)
+            self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
+            self.crs = self._crs  # see _crs property for details
         else:
             if isinstance(projection, str):
                 proj_dict = proj4_str_to_dict(projection)
@@ -1148,6 +1164,23 @@ class AreaDefinition(BaseDefinition):
         self._projection_y_coords = None
 
         self.dtype = dtype
+
+    @property
+    def _crs(self):
+        """Helper property for the `crs` property.
+
+        The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
+        accidentally passing it between threads, we only create it when it
+        is requested (the `self.crs` property). The alternative of storing it
+        as a normal instance attribute could cause issues between threads.
+
+        For backwards compatibility, we only create the `.crs` property if
+        pyproj 2.0+ is installed. Users can then check
+        `hasattr(area_def, 'crs')` to easily support older versions of
+        pyresample and pyproj.
+
+        """
+        return CRS.from_wkt(self.crs_wkt)
 
     @property
     def proj_dict(self):
@@ -1896,7 +1929,7 @@ class AreaDefinition(BaseDefinition):
             raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
         # Proj.4 definition of target area projection
-        proj_def = self.crs if hasattr(self, 'crs') else self.proj_dict
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
