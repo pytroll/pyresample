@@ -1211,6 +1211,25 @@ class AreaDefinition(BaseDefinition):
         return self.height
 
     @classmethod
+    def from_epsg(cls, code, resolution):
+        """Create an AreaDefinition object from an epsg code (string or int) and a resolution."""
+        if CRS is None:
+            raise NotImplementedError
+        crs = CRS('EPSG:' + str(code))
+        bounds = crs.area_of_use.bounds
+        proj = Proj(crs)
+        left1, low1 = proj(bounds[0], bounds[1])
+        right1, up1 = proj(bounds[2], bounds[3])
+        left2, up2 = proj(bounds[0], bounds[3])
+        right2, low2 = proj(bounds[2], bounds[1])
+        left = min(left1, left2)
+        right = max(right1, right2)
+        up = max(up1, up2)
+        low = min(low1, low2)
+        area_extent = (left, low, right, up)
+        return create_area_def(crs.name, crs.to_dict(), area_extent=area_extent, resolution=resolution)
+
+    @classmethod
     def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
         """Create an AreaDefinition object from area_extent and shape.
 
