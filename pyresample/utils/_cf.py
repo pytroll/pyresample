@@ -33,7 +33,6 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
-
     coord_var = nc_handle[coord_varname]
     try:
         if type_of_grid_mapping == 'latitude_longitude':
@@ -82,7 +81,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
         unit = None
 
     # return in a dictionnary structure
-    ret = {'first': first, 'last': last, 'spacing': spacing,\
+    ret = {'first': first, 'last': last, 'spacing': spacing,
            'nb': nb, 'sign': sign, 'unit': unit}
     print(coord_varname, ret)
 
@@ -111,6 +110,7 @@ def _get_area_extent_from_cf_axis(x, y):
 
     return ret
 
+
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     """ guess the name of the coordinate variable holding the axis. although Y and X are recommended to
           be placed last in the list of coordinates, this is not required. """
@@ -127,8 +127,8 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
             ret = dim
             break
 
-
     return ret
+
 
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     """ guess the name of the variable holding the latitude (or longitude)
@@ -152,7 +152,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     for v in search_list:
         try:
             # this allows for both 'latitude' and 'rotated_latitude'...
-            if {'lat':'latitude','lon':'longitude'}[lonlat] in nc_handle[v].standard_name:
+            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in nc_handle[v].standard_name:
                 ret = v
                 break
         except AttributeError:
@@ -234,7 +234,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
                 "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
 
     cf_info['grid_mapping_variable'] = grid_mapping_variable
-    cf_info['type_of_grid_mapping']  = type_of_grid_mapping
+    cf_info['type_of_grid_mapping'] = type_of_grid_mapping
 
     # identify and load the x/y axis
     # ==============================
@@ -249,7 +249,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         for axis in ('x', 'y'):
             xy[axis] = _guess_cf_axis_varname(nc_file, variable, axis, type_of_grid_mapping)
             if xy[axis] is None:
-                raise ValueError("Could not guess the name of the {} axis of the {}".format(axis, grid_mapping_variable))
+                raise ValueError("Could not guess the name of the {} axis of the {}".format(
+                    axis, grid_mapping_variable))
     else:
         # y= and x= are provided by the caller. Check they are valid CF coordinate variables
         #   The order is always (y,x)
@@ -259,7 +260,6 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
             if not _is_valid_coordinate_variable(nc_file, xy[axis], axis, type_of_grid_mapping):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
-
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
@@ -274,14 +274,14 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         #  the satellite. We must multiply them by the height of the satellite.
         satellite_height = crs.to_dict()['h']
         for axis in ('x', 'y'):
-            for k in ('first','last','spacing'):
+            for k in ('first', 'last', 'spacing'):
                 axis_info[axis][k] *= satellite_height
             # the unit is now the default (meters)
             axis_info[axis]['units'] = None
 
     # transfer information on the axis to the cf_info dict()
     for axis in ('x', 'y'):
-        cf_info[axis]  = dict()
+        cf_info[axis] = dict()
         cf_info[axis]['varname'] = xy[axis]
         for k in axis_info[axis].keys():
             cf_info[axis][k] = axis_info[axis][k]
@@ -289,7 +289,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     # sanity check: we cannot have different units for x and y
     unit = axis_info['x']['unit']
     if axis_info['x']['unit'] != axis_info['y']['unit']:
-        raise ValueError("Cannot have different units for 'x' ({}) and 'y' ({}) axis.".format(axis_info['x']['unit'],axis_info['y']['unit']))
+        raise ValueError("Cannot have different units for 'x' ({}) and 'y' ({}) axis.".format(
+            axis_info['x']['unit'], axis_info['y']['unit']))
 
     # create shape
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
@@ -302,7 +303,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
 
     # finally prepare the AreaDefinition object
     area_def = geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
-                                               units=unit, )
+                                                   units=unit, )
 
     # return
     if with_cf_info:
