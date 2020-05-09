@@ -25,7 +25,7 @@ def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
 
 
-def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_variable):
+def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
     """ check if a coord_varname is a valid CF coordinate variable """
 
     valid = False
@@ -33,15 +33,6 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, grid_mapping_v
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
-    # the type of grid_mapping (its grid_mapping_name) decides how the coordinate variables are named
-    if grid_mapping_variable == 'latlon_default':
-        type_of_grid_mapping = 'latitude_longitude'
-    else:
-        try:
-            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
-        except AttributeError:
-            raise ValueError(
-                "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
 
     coord_var = nc_handle[coord_varname]
     try:
@@ -73,34 +64,27 @@ def _load_cf_axis_info(nc_handle, coord_varname):
     first = (nc_handle[coord_varname][0]).item()
     last = (nc_handle[coord_varname][-1]).item()
     nb = len(nc_handle[coord_varname])
-    try:
-        unit = nc_handle[coord_varname].units
-    except AttributeError:
-        unit = 'default'
 
     # spacing and sign of the axis
     delta = float(last - first) / (nb - 1)
     spacing = abs(delta)
     sign = delta / spacing
 
-    # now we take into account the units
-    scalef = 1.
-    if unit != 'default':
-        if unit == 'km':
-            scalef = 1000.
-        elif unit == 'm' or unit == 'meters' or \
-                unit.startswith('degree'):
-            scalef = 1.
-        else:
-            raise ValueError("Sorry: {} uses un-supported unit: {}!".format(coord_varname, unit))
+    # get the unit information
+    try:
+        unit = nc_handle[coord_varname].units
+    except AttributeError:
+        unit = None
 
-    first *= scalef
-    last *= scalef
-    spacing *= scalef
+    # some units that are valid in CF are not valid to pass to proj
+    if unit.startswith('rad') or \
+       unit.startswith('deg'):
+        unit = None
 
     # return in a dictionnary structure
-    ret = {'first': first, 'last': last, 'spacing': spacing, 'nb': nb, 'sign': sign}
-    #print(coord_varname, ret)
+    ret = {'first': first, 'last': last, 'spacing': spacing,\
+           'nb': nb, 'sign': sign, 'unit': unit}
+    print(coord_varname, ret)
 
     return ret
 
@@ -108,50 +92,91 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 def _get_area_extent_from_cf_axis(x, y):
     """ combine the 'info' about x and y axis into an extent """
 
-    # find the ll: lower-left and ur: upper-right in 4 cases
-    if x['sign'] > 0 and y['sign'] > 0:
-        ll_x = x['first']
-        ll_y = y['first']
-        ur_x = x['last']
-        ur_y = y['last']
-    elif x['sign'] > 0 and y['sign'] < 0:
-        ll_x = x['first']
-        ll_y = y['last']
-        ur_x = x['last']
-        ur_y = y['first']
-    elif x['sign'] < 0 and y['sign'] > 0:
-        ll_x = x['last']
-        ll_y = y['first']
-        ur_x = x['first']
-        ur_y = y['last']
-    elif x['sign'] < 0 and y['sign'] < 0:
-        ll_x = x['last']
-        ll_y = y['last']
-        ur_x = x['first']
-        ur_y = y['first']
-    else:
-        raise ValueError("x or y sign is 0, this should not have happened.")
+    # find the ll: lower-left and ur: upper-right.
+    # x['first'], y['first'] is always the Upper Left corner
+    #   (think of numpy's convention for a 2D image with index 0,0 in top left).
+    ll_x, ll_y = x['first'], y['last']
+    ur_x, ur_y = x['last'], y['first']
 
     # handle the half-pixel offset between the center of corner cell (what we have in the axis info)
     #   and the corner of corner cell (what AreaDefinition expects)
-    ll_x -= 0.5 * x['spacing']
-    ll_y -= 0.5 * y['spacing']
-    ur_x += 0.5 * x['spacing']
-    ur_y += 0.5 * y['spacing']
+    ll_x -= x['sign'] * 0.5 * x['spacing']
+    ur_x += x['sign'] * 0.5 * x['spacing']
+    ll_y += y['sign'] * 0.5 * y['spacing']
+    ur_y -= y['sign'] * 0.5 * y['spacing']
 
     # return as tuple
     ret = (ll_x, ll_y, ur_x, ur_y)
-    #print('extent:', ret)
+    print('extent:', ret)
+
+    return ret
+
+def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
+    """ guess the name of the coordinate variable holding the axis. although Y and X are recommended to
+          be placed last in the list of coordinates, this is not required. """
+
+    ret = None
+
+    if axis not in ('x', 'y'):
+        raise ValueError("axis= parameter must be 'x' or 'y'")
+
+    # the name of y and x are in the dimensions of the variable=
+    for dim in nc_handle[variable].dimensions:
+        # test if each dim is a valid CF coordinate variable
+        if _is_valid_coordinate_variable(nc_handle, dim, axis, type_of_grid_mapping):
+            ret = dim
+            break
+
+
+    return ret
+
+def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
+    """ guess the name of the variable holding the latitude (or longitude)
+            corresponding to 'variable' """
+
+    ret = None
+
+    if lonlat not in ('lon', 'lat'):
+        raise ValueError("lonlat= parameter must be 'lon' or 'lat'")
+
+    # lat/lon are either directly a dimension,...
+    search_list = list(nc_handle[variable].dimensions)
+    try:
+        # ...  or listed in the ':coordinates' attribute.
+        search_list += nc_handle[variable].coordinates.split(' ')
+    except AttributeError:
+        # no ':coordinates' attribute, this is fine
+        pass
+
+    # go through the list of variables and check if one of them is lat / lon
+    for v in search_list:
+        try:
+            # this allows for both 'latitude' and 'rotated_latitude'...
+            if {'lat':'latitude','lon':'longitude'}[lonlat] in nc_handle[v].standard_name:
+                ret = v
+                break
+        except AttributeError:
+            # no 'standard_name'. this is not what we are looking for.
+            pass
+
+    if ret is None:
+        raise ValueError("Could not find a valid '{}' coordinate variable for {}".format(lonlat,variable))
 
     return ret
 
 
-def load_cf_area(nc_file, variable=None, y=None, x=None, ):
+def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     """ Load an area def object from a netCDF/CF file. """
 
     from netCDF4 import Dataset
     from pyresample import geometry
     from pyresample.utils import proj4_str_to_dict
+
+    # Prepare cf_info
+    #  cf_info holds information about the structure of the cf grid information
+    #     (like the name of the coordinate axes, the type of projection, the name of
+    #     the lat and lon variables, etc...
+    cf_info = {}
 
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
@@ -197,44 +222,61 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
             # we assume the crs is 'latitude_longitude' with a WGS84 datum. WGS84 is not a default from CF.
             grid_mapping_variable = "latlon_default"
             crs = pyproj.CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
-            # TODO : lat/lon could be very wrong. should we issue a warning ?
 
-    # compute the AREA_EXTENT
-    # =======================
+    # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
+    if grid_mapping_variable == 'latlon_default':
+        type_of_grid_mapping = 'latitude_longitude'
+    else:
+        try:
+            type_of_grid_mapping = nc_file[grid_mapping_variable].grid_mapping_name
+        except AttributeError:
+            raise ValueError(
+                "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
+
+    # identify and load the x/y axis
+    # ==============================
 
     # test if we can allow None for y and x
     if variable_is_itself_gridmapping and (y is None or x is None):
         raise ValueError("When variable= points to the grid_mapping variable itself, y= and x= must be provided")
 
-    # if y= or x= are None, guess the variable names
+    # if y= or x= are None, guess the variable names for the axis
     xy = dict()
     if y is None and x is None:
-        # the name of y and x are in the dimensions of the variable=
-        for dim in nc_file[variable].dimensions:
-            # test if each dim is a valid CF coordinate variable
-            for axis in ('x', 'y'):
-                if _is_valid_coordinate_variable(nc_file, dim, axis, grid_mapping_variable):
-                    xy[axis] = dim
-
-        # did we manage to guess both y= and x= ?
         for axis in ('x', 'y'):
-            if axis not in xy.keys():
-                raise ValueError("Cannot guess coordinate variable holding the '{}' axis".format(axis))
-
+            xy[axis] = _guess_cf_axis_varname(nc_file, variable, axis, type_of_grid_mapping)
+            if xy[axis] is None:
+                raise ValueError("Could not guess the name of the {} axis of the {}".format(axis, grid_mapping_variable))
     else:
         # y= and x= are provided by the caller. Check they are valid CF coordinate variables
         #   The order is always (y,x)
         xy['y'] = y
         xy['x'] = x
         for axis in ('x', 'y'):
-            if not _is_valid_coordinate_variable(nc_file, xy[axis], axis, grid_mapping_variable):
+            if not _is_valid_coordinate_variable(nc_file, xy[axis], axis, type_of_grid_mapping):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
     for axis in xy.keys():
-        axis_info[axis] = _load_cf_axis_info(nc_file, xy[axis])
+        axis_info[axis] = _load_cf_axis_info(nc_file, xy[axis],)
+
+    # there are few cases where the x/y values loaded from the CF files cannot be
+    #   used directly in pyresample.
+    if type_of_grid_mapping == 'geostationary':
+        # for geostationary projection, the values stored as x/y are not directly
+        #  the x/y along the projection axes, but are rather the scanning angles from
+        #  the satellite. We must multiply them by the height of the satellite.
+        satellite_height = crs.to_dict()['h']
+        for axis in xy.keys():
+            for k in ('first','last','spacing'):
+                axis_info[axis][k] *= satellite_height
+
+    # sanity check: we cannot have different units for x and y
+    unit = axis_info['x']['unit']
+    if axis_info['x']['unit'] != axis_info['y']['unit']:
+        raise ValueError("Cannot have different units for 'x' ({}) and 'y' ({}) axis.".format(axis_info['x']['unit'],axis_info['y']['unit']))
 
     # create shape
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
@@ -246,4 +288,5 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, ):
     proj_dict = crs.to_dict()
 
     # now we have all we need to create an area definition
-    return geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,)
+    return geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
+                                               units=unit, )
