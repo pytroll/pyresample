@@ -159,9 +159,6 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
             # no 'standard_name'. this is not what we are looking for.
             pass
 
-    if ret is None:
-        raise ValueError("Could not find a valid '{}' coordinate variable for {}".format(lonlat,variable))
-
     return ret
 
 
@@ -201,6 +198,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         if variable not in nc_file.variables.keys():
             raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
 
+    cf_info['variable'] = variable
+
     # Load a CRS object
     # =================
     grid_mapping_variable = None
@@ -219,7 +218,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
             variable_is_itself_gridmapping = True
         except pyproj.exceptions.CRSError as ex:
             # ... not a valid grid_mapping either
-            # we assume the crs is 'latitude_longitude' with a WGS84 datum. WGS84 is not a default from CF.
+            # we assume the crs is 'latitude_longitude' with a WGS84 datum.
+            # note: there is no default CRS in CF, we choose WGS84
             grid_mapping_variable = "latlon_default"
             crs = pyproj.CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
 
@@ -232,6 +232,9 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         except AttributeError:
             raise ValueError(
                 "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
+
+    cf_info['grid_mapping_variable'] = grid_mapping_variable
+    cf_info['type_of_grid_mapping']  = type_of_grid_mapping
 
     # identify and load the x/y axis
     # ==============================
@@ -257,9 +260,10 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
+
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
-    for axis in xy.keys():
+    for axis in ('x', 'y'):
         axis_info[axis] = _load_cf_axis_info(nc_file, xy[axis],)
 
     # there are few cases where the x/y values loaded from the CF files cannot be
@@ -269,9 +273,18 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         #  the x/y along the projection axes, but are rather the scanning angles from
         #  the satellite. We must multiply them by the height of the satellite.
         satellite_height = crs.to_dict()['h']
-        for axis in xy.keys():
+        for axis in ('x', 'y'):
             for k in ('first','last','spacing'):
                 axis_info[axis][k] *= satellite_height
+            # the unit is now the default (meters)
+            axis_info[axis]['units'] = None
+
+    # transfer information on the axis to the cf_info dict()
+    for axis in ('x', 'y'):
+        cf_info[axis]  = dict()
+        cf_info[axis]['varname'] = xy[axis]
+        for k in axis_info[axis].keys():
+            cf_info[axis][k] = axis_info[axis][k]
 
     # sanity check: we cannot have different units for x and y
     unit = axis_info['x']['unit']
@@ -287,6 +300,19 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
     proj_dict = crs.to_dict()
 
-    # now we have all we need to create an area definition
-    return geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
+    # finally prepare the AreaDefinition object
+    area_def = geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
                                                units=unit, )
+
+    # return
+    if with_cf_info:
+
+        # also guess the name of the latitude and longitude variables
+        for ll in ('lon', 'lat'):
+            cf_info[ll] = _guess_cf_lonlat_varname(nc_file, variable, ll)
+            # this can be None, in which case there was no good lat/lon candidate variable
+            #   in the file.
+
+        return area_def, cf_info
+    else:
+        return area_def
