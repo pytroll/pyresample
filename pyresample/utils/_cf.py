@@ -33,7 +33,11 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
-    coord_var = nc_handle[coord_varname]
+    try:
+        coord_var = nc_handle[coord_varname]
+    except IndexError:
+        raise ValueError("variable {} not in netCDF file".format(coord_varname))
+
     try:
         if type_of_grid_mapping == 'latitude_longitude':
             # specific name for the latitude_longitude grid mapping

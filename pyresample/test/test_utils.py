@@ -639,6 +639,7 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
 
         # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
 
         # try to load using a variable= that does not define a grid mapping
