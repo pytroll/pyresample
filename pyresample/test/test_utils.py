@@ -677,3 +677,20 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
             adef_4 = load_cf_area(nc_handle)
         validate_nh10km_adef(adef_4)
 
+    def test_load_cf_nh10km_cfinfo(self):
+        from pyresample.utils import load_cf_area
+        
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
+
+        # load the cf_info
+        _, cf_info = load_cf_area(cf_file, 'ice_conc', with_cf_info=True)
+
+        # test some of the fields
+        self.assertEqual(cf_info['variable'], 'ice_conc')
+        self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
+        self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
+        self.assertEqual(cf_info['lon'], 'lon')
+        self.assertEqual(cf_info['x']['varname'], 'xc')
+        self.assertEqual(cf_info['x']['first'], -3845.0)
+        self.assertEqual(cf_info['y']['last'], -5345.0)
+
