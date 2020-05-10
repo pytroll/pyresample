@@ -161,43 +161,15 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
     return ret
 
+def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
 
-def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
-    """ Load an area def object from a netCDF/CF file. """
-
-    from netCDF4 import Dataset
     from pyresample import geometry
-    from pyresample.utils import proj4_str_to_dict
 
-    # Prepare cf_info
-    #  cf_info holds information about the structure of the cf grid information
-    #     (like the name of the coordinate axes, the type of projection, the name of
-    #     the lat and lon variables, etc...
-    cf_info = {}
+    if variable not in nc_handle.variables.keys():
+        raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
 
-    # basic check on the default values of the parameters.
-    if (x is not None and y is None) or (x is None and y is not None):
-        raise ValueError("You must specify either all or none of x= and y=")
-
-    # the nc_file can be either the path to a netCDF/CF file, or directly an opened netCDF4.Dataset()
-    #   if the path to a file, open the Dataset access to it
-    if not isinstance(nc_file, Dataset):
-        try:
-            nc_file = Dataset(nc_file)
-        except FileNotFoundError:
-            raise FileNotFoundError('File not found: {}'.format(nc_file))
-        except OSError:
-            raise ValueError('File is not a netCDF file {}'.format(nc_file))
-
-    # if the variable=None, we search for a good variable
-    if variable is None:
-        variable = 'good variable'
-        raise NotImplementedError("search for a good variable is not implemented yet!")
-    else:
-        # the variable= must exist in the netCDF file
-        if variable not in nc_file.variables.keys():
-            raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
-
+    # the routine always prepares a cf_info
+    cf_info = dict()
     cf_info['variable'] = variable
 
     # Load a CRS object
@@ -205,15 +177,15 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     grid_mapping_variable = None
     variable_is_itself_gridmapping = False
     # test if the variable has a grid_mapping attribute
-    if hasattr(nc_file[variable], 'grid_mapping'):
+    if hasattr(nc_handle[variable], 'grid_mapping'):
         # good. attempt to load the grid_mapping information into a pyproj object
-        crs = _load_crs_from_cf(nc_file, nc_file[variable].grid_mapping)
-        grid_mapping_variable = nc_file[variable].grid_mapping
+        crs = _load_crs_from_cf(nc_handle, nc_handle[variable].grid_mapping)
+        grid_mapping_variable = nc_handle[variable].grid_mapping
     else:
         # the variable doesn't have a grid_mapping attribute.
         # ... maybe it is the grid_mapping variable itself?
         try:
-            crs = _load_crs_from_cf(nc_file, variable)
+            crs = _load_crs_from_cf(nc_handle, variable)
             grid_mapping_variable = variable
             variable_is_itself_gridmapping = True
         except pyproj.exceptions.CRSError as ex:
@@ -228,7 +200,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         type_of_grid_mapping = 'latitude_longitude'
     else:
         try:
-            type_of_grid_mapping = nc_file[grid_mapping_variable].grid_mapping_name
+            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
         except AttributeError:
             raise ValueError(
                 "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
@@ -247,7 +219,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     xy = dict()
     if y is None and x is None:
         for axis in ('x', 'y'):
-            xy[axis] = _guess_cf_axis_varname(nc_file, variable, axis, type_of_grid_mapping)
+            xy[axis] = _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping)
             if xy[axis] is None:
                 raise ValueError("Could not guess the name of the {} axis of the {}".format(
                     axis, grid_mapping_variable))
@@ -257,14 +229,14 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         xy['y'] = y
         xy['x'] = x
         for axis in ('x', 'y'):
-            if not _is_valid_coordinate_variable(nc_file, xy[axis], axis, type_of_grid_mapping):
+            if not _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping):
                 raise ValueError(
                     "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
     for axis in ('x', 'y'):
-        axis_info[axis] = _load_cf_axis_info(nc_file, xy[axis],)
+        axis_info[axis] = _load_cf_axis_info(nc_handle, xy[axis],)
 
     # there are few cases where the x/y values loaded from the CF files cannot be
     #   used directly in pyresample.
@@ -292,6 +264,9 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         raise ValueError("Cannot have different units for 'x' ({}) and 'y' ({}) axis.".format(
             axis_info['x']['unit'], axis_info['y']['unit']))
 
+    # prepare the AreaDefinition object
+    # =================================
+
     # create shape
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
 
@@ -305,12 +280,97 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     area_def = geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
                                                    units=unit, )
 
+    return area_def, cf_info
+
+
+def _load_cf_area_allVariables(nc_handle, ):
+    """ load all available AreaDefitions from a netCDF/CF file """
+
+    def _indices_unique_AreaDefs(adefs):
+        """ use a classic dict-based strategy to
+            get the indices of unique AreaDefinitions in a list """
+
+        uniqs   = dict()
+        for i, adef in enumerate(adefs):
+            if not adef in uniqs: # this uses AreaDefinition.__eq__()
+                uniqs[adef] = i
+
+        # return only the indices
+        return uniqs.values()
+
+    adefs = []
+    infos = []
+
+    # go through all the variables
+    for v in nc_handle.variables.keys():
+
+        # skip variables that are less than 2D: they cannot
+        #   possibly sustain an AreaDefinition
+        if nc_handle[v].ndim < 2:
+            continue
+
+        try:
+            # try and load an AreaDefinition from this variable
+            adef, info = _load_cf_area_oneVariable(nc_handle, v)
+        except ValueError:
+            # this is not a problem: variable v simply doesn't define an AreaDefinition
+            continue
+
+        # store
+        adefs.append( adef )
+        infos.append( info )
+
+    # go through the loaded AreaDefinitions and find the unique ones.
+    indices = _indices_unique_AreaDefs(adefs)
+    uniq_adefs = [adefs[ui] for ui in indices]
+    uniq_infos = [infos[ui] for ui in indices]
+
+    return uniq_adefs, uniq_infos
+
+def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
+    """ Load an area def object from a netCDF/CF file. """
+
+    from netCDF4 import Dataset
+
+    # basic check on the default values of the parameters.
+    if (x is not None and y is None) or (x is None and y is not None):
+        raise ValueError("You must specify either both or none of x= and y=")
+
+    # the nc_file can be either the path to a netCDF/CF file, or directly an opened netCDF4.Dataset()
+    #   if the path to a file, open the Dataset access to it
+    if not isinstance(nc_file, Dataset):
+        try:
+            nc_handle = Dataset(nc_file)
+        except FileNotFoundError:
+            raise FileNotFoundError('File not found: {}'.format(nc_file))
+        except OSError:
+            raise ValueError('File is not a netCDF file {}'.format(nc_file))
+    else:
+        nc_handle = nc_file
+
+    # Prepare cf_info
+    #  cf_info holds information about the structure of the cf grid information
+    #     (like the name of the coordinate axes, the type of projection, the name of
+    #     the lat and lon variables, etc...
+
+    if variable is None:
+        # if the variable=None, we search through all variables
+        area_def, cf_info = _load_cf_area_allVariables(nc_handle)
+        if len(area_def) > 1:
+            # there were several area_definitions defined in this file. For now bark.
+            raise ValueError("The CF file holds several different AreaDefinitions. Use the variable= keyword.")
+        area_def = area_def[0]
+        cf_info  = cf_info[0]
+    else:
+        # the variable= is known, call appropriate routine
+        area_def, cf_info = _load_cf_area_oneVariable(nc_handle, variable, y=y, x=x, )
+
     # return
     if with_cf_info:
 
         # also guess the name of the latitude and longitude variables
         for ll in ('lon', 'lat'):
-            cf_info[ll] = _guess_cf_lonlat_varname(nc_file, variable, ll)
+            cf_info[ll] = _guess_cf_lonlat_varname(nc_handle, variable, ll)
             # this can be None, in which case there was no good lat/lon candidate variable
             #   in the file.
 

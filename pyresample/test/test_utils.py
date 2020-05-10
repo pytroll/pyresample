@@ -641,6 +641,9 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Lambert_Azimuthal_Grid', y='time', x='xc',)
 
+        # try to load using a variable= that does not define a grid mapping
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
+
     def test_load_cf_nh25km_from_filepath(self):
         from pyresample.utils import load_cf_area
 
@@ -684,3 +687,7 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # load using a variable= that is a valid grid_mapping container
         adef_2 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
         validate_nh10km_adef(adef_2)
+
+        # load without using a variable=
+        adef_3 = load_cf_area(cf_file)
+        validate_nh10km_adef(adef_3)
