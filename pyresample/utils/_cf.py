@@ -339,7 +339,32 @@ def _load_cf_area_allVariables(nc_handle, ):
     return uniq_adefs, uniq_infos
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
-    """ Load an area def object from a netCDF/CF file. """
+    """Load an AreaDefinition object from a netCDF/CF file.
+
+    Parameters
+    ---------
+    nc_file : string or object
+        path to a netCDF/CF file, or opened netCDF4.Dataset object
+    variable : string, optional
+        name of the variable to load the AreaDefinition from
+        If variable is None the file will be searched for valid CF
+        area definitions
+    y : string, optional
+        name of the variable to use as 'y' axis of the CF area definition
+        If y is None an appropriate 'y' axis will be deduced from the CF file
+    x : string, optional
+        name of the variable to use as 'x' axis of the CF area definition
+        If x is None an appropriate 'x' axis will be deduced from the CF file
+    with_cf_info : bool, optional
+        also return a cf_info dict which holds useful information from the
+        CF file
+
+    Returns
+    -------
+    area_def : geometry.AreaDefinition object (default)
+    are_def, cf_info : geometry.AreaDefinition object, dict (if with_cf_info == True)
+
+    """
 
     from netCDF4 import Dataset
 
