@@ -679,7 +679,7 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
 
     def test_load_cf_nh10km_cfinfo(self):
         from pyresample.utils import load_cf_area
-        
+
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
 
         # load the cf_info
@@ -693,4 +693,3 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         self.assertEqual(cf_info['x']['varname'], 'xc')
         self.assertEqual(cf_info['x']['first'], -3845.0)
         self.assertEqual(cf_info['y']['last'], -5345.0)
-

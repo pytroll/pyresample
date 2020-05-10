@@ -18,6 +18,7 @@
 
 import pyproj
 
+
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """ In few cases (at present only geostationary) the XY stored in CF files are
         not directly what Proj (thus pyresample) expect. We need a conversion """
@@ -180,6 +181,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
     return ret
 
+
 def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
 
     from pyresample import geometry
@@ -301,9 +303,9 @@ def _load_cf_area_allVariables(nc_handle, ):
         """ use a classic dict-based strategy to
             get the indices of unique AreaDefinitions in a list """
 
-        uniqs   = dict()
+        uniqs = dict()
         for i, adef in enumerate(adefs):
-            if not adef in uniqs: # this uses AreaDefinition.__eq__()
+            if not adef in uniqs:  # this uses AreaDefinition.__eq__()
                 uniqs[adef] = i
 
         # return only the indices
@@ -328,8 +330,8 @@ def _load_cf_area_allVariables(nc_handle, ):
             continue
 
         # store
-        adefs.append( adef )
-        infos.append( info )
+        adefs.append(adef)
+        infos.append(info)
 
     # go through the loaded AreaDefinitions and find the unique ones.
     indices = _indices_unique_AreaDefs(adefs)
@@ -337,6 +339,7 @@ def _load_cf_area_allVariables(nc_handle, ):
     uniq_infos = [infos[ui] for ui in indices]
 
     return uniq_adefs, uniq_infos
+
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     """ Load an area def object from a netCDF/CF file. """
@@ -371,7 +374,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
             # there were several area_definitions defined in this file. For now bark.
             raise ValueError("The CF file holds several different AreaDefinitions. Use the variable= keyword.")
         area_def = area_def[0]
-        cf_info  = cf_info[0]
+        cf_info = cf_info[0]
     else:
         # the variable= is known, call appropriate routine
         area_def, cf_info = _load_cf_area_oneVariable(nc_handle, variable, y=y, x=x, )
