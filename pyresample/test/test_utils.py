@@ -645,7 +645,8 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # try to load using a variable= that does not define a grid mapping
         self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
 
-    def test_load_cf_nh10km_from_filepath(self):
+    def test_load_cf_nh10km(self):
+        from netCDF4 import Dataset
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_adef(adef):
@@ -670,3 +671,9 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # load without using a variable=
         adef_3 = load_cf_area(cf_file)
         validate_nh10km_adef(adef_3)
+
+        # load from an opened netCDF handle
+        with Dataset(cf_file) as nc_handle:
+            adef_4 = load_cf_area(nc_handle)
+        validate_nh10km_adef(adef_4)
+
