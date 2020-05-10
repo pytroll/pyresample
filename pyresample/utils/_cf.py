@@ -18,6 +18,23 @@
 
 import pyproj
 
+def _convert_XY_CF_to_Proj(crs, axis_info):
+    """ In few cases (at present only geostationary) the XY stored in CF files are
+        not directly what Proj (thus pyresample) expect. We need a conversion """
+
+    crs_dict = crs.to_dict()
+    if crs_dict['proj'] == 'geos':
+        # for geostationary projection, the values stored as x/y in CF are not directly
+        #  the x/y along the projection axes, but are rather the scanning angles from
+        #  the satellite. We must multiply them by the height of the satellite.
+        satellite_height = crs_dict['h']
+        for k in ('first', 'last', 'spacing'):
+            axis_info[k] *= satellite_height
+        # the unit is now the default (meters)
+        axis_info['units'] = None
+
+    return axis_info
+
 
 def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
@@ -87,7 +104,6 @@ def _load_cf_axis_info(nc_handle, coord_varname):
     # return in a dictionnary structure
     ret = {'first': first, 'last': last, 'spacing': spacing,
            'nb': nb, 'sign': sign, 'unit': unit}
-    print(coord_varname, ret)
 
     return ret
 
@@ -110,7 +126,6 @@ def _get_area_extent_from_cf_axis(x, y):
 
     # return as tuple
     ret = (ll_x, ll_y, ur_x, ur_y)
-    print('extent:', ret)
 
     return ret
 
@@ -243,17 +258,9 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
         axis_info[axis] = _load_cf_axis_info(nc_handle, xy[axis],)
 
     # there are few cases where the x/y values loaded from the CF files cannot be
-    #   used directly in pyresample.
-    if type_of_grid_mapping == 'geostationary':
-        # for geostationary projection, the values stored as x/y are not directly
-        #  the x/y along the projection axes, but are rather the scanning angles from
-        #  the satellite. We must multiply them by the height of the satellite.
-        satellite_height = crs.to_dict()['h']
-        for axis in ('x', 'y'):
-            for k in ('first', 'last', 'spacing'):
-                axis_info[axis][k] *= satellite_height
-            # the unit is now the default (meters)
-            axis_info[axis]['units'] = None
+    #   used directly in pyresample. We need a conversion:
+    for axis in ('x', 'y'):
+        axis_info[axis] = _convert_XY_CF_to_Proj(crs, axis_info[axis])
 
     # transfer information on the axis to the cf_info dict()
     for axis in ('x', 'y'):
