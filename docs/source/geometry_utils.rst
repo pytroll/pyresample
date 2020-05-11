@@ -3,8 +3,8 @@ Geometry Utilities
 
 Pyresample provides convenience functions for constructing area
 definitions. This includes functions for loading ``AreaDefinition``
-from on-disk files. Some of these utility functions are described
-below.
+from on-disk files, and netCDF/CF files. Some of these utility
+functions are described below.
 
 AreaDefinition Creation
 -----------------------
@@ -467,3 +467,111 @@ Several area definitions can be read at once using the region names in an argume
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+Loading from netCDF/CF
+----------------------
+``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`~pyresample.utils.load_cf_area`.
+
+:func:`~pyresample.utils.load_cf_area`
+
+The ``load_cf_area()`` routine offers three call forms:
+
+- Load the ``AreaDefinition`` from a specific CF `grid_mapping` object: with all three of ``variable=``, ``x=``, and ``y=`` ;
+- Load the ``AreaDefinition`` sustaining a CF variable: only ``variable=`` ;
+- Find and load the valid ``AreaDefinition`` in a CF file: no parameter ;
+
+Consider the following netCDF/CF file: ::
+
+   netcdf cf_nh10km {
+   dimensions:
+   	xc = 760 ;
+   	yc = 1120 ;
+   variables:
+   	int Polar_Stereographic_Grid ;
+   		Polar_Stereographic_Grid:grid_mapping_name = "polar_stereographic" ;
+   		Polar_Stereographic_Grid:false_easting = 0. ;
+   		Polar_Stereographic_Grid:false_northing = 0. ;
+   		Polar_Stereographic_Grid:semi_major_axis = 6378273. ;
+   		Polar_Stereographic_Grid:semi_minor_axis = 6356889.44891 ;
+   		Polar_Stereographic_Grid:straight_vertical_longitude_from_pole = -45. ;
+   		Polar_Stereographic_Grid:latitude_of_projection_origin = 90. ;
+   		Polar_Stereographic_Grid:standard_parallel = 70. ;
+   	double xc(xc) ;
+   		xc:axis = "X" ;
+   		xc:units = "km" ;
+   		xc:long_name = "x coordinate in Cartesian system" ;
+   		xc:standard_name = "projection_x_coordinate" ;
+   	double yc(yc) ;
+   		yc:axis = "Y" ;
+   		yc:units = "km" ;
+   		yc:long_name = "y coordinate in Cartesian system" ;
+   		yc:standard_name = "projection_y_coordinate" ;
+   	float lat(yc, xc) ;
+   		lat:long_name = "latitude coordinate" ;
+   		lat:standard_name = "latitude" ;
+   		lat:units = "degrees_north" ;
+   	float lon(yc, xc) ;
+   		lon:long_name = "longitude coordinate" ;
+   		lon:standard_name = "longitude" ;
+   		lon:units = "degrees_east" ;
+   	short ice_conc(yc, xc) ;
+   		ice_conc:_FillValue = -999s ;
+   		ice_conc:grid_mapping = "Polar_Stereographic_Grid" ;
+   		ice_conc:coordinates = "lat lon" ;
+   		ice_conc:standard_name = "sea_ice_area_fraction" ;
+   		ice_conc:units = "%" ;
+   		ice_conc:scale_factor = 0.01f ;
+   		ice_conc:add_offset = 0.f ;
+   		ice_conc:valid_min = 0 ;
+   		ice_conc:valid_max = 10000 ;
+   // global attributes:
+                :Conventions = "CF-1.7"
+
+   } 
+
+The three call forms are:
+
+**1st call form:**
+
+>>> area_def = load_cf_area('/path/to/cf_nh10km.nc', variable='Polar_Stereographic_Grid', x='xc', y='yc')
+
+This will directly create the AreaDefinition ``area_def`` from the content of the `grid_mapping` variable
+'Polar_Stereographic_Grid', and the area extent from the 'xc' and 'yc'.
+
+**2nd call form:**
+
+>>> area_def = load_cf_area('/path/to/cf_nh10km.nc', variable='ice_conc')
+
+This will search which `grid_mapping`, `x` and `y` axes sustain the 'ice_conc' variable, and
+create the ``AreaDefinition`` from this information.
+
+**3rd call form:**
+
+>>> area_def = load_cf_area('/path/to/cf_nh10km.nc')
+
+This will look through the whole netCDF/CF file, and guess all information needed to load a ``AreaDefinition`` object.
+
+.. note::
+
+   The CF convention allows that a single file defines several different `grid_mappings`. At present,
+   the 3rd call form of ``load_cf_area()`` will raise a ``ValueError`` exception when this happens.
+   
+   If you have several `grid_mappings` in your CF file, be specific which one you want to access with the 1st or 2nd call form.
+
+**Access to additional info from the CF file:**
+
+Not all relevant information can be stored in the ``AreaDefinition`` object. For example, it can be useful to know
+what were the names of the variables holding the coordinate variables ('xc' and 'yc' in the example above), or
+that the `latitude` and `longitude` associated to the `grid_mapping` are stored in variables 'lat' and 'lon'. Such
+information can be useful for writing additional variables to the CF file, or to create a new file that looks
+similar to the one we just read.
+
+Such information can be requested with the ``with_cf_info = True`` keyword, which modifies the return values:
+
+>>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc', with_cf_info=True)
+
+Keyword ``with_cf_info`` works for all three call forms. The ``cf_info`` is a ``dict()`` holding additional
+information about the way the `grid_mapping` information was coded in the CF file.
+
+
+.. _CF: http://cfconventions.org/cf-conventions/cf-conventions.html
