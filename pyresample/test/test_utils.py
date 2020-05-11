@@ -660,12 +660,12 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
 
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
 
-        # load using a variable= that has a :grid_mapping attribute
-        adef_1 = load_cf_area(cf_file, 'ice_conc')
+        # load using a variable= that is a valid grid_mapping container
+        adef_1 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
         validate_nh10km_adef(adef_1)
 
-        # load using a variable= that is a valid grid_mapping container
-        adef_2 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
+        # load using a variable= that has a :grid_mapping attribute
+        adef_2 = load_cf_area(cf_file, 'ice_conc')
         validate_nh10km_adef(adef_2)
 
         # load without using a variable=
@@ -678,18 +678,36 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         validate_nh10km_adef(adef_4)
 
     def test_load_cf_nh10km_cfinfo(self):
+        from netCDF4 import Dataset
         from pyresample.utils import load_cf_area
+
+        def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
+            # test some of the fields
+            self.assertEqual(cf_info['variable'], variable)
+            self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
+            self.assertEqual(cf_info['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['x']['varname'], 'xc')
+            self.assertEqual(cf_info['x']['first'], -3845.0)
+            self.assertEqual(cf_info['y']['varname'], 'yc')
+            self.assertEqual(cf_info['y']['last'], -5345.0)
 
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
 
-        # load the cf_info
-        _, cf_info = load_cf_area(cf_file, 'ice_conc', with_cf_info=True)
+        # load using a variable= that is a valid grid_mapping container
+        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc', with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info, variable='Polar_Stereographic_Grid', lat=None, lon=None)
 
-        # test some of the fields
-        self.assertEqual(cf_info['variable'], 'ice_conc')
-        self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
-        self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
-        self.assertEqual(cf_info['lon'], 'lon')
-        self.assertEqual(cf_info['x']['varname'], 'xc')
-        self.assertEqual(cf_info['x']['first'], -3845.0)
-        self.assertEqual(cf_info['y']['last'], -5345.0)
+        # load using a variable= that has a :grid_mapping attribute
+        _, cf_info = load_cf_area(cf_file, 'ice_conc', with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info)
+
+        # load without using a variable=
+        _, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info)
+
+        # load from an opened netCDF handle
+        with Dataset(cf_file) as nc_handle:
+            _, cf_info = load_cf_area(nc_handle,  with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info)
