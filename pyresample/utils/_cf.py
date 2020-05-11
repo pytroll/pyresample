@@ -395,14 +395,20 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     if variable is None:
         # if the variable=None, we search through all variables
         area_def, cf_info = _load_cf_area_allVariables(nc_handle)
-        if len(area_def) > 1:
+        if len(area_def) == 0:
+            raise ValueError("Found no AreaDefinitions in this netCDF/CF file.")
+        elif len(area_def) > 1:
             # there were several area_definitions defined in this file. For now bark.
             raise ValueError("The CF file holds several different AreaDefinitions. Use the variable= keyword.")
-        area_def = area_def[0]
-        cf_info = cf_info[0]
+        else:
+            area_def = area_def[0]
+            cf_info = cf_info[0]
     else:
         # the variable= is known, call appropriate routine
-        area_def, cf_info = _load_cf_area_oneVariable(nc_handle, variable, y=y, x=x, )
+        try:
+            area_def, cf_info = _load_cf_area_oneVariable(nc_handle, variable, y=y, x=x, )
+        except ValueError as ve:
+            raise ValueError("Found no AreaDefinition associated with variable {} ({})".format(variable, ve))
 
     # return
     if with_cf_info:
