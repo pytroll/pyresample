@@ -2030,7 +2030,27 @@ class AreaDefinition(BaseDefinition):
         return new_area
 
     def geocentric_resolution(self, ellps='WGS84', radius=None):
-        """Find best estimate for overall geocentric resolution."""
+        """Find best estimate for overall geocentric resolution.
+
+        This method is extremely important to the results of KDTree-based
+        resamplers like the nearest neighbor resampling. This is used to
+        determine how far the KDTree should be queried for valid pixels
+        before giving up (`radius_of_influence`). This method attempts to
+        make a best guess at what geocentric resolution (the units used by
+        the KDTree) represents the majority of an area.
+
+        To do this this method will:
+
+        1. Create a vertical mid-line and a horizontal mid-line.
+        2. Convert these coordinates to geocentric coordinates.
+        3. Compute the distance between points along these lines.
+        4. Take the histogram of each set of distances and find the
+           bin with the most points.
+        5. Take the average of the edges of that bin.
+        6. Return the maximum of the vertical and horizontal bin
+           edge averages.
+
+        """
         from pyproj import transform
         rows, cols = self.shape
         mid_row = rows // 2
@@ -2043,20 +2063,36 @@ class AreaDefinition(BaseDefinition):
             dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
         else:
             dst = Proj("+proj=cart +ellps={}".format(ellps))
+        # need some altitude, go with the surface (0)
         alt_x = np.zeros(x.size)
         alt_y = np.zeros(y.size)
+        # convert our midlines to (X, Y, Z) geocentric coordinates
         hor_xyz = np.stack(transform(src, dst, x, mid_row_y, alt_x), axis=1)
         vert_xyz = np.stack(transform(src, dst, mid_col_x, y, alt_y), axis=1)
+        # Find the distance in meters along our midlines
         hor_dist = np.linalg.norm(np.diff(hor_xyz, axis=0), axis=1)
         vert_dist = np.linalg.norm(np.diff(vert_xyz, axis=0), axis=1)
-        dist = np.concatenate((hor_dist, vert_dist))
-        dist = dist[np.isfinite(dist)]
-        if not dist.size:
-            raise RuntimeError("Could not calculate geocentric resolution")
-        # return np.max(dist)  # alternative to histogram
+        # Get rid of any NaNs or infinite values
+        hor_dist = hor_dist[np.isfinite(hor_dist)]
+        vert_dist = vert_dist[np.isfinite(vert_dist)]
         # use the average of the largest histogram bin to avoid
-        # outliers and really large values
-        return np.mean(np.histogram_bin_edges(dist)[:2])
+        # outliers and really large values.
+        # Very useful near edge of disk geostationary areas.
+        hor_res = vert_res = 0
+        if hor_dist.size:
+            hor_res = np.mean(np.histogram_bin_edges(hor_dist)[:2])
+        if vert_dist.size:
+            vert_res = np.mean(np.histogram_bin_edges(vert_dist)[:2])
+        # Use the maximum distance between the two midlines instead of
+        # binning both of them together. If we binned them together then
+        # we are highly dependent on the shape of the area (more rows in
+        # the area would almost always mean that we resulted in the vertical
+        # midline's distance).
+        res = max(hor_res, vert_res)
+        if not res:
+            raise RuntimeError("Could not calculate geocentric resolution")
+        # return np.max(np.concatenate(vert_dist, hor_dist))  # alternative to histogram
+        return res
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
