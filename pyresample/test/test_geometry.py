@@ -1073,6 +1073,26 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
+        # The same as source area, but flipped in X and Y
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = utils.get_area_def(area_id,
+                                           area_name,
+                                           proj_id,
+                                           proj_dict,
+                                           x_size, y_size,
+                                           area_extent)
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(0, x_size, None), slice_x)
+        self.assertEqual(slice(0, y_size, None), slice_y)
+
         # totally different area
         projections = [{"init": 'EPSG:4326'}]
         if utils.is_pyproj2():
