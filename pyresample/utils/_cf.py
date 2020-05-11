@@ -409,7 +409,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
 
         # also guess the name of the latitude and longitude variables
         for ll in ('lon', 'lat'):
-            cf_info[ll] = _guess_cf_lonlat_varname(nc_handle, variable, ll)
+            cf_info[ll] = _guess_cf_lonlat_varname(nc_handle, cf_info['variable'], ll)
             # this can be None, in which case there was no good lat/lon candidate variable
             #   in the file.
 
