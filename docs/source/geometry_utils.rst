@@ -558,6 +558,12 @@ This will look through the whole netCDF/CF file, and guess all information neede
    
    If you have several `grid_mappings` in your CF file, be specific which one you want to access with the 1st or 2nd call form.
 
+
+Although a recommended practice, it cannot be trusted that the 'y' and 'x' axes are in the last two dimensions of a CF variable.
+This is because the CF convention does not impose the order of the dimensions of a variable. ``load_cf_area()`` will effectively
+look for the variables holding the `x` and `y` coordinates of the Earth mapping projection, not based on the order of the dimensions
+of the CF variable.
+
 **Access to additional info from the CF file:**
 
 Not all relevant information can be stored in the ``AreaDefinition`` object. For example, it can be useful to know
