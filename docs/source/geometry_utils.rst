@@ -576,8 +576,11 @@ Such information can be requested with the ``with_cf_info = True`` keyword, whic
 
 >>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc', with_cf_info=True)
 
-Keyword ``with_cf_info`` works for all three call forms. The ``cf_info`` is a ``dict()`` holding additional
-information about the way the `grid_mapping` information was coded in the CF file.
+The ``cf_info`` is a ``dict()`` holding additional information about the way the `grid_mapping` information
+was coded in the CF file. The ``with_cf_info=True`` keyword works in all three call forms, but may not contain
+the same amount of information in all three call forms. For example, the 1st call form does not allow to find
+the name of the `latitude` or `longitude` variables, since the 1st call form only gives access to the `grid_mapping`
+variable and its coordinate axes.
 
 
 .. _CF: http://cfconventions.org/cf-conventions/cf-conventions.html
