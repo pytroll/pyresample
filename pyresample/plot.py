@@ -304,7 +304,7 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
 
 def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
                    label='Variable (units)', num_meridians=45,
-                   num_parallels=10, coast_res='110m', backend='AGG',
+                   num_parallels=10, coast_res='110m',
                    cmap='RdBu_r'):
     """Display and save default quicklook plot.
 
@@ -328,12 +328,8 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
         Number of parallels to plot on the globe
     coast_res : {'c', 'l', 'i', 'h', 'f'}, optional
         Resolution of coastlines
-    backend : str, optional
-        matplotlib backend to use'
 
     """
-    import matplotlib
-    matplotlib.use(backend, warn=False)
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
                          num_parallels=num_parallels, coast_res=coast_res,
