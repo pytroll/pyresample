@@ -1054,8 +1054,6 @@ class AreaDefinition(BaseDefinition):
         y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
-    shape : tuple
-        Corresponding array shape as (height, width)
     size : int
         Number of points in grid
     area_extent : tuple
@@ -1066,8 +1064,6 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    resolution : tuple
-      the resolution of the resulting area as (pixel_size_x, pixel_size_y).
     upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_upper_left : tuple
@@ -1086,20 +1082,8 @@ class AreaDefinition(BaseDefinition):
     crs_wkt : str
         WellKnownText version of the CRS object. This is the preferred
         way of describing CRS information as a string.
-    proj_dict : dict
-        Projection defined as a dictionary of PROJ parameters. This is no
-        longer the preferred way of describing CRS information. Switch to
-        the `crs` or `crs_wkt` properties for the most flexibility.
-    proj_str : str
-        Projection defined as a PROJ string. This is no
-        longer the preferred way of describing CRS information. Switch to
-        the `crs` or `crs_wkt` properties for the most flexibility.
     cartesian_coords : object
         Grid cartesian coordinates
-    projection_x_coords : object
-        Grid projection x coordinate
-    projection_y_coords : object
-        Grid projection y coordinate
 
     """
 
@@ -1184,7 +1168,11 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_dict(self):
-        """Return the projection dictionary."""
+        """Return the PROJ projection dictionary.
+
+        This is no longer the preferred way of describing CRS information.
+        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
+        """
         if self._proj_dict is None and hasattr(self, 'crs'):
             if hasattr(self.crs, 'to_dict'):
                 # pyproj 2.2+
@@ -1222,7 +1210,8 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def resolution(self):
-        """Return area resolution in X and Y direction."""
+        """Return area resolution in X and Y direction.
+        """
         return self.pixel_size_x, self.pixel_size_y
 
     @property
@@ -1454,7 +1443,12 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_str(self):
-        """Return PROJ projection string."""
+        """Return PROJ projection string.
+
+        This is no longer the preferred way of describing CRS information.
+        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
+
+        """
         proj_dict = self.proj_dict.copy()
         if 'towgs84' in proj_dict and isinstance(proj_dict['towgs84'], list):
             # pyproj 2+ creates a list in the dictionary
