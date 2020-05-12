@@ -711,3 +711,38 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         with Dataset(cf_file) as nc_handle:
             _, cf_info = load_cf_area(nc_handle,  with_cf_info=True)
         validate_nh10km_cfinfo(cf_info)
+
+    def test_load_cf_llwgs84(self):
+        from netCDF4 import Dataset
+        from pyresample.utils import load_cf_area
+
+        def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
+            self.assertEqual(adef.shape, (19, 37))
+            xc = adef.projection_x_coords
+            yc = adef.projection_y_coords
+            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(cfinfo['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
+            self.assertEqual(cf_info['x']['varname'], 'lon')
+            self.assertEqual(cf_info['x']['first'], -180.)
+            self.assertEqual(cf_info['y']['varname'], 'lat')
+            self.assertEqual(cf_info['y']['first'], -90.)
+
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_llwgs84.nc')
+
+        # load using a variable= that is a valid grid_mapping container
+        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon', with_cf_info=True)
+        validate_llwgs84(adef, cf_info, lat=None, lon=None)
+
+        # load using a variable=temp
+        adef, cf_info = load_cf_area(cf_file, 'temp', with_cf_info=True)
+        validate_llwgs84(adef, cf_info)
+
+        # load using a variable=None
+        adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        validate_llwgs84(adef, cf_info)
+
