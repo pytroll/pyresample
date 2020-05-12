@@ -470,9 +470,9 @@ Several area definitions can be read at once using the region names in an argume
 
 Loading from netCDF/CF
 ----------------------
-``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`~pyresample.utils.load_cf_area`.
+``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`load_cf_area <pyresample.utils._cf>`.
 
-:func:`~pyresample.utils.load_cf_area`
+:func:`~pyresample.utils._cf.load_cf_area`
 
 The ``load_cf_area()`` routine offers three call forms:
 

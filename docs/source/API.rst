@@ -30,6 +30,8 @@ pyresample.utils
 ----------------
 .. automodule:: pyresample.utils
     :members:
+.. automodule:: pyresample.utils._cf
+    :members:
 
 pyresample.area_config
 ----------------------
