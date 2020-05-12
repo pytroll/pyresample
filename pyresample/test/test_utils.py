@@ -745,4 +745,3 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # load using a variable=None
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_llwgs84(adef, cf_info)
-
