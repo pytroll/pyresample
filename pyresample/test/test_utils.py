@@ -613,8 +613,9 @@ class TestProjRotation(unittest.TestCase):
         os.remove(f.name)
 
 
-class TestNetcdfCFAreaParser(unittest.TestCase):
-    """ Test loading an area definition from netCDF/CF files """
+class TestLoadCFArea_Public(unittest.TestCase):
+    """ Test loading an area definition from netCDF/CF files using the
+        public API load_cf_area() """
 
     def test_load_cf_from_wrong_filepath(self):
         from pyresample.utils import load_cf_area
@@ -745,3 +746,50 @@ class TestNetcdfCFAreaParser(unittest.TestCase):
         # load using a variable=None
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_llwgs84(adef, cf_info)
+
+class TestLoadCFArea_Private(unittest.TestCase):
+    """ Test the private routines involved in loading an
+        AreaDefinition from netCDF/CF files. """
+
+
+    def setUp(self):
+        """ Prepare nc_handles """
+        from netCDF4 import Dataset
+
+        self.nc_handles = {}
+        for k in ('nh10km', 'llwgs84'):
+            cf_file = os.path.join(os.path.dirname(__file__),
+                                   'test_files', 'cf_' + k + '.nc')
+            self.nc_handles[k] = Dataset(cf_file)
+
+    def tearDown(self):
+        """ Close nc_handles """
+        for k in self.nc_handles.keys():
+            self.nc_handles[k].close()
+
+    def test_cf_guess_lonlat(self):
+        from pyresample.utils._cf import _guess_cf_lonlat_varname
+
+        # nominal
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'],'ice_conc','lat'),'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'],'ice_conc','lon'),'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'],'temp','lat'),'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'],'temp','lon'),'lon')
+
+        # error cases
+        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
+        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
+
+    def test_cf_guess_axis_varname(self):
+        from pyresample.utils._cf import _guess_cf_axis_varname
+
+        # nominal
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['nh10km'],'ice_conc','x','polar_stereographic'),'xc')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['nh10km'],'ice_conc','y','polar_stereographic'),'yc')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'],'temp','x','latitude_longitude'),'lon')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'],'temp','y','latitude_longitude'),'lat')
+
+        # error cases
+        self.assertRaises(ValueError, _guess_cf_axis_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
+        self.assertRaises(ValueError, _guess_cf_axis_varname, self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
+

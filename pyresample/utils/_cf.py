@@ -143,7 +143,12 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
     # the name of y and x are in the dimensions of the variable=
-    for dim in nc_handle[variable].dimensions:
+    try:
+        dims = nc_handle[variable].dimensions
+    except IndexError:
+        raise ValueError("variable {} not found in file".format(variable))
+
+    for dim in dims:
         # test if each dim is a valid CF coordinate variable
         if _is_valid_coordinate_variable(nc_handle, dim, axis, type_of_grid_mapping):
             ret = dim
@@ -162,7 +167,11 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
         raise ValueError("lonlat= parameter must be 'lon' or 'lat'")
 
     # lat/lon are either directly a dimension,...
-    search_list = list(nc_handle[variable].dimensions)
+    try:
+        search_list = list(nc_handle[variable].dimensions)
+    except IndexError:
+        raise ValueError("variable {} not found in file".format(variable))
+
     try:
         # ...  or listed in the ':coordinates' attribute.
         search_list += nc_handle[variable].coordinates.split(' ')
