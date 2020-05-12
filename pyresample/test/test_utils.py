@@ -747,10 +747,10 @@ class TestLoadCFArea_Public(unittest.TestCase):
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_llwgs84(adef, cf_info)
 
+
 class TestLoadCFArea_Private(unittest.TestCase):
     """ Test the private routines involved in loading an
         AreaDefinition from netCDF/CF files. """
-
 
     def setUp(self):
         """ Prepare nc_handles """
@@ -771,10 +771,10 @@ class TestLoadCFArea_Private(unittest.TestCase):
         from pyresample.utils._cf import _guess_cf_lonlat_varname
 
         # nominal
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'],'ice_conc','lat'),'lat')
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'],'ice_conc','lon'),'lon')
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'],'temp','lat'),'lat')
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'],'temp','lon'),'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
 
         # error cases
         self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
@@ -784,12 +784,15 @@ class TestLoadCFArea_Private(unittest.TestCase):
         from pyresample.utils._cf import _guess_cf_axis_varname
 
         # nominal
-        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['nh10km'],'ice_conc','x','polar_stereographic'),'xc')
-        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['nh10km'],'ice_conc','y','polar_stereographic'),'yc')
-        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'],'temp','x','latitude_longitude'),'lon')
-        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'],'temp','y','latitude_longitude'),'lat')
+        self.assertEqual(_guess_cf_axis_varname(
+            self.nc_handles['nh10km'], 'ice_conc', 'x', 'polar_stereographic'), 'xc')
+        self.assertEqual(_guess_cf_axis_varname(
+            self.nc_handles['nh10km'], 'ice_conc', 'y', 'polar_stereographic'), 'yc')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'], 'temp', 'x', 'latitude_longitude'), 'lon')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'], 'temp', 'y', 'latitude_longitude'), 'lat')
 
         # error cases
-        self.assertRaises(ValueError, _guess_cf_axis_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
-        self.assertRaises(ValueError, _guess_cf_axis_varname, self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
-
+        self.assertRaises(ValueError, _guess_cf_axis_varname,
+                          self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
+        self.assertRaises(ValueError, _guess_cf_axis_varname,
+                          self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
