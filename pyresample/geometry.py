@@ -1489,7 +1489,7 @@ class AreaDefinition(BaseDefinition):
 
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""
-        from pyresample._cartopy import from_proj
+        from pyresample.utils.cartopy import from_proj
         bounds = (self.area_extent[0],
                   self.area_extent[2],
                   self.area_extent[1],
