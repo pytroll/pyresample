@@ -347,7 +347,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     """Load an AreaDefinition object from a netCDF/CF file.
 
     Parameters
-    ---------
+    ----------
     nc_file : string or object
         path to a netCDF/CF file, or opened netCDF4.Dataset object
     variable : string, optional
