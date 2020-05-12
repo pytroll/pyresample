@@ -54,7 +54,8 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
     try:
         coord_var = nc_handle[coord_varname]
     except IndexError:
-        raise ValueError("variable {} not in netCDF file".format(coord_varname))
+        # there is no variable with this name, so it can't be a valid coordinate variable
+        return False
 
     try:
         if type_of_grid_mapping == 'latitude_longitude':
@@ -75,6 +76,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
     except AttributeError:
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
+
     return valid
 
 
