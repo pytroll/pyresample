@@ -1210,8 +1210,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def resolution(self):
-        """Return area resolution in X and Y direction.
-        """
+        """Return area resolution in X and Y direction."""
         return self.pixel_size_x, self.pixel_size_y
 
     @property
