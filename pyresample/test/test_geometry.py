@@ -1326,6 +1326,21 @@ class Test(unittest.TestCase):
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(298.647232, geo_res)
 
+    def test_from_epsg(self):
+        """Test the from_epsg class method."""
+        from pyresample.geometry import AreaDefinition
+        sweref = AreaDefinition.from_epsg('3006', 2000)
+        assert sweref.name == 'SWEREF99 TM'
+        assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
+                                    'proj': 'utm', 'type': 'crs', 'units': 'm',
+                                    'zone': 33}
+        assert sweref.width == 453
+        assert sweref.height == 794
+        import numpy as np
+        np.testing.assert_allclose(sweref.area_extent,
+                                   (181896.3291, 6101648.0705,
+                                    1086312.942376, 7689478.3056))
+
     @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
     def test_area_def_init_projection(self):
         """Test AreaDefinition with different projection definitions."""
