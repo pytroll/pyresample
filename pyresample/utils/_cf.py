@@ -22,21 +22,21 @@ import xarray as xr
 # list of valid CF grid mappings:
 _valid_cf_type_of_grid_mapping = \
     ('albers_conical_equal_area',
-    'azimuthal_equidistant',
-    'geostationary',
-    'lambert_azimuthal_equal_area',
-    'lambert_conformal_conic',
-    'lambert_cylindrical_equal_area',
-    'latitude_longitude',
-    'mercator',
-    'oblique_mercator',
-    'orthographic',
-    'polar_stereographic',
-    'rotated_latitude_longitude',
-    'sinusoidal',
-    'stereographic',
-    'transverse_mercator',
-    'vertical_perspective')
+     'azimuthal_equidistant',
+     'geostationary',
+     'lambert_azimuthal_equal_area',
+     'lambert_conformal_conic',
+     'lambert_cylindrical_equal_area',
+     'latitude_longitude',
+     'mercator',
+     'oblique_mercator',
+     'orthographic',
+     'polar_stereographic',
+     'rotated_latitude_longitude',
+     'sinusoidal',
+     'stereographic',
+     'transverse_mercator',
+     'vertical_perspective')
 
 # dictionnary with the standard_names accepted by CF per projection type
 #   this can be used for reading from and writing to CF files
@@ -55,8 +55,10 @@ _valid_cf_coordinate_standardnames['rotated_latitude_longitude']['x'] = ('grid_l
 _valid_cf_coordinate_standardnames['rotated_latitude_longitude']['y'] = ('grid_latitude',)
 # specific name for the geostationary grid mapping (we support two flavors)
 _valid_cf_coordinate_standardnames['geostationary'] = dict()
-_valid_cf_coordinate_standardnames['geostationary']['x'] = ('projection_x_angular_coordinate', 'projection_x_coordinate',)
-_valid_cf_coordinate_standardnames['geostationary']['y'] = ('projection_y_angular_coordinate', 'projection_y_coordinate',)
+_valid_cf_coordinate_standardnames['geostationary']['x'] = (
+    'projection_x_angular_coordinate', 'projection_x_coordinate',)
+_valid_cf_coordinate_standardnames['geostationary']['y'] = (
+    'projection_y_angular_coordinate', 'projection_y_coordinate',)
 
 
 def _convert_XY_CF_to_Proj(crs, axis_info):
@@ -75,6 +77,7 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
         axis_info['units'] = None
 
     return axis_info
+
 
 def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
@@ -96,7 +99,8 @@ def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     # use pyproj to load the CRS
     return pyproj.CRS.from_cf(v.attrs)
 
-def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping ):
+
+def _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_mapping):
     """ Check that the standard_name provided matches what CF requires for a type of grid_mapping """
     valid = False
 
@@ -117,6 +121,7 @@ def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_m
 
     return valid
 
+
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
     """ check if a coord_varname is a valid CF coordinate variable """
 
@@ -133,7 +138,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
 
     try:
         coord_standard_name = getattr(coord_var, 'standard_name')
-        valid = _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping )
+        valid = _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_mapping)
     except AttributeError:
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
@@ -156,7 +161,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
     # get the unit information
     try:
-        unit = getattr(nc_handle[coord_varname],'units')
+        unit = getattr(nc_handle[coord_varname], 'units')
     except AttributeError:
         unit = None
 
@@ -193,6 +198,7 @@ def _get_area_extent_from_cf_axis(x, y):
 
     return ret
 
+
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     """ guess the name of the coordinate variable holding the axis. although Y and X are recommended to
           be placed last in the list of coordinates, this is not required. """
@@ -216,6 +222,7 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
 
     return ret
 
+
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     """ guess the name of the variable holding the latitude (or longitude)
             corresponding to 'variable' """
@@ -226,7 +233,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
         raise ValueError("lonlat= parameter must be 'lon' or 'lat'")
 
     # lat/lon are either directly a dimension, or a :coordinates.
-    
+
     # By default (decode_cf=True) xarray puts all dims and :coordinates in .coords
     #   and remove the :coordinates attribute
     try:
@@ -242,7 +249,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     for v in search_list:
         try:
             # this allows for both 'latitude' and 'rotated_latitude'...
-            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in getattr(nc_handle[v],'standard_name'):
+            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in getattr(nc_handle[v], 'standard_name'):
                 ret = v
                 break
         except AttributeError:
@@ -439,7 +446,6 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
 
     """
 
-
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")
@@ -447,7 +453,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     # the nc_file can be either the path to a netCDF/CF file, or directly an opened xarray.Dataset()
     if isinstance(nc_file, xr.Dataset):
         nc_handle = nc_file
-    else :
+    else:
         #   if the path to a file, open the Dataset access to it
         try:
             nc_handle = xr.open_dataset(nc_file)

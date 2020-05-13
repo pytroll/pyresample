@@ -35,7 +35,7 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray']}
 
 setup_requires = ['numpy>=1.10.0']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy',]
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', ]
 
 if sys.platform.startswith("win"):
     extra_compile_args = []

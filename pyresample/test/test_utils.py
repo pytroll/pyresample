@@ -844,39 +844,40 @@ class TestLoadCFArea_Private(unittest.TestCase):
                 self.assertTrue(_is_valid_coordinate_standardname('projection_y_coordinate', 'y', 'default'))
 
         # error cases
-        self.assertRaises(ValueError,_is_valid_coordinate_standardname, 'projection_x_coordinate', 'x', 'wrong')
-        self.assertRaises(ValueError,_is_valid_coordinate_standardname, 'projection_y_coordinate', 'y', 'also_wrong')
+        self.assertRaises(ValueError, _is_valid_coordinate_standardname, 'projection_x_coordinate', 'x', 'wrong')
+        self.assertRaises(ValueError, _is_valid_coordinate_standardname, 'projection_y_coordinate', 'y', 'also_wrong')
 
     def test_cf_is_valid_coordinate_variable(self):
         from pyresample.utils._cf import _is_valid_coordinate_variable
 
         # nominal
-        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'xc','x','polar_stereographic'))
-        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'yc','y','polar_stereographic'))
-        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lon','x','latitude_longitude'))
-        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lat','y','latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'xc', 'x', 'polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'yc', 'y', 'polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lon', 'x', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lat', 'y', 'latitude_longitude'))
 
         # error cases
-        self.assertFalse(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'doesNotExist','x','polar_stereographic'))
-        self.assertRaises(ValueError,_is_valid_coordinate_variable, self.nc_handles['nh10km'],'xc','wrong','polar_stereographic')
-        self.assertRaises(ValueError,_is_valid_coordinate_variable, self.nc_handles['nh10km'],'xc','x','wrong')
+        self.assertFalse(_is_valid_coordinate_variable(
+            self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic'))
+        self.assertRaises(ValueError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'xc', 'wrong', 'polar_stereographic')
+        self.assertRaises(ValueError, _is_valid_coordinate_variable, self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
 
     def test_cf_load_crs_from_cf_gridmapping(self):
         from pyresample.utils._cf import _load_crs_from_cf_gridmapping
 
         def validate_crs_nh10km(crs):
             crs_dict = crs.to_dict()
-            self.assertEqual(crs_dict['proj'],'stere')
-            self.assertEqual(crs_dict['lat_0'],90.)
+            self.assertEqual(crs_dict['proj'], 'stere')
+            self.assertEqual(crs_dict['lat_0'], 90.)
 
         def validate_crs_llwgs84(crs):
             crs_dict = crs.to_dict()
-            self.assertEqual(crs_dict['proj'],'longlat')
-            self.assertEqual(crs_dict['ellps'],'WGS84')
+            self.assertEqual(crs_dict['proj'], 'longlat')
+            self.assertEqual(crs_dict['ellps'], 'WGS84')
             print(crs_dict)
 
         crs = _load_crs_from_cf_gridmapping(self.nc_handles['nh10km'], 'Polar_Stereographic_Grid')
         validate_crs_nh10km(crs)
         crs = _load_crs_from_cf_gridmapping(self.nc_handles['llwgs84'], 'crs')
         validate_crs_llwgs84(crs)
-
