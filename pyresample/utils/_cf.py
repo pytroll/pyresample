@@ -279,19 +279,21 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
         # good. attempt to load the grid_mapping information into a pyproj object
         crs = _load_crs_from_cf_gridmapping(nc_handle, nc_handle[variable].grid_mapping)
         grid_mapping_variable = nc_handle[variable].grid_mapping
-    else:
-        # the variable doesn't have a grid_mapping attribute.
-        # ... maybe it is the grid_mapping variable itself?
+    elif hasattr(nc_handle[variable],'grid_mapping_name') and \
+       nc_handle[variable].grid_mapping_name in _valid_cf_type_of_grid_mapping:
+        # this looks like a valid grid_mapping variable
         try:
+            # try to load it
             crs = _load_crs_from_cf_gridmapping(nc_handle, variable)
             grid_mapping_variable = variable
             variable_is_itself_gridmapping = True
         except pyproj.exceptions.CRSError as ex:
-            # ... not a valid grid_mapping either
-            # we assume the crs is 'latitude_longitude' with a WGS84 datum.
-            # note: there is no default CRS in CF, we choose WGS84
-            grid_mapping_variable = "latlon_default"
-            crs = pyproj.CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
+            raise ValueError("ERROR: pyproj didn't manage to load the CRS: {}".format(ex))
+    else:
+        # fallback position: maybe the variable is on a basic lat/lon grid with no
+        #   grid_mapping. Note: there is no default CRS in CF, we choose WGS84
+        grid_mapping_variable = "latlon_default"
+        crs = pyproj.CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
 
     # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
     if grid_mapping_variable == 'latlon_default':
