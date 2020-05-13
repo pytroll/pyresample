@@ -145,7 +145,7 @@ class Test(unittest.TestCase):
                 projection=projection,
                 width=123, height=123,
                 area_extent=[-40000., -40000., 40000., 40000.])
-            with patch('pyresample._cartopy.warnings.warn') as warn:
+            with patch('pyresample.utils.cartopy.warnings.warn') as warn:
                 # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
                 area.to_cartopy_crs()
                 if projection.startswith('EPSG'):
