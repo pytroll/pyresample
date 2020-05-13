@@ -18,30 +18,6 @@
 
 import pyproj
 
-
-def _convert_XY_CF_to_Proj(crs, axis_info):
-    """ In few cases (at present only geostationary) the XY stored in CF files are
-        not directly what Proj (thus pyresample) expect. We need a conversion """
-
-    crs_dict = crs.to_dict()
-    if crs_dict['proj'] == 'geos':
-        # for geostationary projection, the values stored as x/y in CF are not directly
-        #  the x/y along the projection axes, but are rather the scanning angles from
-        #  the satellite. We must multiply them by the height of the satellite.
-        satellite_height = crs_dict['h']
-        for k in ('first', 'last', 'spacing'):
-            axis_info[k] *= satellite_height
-        # the unit is now the default (meters)
-        axis_info['units'] = None
-
-    return axis_info
-
-
-def _load_crs_from_cf(nc_handle, grid_mapping_varname):
-    """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
-    # here we assume the grid_mapping_varname exists (checked by caller)
-    return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
-
 # list of valid CF grid mappings:
 _valid_cf_type_of_grid_mapping = \
     ('albers_conical_equal_area',
@@ -80,6 +56,28 @@ _valid_cf_coordinate_standardnames['rotated_latitude_longitude']['y'] = ('grid_l
 _valid_cf_coordinate_standardnames['geostationary'] = dict()
 _valid_cf_coordinate_standardnames['geostationary']['x'] = ('projection_x_angular_coordinate', 'projection_x_coordinate',)
 _valid_cf_coordinate_standardnames['geostationary']['y'] = ('projection_y_angular_coordinate', 'projection_y_coordinate',)
+
+def _convert_XY_CF_to_Proj(crs, axis_info):
+    """ In few cases (at present only geostationary) the XY stored in CF files are
+        not directly what Proj (thus pyresample) expect. We need a conversion """
+
+    crs_dict = crs.to_dict()
+    if crs_dict['proj'] == 'geos':
+        # for geostationary projection, the values stored as x/y in CF are not directly
+        #  the x/y along the projection axes, but are rather the scanning angles from
+        #  the satellite. We must multiply them by the height of the satellite.
+        satellite_height = crs_dict['h']
+        for k in ('first', 'last', 'spacing'):
+            axis_info[k] *= satellite_height
+        # the unit is now the default (meters)
+        axis_info['units'] = None
+
+    return axis_info
+
+def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
+    """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
+    # here we assume the grid_mapping_varname exists (checked by caller)
+    return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
 
 def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping ):
     """ Check that the standard_name provided matches what CF requires for a type of grid_mapping """
@@ -257,13 +255,13 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
     # test if the variable has a grid_mapping attribute
     if hasattr(nc_handle[variable], 'grid_mapping'):
         # good. attempt to load the grid_mapping information into a pyproj object
-        crs = _load_crs_from_cf(nc_handle, nc_handle[variable].grid_mapping)
+        crs = _load_crs_from_cf_gridmapping(nc_handle, nc_handle[variable].grid_mapping)
         grid_mapping_variable = nc_handle[variable].grid_mapping
     else:
         # the variable doesn't have a grid_mapping attribute.
         # ... maybe it is the grid_mapping variable itself?
         try:
-            crs = _load_crs_from_cf(nc_handle, variable)
+            crs = _load_crs_from_cf_gridmapping(nc_handle, variable)
             grid_mapping_variable = variable
             variable_is_itself_gridmapping = True
         except pyproj.exceptions.CRSError as ex:
