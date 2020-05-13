@@ -10,4 +10,4 @@ Pyresample's API has changed (new functions, modules, classes, etc) then the
 API documentation should be regenerated before running the above make
 command.
 
-    sphinx-apidoc -f -T -P -o source/api ../pyresample ../pyresample/test
+    sphinx-apidoc -f -T -o source/api ../pyresample ../pyresample/test
