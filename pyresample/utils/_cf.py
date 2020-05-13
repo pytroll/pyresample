@@ -279,8 +279,8 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
         # good. attempt to load the grid_mapping information into a pyproj object
         crs = _load_crs_from_cf_gridmapping(nc_handle, nc_handle[variable].grid_mapping)
         grid_mapping_variable = nc_handle[variable].grid_mapping
-    elif hasattr(nc_handle[variable],'grid_mapping_name') and \
-       nc_handle[variable].grid_mapping_name in _valid_cf_type_of_grid_mapping:
+    elif hasattr(nc_handle[variable], 'grid_mapping_name') and \
+            nc_handle[variable].grid_mapping_name in _valid_cf_type_of_grid_mapping:
         # this looks like a valid grid_mapping variable
         try:
             # try to load it
