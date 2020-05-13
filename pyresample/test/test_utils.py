@@ -796,3 +796,26 @@ class TestLoadCFArea_Private(unittest.TestCase):
                           self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
         self.assertRaises(ValueError, _guess_cf_axis_varname,
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
+
+    #def test_cf_is_valid_coordinate_standardname(self):
+    #    from pyresample.utils._cf import _is_valid_coordinate_standardname
+    #
+    #    # nominal
+
+    def test_cf_is_valid_coordinate_variable(self):
+        from pyresample.utils._cf import _is_valid_coordinate_variable
+
+        # nominal
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'xc','x','polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'yc','y','polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lon','x','latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lat','y','latitude_longitude'))
+
+        # 'polar_stereographic' actually falls into a "default" case, and we do not check if the projection type
+        #   is a valid CF projection. This test captures this default behaviour and can be removed later if we
+        #   decide to be more stringent in the future.
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'xc','x','default_CF'))
+
+        # error cases
+        self.assertFalse(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'doesNotExist','x','polar_stereographic'))
+        self.assertRaises(ValueError,_is_valid_coordinate_variable, self.nc_handles['nh10km'],'xc','wrong','polar_stereographic')

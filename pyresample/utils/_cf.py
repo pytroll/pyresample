@@ -42,6 +42,43 @@ def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     # here we assume the grid_mapping_varname exists (checked by caller)
     return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
 
+# dictionnary with the standard_names accepted by CF per projection type
+#   this can be used for reading from and writing to CF files
+_valid_cf_coordinate_standardnames = {}
+# specific name for most grid mappings
+_valid_cf_coordinate_standardnames['default'] = dict()
+_valid_cf_coordinate_standardnames['default']['x'] = ('projection_x_coordinate',)
+_valid_cf_coordinate_standardnames['default']['y'] = ('projection_y_coordinate',)
+# specific name for the latitude_longitude grid mapping
+_valid_cf_coordinate_standardnames['latitude_longitude'] = dict()
+_valid_cf_coordinate_standardnames['latitude_longitude']['x'] = ('longitude',)
+_valid_cf_coordinate_standardnames['latitude_longitude']['y'] = ('latitude',)
+# specific name for the rotated_latitude_longitude grid mapping
+_valid_cf_coordinate_standardnames['rotated_latitude_longitude'] = dict()
+_valid_cf_coordinate_standardnames['rotated_latitude_longitude']['x'] = ('grid_longitude',)
+_valid_cf_coordinate_standardnames['rotated_latitude_longitude']['y'] = ('grid_latitude',)
+# specific name for the geostationary grid mapping (we support two flavors)
+_valid_cf_coordinate_standardnames['geostationary'] = dict()
+_valid_cf_coordinate_standardnames['geostationary']['x'] = ('projection_x_angular_coordinate', 'projection_x_coordinate',)
+_valid_cf_coordinate_standardnames['geostationary']['y'] = ('projection_y_angular_coordinate', 'projection_y_coordinate',)
+
+def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping ):
+    """ Check that the standard_name provided matches what CF requires for a type of grid_mapping """
+    valid = False
+
+    if axis not in ('x', 'y'):
+        raise ValueError("axis= parameter must be 'x' or 'y'")
+
+    # access the valid standard_names (also handle the 'default')
+    try:
+        valid_coord_standard_names = _valid_cf_coordinate_standardnames[type_of_grid_mapping][axis]
+    except KeyError:
+        valid_coord_standard_names = _valid_cf_coordinate_standardnames['default'][axis]
+
+    # test for validity
+    valid = coord_standard_name in valid_coord_standard_names
+
+    return valid
 
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
     """ check if a coord_varname is a valid CF coordinate variable """
@@ -58,21 +95,8 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
         return False
 
     try:
-        if type_of_grid_mapping == 'latitude_longitude':
-            # specific name for the latitude_longitude grid mapping
-            valid = getattr(coord_var, 'standard_name') == {'x': 'longitude', 'y': 'latitude'}[axis]
-        elif type_of_grid_mapping == 'rotated_latitude_longitude':
-            # specific name for the rotated_latitude_longitude grid mapping
-            valid = getattr(coord_var, 'standard_name') == 'grid_'+{'x': 'longitude', 'y': 'latitude'}[axis]
-        elif type_of_grid_mapping == 'geostationary':
-            # specific name for the geostationary grid mapping
-            # CF-1.9 introduces projection_(x|y)_angular_coordinate for the geostationary projection
-            valid_cf19 = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_angular_coordinate'
-            valid_oldercf = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
-            valid = valid_cf19 + valid_oldercf
-        else:
-            # default and most common naming: projection_(x|y)_coordinate
-            valid = getattr(coord_var, 'standard_name') == 'projection_'+axis+'_coordinate'
+        coord_standard_name = getattr(coord_var, 'standard_name')
+        valid = _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping )
     except AttributeError:
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
