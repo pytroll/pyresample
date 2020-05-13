@@ -17,6 +17,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pyproj
+import xarray as xr
 
 # list of valid CF grid mappings:
 _valid_cf_type_of_grid_mapping = \
@@ -57,6 +58,7 @@ _valid_cf_coordinate_standardnames['geostationary'] = dict()
 _valid_cf_coordinate_standardnames['geostationary']['x'] = ('projection_x_angular_coordinate', 'projection_x_coordinate',)
 _valid_cf_coordinate_standardnames['geostationary']['y'] = ('projection_y_angular_coordinate', 'projection_y_coordinate',)
 
+
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """ In few cases (at present only geostationary) the XY stored in CF files are
         not directly what Proj (thus pyresample) expect. We need a conversion """
@@ -76,8 +78,23 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
 
 def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
-    # here we assume the grid_mapping_varname exists (checked by caller)
-    return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
+
+    # check the variable exists
+    try:
+        v = nc_handle[grid_mapping_varname]
+    except KeyError:
+        raise ValueError("There is no variable with name {} in the netCDF file".format(grid_mapping_varname))
+
+    # check this indeed is a supported grid mapping variable
+    try:
+        if v.grid_mapping_name not in _valid_cf_type_of_grid_mapping:
+            raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
+    except AttributeError:
+        # no :grid_mapping_name thus it cannot be a valid grid_mapping variable
+        raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
+
+    # use pyproj to load the CRS
+    return pyproj.CRS.from_cf(v.attrs)
 
 def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_mapping ):
     """ Check that the standard_name provided matches what CF requires for a type of grid_mapping """
@@ -110,7 +127,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
 
     try:
         coord_var = nc_handle[coord_varname]
-    except IndexError:
+    except KeyError:
         # there is no variable with this name, so it can't be a valid coordinate variable
         return False
 
@@ -139,7 +156,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
     # get the unit information
     try:
-        unit = nc_handle[coord_varname].units
+        unit = getattr(nc_handle[coord_varname],'units')
     except AttributeError:
         unit = None
 
@@ -176,7 +193,6 @@ def _get_area_extent_from_cf_axis(x, y):
 
     return ret
 
-
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     """ guess the name of the coordinate variable holding the axis. although Y and X are recommended to
           be placed last in the list of coordinates, this is not required. """
@@ -188,8 +204,8 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
 
     # the name of y and x are in the dimensions of the variable=
     try:
-        dims = nc_handle[variable].dimensions
-    except IndexError:
+        dims = nc_handle[variable].dims
+    except KeyError:
         raise ValueError("variable {} not found in file".format(variable))
 
     for dim in dims:
@@ -200,7 +216,6 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
 
     return ret
 
-
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     """ guess the name of the variable holding the latitude (or longitude)
             corresponding to 'variable' """
@@ -210,24 +225,24 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     if lonlat not in ('lon', 'lat'):
         raise ValueError("lonlat= parameter must be 'lon' or 'lat'")
 
-    # lat/lon are either directly a dimension,...
+    # lat/lon are either directly a dimension, or a :coordinates.
+    
+    # By default (decode_cf=True) xarray puts all dims and :coordinates in .coords
+    #   and remove the :coordinates attribute
     try:
-        search_list = list(nc_handle[variable].dimensions)
-    except IndexError:
+        search_list = list(nc_handle[variable].coords)
+    except KeyError:
         raise ValueError("variable {} not found in file".format(variable))
 
-    try:
-        # ...  or listed in the ':coordinates' attribute.
-        search_list += nc_handle[variable].coordinates.split(' ')
-    except AttributeError:
-        # no ':coordinates' attribute, this is fine
-        pass
+    # if decode_cf=False was used, the look at the :coordinates attribute
+    if 'coordinates' in nc_handle[variable].attrs.keys():
+        search_list += (nc_handle[variable].attrs['coordinates']).split()
 
     # go through the list of variables and check if one of them is lat / lon
     for v in search_list:
         try:
             # this allows for both 'latitude' and 'rotated_latitude'...
-            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in nc_handle[v].standard_name:
+            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in getattr(nc_handle[v],'standard_name'):
                 ret = v
                 break
         except AttributeError:
@@ -397,12 +412,12 @@ def _load_cf_area_allVariables(nc_handle, ):
 
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
-    """Load an AreaDefinition object from a netCDF/CF file.
+    """Load an AreaDefinition object from a netCDF/CF file
 
     Parameters
     ----------
     nc_file : string or object
-        path to a netCDF/CF file, or opened netCDF4.Dataset object
+        path to a netCDF/CF file, or opened xarray.Dataset object
     variable : string, optional
         name of the variable to load the AreaDefinition from
         If variable is None the file will be searched for valid CF
@@ -424,28 +439,22 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
 
     """
 
-    from netCDF4 import Dataset
 
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")
 
-    # the nc_file can be either the path to a netCDF/CF file, or directly an opened netCDF4.Dataset()
-    #   if the path to a file, open the Dataset access to it
-    if not isinstance(nc_file, Dataset):
+    # the nc_file can be either the path to a netCDF/CF file, or directly an opened xarray.Dataset()
+    if isinstance(nc_file, xr.Dataset):
+        nc_handle = nc_file
+    else :
+        #   if the path to a file, open the Dataset access to it
         try:
-            nc_handle = Dataset(nc_file)
+            nc_handle = xr.open_dataset(nc_file)
         except FileNotFoundError:
             raise FileNotFoundError('File not found: {}'.format(nc_file))
         except OSError:
             raise ValueError('File is not a netCDF file {}'.format(nc_file))
-    else:
-        nc_handle = nc_file
-
-    # Prepare cf_info
-    #  cf_info holds information about the structure of the cf grid information
-    #     (like the name of the coordinate axes, the type of projection, the name of
-    #     the lat and lon variables, etc...
 
     if variable is None:
         # if the variable=None, we search through all variables

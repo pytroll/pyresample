@@ -647,7 +647,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
         self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
 
     def test_load_cf_nh10km(self):
-        from netCDF4 import Dataset
+        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_adef(adef):
@@ -673,13 +673,23 @@ class TestLoadCFArea_Public(unittest.TestCase):
         adef_3 = load_cf_area(cf_file)
         validate_nh10km_adef(adef_3)
 
-        # load from an opened netCDF handle
-        with Dataset(cf_file) as nc_handle:
-            adef_4 = load_cf_area(nc_handle)
-        validate_nh10km_adef(adef_4)
+        # load from an opened DataArray
+        with xr.open_dataset(cf_file) as xr_handle:
+            adef_5 = load_cf_area(xr_handle)
+        validate_nh10km_adef(adef_5)
+
+        # load from an opened DataArray (decode_cf=False)
+        with xr.open_dataset(cf_file, decode_cf=False) as xr_handle:
+            adef_6 = load_cf_area(xr_handle)
+        validate_nh10km_adef(adef_6)
+
+        # load from an opened DataArray
+        with xr.open_dataset(cf_file, decode_coords=False) as xr_handle:
+            adef_7 = load_cf_area(xr_handle)
+        validate_nh10km_adef(adef_7)
 
     def test_load_cf_nh10km_cfinfo(self):
-        from netCDF4 import Dataset
+        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
@@ -708,13 +718,23 @@ class TestLoadCFArea_Public(unittest.TestCase):
         _, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_nh10km_cfinfo(cf_info)
 
-        # load from an opened netCDF handle
-        with Dataset(cf_file) as nc_handle:
-            _, cf_info = load_cf_area(nc_handle,  with_cf_info=True)
+        # load from an opened DataArray
+        with xr.open_dataset(cf_file) as xr_handle:
+            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info)
+
+        # load from an opened DataArray (decode_cf=False)
+        with xr.open_dataset(cf_file, decode_cf=False) as xr_handle:
+            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
+        validate_nh10km_cfinfo(cf_info)
+
+        # load from an opened DataArray (decode_coords=False)
+        with xr.open_dataset(cf_file, decode_coords=False) as xr_handle:
+            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
         validate_nh10km_cfinfo(cf_info)
 
     def test_load_cf_llwgs84(self):
-        from netCDF4 import Dataset
+        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
@@ -747,6 +767,11 @@ class TestLoadCFArea_Public(unittest.TestCase):
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_llwgs84(adef, cf_info)
 
+        # load from an opened DataArray
+        with xr.open_dataset(cf_file) as xr_handle:
+            adef, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
+        validate_llwgs84(adef, cf_info)
+
 
 class TestLoadCFArea_Private(unittest.TestCase):
     """ Test the private routines involved in loading an
@@ -754,13 +779,13 @@ class TestLoadCFArea_Private(unittest.TestCase):
 
     def setUp(self):
         """ Prepare nc_handles """
-        from netCDF4 import Dataset
+        import xarray as xr
 
         self.nc_handles = {}
         for k in ('nh10km', 'llwgs84'):
             cf_file = os.path.join(os.path.dirname(__file__),
                                    'test_files', 'cf_' + k + '.nc')
-            self.nc_handles[k] = Dataset(cf_file)
+            self.nc_handles[k] = xr.open_dataset(cf_file,)
 
     def tearDown(self):
         """ Close nc_handles """
@@ -771,8 +796,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
         from pyresample.utils._cf import _guess_cf_lonlat_varname
 
         # nominal
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat')
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat',)
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon',)
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
 
@@ -854,5 +879,4 @@ class TestLoadCFArea_Private(unittest.TestCase):
         validate_crs_nh10km(crs)
         crs = _load_crs_from_cf_gridmapping(self.nc_handles['llwgs84'], 'crs')
         validate_crs_llwgs84(crs)
-
 
