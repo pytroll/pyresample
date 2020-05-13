@@ -26,7 +26,8 @@ from __future__ import absolute_import
 import numpy as np
 
 try:
-    from pyresample import _cartopy  # noqa
+    from pyresample.utils import cartopy  # noqa
+
     BASEMAP_NOT_CARTOPY = False
 except ImportError:
     BASEMAP_NOT_CARTOPY = True

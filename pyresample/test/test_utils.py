@@ -259,7 +259,7 @@ class TestPreprocessing(unittest.TestCase):
     def test_nearest_neighbor_area_area(self):
         from pyresample import utils, geometry
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 5000, 1000. * 5000]
         area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
                                            proj_dict, 400, 500, extents)
@@ -276,7 +276,7 @@ class TestPreprocessing(unittest.TestCase):
         grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
 
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 5000, 1000. * 5000]
         area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
                                            proj_dict, 400, 500, extents)
@@ -285,7 +285,7 @@ class TestPreprocessing(unittest.TestCase):
     def test_nearest_neighbor_grid_area(self):
         from pyresample import utils, geometry
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 2500., 1000. * 2000.]
         area_def = geometry.AreaDefinition('CONUS', 'CONUS', 'CONUS',
                                            proj_dict, 40, 50, extents)
@@ -348,15 +348,15 @@ class TestMisc(unittest.TestCase):
     def test_proj4_radius_parameters_provided(self):
         """Test proj4_radius_parameters with a/b."""
         from pyresample import utils
-        a, b = utils._proj4.proj4_radius_parameters(
+        a, b = utils.proj4.proj4_radius_parameters(
             '+proj=stere +a=6378273 +b=6356889.44891',
         )
         np.testing.assert_almost_equal(a, 6378273)
         np.testing.assert_almost_equal(b, 6356889.44891)
 
         # test again but force pyproj <2 behavior
-        with mock.patch.object(utils._proj4, 'CRS', None):
-            a, b = utils._proj4.proj4_radius_parameters(
+        with mock.patch.object(utils.proj4, 'CRS', None):
+            a, b = utils.proj4.proj4_radius_parameters(
                 '+proj=stere +a=6378273 +b=6356889.44891',
             )
             np.testing.assert_almost_equal(a, 6378273)
@@ -365,15 +365,15 @@ class TestMisc(unittest.TestCase):
     def test_proj4_radius_parameters_ellps(self):
         """Test proj4_radius_parameters with ellps."""
         from pyresample import utils
-        a, b = utils._proj4.proj4_radius_parameters(
+        a, b = utils.proj4.proj4_radius_parameters(
             '+proj=stere +ellps=WGS84',
         )
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
         # test again but force pyproj <2 behavior
-        with mock.patch.object(utils._proj4, 'CRS', None):
-            a, b = utils._proj4.proj4_radius_parameters(
+        with mock.patch.object(utils.proj4, 'CRS', None):
+            a, b = utils.proj4.proj4_radius_parameters(
                 '+proj=stere +ellps=WGS84',
             )
             np.testing.assert_almost_equal(a, 6378137.)
@@ -382,7 +382,7 @@ class TestMisc(unittest.TestCase):
     def test_proj4_radius_parameters_default(self):
         """Test proj4_radius_parameters with default parameters."""
         from pyresample import utils
-        a, b = utils._proj4.proj4_radius_parameters(
+        a, b = utils.proj4.proj4_radius_parameters(
             '+proj=lcc +lat_0=10 +lat_1=10',
         )
         # WGS84
@@ -390,8 +390,8 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
         # test again but force pyproj <2 behavior
-        with mock.patch.object(utils._proj4, 'CRS', None):
-            a, b = utils._proj4.proj4_radius_parameters(
+        with mock.patch.object(utils.proj4, 'CRS', None):
+            a, b = utils.proj4.proj4_radius_parameters(
                 '+proj=lcc +lat_0=10 +lat_1=10',
             )
             # WGS84
@@ -401,15 +401,15 @@ class TestMisc(unittest.TestCase):
     def test_proj4_radius_parameters_spherical(self):
         """Test proj4_radius_parameters in case of a spherical earth."""
         from pyresample import utils
-        a, b = utils._proj4.proj4_radius_parameters(
+        a, b = utils.proj4.proj4_radius_parameters(
             '+proj=stere +R=6378273',
         )
         np.testing.assert_almost_equal(a, 6378273.)
         np.testing.assert_almost_equal(b, 6378273.)
 
         # test again but force pyproj <2 behavior
-        with mock.patch.object(utils._proj4, 'CRS', None):
-            a, b = utils._proj4.proj4_radius_parameters(
+        with mock.patch.object(utils.proj4, 'CRS', None):
+            a, b = utils.proj4.proj4_radius_parameters(
                 '+proj=stere +R=6378273',
             )
             np.testing.assert_almost_equal(a, 6378273.)
@@ -421,21 +421,21 @@ class TestMisc(unittest.TestCase):
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
         expected = OrderedDict([('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', -95.0), ('no_defs', True)])
-        self.assertDictEqual(utils._proj4.convert_proj_floats(pairs), expected)
+        self.assertDictEqual(utils.proj4.convert_proj_floats(pairs), expected)
 
         # EPSG
         pairs = [('init', 'EPSG:4326'), ('EPSG', 4326)]
         for pair in pairs:
             expected = OrderedDict([pair])
-            self.assertDictEqual(utils._proj4.convert_proj_floats([pair]), expected)
+            self.assertDictEqual(utils.proj4.convert_proj_floats([pair]), expected)
 
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
 
         proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
-        proj_str2 = utils._proj4.proj4_dict_to_str(proj_dict)
-        proj_dict2 = utils._proj4.proj4_str_to_dict(proj_str2)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
+        proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
+        proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
         self.assertDictEqual(proj_dict, proj_dict2)
         self.assertIsInstance(proj_dict['lon_0'], float)
         self.assertIsInstance(proj_dict2['lon_0'], float)
@@ -443,14 +443,14 @@ class TestMisc(unittest.TestCase):
         # EPSG
         proj_str = '+init=EPSG:4326'
         proj_dict_exp = {'init': 'EPSG:4326'}
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         self.assertEqual(proj_dict, proj_dict_exp)
-        self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
+        self.assertEqual(utils.proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
         proj_str = 'EPSG:4326'
         proj_dict_exp = {'init': 'EPSG:4326'}
         proj_dict_exp2 = {'proj': 'longlat', 'datum': 'WGS84', 'no_defs': None, 'type': 'crs'}
-        proj_dict = utils._proj4.proj4_str_to_dict(proj_str)
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         if 'init' in proj_dict:
             # pyproj <2.0
             self.assertEqual(proj_dict, proj_dict_exp)
@@ -506,7 +506,7 @@ class TestMisc(unittest.TestCase):
         area_id = 'area_id'
         proj_id = 'proj_id'
         description = 'name'
-        area_def = utils._rasterio.get_area_def_from_raster(
+        area_def = utils.rasterio.get_area_def_from_raster(
             source, area_id=area_id, name=description, proj_id=proj_id)
         self.assertEqual(area_def.area_id, area_id)
         self.assertEqual(area_def.proj_id, proj_id)
@@ -522,7 +522,7 @@ class TestMisc(unittest.TestCase):
         from pyresample import utils
         crs = CRS(init='epsg:3857')
         source = tmptiff(crs=crs)
-        area_def = utils._rasterio.get_area_def_from_raster(source)
+        area_def = utils.rasterio.get_area_def_from_raster(source)
         self.assertEqual(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
 
     def test_get_area_def_from_raster_rotated_value_err(self):
@@ -531,7 +531,7 @@ class TestMisc(unittest.TestCase):
         transform = Affine(300.0379266750948, 0.1, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils._rasterio.get_area_def_from_raster, source)
+        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
 
     def test_get_area_def_from_raster_non_georef_value_err(self):
         from pyresample import utils
@@ -539,7 +539,7 @@ class TestMisc(unittest.TestCase):
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils._rasterio.get_area_def_from_raster, source)
+        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
 
     def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
         from pyresample import utils
@@ -548,7 +548,7 @@ class TestMisc(unittest.TestCase):
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
         proj_dict = {'init': 'epsg:3857'}
-        area_def = utils._rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
+        area_def = utils.rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
         if utils.is_pyproj2():
             from pyproj import CRS
             proj_dict = CRS(3857).to_dict()

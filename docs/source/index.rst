@@ -45,6 +45,6 @@ Documentation
    preproc
    plot
    data_reduce
-   API
+   API <api/pyresample>
 
 

@@ -199,7 +199,7 @@ class Arc(object):
 
         Parameters
         ----------
-        other_arc : Arc
+        other_arc : pyresample.spherical_geometry.Arc
         snap : boolean
             Snap small angles to 0. Allows for detecting colinearity. Disable
             snapping when calculating polygon areas as it might lead to

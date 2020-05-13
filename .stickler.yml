@@ -1,7 +1,4 @@
 linters:
   flake8:
     python: 3
-    fixer: true
-    max-line-length: 120
-fixers:
-  enable: true
+    config: setup.cfg
