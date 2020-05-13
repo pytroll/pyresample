@@ -42,6 +42,25 @@ def _load_crs_from_cf(nc_handle, grid_mapping_varname):
     # here we assume the grid_mapping_varname exists (checked by caller)
     return pyproj.CRS.from_cf(vars(nc_handle[grid_mapping_varname]))
 
+# list of valid CF grid mappings:
+_valid_cf_type_of_grid_mapping = \
+    ('albers_conical_equal_area',
+    'azimuthal_equidistant',
+    'geostationary',
+    'lambert_azimuthal_equal_area',
+    'lambert_conformal_conic',
+    'lambert_cylindrical_equal_area',
+    'latitude_longitude',
+    'mercator',
+    'oblique_mercator',
+    'orthographic',
+    'polar_stereographic',
+    'rotated_latitude_longitude',
+    'sinusoidal',
+    'stereographic',
+    'transverse_mercator',
+    'vertical_perspective')
+
 # dictionnary with the standard_names accepted by CF per projection type
 #   this can be used for reading from and writing to CF files
 _valid_cf_coordinate_standardnames = {}
@@ -68,6 +87,9 @@ def _is_valid_coordinate_standardname( coord_standard_name, axis, type_of_grid_m
 
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
+
+    if type_of_grid_mapping != 'default' and type_of_grid_mapping not in _valid_cf_type_of_grid_mapping:
+        raise ValueError("grid_mapping_name {} is not a valid CF one".format(type_of_grid_mapping))
 
     # access the valid standard_names (also handle the 'default')
     try:

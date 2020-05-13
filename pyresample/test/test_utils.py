@@ -797,10 +797,30 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertRaises(ValueError, _guess_cf_axis_varname,
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
-    #def test_cf_is_valid_coordinate_standardname(self):
-    #    from pyresample.utils._cf import _is_valid_coordinate_standardname
-    #
-    #    # nominal
+    def test_cf_is_valid_coordinate_standardname(self):
+        from pyresample.utils._cf import _is_valid_coordinate_standardname
+        from pyresample.utils._cf import _valid_cf_type_of_grid_mapping
+
+        # nominal
+        for proj_type in _valid_cf_type_of_grid_mapping:
+            if proj_type == 'geostationary':
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_angular_coordinate', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_angular_coordinate', 'y', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_coordinate', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_coordinate', 'y', proj_type))
+            elif proj_type == 'latitude_longitude':
+                self.assertTrue(_is_valid_coordinate_standardname('longitude', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('latitude', 'y', proj_type))
+            elif proj_type == 'rotated_latitude_longitude':
+                self.assertTrue(_is_valid_coordinate_standardname('grid_longitude', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('grid_latitude', 'y', proj_type))
+            else:
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_coordinate', 'x', 'default'))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_coordinate', 'y', 'default'))
+
+        # error cases
+        self.assertRaises(ValueError,_is_valid_coordinate_standardname, 'projection_x_coordinate', 'x', 'wrong')
+        self.assertRaises(ValueError,_is_valid_coordinate_standardname, 'projection_y_coordinate', 'y', 'also_wrong')
 
     def test_cf_is_valid_coordinate_variable(self):
         from pyresample.utils._cf import _is_valid_coordinate_variable
@@ -811,11 +831,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lon','x','latitude_longitude'))
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'],'lat','y','latitude_longitude'))
 
-        # 'polar_stereographic' actually falls into a "default" case, and we do not check if the projection type
-        #   is a valid CF projection. This test captures this default behaviour and can be removed later if we
-        #   decide to be more stringent in the future.
-        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'xc','x','default_CF'))
-
         # error cases
         self.assertFalse(_is_valid_coordinate_variable(self.nc_handles['nh10km'],'doesNotExist','x','polar_stereographic'))
         self.assertRaises(ValueError,_is_valid_coordinate_variable, self.nc_handles['nh10km'],'xc','wrong','polar_stereographic')
+        self.assertRaises(ValueError,_is_valid_coordinate_variable, self.nc_handles['nh10km'],'xc','x','wrong')
