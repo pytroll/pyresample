@@ -5,6 +5,6 @@ Module contents
 ---------------
 
 .. automodule:: pyresample.ewa
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
