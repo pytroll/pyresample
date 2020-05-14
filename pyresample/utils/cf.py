@@ -79,7 +79,7 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
 
 
 def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
-    """ use pyproj to parse the content of the grid_mapping variable and initialize a crs object """
+    """Initialize a CRS object from a CF grid_mapping variable."""
 
     # check the variable exists
     try:
@@ -100,7 +100,7 @@ def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
 
 
 def _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_mapping):
-    """ Check that the standard_name provided matches what CF requires for a type of grid_mapping """
+    """Check that a CF coordinate variable has the expected CF standard_name with regard to the typw of grid mapping."""
     valid = False
 
     if axis not in ('x', 'y'):
@@ -122,7 +122,7 @@ def _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_ma
 
 
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
-    """ check if a coord_varname is a valid CF coordinate variable """
+    """Check if a variable is a valid CF coordinate variable."""
 
     valid = False
 
@@ -146,7 +146,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
 
 
 def _load_cf_axis_info(nc_handle, coord_varname):
-    """ load first value, last value, sign, spacing, and length for the axis held in coord_varname """
+    """Load and compute information for a coordinate axis (e.g. first & last values, spacing, length, etc...)."""
 
     # this requires reading the data, we only read first and last
     first = (nc_handle[coord_varname][0]).item()
@@ -177,7 +177,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
 
 def _get_area_extent_from_cf_axis(x, y):
-    """ combine the 'info' about x and y axis into an extent """
+    """Compute the area_extent of the AreaDefinition object from the information on the x and y axes."""
 
     # find the ll: lower-left and ur: upper-right.
     # x['first'], y['first'] is always the Upper Left corner
@@ -199,8 +199,7 @@ def _get_area_extent_from_cf_axis(x, y):
 
 
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
-    """ guess the name of the coordinate variable holding the axis. although Y and X are recommended to
-          be placed last in the list of coordinates, this is not required. """
+    """Guess the name of the netCDF variable holding the coordinate axis of a netCDF field."""
 
     ret = None
 
@@ -223,8 +222,7 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
 
 
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
-    """ guess the name of the variable holding the latitude (or longitude)
-            corresponding to 'variable' """
+    """Guess the name of the netCDF variable holding the longitude (or latitude) of a netCDF field."""
 
     ret = None
 
@@ -259,6 +257,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
 
 def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
+    """Load the AreaDefinition corresponding to one netCDF variable/field."""
 
     from pyresample import geometry
 
@@ -375,11 +374,10 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
 
 
 def _load_cf_area_severalVariables(nc_handle, ):
-    """ load several AreaDefitions from a netCDF/CF file """
+    """Load the AreaDefinition corresponding to several netCDF variables/fields."""
 
     def _indices_unique_AreaDefs(adefs):
-        """ use a classic dict-based strategy to
-            get the indices of unique AreaDefinitions in a list """
+        """Find the indices of unique AreaDefinitions in a list."""
 
         uniqs = dict()
         for i, adef in enumerate(adefs):
@@ -421,7 +419,7 @@ def _load_cf_area_severalVariables(nc_handle, ):
 
 
 def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
-    """Load an AreaDefinition object from a netCDF/CF file
+    """Load an AreaDefinition object from a netCDF/CF file.
 
     Parameters
     ----------
