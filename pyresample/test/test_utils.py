@@ -827,7 +827,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
             self.nc_handles[k].close()
 
     def test_cf_guess_lonlat(self):
-        from pyresample.utils._cf import _guess_cf_lonlat_varname
+        from pyresample.utils.cf import _guess_cf_lonlat_varname
 
         # nominal
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat',)
@@ -840,7 +840,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
 
     def test_cf_guess_axis_varname(self):
-        from pyresample.utils._cf import _guess_cf_axis_varname
+        from pyresample.utils.cf import _guess_cf_axis_varname
 
         # nominal
         self.assertEqual(_guess_cf_axis_varname(
@@ -857,8 +857,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
     def test_cf_is_valid_coordinate_standardname(self):
-        from pyresample.utils._cf import _is_valid_coordinate_standardname
-        from pyresample.utils._cf import _valid_cf_type_of_grid_mapping
+        from pyresample.utils.cf import _is_valid_coordinate_standardname
+        from pyresample.utils.cf import _valid_cf_type_of_grid_mapping
 
         # nominal
         for proj_type in _valid_cf_type_of_grid_mapping:
@@ -882,7 +882,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertRaises(ValueError, _is_valid_coordinate_standardname, 'projection_y_coordinate', 'y', 'also_wrong')
 
     def test_cf_is_valid_coordinate_variable(self):
-        from pyresample.utils._cf import _is_valid_coordinate_variable
+        from pyresample.utils.cf import _is_valid_coordinate_variable
 
         # nominal
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'xc', 'x', 'polar_stereographic'))
@@ -898,7 +898,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertRaises(ValueError, _is_valid_coordinate_variable, self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
 
     def test_cf_load_crs_from_cf_gridmapping(self):
-        from pyresample.utils._cf import _load_crs_from_cf_gridmapping
+        from pyresample.utils.cf import _load_crs_from_cf_gridmapping
 
         def validate_crs_nh10km(crs):
             crs_dict = crs.to_dict()
