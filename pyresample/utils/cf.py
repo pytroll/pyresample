@@ -62,8 +62,7 @@ _valid_cf_coordinate_standardnames['geostationary']['y'] = (
 
 
 def _convert_XY_CF_to_Proj(crs, axis_info):
-    """ In few cases (at present only geostationary) the XY stored in CF files are
-        not directly what Proj (thus pyresample) expect. We need a conversion """
+    """Convert XY values from CF to PROJ convention. With CF =< 1.9 only affects geostrationary projection."""
 
     crs_dict = crs.to_dict()
     if crs_dict['proj'] == 'geos':
