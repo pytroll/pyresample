@@ -114,14 +114,13 @@ class GradientSearchResampler(BaseResampler):
         for i in range(num_chunks):
             x_end = x_start + shp[1]
             y_end = y_start + shp[0]
-
             chunk_geo_def = self.source_geo_def[y_start:y_end, x_start:x_end]
             b_lon, b_lat = get_border_lonlats(chunk_geo_def)
             b_x, b_y = prj(b_lon, b_lat)
             src_polys.append(get_polygon(b_x, b_y))
 
             x_start += shp[1]
-            if x_end == shp[1]:
+            if x_end == self.source_geo_def.shape[1]:
                 x_start = 0
                 y_start += shp[0]
 
@@ -314,7 +313,7 @@ def reshape_to_stacked_3d(array):
 def get_border_lonlats(geo_def, x_stride=1, y_stride=1):
     """Get the border x- and y-coordinates."""
     if geo_def.proj_dict['proj'] == 'geos':
-        lon_b, lat_b = get_geostationary_bounding_box(geo_def)
+        lon_b, lat_b = get_geostationary_bounding_box(geo_def, 3600)
     else:
         lons, lats = geo_def.get_boundary_lonlats()
         lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))
