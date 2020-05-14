@@ -214,6 +214,12 @@ class GradientSearchResampler(BaseResampler):
                                        self.src_gradient_yl,
                                        self.src_gradient_yp,
                                        **kwargs)
+
+        if res is None:
+            if fill_value is None:
+                fill_value = np.nan
+            res = da.full(self.target_geo_def.shape, fill_value)
+
         # TODO: this will crash wen the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
@@ -332,13 +338,18 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     if data.ndim != 4:
         raise NotImplementedError(
             'Gradient search resampling only supports 4D arrays.')
-    res = da.blockwise(_gradient_resample_data, 'bmnz',
-                       data.astype(np.float64), 'bijz',
-                       src_x, 'ijz', src_y, 'ijz',
-                       src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
-                       src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
-                       dst_x, 'mn', dst_y, 'mn',
-                       dtype=np.float64,
-                       method=kwargs.get('method', 'bilinear'))
 
-    return da.nanmax(res, axis=-1).squeeze()
+    if data.shape[-1] == 0:
+        logger.warning("Data doesn't cover the target area.")
+        return None
+    else:
+        res = da.blockwise(_gradient_resample_data, 'bmnz',
+                           data.astype(np.float64), 'bijz',
+                           src_x, 'ijz', src_y, 'ijz',
+                           src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
+                           src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
+                           dst_x, 'mn', dst_y, 'mn',
+                           dtype=np.float64,
+                           method=kwargs.get('method', 'bilinear'))
+
+        return da.nanmax(res, axis=-1).squeeze()
