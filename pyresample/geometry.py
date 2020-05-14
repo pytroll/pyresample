@@ -37,7 +37,8 @@ from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import (proj4_str_to_dict, proj4_dict_to_str,
-                              convert_proj_floats, proj4_radius_parameters)
+                              convert_proj_floats, proj4_radius_parameters,
+                              check_slice_orientation)
 from pyresample.area_config import create_area_def
 
 try:
@@ -1024,8 +1025,9 @@ class AreaDefinition(BaseDefinition):
         Human-readable description of the area
     proj_id : str
         ID of projection
-    projection: dict or str
-        Dictionary or string of Proj.4 parameters
+    projection: dict or str or pyproj.crs.CRS
+        Dictionary of PROJ parameters or string of PROJ or WKT parameters.
+        Can also be a :class:`pyproj.crs.CRS` object.
     width : int
         x dimension in number of pixels, aka number of grid columns
     height : int
@@ -1053,8 +1055,6 @@ class AreaDefinition(BaseDefinition):
         y dimension in number of pixels, aka number of grid rows
     rotation: float
         rotation in degrees (negative is cw)
-    shape : tuple
-        Corresponding array shape as (height, width)
     size : int
         Number of points in grid
     area_extent : tuple
@@ -1065,8 +1065,6 @@ class AreaDefinition(BaseDefinition):
         Pixel width in projection units
     pixel_size_y : float
         Pixel height in projection units
-    resolution : tuple
-      the resolution of the resulting area as (pixel_size_x, pixel_size_y).
     upper_left_extent : tuple
         Coordinates (x, y) of upper left corner of upper left pixel in projection units
     pixel_upper_left : tuple
@@ -1077,14 +1075,16 @@ class AreaDefinition(BaseDefinition):
     pixel_offset_y : float
         y offset between projection center and upper left corner of upper
         left pixel in units of pixels..
-    proj_str : str
-        Projection defined as Proj.4 string
+    crs : pyproj.crs.CRS
+        Coordinate reference system object similar to the PROJ parameters in
+        `proj_dict` and `proj_str`. This is the preferred attribute to use
+        when working with the `pyproj` library. Note, however, that this
+        object is not thread-safe and should not be passed between threads.
+    crs_wkt : str
+        WellKnownText version of the CRS object. This is the preferred
+        way of describing CRS information as a string.
     cartesian_coords : object
         Grid cartesian coordinates
-    projection_x_coords : object
-        Grid projection x coordinate
-    projection_y_coords : object
-        Grid projection y coordinate
 
     """
 
@@ -1113,8 +1113,9 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self.area_extent = tuple(area_extent)
         if CRS is not None:
-            self.crs = CRS(projection)
+            self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
+            self.crs = self._crs  # see _crs property for details
         else:
             if isinstance(projection, str):
                 proj_dict = proj4_str_to_dict(projection)
@@ -1150,8 +1151,29 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @property
+    def _crs(self):
+        """Helper property for the `crs` property.
+
+        The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
+        accidentally passing it between threads, we only create it when it
+        is requested (the `self.crs` property). The alternative of storing it
+        as a normal instance attribute could cause issues between threads.
+
+        For backwards compatibility, we only create the `.crs` property if
+        pyproj 2.0+ is installed. Users can then check
+        `hasattr(area_def, 'crs')` to easily support older versions of
+        pyresample and pyproj.
+
+        """
+        return CRS.from_wkt(self.crs_wkt)
+
+    @property
     def proj_dict(self):
-        """Return the projection dictionary."""
+        """Return the PROJ projection dictionary.
+
+        This is no longer the preferred way of describing CRS information.
+        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
+        """
         if self._proj_dict is None and hasattr(self, 'crs'):
             if hasattr(self.crs, 'to_dict'):
                 # pyproj 2.2+
@@ -1209,6 +1231,25 @@ class AreaDefinition(BaseDefinition):
         """Return area height."""
         warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
         return self.height
+
+    @classmethod
+    def from_epsg(cls, code, resolution):
+        """Create an AreaDefinition object from an epsg code (string or int) and a resolution."""
+        if CRS is None:
+            raise NotImplementedError
+        crs = CRS('EPSG:' + str(code))
+        bounds = crs.area_of_use.bounds
+        proj = Proj(crs)
+        left1, low1 = proj(bounds[0], bounds[1])
+        right1, up1 = proj(bounds[2], bounds[3])
+        left2, up2 = proj(bounds[0], bounds[3])
+        right2, low2 = proj(bounds[2], bounds[1])
+        left = min(left1, left2)
+        right = max(right1, right2)
+        up = max(up1, up2)
+        low = min(low1, low2)
+        area_extent = (left, low, right, up)
+        return create_area_def(crs.name, crs.to_dict(), area_extent=area_extent, resolution=resolution)
 
     @classmethod
     def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
@@ -1421,7 +1462,12 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def proj_str(self):
-        """Return PROJ projection string."""
+        """Return PROJ projection string.
+
+        This is no longer the preferred way of describing CRS information.
+        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
+
+        """
         proj_dict = self.proj_dict.copy()
         if 'towgs84' in proj_dict and isinstance(proj_dict['towgs84'], list):
             # pyproj 2+ creates a list in the dictionary
@@ -1456,7 +1502,7 @@ class AreaDefinition(BaseDefinition):
 
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""
-        from pyresample._cartopy import from_proj
+        from pyresample.utils.cartopy import from_proj
         bounds = (self.area_extent[0],
                   self.area_extent[2],
                   self.area_extent[1],
@@ -1877,7 +1923,7 @@ class AreaDefinition(BaseDefinition):
             raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
         # Proj.4 definition of target area projection
-        proj_def = self.crs if hasattr(self, 'crs') else self.proj_dict
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
@@ -1931,7 +1977,8 @@ class AreaDefinition(BaseDefinition):
             xstop = self.width if x[1] is np.ma.masked else x[1] + 1
             ystop = self.height if y[0] is np.ma.masked else y[0] + 1
 
-            return slice(xstart, xstop), slice(ystart, ystop)
+            return (check_slice_orientation(slice(xstart, xstop)),
+                    check_slice_orientation(slice(ystart, ystop)))
 
         if self.proj_dict.get('proj') != 'geos':
             raise NotImplementedError("Source projection must be 'geos' if "
@@ -1953,7 +2000,6 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
-
         x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
         y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
         if shape_divisible_by is not None:
@@ -1962,7 +2008,8 @@ class AreaDefinition(BaseDefinition):
             y_slice = _make_slice_divisible(y_slice, self.height,
                                             factor=shape_divisible_by)
 
-        return (x_slice, y_slice)
+        return (check_slice_orientation(x_slice),
+                check_slice_orientation(y_slice))
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -1997,7 +2044,27 @@ class AreaDefinition(BaseDefinition):
         return new_area
 
     def geocentric_resolution(self, ellps='WGS84', radius=None):
-        """Find best estimate for overall geocentric resolution."""
+        """Find best estimate for overall geocentric resolution.
+
+        This method is extremely important to the results of KDTree-based
+        resamplers like the nearest neighbor resampling. This is used to
+        determine how far the KDTree should be queried for valid pixels
+        before giving up (`radius_of_influence`). This method attempts to
+        make a best guess at what geocentric resolution (the units used by
+        the KDTree) represents the majority of an area.
+
+        To do this this method will:
+
+        1. Create a vertical mid-line and a horizontal mid-line.
+        2. Convert these coordinates to geocentric coordinates.
+        3. Compute the distance between points along these lines.
+        4. Take the histogram of each set of distances and find the
+           bin with the most points.
+        5. Take the average of the edges of that bin.
+        6. Return the maximum of the vertical and horizontal bin
+           edge averages.
+
+        """
         from pyproj import transform
         rows, cols = self.shape
         mid_row = rows // 2
@@ -2010,20 +2077,36 @@ class AreaDefinition(BaseDefinition):
             dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
         else:
             dst = Proj("+proj=cart +ellps={}".format(ellps))
+        # need some altitude, go with the surface (0)
         alt_x = np.zeros(x.size)
         alt_y = np.zeros(y.size)
+        # convert our midlines to (X, Y, Z) geocentric coordinates
         hor_xyz = np.stack(transform(src, dst, x, mid_row_y, alt_x), axis=1)
         vert_xyz = np.stack(transform(src, dst, mid_col_x, y, alt_y), axis=1)
+        # Find the distance in meters along our midlines
         hor_dist = np.linalg.norm(np.diff(hor_xyz, axis=0), axis=1)
         vert_dist = np.linalg.norm(np.diff(vert_xyz, axis=0), axis=1)
-        dist = np.concatenate((hor_dist, vert_dist))
-        dist = dist[np.isfinite(dist)]
-        if not dist.size:
-            raise RuntimeError("Could not calculate geocentric resolution")
-        # return np.max(dist)  # alternative to histogram
+        # Get rid of any NaNs or infinite values
+        hor_dist = hor_dist[np.isfinite(hor_dist)]
+        vert_dist = vert_dist[np.isfinite(vert_dist)]
         # use the average of the largest histogram bin to avoid
-        # outliers and really large values
-        return np.mean(np.histogram_bin_edges(dist)[:2])
+        # outliers and really large values.
+        # Very useful near edge of disk geostationary areas.
+        hor_res = vert_res = 0
+        if hor_dist.size:
+            hor_res = np.mean(np.histogram_bin_edges(hor_dist)[:2])
+        if vert_dist.size:
+            vert_res = np.mean(np.histogram_bin_edges(vert_dist)[:2])
+        # Use the maximum distance between the two midlines instead of
+        # binning both of them together. If we binned them together then
+        # we are highly dependent on the shape of the area (more rows in
+        # the area would almost always mean that we resulted in the vertical
+        # midline's distance).
+        res = max(hor_res, vert_res)
+        if not res:
+            raise RuntimeError("Could not calculate geocentric resolution")
+        # return np.max(np.concatenate(vert_dist, hor_dist))  # alternative to histogram
+        return res
 
 
 def _make_slice_divisible(sli, max_size, factor=2):

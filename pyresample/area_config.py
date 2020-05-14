@@ -376,7 +376,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
 
 def _get_proj4_args(proj4_args):
     """Create dict from proj4 args."""
-    from pyresample.utils._proj4 import convert_proj_floats
+    from pyresample.utils.proj4 import convert_proj_floats
     if isinstance(proj4_args, str):
         # float conversion is done in `proj4_str_to_dict` already
         return proj4_str_to_dict(str(proj4_args))

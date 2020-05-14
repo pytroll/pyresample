@@ -36,6 +36,11 @@ from pyresample.test.utils import catch_warnings
 from unittest.mock import MagicMock, patch
 import unittest
 
+try:
+    from pyproj import CRS
+except ImportError:
+    CRS = None
+
 
 class Test(unittest.TestCase):
     """Unit testing the geometry and geo_filter modules."""
@@ -140,7 +145,7 @@ class Test(unittest.TestCase):
                 projection=projection,
                 width=123, height=123,
                 area_extent=[-40000., -40000., 40000., 40000.])
-            with patch('pyresample._cartopy.warnings.warn') as warn:
+            with patch('pyresample.utils.cartopy.warnings.warn') as warn:
                 # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
                 area.to_cartopy_crs()
                 if projection.startswith('EPSG'):
@@ -166,7 +171,7 @@ class Test(unittest.TestCase):
                                            'areaD',
                                            {'a': '6378144.0',
                                             'b': '6356759.0',
-                                            'lat_0': '50.00',
+                                            'lat_0': '90.00',
                                             'lat_ts': '50.00',
                                             'lon_0': '8.00',
                                             'proj': 'stere'},
@@ -179,13 +184,25 @@ class Test(unittest.TestCase):
         res = yaml.safe_load(area_def.create_areas_def())
         expected = yaml.safe_load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
-                                   '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                                   '    lat_0: 90.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
                                    '    proj: stere\n  shape:\n    height: 800\n'
                                    '    width: 800\n  area_extent:\n'
                                    '    lower_left_xy: [-1370912.72, -909968.64]\n'
                                    '    upper_right_xy: [1029087.28, 1490031.36]\n'))
 
-        self.assertDictEqual(res, expected)
+        self.assertEqual(set(res.keys()), set(expected.keys()))
+        res = res['areaD']
+        expected = expected['areaD']
+        self.assertEqual(set(res.keys()), set(expected.keys()))
+        self.assertEqual(res['description'], expected['description'])
+        self.assertEqual(res['shape'], expected['shape'])
+        self.assertEqual(res['area_extent']['lower_left_xy'],
+                         expected['area_extent']['lower_left_xy'])
+        # pyproj versions may effect how the PROJ is formatted
+        for proj_key in ['a', 'lat_0', 'lon_0', 'proj', 'lat_ts']:
+            self.assertEqual(res['projection'][proj_key],
+                             expected['projection'][proj_key])
+
 
         # EPSG
         projections = {'+init=epsg:3006': 'init: epsg:3006'}
@@ -1056,6 +1073,26 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
+        # The same as source area, but flipped in X and Y
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = utils.get_area_def(area_id,
+                                           area_name,
+                                           proj_id,
+                                           proj_dict,
+                                           x_size, y_size,
+                                           area_extent)
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(0, x_size, None), slice_x)
+        self.assertEqual(slice(0, y_size, None), slice_y)
+
         # totally different area
         projections = [{"init": 'EPSG:4326'}]
         if utils.is_pyproj2():
@@ -1112,34 +1149,39 @@ class Test(unittest.TestCase):
         """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
         from pyresample import utils
+        from pyresample.test.utils import friendly_crs_equal
 
         # pyproj 2.0+ adds a +type=crs parameter
-        extra_params = ' +type=crs' if utils.is_pyproj2() else ''
         proj_dict = OrderedDict()
         proj_dict['proj'] = 'stere'
         proj_dict['a'] = 6378144.0
         proj_dict['b'] = 6356759.0
-        proj_dict['lat_0'] = 50.00
+        proj_dict['lat_0'] = 90.00
         proj_dict['lat_ts'] = 50.00
         proj_dict['lon_0'] = 8.00
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +b=6356759.0 +lat_0=50.0 +lat_ts=50.0 '
-                         '+lon_0=8.0 +proj=stere' + extra_params)
+        assert friendly_crs_equal(
+            '+a=6378144.0 +b=6356759.0 +lat_0=90.0 +lat_ts=50.0 '
+            '+lon_0=8.0 +proj=stere',
+            area
+        )
         # try a omerc projection and no_rot parameters
         proj_dict['proj'] = 'omerc'
+        proj_dict['lat_0'] = 50.0
         proj_dict['alpha'] = proj_dict.pop('lat_ts')
         proj_dict['no_rot'] = ''
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        self.assertEqual(area.proj_str,
-                         '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
-                         '+lon_0=8.0 +no_rot +proj=omerc' + extra_params)
+        assert friendly_crs_equal(
+            '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
+            '+lon_0=8.0 +no_rot +proj=omerc',
+            area
+        )
 
         # EPSG
         if utils.is_pyproj2():
@@ -1266,15 +1308,87 @@ class Test(unittest.TestCase):
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(10646.562531, geo_res)
 
+        # non-square area non-space area
+        area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                2000, 5000,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(2397.687307, geo_res)
+
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
         area_def = get_area_def('orig', 'Test area', 'test',
                                 proj_dict,
                                 3712, 3712,
-                                [-130, 30, -120, 40],
-                                area_extent)
+                                [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(248.594116, geo_res)
+        np.testing.assert_allclose(298.647232, geo_res)
+
+    def test_from_epsg(self):
+        """Test the from_epsg class method."""
+        from pyresample.geometry import AreaDefinition
+        sweref = AreaDefinition.from_epsg('3006', 2000)
+        assert sweref.name == 'SWEREF99 TM'
+        assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
+                                    'proj': 'utm', 'type': 'crs', 'units': 'm',
+                                    'zone': 33}
+        assert sweref.width == 453
+        assert sweref.height == 794
+        import numpy as np
+        np.testing.assert_allclose(sweref.area_extent,
+                                   (181896.3291, 6101648.0705,
+                                    1086312.942376, 7689478.3056))
+
+    @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
+    def test_area_def_init_projection(self):
+        """Test AreaDefinition with different projection definitions."""
+        proj_dict = {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '90.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        }
+        crs = CRS(CRS.from_dict(proj_dict).to_wkt())
+        # pass CRS object directly
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs,
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # PROJ dictionary
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_dict(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # PROJ string
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_string(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # WKT2
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_wkt(),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        self.assertEqual(crs, area_def.crs)
+        # WKT1_ESRI
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           crs.to_wkt(version='WKT1_ESRI'),
+                                           800, 800,
+                                           [-1370912.72, -909968.64000000001,
+                                            1029087.28, 1490031.3600000001])
+        # WKT1 to WKT2 has some different naming of things so this fails
+        # self.assertEqual(crs, area_def.crs)
 
 
 class TestMakeSliceDivisible(unittest.TestCase):
@@ -1662,6 +1776,7 @@ class TestSwathDefinition(unittest.TestCase):
         xlons = xr.DataArray(da.from_array(lons.ravel(), chunks=2), dims=['y'])
         sd = SwathDefinition(xlons, xlats)
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
+
 
 class TestStackedAreaDefinition(unittest.TestCase):
     """Test the StackedAreaDefition."""
@@ -2063,28 +2178,36 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        geos_area.proj_dict = {'a': 6378169.00,
-                               'b': 6356583.80,
-                               'h': 35785831.00}
+        del geos_area.crs
+        geos_area.proj_dict = {
+            'proj': 'geos',
+            'sweep': 'x',
+            'lon_0': -89.5,
+            'a': 6378169.00,
+            'b': 6356583.80,
+            'h': 35785831.00,
+            'units': 'm'}
 
         expected = (0.15185342867090912, 0.15133555510297725)
-
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
-        geos_area.proj_dict = {'ellps': 'GRS80',
-                               'h': 35785831.00}
-        expected = (0.15185277703584374, 0.15133971368991794)
-
-        np.testing.assert_allclose(expected,
-                                   geometry.get_geostationary_angle_extent(geos_area))
-
-        geos_area.proj_dict = {'a': 1000.0,
-                               'b': 1000.0,
-                               'h': np.sqrt(2) * 1000.0 - 1000.0}
+        geos_area.proj_dict['a'] = 1000.0
+        geos_area.proj_dict['b'] = 1000.0
+        geos_area.proj_dict['h'] = np.sqrt(2) * 1000.0 - 1000.0
 
         expected = (np.deg2rad(45), np.deg2rad(45))
+        np.testing.assert_allclose(expected,
+                                   geometry.get_geostationary_angle_extent(geos_area))
 
+        geos_area.proj_dict = {
+            'proj': 'geos',
+            'sweep': 'x',
+            'lon_0': -89.5,
+            'ellps': 'GRS80',
+            'h': 35785831.00,
+            'units': 'm'}
+        expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 

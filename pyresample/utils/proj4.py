@@ -90,6 +90,16 @@ def proj4_radius_parameters(proj4_dict):
     Returns:
         a (float), b (float): equatorial and polar radius
     """
+    if CRS is not None:
+        import math
+        crs = CRS(proj4_dict)
+        a = crs.ellipsoid.semi_major_metre
+        b = crs.ellipsoid.semi_minor_metre
+        if not math.isnan(b):
+            return a, b
+        # older versions of pyproj didn't always have a valid minor radius
+        proj4_dict = crs.to_dict()
+
     if isinstance(proj4_dict, str):
         new_info = proj4_str_to_dict(proj4_dict)
     else:

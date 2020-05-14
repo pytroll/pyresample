@@ -22,7 +22,8 @@ necessary to get an area's ``shape`` and ``area_extent``.
 The ``create_area_def`` function has the following required arguments:
 
 * **area_id**: ID of area
-* **projection**: Projection parameters as a proj4_dict or proj4_string
+* **projection**: Projection parameters as a dictionary or string of PROJ
+  parameters.
 
 and optional arguments:
 
@@ -61,6 +62,13 @@ and optional arguments:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+.. note::
+
+    Projection (CRS) information is stored internally using the pyproj
+    library's :class:`CRS <pyproj.crs.CRS>` object. To meet certain standards
+    for representing CRS information, pyproj may rename parameters or use
+    completely different parameters from what you provide.
+
 The ``create_area_def`` function accepts some parameters in multiple forms
 to make it as easy as possible. For example, the **resolution** and **radius**
 keyword arguments can be specified with one value if ``dx == dy``:
@@ -92,7 +100,7 @@ the mercator projection with radius and resolution defined in degrees.
  >>> print(area_def)
  Area ID: ease_sh
  Description: Antarctic EASE grid
- Projection: {'a': '6371228.0', 'lat_0': '0', 'lon_0': '0', 'proj': 'merc', 'type': 'crs', 'units': 'm'}
+ Projection: {'R': '6371228', 'k': '1', 'lon_0': '0', 'no_defs': 'None', 'proj': 'merc', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
  Number of columns: 425
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -103,7 +111,7 @@ can be obtained as follows:
 .. doctest::
 
  >>> area_def = create_area_def('my_area',
- ...                            {'proj': 'latlong', 'lon_0': 0},
+ ...                            {'proj': 'longlat', 'datum': 'WGS84'},
  ...                            area_extent=[-180, -90, 180, 90],
  ...                            resolution=1,
  ...                            units='degrees',
@@ -111,7 +119,7 @@ can be obtained as follows:
  >>> print(area_def)
  Area ID: my_area
  Description: Global 1x1 degree lat-lon grid
- Projection: {'lon_0': '0', 'proj': 'latlong', 'type': 'crs'}
+ Projection: {'datum': 'WGS84', 'no_defs': 'None', 'proj': 'longlat', 'type': 'crs'}
  Number of columns: 360
  Number of rows: 180
  Area extent: (-180.0, -90.0, 180.0, 90.0)
@@ -385,9 +393,20 @@ an area might be specified.
 If we assume the YAML content is stored in an ``areas.yaml`` file, we can
 read a single ``AreaDefinition`` named ``corner`` by doing:
 
+.. testsetup::
+
+   import os
+   import shutil
+   # Travis Windows currently doesn't clone symbolic links properly
+   # See https://travis-ci.community/t/git-symlinks-support/274
+   if os.getenv('TRAVIS_OS_NAME', '') == 'windows':
+       os.remove('areas.yaml')
+       shutil.copy('../pyresample/test/test_files/areas.yaml', 'areas.yaml')
+
 .. doctest::
 
  >>> from pyresample import load_area
+ >>> import yaml
  >>> area_def = load_area('areas.yaml', 'corner')
  >>> print(area_def)
  Area ID: corner
