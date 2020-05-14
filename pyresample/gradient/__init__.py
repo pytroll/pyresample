@@ -111,18 +111,18 @@ class GradientSearchResampler(BaseResampler):
         num_chunks = shp[2]
         x_start, y_start = 0, 0
         src_polys = []
-        for i in range(num_chunks):
-            x_end = x_start + shp[1]
+        for _ in range(num_chunks):
             y_end = y_start + shp[0]
+            x_end = x_start + shp[1]
             chunk_geo_def = self.source_geo_def[y_start:y_end, x_start:x_end]
             b_lon, b_lat = get_border_lonlats(chunk_geo_def)
             b_x, b_y = prj(b_lon, b_lat)
             src_polys.append(get_polygon(b_x, b_y))
 
-            x_start += shp[1]
-            if x_end == self.source_geo_def.shape[1]:
-                x_start = 0
-                y_start += shp[0]
+            y_start += shp[0]
+            if y_end == self.source_geo_def.shape[0]:
+                y_start = 0
+                x_start += shp[1]
 
         covers = []
         for poly in src_polys:
