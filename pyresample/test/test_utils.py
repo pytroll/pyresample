@@ -806,6 +806,41 @@ class TestLoadCFArea_Public(unittest.TestCase):
             adef, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
         validate_llwgs84(adef, cf_info)
 
+    def test_load_cf_llnocrs(self):
+        import xarray as xr
+        from pyresample.utils import load_cf_area
+
+        def validate_llnocrs(adef, cfinfo, lat='lat', lon='lon'):
+            self.assertEqual(adef.shape, (19, 37))
+            xc = adef.projection_x_coords
+            yc = adef.projection_y_coords
+            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(cfinfo['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
+            self.assertEqual(cf_info['x']['varname'], 'lon')
+            self.assertEqual(cf_info['x']['first'], -180.)
+            self.assertEqual(cf_info['y']['varname'], 'lat')
+            self.assertEqual(cf_info['y']['first'], -90.)
+
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_llnocrs.nc')
+
+        # load using a variable=temp
+        adef, cf_info = load_cf_area(cf_file, 'temp', with_cf_info=True)
+        validate_llnocrs(adef, cf_info)
+
+        # load using a variable=None
+        adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        validate_llnocrs(adef, cf_info)
+
+        # load from an opened DataArray
+        with xr.open_dataset(cf_file) as xr_handle:
+            adef, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
+        validate_llnocrs(adef, cf_info)
+
 
 class TestLoadCFArea_Private(unittest.TestCase):
     """ Test the private routines involved in loading an
@@ -816,7 +851,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         import xarray as xr
 
         self.nc_handles = {}
-        for k in ('nh10km', 'llwgs84'):
+        for k in ('nh10km', 'llwgs84','llnocrs'):
             cf_file = os.path.join(os.path.dirname(__file__),
                                    'test_files', 'cf_' + k + '.nc')
             self.nc_handles[k] = xr.open_dataset(cf_file,)
@@ -834,6 +869,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon',)
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lat'), 'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lon'), 'lon')
 
         # error cases
         self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
@@ -889,6 +926,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'yc', 'y', 'polar_stereographic'))
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lon', 'x', 'latitude_longitude'))
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lat', 'y', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lon', 'x', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lat', 'y', 'latitude_longitude'))
 
         # error cases
         self.assertFalse(_is_valid_coordinate_variable(
@@ -909,7 +948,6 @@ class TestLoadCFArea_Private(unittest.TestCase):
             crs_dict = crs.to_dict()
             self.assertEqual(crs_dict['proj'], 'longlat')
             self.assertEqual(crs_dict['ellps'], 'WGS84')
-            print(crs_dict)
 
         crs = _load_crs_from_cf_gridmapping(self.nc_handles['nh10km'], 'Polar_Stereographic_Grid')
         validate_crs_nh10km(crs)
