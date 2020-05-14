@@ -489,11 +489,11 @@ Several area definitions can be read at once using the region names in an argume
 
 Loading from netCDF/CF
 ----------------------
-``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`load_cf_area <pyresample.utils._cf>`.
+``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`~pyresample.utils.cf.load_cf_area`.
 
-:func:`~pyresample.utils._cf.load_cf_area`
+>>> from pyresample.utils import load_cf_area
 
-The ``load_cf_area()`` routine offers three call forms:
+The :func:`~pyresample.utils.cf.load_cf_area` routine offers three call forms:
 
 - Load the ``AreaDefinition`` from a specific CF `grid_mapping` object: with all three of ``variable=``, ``x=``, and ``y=`` ;
 - Load the ``AreaDefinition`` sustaining a CF variable: only ``variable=`` ;
@@ -549,6 +549,7 @@ Consider the following netCDF/CF file: ::
    } 
 
 The three call forms are:
+
 
 **1st call form:**
 
