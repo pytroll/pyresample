@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Load an AreaDefinition object from a netCDF/CF file."""
 
 import pyproj
 import xarray as xr
@@ -63,7 +64,6 @@ _valid_cf_coordinate_standardnames['geostationary']['y'] = (
 
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """Convert XY values from CF to PROJ convention. With CF =< 1.9 only affects geostrationary projection."""
-
     crs_dict = crs.to_dict()
     if crs_dict['proj'] == 'geos':
         # for geostationary projection, the values stored as x/y in CF are not directly
@@ -80,7 +80,6 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
 
 def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     """Initialize a CRS object from a CF grid_mapping variable."""
-
     # check the variable exists
     try:
         v = nc_handle[grid_mapping_varname]
@@ -123,7 +122,6 @@ def _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_ma
 
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
     """Check if a variable is a valid CF coordinate variable."""
-
     valid = False
 
     if axis not in ('x', 'y'):
@@ -147,7 +145,6 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
 
 def _load_cf_axis_info(nc_handle, coord_varname):
     """Load and compute information for a coordinate axis (e.g. first & last values, spacing, length, etc...)."""
-
     # this requires reading the data, we only read first and last
     first = (nc_handle[coord_varname][0]).item()
     last = (nc_handle[coord_varname][-1]).item()
@@ -178,7 +175,6 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
 def _get_area_extent_from_cf_axis(x, y):
     """Compute the area_extent of the AreaDefinition object from the information on the x and y axes."""
-
     # find the ll: lower-left and ur: upper-right.
     # x['first'], y['first'] is always the Upper Left corner
     #   (think of numpy's convention for a 2D image with index 0,0 in top left).
@@ -200,7 +196,6 @@ def _get_area_extent_from_cf_axis(x, y):
 
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     """Guess the name of the netCDF variable holding the coordinate axis of a netCDF field."""
-
     ret = None
 
     if axis not in ('x', 'y'):
@@ -223,7 +218,6 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
 
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     """Guess the name of the netCDF variable holding the longitude (or latitude) of a netCDF field."""
-
     ret = None
 
     if lonlat not in ('lon', 'lat'):
@@ -258,7 +252,6 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
 def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
     """Load the AreaDefinition corresponding to one netCDF variable/field."""
-
     from pyresample import geometry
 
     if variable not in nc_handle.variables.keys():
@@ -301,7 +294,8 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
             type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
         except AttributeError:
             raise ValueError(
-                "Not a valid CF grid_mapping variable ({}): it lacks a :grid_mapping_name attribute".format(grid_mapping_variable))
+                ("Not a valid CF grid_mapping variable ({}):"
+                 "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
 
     cf_info['grid_mapping_variable'] = grid_mapping_variable
     cf_info['type_of_grid_mapping'] = type_of_grid_mapping
@@ -375,13 +369,11 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
 
 def _load_cf_area_severalVariables(nc_handle, ):
     """Load the AreaDefinition corresponding to several netCDF variables/fields."""
-
     def _indices_unique_AreaDefs(adefs):
         """Find the indices of unique AreaDefinitions in a list."""
-
         uniqs = dict()
         for i, adef in enumerate(adefs):
-            if not adef in uniqs:  # this uses AreaDefinition.__eq__()
+            if adef not in uniqs:  # this uses AreaDefinition.__eq__()
                 uniqs[adef] = i
 
         # return only the indices
@@ -445,7 +437,6 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     are_def, cf_info : geometry.AreaDefinition object, dict (if with_cf_info == True)
 
     """
-
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")
