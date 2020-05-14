@@ -62,7 +62,7 @@ class GradientSearchResampler(BaseResampler):
         self.src_gradient_xp = None
         self.src_gradient_yl = None
         self.src_gradient_yp = None
-        self.transformer = None
+        self._chunk_covers = None
 
     def _get_projection_coordinates(self, datachunks):
         """Get projection coordinates."""
@@ -96,8 +96,8 @@ class GradientSearchResampler(BaseResampler):
                     self.src_x, self.src_y,
                     src_prj=self.src_prj, dst_prj=self.dst_prj)
 
-    def _remove_extra_chunks(self, data):
-        """Remove chunks that don't cover the target area."""
+    def _find_covering_chunks(self):
+        """Find chunks that cover the target area."""
         dst_border_lon, dst_border_lat = get_border_lonlats(self.target_geo_def)
         if self.use_input_coords:
             prj = pyproj.Proj(self.source_geo_def.crs)
@@ -107,23 +107,23 @@ class GradientSearchResampler(BaseResampler):
 
         dst_polygon = get_polygon(dst_border_x, dst_border_y)
 
-        shp = data.shape
-        num_chunks = shp[-1]
+        shp = self.src_x.shape
+        num_chunks = shp[2]
         x_start, y_start = 0, 0
         src_polys = []
         for i in range(num_chunks):
-            x_end = x_start + shp[-2]
-            y_end = y_start + shp[-3]
+            x_end = x_start + shp[1]
+            y_end = y_start + shp[0]
 
             chunk_geo_def = self.source_geo_def[y_start:y_end, x_start:x_end]
             b_lon, b_lat = get_border_lonlats(chunk_geo_def)
             b_x, b_y = prj(b_lon, b_lat)
             src_polys.append(get_polygon(b_x, b_y))
 
-            x_start += shp[-2]
-            if x_end == shp[-2]:
+            x_start += shp[1]
+            if x_end == shp[1]:
                 x_start = 0
-                y_start += shp[-3]
+                y_start += shp[0]
 
         covers = []
         for poly in src_polys:
@@ -139,15 +139,28 @@ class GradientSearchResampler(BaseResampler):
                 cov = True
             covers.append(cov)
 
-        arrays = (data, self.src_x, self.src_y,
-                  self.src_gradient_xl, self.src_gradient_xp,
-                  self.src_gradient_yl, self.src_gradient_yp)
+        self._chunk_covers = covers
+
+    def _remove_extra_chunks(self, data):
+        """Remove chunks that don't cover the target area."""
+        if self._chunk_covers is None:
+            self._find_covering_chunks()
+            arrays = (data, self.src_x, self.src_y,
+                      self.src_gradient_xl, self.src_gradient_xp,
+                      self.src_gradient_yl, self.src_gradient_yp)
+        else:
+            arrays = (data, )
+
         res = []
         for arr in arrays:
-            res.append(np.take(arr, covers, axis=-1))
-        (data, self.src_x, self.src_y,
-         self.src_gradient_xl, self.src_gradient_xp,
-         self.src_gradient_yl, self.src_gradient_yp) = res
+            res.append(np.take(arr, self._chunk_covers, axis=-1))
+
+        try:
+            (data, self.src_x, self.src_y,
+             self.src_gradient_xl, self.src_gradient_xp,
+             self.src_gradient_yl, self.src_gradient_yp) = res
+        except ValueError:
+            data, = res
 
         return data
 
@@ -158,15 +171,15 @@ class GradientSearchResampler(BaseResampler):
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
 
-        arrays = reshape_arrays_in_stacked_chunks((self.src_x, self.src_y,
-                                                   self.src_gradient_xl,
-                                                   self.src_gradient_xp,
-                                                   self.src_gradient_yl,
-                                                   self.src_gradient_yp),
-                                                  self.src_x.chunks)
-        # TODO: rechunk and reformat the data array
-        (self.src_x, self.src_y, self.src_gradient_xl, self.src_gradient_xp,
-         self.src_gradient_yl, self.src_gradient_yp) = arrays
+        if self._chunk_covers is None:
+            arrays = reshape_arrays_in_stacked_chunks(
+                (self.src_x, self.src_y,
+                 self.src_gradient_xl, self.src_gradient_xp,
+                 self.src_gradient_yl, self.src_gradient_yp),
+                self.src_x.chunks)
+            (self.src_x, self.src_y, self.src_gradient_xl,
+             self.src_gradient_xp, self.src_gradient_yl,
+             self.src_gradient_yp) = arrays
 
         data = reshape_to_stacked_3d(data)
         data = self._remove_extra_chunks(data)
@@ -319,7 +332,6 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     if data.ndim != 4:
         raise NotImplementedError(
             'Gradient search resampling only supports 4D arrays.')
-
     res = da.blockwise(_gradient_resample_data, 'bmnz',
                        data.astype(np.float64), 'bijz',
                        src_x, 'ijz', src_y, 'ijz',
