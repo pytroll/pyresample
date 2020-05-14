@@ -145,7 +145,7 @@ class Test(unittest.TestCase):
                 projection=projection,
                 width=123, height=123,
                 area_extent=[-40000., -40000., 40000., 40000.])
-            with patch('pyresample._cartopy.warnings.warn') as warn:
+            with patch('pyresample.utils.cartopy.warnings.warn') as warn:
                 # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
                 area.to_cartopy_crs()
                 if projection.startswith('EPSG'):
@@ -1073,6 +1073,26 @@ class Test(unittest.TestCase):
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
+        # The same as source area, but flipped in X and Y
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = utils.get_area_def(area_id,
+                                           area_name,
+                                           proj_id,
+                                           proj_dict,
+                                           x_size, y_size,
+                                           area_extent)
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(0, x_size, None), slice_x)
+        self.assertEqual(slice(0, y_size, None), slice_y)
+
         # totally different area
         projections = [{"init": 'EPSG:4326'}]
         if utils.is_pyproj2():
@@ -1288,15 +1308,38 @@ class Test(unittest.TestCase):
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(10646.562531, geo_res)
 
+        # non-square area non-space area
+        area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                proj_dict,
+                                2000, 5000,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(2397.687307, geo_res)
+
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
         area_def = get_area_def('orig', 'Test area', 'test',
                                 proj_dict,
                                 3712, 3712,
-                                [-130, 30, -120, 40],
-                                area_extent)
+                                [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(248.594116, geo_res)
+        np.testing.assert_allclose(298.647232, geo_res)
+
+    def test_from_epsg(self):
+        """Test the from_epsg class method."""
+        from pyresample.geometry import AreaDefinition
+        sweref = AreaDefinition.from_epsg('3006', 2000)
+        assert sweref.name == 'SWEREF99 TM'
+        assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
+                                    'proj': 'utm', 'type': 'crs', 'units': 'm',
+                                    'zone': 33}
+        assert sweref.width == 453
+        assert sweref.height == 794
+        import numpy as np
+        np.testing.assert_allclose(sweref.area_extent,
+                                   (181896.3291, 6101648.0705,
+                                    1086312.942376, 7689478.3056))
 
     @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
     def test_area_def_init_projection(self):

@@ -21,6 +21,8 @@ classes must be in degrees. Additionally, longitudes must be in the
     and latitude arrays on initialization. Use
     :func:`~pyresample.utils.check_and_wrap` to preprocess your arrays.
 
+.. _area-definitions:
+
 AreaDefinition
 --------------
 

@@ -621,6 +621,30 @@ class Test(unittest.TestCase):
         expected = 15874591.0
         self.assertEqual(cross_sum, expected)
 
+    def test_nearest_from_sample_np_dtypes(self):
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        valid_input_index, valid_output_index, index_array, distance_array = \
+            kd_tree.get_neighbour_info(swath_def,
+                                       self.area_def,
+                                       50000, neighbours=1, segments=1)
+
+        for dtype in [np.uint16, np.float32]:
+            with self.subTest(dtype):
+                data = np.fromfunction(lambda y, x: y * x, (50, 10)).astype(dtype)
+                fill_value = dtype(0.0)
+                res = \
+                    kd_tree.get_sample_from_neighbour_info('nn', (800, 800),
+                                                           data.ravel(),
+                                                           valid_input_index,
+                                                           valid_output_index,
+                                                           index_array,
+                                                           fill_value=fill_value)
+                cross_sum = res.sum()
+                expected = 15874591.0
+                self.assertEqual(cross_sum, expected)
+
     def test_custom_multi_from_sample(self):
         def wf1(dist):
             return 1 - dist / 100000.0
@@ -902,7 +926,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         self.assertIsInstance(res.data, da.Array)
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 32114793.0
+        expected = 87281406.0
         self.assertEqual(cross_sum, expected)
 
         # pretend the resolutions can't be determined
