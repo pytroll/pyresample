@@ -34,6 +34,7 @@ from shapely.errors import TopologicalError
 from pyresample import CHUNK_SIZE
 from pyresample.gradient._gradient_search import one_step_gradient_search
 from pyresample.resampler import BaseResampler
+from pyresample.geometry import get_geostationary_bounding_box
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,127 @@ class GradientSearchResampler(BaseResampler):
         self.src_y = None
         self.dst_x = None
         self.dst_y = None
+        self.src_gradient_xl = None
+        self.src_gradient_xp = None
+        self.src_gradient_yl = None
+        self.src_gradient_yp = None
         self.transformer = None
+
+    def _get_projection_coordinates(self, datachunks):
+        """Get projection coordinates."""
+        if self.use_input_coords is None:
+            try:
+                self.src_x, self.src_y = self.source_geo_def.get_proj_coords(
+                    chunks=datachunks)
+                self.src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                self.use_input_coords = True
+            except AttributeError:
+                self.src_x, self.src_y = self.source_geo_def.get_lonlats(
+                    chunks=datachunks)
+                self.src_prj = pyproj.Proj("+proj=longlat")
+                self.use_input_coords = False
+            try:
+                self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
+                    chunks=CHUNK_SIZE)
+                self.dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+            except AttributeError:
+                if self.use_input_coords is False:
+                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
+                self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
+                    chunks=CHUNK_SIZE)
+                self.dst_prj = pyproj.Proj("+proj=longlat")
+            if self.use_input_coords:
+                self.dst_x, self.dst_y = transform(
+                    self.dst_x, self.dst_y,
+                    src_prj=self.dst_prj, dst_prj=self.src_prj)
+            else:
+                self.src_x, self.src_y = transform(
+                    self.src_x, self.src_y,
+                    src_prj=self.src_prj, dst_prj=self.dst_prj)
+
+    def _remove_extra_chunks(self, data):
+        """Remove chunks that don't cover the target area."""
+        dst_border_lon, dst_border_lat = get_border_lonlats(self.target_geo_def)
+        if self.use_input_coords:
+            prj = pyproj.Proj(self.source_geo_def.crs)
+        else:
+            prj = pyproj.Proj(self.target_geo_def.crs)
+        dst_border_x, dst_border_y = prj(dst_border_lon, dst_border_lat)
+
+        dst_polygon = get_polygon(dst_border_x, dst_border_y)
+
+        shp = data.shape
+        num_chunks = shp[-1]
+        x_start, y_start = 0, 0
+        src_polys = []
+        for i in range(num_chunks):
+            x_end = x_start + shp[-2]
+            y_end = y_start + shp[-3]
+
+            chunk_geo_def = self.source_geo_def[y_start:y_end, x_start:x_end]
+            b_lon, b_lat = get_border_lonlats(chunk_geo_def)
+            b_x, b_y = prj(b_lon, b_lat)
+            src_polys.append(get_polygon(b_x, b_y))
+
+            x_start += shp[-2]
+            if x_end == shp[-2]:
+                x_start = 0
+                y_start += shp[-3]
+
+        covers = []
+        for poly in src_polys:
+            try:
+                # Destination area has all corners/sides in space
+                if dst_polygon.area == 0.0:
+                    cov = True
+                else:
+                    cov = dst_polygon.intersects(poly)
+            # This happens if the target area "goes over the edge" of the
+            # GEO disk and the border isn't a closed curve
+            except TopologicalError:
+                cov = True
+            covers.append(cov)
+
+        arrays = (data, self.src_x, self.src_y,
+                  self.src_gradient_xl, self.src_gradient_xp,
+                  self.src_gradient_yl, self.src_gradient_yp)
+        res = []
+        for arr in arrays:
+            res.append(np.take(arr, covers, axis=-1))
+        (data, self.src_x, self.src_y,
+         self.src_gradient_xl, self.src_gradient_xp,
+         self.src_gradient_yl, self.src_gradient_yp) = res
+
+        return data
+
+    def _prepare_arrays(self, data):
+        if data.ndim not in [2, 3]:
+            raise NotImplementedError('Gradient search resampling only '
+                                      'supports 2D or 3D arrays.')
+        if data.ndim == 2:
+            data = data[np.newaxis, :, :]
+
+        arrays = reshape_arrays_in_stacked_chunks((self.src_x, self.src_y,
+                                                   self.src_gradient_xl,
+                                                   self.src_gradient_xp,
+                                                   self.src_gradient_yl,
+                                                   self.src_gradient_yp),
+                                                  self.src_x.chunks)
+        # TODO: rechunk and reformat the data array
+        (self.src_x, self.src_y, self.src_gradient_xl, self.src_gradient_xp,
+         self.src_gradient_yl, self.src_gradient_yp) = arrays
+
+        data = reshape_to_stacked_3d(data)
+        data = self._remove_extra_chunks(data)
+
+        return data
+
+    def _get_gradients(self):
+        """Get gradients in X and Y directions."""
+        self.src_gradient_xl, self.src_gradient_xp = np.gradient(
+            self.src_x, axis=[0, 1])
+        self.src_gradient_yl, self.src_gradient_yp = np.gradient(
+            self.src_y, axis=[0, 1])
 
     def compute(self, data, fill_value=None, **kwargs):
         """Resample the given data using gradient search algorithm."""
@@ -65,41 +186,32 @@ class GradientSearchResampler(BaseResampler):
             datachunks = data.sel(bands=data.coords['bands'][0]).chunks
         else:
             datachunks = data.chunks
-        if self.use_input_coords is None:
-            try:
-                self.src_x, self.src_y = self.source_geo_def.get_proj_coords(chunks=datachunks)
-                self.src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
-                self.use_input_coords = True
-            except AttributeError:
-                self.src_x, self.src_y = self.source_geo_def.get_lonlats(chunks=datachunks)
-                self.src_prj = pyproj.Proj("+proj=longlat")
-                self.use_input_coords = False
-            try:
-                self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
-                self.dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
-            except AttributeError:
-                if self.use_input_coords is False:
-                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
-                self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-                self.dst_prj = pyproj.Proj("+proj=longlat")
-            if self.use_input_coords:
-                self.dst_x, self.dst_y = transform(self.dst_x, self.dst_y, src_prj=self.dst_prj, dst_prj=self.src_prj)
-            else:
-                self.src_x, self.src_y = transform(self.src_x, self.src_y, src_prj=self.src_prj, dst_prj=self.dst_prj)
+        data_dims = data.dims
+        data_coords = data.coords
 
-        res = parallel_gradient_search(data.data, self.src_x, self.src_y, self.dst_x, self.dst_y,
+        self._get_projection_coordinates(datachunks)
+        self._get_gradients()
+        data = self._prepare_arrays(data.data)
+
+        res = parallel_gradient_search(data,
+                                       self.src_x, self.src_y,
+                                       self.dst_x, self.dst_y,
+                                       self.src_gradient_xl,
+                                       self.src_gradient_xp,
+                                       self.src_gradient_yl,
+                                       self.src_gradient_yp,
                                        **kwargs)
         # TODO: this will crash wen the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
-        for key in data.dims:
+        for key in data_dims:
             if key == 'x':
                 coords.append(x_coord)
             elif key == 'y':
                 coords.append(y_coord)
             else:
-                coords.append(data.coords[key])
-        res = xr.DataArray(res, dims=data.dims, coords=coords)
+                coords.append(data_coords[key])
+        res = xr.DataArray(res, dims=data_dims, coords=coords)
         return res
 
 
@@ -180,124 +292,36 @@ def reshape_to_stacked_3d(array):
     return np.stack(layers, axis=-1)
 
 
-def get_border(x_coords, y_coords, x_stride=1, y_stride=1):
+def get_border_lonlats(geo_def, x_stride=1, y_stride=1):
     """Get the border x- and y-coordinates."""
-    up_x = x_coords[0, ::x_stride]
-    right_x = x_coords[::y_stride, -1]
-    down_x = x_coords[-1, ::-x_stride]
-    left_x = x_coords[::-y_stride, 0]
-    up_y = y_coords[0, ::x_stride]
-    right_y = y_coords[::y_stride, -1]
-    down_y = y_coords[-1, ::-x_stride]
-    left_y = y_coords[::-y_stride, 0]
-    res = da.compute(up_x, right_x, down_x, left_x, up_y, right_y, down_y, left_y)
-    x_s = np.concatenate(res[0:4])
-    y_s = np.concatenate(res[4:])
+    if geo_def.proj_dict['proj'] == 'geos':
+        lon_b, lat_b = get_geostationary_bounding_box(geo_def)
+    else:
+        lons, lats = geo_def.get_boundary_lonlats()
+        lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))
+        lat_b = np.concatenate((lats.side1, lats.side2, lats.side3, lats.side4))
 
-    return x_s, y_s
+    return lon_b, lat_b
 
 
-def get_corners(x_coords, y_coords):
-    """Get the border x- and y-coordinates."""
-    x1 = x_coords[0, 0]
-    x2 = x_coords[0, -1]
-    x3 = x_coords[-1, -1]
-    x4 = x_coords[-1, 0]
-    y1 = y_coords[0, 0]
-    y2 = y_coords[0, -1]
-    y3 = y_coords[-1, -1]
-    y4 = y_coords[-1, 0]
-    res = da.compute(x1, x2, x3, x4, y1, y2, y3, y4)
-    x_s = np.array(res[0:4])
-    y_s = np.array(res[4:])
-
-    return x_s, y_s
-
-
-def get_boundary(x_coords, y_coords):
-    """Get boundary from 2D *x_coords* and *y_coords* arrays."""
-    # x_border, y_border = get_border(x_coords, y_coords)
-    x_border, y_border = get_corners(x_coords, y_coords)
-    boundary = [(x_border[i], y_border[i]) for i in range(len(x_border))
-                if np.isfinite(x_border[i]) and np.isfinite(y_border[i])]
-
-    return boundary
-
-
-def get_polygon(x_coords, y_coords):
-    """Get border polygon from *x_coords* and *y_coords*."""
-    boundary = get_boundary(x_coords, y_coords)
+def get_polygon(x_borders, y_borders):
+    """Get border polygon from *x_borders* and *y_borders*."""
+    boundary = [(x_borders[i], y_borders[i]) for i in range(len(x_borders))
+                if np.isfinite(x_borders[i]) and np.isfinite(y_borders[i])]
 
     return Polygon(boundary)
 
 
-def remove_extra_chunks(arrays, dst_x, dst_y):
-    """Remove chunks that don't cover the target area."""
-    dst_polygon = get_polygon(dst_x, dst_y)
-    num_chunks = arrays[0].shape[-1]
-    src_x, src_y = da.compute(arrays[1], arrays[2])
-    src_x = np.split(src_x, num_chunks, axis=-1)
-    src_y = np.split(src_y, num_chunks, axis=-1)
-    src_polys = [get_polygon(x, y) for (x, y) in zip(src_x, src_y)]
-
-    covers = []
-    for poly in src_polys:
-        try:
-            # Destination area has all corners/sides in space
-            if dst_polygon.area == 0.0:
-                cov = True
-            else:
-                cov = dst_polygon.intersects(poly)
-        # This happens if the target area "goes over the edge" of the
-        # GEO disk and the border isn't a closed curve
-        except TopologicalError:
-            cov = True
-        covers.append(cov)
-
-    # import matplotlib.pyplot as plt
-    # for i in range(len(src_x)):
-    #     src_xb, src_yb = get_border(src_x[i], src_y[i])
-    #     src_xb, src_yb = get_corners(src_x[i], src_y[i])
-    #     if covers[i]:
-    #         color = 'bx'
-    #     else:
-    #         color = 'r.'
-    #     plt.plot(src_xb, src_yb, color)
-    # dst_xb, dst_yb = get_border(dst_x, dst_y)
-    # dst_xb, dst_yb = get_corners(dst_x, dst_y)
-    # plt.plot(dst_xb, dst_yb, 'k.')
-    # plt.show()
-
-    res = []
-    for arr in arrays:
-        res.append(np.take(arr, covers, axis=-1))
-
-    return res
-
-
-def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y, **kwargs):
+def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp, **kwargs):
     """Run gradient search in parallel in input area coordinates."""
-    if data.ndim not in [2, 3]:
-        raise NotImplementedError('Gradient search resampling only supports 2D or 3D arrays.')
-    if data.ndim == 2:
-        data = data[np.newaxis, :, :]
-    # TODO: Make sure the data is uniformly chunked.
-    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
-    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
-    arrays = reshape_arrays_in_stacked_chunks((src_x, src_y,
-                                               src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp),
-                                              src_x.chunks)
-    # TODO: rechunk and reformat the data array
-    src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = arrays
+    if data.ndim != 4:
+        raise NotImplementedError(
+            'Gradient search resampling only supports 4D arrays.')
 
-    data = reshape_to_stacked_3d(data)
-    arrays = remove_extra_chunks((data, src_x, src_y, src_gradient_xl,
-                                  src_gradient_xp, src_gradient_yl,
-                                  src_gradient_yp), dst_x, dst_y)
-    (data, src_x, src_y, src_gradient_xl, src_gradient_xp, src_gradient_yl,
-     src_gradient_yp) = arrays
-
-    res = da.blockwise(_gradient_resample_data, 'bmnz', data.astype(np.float64), 'bijz',
+    res = da.blockwise(_gradient_resample_data, 'bmnz',
+                       data.astype(np.float64), 'bijz',
                        src_x, 'ijz', src_y, 'ijz',
                        src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
                        src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
