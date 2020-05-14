@@ -125,7 +125,7 @@ class GradientSearchResampler(BaseResampler):
                 x_start += shp[1]
 
         covers = []
-        for poly in src_polys:
+        for i, poly in enumerate(src_polys):
             try:
                 # Destination area has all corners/sides in space
                 if dst_polygon.area == 0.0:
@@ -136,7 +136,8 @@ class GradientSearchResampler(BaseResampler):
             # GEO disk and the border isn't a closed curve
             except TopologicalError:
                 cov = True
-            covers.append(cov)
+            if cov:
+                covers.append(i)
 
         self._chunk_covers = covers
 
