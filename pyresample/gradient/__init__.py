@@ -342,14 +342,14 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     if data.shape[-1] == 0:
         logger.warning("Data doesn't cover the target area.")
         return None
-    else:
-        res = da.blockwise(_gradient_resample_data, 'bmnz',
-                           data.astype(np.float64), 'bijz',
-                           src_x, 'ijz', src_y, 'ijz',
-                           src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
-                           src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
-                           dst_x, 'mn', dst_y, 'mn',
-                           dtype=np.float64,
-                           method=kwargs.get('method', 'bilinear'))
 
-        return da.nanmax(res, axis=-1).squeeze()
+    res = da.blockwise(_gradient_resample_data, 'bmnz',
+                       data.astype(np.float64), 'bijz',
+                       src_x, 'ijz', src_y, 'ijz',
+                       src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
+                       src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
+                       dst_x, 'mn', dst_y, 'mn',
+                       dtype=np.float64,
+                       method=kwargs.get('method', 'bilinear'))
+
+    return da.nanmax(res, axis=-1).squeeze()
