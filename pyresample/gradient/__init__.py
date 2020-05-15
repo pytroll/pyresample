@@ -70,31 +70,31 @@ class GradientSearchResampler(BaseResampler):
             try:
                 self.src_x, self.src_y = self.source_geo_def.get_proj_coords(
                     chunks=datachunks)
-                self.src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
                 self.use_input_coords = True
             except AttributeError:
                 self.src_x, self.src_y = self.source_geo_def.get_lonlats(
                     chunks=datachunks)
-                self.src_prj = pyproj.Proj("+proj=longlat")
+                src_prj = pyproj.Proj("+proj=longlat")
                 self.use_input_coords = False
             try:
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
-                self.dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
             except AttributeError:
                 if self.use_input_coords is False:
                     raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
-                self.dst_prj = pyproj.Proj("+proj=longlat")
+                dst_prj = pyproj.Proj("+proj=longlat")
             if self.use_input_coords:
                 self.dst_x, self.dst_y = transform(
                     self.dst_x, self.dst_y,
-                    src_prj=self.dst_prj, dst_prj=self.src_prj)
+                    src_prj=dst_prj, dst_prj=src_prj)
             else:
                 self.src_x, self.src_y = transform(
                     self.src_x, self.src_y,
-                    src_prj=self.src_prj, dst_prj=self.dst_prj)
+                    src_prj=src_prj, dst_prj=dst_prj)
 
     def _find_covering_chunks(self):
         """Find chunks that cover the target area."""
