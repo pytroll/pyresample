@@ -234,22 +234,35 @@ class GradientSearchResampler(BaseResampler):
         return res
 
 
+def get_corners(arr):
+    """Get corner values of the array."""
+    return (arr[0, 0], arr[0, -1], arr[-1, -1], arr[-1, 0])
+
+
 def _gradient_resample_data(src_data, src_x, src_y,
                             src_gradient_xl, src_gradient_xp,
                             src_gradient_yl, src_gradient_yp,
                             dst_x, dst_y, method='bilinear'):
-    image = one_step_gradient_search(
-        src_data[0][0][:, :, :, 0],
-        src_x[0][0][:, :, 0],
-        src_y[0][0][:, :, 0],
-        src_gradient_xl[0][0][:, :, 0],
-        src_gradient_xp[0][0][:, :, 0],
-        src_gradient_yl[0][0][:, :, 0],
-        src_gradient_yp[0][0][:, :, 0],
-        dst_x,
-        dst_y,
-        method=method)
-    return image[:, :, :, np.newaxis]
+    # Check if these chunks overlap
+    dst_poly = get_polygon_from_corners(get_corners(dst_x), get_corners(dst_y))
+    src_poly = get_polygon_from_corners(get_corners(src_x[0][0][:, :, 0]),
+                                        get_corners(src_y[0][0][:, :, 0]))
+
+    if dst_poly is None or src_poly is None or dst_poly.intersects(src_poly):
+        image = one_step_gradient_search(
+            src_data[0][0][:, :, :, 0],
+            src_x[0][0][:, :, 0],
+            src_y[0][0][:, :, 0],
+            src_gradient_xl[0][0][:, :, 0],
+            src_gradient_xp[0][0][:, :, 0],
+            src_gradient_yl[0][0][:, :, 0],
+            src_gradient_yp[0][0][:, :, 0],
+            dst_x,
+            dst_y,
+            method=method)
+        return image[:, :, :, np.newaxis]
+
+    return np.full((src_data[0][0].shape[0], *dst_x.shape, 1), np.nan)
 
 
 def vsplit(arr, n):
@@ -311,7 +324,7 @@ def reshape_to_stacked_3d(array):
     return np.stack(layers, axis=-1)
 
 
-def get_border_lonlats(geo_def, x_stride=1, y_stride=1):
+def get_border_lonlats(geo_def):
     """Get the border x- and y-coordinates."""
     if geo_def.proj_dict['proj'] == 'geos':
         lon_b, lat_b = get_geostationary_bounding_box(geo_def, 3600)
@@ -329,6 +342,16 @@ def get_polygon(x_borders, y_borders):
                 if np.isfinite(x_borders[i]) and np.isfinite(y_borders[i])]
 
     return Polygon(boundary)
+
+
+def get_polygon_from_corners(x_corners, y_corners):
+    """Get border polygon from *x_corners* and *y_corners*."""
+    if np.all(np.isfinite((x_corners, y_corners))):
+        boundary = [(x_corners[i], y_corners[i]) for i in range(len(x_corners))]
+    else:
+        return None
+
+    poly = Polygon(boundary)
 
 
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
