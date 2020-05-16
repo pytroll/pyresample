@@ -646,6 +646,66 @@ class TestProjRotation(unittest.TestCase):
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
 
+# helper routines for the CF test cases
+def _prepare_cf_nh10km():
+    import xarray as xr
+    nx = 760
+    ny = 1120
+    ds = xr.Dataset({'ice_conc':(('time','yc','xc'),np.ma.masked_all((1,ny,nx)),{'grid_mapping':'Polar_Stereographic_Grid'}),
+                     'xc':('xc',np.linspace(-3845,3745,num=nx),{'standard_name':'projection_x_coordinate','units':'km'}),
+                     'yc':('yc',np.linspace(+5845,-5345,num=ny),{'standard_name':'projection_y_coordinate','units':'km'})},
+                    coords={'lat':(('yc','xc'),np.ma.masked_all((ny,nx))),
+                            'lon':(('yc','xc'),np.ma.masked_all((ny,nx)))},)
+    ds['lat'].attrs['units'] = 'degrees_north'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degrees_east'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    ds['Polar_Stereographic_Grid'] = 0
+    ds['Polar_Stereographic_Grid'].attrs['grid_mapping_name'] = "polar_stereographic"
+    ds['Polar_Stereographic_Grid'].attrs['false_easting'] = 0.
+    ds['Polar_Stereographic_Grid'].attrs['false_northing'] = 0.
+    ds['Polar_Stereographic_Grid'].attrs['semi_major_axis'] = 6378273.
+    ds['Polar_Stereographic_Grid'].attrs['semi_minor_axis'] = 6356889.44891
+    ds['Polar_Stereographic_Grid'].attrs['straight_vertical_longitude_from_pole'] = -45.
+    ds['Polar_Stereographic_Grid'].attrs['latitude_of_projection_origin'] = 90.
+    ds['Polar_Stereographic_Grid'].attrs['standard_parallel'] = 70.
+
+    return ds
+
+def _prepare_cf_llwgs84():
+    import xarray as xr
+    nlat = 19
+    nlon = 37
+    ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),{'grid_mapping':'crs'}),},
+                    coords={'lat':np.linspace(-90.,+90.,num=nlat),
+                            'lon':np.linspace(-180.,+180.,nlon)},)
+    ds['lat'].attrs['units'] = 'degreesN'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degreesE'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    ds['crs'] = 0
+    ds['crs'].attrs['grid_mapping_name'] = "latitude_longitude"
+    ds['crs'].attrs['longitude_of_prime_meridian'] = 0.
+    ds['crs'].attrs['semi_major_axis'] = 6378137.
+    ds['crs'].attrs['inverse_flattening'] = 298.257223563
+
+    return ds
+
+def _prepare_cf_llnocrs():
+    import xarray as xr
+    nlat = 19
+    nlon = 37
+    ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),),},
+                    coords={'lat':np.linspace(-90.,+90.,num=nlat),
+                            'lon':np.linspace(-180.,+180.,nlon)},)
+    ds['lat'].attrs['units'] = 'degreeN'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degreeE'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    return ds
 
 class TestLoadCFArea_Public(unittest.TestCase):
     """ Test loading an area definition from netCDF/CF files using the
@@ -662,10 +722,12 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
         self.assertRaises(ValueError, load_cf_area, cf_file)
 
+
     def test_load_cf_parameters_errors(self):
         from pyresample.utils import load_cf_area
 
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
 
         # try to load from a variable= that does not exist
         self.assertRaises(ValueError, load_cf_area, cf_file, 'doesNotExist')
@@ -681,7 +743,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
         self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
 
     def test_load_cf_nh10km(self):
-        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_adef(adef):
@@ -693,7 +754,8 @@ class TestLoadCFArea_Public(unittest.TestCase):
             self.assertEqual(yc[0], 5845000.0, msg="Wrong y axis (index 0)")
             self.assertEqual(yc[1], yc[0] - 10000.0, msg="Wrong y axis (index 1)")
 
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
         adef_1 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
@@ -707,23 +769,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
         adef_3 = load_cf_area(cf_file)
         validate_nh10km_adef(adef_3)
 
-        # load from an opened DataArray
-        with xr.open_dataset(cf_file) as xr_handle:
-            adef_5 = load_cf_area(xr_handle)
-        validate_nh10km_adef(adef_5)
-
-        # load from an opened DataArray (decode_cf=False)
-        with xr.open_dataset(cf_file, decode_cf=False) as xr_handle:
-            adef_6 = load_cf_area(xr_handle)
-        validate_nh10km_adef(adef_6)
-
-        # load from an opened DataArray
-        with xr.open_dataset(cf_file, decode_coords=False) as xr_handle:
-            adef_7 = load_cf_area(xr_handle)
-        validate_nh10km_adef(adef_7)
-
     def test_load_cf_nh10km_cfinfo(self):
-        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
@@ -738,7 +784,8 @@ class TestLoadCFArea_Public(unittest.TestCase):
             self.assertEqual(cf_info['y']['varname'], 'yc')
             self.assertEqual(cf_info['y']['last'], -5345.0)
 
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_nh10km.nc')
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
         _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc', with_cf_info=True)
@@ -752,23 +799,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
         _, cf_info = load_cf_area(cf_file, with_cf_info=True)
         validate_nh10km_cfinfo(cf_info)
 
-        # load from an opened DataArray
-        with xr.open_dataset(cf_file) as xr_handle:
-            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
-        validate_nh10km_cfinfo(cf_info)
-
-        # load from an opened DataArray (decode_cf=False)
-        with xr.open_dataset(cf_file, decode_cf=False) as xr_handle:
-            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
-        validate_nh10km_cfinfo(cf_info)
-
-        # load from an opened DataArray (decode_coords=False)
-        with xr.open_dataset(cf_file, decode_coords=False) as xr_handle:
-            _, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
-        validate_nh10km_cfinfo(cf_info)
-
     def test_load_cf_llwgs84(self):
-        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
@@ -787,7 +818,8 @@ class TestLoadCFArea_Public(unittest.TestCase):
             self.assertEqual(cf_info['y']['varname'], 'lat')
             self.assertEqual(cf_info['y']['first'], -90.)
 
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_llwgs84.nc')
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_llwgs84()
 
         # load using a variable= that is a valid grid_mapping container
         adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon', with_cf_info=True)
@@ -799,11 +831,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
 
         # load using a variable=None
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
-        validate_llwgs84(adef, cf_info)
-
-        # load from an opened DataArray
-        with xr.open_dataset(cf_file) as xr_handle:
-            adef, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
         validate_llwgs84(adef, cf_info)
 
     def test_load_cf_llnocrs(self):
@@ -826,7 +853,8 @@ class TestLoadCFArea_Public(unittest.TestCase):
             self.assertEqual(cf_info['y']['varname'], 'lat')
             self.assertEqual(cf_info['y']['first'], -90.)
 
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'cf_llnocrs.nc')
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_llnocrs()
 
         # load using a variable=temp
         adef, cf_info = load_cf_area(cf_file, 'temp', with_cf_info=True)
@@ -834,11 +862,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
 
         # load using a variable=None
         adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
-        validate_llnocrs(adef, cf_info)
-
-        # load from an opened DataArray
-        with xr.open_dataset(cf_file) as xr_handle:
-            adef, cf_info = load_cf_area(xr_handle,  with_cf_info=True)
         validate_llnocrs(adef, cf_info)
 
 
@@ -851,15 +874,9 @@ class TestLoadCFArea_Private(unittest.TestCase):
         import xarray as xr
 
         self.nc_handles = {}
-        for k in ('nh10km', 'llwgs84','llnocrs'):
-            cf_file = os.path.join(os.path.dirname(__file__),
-                                   'test_files', 'cf_' + k + '.nc')
-            self.nc_handles[k] = xr.open_dataset(cf_file,)
-
-    def tearDown(self):
-        """ Close nc_handles """
-        for k in self.nc_handles.keys():
-            self.nc_handles[k].close()
+        self.nc_handles['nh10km']  = _prepare_cf_nh10km()
+        self.nc_handles['llwgs84'] = _prepare_cf_llwgs84()
+        self.nc_handles['llnocrs'] = _prepare_cf_llnocrs()
 
     def test_cf_guess_lonlat(self):
         from pyresample.utils.cf import _guess_cf_lonlat_varname
