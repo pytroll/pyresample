@@ -418,7 +418,9 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     nc_file : string or object
         path to a netCDF/CF file, or opened xarray.Dataset object
     variable : string, optional
-        name of the variable to load the AreaDefinition from
+        name of the variable to load the AreaDefinition from.
+        If the variable is not a CF grid_mapping container variable,
+        it should be a variable having a :grid_mapping attribute.
         If variable is None the file will be searched for valid CF
         area definitions
     y : string, optional
