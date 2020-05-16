@@ -1341,6 +1341,11 @@ class Test(unittest.TestCase):
                                    (181896.3291, 6101648.0705,
                                     1086312.942376, 7689478.3056))
 
+    def test_from_cf(self):
+        """Test the from_cf class method."""
+        from pyresample.geometry import AreaDefinition
+        adef = AreaDefinition.from_cf('FIXME', )
+
     @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
     def test_area_def_init_projection(self):
         """Test AreaDefinition with different projection definitions."""
