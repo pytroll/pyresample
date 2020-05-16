@@ -1348,9 +1348,9 @@ class Test(unittest.TestCase):
         import xarray as xr
         nlat = 19
         nlon = 37
-        ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),),},
-                        coords={'lat':np.linspace(-90.,+90.,num=nlat),
-                                'lon':np.linspace(-180.,+180.,nlon)},)
+        ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)))},
+                        coords={'lat': np.linspace(-90., +90., num=nlat),
+                                'lon': np.linspace(-180., +180., num=nlon)},)
         ds['lat'].attrs['units'] = 'degreeN'
         ds['lat'].attrs['standard_name'] = 'latitude'
         ds['lon'].attrs['units'] = 'degreeE'
