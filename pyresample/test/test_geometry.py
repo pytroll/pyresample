@@ -1344,7 +1344,28 @@ class Test(unittest.TestCase):
     def test_from_cf(self):
         """Test the from_cf class method."""
         from pyresample.geometry import AreaDefinition
-        adef = AreaDefinition.from_cf('FIXME', )
+        # prepare a netCDF/CF lookalike with xarray
+        import xarray as xr
+        nlat = 19
+        nlon = 37
+        ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),),},
+                        coords={'lat':np.linspace(-90.,+90.,num=nlat),
+                                'lon':np.linspace(-180.,+180.,nlon)},)
+        ds['lat'].attrs['units'] = 'degreeN'
+        ds['lat'].attrs['standard_name'] = 'latitude'
+        ds['lon'].attrs['units'] = 'degreeE'
+        ds['lon'].attrs['standard_name'] = 'longitude'
+
+        # call from_cf() and check the results
+        adef = AreaDefinition.from_cf(ds, )
+
+        self.assertEqual(adef.shape, (19, 37))
+        xc = adef.projection_x_coords
+        yc = adef.projection_y_coords
+        self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
+        self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
+        self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
+        self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
 
     @unittest.skipIf(CRS is None, "pyproj 2.0+ required")
     def test_area_def_init_projection(self):
