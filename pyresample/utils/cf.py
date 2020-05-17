@@ -248,20 +248,8 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
     return ret
 
-
-def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
-    """Load the AreaDefinition corresponding to one netCDF variable/field."""
-    from pyresample import geometry
-
-    if variable not in nc_handle.variables.keys():
-        raise KeyError("Variable '{}' does not exist in netCDF file".format(variable))
-
-    # the routine always prepares a cf_info
-    cf_info = dict()
-    cf_info['variable'] = variable
-
-    # Load a CRS object
-    # =================
+def _load_cf_area_one_variable_crs(nc_handle, variable):
+    """Load the CRS corresponding to variable."""
     grid_mapping_variable = None
     variable_is_itself_gridmapping = False
     # test if the variable has a grid_mapping attribute
@@ -285,35 +273,19 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
         grid_mapping_variable = "latlon_default"
         crs = pyproj.CRS.from_string('+proj=latlon +datum=WGS84 +ellps=WGS84')
 
-    # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
-    if grid_mapping_variable == 'latlon_default':
-        type_of_grid_mapping = 'latitude_longitude'
-    else:
-        try:
-            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
-        except AttributeError:
-            raise ValueError(
-                ("Not a valid CF grid_mapping variable ({}):"
-                 "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
+    # return
+    return crs, grid_mapping_variable, variable_is_itself_gridmapping
 
-    cf_info['grid_mapping_variable'] = grid_mapping_variable
-    cf_info['type_of_grid_mapping'] = type_of_grid_mapping
-
-    # identify and load the x/y axis
-    # ==============================
-
-    # test if we can allow None for y and x
-    if variable_is_itself_gridmapping and (y is None or x is None):
-        raise ValueError("When variable= points to the grid_mapping variable itself, y= and x= must be provided")
-
+def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y=None, x=None):
+    """Identidy and load axis x and y."""
     # if y= or x= are None, guess the variable names for the axis
     xy = dict()
     if y is None and x is None:
         for axis in ('x', 'y'):
             xy[axis] = _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping)
             if xy[axis] is None:
-                raise ValueError("Could not guess the name of the {} axis of the {}".format(
-                    axis, grid_mapping_variable))
+                raise ValueError("Could not guess the name of the '{}' axis for {}".format(
+                    axis, variable))
     else:
         # y= and x= are provided by the caller. Check they are valid CF coordinate variables
         #   The order is always (y,x)
@@ -329,6 +301,61 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     axis_info = dict()
     for axis in ('x', 'y'):
         axis_info[axis] = _load_cf_axis_info(nc_handle, xy[axis],)
+
+    return xy, axis_info
+
+def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable):
+    """Prepare the AreaDefinition object."""
+    from pyresample import geometry
+    # create shape
+    shape = (axis_info['y']['nb'], axis_info['x']['nb'])
+
+    # get area extent from the x and y info
+    extent = _get_area_extent_from_cf_axis(axis_info['x'], axis_info['y'])
+
+    # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
+    proj_dict = crs.to_dict()
+
+    # finally prepare the AreaDefinition object
+    return geometry.AreaDefinition.from_extent(grid_mapping_variable, proj_dict, shape, extent,
+                                                   units=unit,)
+
+def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
+    """Load the AreaDefinition corresponding to one netCDF variable/field."""
+
+    if variable not in nc_handle.variables.keys():
+        raise KeyError("Variable '{}' does not exist in netCDF file".format(variable))
+
+    # the routine always prepares a cf_info
+    cf_info = dict()
+    cf_info['variable'] = variable
+
+    # Load a CRS object
+    # =================
+    crs, grid_mapping_variable, variable_is_itself_gridmapping = \
+            _load_cf_area_one_variable_crs(nc_handle, variable)
+
+    # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
+    if grid_mapping_variable == 'latlon_default':
+        type_of_grid_mapping = 'latitude_longitude'
+    else:
+        try:
+            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
+        except AttributeError:
+            raise ValueError(
+                ("Not a valid CF grid_mapping variable ({}):"
+                 "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
+
+    cf_info['grid_mapping_variable'] = grid_mapping_variable
+    cf_info['type_of_grid_mapping'] = type_of_grid_mapping
+
+    # test if we can allow None for y and x
+    if variable_is_itself_gridmapping and (y is None or x is None):
+        raise ValueError("When variable= points to the grid_mapping variable itself, y= and x= must be provided")
+
+    # identify and load the x/y axis
+    # ==============================
+    xy, axis_info = _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y=y, x=x)
 
     # there are few cases where the x/y values loaded from the CF files cannot be
     #   used directly in pyresample. We need a conversion:
@@ -350,22 +377,9 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
 
     # prepare the AreaDefinition object
     # =================================
-
-    # create shape
-    shape = (axis_info['y']['nb'], axis_info['x']['nb'])
-
-    # get area extent from the x and y info
-    extent = _get_area_extent_from_cf_axis(axis_info['x'], axis_info['y'])
-
-    # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
-    proj_dict = crs.to_dict()
-
-    # finally prepare the AreaDefinition object
-    area_def = geometry.AreaDefinition.from_extent('from_cf', proj_dict, shape, extent,
-                                                   units=unit, )
+    area_def = _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable)
 
     return area_def, cf_info
-
 
 def _load_cf_area_several_variables(nc_handle, ):
     """Load the AreaDefinition corresponding to several netCDF variables/fields."""
