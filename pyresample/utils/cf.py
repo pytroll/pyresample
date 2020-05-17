@@ -249,7 +249,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     return ret
 
 
-def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
+def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     """Load the AreaDefinition corresponding to one netCDF variable/field."""
     from pyresample import geometry
 
@@ -367,7 +367,7 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
     return area_def, cf_info
 
 
-def _load_cf_area_severalVariables(nc_handle, ):
+def _load_cf_area_several_variables(nc_handle, ):
     """Load the AreaDefinition corresponding to several netCDF variables/fields."""
     def _indices_unique_AreaDefs(adefs):
         """Find the indices of unique AreaDefinitions in a list."""
@@ -392,7 +392,7 @@ def _load_cf_area_severalVariables(nc_handle, ):
 
         try:
             # try and load an AreaDefinition from this variable
-            adef, info = _load_cf_area_oneVariable(nc_handle, v)
+            adef, info = _load_cf_area_one_variable(nc_handle, v)
             # store
             adefs.append(adef)
             infos.append(info)
@@ -453,7 +453,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
 
     if variable is None:
         # if the variable=None, we search through all variables
-        area_def, cf_info = _load_cf_area_severalVariables(nc_handle)
+        area_def, cf_info = _load_cf_area_several_variables(nc_handle)
         if len(area_def) == 0:
             raise ValueError("Found no AreaDefinitions in this netCDF/CF file.")
         elif len(area_def) > 1:
@@ -465,7 +465,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     else:
         # the variable= is known, call appropriate routine
         try:
-            area_def, cf_info = _load_cf_area_oneVariable(nc_handle, variable, y=y, x=x, )
+            area_def, cf_info = _load_cf_area_one_variable(nc_handle, variable, y=y, x=x, )
         except ValueError as ve:
             raise ValueError("Found no AreaDefinition associated with variable {} ({})".format(variable, ve))
 
