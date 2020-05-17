@@ -448,12 +448,8 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         nc_handle = nc_file
     else:
         #   if the path to a file, open the Dataset access to it
-        try:
-            nc_handle = xr.open_dataset(nc_file)
-        except FileNotFoundError:
-            raise FileNotFoundError('File not found: {}'.format(nc_file))
-        except OSError:
-            raise ValueError('File is not a netCDF file {}'.format(nc_file))
+        #  we rely on xarray.open_dataset() to raise the appropriate exceptions
+        nc_handle = xr.open_dataset(nc_file)
 
     if variable is None:
         # if the variable=None, we search through all variables
