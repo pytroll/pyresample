@@ -322,7 +322,7 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
         for axis in ('x', 'y'):
             _valid_axis = _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping)
             if not _valid_axis:
-                raise ValueError( ("Variable x='{}' is not a valid CF coordinate "
+                raise ValueError(("Variable x='{}' is not a valid CF coordinate "
                                    "variable for the {} axis").format(xy[axis], axis))
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
