@@ -84,7 +84,7 @@ def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     try:
         v = nc_handle[grid_mapping_varname]
     except KeyError:
-        raise ValueError("There is no variable with name {} in the netCDF file".format(grid_mapping_varname))
+        raise KeyError("Variable '{}' does not exist in netCDF file".format(grid_mapping_varname))
 
     # check this indeed is a supported grid mapping variable
     try:
@@ -130,8 +130,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
     try:
         coord_var = nc_handle[coord_varname]
     except KeyError:
-        # there is no variable with this name, so it can't be a valid coordinate variable
-        return False
+        raise KeyError("Variable '{}' does not exist in netCDF file".format(coord_varname))
 
     try:
         coord_standard_name = getattr(coord_var, 'standard_name')
@@ -205,7 +204,7 @@ def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     try:
         dims = nc_handle[variable].dims
     except KeyError:
-        raise ValueError("variable {} not found in file".format(variable))
+        raise KeyError("variable {} not found in file".format(variable))
 
     for dim in dims:
         # test if each dim is a valid CF coordinate variable
@@ -230,7 +229,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     try:
         search_list = list(nc_handle[variable].coords)
     except KeyError:
-        raise ValueError("variable {} not found in file".format(variable))
+        raise KeyError("variable {} not found in file".format(variable))
 
     # if decode_cf=False was used, the look at the :coordinates attribute
     if 'coordinates' in nc_handle[variable].attrs.keys():
@@ -255,7 +254,7 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
     from pyresample import geometry
 
     if variable not in nc_handle.variables.keys():
-        raise ValueError("Variable '{}' does not exist in netCDF file".format(variable))
+        raise KeyError("Variable '{}' does not exist in netCDF file".format(variable))
 
     # the routine always prepares a cf_info
     cf_info = dict()
@@ -321,9 +320,10 @@ def _load_cf_area_oneVariable(nc_handle, variable, y=None, x=None):
         xy['y'] = y
         xy['x'] = x
         for axis in ('x', 'y'):
-            if not _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping):
-                raise ValueError(
-                    "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis))
+            _valid_axis = _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping)
+            if not _valid_axis:
+                raise ValueError( ("Variable x='{}' is not a valid CF coordinate "
+                                   "variable for the {} axis").format(xy[axis], axis))
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()

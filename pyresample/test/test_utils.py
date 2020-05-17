@@ -730,13 +730,13 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_nh10km()
 
         # try to load from a variable= that does not exist
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'doesNotExist')
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
 
         # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
 
         # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
         self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
 
         # try to load using a variable= that does not define a grid mapping
@@ -891,7 +891,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
 
         # error cases
         self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
-        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
+        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
 
     def test_cf_guess_axis_varname(self):
         from pyresample.utils.cf import _guess_cf_axis_varname
@@ -907,7 +907,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         # error cases
         self.assertRaises(ValueError, _guess_cf_axis_varname,
                           self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
-        self.assertRaises(ValueError, _guess_cf_axis_varname,
+        self.assertRaises(KeyError, _guess_cf_axis_varname,
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
     def test_cf_is_valid_coordinate_standardname(self):
@@ -947,8 +947,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lat', 'y', 'latitude_longitude'))
 
         # error cases
-        self.assertFalse(_is_valid_coordinate_variable(
-            self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic'))
+        self.assertRaises(KeyError, _is_valid_coordinate_variable, 
+            self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
         self.assertRaises(ValueError, _is_valid_coordinate_variable,
                           self.nc_handles['nh10km'], 'xc', 'wrong', 'polar_stereographic')
         self.assertRaises(ValueError, _is_valid_coordinate_variable, self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
