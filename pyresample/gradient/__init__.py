@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#
 # Copyright (c) 2013-2019
-
+#
 # Author(s):
-
+#
 #   Martin Raspaud <martin.raspaud@smhi.se>
-
+#   Panu Lahtinen <panu.lahtinen@fmi.fi>
+#
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or (at your option) any
@@ -25,11 +26,11 @@
 import logging
 
 import dask.array as da
+import dask
 import numpy as np
 import pyproj
 import xarray as xr
 from shapely.geometry import Polygon
-from shapely.errors import TopologicalError
 
 from pyresample import CHUNK_SIZE
 from pyresample.gradient._gradient_search import one_step_gradient_search
@@ -54,15 +55,20 @@ class GradientSearchResampler(BaseResampler):
         import warnings
         warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
         self.use_input_coords = None
+        self.prj = None
         self.src_x = None
         self.src_y = None
+        self.src_xys = None
         self.dst_x = None
         self.dst_y = None
+        self.dst_xys = None
         self.src_gradient_xl = None
         self.src_gradient_xp = None
         self.src_gradient_yl = None
         self.src_gradient_yp = None
-        self._chunk_covers = None
+        self.src_polys = {}
+        self.dst_polys = {}
+        self.dst_kl = None
 
     def _get_projection_coordinates(self, datachunks):
         """Get projection coordinates."""
@@ -91,100 +97,126 @@ class GradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = transform(
                     self.dst_x, self.dst_y,
                     src_prj=dst_prj, dst_prj=src_prj)
+                self.prj = pyproj.Proj(**self.source_geo_def.proj_dict)
             else:
                 self.src_x, self.src_y = transform(
                     self.src_x, self.src_y,
                     src_prj=src_prj, dst_prj=dst_prj)
+                self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
 
-    def _find_covering_chunks(self):
-        """Find chunks that cover the target area."""
-        dst_border_lon, dst_border_lat = get_border_lonlats(self.target_geo_def)
-        if self.use_input_coords:
-            prj = pyproj.Proj(self.source_geo_def.crs)
-        else:
-            prj = pyproj.Proj(self.target_geo_def.crs)
-        dst_border_x, dst_border_y = prj(dst_border_lon, dst_border_lat)
+    def get_overlap_chunks(self):
+        """Find source and target chunks that overlap and reorder arrays."""
+        src_y_chunks, src_x_chunks = self.src_x.chunks
+        dst_y_chunks, dst_x_chunks = self.dst_x.chunks
 
-        dst_polygon = get_polygon(dst_border_x, dst_border_y)
+        src_y, src_x = [], []
+        dst_y, dst_x = [], []
+        src_gradient_yl, src_gradient_yp = [], []
+        src_gradient_xl, src_gradient_xp = [], []
+        src_xys, dst_xys = [], []
+        dst_kl = []
+        src_x_start = 0
+        for i, src_x_step in enumerate(src_x_chunks):
+            src_x_end = src_x_start + src_x_step
+            src_y_start = 0
+            for j, src_y_step in enumerate(src_y_chunks):
+                src_y_end = src_y_start + src_y_step
+                # Get source chunk polygon
+                src_poly = self.src_polys.get((i, j), None)
+                if src_poly is None:
+                    geo_def = self.source_geo_def[src_y_start:src_y_end,
+                                              src_x_start:src_x_end]
+                    src_poly = get_polygon(self.prj, geo_def)
+                    self.src_polys[(i, j)] = src_poly
 
-        shp = self.src_x.shape
-        num_chunks = shp[2]
-        x_start, y_start = 0, 0
-        src_polys = []
-        for _ in range(num_chunks):
-            y_end = y_start + shp[0]
-            x_end = x_start + shp[1]
-            chunk_geo_def = self.source_geo_def[y_start:y_end, x_start:x_end]
-            b_lon, b_lat = get_border_lonlats(chunk_geo_def)
-            b_x, b_y = prj(b_lon, b_lat)
-            src_polys.append(get_polygon(b_x, b_y))
+                dst_x_start = 0
+                for k, dst_x_step in enumerate(dst_x_chunks):
+                    dst_x_end = dst_x_start + dst_x_step
+                    dst_y_start = 0
+                    for l, dst_y_step in enumerate(dst_y_chunks):
+                        dst_y_end = dst_y_start + dst_y_step
+                        # Get destination chunk polygon
+                        dst_poly = self.dst_polys.get((k, l), None)
+                        if dst_poly is None:
+                            geo_def = self.target_geo_def[
+                                dst_y_start:dst_y_end, dst_x_start:dst_x_end]
+                            dst_poly = get_polygon(self.prj, geo_def)
+                            self.dst_polys[(k, l)] = dst_poly
+                        if dst_poly is not None and src_poly is not None:
+                            covers = src_poly.intersects(dst_poly)
+                        else:
+                            covers = False
+                        if covers:
+                            src_y.append(self.src_y[src_y_start:src_y_end,
+                                                    src_x_start:src_x_end])
+                            src_x.append(self.src_x[src_y_start:src_y_end,
+                                                    src_x_start:src_x_end])
+                            src_gradient_yl.append(
+                                self.src_gradient_yl[src_y_start:src_y_end,
+                                                     src_x_start:src_x_end])
+                            src_gradient_yp.append(
+                                self.src_gradient_yp[src_y_start:src_y_end,
+                                                     src_x_start:src_x_end])
+                            src_gradient_xl.append(
+                                self.src_gradient_xl[src_y_start:src_y_end,
+                                                     src_x_start:src_x_end])
+                            src_gradient_xp.append(
+                                self.src_gradient_xp[src_y_start:src_y_end,
+                                                     src_x_start:src_x_end])
+                            src_xys.append((src_y_start, src_y_end,
+                                            src_x_start, src_x_end))
+                            dst_y.append(self.dst_y[dst_y_start:dst_y_end,
+                                                    dst_x_start:dst_x_end])
+                            dst_x.append(self.dst_x[dst_y_start:dst_y_end,
+                                                    dst_x_start:dst_x_end])
+                        else:
+                            src_y.append(None)
+                            src_x.append(None)
+                            src_gradient_yl.append(None)
+                            src_gradient_yp.append(None)
+                            src_gradient_xl.append(None)
+                            src_gradient_xp.append(None)
+                            src_xys.append(None)
+                            dst_x.append(None)
+                            dst_y.append(None)
+                        dst_xys.append((dst_y_start, dst_y_end,
+                                        dst_x_start, dst_x_end))
+                        dst_kl.append((k, l))
 
-            y_start += shp[0]
-            if y_end == self.source_geo_def.shape[0]:
-                y_start = 0
-                x_start += shp[1]
+                        dst_y_start = dst_y_end
+                    dst_x_start = dst_x_end
+                src_y_start = src_y_end
+            src_x_start = src_x_end
 
-        covers = []
-        for i, poly in enumerate(src_polys):
-            try:
-                # Destination area has all corners/sides in space
-                if dst_polygon.area == 0.0:
-                    cov = True
-                else:
-                    cov = dst_polygon.intersects(poly)
-            # This happens if the target area "goes over the edge" of the
-            # GEO disk and the border isn't a closed curve
-            except TopologicalError:
-                cov = True
-            if cov:
-                covers.append(i)
+        self.src_x = src_x
+        self.src_y = src_y
+        self.src_gradient_xl = src_gradient_xl
+        self.src_gradient_xp = src_gradient_xp
+        self.src_gradient_yl = src_gradient_yl
+        self.src_gradient_yp = src_gradient_yp
+        self.src_xys = src_xys
+        self.dst_x = dst_x
+        self.dst_y = dst_y
+        self.dst_xys = dst_xys
+        self.dst_kl = dst_kl
 
-        self._chunk_covers = covers
-
-    def _remove_extra_chunks(self, data):
-        """Remove chunks that don't cover the target area."""
-        if self._chunk_covers is None:
-            self._find_covering_chunks()
-            arrays = (data, self.src_x, self.src_y,
-                      self.src_gradient_xl, self.src_gradient_xp,
-                      self.src_gradient_yl, self.src_gradient_yp)
-        else:
-            arrays = (data, )
-
-        res = []
-        for arr in arrays:
-            res.append(np.take(arr, self._chunk_covers, axis=-1))
-
-        try:
-            (data, self.src_x, self.src_y,
-             self.src_gradient_xl, self.src_gradient_xp,
-             self.src_gradient_yl, self.src_gradient_yp) = res
-        except ValueError:
-            data, = res
-
-        return data
-
-    def _prepare_arrays(self, data):
+    def _filter_data(self, data):
+        """Filter unused chunks from the data."""
         if data.ndim not in [2, 3]:
             raise NotImplementedError('Gradient search resampling only '
                                       'supports 2D or 3D arrays.')
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
 
-        if self._chunk_covers is None:
-            arrays = reshape_arrays_in_stacked_chunks(
-                (self.src_x, self.src_y,
-                 self.src_gradient_xl, self.src_gradient_xp,
-                 self.src_gradient_yl, self.src_gradient_yp),
-                self.src_x.chunks)
-            (self.src_x, self.src_y, self.src_gradient_xl,
-             self.src_gradient_xp, self.src_gradient_yl,
-             self.src_gradient_yp) = arrays
-
-        data = reshape_to_stacked_3d(data)
-        data = self._remove_extra_chunks(data)
-
-        return data
+        data_out = []
+        for src_xy in self.src_xys:
+            try:
+                src_y_start, src_y_end, src_x_start, src_x_end = src_xy
+                val = data[:, src_y_start:src_y_end, src_x_start:src_x_end]
+            except TypeError:
+                val = None
+            data_out.append(val)
+        return data_out
 
     def _get_gradients(self):
         """Get gradients in X and Y directions."""
@@ -203,8 +235,11 @@ class GradientSearchResampler(BaseResampler):
         data_coords = data.coords
 
         self._get_projection_coordinates(datachunks)
-        self._get_gradients()
-        data = self._prepare_arrays(data.data)
+
+        if self.src_gradient_xl is None:
+            self._get_gradients()
+            self.get_overlap_chunks()
+        data = self._filter_data(data.data)
 
         res = parallel_gradient_search(data,
                                        self.src_x, self.src_y,
@@ -213,12 +248,8 @@ class GradientSearchResampler(BaseResampler):
                                        self.src_gradient_xp,
                                        self.src_gradient_yl,
                                        self.src_gradient_yp,
+                                       self.dst_kl, self.dst_xys,
                                        **kwargs)
-
-        if res is None:
-            if fill_value is None:
-                fill_value = np.nan
-            res = da.full(self.target_geo_def.shape, fill_value)
 
         # TODO: this will crash wen the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
@@ -234,94 +265,25 @@ class GradientSearchResampler(BaseResampler):
         return res
 
 
-def get_corners(arr):
-    """Get corner values of the array."""
-    return (arr[0, 0], arr[0, -1], arr[-1, -1], arr[-1, 0])
-
-
 def _gradient_resample_data(src_data, src_x, src_y,
                             src_gradient_xl, src_gradient_xp,
                             src_gradient_yl, src_gradient_yp,
-                            dst_x, dst_y, method='bilinear'):
-    # Check if these chunks overlap
-    dst_poly = get_polygon_from_corners(get_corners(dst_x), get_corners(dst_y))
-    src_poly = get_polygon_from_corners(get_corners(src_x[0][0][:, :, 0]),
-                                        get_corners(src_y[0][0][:, :, 0]))
+                            dst_x, dst_y,
+                            method='bilinear'):
+    """Resample using gradient search."""
+    image = one_step_gradient_search(
+        src_data[:, :, :],
+        src_x[:, :],
+        src_y[:, :],
+        src_gradient_xl[:, :],
+        src_gradient_xp[:, :],
+        src_gradient_yl[:, :],
+        src_gradient_yp[:, :],
+        dst_x,
+        dst_y,
+        method=method)
 
-    if dst_poly is None or src_poly is None or dst_poly.intersects(src_poly):
-        image = one_step_gradient_search(
-            src_data[0][0][:, :, :, 0],
-            src_x[0][0][:, :, 0],
-            src_y[0][0][:, :, 0],
-            src_gradient_xl[0][0][:, :, 0],
-            src_gradient_xp[0][0][:, :, 0],
-            src_gradient_yl[0][0][:, :, 0],
-            src_gradient_yp[0][0][:, :, 0],
-            dst_x,
-            dst_y,
-            method=method)
-        return image[:, :, :, np.newaxis]
-
-    return np.full((src_data[0][0].shape[0], *dst_x.shape, 1), np.nan)
-
-
-def vsplit(arr, n):
-    """Split the array vertically."""
-    res = arr.reshape((n, -1) + arr.shape[1:])
-    return [np.take(res, x, axis=0) for x in range(n)]
-
-
-def hsplit(arr, n):
-    """Split the array horizontally."""
-    res = arr.reshape((arr.shape[0], n, -1) + arr.shape[2:])
-    return [np.take(res, x, axis=1) for x in range(n)]
-
-
-def split(arr, n, axis):
-    """Split an array in n pieces along axis."""
-    shape = arr.shape
-    ax_shape = shape[axis]
-    if axis < 0:
-        rest_idx = len(shape) + axis + 1
-    else:
-        rest_idx = axis + 1
-    new_shape = shape[:axis] + (n, int(ax_shape / n)) + shape[rest_idx:]
-    res = arr.reshape(new_shape)
-    return [np.take(res, x, axis=rest_idx - 1) for x in range(n)]
-
-
-def reshape_arrays_in_stacked_chunks(arrays, chunks):
-    """Reshape the arrays such that all the chunks are stacked along the last dimension.
-
-    In effect, this will make the arrays have only one chunk over the first dimensions.
-    """
-    h_fac = len(chunks[1])
-    v_fac = len(chunks[0])
-    res = []
-    for array in arrays:
-        cols = hsplit(array, h_fac)
-        layers = []
-        for col in cols:
-            layers.extend(vsplit(col, v_fac))
-        res.append(np.stack(layers, axis=2))
-
-    return res
-
-
-def reshape_to_stacked_3d(array):
-    """Reshape a 3d array so that all chunks on the x and y dimensions are stacked along the last dimension.
-
-    This relies on y and x being the two last dimensions of the input array.
-    """
-    chunks = array.chunks
-
-    x_fac = len(chunks[-1])
-    y_fac = len(chunks[-2])
-    cols = split(array, x_fac, -1)
-    layers = []
-    for col in cols:
-        layers.extend(split(col, y_fac, -2))
-    return np.stack(layers, axis=-1)
+    return image
 
 
 def get_border_lonlats(geo_def):
@@ -336,43 +298,58 @@ def get_border_lonlats(geo_def):
     return lon_b, lat_b
 
 
-def get_polygon(x_borders, y_borders):
-    """Get border polygon from *x_borders* and *y_borders*."""
+def get_polygon(prj, geo_def):
+    """Get border polygon from area definition in projection *prj*."""
+    lon_b, lat_b = get_border_lonlats(geo_def)
+    x_borders, y_borders = prj(lon_b, lat_b)
     boundary = [(x_borders[i], y_borders[i]) for i in range(len(x_borders))
                 if np.isfinite(x_borders[i]) and np.isfinite(y_borders[i])]
-
-    return Polygon(boundary)
-
-
-def get_polygon_from_corners(x_corners, y_corners):
-    """Get border polygon from *x_corners* and *y_corners*."""
-    if np.all(np.isfinite((x_corners, y_corners))):
-        boundary = [(x_corners[i], y_corners[i]) for i in range(len(x_corners))]
-    else:
-        return None
-
     poly = Polygon(boundary)
+    if np.isfinite(poly.area) and poly.area > 0.0:
+        return poly
+    return None
 
 
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                              src_gradient_xl, src_gradient_xp,
-                             src_gradient_yl, src_gradient_yp, **kwargs):
+                             src_gradient_yl, src_gradient_yp,
+                             dst_kl, dst_xys,
+                             **kwargs):
     """Run gradient search in parallel in input area coordinates."""
-    if data.ndim != 4:
-        raise NotImplementedError(
-            'Gradient search resampling only supports 4D arrays.')
+    method = kwargs.get('method', 'bilinear')
+    chunks = {}
+    # Collect co-located target chunks
+    for i in range(len(data)):
+        if data[i] is None:
+            res = da.full((1, dst_xys[i][1] - dst_xys[i][0],
+                           dst_xys[i][3] - dst_xys[i][2]), np.nan)
+        else:
+            res = dask.delayed(_gradient_resample_data)(
+                data[i].astype(np.float64),
+                src_x[i], src_y[i],
+                src_gradient_xl[i], src_gradient_xp[i],
+                src_gradient_yl[i], src_gradient_yp[i],
+                dst_x[i], dst_y[i],
+                method=method)
+            res = da.from_delayed(res, (1, ) + dst_x[i].shape, dtype=np.float64)
+        if dst_kl[i] in chunks:
+            chunks[dst_kl[i]].append(res)
+        else:
+            chunks[dst_kl[i]] = [res, ]
 
-    if data.shape[-1] == 0:
-        logger.warning("Data doesn't cover the target area.")
-        return None
+    # Form the full array
+    col, res = [], []
+    prev_y = 0
+    for y, x in sorted(chunks):
+        chunk = da.nanmax(da.stack(chunks[(y, x)], axis=-1), axis=-1)
+        if y == prev_y:
+            col.append(chunk)
+            continue
+        res.append(da.concatenate(col, axis=1))
+        col = [chunk]
+        prev_y = y
+    res.append(da.concatenate(col, axis=1))
 
-    res = da.blockwise(_gradient_resample_data, 'bmnz',
-                       data.astype(np.float64), 'bijz',
-                       src_x, 'ijz', src_y, 'ijz',
-                       src_gradient_xl, 'ijz', src_gradient_xp, 'ijz',
-                       src_gradient_yl, 'ijz', src_gradient_yp, 'ijz',
-                       dst_x, 'mn', dst_y, 'mn',
-                       dtype=np.float64,
-                       method=kwargs.get('method', 'bilinear'))
+    res = da.concatenate(res, axis=2).squeeze()
 
-    return da.nanmax(res, axis=-1).squeeze()
+    return res
