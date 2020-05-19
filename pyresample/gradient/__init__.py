@@ -318,12 +318,15 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     """Run gradient search in parallel in input area coordinates."""
     method = kwargs.get('method', 'bilinear')
     chunks = {}
+    is_pad = False
     # Collect co-located target chunks
     for i in range(len(data)):
         if data[i] is None:
+            is_pad = True
             res = da.full((1, dst_xys[i][1] - dst_xys[i][0],
                            dst_xys[i][3] - dst_xys[i][2]), np.nan)
         else:
+            is_pad = False
             res = dask.delayed(_gradient_resample_data)(
                 data[i].astype(np.float64),
                 src_x[i], src_y[i],
@@ -333,7 +336,8 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                 method=method)
             res = da.from_delayed(res, (1, ) + dst_x[i].shape, dtype=np.float64)
         if dst_kl[i] in chunks:
-            chunks[dst_kl[i]].append(res)
+            if not is_pad:
+                chunks[dst_kl[i]].append(res)
         else:
             chunks[dst_kl[i]] = [res, ]
 
@@ -341,7 +345,10 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     col, res = [], []
     prev_y = 0
     for y, x in sorted(chunks):
-        chunk = da.nanmax(da.stack(chunks[(y, x)], axis=-1), axis=-1)
+        if len(chunks[(y, x)]) > 1:
+            chunk = da.nanmax(da.stack(chunks[(y, x)], axis=-1), axis=-1)
+        else:
+            chunk = chunks[(y, x)][0]
         if y == prev_y:
             col.append(chunk)
             continue
