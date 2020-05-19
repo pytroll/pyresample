@@ -126,7 +126,11 @@ class GradientSearchResampler(BaseResampler):
                 if src_poly is None:
                     geo_def = self.source_geo_def[src_y_start:src_y_end,
                                                   src_x_start:src_x_end]
-                    src_poly = get_polygon(self.prj, geo_def)
+                    try:
+                        src_poly = get_polygon(self.prj, geo_def)
+                    except AttributeError:
+                        # Can't create polygons for SwathDefinition
+                        src_poly = False
                     self.src_polys[(i, j)] = src_poly
 
                 dst_x_start = 0
@@ -140,9 +144,15 @@ class GradientSearchResampler(BaseResampler):
                         if dst_poly is None:
                             geo_def = self.target_geo_def[
                                 dst_y_start:dst_y_end, dst_x_start:dst_x_end]
-                            dst_poly = get_polygon(self.prj, geo_def)
+                            try:
+                                dst_poly = get_polygon(self.prj, geo_def)
+                            except AttributeError:
+                                # Can't create polygons for SwathDefinition
+                                dst_poly = False
                             self.dst_polys[(k, l)] = dst_poly
-                        if dst_poly is not None and src_poly is not None:
+                        if dst_poly is False or src_poly is False:
+                            covers = True
+                        elif dst_poly is not None and src_poly is not None:
                             covers = src_poly.intersects(dst_poly)
                         else:
                             covers = False
