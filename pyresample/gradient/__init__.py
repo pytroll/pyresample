@@ -154,6 +154,11 @@ class GradientSearchResampler(BaseResampler):
                                            dst_x_start, dst_x_end))
                         dst_mosaic_locations.append((k, l))
 
+                        dst_y_start = dst_y_end
+                    dst_x_start = dst_x_end
+                src_y_start = src_y_end
+            src_x_start = src_x_end
+
         self.src_slices = src_slices
         self.dst_slices = dst_slices
         self.dst_mosaic_locations = dst_mosaic_locations
