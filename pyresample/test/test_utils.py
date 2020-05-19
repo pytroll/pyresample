@@ -758,16 +758,16 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
-        adef_1 = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
-        validate_nh10km_adef(adef_1)
+        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
+        validate_nh10km_adef(adef)
 
         # load using a variable= that has a :grid_mapping attribute
-        adef_2 = load_cf_area(cf_file, 'ice_conc')
-        validate_nh10km_adef(adef_2)
+        adef, _ = load_cf_area(cf_file, 'ice_conc')
+        validate_nh10km_adef(adef)
 
         # load without using a variable=
-        adef_3 = load_cf_area(cf_file)
-        validate_nh10km_adef(adef_3)
+        adef, _ = load_cf_area(cf_file)
+        validate_nh10km_adef(adef)
 
     def test_load_cf_nh10km_cfinfo(self):
         from pyresample.utils import load_cf_area
@@ -788,15 +788,15 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
-        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc', with_cf_info=True)
+        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc')
         validate_nh10km_cfinfo(cf_info, variable='Polar_Stereographic_Grid', lat=None, lon=None)
 
         # load using a variable= that has a :grid_mapping attribute
-        _, cf_info = load_cf_area(cf_file, 'ice_conc', with_cf_info=True)
+        _, cf_info = load_cf_area(cf_file, 'ice_conc')
         validate_nh10km_cfinfo(cf_info)
 
         # load without using a variable=
-        _, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        _, cf_info = load_cf_area(cf_file)
         validate_nh10km_cfinfo(cf_info)
 
     def test_load_cf_llwgs84(self):
@@ -822,15 +822,15 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_llwgs84()
 
         # load using a variable= that is a valid grid_mapping container
-        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon', with_cf_info=True)
+        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon')
         validate_llwgs84(adef, cf_info, lat=None, lon=None)
 
         # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp', with_cf_info=True)
+        adef, cf_info = load_cf_area(cf_file, 'temp')
         validate_llwgs84(adef, cf_info)
 
         # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        adef, cf_info = load_cf_area(cf_file)
         validate_llwgs84(adef, cf_info)
 
     def test_load_cf_llnocrs(self):
@@ -857,11 +857,11 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_llnocrs()
 
         # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp', with_cf_info=True)
+        adef, cf_info = load_cf_area(cf_file, 'temp')
         validate_llnocrs(adef, cf_info)
 
         # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file, with_cf_info=True)
+        adef, cf_info = load_cf_area(cf_file)
         validate_llnocrs(adef, cf_info)
 
 

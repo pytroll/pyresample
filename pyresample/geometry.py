@@ -1478,7 +1478,7 @@ class AreaDefinition(BaseDefinition):
         AreaDefinition : AreaDefinition
 
         """
-        return load_cf_area(cf_file, variable=variable, y=y, x=x, with_cf_info=False)
+        return load_cf_area(cf_file, variable=variable, y=y, x=x)[0]
 
     def __hash__(self):
         """Compute the hash of this object."""

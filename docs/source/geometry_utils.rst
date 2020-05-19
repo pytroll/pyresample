@@ -553,21 +553,21 @@ The three call forms are:
 
 **1st call form:**
 
->>> area_def = load_cf_area('/path/to/cf_nh10km.nc', variable='Polar_Stereographic_Grid', x='xc', y='yc')
+>>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc', variable='Polar_Stereographic_Grid', x='xc', y='yc')
 
 This will directly create the AreaDefinition ``area_def`` from the content of the `grid_mapping` variable
 'Polar_Stereographic_Grid', and the area extent from the 'xc' and 'yc'.
 
 **2nd call form:**
 
->>> area_def = load_cf_area('/path/to/cf_nh10km.nc', variable='ice_conc')
+>>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc', variable='ice_conc')
 
 This will search which `grid_mapping`, `x` and `y` axes sustain the 'ice_conc' variable, and
 create the ``AreaDefinition`` from this information.
 
 **3rd call form:**
 
->>> area_def = load_cf_area('/path/to/cf_nh10km.nc')
+>>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc')
 
 This will look through the whole netCDF/CF file, and guess all information needed to load a ``AreaDefinition`` object.
 
@@ -592,13 +592,13 @@ that the `latitude` and `longitude` associated to the `grid_mapping` are stored 
 information can be useful for writing additional variables to the CF file, or to create a new file that looks
 similar to the one we just read.
 
-Such information can be requested with the ``with_cf_info = True`` keyword, which modifies the return values:
+This information is in a second return value ``cf_info``:
 
 >>> area_def, cf_info = load_cf_area('/path/to/cf_nh10km.nc', with_cf_info=True)
 
 The ``cf_info`` is a ``dict()`` holding additional information about the way the `grid_mapping` information
-was coded in the CF file. The ``with_cf_info=True`` keyword works in all three call forms, but may not contain
-the same amount of information in all three call forms. For example, the 1st call form does not allow to find
+was coded in the CF file. It may not contain the same amount of information in all three call forms.
+For example, the 1st call form does not allow to find
 the name of the `latitude` or `longitude` variables, since the 1st call form only gives access to the `grid_mapping`
 variable and its coordinate axes.
 

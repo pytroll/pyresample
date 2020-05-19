@@ -248,6 +248,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
     return ret
 
+
 def _load_cf_area_one_variable_crs(nc_handle, variable):
     """Load the CRS corresponding to variable."""
     grid_mapping_variable = None
@@ -275,6 +276,7 @@ def _load_cf_area_one_variable_crs(nc_handle, variable):
 
     # return
     return crs, grid_mapping_variable, variable_is_itself_gridmapping
+
 
 def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y=None, x=None):
     """Identidy and load axis x and y."""
@@ -304,6 +306,7 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
 
     return xy, axis_info
 
+
 def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable):
     """Prepare the AreaDefinition object."""
     from pyresample import geometry
@@ -320,9 +323,9 @@ def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variab
     return geometry.AreaDefinition.from_extent(grid_mapping_variable, proj_dict, shape, extent,
                                                    units=unit,)
 
+
 def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     """Load the AreaDefinition corresponding to one netCDF variable/field."""
-
     if variable not in nc_handle.variables.keys():
         raise KeyError("Variable '{}' does not exist in netCDF file".format(variable))
 
@@ -424,7 +427,7 @@ def _load_cf_area_several_variables(nc_handle, ):
     return uniq_adefs, uniq_infos
 
 
-def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
+def load_cf_area(nc_file, variable=None, y=None, x=None):
     """Load an AreaDefinition object from a netCDF/CF file.
 
     Parameters
@@ -443,14 +446,11 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
     x : string, optional
         name of the variable to use as 'x' axis of the CF area definition
         If x is None an appropriate 'x' axis will be deduced from the CF file
-    with_cf_info : bool, optional
-        also return a cf_info dict which holds useful information from the
-        CF file
 
     Returns
     -------
-    area_def : geometry.AreaDefinition object (default)
-    are_def, cf_info : geometry.AreaDefinition object, dict (if with_cf_info == True)
+    are_def, cf_info : geometry.AreaDefinition object, dict
+       cf_info holds info about how the AreaDefinition was defined in the CF file.
 
     """
     # basic check on the default values of the parameters.
@@ -483,15 +483,10 @@ def load_cf_area(nc_file, variable=None, y=None, x=None, with_cf_info=False):
         except ValueError as ve:
             raise ValueError("Found no AreaDefinition associated with variable {} ({})".format(variable, ve))
 
-    # return
-    if with_cf_info:
+    # also guess the name of the latitude and longitude variables
+    for ll in ('lon', 'lat'):
+        cf_info[ll] = _guess_cf_lonlat_varname(nc_handle, cf_info['variable'], ll)
+        # this can be None, in which case there was no good lat/lon candidate variable
+        #   in the file.
 
-        # also guess the name of the latitude and longitude variables
-        for ll in ('lon', 'lat'):
-            cf_info[ll] = _guess_cf_lonlat_varname(nc_handle, cf_info['variable'], ll)
-            # this can be None, in which case there was no good lat/lon candidate variable
-            #   in the file.
-
-        return area_def, cf_info
-    else:
-        return area_def
+    return area_def, cf_info
