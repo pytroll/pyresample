@@ -316,13 +316,18 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                              **kwargs):
     """Run gradient search in parallel in input area coordinates."""
     method = kwargs.get('method', 'bilinear')
+    # Determine the number of bands
+    bands = np.array([arr.shape[0] for arr in data if arr is not None])
+    num_bands = np.max(bands)
+    if np.any(bands != num_bands):
+        raise ValueError("All source data chunks have to have the same number of bands")
     chunks = {}
     is_pad = False
     # Collect co-located target chunks
     for i in range(len(data)):
         if data[i] is None:
             is_pad = True
-            res = da.full((1, dst_slices[i][1] - dst_slices[i][0],
+            res = da.full((num_bands, dst_slices[i][1] - dst_slices[i][0],
                            dst_slices[i][3] - dst_slices[i][2]), np.nan)
         else:
             is_pad = False
@@ -333,7 +338,8 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                 src_gradient_yl[i], src_gradient_yp[i],
                 dst_x[i], dst_y[i],
                 method=method)
-            res = da.from_delayed(res, (1, ) + dst_x[i].shape, dtype=np.float64)
+            res = da.from_delayed(res, (num_bands, ) + dst_x[i].shape,
+                                  dtype=np.float64)
         if dst_mosaic_locations[i] in chunks:
             if not is_pad:
                 chunks[dst_mosaic_locations[i]].append(res)
