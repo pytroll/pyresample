@@ -55,20 +55,22 @@ class GradientSearchResampler(BaseResampler):
         import warnings
         warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
         self.use_input_coords = None
+        self._src_dst_filtered = False
         self.prj = None
         self.src_x = None
         self.src_y = None
-        self.src_xys = None
+        self.src_slices = None
         self.dst_x = None
         self.dst_y = None
-        self.dst_xys = None
+        self.dst_slices = None
         self.src_gradient_xl = None
         self.src_gradient_xp = None
         self.src_gradient_yl = None
         self.src_gradient_yp = None
         self.src_polys = {}
         self.dst_polys = {}
-        self.dst_kl = None
+        self.dst_mosaic_locations = None
+        self.coverage_status = None
 
     def _get_projection_coordinates(self, datachunks):
         """Get projection coordinates."""
@@ -104,17 +106,15 @@ class GradientSearchResampler(BaseResampler):
                     src_prj=src_prj, dst_prj=dst_prj)
                 self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
 
-    def get_overlap_chunks(self):
-        """Find source and target chunks that overlap and reorder arrays."""
+    def get_chunk_mappings(self):
+        """"""
         src_y_chunks, src_x_chunks = self.src_x.chunks
         dst_y_chunks, dst_x_chunks = self.dst_x.chunks
 
-        src_y, src_x = [], []
-        dst_y, dst_x = [], []
-        src_gradient_yl, src_gradient_yp = [], []
-        src_gradient_xl, src_gradient_xp = [], []
-        src_xys, dst_xys = [], []
-        dst_kl = []
+        coverage_status = []
+        src_slices, dst_slices = [], []
+        dst_mosaic_locations = []
+
         src_x_start = 0
         for i, src_x_step in enumerate(src_x_chunks):
             src_x_end = src_x_start + src_x_step
@@ -125,7 +125,7 @@ class GradientSearchResampler(BaseResampler):
                 src_poly = self.src_polys.get((i, j), None)
                 if src_poly is None:
                     geo_def = self.source_geo_def[src_y_start:src_y_end,
-                                              src_x_start:src_x_end]
+                                                  src_x_start:src_x_end]
                     src_poly = get_polygon(self.prj, geo_def)
                     self.src_polys[(i, j)] = src_poly
 
@@ -146,76 +146,43 @@ class GradientSearchResampler(BaseResampler):
                             covers = src_poly.intersects(dst_poly)
                         else:
                             covers = False
-                        if covers:
-                            src_y.append(self.src_y[src_y_start:src_y_end,
-                                                    src_x_start:src_x_end])
-                            src_x.append(self.src_x[src_y_start:src_y_end,
-                                                    src_x_start:src_x_end])
-                            src_gradient_yl.append(
-                                self.src_gradient_yl[src_y_start:src_y_end,
-                                                     src_x_start:src_x_end])
-                            src_gradient_yp.append(
-                                self.src_gradient_yp[src_y_start:src_y_end,
-                                                     src_x_start:src_x_end])
-                            src_gradient_xl.append(
-                                self.src_gradient_xl[src_y_start:src_y_end,
-                                                     src_x_start:src_x_end])
-                            src_gradient_xp.append(
-                                self.src_gradient_xp[src_y_start:src_y_end,
-                                                     src_x_start:src_x_end])
-                            src_xys.append((src_y_start, src_y_end,
-                                            src_x_start, src_x_end))
-                            dst_y.append(self.dst_y[dst_y_start:dst_y_end,
-                                                    dst_x_start:dst_x_end])
-                            dst_x.append(self.dst_x[dst_y_start:dst_y_end,
-                                                    dst_x_start:dst_x_end])
-                        else:
-                            src_y.append(None)
-                            src_x.append(None)
-                            src_gradient_yl.append(None)
-                            src_gradient_yp.append(None)
-                            src_gradient_xl.append(None)
-                            src_gradient_xp.append(None)
-                            src_xys.append(None)
-                            dst_x.append(None)
-                            dst_y.append(None)
-                        dst_xys.append((dst_y_start, dst_y_end,
-                                        dst_x_start, dst_x_end))
-                        dst_kl.append((k, l))
 
-                        dst_y_start = dst_y_end
-                    dst_x_start = dst_x_end
-                src_y_start = src_y_end
-            src_x_start = src_x_end
+                        coverage_status.append(covers)
+                        src_slices.append((src_y_start, src_y_end,
+                                           src_x_start, src_x_end))
+                        dst_slices.append((dst_y_start, dst_y_end,
+                                           dst_x_start, dst_x_end))
+                        dst_mosaic_locations.append((k, l))
 
-        self.src_x = src_x
-        self.src_y = src_y
-        self.src_gradient_xl = src_gradient_xl
-        self.src_gradient_xp = src_gradient_xp
-        self.src_gradient_yl = src_gradient_yl
-        self.src_gradient_yp = src_gradient_yp
-        self.src_xys = src_xys
-        self.dst_x = dst_x
-        self.dst_y = dst_y
-        self.dst_xys = dst_xys
-        self.dst_kl = dst_kl
+        self.src_slices = src_slices
+        self.dst_slices = dst_slices
+        self.dst_mosaic_locations = dst_mosaic_locations
+        self.coverage_status = coverage_status
 
-    def _filter_data(self, data):
-        """Filter unused chunks from the data."""
-        if data.ndim not in [2, 3]:
-            raise NotImplementedError('Gradient search resampling only '
-                                      'supports 2D or 3D arrays.')
-        if data.ndim == 2:
-            data = data[np.newaxis, :, :]
+    def _filter_data(self, data, is_src=True, add_dim=False):
+        """Filter unused chunks from the given array."""
+        if add_dim:
+            if data.ndim not in [2, 3]:
+                raise NotImplementedError('Gradient search resampling only '
+                                          'supports 2D or 3D arrays.')
+            if data.ndim == 2:
+                data = data[np.newaxis, :, :]
 
         data_out = []
-        for src_xy in self.src_xys:
-            try:
-                src_y_start, src_y_end, src_x_start, src_x_end = src_xy
-                val = data[:, src_y_start:src_y_end, src_x_start:src_x_end]
-            except TypeError:
+        for i, covers in enumerate(self.coverage_status):
+            if covers:
+                if is_src:
+                    y_start, y_end, x_start, x_end = self.src_slices[i]
+                else:
+                    y_start, y_end, x_start, x_end = self.dst_slices[i]
+                try:
+                    val = data[:, y_start:y_end, x_start:x_end]
+                except IndexError:
+                    val = data[y_start:y_end, x_start:x_end]
+            else:
                 val = None
             data_out.append(val)
+
         return data_out
 
     def _get_gradients(self):
@@ -224,6 +191,18 @@ class GradientSearchResampler(BaseResampler):
             self.src_x, axis=[0, 1])
         self.src_gradient_yl, self.src_gradient_yp = np.gradient(
             self.src_y, axis=[0, 1])
+
+    def _filter_src_dst(self):
+        """Filter source and target chunks."""
+        self.src_x = self._filter_data(self.src_x)
+        self.src_y = self._filter_data(self.src_y)
+        self.src_gradient_yl = self._filter_data(self.src_gradient_yl)
+        self.src_gradient_yp = self._filter_data(self.src_gradient_yp)
+        self.src_gradient_xl = self._filter_data(self.src_gradient_xl)
+        self.src_gradient_xp = self._filter_data(self.src_gradient_xp)
+        self.dst_x = self._filter_data(self.dst_x, is_src=False)
+        self.dst_y = self._filter_data(self.dst_y, is_src=False)
+        self._src_dst_filtered = True
 
     def compute(self, data, fill_value=None, **kwargs):
         """Resample the given data using gradient search algorithm."""
@@ -238,8 +217,12 @@ class GradientSearchResampler(BaseResampler):
 
         if self.src_gradient_xl is None:
             self._get_gradients()
-            self.get_overlap_chunks()
-        data = self._filter_data(data.data)
+        if self.coverage_status is None:
+            self.get_chunk_mappings()
+        if not self._src_dst_filtered:
+            self._filter_src_dst()
+
+        data = self._filter_data(data.data, add_dim=True)
 
         res = parallel_gradient_search(data,
                                        self.src_x, self.src_y,
@@ -248,7 +231,8 @@ class GradientSearchResampler(BaseResampler):
                                        self.src_gradient_xp,
                                        self.src_gradient_yl,
                                        self.src_gradient_yp,
-                                       self.dst_kl, self.dst_xys,
+                                       self.dst_mosaic_locations,
+                                       self.dst_slices,
                                        **kwargs)
 
         # TODO: this will crash wen the target geo definition is a swath def.
@@ -313,7 +297,7 @@ def get_polygon(prj, geo_def):
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                              src_gradient_xl, src_gradient_xp,
                              src_gradient_yl, src_gradient_yp,
-                             dst_kl, dst_xys,
+                             dst_mosaic_locations, dst_slices,
                              **kwargs):
     """Run gradient search in parallel in input area coordinates."""
     method = kwargs.get('method', 'bilinear')
@@ -323,8 +307,8 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     for i in range(len(data)):
         if data[i] is None:
             is_pad = True
-            res = da.full((1, dst_xys[i][1] - dst_xys[i][0],
-                           dst_xys[i][3] - dst_xys[i][2]), np.nan)
+            res = da.full((1, dst_slices[i][1] - dst_slices[i][0],
+                           dst_slices[i][3] - dst_slices[i][2]), np.nan)
         else:
             is_pad = False
             res = dask.delayed(_gradient_resample_data)(
@@ -335,11 +319,11 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                 dst_x[i], dst_y[i],
                 method=method)
             res = da.from_delayed(res, (1, ) + dst_x[i].shape, dtype=np.float64)
-        if dst_kl[i] in chunks:
+        if dst_mosaic_locations[i] in chunks:
             if not is_pad:
-                chunks[dst_kl[i]].append(res)
+                chunks[dst_mosaic_locations[i]].append(res)
         else:
-            chunks[dst_kl[i]] = [res, ]
+            chunks[dst_mosaic_locations[i]] = [res, ]
 
     # Form the full array
     col, res = [], []
