@@ -18,7 +18,6 @@
 """Load an AreaDefinition object from a netCDF/CF file."""
 
 import pyproj
-import xarray as xr
 
 # list of valid CF grid mappings:
 _valid_cf_type_of_grid_mapping = \
@@ -453,6 +452,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
        cf_info holds info about how the AreaDefinition was defined in the CF file.
 
     """
+    import xarray as xr
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")
