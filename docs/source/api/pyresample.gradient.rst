@@ -5,6 +5,6 @@ Module contents
 ---------------
 
 .. automodule:: pyresample.gradient
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
