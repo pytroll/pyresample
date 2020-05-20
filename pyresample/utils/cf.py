@@ -295,8 +295,8 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
         for axis in ('x', 'y'):
             _valid_axis = _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping)
             if not _valid_axis:
-                raise ValueError(("Variable x='{}' is not a valid CF coordinate "
-                                   "variable for the {} axis").format(xy[axis], axis))
+                ve = "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis)
+                raise ValueError(ve)
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
@@ -319,8 +319,7 @@ def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variab
     proj_dict = crs.to_dict()
 
     # finally prepare the AreaDefinition object
-    return geometry.AreaDefinition.from_extent(grid_mapping_variable, proj_dict, shape, extent,
-                                                   units=unit,)
+    return geometry.AreaDefinition.from_extent(grid_mapping_variable, proj_dict, shape, extent, units=unit)
 
 
 def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
@@ -334,8 +333,7 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
 
     # Load a CRS object
     # =================
-    crs, grid_mapping_variable, variable_is_itself_gridmapping = \
-            _load_cf_area_one_variable_crs(nc_handle, variable)
+    crs, grid_mapping_variable, variable_is_itself_gridmapping = _load_cf_area_one_variable_crs(nc_handle, variable)
 
     # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
     if grid_mapping_variable == 'latlon_default':
@@ -383,7 +381,8 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
 
     return area_def, cf_info
 
-def _load_cf_area_several_variables(nc_handle, ):
+
+def _load_cf_area_several_variables(nc_handle):
     """Load the AreaDefinition corresponding to several netCDF variables/fields."""
     def _indices_unique_AreaDefs(adefs):
         """Find the indices of unique AreaDefinitions in a list."""
