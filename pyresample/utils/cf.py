@@ -466,7 +466,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
             nc_handle = xr.open_dataset(nc_file)
         except FileNotFoundError as ex:
             raise FileNotFoundError("This file does not exist ({})".format(ex))
-        except (OSError, KeyError) as ex:
+        except (OSError, TypeError) as ex:
             raise OSError("This file is probably not a valid netCDF file ({}).".format(ex))
 
     if variable is None:
