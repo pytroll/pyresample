@@ -370,6 +370,11 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
         else:
             chunks[dst_mosaic_locations[i]] = [res, ]
 
+    return _concatenate_chunks(chunks)
+
+
+def _concatenate_chunks(chunks):
+    """Concatenate chunks to full output array."""
     # Form the full array
     col, res = [], []
     prev_y = 0
