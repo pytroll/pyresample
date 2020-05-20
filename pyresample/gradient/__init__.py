@@ -268,7 +268,11 @@ class GradientSearchResampler(BaseResampler):
                 coords.append(y_coord)
             else:
                 coords.append(data_coords[key])
+
+        if fill_value is not None:
+            res = da.where(np.isnan(res), fill_value, res)
         res = xr.DataArray(res, dims=data_dims, coords=coords)
+
         return res
 
 
