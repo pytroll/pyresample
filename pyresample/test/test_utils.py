@@ -338,8 +338,7 @@ class TestMisc(unittest.TestCase):
         self.assertRaises(ValueError, utils.check_and_wrap, lons1, lats2)
 
     def test_unicode_proj4_string(self):
-        """Test that unicode is accepted for area creation.
-        """
+        """Test that unicode is accepted for area creation."""
         from pyresample import get_area_def
         get_area_def(u"eurol", u"eurol", u"bla",
                      u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
@@ -646,16 +645,20 @@ class TestProjRotation(unittest.TestCase):
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
 
+
 # helper routines for the CF test cases
 def _prepare_cf_nh10km():
     import xarray as xr
     nx = 760
     ny = 1120
-    ds = xr.Dataset({'ice_conc':(('time','yc','xc'),np.ma.masked_all((1,ny,nx)),{'grid_mapping':'Polar_Stereographic_Grid'}),
-                     'xc':('xc',np.linspace(-3845,3745,num=nx),{'standard_name':'projection_x_coordinate','units':'km'}),
-                     'yc':('yc',np.linspace(+5845,-5345,num=ny),{'standard_name':'projection_y_coordinate','units':'km'})},
-                    coords={'lat':(('yc','xc'),np.ma.masked_all((ny,nx))),
-                            'lon':(('yc','xc'),np.ma.masked_all((ny,nx)))},)
+    ds = xr.Dataset({'ice_conc': (('time', 'yc', 'xc'), np.ma.masked_all((1, ny, nx)),
+                                  {'grid_mapping': 'Polar_Stereographic_Grid'}),
+                     'xc': ('xc', np.linspace(-3845, 3745, num=nx),
+                            {'standard_name': 'projection_x_coordinate', 'units': 'km'}),
+                     'yc': ('yc', np.linspace(+5845, -5345, num=ny),
+                            {'standard_name': 'projection_y_coordinate', 'units': 'km'})},
+                    coords={'lat': (('yc', 'xc'), np.ma.masked_all((ny, nx))),
+                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))},)
     ds['lat'].attrs['units'] = 'degrees_north'
     ds['lat'].attrs['standard_name'] = 'latitude'
     ds['lon'].attrs['units'] = 'degrees_east'
@@ -673,13 +676,14 @@ def _prepare_cf_nh10km():
 
     return ds
 
+
 def _prepare_cf_llwgs84():
     import xarray as xr
     nlat = 19
     nlon = 37
-    ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),{'grid_mapping':'crs'}),},
-                    coords={'lat':np.linspace(-90.,+90.,num=nlat),
-                            'lon':np.linspace(-180.,+180.,nlon)},)
+    ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)), {'grid_mapping': 'crs'})},
+                    coords={'lat': np.linspace(-90., +90., num=nlat),
+                            'lon': np.linspace(-180., +180., num=nlon)})
     ds['lat'].attrs['units'] = 'degreesN'
     ds['lat'].attrs['standard_name'] = 'latitude'
     ds['lon'].attrs['units'] = 'degreesE'
@@ -693,13 +697,14 @@ def _prepare_cf_llwgs84():
 
     return ds
 
+
 def _prepare_cf_llnocrs():
     import xarray as xr
     nlat = 19
     nlon = 37
-    ds = xr.Dataset({'temp':(('lat','lon'),np.ma.masked_all((nlat,nlon)),),},
-                    coords={'lat':np.linspace(-90.,+90.,num=nlat),
-                            'lon':np.linspace(-180.,+180.,nlon)},)
+    ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)))},
+                    coords={'lat': np.linspace(-90., +90., num=nlat),
+                            'lon': np.linspace(-180., +180., num=nlon)})
     ds['lat'].attrs['units'] = 'degreeN'
     ds['lat'].attrs['standard_name'] = 'latitude'
     ds['lon'].attrs['units'] = 'degreeE'
@@ -707,9 +712,9 @@ def _prepare_cf_llnocrs():
 
     return ds
 
+
 class TestLoadCFArea_Public(unittest.TestCase):
-    """ Test loading an area definition from netCDF/CF files using the
-        public API load_cf_area() """
+    """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
 
     def test_load_cf_from_wrong_filepath(self):
         from pyresample.utils import load_cf_area
@@ -721,7 +726,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
         # wrong case #2: the path exists, but is not a netCDF file
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
         self.assertRaises(OSError, load_cf_area, cf_file)
-
 
     def test_load_cf_parameters_errors(self):
         from pyresample.utils import load_cf_area
@@ -834,7 +838,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
         validate_llwgs84(adef, cf_info)
 
     def test_load_cf_llnocrs(self):
-        import xarray as xr
         from pyresample.utils import load_cf_area
 
         def validate_llnocrs(adef, cfinfo, lat='lat', lon='lon'):
@@ -866,15 +869,12 @@ class TestLoadCFArea_Public(unittest.TestCase):
 
 
 class TestLoadCFArea_Private(unittest.TestCase):
-    """ Test the private routines involved in loading an
-        AreaDefinition from netCDF/CF files. """
+    """Test private routines involved in loading an AreaDefinition from netCDF/CF files."""
 
     def setUp(self):
-        """ Prepare nc_handles """
-        import xarray as xr
-
+        """Prepare nc_handles."""
         self.nc_handles = {}
-        self.nc_handles['nh10km']  = _prepare_cf_nh10km()
+        self.nc_handles['nh10km'] = _prepare_cf_nh10km()
         self.nc_handles['llwgs84'] = _prepare_cf_llwgs84()
         self.nc_handles['llnocrs'] = _prepare_cf_llnocrs()
 
@@ -947,11 +947,12 @@ class TestLoadCFArea_Private(unittest.TestCase):
         self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lat', 'y', 'latitude_longitude'))
 
         # error cases
-        self.assertRaises(KeyError, _is_valid_coordinate_variable, 
-            self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
+        self.assertRaises(KeyError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
         self.assertRaises(ValueError, _is_valid_coordinate_variable,
                           self.nc_handles['nh10km'], 'xc', 'wrong', 'polar_stereographic')
-        self.assertRaises(ValueError, _is_valid_coordinate_variable, self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
+        self.assertRaises(ValueError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
 
     def test_cf_load_crs_from_cf_gridmapping(self):
         from pyresample.utils.cf import _load_crs_from_cf_gridmapping
@@ -970,6 +971,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
         validate_crs_nh10km(crs)
         crs = _load_crs_from_cf_gridmapping(self.nc_handles['llwgs84'], 'crs')
         validate_crs_llwgs84(crs)
+
 
 def test_check_slice_orientation():
     """Test that slicing fix is doing what it should."""
