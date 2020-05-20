@@ -26,6 +26,7 @@ import numpy as np
 import yaml
 from pyresample.utils import proj4_str_to_dict
 
+
 try:
     from xarray import DataArray
 except ImportError:
