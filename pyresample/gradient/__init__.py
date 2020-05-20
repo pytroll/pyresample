@@ -67,7 +67,6 @@ class GradientSearchResampler(BaseResampler):
         self.src_gradient_xp = None
         self.src_gradient_yl = None
         self.src_gradient_yp = None
-        self.src_polys = {}
         self.dst_polys = {}
         self.dst_mosaic_locations = None
         self.coverage_status = None
@@ -106,6 +105,34 @@ class GradientSearchResampler(BaseResampler):
                     src_prj=src_prj, dst_prj=dst_prj)
                 self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
 
+    def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
+        """Get bounding polygon for source chunk."""
+        geo_def = self.source_geo_def[src_y_start:src_y_end,
+                                      src_x_start:src_x_end]
+        try:
+            src_poly = get_polygon(self.prj, geo_def)
+        except AttributeError:
+            # Can't create polygons for SwathDefinition
+            src_poly = False
+
+        return src_poly
+
+    def _get_dst_poly(self, idx, dst_x_start, dst_x_end,
+                      dst_y_start, dst_y_end):
+        """Get target chunk polygon."""
+        dst_poly = self.dst_polys.get(idx, None)
+        if dst_poly is None:
+            geo_def = self.target_geo_def[dst_y_start:dst_y_end,
+                                          dst_x_start:dst_x_end]
+            try:
+                dst_poly = get_polygon(self.prj, geo_def)
+            except AttributeError:
+                # Can't create polygons for SwathDefinition
+                dst_poly = False
+            self.dst_polys[idx] = dst_poly
+
+        return dst_poly
+
     def get_chunk_mappings(self):
         """"""
         src_y_chunks, src_x_chunks = self.src_x.chunks
@@ -122,16 +149,8 @@ class GradientSearchResampler(BaseResampler):
             for j, src_y_step in enumerate(src_y_chunks):
                 src_y_end = src_y_start + src_y_step
                 # Get source chunk polygon
-                src_poly = self.src_polys.get((i, j), None)
-                if src_poly is None:
-                    geo_def = self.source_geo_def[src_y_start:src_y_end,
-                                                  src_x_start:src_x_end]
-                    try:
-                        src_poly = get_polygon(self.prj, geo_def)
-                    except AttributeError:
-                        # Can't create polygons for SwathDefinition
-                        src_poly = False
-                    self.src_polys[(i, j)] = src_poly
+                src_poly = self._get_src_poly(src_y_start, src_y_end,
+                                              src_x_start, src_x_end)
 
                 dst_x_start = 0
                 for k, dst_x_step in enumerate(dst_x_chunks):
@@ -140,22 +159,11 @@ class GradientSearchResampler(BaseResampler):
                     for l, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        dst_poly = self.dst_polys.get((k, l), None)
-                        if dst_poly is None:
-                            geo_def = self.target_geo_def[
-                                dst_y_start:dst_y_end, dst_x_start:dst_x_end]
-                            try:
-                                dst_poly = get_polygon(self.prj, geo_def)
-                            except AttributeError:
-                                # Can't create polygons for SwathDefinition
-                                dst_poly = False
-                            self.dst_polys[(k, l)] = dst_poly
-                        if dst_poly is False or src_poly is False:
-                            covers = True
-                        elif dst_poly is not None and src_poly is not None:
-                            covers = src_poly.intersects(dst_poly)
-                        else:
-                            covers = False
+                        dst_poly = self._get_dst_poly((k, l),
+                                                      dst_x_start, dst_x_end,
+                                                      dst_y_start, dst_y_end)
+
+                        covers = check_overlap(src_poly, dst_poly)
 
                         coverage_status.append(covers)
                         src_slices.append((src_y_start, src_y_end,
@@ -262,6 +270,18 @@ class GradientSearchResampler(BaseResampler):
                 coords.append(data_coords[key])
         res = xr.DataArray(res, dims=data_dims, coords=coords)
         return res
+
+
+def check_overlap(src_poly, dst_poly):
+    """Check if the two polygons overlap."""
+    if dst_poly is False or src_poly is False:
+        covers = True
+    elif dst_poly is not None and src_poly is not None:
+        covers = src_poly.intersects(dst_poly)
+    else:
+        covers = False
+
+    return covers
 
 
 def _gradient_resample_data(src_data, src_x, src_y,
