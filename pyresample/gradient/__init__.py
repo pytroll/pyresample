@@ -143,10 +143,10 @@ class GradientSearchResampler(BaseResampler):
         dst_mosaic_locations = []
 
         src_x_start = 0
-        for i, src_x_step in enumerate(src_x_chunks):
+        for src_x_step in src_x_chunks:
             src_x_end = src_x_start + src_x_step
             src_y_start = 0
-            for j, src_y_step in enumerate(src_y_chunks):
+            for src_y_step in src_y_chunks:
                 src_y_end = src_y_start + src_y_step
                 # Get source chunk polygon
                 src_poly = self._get_src_poly(src_y_start, src_y_end,
