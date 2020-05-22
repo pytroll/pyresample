@@ -180,6 +180,20 @@ class TestGradientResampler(unittest.TestCase):
         for shp in shapes:
             assert shp == (1, 10, 10)
 
+        # 1D and 3+D should raise NotImplementedError
+        data = da.random.random((3,))
+        try:
+            res = self.resampler._filter_data(data, add_dim=True)
+            raise IndexError
+        except NotImplementedError:
+            pass
+        data = da.random.random((3, 3, 3, 3))
+        try:
+            res = self.resampler._filter_data(data, add_dim=True)
+            raise IndexError
+        except NotImplementedError:
+            pass
+
     def test_resample_area_to_area_2d(self):
         """Resample area to area, 2d."""
         data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
