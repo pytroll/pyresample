@@ -413,17 +413,17 @@ def test_parallel_gradient_search(dask_da, _concatenate_chunks, delayed):
     assert '_gradient_resample_data' in str(delayed.mock_calls[0])
     assert '_gradient_resample_data' in str(delayed.mock_calls[2])
     assert str(mock.call()(data[0],
-                       src_x[0], src_y[0],
-                       src_gradient_xl[0], src_gradient_xp[0],
-                       src_gradient_yl[0], src_gradient_yp[0],
-                       dst_x[0], dst_y[0],
-                       method='foo')) == str(delayed.mock_calls[1])
+                           src_x[0], src_y[0],
+                           src_gradient_xl[0], src_gradient_xp[0],
+                           src_gradient_yl[0], src_gradient_yp[0],
+                           dst_x[0], dst_y[0],
+                           method='foo')) == str(delayed.mock_calls[1])
     assert str(mock.call()(data[1],
-                       src_x[1], src_y[1],
-                       src_gradient_xl[1], src_gradient_xp[1],
-                       src_gradient_yl[1], src_gradient_yp[1],
-                       dst_x[1], dst_y[1],
-                       method='foo')) == str(delayed.mock_calls[3])
+                           src_x[1], src_y[1],
+                           src_gradient_xl[1], src_gradient_xp[1],
+                           src_gradient_yl[1], src_gradient_yp[1],
+                           dst_x[1], dst_y[1],
+                           method='foo')) == str(delayed.mock_calls[3])
 
 
 def test_concatenate_chunks():
