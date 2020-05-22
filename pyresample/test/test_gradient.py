@@ -58,10 +58,10 @@ class TestGradientResampler(unittest.TestCase):
         self.resampler._get_projection_coordinates((10, 10))
         cdst_x = self.resampler.dst_x.compute()
         cdst_y = self.resampler.dst_y.compute()
-        assert np.min(cdst_x) == -2022632.1675016289
-        assert np.max(cdst_x) == 2196052.591296284
-        assert np.min(cdst_y) == 3517933.413092212
-        assert np.max(cdst_y) == 5387038.893400168
+        assert np.allclose(np.min(cdst_x), -2022632.1675016289)
+        assert np.allclose(np.max(cdst_x), 2196052.591296284)
+        assert np.allclose(np.min(cdst_y), 3517933.413092212)
+        assert np.allclose(np.max(cdst_y), 5387038.893400168)
         assert self.resampler.use_input_coords
         assert self.resampler.prj is not None
 
@@ -71,10 +71,10 @@ class TestGradientResampler(unittest.TestCase):
         self.swath_resampler._get_projection_coordinates((10, 10))
         cdst_x = self.swath_resampler.dst_x.compute()
         cdst_y = self.swath_resampler.dst_y.compute()
-        assert np.min(cdst_x) == -2697103.29912692
-        assert np.max(cdst_x) == 1358739.8381279823
-        assert np.min(cdst_y) == -5550969.708939591
-        assert np.max(cdst_y) == -1495126.5716846888
+        assert np.allclose(np.min(cdst_x), -2697103.29912692)
+        assert np.allclose(np.max(cdst_x), 1358739.8381279823)
+        assert np.allclose(np.min(cdst_y), -5550969.708939591)
+        assert np.allclose(np.max(cdst_y), -1495126.5716846888)
         assert self.swath_resampler.use_input_coords is False
         assert self.swath_resampler.prj is not None
 
@@ -116,7 +116,7 @@ class TestGradientResampler(unittest.TestCase):
         self.resampler._get_projection_coordinates(chunks)
         self.resampler._get_gradients()
         poly = self.resampler._get_src_poly(0, 40, 0, 40)
-        assert poly.area == 12365358458842.43
+        assert np.allclose(poly.area, 12365358458842.43)
 
     def test_get_src_poly_swath(self):
         """Test defining source chunk polygon for SwathDefinition."""
@@ -221,10 +221,7 @@ class TestGradientResampler(unittest.TestCase):
         res = self.swath_resampler.compute(
             data, method='bil').compute(scheduler='single-threaded')
         assert res.shape == (3, ) + self.dst_area.shape
-        assert np.nanmin(res[0, :, :]) == 1.0
-        assert np.nanmax(res[0, :, :]) == 1.0
-        assert np.nanmin(res[1, :, :]) == 2.0
-        assert np.nanmax(res[1, :, :]) == 2.0
-        assert np.nanmin(res[2, :, :]) == 3.0
-        assert np.nanmax(res[2, :, :]) == 3.0
+        for i in range(res.shape[0]):
+            arr = np.ravel(res[i, :, :])
+            assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
