@@ -464,7 +464,7 @@ def test_concatenate_chunks_stack_calls(dask_da):
               (1, 0): [np.zeros((1, 5, 2))],
               (1, 1): [np.full((1, 3, 2), 0.5)],
               (0, 1): [np.full((1, 3, 4), -1)]}
-    res = _concatenate_chunks(chunks)
+    _ = _concatenate_chunks(chunks)
     dask_da.stack.assert_called_once_with(chunks[(0, 0)], axis=-1)
     dask_da.nanmax.assert_called_once()
     assert 'axis=2' in str(dask_da.concatenate.mock_calls[-2])
