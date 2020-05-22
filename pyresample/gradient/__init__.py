@@ -356,15 +356,15 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
     chunks = {}
     is_pad = False
     # Collect co-located target chunks
-    for i in range(len(data)):
-        if data[i] is None:
+    for i, arr in enumerate(data):
+        if arr is None:
             is_pad = True
             res = da.full((num_bands, dst_slices[i][1] - dst_slices[i][0],
                            dst_slices[i][3] - dst_slices[i][2]), np.nan)
         else:
             is_pad = False
             res = dask.delayed(_gradient_resample_data)(
-                data[i].astype(np.float64),
+                arr.astype(np.float64),
                 src_x[i], src_y[i],
                 src_gradient_xl[i], src_gradient_xp[i],
                 src_gradient_yl[i], src_gradient_yp[i],
