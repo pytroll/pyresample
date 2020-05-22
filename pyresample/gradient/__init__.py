@@ -294,17 +294,25 @@ def _gradient_resample_data(src_data, src_x, src_y,
                             dst_x, dst_y,
                             method='bilinear'):
     """Resample using gradient search."""
-    image = one_step_gradient_search(
-        src_data[:, :, :],
-        src_x[:, :],
-        src_y[:, :],
-        src_gradient_xl[:, :],
-        src_gradient_xp[:, :],
-        src_gradient_yl[:, :],
-        src_gradient_yp[:, :],
-        dst_x,
-        dst_y,
-        method=method)
+    assert src_data.ndim == 3
+    assert src_x.ndim == 2
+    assert src_y.ndim == 2
+    assert src_gradient_xl.ndim == 2
+    assert src_gradient_xp.ndim == 2
+    assert src_gradient_yl.ndim == 2
+    assert src_gradient_yp.ndim == 2
+    assert dst_x.ndim == 2
+    assert dst_y.ndim == 2
+    assert (src_data.shape[1:] == src_x.shape == src_y.shape ==
+            src_gradient_xl.shape == src_gradient_xp.shape ==
+            src_gradient_yl.shape == src_gradient_yp.shape)
+    assert dst_x.shape == dst_y.shape
+
+    image = one_step_gradient_search(src_data, src_x, src_y,
+                                     src_gradient_xl, src_gradient_xp,
+                                     src_gradient_yl, src_gradient_yp,
+                                     dst_x, dst_y,
+                                     method=method)
 
     return image
 
