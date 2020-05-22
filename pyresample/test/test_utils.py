@@ -338,8 +338,7 @@ class TestMisc(unittest.TestCase):
         self.assertRaises(ValueError, utils.check_and_wrap, lons1, lats2)
 
     def test_unicode_proj4_string(self):
-        """Test that unicode is accepted for area creation.
-        """
+        """Test that unicode is accepted for area creation."""
         from pyresample import get_area_def
         get_area_def(u"eurol", u"eurol", u"bla",
                      u'+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45',
@@ -645,6 +644,333 @@ class TestProjRotation(unittest.TestCase):
         test_area = load_area(f.name, 'regionB')
         self.assertEqual(test_area.rotation, 0)
         os.remove(f.name)
+
+
+# helper routines for the CF test cases
+def _prepare_cf_nh10km():
+    import xarray as xr
+    nx = 760
+    ny = 1120
+    ds = xr.Dataset({'ice_conc': (('time', 'yc', 'xc'), np.ma.masked_all((1, ny, nx)),
+                                  {'grid_mapping': 'Polar_Stereographic_Grid'}),
+                     'xc': ('xc', np.linspace(-3845, 3745, num=nx),
+                            {'standard_name': 'projection_x_coordinate', 'units': 'km'}),
+                     'yc': ('yc', np.linspace(+5845, -5345, num=ny),
+                            {'standard_name': 'projection_y_coordinate', 'units': 'km'})},
+                    coords={'lat': (('yc', 'xc'), np.ma.masked_all((ny, nx))),
+                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))},)
+    ds['lat'].attrs['units'] = 'degrees_north'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degrees_east'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    ds['Polar_Stereographic_Grid'] = 0
+    ds['Polar_Stereographic_Grid'].attrs['grid_mapping_name'] = "polar_stereographic"
+    ds['Polar_Stereographic_Grid'].attrs['false_easting'] = 0.
+    ds['Polar_Stereographic_Grid'].attrs['false_northing'] = 0.
+    ds['Polar_Stereographic_Grid'].attrs['semi_major_axis'] = 6378273.
+    ds['Polar_Stereographic_Grid'].attrs['semi_minor_axis'] = 6356889.44891
+    ds['Polar_Stereographic_Grid'].attrs['straight_vertical_longitude_from_pole'] = -45.
+    ds['Polar_Stereographic_Grid'].attrs['latitude_of_projection_origin'] = 90.
+    ds['Polar_Stereographic_Grid'].attrs['standard_parallel'] = 70.
+
+    return ds
+
+
+def _prepare_cf_llwgs84():
+    import xarray as xr
+    nlat = 19
+    nlon = 37
+    ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)), {'grid_mapping': 'crs'})},
+                    coords={'lat': np.linspace(-90., +90., num=nlat),
+                            'lon': np.linspace(-180., +180., num=nlon)})
+    ds['lat'].attrs['units'] = 'degreesN'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degreesE'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    ds['crs'] = 0
+    ds['crs'].attrs['grid_mapping_name'] = "latitude_longitude"
+    ds['crs'].attrs['longitude_of_prime_meridian'] = 0.
+    ds['crs'].attrs['semi_major_axis'] = 6378137.
+    ds['crs'].attrs['inverse_flattening'] = 298.257223563
+
+    return ds
+
+
+def _prepare_cf_llnocrs():
+    import xarray as xr
+    nlat = 19
+    nlon = 37
+    ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)))},
+                    coords={'lat': np.linspace(-90., +90., num=nlat),
+                            'lon': np.linspace(-180., +180., num=nlon)})
+    ds['lat'].attrs['units'] = 'degreeN'
+    ds['lat'].attrs['standard_name'] = 'latitude'
+    ds['lon'].attrs['units'] = 'degreeE'
+    ds['lon'].attrs['standard_name'] = 'longitude'
+
+    return ds
+
+
+class TestLoadCFArea_Public(unittest.TestCase):
+    """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
+
+    def test_load_cf_from_wrong_filepath(self):
+        from pyresample.utils import load_cf_area
+
+        # wrong case #1: the path does not exist
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
+        self.assertRaises(FileNotFoundError, load_cf_area, cf_file)
+
+        # wrong case #2: the path exists, but is not a netCDF file
+        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        self.assertRaises(OSError, load_cf_area, cf_file)
+
+    def test_load_cf_parameters_errors(self):
+        from pyresample.utils import load_cf_area
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
+
+        # try to load from a variable= that does not exist
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
+
+        # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
+
+        # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
+
+        # try to load using a variable= that does not define a grid mapping
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
+
+    def test_load_cf_nh10km(self):
+        from pyresample.utils import load_cf_area
+
+        def validate_nh10km_adef(adef):
+            self.assertEqual(adef.shape, (1120, 760))
+            xc = adef.projection_x_coords
+            yc = adef.projection_y_coords
+            self.assertEqual(xc[0], -3845000.0, msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], xc[0] + 10000.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], 5845000.0, msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], yc[0] - 10000.0, msg="Wrong y axis (index 1)")
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
+
+        # load using a variable= that is a valid grid_mapping container
+        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
+        validate_nh10km_adef(adef)
+
+        # load using a variable= that has a :grid_mapping attribute
+        adef, _ = load_cf_area(cf_file, 'ice_conc')
+        validate_nh10km_adef(adef)
+
+        # load without using a variable=
+        adef, _ = load_cf_area(cf_file)
+        validate_nh10km_adef(adef)
+
+    def test_load_cf_nh10km_cfinfo(self):
+        from pyresample.utils import load_cf_area
+
+        def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
+            # test some of the fields
+            self.assertEqual(cf_info['variable'], variable)
+            self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
+            self.assertEqual(cf_info['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['x']['varname'], 'xc')
+            self.assertEqual(cf_info['x']['first'], -3845.0)
+            self.assertEqual(cf_info['y']['varname'], 'yc')
+            self.assertEqual(cf_info['y']['last'], -5345.0)
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_nh10km()
+
+        # load using a variable= that is a valid grid_mapping container
+        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc')
+        validate_nh10km_cfinfo(cf_info, variable='Polar_Stereographic_Grid', lat=None, lon=None)
+
+        # load using a variable= that has a :grid_mapping attribute
+        _, cf_info = load_cf_area(cf_file, 'ice_conc')
+        validate_nh10km_cfinfo(cf_info)
+
+        # load without using a variable=
+        _, cf_info = load_cf_area(cf_file)
+        validate_nh10km_cfinfo(cf_info)
+
+    def test_load_cf_llwgs84(self):
+        from pyresample.utils import load_cf_area
+
+        def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
+            self.assertEqual(adef.shape, (19, 37))
+            xc = adef.projection_x_coords
+            yc = adef.projection_y_coords
+            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(cfinfo['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
+            self.assertEqual(cf_info['x']['varname'], 'lon')
+            self.assertEqual(cf_info['x']['first'], -180.)
+            self.assertEqual(cf_info['y']['varname'], 'lat')
+            self.assertEqual(cf_info['y']['first'], -90.)
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_llwgs84()
+
+        # load using a variable= that is a valid grid_mapping container
+        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon')
+        validate_llwgs84(adef, cf_info, lat=None, lon=None)
+
+        # load using a variable=temp
+        adef, cf_info = load_cf_area(cf_file, 'temp')
+        validate_llwgs84(adef, cf_info)
+
+        # load using a variable=None
+        adef, cf_info = load_cf_area(cf_file)
+        validate_llwgs84(adef, cf_info)
+
+    def test_load_cf_llnocrs(self):
+        from pyresample.utils import load_cf_area
+
+        def validate_llnocrs(adef, cfinfo, lat='lat', lon='lon'):
+            self.assertEqual(adef.shape, (19, 37))
+            xc = adef.projection_x_coords
+            yc = adef.projection_y_coords
+            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
+            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
+            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
+            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
+            self.assertEqual(cfinfo['lon'], lon)
+            self.assertEqual(cf_info['lat'], lat)
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
+            self.assertEqual(cf_info['x']['varname'], 'lon')
+            self.assertEqual(cf_info['x']['first'], -180.)
+            self.assertEqual(cf_info['y']['varname'], 'lat')
+            self.assertEqual(cf_info['y']['first'], -90.)
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_llnocrs()
+
+        # load using a variable=temp
+        adef, cf_info = load_cf_area(cf_file, 'temp')
+        validate_llnocrs(adef, cf_info)
+
+        # load using a variable=None
+        adef, cf_info = load_cf_area(cf_file)
+        validate_llnocrs(adef, cf_info)
+
+
+class TestLoadCFArea_Private(unittest.TestCase):
+    """Test private routines involved in loading an AreaDefinition from netCDF/CF files."""
+
+    def setUp(self):
+        """Prepare nc_handles."""
+        self.nc_handles = {}
+        self.nc_handles['nh10km'] = _prepare_cf_nh10km()
+        self.nc_handles['llwgs84'] = _prepare_cf_llwgs84()
+        self.nc_handles['llnocrs'] = _prepare_cf_llnocrs()
+
+    def test_cf_guess_lonlat(self):
+        from pyresample.utils.cf import _guess_cf_lonlat_varname
+
+        # nominal
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat',)
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon',)
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lat'), 'lat')
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lon'), 'lon')
+
+        # error cases
+        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
+        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
+
+    def test_cf_guess_axis_varname(self):
+        from pyresample.utils.cf import _guess_cf_axis_varname
+
+        # nominal
+        self.assertEqual(_guess_cf_axis_varname(
+            self.nc_handles['nh10km'], 'ice_conc', 'x', 'polar_stereographic'), 'xc')
+        self.assertEqual(_guess_cf_axis_varname(
+            self.nc_handles['nh10km'], 'ice_conc', 'y', 'polar_stereographic'), 'yc')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'], 'temp', 'x', 'latitude_longitude'), 'lon')
+        self.assertEqual(_guess_cf_axis_varname(self.nc_handles['llwgs84'], 'temp', 'y', 'latitude_longitude'), 'lat')
+
+        # error cases
+        self.assertRaises(ValueError, _guess_cf_axis_varname,
+                          self.nc_handles['nh10km'], 'ice_conc', 'wrong', 'polar_stereographic')
+        self.assertRaises(KeyError, _guess_cf_axis_varname,
+                          self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
+
+    def test_cf_is_valid_coordinate_standardname(self):
+        from pyresample.utils.cf import _is_valid_coordinate_standardname
+        from pyresample.utils.cf import _valid_cf_type_of_grid_mapping
+
+        # nominal
+        for proj_type in _valid_cf_type_of_grid_mapping:
+            if proj_type == 'geostationary':
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_angular_coordinate', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_angular_coordinate', 'y', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_coordinate', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_coordinate', 'y', proj_type))
+            elif proj_type == 'latitude_longitude':
+                self.assertTrue(_is_valid_coordinate_standardname('longitude', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('latitude', 'y', proj_type))
+            elif proj_type == 'rotated_latitude_longitude':
+                self.assertTrue(_is_valid_coordinate_standardname('grid_longitude', 'x', proj_type))
+                self.assertTrue(_is_valid_coordinate_standardname('grid_latitude', 'y', proj_type))
+            else:
+                self.assertTrue(_is_valid_coordinate_standardname('projection_x_coordinate', 'x', 'default'))
+                self.assertTrue(_is_valid_coordinate_standardname('projection_y_coordinate', 'y', 'default'))
+
+        # error cases
+        self.assertRaises(ValueError, _is_valid_coordinate_standardname, 'projection_x_coordinate', 'x', 'wrong')
+        self.assertRaises(ValueError, _is_valid_coordinate_standardname, 'projection_y_coordinate', 'y', 'also_wrong')
+
+    def test_cf_is_valid_coordinate_variable(self):
+        from pyresample.utils.cf import _is_valid_coordinate_variable
+
+        # nominal
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'xc', 'x', 'polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['nh10km'], 'yc', 'y', 'polar_stereographic'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lon', 'x', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llwgs84'], 'lat', 'y', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lon', 'x', 'latitude_longitude'))
+        self.assertTrue(_is_valid_coordinate_variable(self.nc_handles['llnocrs'], 'lat', 'y', 'latitude_longitude'))
+
+        # error cases
+        self.assertRaises(KeyError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
+        self.assertRaises(ValueError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'xc', 'wrong', 'polar_stereographic')
+        self.assertRaises(ValueError, _is_valid_coordinate_variable,
+                          self.nc_handles['nh10km'], 'xc', 'x', 'wrong')
+
+    def test_cf_load_crs_from_cf_gridmapping(self):
+        from pyresample.utils.cf import _load_crs_from_cf_gridmapping
+
+        def validate_crs_nh10km(crs):
+            crs_dict = crs.to_dict()
+            self.assertEqual(crs_dict['proj'], 'stere')
+            self.assertEqual(crs_dict['lat_0'], 90.)
+
+        def validate_crs_llwgs84(crs):
+            crs_dict = crs.to_dict()
+            self.assertEqual(crs_dict['proj'], 'longlat')
+            self.assertEqual(crs_dict['ellps'], 'WGS84')
+
+        crs = _load_crs_from_cf_gridmapping(self.nc_handles['nh10km'], 'Polar_Stereographic_Grid')
+        validate_crs_nh10km(crs)
+        crs = _load_crs_from_cf_gridmapping(self.nc_handles['llwgs84'], 'crs')
+        validate_crs_llwgs84(crs)
 
 
 def test_check_slice_orientation():

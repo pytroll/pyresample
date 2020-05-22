@@ -38,7 +38,7 @@ from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import (proj4_str_to_dict, proj4_dict_to_str,
                               convert_proj_floats, proj4_radius_parameters,
-                              check_slice_orientation)
+                              check_slice_orientation, load_cf_area)
 from pyresample.area_config import create_area_def
 
 try:
@@ -1453,6 +1453,32 @@ class AreaDefinition(BaseDefinition):
         """
         return create_area_def(area_id, projection, shape=shape, upper_left_extent=upper_left_extent,
                                resolution=resolution, units=units, **kwargs)
+
+    @classmethod
+    def from_cf(cls, cf_file, variable=None, y=None, x=None):
+        """Create an AreaDefinition object from a netCDF/CF file.
+
+        Parameters
+        ----------
+        nc_file : string or object
+            path to a netCDF/CF file, or opened xarray.Dataset object
+        variable : string, optional
+            name of the variable to load the AreaDefinition from
+            If variable is None the file will be searched for valid CF
+            area definitions
+        y : string, optional
+            name of the variable to use as 'y' axis of the CF area definition
+            If y is None an appropriate 'y' axis will be deduced from the CF file
+        x : string, optional
+            name of the variable to use as 'x' axis of the CF area definition
+            If x is None an appropriate 'x' axis will be deduced from the CF file
+
+        Returns
+        -------
+        AreaDefinition : AreaDefinition
+
+        """
+        return load_cf_area(cf_file, variable=variable, y=y, x=x)[0]
 
     def __hash__(self):
         """Compute the hash of this object."""

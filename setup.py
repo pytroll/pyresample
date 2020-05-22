@@ -31,10 +31,11 @@ requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'configobj',
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
-                  'dask': ['dask>=0.16.1']}
+                  'dask': ['dask>=0.16.1'],
+                  'cf': ['xarray']}
 
 setup_requires = ['numpy>=1.10.0']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', ]
 
 if sys.platform.startswith("win"):
     extra_compile_args = []

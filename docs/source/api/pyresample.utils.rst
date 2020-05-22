@@ -12,6 +12,14 @@ pyresample.utils.cartopy module
    :undoc-members:
    :show-inheritance:
 
+pyresample.utils.cf module
+--------------------------
+
+.. automodule:: pyresample.utils.cf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyresample.utils.proj4 module
 -----------------------------
 
