@@ -203,6 +203,15 @@ class TestGradientResampler(unittest.TestCase):
         assert res.shape == self.dst_area.shape
         assert np.allclose(res, 1)
 
+    def test_resample_area_to_area_2d_fill_value(self):
+        """Resample area to area, 2d, use fill value."""
+        data = xr.DataArray(da.full(self.src_area.shape, np.nan,
+                                    dtype=np.float64), dims=['y', 'x'])
+        res = self.resampler.compute(data, method='bil',
+            fill_value=2.0).compute(scheduler='single-threaded')
+        assert res.shape == self.dst_area.shape
+        assert np.allclose(res, 2.0)
+
     def test_resample_area_to_area_3d(self):
         """Resample area to area, 3d."""
         data = xr.DataArray(da.ones((3, ) + self.src_area.shape,
