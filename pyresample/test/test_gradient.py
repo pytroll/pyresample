@@ -328,7 +328,7 @@ def test_gradient_resample_data(one_step_gradient_search):
     try:
         _ = _gradient_resample_data(ndim_3, ndim_2a, ndim_2b, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2b)
-        raise
+        raise IndexError
     except AssertionError:
         pass
     one_step_gradient_search.assert_not_called()
@@ -337,7 +337,7 @@ def test_gradient_resample_data(one_step_gradient_search):
     try:
         _ = _gradient_resample_data(ndim_2a, ndim_2a, ndim_2a, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2b)
-        raise
+        raise IndexError
     except AssertionError:
         pass
     one_step_gradient_search.assert_not_called()
@@ -346,7 +346,7 @@ def test_gradient_resample_data(one_step_gradient_search):
     try:
         _ = _gradient_resample_data(ndim_3, ndim_2a, ndim_2a, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2a)
-        raise
+        raise IndexError
     except AssertionError:
         pass
     one_step_gradient_search.assert_not_called()
