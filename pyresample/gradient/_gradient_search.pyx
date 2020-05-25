@@ -112,10 +112,6 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
     # output image array --> needs to be (lines, pixels) --> y,x
     cdef np.ndarray[DTYPE_t, ndim = 3] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
     cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
-    src_x.setflags(write=True)
-    src_y.setflags(write=True)
-    dst_x.setflags(write=True)
-    dst_y.setflags(write=True)
 
     one_step_gradient_search_no_gil(data,
                                     src_x, src_y,
