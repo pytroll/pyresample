@@ -134,7 +134,7 @@ class GradientSearchResampler(BaseResampler):
         return dst_poly
 
     def get_chunk_mappings(self):
-        """"""
+        """Map source and target chunks together if they overlap."""
         src_y_chunks, src_x_chunks = self.src_x.chunks
         dst_y_chunks, dst_x_chunks = self.dst_x.chunks
 
