@@ -32,7 +32,8 @@ extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1'],
-                  'cf': ['xarray']}
+                  'cf': ['xarray'],
+                  'gradient_search': ['shapely']}
 
 setup_requires = ['numpy>=1.10.0']
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', ]
