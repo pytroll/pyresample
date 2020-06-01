@@ -54,6 +54,13 @@ extern int compute_ewa(size_t chan_count, int maximum_weight_mode,
         IMAGE_TYPE **images, IMAGE_TYPE img_fill, accum_type **grid_accums, weight_type **grid_weights,
         ewa_weight *ewaw, ewa_parameters *ewap);
 
+template<typename CR_TYPE, typename IMAGE_TYPE>
+extern int compute_ewa_single(int maximum_weight_mode,
+        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
+        CR_TYPE *uimg, CR_TYPE *vimg,
+        IMAGE_TYPE *image, IMAGE_TYPE img_fill, accum_type *grid_accum, weight_type *grid_weight,
+        ewa_weight *ewaw, ewa_parameters *ewap);
+
 template<typename GRID_TYPE> unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill,
         size_t grid_cols, size_t grid_rows,
         accum_type *grid_accum, weight_type *grid_weights,
