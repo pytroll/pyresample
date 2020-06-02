@@ -70,7 +70,7 @@ def _call_ll2cr(lons, lats, target_geo_def, swath_usage=0):
     new_src = SwathDefinition(lons, lats)
     swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
     if swath_points_in_grid == 0:
-        return None
+        return (lons.shape, np.nan, lons.dtype)
     return np.stack([cols, rows], axis=0)
 
 
@@ -101,10 +101,62 @@ def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, kwargs
             cols, rows, data, weights, accums, np.nan, np.nan,
             **kwargs)
     except RuntimeError:
-        return None
+        return (weights.shape, 0, weights.dtype), (accums.shape, 0, accums.dtype)
     if got_points:
-        return None
+        return (weights.shape, 0, weights.dtype), (accums.shape, 0, accums.dtype)
     return weights, accums
+
+
+def chunk_callable(x_chunk, axis, keepdims, **kwargs):
+    """No-op for reduction call."""
+    return x_chunk
+
+
+def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
+    if isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple):
+        # single "empty" chunk
+        return x_chunk
+    if not isinstance(x_chunk, list):
+        x_chunk = [x_chunk]
+    if computing_meta or not len(x_chunk):
+        # computing metadata
+        return x_chunk
+    valid_chunks = [x for x in x_chunk if not isinstance(x[0], tuple)]
+    if not len(valid_chunks):
+        # print("agg input has no length: ", x_chunk, axis, keepdims)
+        if keepdims:
+            # split step - return "empty" chunk placeholder
+            return x_chunk[0]
+        else:
+            # print("Returning full array")
+            return np.full(*x_chunk[0][0]), np.full(*x_chunk[0][1])
+    # TODO: Handle maximum weight mode
+    weights = [x[0] for x in valid_chunks]
+    accums = [x[1] for x in valid_chunks]
+    # NOTE: We use the builtin "sum" function below because it does not copy
+    #       the numpy arrays. Using numpy.sum would do that.
+    if keepdims:
+        # split step
+        # print("Valid chunks: ", len(valid_chunks), valid_chunks[0][0].shape)
+        return sum(weights), sum(accums)
+    else:
+        # final combining
+        # print("Final combine: ", len(valid_chunks), valid_chunks[0][0].shape)
+        return sum(weights), sum(accums)
+
+
+def average_fornav(x_chunk, axis, keepdims, computing_meta=False):
+    if not len(x_chunk):
+        return x_chunk
+    # combine the arrays one last time
+    res = combine_fornav(x_chunk, axis, keepdims, computing_meta=computing_meta)
+    # if we have only "empty" arrays at this point then the target chunk
+    # has no valid input data in it.
+    if isinstance(res[0], tuple):
+        # FIXME: This is of weights type, not source data type
+        return np.full(*res[0])
+    # print("Average fornav: ", res)
+    return res[1] / res[0]
 
 
 def merge_fornav(out_chunk, fill_value, dtype, *output_stack, maximum_weight_mode=False):
@@ -317,29 +369,6 @@ class DaskEWAResampler(BaseResampler):
         }
         return None
 
-    def _call_fornav(self, cols, rows, target_geo_def, data,
-                     grid_coverage=0, **kwargs):
-        """Wrap fornav() to run as a dask delayed."""
-        num_valid_points, res = fornav(cols, rows, target_geo_def,
-                                       data, **kwargs)
-
-        if isinstance(data, tuple):
-            # convert 'res' from tuple of arrays to one array
-            res = np.stack(res)
-            num_valid_points = sum(num_valid_points)
-
-        grid_covered_ratio = num_valid_points / float(res.size)
-        grid_covered = grid_covered_ratio > grid_coverage
-        if not grid_covered:
-            msg = "EWA resampling only found %f%% of the grid covered " \
-                  "(need %f%%)" % (grid_covered_ratio * 100,
-                                   grid_coverage * 100)
-            raise RuntimeError(msg)
-        logger.debug("EWA resampling found %f%% of the grid covered" %
-                     (grid_covered_ratio * 100))
-
-        return res
-
     def _get_input_tuples(self, data, kwargs):
         if xr is not None and isinstance(data, xr.DataArray):
             xr_obj = data
@@ -391,7 +420,6 @@ class DaskEWAResampler(BaseResampler):
         # TODO: iterate over tuple of 2D arrays
         data = data_in[0]
         y_start = 0
-        dsk = {}
         output_stack = {}
         ll2cr_result = self.cache['ll2cr_result']
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
@@ -412,33 +440,28 @@ class DaskEWAResampler(BaseResampler):
                 x_end = x_start + out_chunks[1][out_col_idx]
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
-                z_idx = 0
-                out_chunk_list = []
-                for (ll2cr_name, in_row_idx, in_col_idx), ll2cr_block in ll2cr_blocks:
+                for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
                     key = ("out_stack", z_idx, out_row_idx, out_col_idx)
-                    # TODO: Call an updated fornav to get weights, image pixels
+                    # XXX: If we get IndexErrors from dask trying to get chunks that don't exist,
+                    #      we need to fill these with something here
                     output_stack[key] = (_delayed_fornav,
                                          (ll2cr_result.name, in_row_idx, in_col_idx),
                                          self.target_geo_def, y_slice, x_slice,
                                          (data.name, in_row_idx, in_col_idx), fornav_kwargs)
-                    out_chunk_list.append(key)
-                    z_idx += 1
-                # TODO: Create two output stacks here, one for each nansum
-                #       Then the final step will be a divide
-                dsk[("out", out_row_idx, out_col_idx)] = (
-                    merge_fornav, (out_chunks[0][out_row_idx], out_chunks[1][out_col_idx]), np.nan, data.dtype,
-                    *tuple(out_chunk_list))
                 x_start = x_end
             y_start = y_end
 
         from dask.highlevelgraph import HighLevelGraph
-        dsk.update(output_stack)
-        dsk_graph = HighLevelGraph.from_collections('out', dsk, dependencies=[data, ll2cr_result])
-        name = 'out'
-        out = da.Array(dsk_graph, name, out_chunks, data.dtype)
+        dsk_graph = HighLevelGraph.from_collections('out_stack', output_stack, dependencies=[data, ll2cr_result])
+        stack_chunks = ((1,) * (ll2cr_result.numblocks[0] * ll2cr_result.numblocks[1]),) + out_chunks
+        out_stack = da.Array(dsk_graph, 'out_stack', stack_chunks, data.dtype)
+        out = da.reduction(out_stack, chunk_callable, average_fornav,
+                           combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
+        # dsk.update(output_stack)
+        # dsk_graph = HighLevelGraph.from_collections('out', dsk, dependencies=[data, ll2cr_result])
+        # name = 'out'
+        # out = da.Array(dsk_graph, name, out_chunks, data.dtype)
         # if xr_obj is not None:
         #     # TODO: Rebuild xarray object
         #     out = xr.DataArray(out, attrs=xr_obj.attrs.copy())
         return out
-
-# ewa_out = run_chunked_ewa(scn['I04'], area_def, weight_delta_max=40.0, weight_distance_max=2.0)
