@@ -30,16 +30,14 @@ usage until necessary.
 """
 import math
 import logging
-from collections import defaultdict
 import dask.array as da
-from dask.array import map_blocks
 from dask.array.core import normalize_chunks
-from .ewa import ll2cr, fornav
+from .ewa import ll2cr
 from ._fornav import fornav_weights_and_sums_wrapper
-from pyresample.geometry import AreaDefinition, SwathDefinition
+from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler
-from pyresample import CHUNK_SIZE
 import dask
+from dask.highlevelgraph import HighLevelGraph
 import numpy as np
 
 try:
@@ -51,26 +49,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _run_proj(data_x, data_y, crs_wkt):
-    """Perform inverse projection."""
-    target_proj = Proj(crs_wkt)
-    return np.dstack(target_proj(data_x, data_y))
-
-
-def get_target_coords(lons, lats, target_geo_def, dtype=np.float64):
-    crs_wkt = target_geo_def.crs_wkt
-    res = map_blocks(_run_proj, lons, lats, crs_wkt,
-                     chunks=(lons.chunks[0], lons.chunks[1], 2),
-                     new_axis=[2]).astype(dtype)
-    return res[:, :, 0], res[:, :, 1]
-
-
 def _call_ll2cr(lons, lats, target_geo_def, swath_usage=0):
     """Wrap ll2cr() for handling dask delayed calls better."""
     new_src = SwathDefinition(lons, lats)
     swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
     if swath_points_in_grid == 0:
-        return (lons.shape, np.nan, lons.dtype)
+        return (lons.shape, np.nan, lons.dtype), (lats.shape, np.nan, lats.dtype)
     return np.stack([cols, rows], axis=0)
 
 
@@ -82,28 +66,33 @@ def call_ll2cr(lons, lats, target_geo_def):
 
 
 def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, kwargs):
-    if ll2cr_result is None:
-        # this source data doesn't fit in the target area at all
-        return None
-    cols = ll2cr_result[0]
-    rows = ll2cr_result[1]
     # Adjust cols and rows for this sub-area
     subdef = target_geo_def[y_slice, x_slice]
+    weights_dtype = np.float32
+    accums_dtype = np.float32
+    empty_weights = (subdef.shape, 0, weights_dtype)
+    empty_accums = (subdef.shape, 0, accums_dtype)
+
+    # Empty ll2cr results: ((shape, fill, dtype), (shape, fill, dtype))
+    if isinstance(ll2cr_result[0], tuple):
+        # this source data doesn't fit in the target area at all
+        return empty_weights, empty_accums
+    cols = ll2cr_result[0]
+    rows = ll2cr_result[1]
     if x_slice.start != 0:
         cols = cols - x_slice.start
     if y_slice.start != 0:
         rows = rows - y_slice.start
-    weights = np.zeros(subdef.shape, dtype=np.float32)
-    accums = np.zeros(subdef.shape, dtype=np.float32)
+    weights = np.zeros(subdef.shape, dtype=weights_dtype)
+    accums = np.zeros(subdef.shape, dtype=accums_dtype)
     try:
-        #         got_points, res = fornav(cols, rows, subdef, data, **kwargs)
         got_points = fornav_weights_and_sums_wrapper(
             cols, rows, data, weights, accums, np.nan, np.nan,
             **kwargs)
     except RuntimeError:
-        return (weights.shape, 0, weights.dtype), (accums.shape, 0, accums.dtype)
+        return empty_weights, empty_accums
     if got_points:
-        return (weights.shape, 0, weights.dtype), (accums.shape, 0, accums.dtype)
+        return empty_weights, empty_accums
     return weights, accums
 
 
@@ -121,7 +110,10 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
     if computing_meta or not len(x_chunk):
         # computing metadata
         return x_chunk
-    valid_chunks = [x for x in x_chunk if not isinstance(x[0], tuple)]
+    # if the first element is not an array it is either:
+    #   1. (empty_tuple_description, empty_tuple_description)
+    #   2. ('missing_chunk', i, j, k)
+    valid_chunks = [x for x in x_chunk if not isinstance(x[0], (str, tuple))]
     if not len(valid_chunks):
         # print("agg input has no length: ", x_chunk, axis, keepdims)
         if keepdims:
@@ -137,6 +129,7 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
     #       the numpy arrays. Using numpy.sum would do that.
     if keepdims:
         # split step
+        # print("Valid chunks pre: ", valid_chunks)
         # print("Valid chunks: ", len(valid_chunks), valid_chunks[0][0].shape)
         return sum(weights), sum(accums)
     else:
@@ -175,59 +168,6 @@ def merge_fornav(out_chunk, fill_value, dtype, *output_stack, maximum_weight_mod
         accums = np.nansum(accums, axis=0)
     res = (accums / weights).astype(dtype)
     return res
-
-
-def run_chunked_ewa(src_data_arr, target_geo_def, **kwargs):
-    from pyresample.geometry import SwathDefinition, AreaDefinition
-    src_arr = src_data_arr.data
-    src_geo_def = src_data_arr.attrs['area']
-    assert isinstance(src_geo_def, SwathDefinition)
-    assert isinstance(target_geo_def, AreaDefinition)
-    kwargs['rows_per_scan'] = src_data_arr.attrs['rows_per_scan']
-
-    out_chunks = normalize_chunks(CHUNK_SIZE, target_geo_def.shape)
-    output_stack = {}
-    # get lons and lats and assume the source data is chunked per scan
-    lons = src_geo_def.lons.data
-    lons = lons.rechunk(src_arr.chunks)
-    lats = src_geo_def.lats.data
-    lats = lats.rechunk(src_arr.chunks)
-    ll2cr_result = call_ll2cr(lons, lats, target_geo_def)
-    y_start = 0
-    dsk = {}
-    for out_row_idx in range(len(out_chunks[0])):
-        y_end = y_start + out_chunks[0][out_row_idx]
-        x_start = 0
-        for out_col_idx in range(len(out_chunks[1])):
-            x_end = x_start + out_chunks[1][out_col_idx]
-            y_slice = slice(y_start, y_end)
-            x_slice = slice(x_start, x_end)
-            z_idx = 0
-            out_chunk_list = []
-            for in_row_idx in range(src_arr.numblocks[0]):
-                for in_col_idx in range(src_arr.numblocks[1]):
-                    key = ("out_stack", z_idx, out_row_idx, out_col_idx)
-                    # TODO: Call an updated fornav to get weights, image pixels
-                    output_stack[key] = (_delayed_fornav,
-                                         (ll2cr_result.name, in_row_idx, in_col_idx),
-                                         target_geo_def, y_slice, x_slice,
-                                         (src_arr.name, in_row_idx, in_col_idx), kwargs)
-                    out_chunk_list.append(key)
-                    z_idx += 1
-            # TODO: Create two output stacks here, one for each nansum
-            #       Then the final step will be a divide
-            dsk[("out", out_row_idx, out_col_idx)] = (
-            merge_fornav, (out_chunks[0][out_row_idx], out_chunks[1][out_col_idx]), np.nan, src_data_arr.dtype,
-            *tuple(out_chunk_list))
-            x_start = x_end
-        y_start = y_end
-
-    from dask.highlevelgraph import HighLevelGraph
-    dsk.update(output_stack)
-    dsk_graph = HighLevelGraph.from_collections('out', dsk, dependencies=[scn['I04'].data, ll2cr_rows, ll2cr_cols])
-    name = 'out'
-    out = da.Array(dsk_graph, name, out_chunks, src_arr.dtype)
-    return out
 
 
 class DaskEWAResampler(BaseResampler):
@@ -348,19 +288,22 @@ class DaskEWAResampler(BaseResampler):
         # if chunk does not overlap target area then None is returned
         # otherwise a 3D array (2, y, x) of cols, rows are returned
         ll2cr_result = call_ll2cr(lons, lats, target_geo_def)
+        persist = kwargs.get('persist', False)
+        if persist:
+            ll2cr_delayeds = ll2cr_result.to_delayed()
+            ll2cr_delayeds = dask.persist(*ll2cr_delayeds.tolist())
 
         block_cache = {}
         for in_row_idx in range(lons.numblocks[0]):
             for in_col_idx in range(lons.numblocks[1]):
-                ll2cr_block = ll2cr_result.blocks[in_row_idx, in_col_idx]
-                key = (ll2cr_block.name, in_row_idx, in_col_idx)
-                # XXX: instead of using the block, use the original name to reduce duplicate dask graph entries
-                if kwargs.get('persist', False):
-                    ll2cr_block = ll2cr_block.persist()
-                # FUTURE: Compute early and don't include source blocks that are None
-                result = ll2cr_block
-                if result is not None:
-                    block_cache[key] = result
+                key = (ll2cr_result.name, in_row_idx, in_col_idx)
+                if persist:
+                    this_delayed = ll2cr_delayeds[in_row_idx][in_col_idx]
+                    result = dask.compute(this_delayed)[0]
+                    if not isinstance(result[0], tuple):
+                        block_cache[key] = this_delayed.key
+                else:
+                    block_cache[key] = key
 
         # save the dask arrays in the class instance cache
         self.cache = {
@@ -411,6 +354,8 @@ class DaskEWAResampler(BaseResampler):
                 weight_delta_max=1.0, weight_sum_min=-1.0,
                 maximum_weight_mode=False, grid_coverage=0, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
+        # not used in this step
+        kwargs.pop("persist", None)
         data_in, xr_obj = self._get_input_tuples(data, kwargs)
         rows_per_scan = self._get_rows_per_scan(kwargs)
         data_in = tuple(self._convert_to_dask(data_in, rows_per_scan))
@@ -423,6 +368,7 @@ class DaskEWAResampler(BaseResampler):
         output_stack = {}
         ll2cr_result = self.cache['ll2cr_result']
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
+        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
         fornav_kwargs = kwargs.copy()
         fornav_kwargs.update(dict(
             weight_count=weight_count,
@@ -442,25 +388,18 @@ class DaskEWAResampler(BaseResampler):
                 x_slice = slice(x_start, x_end)
                 for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
                     key = ("out_stack", z_idx, out_row_idx, out_col_idx)
-                    # XXX: If we get IndexErrors from dask trying to get chunks that don't exist,
-                    #      we need to fill these with something here
                     output_stack[key] = (_delayed_fornav,
-                                         (ll2cr_result.name, in_row_idx, in_col_idx),
+                                         ll2cr_block,
                                          self.target_geo_def, y_slice, x_slice,
                                          (data.name, in_row_idx, in_col_idx), fornav_kwargs)
                 x_start = x_end
             y_start = y_end
 
-        from dask.highlevelgraph import HighLevelGraph
         dsk_graph = HighLevelGraph.from_collections('out_stack', output_stack, dependencies=[data, ll2cr_result])
-        stack_chunks = ((1,) * (ll2cr_result.numblocks[0] * ll2cr_result.numblocks[1]),) + out_chunks
+        stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, 'out_stack', stack_chunks, data.dtype)
         out = da.reduction(out_stack, chunk_callable, average_fornav,
                            combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
-        # dsk.update(output_stack)
-        # dsk_graph = HighLevelGraph.from_collections('out', dsk, dependencies=[data, ll2cr_result])
-        # name = 'out'
-        # out = da.Array(dsk_graph, name, out_chunks, data.dtype)
         # if xr_obj is not None:
         #     # TODO: Rebuild xarray object
         #     out = xr.DataArray(out, attrs=xr_obj.attrs.copy())
