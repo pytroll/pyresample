@@ -414,7 +414,8 @@ class DaskEWAResampler(BaseResampler):
             out = da.concatenate([arr[None, ...] for arr in data_out], axis=0)
 
         if xr_obj is not None:
+            dims = [d for d in xr_obj.dims if d not in ('y', 'x')] + ['y', 'x']
             out = xr.DataArray(out, attrs=xr_obj.attrs.copy(),
-                               dims=xr_obj.dims)
+                               dims=dims)
             out = update_resampled_coords(xr_obj, out, self.target_geo_def)
         return out
