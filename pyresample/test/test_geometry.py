@@ -2165,6 +2165,7 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
         geos_area = MagicMock()
+        del geos_area.crs_wkt
         lon_0 = 0
         geos_area.proj_dict = {'a': 6378169.00,
                                'b': 6356583.80,
@@ -2190,6 +2191,7 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(lat, elat)
 
         geos_area = MagicMock()
+        del geos_area.crs_wkt
         lon_0 = 10
         geos_area.proj_dict = {'a': 6378169.00,
                                'b': 6356583.80,
@@ -2204,7 +2206,7 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        del geos_area.crs
+        del geos_area.crs_wkt
         geos_area.proj_dict = {
             'proj': 'geos',
             'sweep': 'x',
