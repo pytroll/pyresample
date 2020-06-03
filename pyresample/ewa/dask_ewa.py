@@ -349,6 +349,36 @@ class DaskEWAResampler(BaseResampler):
             else:
                 yield data.rechunk(new_chunks)
 
+    def _run_fornav_single(self, data, out_chunks, target_geo_def, **kwargs):
+        y_start = 0
+        output_stack = {}
+        ll2cr_result = self.cache['ll2cr_result']
+        ll2cr_blocks = self.cache['ll2cr_blocks'].items()
+        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
+        name = "fornav-{}".format(data.name)
+        for out_row_idx in range(len(out_chunks[0])):
+            y_end = y_start + out_chunks[0][out_row_idx]
+            x_start = 0
+            for out_col_idx in range(len(out_chunks[1])):
+                x_end = x_start + out_chunks[1][out_col_idx]
+                y_slice = slice(y_start, y_end)
+                x_slice = slice(x_start, x_end)
+                for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
+                    key = (name, z_idx, out_row_idx, out_col_idx)
+                    output_stack[key] = (_delayed_fornav,
+                                         ll2cr_block,
+                                         target_geo_def, y_slice, x_slice,
+                                         (data.name, in_row_idx, in_col_idx), kwargs)
+                x_start = x_end
+            y_start = y_end
+
+        dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
+        stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
+        out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
+        out = da.reduction(out_stack, chunk_callable, average_fornav,
+                           combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
+        return out
+
     def compute(self, data, cache_id=None, chunks=None, fill_value=0,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
                 weight_delta_max=1.0, weight_sum_min=-1.0,
@@ -362,13 +392,6 @@ class DaskEWAResampler(BaseResampler):
         out_chunks = normalize_chunks(chunks or 'auto',
                                       shape=self.target_geo_def.shape,
                                       dtype=data.dtype)
-        # TODO: iterate over tuple of 2D arrays
-        data = data_in[0]
-        y_start = 0
-        output_stack = {}
-        ll2cr_result = self.cache['ll2cr_result']
-        ll2cr_blocks = self.cache['ll2cr_blocks'].items()
-        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
         fornav_kwargs = kwargs.copy()
         fornav_kwargs.update(dict(
             weight_count=weight_count,
@@ -379,28 +402,16 @@ class DaskEWAResampler(BaseResampler):
             maximum_weight_mode=maximum_weight_mode,
             rows_per_scan=rows_per_scan,
         ))
-        name = "fornav-{}".format(data.name)
-        for out_row_idx in range(len(out_chunks[0])):
-            y_end = y_start + out_chunks[0][out_row_idx]
-            x_start = 0
-            for out_col_idx in range(len(out_chunks[1])):
-                x_end = x_start + out_chunks[1][out_col_idx]
-                y_slice = slice(y_start, y_end)
-                x_slice = slice(x_start, x_end)
-                for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
-                    key = (name, z_idx, out_row_idx, out_col_idx)
-                    output_stack[key] = (_delayed_fornav,
-                                         ll2cr_block,
-                                         self.target_geo_def, y_slice, x_slice,
-                                         (data.name, in_row_idx, in_col_idx), fornav_kwargs)
-                x_start = x_end
-            y_start = y_end
-
-        dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
-        stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
-        out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
-        out = da.reduction(out_stack, chunk_callable, average_fornav,
-                           combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
+        data_out = []
+        for data in data_in:
+            res = self._run_fornav_single(data, out_chunks,
+                                          self.target_geo_def,
+                                          **fornav_kwargs)
+            data_out.append(res)
+        if data.ndim == 2:
+            out = data_out[0]
+        else:
+            out = da.concatenate([arr[None, ...] for arr in data_out], axis=0)
 
         if xr_obj is not None:
             out = xr.DataArray(out, attrs=xr_obj.attrs.copy(),
