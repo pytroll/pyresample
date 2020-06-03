@@ -1187,10 +1187,11 @@ class AreaDefinition(BaseDefinition):
 
         This replaces the current values with anything in *override_kwargs*.
         """
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
         kwargs = {'area_id': self.area_id,
                   'description': self.description,
                   'proj_id': self.proj_id,
-                  'projection': self.proj_dict,
+                  'projection': proj_def,
                   'width': self.width,
                   'height': self.height,
                   'area_extent': self.area_extent,
@@ -1881,7 +1882,8 @@ class AreaDefinition(BaseDefinition):
     def outer_boundary_corners(self):
         """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
-        proj = Proj(**self.proj_dict)
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
+        proj = Proj(proj_def)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
                                          self.area_extent[2], self.area_extent[0]),
@@ -2060,8 +2062,9 @@ class AreaDefinition(BaseDefinition):
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
         new_area = AreaDefinition(self.area_id, self.description,
-                                  self.proj_id, self.proj_dict,
+                                  self.proj_id, proj_def,
                                   total_cols,
                                   total_rows,
                                   new_area_extent)
@@ -2098,7 +2101,8 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_proj_vectors()
         mid_col_x = np.repeat(x[mid_col], y.size)
         mid_row_y = np.repeat(y[mid_row], x.size)
-        src = Proj(getattr(self, 'crs', self.proj_dict))
+        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
+        src = Proj(proj_def)
         if radius:
             dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
         else:
@@ -2153,7 +2157,8 @@ def _make_slice_divisible(sli, max_size, factor=2):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    a, b = proj4_radius_parameters(geos_area.proj_dict)
+    proj_def = geos_area.crs_wkt if hasattr(geos_area, 'crs_wkt') else geos_area.proj_dict
+    a, b = proj4_radius_parameters(proj_def)
     req = a / 1000.0
     rp = b / 1000.0
     h = geos_area.proj_dict['h'] / 1000.0 + req
