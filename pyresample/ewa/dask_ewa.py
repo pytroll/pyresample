@@ -35,7 +35,7 @@ from dask.array.core import normalize_chunks
 from .ewa import ll2cr
 from ._fornav import fornav_weights_and_sums_wrapper
 from pyresample.geometry import SwathDefinition
-from pyresample.resampler import BaseResampler
+from pyresample.resampler import BaseResampler, update_resampled_coords
 import dask
 from dask.highlevelgraph import HighLevelGraph
 import numpy as np
@@ -379,6 +379,7 @@ class DaskEWAResampler(BaseResampler):
             maximum_weight_mode=maximum_weight_mode,
             rows_per_scan=rows_per_scan,
         ))
+        name = "fornav-{}".format(data.name)
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -387,7 +388,7 @@ class DaskEWAResampler(BaseResampler):
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
                 for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
-                    key = ("out_stack", z_idx, out_row_idx, out_col_idx)
+                    key = (name, z_idx, out_row_idx, out_col_idx)
                     output_stack[key] = (_delayed_fornav,
                                          ll2cr_block,
                                          self.target_geo_def, y_slice, x_slice,
@@ -395,12 +396,14 @@ class DaskEWAResampler(BaseResampler):
                 x_start = x_end
             y_start = y_end
 
-        dsk_graph = HighLevelGraph.from_collections('out_stack', output_stack, dependencies=[data, ll2cr_result])
+        dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
-        out_stack = da.Array(dsk_graph, 'out_stack', stack_chunks, data.dtype)
+        out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
         out = da.reduction(out_stack, chunk_callable, average_fornav,
                            combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
-        # if xr_obj is not None:
-        #     # TODO: Rebuild xarray object
-        #     out = xr.DataArray(out, attrs=xr_obj.attrs.copy())
+
+        if xr_obj is not None:
+            out = xr.DataArray(out, attrs=xr_obj.attrs.copy(),
+                               dims=xr_obj.dims)
+            out = update_resampled_coords(xr_obj, out, self.target_geo_def)
         return out
