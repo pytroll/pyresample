@@ -161,7 +161,7 @@ def fornav(cols, rows, area_def, data_in,
     data_in = [np.ascontiguousarray(d) for d in data_in]
     # determine a fill value if they didn't tell us what they have as a
     # fill value in the numpy arrays
-    if "fill" is None:
+    if fill is None:
         if np.issubdtype(data_in[0].dtype, np.floating):
             fill = np.nan
         elif np.issubdtype(data_in[0].dtype, np.integer):

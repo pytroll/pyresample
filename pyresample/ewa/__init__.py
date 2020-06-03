@@ -74,4 +74,4 @@ except ImportError:
     # fallback to old numpy-only implementation
     pass
 
-from .ewa import ll2cr, fornav
+from .ewa import ll2cr, fornav  # noqa

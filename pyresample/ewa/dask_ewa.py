@@ -273,7 +273,7 @@ class DaskEWAResampler(BaseResampler):
 
         if kwargs.get('mask') is not None:
             logger.warning("'mask' parameter has no affect during EWA "
-                        "resampling")
+                           "resampling")
 
         source_geo_def = self.source_geo_def
         target_geo_def = self.target_geo_def
