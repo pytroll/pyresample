@@ -30,10 +30,11 @@ usage until necessary.
 """
 import math
 import logging
+from functools import partial
 import dask.array as da
 from dask.array.core import normalize_chunks
 from .ewa import ll2cr
-from ._fornav import fornav_weights_and_sums_wrapper
+from ._fornav import fornav_weights_and_sums_wrapper, write_grid_image_single
 from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler, update_resampled_coords
 import dask
@@ -138,7 +139,7 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
         return sum(weights), sum(accums)
 
 
-def average_fornav(x_chunk, axis, keepdims, computing_meta=False):
+def average_fornav(x_chunk, axis, keepdims, computing_meta=False, weight_sum_min=-1.0, maximum_weight_mode=False):
     if not len(x_chunk):
         return x_chunk
     # combine the arrays one last time
@@ -149,25 +150,12 @@ def average_fornav(x_chunk, axis, keepdims, computing_meta=False):
         # FIXME: This is of weights type, not source data type
         return np.full(*res[0])
     # print("Average fornav: ", res)
-    return res[1] / res[0]
-
-
-def merge_fornav(out_chunk, fill_value, dtype, *output_stack, maximum_weight_mode=False):
-    # TODO: Actually do stuff with this to sum and average pixels
-    valid_stack = [x for x in output_stack if x is not None]
-    if not valid_stack:
-        return np.full(out_chunk, fill_value, dtype=dtype)
-    weights = np.array([x[0] for x in valid_stack], copy=False)
-    accums = np.array([x[1] for x in valid_stack], copy=False)
-    #     stack = np.array(valid_stack, copy=False)
-    #     res = np.nanmax(stack, axis=0)
-    if maximum_weight_mode:
-        raise NotImplementedError("maximum_weight_mode is not implemented yet")
-    else:
-        weights = np.nansum(weights, axis=0)
-        accums = np.nansum(accums, axis=0)
-    res = (accums / weights).astype(dtype)
-    return res
+    weights, accums = res
+    out = np.full(weights.shape, np.nan, dtype=weights.dtype)
+    write_grid_image_single(out, weights, accums, np.nan,
+                            weight_sum_min=weight_sum_min,
+                            maximum_weight_mode=maximum_weight_mode)
+    return out
 
 
 class DaskEWAResampler(BaseResampler):
@@ -356,6 +344,8 @@ class DaskEWAResampler(BaseResampler):
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
         ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
         name = "fornav-{}".format(data.name)
+        maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
+        weight_sum_min = kwargs.get('weight_sum_min', -1.0)
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -375,7 +365,10 @@ class DaskEWAResampler(BaseResampler):
         dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
-        out = da.reduction(out_stack, chunk_callable, average_fornav,
+        average_fornav_with_kwargs = partial(
+            average_fornav, maximum_weight_mode=maximum_weight_mode,
+            weight_sum_min=weight_sum_min)
+        out = da.reduction(out_stack, chunk_callable, average_fornav_with_kwargs,
                            combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
         return out
 

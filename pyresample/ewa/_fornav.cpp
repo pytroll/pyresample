@@ -1327,6 +1327,18 @@ struct __pyx_defaults38;
 typedef struct __pyx_defaults38 __pyx_defaults38;
 struct __pyx_defaults39;
 typedef struct __pyx_defaults39 __pyx_defaults39;
+struct __pyx_defaults40;
+typedef struct __pyx_defaults40 __pyx_defaults40;
+struct __pyx_defaults41;
+typedef struct __pyx_defaults41 __pyx_defaults41;
+struct __pyx_defaults42;
+typedef struct __pyx_defaults42 __pyx_defaults42;
+struct __pyx_defaults43;
+typedef struct __pyx_defaults43 __pyx_defaults43;
+struct __pyx_defaults44;
+typedef struct __pyx_defaults44 __pyx_defaults44;
+struct __pyx_defaults45;
+typedef struct __pyx_defaults45 __pyx_defaults45;
 struct __pyx_defaults {
   PyBoolObject *__pyx_arg_maximum_weight_mode;
   unsigned int __pyx_arg_weight_count;
@@ -1645,6 +1657,30 @@ struct __pyx_defaults39 {
   weight_type __pyx_arg_weight_min;
   weight_type __pyx_arg_weight_distance_max;
   weight_type __pyx_arg_weight_delta_max;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults40 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults41 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults42 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults43 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults44 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
+  weight_type __pyx_arg_weight_sum_min;
+};
+struct __pyx_defaults45 {
+  PyBoolObject *__pyx_arg_maximum_weight_mode;
   weight_type __pyx_arg_weight_sum_min;
 };
 
@@ -2752,11 +2788,11 @@ static CYTHON_INLINE unsigned int __Pyx_PyInt_As_unsigned_int(PyObject *);
 /* CIntFromPy.proto */
 static CYTHON_INLINE npy_int8 __Pyx_PyInt_As_npy_int8(PyObject *);
 
-/* BytesContains.proto */
-static CYTHON_INLINE int __Pyx_BytesContains(PyObject* bytes, char character);
-
 /* CIntFromPy.proto */
 static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
+
+/* BytesContains.proto */
+static CYTHON_INLINE int __Pyx_BytesContains(PyObject* bytes, char character);
 
 /* ImportNumPyArray.proto */
 static PyObject *__pyx_numpy_ndarray = NULL;
@@ -3155,6 +3191,7 @@ static const char __pyx_k_RuntimeError[] = "RuntimeError";
 static const char __pyx_k_cols_pointer[] = "cols_pointer";
 static const char __pyx_k_grid_weights[] = "grid_weights";
 static const char __pyx_k_input_arrays[] = "input_arrays";
+static const char __pyx_k_output_array[] = "output_array";
 static const char __pyx_k_pyx_checksum[] = "__pyx_checksum";
 static const char __pyx_k_rows_pointer[] = "rows_pointer";
 static const char __pyx_k_stringsource[] = "stringsource";
@@ -3190,6 +3227,7 @@ static const char __pyx_k_MemoryView_of_r_at_0x_x[] = "<MemoryView of %r at 0x%x
 static const char __pyx_k_contiguous_and_indirect[] = "<contiguous and indirect>";
 static const char __pyx_k_float32_t_int8_t_int8_t[] = "float32_t|int8_t|int8_t";
 static const char __pyx_k_float64_t_int8_t_int8_t[] = "float64_t|int8_t|int8_t";
+static const char __pyx_k_write_grid_image_single[] = "write_grid_image_single";
 static const char __pyx_k_Cannot_index_with_type_s[] = "Cannot index with type '%s'";
 static const char __pyx_k_Invalid_shape_in_axis_d_d[] = "Invalid shape in axis %d: %d.";
 static const char __pyx_k_float32_t_float32_t_int8_t[] = "float32_t|float32_t|int8_t";
@@ -3378,6 +3416,7 @@ static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
 static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
 static PyObject *__pyx_n_s_obj;
 static PyObject *__pyx_n_s_out_type;
+static PyObject *__pyx_n_s_output_array;
 static PyObject *__pyx_n_s_output_arrays;
 static PyObject *__pyx_n_s_output_fill;
 static PyObject *__pyx_n_s_output_pointer;
@@ -3440,52 +3479,60 @@ static PyObject *__pyx_n_s_weight_distance_max;
 static PyObject *__pyx_n_s_weight_min;
 static PyObject *__pyx_n_s_weight_sum_min;
 static PyObject *__pyx_n_s_weights_pointer;
+static PyObject *__pyx_n_s_write_grid_image_single;
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_52__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_62__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_wrapper_genexpr(PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_wrapper_3genexpr(PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_4fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_54__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_64__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_wrapper_6genexpr(PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_wrapper_9genexpr(PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_8fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_92__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_10fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_94__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_96__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_98__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_100__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_128__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_130__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_132__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_134__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_136__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_46fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_4write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_144__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_50write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_146__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_52write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_148__defaults__(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_54write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode); /* proto */
 static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
@@ -3542,6 +3589,7 @@ static PyObject *__pyx_tp_new_memoryview(PyTypeObject *t, PyObject *a, PyObject 
 static PyObject *__pyx_tp_new__memoryviewslice(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_int_0;
 static PyObject *__pyx_int_1;
+static PyObject *__pyx_int_4;
 static PyObject *__pyx_int_7;
 static PyObject *__pyx_int_8;
 static PyObject *__pyx_int_184977713;
@@ -3584,14 +3632,16 @@ static PyObject *__pyx_tuple__37;
 static PyObject *__pyx_tuple__38;
 static PyObject *__pyx_tuple__40;
 static PyObject *__pyx_tuple__42;
-static PyObject *__pyx_tuple__43;
 static PyObject *__pyx_tuple__44;
 static PyObject *__pyx_tuple__45;
 static PyObject *__pyx_tuple__46;
 static PyObject *__pyx_tuple__47;
+static PyObject *__pyx_tuple__48;
+static PyObject *__pyx_tuple__49;
 static PyObject *__pyx_codeobj__39;
 static PyObject *__pyx_codeobj__41;
-static PyObject *__pyx_codeobj__48;
+static PyObject *__pyx_codeobj__43;
+static PyObject *__pyx_codeobj__50;
 /* Late includes */
 
 /* "pyresample/ewa/_fornav.pyx":118
@@ -7207,7 +7257,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_fornav_wrapper(CYTHON_UNUSE
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_52__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_62__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -7277,9 +7327,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_52__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_5fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_5fornav_wrapper = {"__pyx_fuse_0fornav_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_5fornav_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_fornav_wrapper};
-static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_5fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_7fornav_wrapper = {"__pyx_fuse_0fornav_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_fornav_wrapper};
+static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyObject *__pyx_v_input_arrays = 0;
@@ -7487,7 +7537,7 @@ static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_5fornav_wrapper
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_input_arrays), (&PyTuple_Type), 1, "input_arrays", 1))) __PYX_ERR(0, 209, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output_arrays), (&PyTuple_Type), 1, "output_arrays", 1))) __PYX_ERR(0, 209, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 212, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_4fornav_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_arrays, __pyx_v_output_arrays, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_arrays, __pyx_v_output_arrays, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -7754,7 +7804,7 @@ static PyObject *__pyx_gb_10pyresample_3ewa_7_fornav_14fornav_wrapper_5generator
  *            tuple input_arrays, tuple output_arrays, input_fill, output_fill,
  */
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_4fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   struct __pyx_obj_10pyresample_3ewa_7_fornav___pyx_scope_struct____pyx_fuse_0fornav_wrapper *__pyx_cur_scope;
   size_t __pyx_v_num_items;
   size_t __pyx_v_num_outputs;
@@ -8910,7 +8960,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_4fornav_wrapper(CYTHON_UNUS
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_54__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_64__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -8980,9 +9030,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_54__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_7fornav_wrapper = {"__pyx_fuse_1fornav_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_fornav_wrapper};
-static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_9fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_9fornav_wrapper = {"__pyx_fuse_1fornav_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_9fornav_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_fornav_wrapper};
+static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_9fornav_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyObject *__pyx_v_input_arrays = 0;
@@ -9190,7 +9240,7 @@ static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_7fornav_wrapper
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_input_arrays), (&PyTuple_Type), 1, "input_arrays", 1))) __PYX_ERR(0, 209, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output_arrays), (&PyTuple_Type), 1, "output_arrays", 1))) __PYX_ERR(0, 209, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 212, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_arrays, __pyx_v_output_arrays, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_8fornav_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_arrays, __pyx_v_output_arrays, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -9457,7 +9507,7 @@ static PyObject *__pyx_gb_10pyresample_3ewa_7_fornav_14fornav_wrapper_11generato
  *            tuple input_arrays, tuple output_arrays, input_fill, output_fill,
  */
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_6fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_8fornav_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyObject *__pyx_v_input_arrays, PyObject *__pyx_v_output_arrays, PyObject *__pyx_v_input_fill, PyObject *__pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   struct __pyx_obj_10pyresample_3ewa_7_fornav___pyx_scope_struct_3___pyx_fuse_1fornav_wrapper *__pyx_cur_scope;
   size_t __pyx_v_num_items;
   size_t __pyx_v_num_outputs;
@@ -17524,7 +17574,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wr
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_92__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -17594,9 +17644,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_92__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_11fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_11fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_11fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_11fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -17816,7 +17866,7 @@ static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_11fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_10fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -17827,7 +17877,7 @@ static PyObject *__pyx_fuse_0_0_0__pyx_pw_10pyresample_3ewa_7_fornav_11fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_10fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -18061,6 +18111,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_10fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -18105,7 +18157,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_10fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_94__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -18175,9 +18227,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_94__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -18397,7 +18449,7 @@ static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -18408,7 +18460,7 @@ static PyObject *__pyx_fuse_0_0_1__pyx_pw_10pyresample_3ewa_7_fornav_13fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -18642,6 +18694,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -18686,7 +18740,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_12fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_96__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -18756,9 +18810,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_96__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_0_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -18978,7 +19032,7 @@ static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -18989,7 +19043,7 @@ static PyObject *__pyx_fuse_0_0_2__pyx_pw_10pyresample_3ewa_7_fornav_15fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -19223,6 +19277,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -19267,7 +19323,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_14fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_98__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -19337,9 +19393,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_98__defaults__(CYTHON_UNUSE
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -19559,7 +19615,7 @@ static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -19570,7 +19626,7 @@ static PyObject *__pyx_fuse_0_1_0__pyx_pw_10pyresample_3ewa_7_fornav_17fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -19804,6 +19860,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -19848,7 +19906,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_16fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_100__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -19918,9 +19976,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_100__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -20140,7 +20198,7 @@ static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -20151,7 +20209,7 @@ static PyObject *__pyx_fuse_0_1_1__pyx_pw_10pyresample_3ewa_7_fornav_19fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -20385,6 +20443,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -20429,7 +20489,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_18fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -20499,9 +20559,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_1_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -20721,7 +20781,7 @@ static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -20732,7 +20792,7 @@ static PyObject *__pyx_fuse_0_1_2__pyx_pw_10pyresample_3ewa_7_fornav_21fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -20966,6 +21026,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -21010,7 +21072,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_20fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -21080,9 +21142,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -21302,7 +21364,7 @@ static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -21313,7 +21375,7 @@ static PyObject *__pyx_fuse_0_2_0__pyx_pw_10pyresample_3ewa_7_fornav_23fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -21547,6 +21609,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -21591,7 +21655,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_22fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -21661,9 +21725,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -21883,7 +21947,7 @@ static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -21894,7 +21958,7 @@ static PyObject *__pyx_fuse_0_2_1__pyx_pw_10pyresample_3ewa_7_fornav_25fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -22128,6 +22192,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -22172,7 +22238,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_24fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -22242,9 +22308,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_0_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper = {"__pyx_fuse_0_2_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -22464,7 +22530,7 @@ static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -22475,7 +22541,7 @@ static PyObject *__pyx_fuse_0_2_2__pyx_pw_10pyresample_3ewa_7_fornav_27fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -22709,6 +22775,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -22753,7 +22821,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_26fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -22823,9 +22891,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -23045,7 +23113,7 @@ static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -23056,7 +23124,7 @@ static PyObject *__pyx_fuse_1_0_0__pyx_pw_10pyresample_3ewa_7_fornav_29fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -23290,6 +23358,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -23334,7 +23404,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_28fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -23404,9 +23474,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -23626,7 +23696,7 @@ static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -23637,7 +23707,7 @@ static PyObject *__pyx_fuse_1_0_1__pyx_pw_10pyresample_3ewa_7_fornav_31fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -23871,6 +23941,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -23915,7 +23987,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_30fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -23985,9 +24057,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_0_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -24207,7 +24279,7 @@ static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -24218,7 +24290,7 @@ static PyObject *__pyx_fuse_1_0_2__pyx_pw_10pyresample_3ewa_7_fornav_33fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -24452,6 +24524,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -24496,7 +24570,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_32fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -24566,9 +24640,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -24788,7 +24862,7 @@ static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -24799,7 +24873,7 @@ static PyObject *__pyx_fuse_1_1_0__pyx_pw_10pyresample_3ewa_7_fornav_35fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -25033,6 +25107,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -25077,7 +25153,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_34fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_128__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -25147,9 +25223,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -25369,7 +25445,7 @@ static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -25380,7 +25456,7 @@ static PyObject *__pyx_fuse_1_1_1__pyx_pw_10pyresample_3ewa_7_fornav_37fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -25614,6 +25690,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -25658,7 +25736,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_36fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_130__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -25728,9 +25806,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_1_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -25950,7 +26028,7 @@ static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -25961,7 +26039,7 @@ static PyObject *__pyx_fuse_1_1_2__pyx_pw_10pyresample_3ewa_7_fornav_39fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -26195,6 +26273,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -26239,7 +26319,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_38fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_132__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -26309,9 +26389,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_0fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -26531,7 +26611,7 @@ static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -26542,7 +26622,7 @@ static PyObject *__pyx_fuse_1_2_0__pyx_pw_10pyresample_3ewa_7_fornav_41fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float32_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -26776,6 +26856,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -26820,7 +26902,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_40fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_134__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -26890,9 +26972,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_1fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -27112,7 +27194,7 @@ static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -27123,7 +27205,7 @@ static PyObject *__pyx_fuse_1_2_1__pyx_pw_10pyresample_3ewa_7_fornav_43fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_float64_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -27357,6 +27439,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -27401,7 +27485,7 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_42fornav_weights_and_sums_w
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_136__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -27471,9 +27555,9 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__(CYTHON_UNUS
 }
 
 /* Python wrapper */
-static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_fuse_1_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
-static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_47fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_47fornav_weights_and_sums_wrapper = {"__pyx_fuse_1_2_2fornav_weights_and_sums_wrapper", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_47fornav_weights_and_sums_wrapper, METH_VARARGS|METH_KEYWORDS, __pyx_doc_10pyresample_3ewa_7_fornav_2fornav_weights_and_sums_wrapper};
+static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_47fornav_weights_and_sums_wrapper(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyArrayObject *__pyx_v_cols_array = 0;
   PyArrayObject *__pyx_v_rows_array = 0;
   PyArrayObject *__pyx_v_input_array = 0;
@@ -27693,7 +27777,7 @@ static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_we
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 418, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 419, __pyx_L1_error)
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 423, __pyx_L1_error)
-  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_46fornav_weights_and_sums_wrapper(__pyx_self, __pyx_v_cols_array, __pyx_v_rows_array, __pyx_v_input_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_input_fill, __pyx_v_output_fill, __pyx_v_rows_per_scan, __pyx_v_weight_count, __pyx_v_weight_min, __pyx_v_weight_distance_max, __pyx_v_weight_delta_max, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
 
   /* function exit code */
   goto __pyx_L0;
@@ -27704,7 +27788,7 @@ static PyObject *__pyx_fuse_1_2_2__pyx_pw_10pyresample_3ewa_7_fornav_45fornav_we
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_46fornav_weights_and_sums_wrapper(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_cols_array, PyArrayObject *__pyx_v_rows_array, PyArrayObject *__pyx_v_input_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_input_fill, __pyx_t_5numpy_int8_t __pyx_v_output_fill, size_t __pyx_v_rows_per_scan, unsigned int __pyx_v_weight_count, weight_type __pyx_v_weight_min, weight_type __pyx_v_weight_distance_max, weight_type __pyx_v_weight_delta_max, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
   size_t __pyx_v_swath_cols;
   size_t __pyx_v_swath_rows;
   size_t __pyx_v_grid_cols;
@@ -27938,6 +28022,8 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_w
  *                                         <bint>maximum_weight_mode)
  * 
  *     return got_point             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_got_point); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 488, __pyx_L1_error)
@@ -27976,6 +28062,1413 @@ static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_44fornav_weights_and_sums_w
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_input_array.rcbuffer->pybuffer);
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_rows_array.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_10pyresample_3ewa_7_fornav_5write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_10pyresample_3ewa_7_fornav_5write_grid_image_single = {"write_grid_image_single", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10pyresample_3ewa_7_fornav_5write_grid_image_single, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_10pyresample_3ewa_7_fornav_5write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_signatures = 0;
+  PyObject *__pyx_v_args = 0;
+  PyObject *__pyx_v_kwargs = 0;
+  CYTHON_UNUSED PyObject *__pyx_v_defaults = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__pyx_fused_cpdef (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_signatures,&__pyx_n_s_args,&__pyx_n_s_kwargs,&__pyx_n_s_defaults,0};
+    PyObject* values[4] = {0,0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_signatures)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_args)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, 1); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_kwargs)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, 2); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_defaults)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, 3); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__pyx_fused_cpdef") < 0)) __PYX_ERR(0, 493, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+    }
+    __pyx_v_signatures = values[0];
+    __pyx_v_args = values[1];
+    __pyx_v_kwargs = values[2];
+    __pyx_v_defaults = values[3];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("__pyx_fused_cpdef", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 493, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyresample.ewa._fornav.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_4write_grid_image_single(__pyx_self, __pyx_v_signatures, __pyx_v_args, __pyx_v_kwargs, __pyx_v_defaults);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_4write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_signatures, PyObject *__pyx_v_args, PyObject *__pyx_v_kwargs, CYTHON_UNUSED PyObject *__pyx_v_defaults) {
+  PyObject *__pyx_v_dest_sig = NULL;
+  Py_ssize_t __pyx_v_i;
+  PyTypeObject *__pyx_v_ndarray = 0;
+  __Pyx_memviewslice __pyx_v_memslice;
+  Py_ssize_t __pyx_v_itemsize;
+  int __pyx_v_dtype_signed;
+  char __pyx_v_kind;
+  int __pyx_v____pyx_int8_t_is_signed;
+  PyObject *__pyx_v_arg = NULL;
+  PyObject *__pyx_v_dtype = NULL;
+  PyObject *__pyx_v_arg_base = NULL;
+  PyObject *__pyx_v_candidates = NULL;
+  PyObject *__pyx_v_sig = NULL;
+  int __pyx_v_match_found;
+  PyObject *__pyx_v_src_sig = NULL;
+  PyObject *__pyx_v_dst_type = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  int __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  PyObject *__pyx_t_6 = NULL;
+  long __pyx_t_7;
+  __Pyx_memviewslice __pyx_t_8;
+  Py_ssize_t __pyx_t_9;
+  int __pyx_t_10;
+  int __pyx_t_11;
+  PyObject *__pyx_t_12 = NULL;
+  PyObject *__pyx_t_13 = NULL;
+  PyObject *__pyx_t_14 = NULL;
+  Py_ssize_t __pyx_t_15;
+  Py_ssize_t __pyx_t_16;
+  Py_ssize_t __pyx_t_17;
+  int __pyx_t_18;
+  __Pyx_RefNannySetupContext("write_grid_image_single", 0);
+  __Pyx_INCREF(__pyx_v_kwargs);
+  __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  PyList_SET_ITEM(__pyx_t_1, 0, Py_None);
+  __pyx_v_dest_sig = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  __pyx_t_3 = (__pyx_v_kwargs != Py_None);
+  __pyx_t_4 = (__pyx_t_3 != 0);
+  if (__pyx_t_4) {
+  } else {
+    __pyx_t_2 = __pyx_t_4;
+    goto __pyx_L4_bool_binop_done;
+  }
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_kwargs); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __pyx_t_3 = ((!__pyx_t_4) != 0);
+  __pyx_t_2 = __pyx_t_3;
+  __pyx_L4_bool_binop_done:;
+  if (__pyx_t_2) {
+    __Pyx_INCREF(Py_None);
+    __Pyx_DECREF_SET(__pyx_v_kwargs, Py_None);
+  }
+  __pyx_t_1 = ((PyObject *)__Pyx_ImportNumPyArrayTypeIfAvailable()); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_v_ndarray = ((PyTypeObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  __pyx_v_itemsize = -1L;
+  __pyx_v____pyx_int8_t_is_signed = (!((((__pyx_t_5numpy_int8_t)-1L) > 0) != 0));
+  if (unlikely(__pyx_v_args == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_t_5 = PyTuple_GET_SIZE(((PyObject*)__pyx_v_args)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+  __pyx_t_2 = ((0 < __pyx_t_5) != 0);
+  if (__pyx_t_2) {
+    if (unlikely(__pyx_v_args == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 493, __pyx_L1_error)
+    }
+    __pyx_t_1 = PyTuple_GET_ITEM(((PyObject*)__pyx_v_args), 0);
+    __Pyx_INCREF(__pyx_t_1);
+    __pyx_v_arg = __pyx_t_1;
+    __pyx_t_1 = 0;
+    goto __pyx_L6;
+  }
+  __pyx_t_3 = (__pyx_v_kwargs != Py_None);
+  __pyx_t_4 = (__pyx_t_3 != 0);
+  if (__pyx_t_4) {
+  } else {
+    __pyx_t_2 = __pyx_t_4;
+    goto __pyx_L7_bool_binop_done;
+  }
+  if (unlikely(__pyx_v_kwargs == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_t_4 = (__Pyx_PyDict_ContainsTF(__pyx_n_s_output_array, ((PyObject*)__pyx_v_kwargs), Py_EQ)); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __pyx_t_3 = (__pyx_t_4 != 0);
+  __pyx_t_2 = __pyx_t_3;
+  __pyx_L7_bool_binop_done:;
+  if (__pyx_t_2) {
+    if (unlikely(__pyx_v_kwargs == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 493, __pyx_L1_error)
+    }
+    __pyx_t_1 = __Pyx_PyDict_GetItem(((PyObject*)__pyx_v_kwargs), __pyx_n_s_output_array); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_v_arg = __pyx_t_1;
+    __pyx_t_1 = 0;
+    goto __pyx_L6;
+  }
+  /*else*/ {
+    if (unlikely(__pyx_v_args == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
+      __PYX_ERR(0, 493, __pyx_L1_error)
+    }
+    __pyx_t_5 = PyTuple_GET_SIZE(((PyObject*)__pyx_v_args)); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+    __pyx_t_1 = PyInt_FromSsize_t(__pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_6 = PyTuple_New(3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_INCREF(__pyx_int_4);
+    __Pyx_GIVEREF(__pyx_int_4);
+    PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_int_4);
+    __Pyx_INCREF(__pyx_n_s_s);
+    __Pyx_GIVEREF(__pyx_n_s_s);
+    PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_n_s_s);
+    __Pyx_GIVEREF(__pyx_t_1);
+    PyTuple_SET_ITEM(__pyx_t_6, 2, __pyx_t_1);
+    __pyx_t_1 = 0;
+    __pyx_t_1 = __Pyx_PyString_Format(__pyx_kp_s_Expected_at_least_d_argument_s_g, __pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __pyx_t_6 = __Pyx_PyObject_CallOneArg(__pyx_builtin_TypeError, __pyx_t_1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_Raise(__pyx_t_6, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_L6:;
+  while (1) {
+    __pyx_t_2 = (__pyx_v_ndarray != ((PyTypeObject*)Py_None));
+    __pyx_t_3 = (__pyx_t_2 != 0);
+    if (__pyx_t_3) {
+      __pyx_t_3 = __Pyx_TypeCheck(__pyx_v_arg, __pyx_v_ndarray); 
+      __pyx_t_2 = (__pyx_t_3 != 0);
+      if (__pyx_t_2) {
+        __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg, __pyx_n_s_dtype); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __pyx_v_dtype = __pyx_t_6;
+        __pyx_t_6 = 0;
+        goto __pyx_L12;
+      }
+      __pyx_t_2 = __pyx_memoryview_check(__pyx_v_arg); 
+      __pyx_t_3 = (__pyx_t_2 != 0);
+      if (__pyx_t_3) {
+        __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg, __pyx_n_s_base); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __pyx_v_arg_base = __pyx_t_6;
+        __pyx_t_6 = 0;
+        __pyx_t_3 = __Pyx_TypeCheck(__pyx_v_arg_base, __pyx_v_ndarray); 
+        __pyx_t_2 = (__pyx_t_3 != 0);
+        if (__pyx_t_2) {
+          __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg_base, __pyx_n_s_dtype); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          __pyx_v_dtype = __pyx_t_6;
+          __pyx_t_6 = 0;
+          goto __pyx_L13;
+        }
+        /*else*/ {
+          __Pyx_INCREF(Py_None);
+          __pyx_v_dtype = Py_None;
+        }
+        __pyx_L13:;
+        goto __pyx_L12;
+      }
+      /*else*/ {
+        __Pyx_INCREF(Py_None);
+        __pyx_v_dtype = Py_None;
+      }
+      __pyx_L12:;
+      __pyx_v_itemsize = -1L;
+      __pyx_t_2 = (__pyx_v_dtype != Py_None);
+      __pyx_t_3 = (__pyx_t_2 != 0);
+      if (__pyx_t_3) {
+        __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_dtype, __pyx_n_s_itemsize); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __pyx_t_5 = __Pyx_PyIndex_AsSsize_t(__pyx_t_6); if (unlikely((__pyx_t_5 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+        __pyx_v_itemsize = __pyx_t_5;
+        __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_dtype, __pyx_n_s_kind); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __pyx_t_7 = __Pyx_PyObject_Ord(__pyx_t_6); if (unlikely(__pyx_t_7 == ((long)(long)(Py_UCS4)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+        __pyx_v_kind = __pyx_t_7;
+        __pyx_v_dtype_signed = (__pyx_v_kind == 'i');
+        switch (__pyx_v_kind) {
+          case 'i':
+          case 'u':
+          __pyx_t_2 = (((sizeof(__pyx_t_5numpy_int8_t)) == __pyx_v_itemsize) != 0);
+          if (__pyx_t_2) {
+          } else {
+            __pyx_t_3 = __pyx_t_2;
+            goto __pyx_L16_bool_binop_done;
+          }
+          __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg, __pyx_n_s_ndim); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          __pyx_t_5 = __Pyx_PyIndex_AsSsize_t(__pyx_t_6); if (unlikely((__pyx_t_5 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+          __pyx_t_2 = ((((Py_ssize_t)__pyx_t_5) == 2) != 0);
+          if (__pyx_t_2) {
+          } else {
+            __pyx_t_3 = __pyx_t_2;
+            goto __pyx_L16_bool_binop_done;
+          }
+          __pyx_t_2 = ((!((__pyx_v____pyx_int8_t_is_signed ^ __pyx_v_dtype_signed) != 0)) != 0);
+          __pyx_t_3 = __pyx_t_2;
+          __pyx_L16_bool_binop_done:;
+          if (__pyx_t_3) {
+            if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_int8_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+            goto __pyx_L10_break;
+          }
+          break;
+          case 'f':
+          __pyx_t_2 = (((sizeof(__pyx_t_5numpy_float32_t)) == __pyx_v_itemsize) != 0);
+          if (__pyx_t_2) {
+          } else {
+            __pyx_t_3 = __pyx_t_2;
+            goto __pyx_L20_bool_binop_done;
+          }
+          __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg, __pyx_n_s_ndim); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          __pyx_t_5 = __Pyx_PyIndex_AsSsize_t(__pyx_t_6); if (unlikely((__pyx_t_5 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+          __pyx_t_2 = ((((Py_ssize_t)__pyx_t_5) == 2) != 0);
+          __pyx_t_3 = __pyx_t_2;
+          __pyx_L20_bool_binop_done:;
+          if (__pyx_t_3) {
+            if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_float32_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+            goto __pyx_L10_break;
+          }
+          __pyx_t_2 = (((sizeof(__pyx_t_5numpy_float64_t)) == __pyx_v_itemsize) != 0);
+          if (__pyx_t_2) {
+          } else {
+            __pyx_t_3 = __pyx_t_2;
+            goto __pyx_L23_bool_binop_done;
+          }
+          __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_arg, __pyx_n_s_ndim); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          __pyx_t_5 = __Pyx_PyIndex_AsSsize_t(__pyx_t_6); if (unlikely((__pyx_t_5 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 493, __pyx_L1_error)
+          __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+          __pyx_t_2 = ((((Py_ssize_t)__pyx_t_5) == 2) != 0);
+          __pyx_t_3 = __pyx_t_2;
+          __pyx_L23_bool_binop_done:;
+          if (__pyx_t_3) {
+            if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_float64_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+            goto __pyx_L10_break;
+          }
+          break;
+          case 'c':
+          break;
+          case 'O':
+          break;
+          default: break;
+        }
+      }
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == -1L) != 0);
+    if (!__pyx_t_2) {
+    } else {
+      __pyx_t_3 = __pyx_t_2;
+      goto __pyx_L26_bool_binop_done;
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == (sizeof(__pyx_t_5numpy_float32_t))) != 0);
+    __pyx_t_3 = __pyx_t_2;
+    __pyx_L26_bool_binop_done:;
+    if (__pyx_t_3) {
+      __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dsds_nn___pyx_t_5numpy_float32_t(__pyx_v_arg, 0); 
+      __pyx_v_memslice = __pyx_t_8;
+      __pyx_t_3 = (__pyx_v_memslice.memview != 0);
+      if (__pyx_t_3) {
+        __PYX_XDEC_MEMVIEW((&__pyx_v_memslice), 1); 
+        if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_float32_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+        goto __pyx_L10_break;
+      }
+      /*else*/ {
+        PyErr_Clear(); 
+      }
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == -1L) != 0);
+    if (!__pyx_t_2) {
+    } else {
+      __pyx_t_3 = __pyx_t_2;
+      goto __pyx_L30_bool_binop_done;
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == (sizeof(__pyx_t_5numpy_float64_t))) != 0);
+    __pyx_t_3 = __pyx_t_2;
+    __pyx_L30_bool_binop_done:;
+    if (__pyx_t_3) {
+      __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dsds_nn___pyx_t_5numpy_float64_t(__pyx_v_arg, 0); 
+      __pyx_v_memslice = __pyx_t_8;
+      __pyx_t_3 = (__pyx_v_memslice.memview != 0);
+      if (__pyx_t_3) {
+        __PYX_XDEC_MEMVIEW((&__pyx_v_memslice), 1); 
+        if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_float64_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+        goto __pyx_L10_break;
+      }
+      /*else*/ {
+        PyErr_Clear(); 
+      }
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == -1L) != 0);
+    if (!__pyx_t_2) {
+    } else {
+      __pyx_t_3 = __pyx_t_2;
+      goto __pyx_L34_bool_binop_done;
+    }
+    __pyx_t_2 = ((__pyx_v_itemsize == (sizeof(__pyx_t_5numpy_int8_t))) != 0);
+    __pyx_t_3 = __pyx_t_2;
+    __pyx_L34_bool_binop_done:;
+    if (__pyx_t_3) {
+      __pyx_t_8 = __Pyx_PyObject_to_MemoryviewSlice_dsds_nn___pyx_t_5numpy_int8_t(__pyx_v_arg, 0); 
+      __pyx_v_memslice = __pyx_t_8;
+      __pyx_t_3 = (__pyx_v_memslice.memview != 0);
+      if (__pyx_t_3) {
+        __PYX_XDEC_MEMVIEW((&__pyx_v_memslice), 1); 
+        if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, __pyx_n_s_int8_t, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+        goto __pyx_L10_break;
+      }
+      /*else*/ {
+        PyErr_Clear(); 
+      }
+    }
+    if (unlikely(__Pyx_SetItemInt(__pyx_v_dest_sig, 0, Py_None, long, 1, __Pyx_PyInt_From_long, 1, 0, 0) < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+    goto __pyx_L10_break;
+  }
+  __pyx_L10_break:;
+  __pyx_t_6 = PyList_New(0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_v_candidates = ((PyObject*)__pyx_t_6);
+  __pyx_t_6 = 0;
+  __pyx_t_5 = 0;
+  if (unlikely(__pyx_v_signatures == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_dict_iterator(((PyObject*)__pyx_v_signatures), 1, ((PyObject *)NULL), (&__pyx_t_9), (&__pyx_t_10)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_6);
+  __pyx_t_6 = __pyx_t_1;
+  __pyx_t_1 = 0;
+  while (1) {
+    __pyx_t_11 = __Pyx_dict_iter_next(__pyx_t_6, __pyx_t_9, &__pyx_t_5, &__pyx_t_1, NULL, NULL, __pyx_t_10);
+    if (unlikely(__pyx_t_11 == 0)) break;
+    if (unlikely(__pyx_t_11 == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_XDECREF_SET(__pyx_v_sig, __pyx_t_1);
+    __pyx_t_1 = 0;
+    __pyx_v_match_found = 0;
+    __pyx_t_13 = __Pyx_PyObject_GetAttrStr(__pyx_v_sig, __pyx_n_s_strip); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_13);
+    __pyx_t_14 = NULL;
+    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_13))) {
+      __pyx_t_14 = PyMethod_GET_SELF(__pyx_t_13);
+      if (likely(__pyx_t_14)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_13);
+        __Pyx_INCREF(__pyx_t_14);
+        __Pyx_INCREF(function);
+        __Pyx_DECREF_SET(__pyx_t_13, function);
+      }
+    }
+    __pyx_t_12 = (__pyx_t_14) ? __Pyx_PyObject_Call2Args(__pyx_t_13, __pyx_t_14, __pyx_kp_s__3) : __Pyx_PyObject_CallOneArg(__pyx_t_13, __pyx_kp_s__3);
+    __Pyx_XDECREF(__pyx_t_14); __pyx_t_14 = 0;
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_12);
+    __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __pyx_t_13 = __Pyx_PyObject_GetAttrStr(__pyx_t_12, __pyx_n_s_split); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_13);
+    __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+    __pyx_t_12 = NULL;
+    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_13))) {
+      __pyx_t_12 = PyMethod_GET_SELF(__pyx_t_13);
+      if (likely(__pyx_t_12)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_13);
+        __Pyx_INCREF(__pyx_t_12);
+        __Pyx_INCREF(function);
+        __Pyx_DECREF_SET(__pyx_t_13, function);
+      }
+    }
+    __pyx_t_1 = (__pyx_t_12) ? __Pyx_PyObject_Call2Args(__pyx_t_13, __pyx_t_12, __pyx_kp_s__4) : __Pyx_PyObject_CallOneArg(__pyx_t_13, __pyx_kp_s__4);
+    __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_src_sig, __pyx_t_1);
+    __pyx_t_1 = 0;
+    __pyx_t_15 = PyList_GET_SIZE(__pyx_v_dest_sig); if (unlikely(__pyx_t_15 == ((Py_ssize_t)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+    __pyx_t_16 = __pyx_t_15;
+    for (__pyx_t_17 = 0; __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
+      __pyx_v_i = __pyx_t_17;
+      __pyx_t_1 = PyList_GET_ITEM(__pyx_v_dest_sig, __pyx_v_i);
+      __Pyx_INCREF(__pyx_t_1);
+      __Pyx_XDECREF_SET(__pyx_v_dst_type, __pyx_t_1);
+      __pyx_t_1 = 0;
+      __pyx_t_3 = (__pyx_v_dst_type != Py_None);
+      __pyx_t_2 = (__pyx_t_3 != 0);
+      if (__pyx_t_2) {
+        __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_src_sig, __pyx_v_i, Py_ssize_t, 1, PyInt_FromSsize_t, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_1);
+        __pyx_t_13 = PyObject_RichCompare(__pyx_t_1, __pyx_v_dst_type, Py_EQ); __Pyx_XGOTREF(__pyx_t_13); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_t_13); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 493, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+        if (__pyx_t_2) {
+          __pyx_v_match_found = 1;
+          goto __pyx_L42;
+        }
+        /*else*/ {
+          __pyx_v_match_found = 0;
+          goto __pyx_L40_break;
+        }
+        __pyx_L42:;
+      }
+    }
+    __pyx_L40_break:;
+    __pyx_t_2 = (__pyx_v_match_found != 0);
+    if (__pyx_t_2) {
+      __pyx_t_18 = __Pyx_PyList_Append(__pyx_v_candidates, __pyx_v_sig); if (unlikely(__pyx_t_18 == ((int)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+    }
+  }
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __pyx_t_2 = (PyList_GET_SIZE(__pyx_v_candidates) != 0);
+  __pyx_t_3 = ((!__pyx_t_2) != 0);
+  if (__pyx_t_3) {
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_Raise(__pyx_t_6, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_t_9 = PyList_GET_SIZE(__pyx_v_candidates); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(0, 493, __pyx_L1_error)
+  __pyx_t_3 = ((__pyx_t_9 > 1) != 0);
+  if (__pyx_t_3) {
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_Raise(__pyx_t_6, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  /*else*/ {
+    __Pyx_XDECREF(__pyx_r);
+    if (unlikely(__pyx_v_signatures == Py_None)) {
+      PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+      __PYX_ERR(0, 493, __pyx_L1_error)
+    }
+    __pyx_t_6 = __Pyx_PyDict_GetItem(((PyObject*)__pyx_v_signatures), PyList_GET_ITEM(__pyx_v_candidates, 0)); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 493, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __pyx_r = __pyx_t_6;
+    __pyx_t_6 = 0;
+    goto __pyx_L0;
+  }
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_12);
+  __Pyx_XDECREF(__pyx_t_13);
+  __Pyx_XDECREF(__pyx_t_14);
+  __Pyx_AddTraceback("pyresample.ewa._fornav.__pyx_fused_cpdef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_dest_sig);
+  __Pyx_XDECREF(__pyx_v_ndarray);
+  __Pyx_XDECREF(__pyx_v_arg);
+  __Pyx_XDECREF(__pyx_v_dtype);
+  __Pyx_XDECREF(__pyx_v_arg_base);
+  __Pyx_XDECREF(__pyx_v_candidates);
+  __Pyx_XDECREF(__pyx_v_sig);
+  __Pyx_XDECREF(__pyx_v_src_sig);
+  __Pyx_XDECREF(__pyx_v_dst_type);
+  __Pyx_XDECREF(__pyx_v_kwargs);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_144__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  __Pyx_RefNannySetupContext("__defaults__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_self)->__pyx_arg_weight_sum_min); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
+  __Pyx_INCREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __Pyx_GIVEREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  PyTuple_SET_ITEM(__pyx_t_2, 1, ((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __pyx_t_1 = 0;
+  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  PyTuple_SET_ITEM(__pyx_t_1, 1, Py_None);
+  __pyx_t_2 = 0;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_AddTraceback("pyresample.ewa._fornav.__defaults__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_51write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_51write_grid_image_single = {"__pyx_fuse_0write_grid_image_single", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_51write_grid_image_single, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_fuse_0__pyx_pw_10pyresample_3ewa_7_fornav_51write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyArrayObject *__pyx_v_output_array = 0;
+  PyArrayObject *__pyx_v_grid_weights = 0;
+  PyArrayObject *__pyx_v_grid_accums = 0;
+  __pyx_t_5numpy_float32_t __pyx_v_output_fill;
+  weight_type __pyx_v_weight_sum_min;
+  PyBoolObject *__pyx_v_maximum_weight_mode = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("write_grid_image_single (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_output_array,&__pyx_n_s_grid_weights,&__pyx_n_s_grid_accums,&__pyx_n_s_output_fill,&__pyx_n_s_weight_sum_min,&__pyx_n_s_maximum_weight_mode,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
+    __pyx_defaults43 *__pyx_dynamic_args = __Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_self);
+    values[5] = (PyObject *)__pyx_dynamic_args->__pyx_arg_maximum_weight_mode;
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_array)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_weights)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 1); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_accums)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 2); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_fill)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 3); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight_sum_min);
+          if (value) { values[4] = value; kw_args--; }
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_maximum_weight_mode);
+          if (value) { values[5] = value; kw_args--; }
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "write_grid_image_single") < 0)) __PYX_ERR(0, 493, __pyx_L3_error)
+      }
+    } else {
+      switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+    }
+    __pyx_v_output_array = ((PyArrayObject *)values[0]);
+    __pyx_v_grid_weights = ((PyArrayObject *)values[1]);
+    __pyx_v_grid_accums = ((PyArrayObject *)values[2]);
+    __pyx_v_output_fill = __pyx_PyFloat_AsFloat(values[3]); if (unlikely((__pyx_v_output_fill == ((npy_float32)-1)) && PyErr_Occurred())) __PYX_ERR(0, 496, __pyx_L3_error)
+    if (values[4]) {
+      __pyx_v_weight_sum_min = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_weight_sum_min == ((weight_type)-1)) && PyErr_Occurred())) __PYX_ERR(0, 497, __pyx_L3_error)
+    } else {
+      __pyx_v_weight_sum_min = __pyx_dynamic_args->__pyx_arg_weight_sum_min;
+    }
+    __pyx_v_maximum_weight_mode = ((PyBoolObject *)values[5]);
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 493, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output_array), __pyx_ptype_5numpy_ndarray, 1, "output_array", 0))) __PYX_ERR(0, 493, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 494, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 495, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_50write_grid_image_single(__pyx_self, __pyx_v_output_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_output_fill, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_50write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float32_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_accums;
+  __Pyx_Buffer __pyx_pybuffer_grid_accums;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_weights;
+  __Pyx_Buffer __pyx_pybuffer_grid_weights;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_output_array;
+  __Pyx_Buffer __pyx_pybuffer_output_array;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  Py_ssize_t __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  int __pyx_t_7;
+  PyObject *__pyx_t_8 = NULL;
+  __Pyx_RefNannySetupContext("__pyx_fuse_0write_grid_image_single", 0);
+  __pyx_pybuffer_output_array.pybuffer.buf = NULL;
+  __pyx_pybuffer_output_array.refcount = 0;
+  __pyx_pybuffernd_output_array.data = NULL;
+  __pyx_pybuffernd_output_array.rcbuffer = &__pyx_pybuffer_output_array;
+  __pyx_pybuffer_grid_weights.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_weights.refcount = 0;
+  __pyx_pybuffernd_grid_weights.data = NULL;
+  __pyx_pybuffernd_grid_weights.rcbuffer = &__pyx_pybuffer_grid_weights;
+  __pyx_pybuffer_grid_accums.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_accums.refcount = 0;
+  __pyx_pybuffernd_grid_accums.data = NULL;
+  __pyx_pybuffernd_grid_accums.rcbuffer = &__pyx_pybuffer_grid_accums;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_output_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float32_t, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_output_array.diminfo[0].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_output_array.diminfo[0].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_output_array.diminfo[1].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_output_array.diminfo[1].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_weights, &__Pyx_TypeInfo_nn_weight_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_weights.diminfo[0].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_weights.diminfo[0].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_weights.diminfo[1].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_weights.diminfo[1].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_accums, &__Pyx_TypeInfo_nn_accum_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_accums.diminfo[0].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_accums.diminfo[0].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_accums.diminfo[1].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_accums.diminfo[1].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[1];
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":503
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)             # <<<<<<<<<<<<<<
+ */
+  __pyx_t_3 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_5 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_7 = __Pyx_PyInt_As_int(((PyObject *)__pyx_v_maximum_weight_mode)); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 503, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __pyx_t_8 = __Pyx_PyInt_From_unsigned_int(write_grid_image((&(*__Pyx_BufPtrCContig2d(__pyx_t_5numpy_float32_t *, __pyx_pybuffernd_output_array.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_output_array.diminfo[0].strides, __pyx_t_2, __pyx_pybuffernd_output_array.diminfo[1].strides))), __pyx_v_output_fill, ((size_t)(__pyx_v_output_array->dimensions[1])), ((size_t)(__pyx_v_output_array->dimensions[0])), (&(*__Pyx_BufPtrCContig2d(accum_type *, __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_grid_accums.diminfo[0].strides, __pyx_t_4, __pyx_pybuffernd_grid_accums.diminfo[1].strides))), (&(*__Pyx_BufPtrCContig2d(weight_type *, __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_grid_weights.diminfo[0].strides, __pyx_t_6, __pyx_pybuffernd_grid_weights.diminfo[1].strides))), ((int)__pyx_t_7), __pyx_v_weight_sum_min)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_8);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_146__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  __Pyx_RefNannySetupContext("__defaults__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_self)->__pyx_arg_weight_sum_min); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
+  __Pyx_INCREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __Pyx_GIVEREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  PyTuple_SET_ITEM(__pyx_t_2, 1, ((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __pyx_t_1 = 0;
+  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  PyTuple_SET_ITEM(__pyx_t_1, 1, Py_None);
+  __pyx_t_2 = 0;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_AddTraceback("pyresample.ewa._fornav.__defaults__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_53write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_53write_grid_image_single = {"__pyx_fuse_1write_grid_image_single", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_53write_grid_image_single, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_fuse_1__pyx_pw_10pyresample_3ewa_7_fornav_53write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyArrayObject *__pyx_v_output_array = 0;
+  PyArrayObject *__pyx_v_grid_weights = 0;
+  PyArrayObject *__pyx_v_grid_accums = 0;
+  __pyx_t_5numpy_float64_t __pyx_v_output_fill;
+  weight_type __pyx_v_weight_sum_min;
+  PyBoolObject *__pyx_v_maximum_weight_mode = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("write_grid_image_single (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_output_array,&__pyx_n_s_grid_weights,&__pyx_n_s_grid_accums,&__pyx_n_s_output_fill,&__pyx_n_s_weight_sum_min,&__pyx_n_s_maximum_weight_mode,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
+    __pyx_defaults44 *__pyx_dynamic_args = __Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_self);
+    values[5] = (PyObject *)__pyx_dynamic_args->__pyx_arg_maximum_weight_mode;
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_array)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_weights)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 1); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_accums)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 2); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_fill)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 3); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight_sum_min);
+          if (value) { values[4] = value; kw_args--; }
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_maximum_weight_mode);
+          if (value) { values[5] = value; kw_args--; }
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "write_grid_image_single") < 0)) __PYX_ERR(0, 493, __pyx_L3_error)
+      }
+    } else {
+      switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+    }
+    __pyx_v_output_array = ((PyArrayObject *)values[0]);
+    __pyx_v_grid_weights = ((PyArrayObject *)values[1]);
+    __pyx_v_grid_accums = ((PyArrayObject *)values[2]);
+    __pyx_v_output_fill = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_output_fill == ((npy_float64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 496, __pyx_L3_error)
+    if (values[4]) {
+      __pyx_v_weight_sum_min = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_weight_sum_min == ((weight_type)-1)) && PyErr_Occurred())) __PYX_ERR(0, 497, __pyx_L3_error)
+    } else {
+      __pyx_v_weight_sum_min = __pyx_dynamic_args->__pyx_arg_weight_sum_min;
+    }
+    __pyx_v_maximum_weight_mode = ((PyBoolObject *)values[5]);
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 493, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output_array), __pyx_ptype_5numpy_ndarray, 1, "output_array", 0))) __PYX_ERR(0, 493, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 494, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 495, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_52write_grid_image_single(__pyx_self, __pyx_v_output_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_output_fill, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_52write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_float64_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_accums;
+  __Pyx_Buffer __pyx_pybuffer_grid_accums;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_weights;
+  __Pyx_Buffer __pyx_pybuffer_grid_weights;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_output_array;
+  __Pyx_Buffer __pyx_pybuffer_output_array;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  Py_ssize_t __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  int __pyx_t_7;
+  PyObject *__pyx_t_8 = NULL;
+  __Pyx_RefNannySetupContext("__pyx_fuse_1write_grid_image_single", 0);
+  __pyx_pybuffer_output_array.pybuffer.buf = NULL;
+  __pyx_pybuffer_output_array.refcount = 0;
+  __pyx_pybuffernd_output_array.data = NULL;
+  __pyx_pybuffernd_output_array.rcbuffer = &__pyx_pybuffer_output_array;
+  __pyx_pybuffer_grid_weights.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_weights.refcount = 0;
+  __pyx_pybuffernd_grid_weights.data = NULL;
+  __pyx_pybuffernd_grid_weights.rcbuffer = &__pyx_pybuffer_grid_weights;
+  __pyx_pybuffer_grid_accums.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_accums.refcount = 0;
+  __pyx_pybuffernd_grid_accums.data = NULL;
+  __pyx_pybuffernd_grid_accums.rcbuffer = &__pyx_pybuffer_grid_accums;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_output_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_output_array.diminfo[0].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_output_array.diminfo[0].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_output_array.diminfo[1].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_output_array.diminfo[1].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_weights, &__Pyx_TypeInfo_nn_weight_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_weights.diminfo[0].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_weights.diminfo[0].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_weights.diminfo[1].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_weights.diminfo[1].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_accums, &__Pyx_TypeInfo_nn_accum_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_accums.diminfo[0].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_accums.diminfo[0].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_accums.diminfo[1].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_accums.diminfo[1].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[1];
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":503
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)             # <<<<<<<<<<<<<<
+ */
+  __pyx_t_3 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_5 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_7 = __Pyx_PyInt_As_int(((PyObject *)__pyx_v_maximum_weight_mode)); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 503, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __pyx_t_8 = __Pyx_PyInt_From_unsigned_int(write_grid_image((&(*__Pyx_BufPtrCContig2d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_output_array.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_output_array.diminfo[0].strides, __pyx_t_2, __pyx_pybuffernd_output_array.diminfo[1].strides))), __pyx_v_output_fill, ((size_t)(__pyx_v_output_array->dimensions[1])), ((size_t)(__pyx_v_output_array->dimensions[0])), (&(*__Pyx_BufPtrCContig2d(accum_type *, __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_grid_accums.diminfo[0].strides, __pyx_t_4, __pyx_pybuffernd_grid_accums.diminfo[1].strides))), (&(*__Pyx_BufPtrCContig2d(weight_type *, __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_grid_weights.diminfo[0].strides, __pyx_t_6, __pyx_pybuffernd_grid_weights.diminfo[1].strides))), ((int)__pyx_t_7), __pyx_v_weight_sum_min)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_8);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_148__defaults__(CYTHON_UNUSED PyObject *__pyx_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  __Pyx_RefNannySetupContext("__defaults__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_self)->__pyx_arg_weight_sum_min); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
+  __Pyx_INCREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __Pyx_GIVEREF(((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  PyTuple_SET_ITEM(__pyx_t_2, 1, ((PyObject *)__Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_self)->__pyx_arg_maximum_weight_mode));
+  __pyx_t_1 = 0;
+  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  PyTuple_SET_ITEM(__pyx_t_1, 1, Py_None);
+  __pyx_t_2 = 0;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_AddTraceback("pyresample.ewa._fornav.__defaults__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_fuse_2__pyx_pw_10pyresample_3ewa_7_fornav_55write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_fuse_2__pyx_mdef_10pyresample_3ewa_7_fornav_55write_grid_image_single = {"__pyx_fuse_2write_grid_image_single", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_fuse_2__pyx_pw_10pyresample_3ewa_7_fornav_55write_grid_image_single, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_fuse_2__pyx_pw_10pyresample_3ewa_7_fornav_55write_grid_image_single(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyArrayObject *__pyx_v_output_array = 0;
+  PyArrayObject *__pyx_v_grid_weights = 0;
+  PyArrayObject *__pyx_v_grid_accums = 0;
+  __pyx_t_5numpy_int8_t __pyx_v_output_fill;
+  weight_type __pyx_v_weight_sum_min;
+  PyBoolObject *__pyx_v_maximum_weight_mode = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("write_grid_image_single (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_output_array,&__pyx_n_s_grid_weights,&__pyx_n_s_grid_accums,&__pyx_n_s_output_fill,&__pyx_n_s_weight_sum_min,&__pyx_n_s_maximum_weight_mode,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
+    __pyx_defaults45 *__pyx_dynamic_args = __Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_self);
+    values[5] = (PyObject *)__pyx_dynamic_args->__pyx_arg_maximum_weight_mode;
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_array)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_weights)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 1); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_grid_accums)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 2); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output_fill)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, 3); __PYX_ERR(0, 493, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight_sum_min);
+          if (value) { values[4] = value; kw_args--; }
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (kw_args > 0) {
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_maximum_weight_mode);
+          if (value) { values[5] = value; kw_args--; }
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "write_grid_image_single") < 0)) __PYX_ERR(0, 493, __pyx_L3_error)
+      }
+    } else {
+      switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+    }
+    __pyx_v_output_array = ((PyArrayObject *)values[0]);
+    __pyx_v_grid_weights = ((PyArrayObject *)values[1]);
+    __pyx_v_grid_accums = ((PyArrayObject *)values[2]);
+    __pyx_v_output_fill = __Pyx_PyInt_As_npy_int8(values[3]); if (unlikely((__pyx_v_output_fill == ((npy_int8)-1)) && PyErr_Occurred())) __PYX_ERR(0, 496, __pyx_L3_error)
+    if (values[4]) {
+      __pyx_v_weight_sum_min = __pyx_PyFloat_AsFloat(values[4]); if (unlikely((__pyx_v_weight_sum_min == ((weight_type)-1)) && PyErr_Occurred())) __PYX_ERR(0, 497, __pyx_L3_error)
+    } else {
+      __pyx_v_weight_sum_min = __pyx_dynamic_args->__pyx_arg_weight_sum_min;
+    }
+    __pyx_v_maximum_weight_mode = ((PyBoolObject *)values[5]);
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("write_grid_image_single", 0, 4, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 493, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output_array), __pyx_ptype_5numpy_ndarray, 1, "output_array", 0))) __PYX_ERR(0, 493, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_weights), __pyx_ptype_5numpy_ndarray, 1, "grid_weights", 0))) __PYX_ERR(0, 494, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_grid_accums), __pyx_ptype_5numpy_ndarray, 1, "grid_accums", 0))) __PYX_ERR(0, 495, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_maximum_weight_mode), __pyx_ptype_7cpython_4bool_bool, 1, "maximum_weight_mode", 0))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __pyx_r = __pyx_pf_10pyresample_3ewa_7_fornav_54write_grid_image_single(__pyx_self, __pyx_v_output_array, __pyx_v_grid_weights, __pyx_v_grid_accums, __pyx_v_output_fill, __pyx_v_weight_sum_min, __pyx_v_maximum_weight_mode);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10pyresample_3ewa_7_fornav_54write_grid_image_single(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_output_array, PyArrayObject *__pyx_v_grid_weights, PyArrayObject *__pyx_v_grid_accums, __pyx_t_5numpy_int8_t __pyx_v_output_fill, weight_type __pyx_v_weight_sum_min, PyBoolObject *__pyx_v_maximum_weight_mode) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_accums;
+  __Pyx_Buffer __pyx_pybuffer_grid_accums;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_grid_weights;
+  __Pyx_Buffer __pyx_pybuffer_grid_weights;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_output_array;
+  __Pyx_Buffer __pyx_pybuffer_output_array;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  Py_ssize_t __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  int __pyx_t_7;
+  PyObject *__pyx_t_8 = NULL;
+  __Pyx_RefNannySetupContext("__pyx_fuse_2write_grid_image_single", 0);
+  __pyx_pybuffer_output_array.pybuffer.buf = NULL;
+  __pyx_pybuffer_output_array.refcount = 0;
+  __pyx_pybuffernd_output_array.data = NULL;
+  __pyx_pybuffernd_output_array.rcbuffer = &__pyx_pybuffer_output_array;
+  __pyx_pybuffer_grid_weights.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_weights.refcount = 0;
+  __pyx_pybuffernd_grid_weights.data = NULL;
+  __pyx_pybuffernd_grid_weights.rcbuffer = &__pyx_pybuffer_grid_weights;
+  __pyx_pybuffer_grid_accums.pybuffer.buf = NULL;
+  __pyx_pybuffer_grid_accums.refcount = 0;
+  __pyx_pybuffernd_grid_accums.data = NULL;
+  __pyx_pybuffernd_grid_accums.rcbuffer = &__pyx_pybuffer_grid_accums;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer, (PyObject*)__pyx_v_output_array, &__Pyx_TypeInfo_nn___pyx_t_5numpy_int8_t, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_output_array.diminfo[0].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_output_array.diminfo[0].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_output_array.diminfo[1].strides = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_output_array.diminfo[1].shape = __pyx_pybuffernd_output_array.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_weights, &__Pyx_TypeInfo_nn_weight_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_weights.diminfo[0].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_weights.diminfo[0].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_weights.diminfo[1].strides = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_weights.diminfo[1].shape = __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.shape[1];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer, (PyObject*)__pyx_v_grid_accums, &__Pyx_TypeInfo_nn_accum_type, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_grid_accums.diminfo[0].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_grid_accums.diminfo[0].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_grid_accums.diminfo[1].strides = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_grid_accums.diminfo[1].shape = __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.shape[1];
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":503
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)             # <<<<<<<<<<<<<<
+ */
+  __pyx_t_3 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_5 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_7 = __Pyx_PyInt_As_int(((PyObject *)__pyx_v_maximum_weight_mode)); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 503, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":502
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ *     # int maximum_weight_mode, weight_type weight_sum_min) {
+ *     return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],             # <<<<<<<<<<<<<<
+ *                             &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
+ */
+  __pyx_t_8 = __Pyx_PyInt_From_unsigned_int(write_grid_image((&(*__Pyx_BufPtrCContig2d(__pyx_t_5numpy_int8_t *, __pyx_pybuffernd_output_array.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_output_array.diminfo[0].strides, __pyx_t_2, __pyx_pybuffernd_output_array.diminfo[1].strides))), __pyx_v_output_fill, ((size_t)(__pyx_v_output_array->dimensions[1])), ((size_t)(__pyx_v_output_array->dimensions[0])), (&(*__Pyx_BufPtrCContig2d(accum_type *, __pyx_pybuffernd_grid_accums.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_grid_accums.diminfo[0].strides, __pyx_t_4, __pyx_pybuffernd_grid_accums.diminfo[1].strides))), (&(*__Pyx_BufPtrCContig2d(weight_type *, __pyx_pybuffernd_grid_weights.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_grid_weights.diminfo[0].strides, __pyx_t_6, __pyx_pybuffernd_grid_weights.diminfo[1].strides))), ((int)__pyx_t_7), __pyx_v_weight_sum_min)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_8);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("pyresample.ewa._fornav.write_grid_image_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_accums.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_grid_weights.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_output_array.rcbuffer->pybuffer);
   __pyx_L2:;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -44827,6 +46320,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
   {&__pyx_n_s_obj, __pyx_k_obj, sizeof(__pyx_k_obj), 0, 0, 1, 1},
   {&__pyx_n_s_out_type, __pyx_k_out_type, sizeof(__pyx_k_out_type), 0, 0, 1, 1},
+  {&__pyx_n_s_output_array, __pyx_k_output_array, sizeof(__pyx_k_output_array), 0, 0, 1, 1},
   {&__pyx_n_s_output_arrays, __pyx_k_output_arrays, sizeof(__pyx_k_output_arrays), 0, 0, 1, 1},
   {&__pyx_n_s_output_fill, __pyx_k_output_fill, sizeof(__pyx_k_output_fill), 0, 0, 1, 1},
   {&__pyx_n_s_output_pointer, __pyx_k_output_pointer, sizeof(__pyx_k_output_pointer), 0, 0, 1, 1},
@@ -44889,6 +46383,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_weight_min, __pyx_k_weight_min, sizeof(__pyx_k_weight_min), 0, 0, 1, 1},
   {&__pyx_n_s_weight_sum_min, __pyx_k_weight_sum_min, sizeof(__pyx_k_weight_sum_min), 0, 0, 1, 1},
   {&__pyx_n_s_weights_pointer, __pyx_k_weights_pointer, sizeof(__pyx_k_weights_pointer), 0, 0, 1, 1},
+  {&__pyx_n_s_write_grid_image_single, __pyx_k_write_grid_image_single, sizeof(__pyx_k_write_grid_image_single), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
@@ -45306,6 +46801,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GIVEREF(__pyx_tuple__40);
   __pyx_codeobj__41 = (PyObject*)__Pyx_PyCode_New(14, 0, 25, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__40, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_pyresample_ewa__fornav_pyx, __pyx_n_s_fornav_weights_and_sums_wrapper, 415, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__41)) __PYX_ERR(0, 415, __pyx_L1_error)
 
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+  __pyx_tuple__42 = PyTuple_Pack(6, __pyx_n_s_output_array, __pyx_n_s_grid_weights, __pyx_n_s_grid_accums, __pyx_n_s_output_fill, __pyx_n_s_weight_sum_min, __pyx_n_s_maximum_weight_mode); if (unlikely(!__pyx_tuple__42)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__42);
+  __Pyx_GIVEREF(__pyx_tuple__42);
+  __pyx_codeobj__43 = (PyObject*)__Pyx_PyCode_New(6, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__42, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_pyresample_ewa__fornav_pyx, __pyx_n_s_write_grid_image_single, 493, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__43)) __PYX_ERR(0, 493, __pyx_L1_error)
+
   /* "View.MemoryView":286
  *         return self.name
  * 
@@ -45313,9 +46820,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_tuple__42 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__42)) __PYX_ERR(2, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__42);
-  __Pyx_GIVEREF(__pyx_tuple__42);
+  __pyx_tuple__44 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__44)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__44);
+  __Pyx_GIVEREF(__pyx_tuple__44);
 
   /* "View.MemoryView":287
  * 
@@ -45324,9 +46831,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_tuple__43 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__43)) __PYX_ERR(2, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__43);
-  __Pyx_GIVEREF(__pyx_tuple__43);
+  __pyx_tuple__45 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__45)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__45);
+  __Pyx_GIVEREF(__pyx_tuple__45);
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -45335,9 +46842,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__44 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__44)) __PYX_ERR(2, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__44);
-  __Pyx_GIVEREF(__pyx_tuple__44);
+  __pyx_tuple__46 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__46)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__46);
+  __Pyx_GIVEREF(__pyx_tuple__46);
 
   /* "View.MemoryView":291
  * 
@@ -45346,9 +46853,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_tuple__45 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__45)) __PYX_ERR(2, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__45);
-  __Pyx_GIVEREF(__pyx_tuple__45);
+  __pyx_tuple__47 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__47)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__47);
+  __Pyx_GIVEREF(__pyx_tuple__47);
 
   /* "View.MemoryView":292
  * 
@@ -45357,19 +46864,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__46 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__46)) __PYX_ERR(2, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__46);
-  __Pyx_GIVEREF(__pyx_tuple__46);
+  __pyx_tuple__48 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__48)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__48);
+  __Pyx_GIVEREF(__pyx_tuple__48);
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Enum(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_tuple__47 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__47)) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__47);
-  __Pyx_GIVEREF(__pyx_tuple__47);
-  __pyx_codeobj__48 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__47, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__48)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_tuple__49 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__49)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__49);
+  __Pyx_GIVEREF(__pyx_tuple__49);
+  __pyx_codeobj__50 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__49, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__50)) __PYX_ERR(2, 1, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -45381,6 +46888,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitGlobals(void) {
   if (__Pyx_InitStrings(__pyx_string_tab) < 0) __PYX_ERR(0, 1, __pyx_L1_error);
   __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_1 = PyInt_FromLong(1); if (unlikely(!__pyx_int_1)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_int_4 = PyInt_FromLong(4); if (unlikely(!__pyx_int_4)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_7 = PyInt_FromLong(7); if (unlikely(!__pyx_int_7)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_8 = PyInt_FromLong(8); if (unlikely(!__pyx_int_8)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_184977713 = PyInt_FromLong(184977713L); if (unlikely(!__pyx_int_184977713)) __PYX_ERR(0, 1, __pyx_L1_error)
@@ -45885,7 +47393,7 @@ if (!__Pyx_RefNanny) {
   __pyx_t_6 = 0;
   __pyx_t_6 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_5fornav_wrapper, 0, __pyx_n_s_fornav_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_5 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_7fornav_wrapper, 0, __pyx_n_s_fornav_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_5, sizeof(__pyx_defaults2), 1)) __PYX_ERR(0, 207, __pyx_L1_error)
 
@@ -45908,7 +47416,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults2, __pyx_t_5)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults2, __pyx_t_5)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_5, __pyx_t_7);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_5, __pyx_pf_10pyresample_3ewa_7_fornav_52__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_5, __pyx_pf_10pyresample_3ewa_7_fornav_62__defaults__);
   if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_float32_t, __pyx_t_5) < 0) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
@@ -45919,7 +47427,7 @@ if (!__Pyx_RefNanny) {
  *            numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *            tuple input_arrays, tuple output_arrays, input_fill, output_fill,
  */
-  __pyx_t_5 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_7fornav_wrapper, 0, __pyx_n_s_fornav_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_5 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_9fornav_wrapper, 0, __pyx_n_s_fornav_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__39)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_5, sizeof(__pyx_defaults3), 1)) __PYX_ERR(0, 207, __pyx_L1_error)
 
@@ -45942,7 +47450,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults3, __pyx_t_5)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults3, __pyx_t_5)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_5, __pyx_t_7);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_5, __pyx_pf_10pyresample_3ewa_7_fornav_54__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_5, __pyx_pf_10pyresample_3ewa_7_fornav_64__defaults__);
   if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_float64_t, __pyx_t_5) < 0) __PYX_ERR(0, 207, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
@@ -46019,7 +47527,7 @@ if (!__Pyx_RefNanny) {
   __pyx_t_9 = 0;
   __pyx_t_9 = __Pyx_PyDict_NewPresized(18); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_11fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults22), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46042,7 +47550,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults22, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults22, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_92__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float32_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46053,7 +47561,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_13fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults23), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46076,7 +47584,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults23, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults23, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_94__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float32_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46087,7 +47595,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_15fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults24), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46110,7 +47618,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults24, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults24, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_96__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float32_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46121,7 +47629,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_17fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults25), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46144,7 +47652,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults25, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults25, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_98__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float64_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46155,7 +47663,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_19fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults26), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46178,7 +47686,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults26, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults26, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_100__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float64_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46189,7 +47697,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_21fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults27), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46212,7 +47720,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults27, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults27, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_102__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_float64_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46223,7 +47731,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_23fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults28), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46246,7 +47754,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults28, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults28, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_104__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_int8_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46257,7 +47765,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_25fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults29), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46280,7 +47788,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults29, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults29, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_106__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_int8_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46291,7 +47799,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_27fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_0_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults30), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46314,7 +47822,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults30, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults30, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_108__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float32_t_int8_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46325,7 +47833,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_29fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_0__pyx_mdef_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults31), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46348,7 +47856,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults31, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults31, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_110__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float32_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46359,7 +47867,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_31fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_1__pyx_mdef_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults32), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46382,7 +47890,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults32, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults32, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_112__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float32_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46393,7 +47901,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_33fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_0_2__pyx_mdef_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults33), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46416,7 +47924,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults33, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults33, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_114__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float32_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46427,7 +47935,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_35fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_0__pyx_mdef_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults34), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46450,7 +47958,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults34, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults34, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_116__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float64_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46461,7 +47969,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_37fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_1__pyx_mdef_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults35), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46484,7 +47992,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults35, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults35, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_118__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_128__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float64_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46495,7 +48003,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_39fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_1_2__pyx_mdef_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults36), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46518,7 +48026,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults36, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults36, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_120__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_130__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_float64_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46529,7 +48037,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_41fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_0__pyx_mdef_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults37), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46552,7 +48060,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults37, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults37, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_122__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_132__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_int8_t_float32_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46563,7 +48071,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_43fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_1__pyx_mdef_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults38), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46586,7 +48094,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults38, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults38, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_124__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_134__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_int8_t_float64_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46597,7 +48105,7 @@ if (!__Pyx_RefNanny) {
  *                                     numpy.ndarray[cr_dtype, ndim=2, mode='c'] rows_array,
  *                                     numpy.ndarray[image_dtype, ndim=2, mode='c'] input_array,
  */
-  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_45fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_8 = __pyx_FusedFunction_New(&__pyx_fuse_1_2_2__pyx_mdef_10pyresample_3ewa_7_fornav_47fornav_weights_and_sums_wrapper, 0, __pyx_n_s_fornav_weights_and_sums_wrapper, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__41)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (!__Pyx_CyFunction_InitDefaults(__pyx_t_8, sizeof(__pyx_defaults39), 1)) __PYX_ERR(0, 415, __pyx_L1_error)
 
@@ -46620,7 +48128,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_CyFunction_Defaults(__pyx_defaults39, __pyx_t_8)->__pyx_arg_weight_delta_max = 10.0;
   __Pyx_CyFunction_Defaults(__pyx_defaults39, __pyx_t_8)->__pyx_arg_weight_sum_min = -1.0;
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_8, __pyx_t_10);
-  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_126__defaults__);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_8, __pyx_pf_10pyresample_3ewa_7_fornav_136__defaults__);
   if (PyDict_SetItem(__pyx_t_9, __pyx_kp_s_float64_t_int8_t_int8_t, __pyx_t_8) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
 
@@ -46640,15 +48148,151 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
 
+  /* "pyresample/ewa/_fornav.pyx":497
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ *                             grid_dtype output_fill,
+ *                             weight_type weight_sum_min=-1.0,             # <<<<<<<<<<<<<<
+ *                             cpython.bool maximum_weight_mode=False):
+ *     # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+ */
+  __pyx_t_1 = PyFloat_FromDouble(-1.0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 497, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+
+  /* "pyresample/ewa/_fornav.pyx":498
+ *                             grid_dtype output_fill,
+ *                             weight_type weight_sum_min=-1.0,
+ *                             cpython.bool maximum_weight_mode=False):             # <<<<<<<<<<<<<<
+ *     # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ */
+  __pyx_t_2 = __Pyx_PyBool_FromLong(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_2);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_10pyresample_3ewa_7_fornav_51write_grid_image_single, 0, __pyx_n_s_write_grid_image_single, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__43)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!__Pyx_CyFunction_InitDefaults(__pyx_t_1, sizeof(__pyx_defaults43), 1)) __PYX_ERR(0, 493, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":498
+ *                             grid_dtype output_fill,
+ *                             weight_type weight_sum_min=-1.0,
+ *                             cpython.bool maximum_weight_mode=False):             # <<<<<<<<<<<<<<
+ *     # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ */
+  __pyx_t_4 = __Pyx_PyBool_FromLong(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (!(likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_7cpython_4bool_bool)))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_t_1)->__pyx_arg_maximum_weight_mode = ((PyBoolObject *)__pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
+  __Pyx_CyFunction_Defaults(__pyx_defaults43, __pyx_t_1)->__pyx_arg_weight_sum_min = -1.0;
+  __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_1, __pyx_t_3);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_1, __pyx_pf_10pyresample_3ewa_7_fornav_144__defaults__);
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_float32_t, __pyx_t_1) < 0) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+  __pyx_t_1 = __pyx_FusedFunction_New(&__pyx_fuse_1__pyx_mdef_10pyresample_3ewa_7_fornav_53write_grid_image_single, 0, __pyx_n_s_write_grid_image_single, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__43)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!__Pyx_CyFunction_InitDefaults(__pyx_t_1, sizeof(__pyx_defaults44), 1)) __PYX_ERR(0, 493, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":498
+ *                             grid_dtype output_fill,
+ *                             weight_type weight_sum_min=-1.0,
+ *                             cpython.bool maximum_weight_mode=False):             # <<<<<<<<<<<<<<
+ *     # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ */
+  __pyx_t_4 = __Pyx_PyBool_FromLong(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (!(likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_7cpython_4bool_bool)))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_t_1)->__pyx_arg_maximum_weight_mode = ((PyBoolObject *)__pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
+  __Pyx_CyFunction_Defaults(__pyx_defaults44, __pyx_t_1)->__pyx_arg_weight_sum_min = -1.0;
+  __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_1, __pyx_t_3);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_1, __pyx_pf_10pyresample_3ewa_7_fornav_146__defaults__);
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_float64_t, __pyx_t_1) < 0) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+  __pyx_t_1 = __pyx_FusedFunction_New(&__pyx_fuse_2__pyx_mdef_10pyresample_3ewa_7_fornav_55write_grid_image_single, 0, __pyx_n_s_write_grid_image_single, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__43)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!__Pyx_CyFunction_InitDefaults(__pyx_t_1, sizeof(__pyx_defaults45), 1)) __PYX_ERR(0, 493, __pyx_L1_error)
+
+  /* "pyresample/ewa/_fornav.pyx":498
+ *                             grid_dtype output_fill,
+ *                             weight_type weight_sum_min=-1.0,
+ *                             cpython.bool maximum_weight_mode=False):             # <<<<<<<<<<<<<<
+ *     # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+ *     # accum_type *grid_accum, weight_type *grid_weights,
+ */
+  __pyx_t_4 = __Pyx_PyBool_FromLong(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (!(likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_7cpython_4bool_bool)))) __PYX_ERR(0, 498, __pyx_L1_error)
+  __Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_t_1)->__pyx_arg_maximum_weight_mode = ((PyBoolObject *)__pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
+  __Pyx_CyFunction_Defaults(__pyx_defaults45, __pyx_t_1)->__pyx_arg_weight_sum_min = -1.0;
+  __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_1, __pyx_t_3);
+  __Pyx_CyFunction_SetDefaultsGetter(__pyx_t_1, __pyx_pf_10pyresample_3ewa_7_fornav_148__defaults__);
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_int8_t, __pyx_t_1) < 0) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "pyresample/ewa/_fornav.pyx":493
+ * @cython.boundscheck(False)
+ * @cython.wraparound(False)
+ * def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,             # <<<<<<<<<<<<<<
+ *                             numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+ *                             numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+ */
+  __pyx_t_1 = __pyx_FusedFunction_New(&__pyx_mdef_10pyresample_3ewa_7_fornav_5write_grid_image_single, 0, __pyx_n_s_write_grid_image_single, NULL, __pyx_n_s_pyresample_ewa__fornav, __pyx_d, ((PyObject *)__pyx_codeobj__43)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_1, __pyx_t_3);
+  ((__pyx_FusedFunctionObject *) __pyx_t_1)->__signatures__ = __pyx_t_2;
+  __Pyx_GIVEREF(__pyx_t_2);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_write_grid_image_single, __pyx_t_1) < 0) __PYX_ERR(0, 493, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
   /* "pyresample/ewa/_fornav.pyx":1
  * #!/usr/bin/env python             # <<<<<<<<<<<<<<
  * # -*- coding: utf-8 -*-
  * 
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_4) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "View.MemoryView":209
  *         info.obj = self
@@ -46657,10 +48301,10 @@ if (!__Pyx_RefNanny) {
  * 
  *     def __dealloc__(array self):
  */
-  __pyx_t_1 = __pyx_capsule_create(((void *)(&__pyx_array_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 209, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem((PyObject *)__pyx_array_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_1) < 0) __PYX_ERR(2, 209, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = __pyx_capsule_create(((void *)(&__pyx_array_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 209, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem((PyObject *)__pyx_array_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_4) < 0) __PYX_ERR(2, 209, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   PyType_Modified(__pyx_array_type);
 
   /* "View.MemoryView":286
@@ -46670,12 +48314,12 @@ if (!__Pyx_RefNanny) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__42, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__44, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_XGOTREF(generic);
-  __Pyx_DECREF_SET(generic, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(generic, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
 
   /* "View.MemoryView":287
  * 
@@ -46684,12 +48328,12 @@ if (!__Pyx_RefNanny) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__43, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__45, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_XGOTREF(strided);
-  __Pyx_DECREF_SET(strided, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(strided, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -46698,12 +48342,12 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__44, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__46, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_XGOTREF(indirect);
-  __Pyx_DECREF_SET(indirect, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(indirect, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
 
   /* "View.MemoryView":291
  * 
@@ -46712,12 +48356,12 @@ if (!__Pyx_RefNanny) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__45, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__47, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_XGOTREF(contiguous);
-  __Pyx_DECREF_SET(contiguous, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(contiguous, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
 
   /* "View.MemoryView":292
  * 
@@ -46726,12 +48370,12 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__46, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__48, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_XGOTREF(indirect_contiguous);
-  __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_4);
+  __pyx_t_4 = 0;
 
   /* "View.MemoryView":316
  * 
@@ -46766,10 +48410,10 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __pyx_capsule_create(((void *)(&__pyx_memoryview_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 549, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem((PyObject *)__pyx_memoryview_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_1) < 0) __PYX_ERR(2, 549, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = __pyx_capsule_create(((void *)(&__pyx_memoryview_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 549, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem((PyObject *)__pyx_memoryview_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_4) < 0) __PYX_ERR(2, 549, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   PyType_Modified(__pyx_memoryview_type);
 
   /* "View.MemoryView":995
@@ -46779,10 +48423,10 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __pyx_capsule_create(((void *)(&__pyx_memoryview_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 995, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem((PyObject *)__pyx_memoryviewslice_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_1) < 0) __PYX_ERR(2, 995, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = __pyx_capsule_create(((void *)(&__pyx_memoryview_getbuffer)), ((char *)"getbuffer(obj, view, flags)")); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 995, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem((PyObject *)__pyx_memoryviewslice_type->tp_dict, __pyx_n_s_pyx_getbuffer, __pyx_t_4) < 0) __PYX_ERR(2, 995, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   PyType_Modified(__pyx_memoryviewslice_type);
 
   /* "(tree fragment)":1
@@ -46790,10 +48434,10 @@ if (!__Pyx_RefNanny) {
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_15View_dot_MemoryView_1__pyx_unpickle_Enum, NULL, __pyx_n_s_View_MemoryView); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_pyx_unpickle_Enum, __pyx_t_1) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = PyCFunction_NewEx(&__pyx_mdef_15View_dot_MemoryView_1__pyx_unpickle_Enum, NULL, __pyx_n_s_View_MemoryView); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_pyx_unpickle_Enum, __pyx_t_4) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "(tree fragment)":11
  *         __pyx_unpickle_Enum__set_state(<Enum> __pyx_result, __pyx_state)
@@ -52539,13 +54183,6 @@ raise_neg_overflow:
     return (npy_int8) -1;
 }
 
-/* BytesContains */
-  static CYTHON_INLINE int __Pyx_BytesContains(PyObject* bytes, char character) {
-    const Py_ssize_t length = PyBytes_GET_SIZE(bytes);
-    char* char_start = PyBytes_AS_STRING(bytes);
-    return memchr(char_start, (unsigned char)character, (size_t)length) != NULL;
-}
-
 /* CIntFromPy */
   static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
     const int neg_one = (int) ((int) 0 - (int) 1), const_zero = (int) 0;
@@ -52733,6 +54370,13 @@ raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
         "can't convert negative value to int");
     return (int) -1;
+}
+
+/* BytesContains */
+  static CYTHON_INLINE int __Pyx_BytesContains(PyObject* bytes, char character) {
+    const Py_ssize_t length = PyBytes_GET_SIZE(bytes);
+    char* char_start = PyBytes_AS_STRING(bytes);
+    return memchr(char_start, (unsigned char)character, (size_t)length) != NULL;
 }
 
 /* ImportNumPyArray */

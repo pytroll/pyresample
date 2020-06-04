@@ -486,3 +486,18 @@ def fornav_weights_and_sums_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] co
                                         <bint>maximum_weight_mode)
 
     return got_point
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_array,
+                            numpy.ndarray[weight_type, ndim=2, mode='c'] grid_weights,
+                            numpy.ndarray[accum_type, ndim=2, mode='c'] grid_accums,
+                            grid_dtype output_fill,
+                            weight_type weight_sum_min=-1.0,
+                            cpython.bool maximum_weight_mode=False):
+    # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
+    # accum_type *grid_accum, weight_type *grid_weights,
+    # int maximum_weight_mode, weight_type weight_sum_min) {
+    return write_grid_image(&output_array[0, 0], output_fill, <size_t>output_array.shape[1], <size_t>output_array.shape[0],
+                            &grid_accums[0, 0], &grid_weights[0, 0], <int>maximum_weight_mode, weight_sum_min)
