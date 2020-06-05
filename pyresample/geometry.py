@@ -711,9 +711,9 @@ class SwathDefinition(CoordinateDefinition):
 
         # We need to compute alpha-based omerc for geotiff support
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
-        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
+        az1, az2, _ = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
         azimuth = az1
-        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
+        az1, az2, _ = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
         if abs(az1 - azimuth) > 1:
             if abs(az2 - azimuth) > 1:
                 logger.warning("Can't find appropriate azimuth.")
@@ -1152,7 +1152,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def _crs(self):
-        """Helper property for the `crs` property.
+        """Wrap the `crs` property in a helper property.
 
         The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
         accidentally passing it between threads, we only create it when it
@@ -1982,6 +1982,26 @@ class AreaDefinition(BaseDefinition):
                       "instead.", DeprecationWarning)
         return proj4_dict_to_str(self.proj_dict)
 
+    def _get_slice_starts_stops(self, area_to_cover):
+        """Get x and y start and stop points for slicing."""
+        llx, lly, urx, ury = area_to_cover.area_extent
+        x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
+
+        if self.area_extent[0] > self.area_extent[2]:
+            xstart = 0 if x[1] is np.ma.masked else x[1]
+            xstop = self.width if x[0] is np.ma.masked else x[0] + 1
+        else:
+            xstart = 0 if x[0] is np.ma.masked else x[0]
+            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
+        if self.area_extent[1] > self.area_extent[3]:
+            ystart = 0 if y[0] is np.ma.masked else y[0]
+            ystop = self.height if y[1] is np.ma.masked else y[1] + 1
+        else:
+            ystart = 0 if y[1] is np.ma.masked else y[1]
+            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
+
+        return xstart, xstop, ystart, ystop
+
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
         if not isinstance(area_to_cover, AreaDefinition):
@@ -1994,14 +2014,9 @@ class AreaDefinition(BaseDefinition):
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s',
                          proj_def_to_cover)
-            # Get xy coordinates
-            llx, lly, urx, ury = area_to_cover.area_extent
-            x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
-
-            xstart = 0 if x[0] is np.ma.masked else x[0]
-            ystart = 0 if y[1] is np.ma.masked else y[1]
-            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
-            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
+            # Get slice parameters
+            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(
+                area_to_cover)
 
             return (check_slice_orientation(slice(xstart, xstop)),
                     check_slice_orientation(slice(ystart, ystop)))

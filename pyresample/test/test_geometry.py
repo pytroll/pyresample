@@ -203,7 +203,6 @@ class Test(unittest.TestCase):
             self.assertEqual(res['projection'][proj_key],
                              expected['projection'][proj_key])
 
-
         # EPSG
         projections = {'+init=epsg:3006': 'init: epsg:3006'}
         if utils.is_pyproj2():
@@ -1000,6 +999,71 @@ class Test(unittest.TestCase):
         y_expects = np.array([1, 0])
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
+
+    def test_get_slice_starts_stops(self):
+        """Check area slice end-points."""
+        from pyresample import utils
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        target_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+
+        # Expected result is the same for all cases
+        expected = (3, 3709, 3, 3709)
+
+        # Source and target have the same orientation
+        area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in X direction
+        area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in Y direction
+        area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in both X and Y directions
+        area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
 
     def test_get_area_slices(self):
         """Check area slicing."""
