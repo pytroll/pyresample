@@ -102,7 +102,8 @@ def chunk_callable(x_chunk, axis, keepdims, **kwargs):
     return x_chunk
 
 
-def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
+def combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
+                   maximum_weight_mode=False):
     if isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple):
         # single "empty" chunk
         return x_chunk
@@ -116,42 +117,40 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False):
     #   2. ('missing_chunk', i, j, k)
     valid_chunks = [x for x in x_chunk if not isinstance(x[0], (str, tuple))]
     if not len(valid_chunks):
-        # print("agg input has no length: ", x_chunk, axis, keepdims)
         if keepdims:
             # split step - return "empty" chunk placeholder
             return x_chunk[0]
         else:
-            # print("Returning full array")
             return np.full(*x_chunk[0][0]), np.full(*x_chunk[0][1])
-    # TODO: Handle maximum weight mode
     weights = [x[0] for x in valid_chunks]
     accums = [x[1] for x in valid_chunks]
+    if maximum_weight_mode:
+        weights = np.array(weights)
+        accums = np.array(accums)
+        max_indexes = np.expand_dims(np.argmax(weights, axis=0), axis=0)
+        weights = np.take_along_axis(weights, max_indexes, axis=0).squeeze(axis=0)
+        accums = np.take_along_axis(accums, max_indexes, axis=0).squeeze(axis=0)
+        return weights, accums
     # NOTE: We use the builtin "sum" function below because it does not copy
     #       the numpy arrays. Using numpy.sum would do that.
-    if keepdims:
-        # split step
-        # print("Valid chunks pre: ", valid_chunks)
-        # print("Valid chunks: ", len(valid_chunks), valid_chunks[0][0].shape)
-        return sum(weights), sum(accums)
-    else:
-        # final combining
-        # print("Final combine: ", len(valid_chunks), valid_chunks[0][0].shape)
-        return sum(weights), sum(accums)
+    return sum(weights), sum(accums)
 
 
-def average_fornav(x_chunk, axis, keepdims, computing_meta=False, weight_sum_min=-1.0, maximum_weight_mode=False):
+def average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
+                   fill_value=None,
+                   weight_sum_min=-1.0, maximum_weight_mode=False):
     if not len(x_chunk):
         return x_chunk
     # combine the arrays one last time
-    res = combine_fornav(x_chunk, axis, keepdims, computing_meta=computing_meta)
+    res = combine_fornav(x_chunk, axis, keepdims,
+                         computing_meta=computing_meta,
+                         maximum_weight_mode=maximum_weight_mode)
     # if we have only "empty" arrays at this point then the target chunk
     # has no valid input data in it.
     if isinstance(res[0], tuple):
-        # FIXME: This is of weights type, not source data type
-        return np.full(*res[0])
-    # print("Average fornav: ", res)
+        return np.full(res[0], fill_value, dtype)
     weights, accums = res
-    out = np.full(weights.shape, np.nan, dtype=weights.dtype)
+    out = np.full(weights.shape, fill_value, dtype=dtype.dtype)
     write_grid_image_single(out, weights, accums, np.nan,
                             weight_sum_min=weight_sum_min,
                             maximum_weight_mode=maximum_weight_mode)
@@ -337,7 +336,7 @@ class DaskEWAResampler(BaseResampler):
             else:
                 yield data.rechunk(new_chunks)
 
-    def _run_fornav_single(self, data, out_chunks, target_geo_def, **kwargs):
+    def _run_fornav_single(self, data, out_chunks, target_geo_def, fill_value, **kwargs):
         y_start = 0
         output_stack = {}
         ll2cr_result = self.cache['ll2cr_result']
@@ -346,6 +345,7 @@ class DaskEWAResampler(BaseResampler):
         name = "fornav-{}".format(data.name)
         maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
         weight_sum_min = kwargs.get('weight_sum_min', -1.0)
+        fill_value = kwargs.pop('fill_value', 0)
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -365,14 +365,19 @@ class DaskEWAResampler(BaseResampler):
         dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
+        combine_fornav_with_kwargs = partial(
+            average_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
             average_fornav, maximum_weight_mode=maximum_weight_mode,
-            weight_sum_min=weight_sum_min)
-        out = da.reduction(out_stack, chunk_callable, average_fornav_with_kwargs,
-                           combine=combine_fornav, axis=(0,), dtype=data.dtype, concatenate=False)
+            weight_sum_min=weight_sum_min, dtype=data.dtype,
+            fill_value=fill_value)
+        out = da.reduction(out_stack, chunk_callable,
+                           average_fornav_with_kwargs,
+                           combine=combine_fornav_with_kwargs, axis=(0,),
+                           dtype=data.dtype, concatenate=False)
         return out
 
-    def compute(self, data, cache_id=None, chunks=None, fill_value=0,
+    def compute(self, data, cache_id=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
                 weight_delta_max=1.0, weight_sum_min=-1.0,
                 maximum_weight_mode=False, grid_coverage=0, **kwargs):
@@ -395,10 +400,23 @@ class DaskEWAResampler(BaseResampler):
             maximum_weight_mode=maximum_weight_mode,
             rows_per_scan=rows_per_scan,
         ))
+
+        # determine a fill value if they didn't tell us what they have as a
+        # fill value in the numpy arrays
+        if fill_value is None:
+            if np.issubdtype(data_in[0].dtype, np.floating):
+                fill_value = np.nan
+            elif np.issubdtype(data_in[0].dtype, np.integer):
+                fill_value = -999
+            else:
+                raise ValueError(
+                    "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+
         data_out = []
         for data in data_in:
             res = self._run_fornav_single(data, out_chunks,
                                           self.target_geo_def,
+                                          fill_value,
                                           **fornav_kwargs)
             data_out.append(res)
         if data.ndim == 2:
