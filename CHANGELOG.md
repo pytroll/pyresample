@@ -1,3 +1,45 @@
+## Version 1.16.0 (2020/06/10)
+
+### Issues Closed
+
+* [Issue 274](https://github.com/pytroll/pyresample/issues/274) - segmentation fault or AssertionError when resampling ([PR 277](https://github.com/pytroll/pyresample/pull/277))
+* [Issue 272](https://github.com/pytroll/pyresample/issues/272) - `kd_tree.get_sample_from_neighbour_info` can't handle `fill_value` with `numpy` data types. ([PR 273](https://github.com/pytroll/pyresample/pull/273))
+* [Issue 269](https://github.com/pytroll/pyresample/issues/269) - add a from_cf() mechanism for AreaDefinition ([PR 271](https://github.com/pytroll/pyresample/pull/271))
+* [Issue 261](https://github.com/pytroll/pyresample/issues/261) - AreaDefinition docstring does not agree with its constructors definition ([PR 263](https://github.com/pytroll/pyresample/pull/263))
+* [Issue 232](https://github.com/pytroll/pyresample/issues/232) - Possibly an issue with get_lonlats() for robinson projection
+
+In this release 5 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 285](https://github.com/pytroll/pyresample/pull/285) - Check the source area orientation before defining slices ([274](https://github.com/pytroll/pyresample/issues/274))
+* [PR 277](https://github.com/pytroll/pyresample/pull/277) - Fix calculating area slices for flipped projections ([274](https://github.com/pytroll/pyresample/issues/274))
+* [PR 275](https://github.com/pytroll/pyresample/pull/275) - Check area slices for correct step
+* [PR 273](https://github.com/pytroll/pyresample/pull/273) - Remove type check for nearest neighbour fill value. ([272](https://github.com/pytroll/pyresample/issues/272))
+* [PR 265](https://github.com/pytroll/pyresample/pull/265) - Fix geocentric resolution favoring one area dimension over the other
+* [PR 264](https://github.com/pytroll/pyresample/pull/264) - Switch to storing CRS WKT in AreaDefinitions instead of the CRS object
+* [PR 251](https://github.com/pytroll/pyresample/pull/251) - Fix bugs and use real data in the plotting docs
+* [PR 249](https://github.com/pytroll/pyresample/pull/249) - Fix bucket assignment
+
+#### Features added
+
+* [PR 282](https://github.com/pytroll/pyresample/pull/282) - Remove chunks that do not intersect target area in gradient search resampling
+* [PR 279](https://github.com/pytroll/pyresample/pull/279) - Refactor API docs to document things more easily
+* [PR 276](https://github.com/pytroll/pyresample/pull/276) - Create AreaDefinition from epsg codes
+* [PR 271](https://github.com/pytroll/pyresample/pull/271) - Create AreaDefinition from a netCDF/CF file ([269](https://github.com/pytroll/pyresample/issues/269))
+
+#### Documentation changes
+
+* [PR 280](https://github.com/pytroll/pyresample/pull/280) - Remove unnecessary -P flag from the docs readme
+* [PR 279](https://github.com/pytroll/pyresample/pull/279) - Refactor API docs to document things more easily
+* [PR 263](https://github.com/pytroll/pyresample/pull/263) - Fix parameter order in AreaDefinition docstring ([261](https://github.com/pytroll/pyresample/issues/261), [261](https://github.com/pytroll/pyresample/issues/261))
+* [PR 251](https://github.com/pytroll/pyresample/pull/251) - Fix bugs and use real data in the plotting docs
+
+In this release 16 pull requests were closed.
+
+
 ## Version 1.15.0 (2020/03/20)
 
 ### Issues Closed
