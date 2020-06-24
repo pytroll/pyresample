@@ -116,6 +116,8 @@ class BaseDefinition(object):
         """Test for approximate equality."""
         if self is other:
             return True
+        if not isinstance(other, BaseDefinition):
+            return False
         if other.lons is None or other.lats is None:
             other_lons, other_lats = other.get_lonlats()
         else:
