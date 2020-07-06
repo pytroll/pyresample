@@ -1480,6 +1480,28 @@ class Test(unittest.TestCase):
         # WKT1 to WKT2 has some different naming of things so this fails
         # self.assertEqual(crs, area_def.crs)
 
+    def test_areadef_immutable(self):
+        import pytest
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           10,
+                                           10,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+        with pytest.raises(AttributeError):
+            area_def.shape = (10, 10)
+        with pytest.raises(AttributeError):
+            area_def.proj_str = "seaweed"
+        with pytest.raises(AttributeError):
+            area_def.area_extent = (-1000000, -900000, 1000000, 1500000)
+
 
 class TestMakeSliceDivisible(unittest.TestCase):
     """Test the _make_slice_divisible."""
