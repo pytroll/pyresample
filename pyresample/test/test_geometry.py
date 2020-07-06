@@ -515,6 +515,8 @@ class Test(unittest.TestCase):
                                            )
         self.assertFalse(
             area_def == msg_area, 'area_defs are not expected to be equal')
+        self.assertFalse(
+            area_def == "area", 'area_defs are not expected to be equal')
 
     def test_swath_equal_area(self):
         """Test equality swath area."""
