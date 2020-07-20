@@ -784,6 +784,46 @@ class Test(unittest.TestCase):
     def test_colrow2lonlat(self):
         """Test colrow2lonlat."""
         from pyresample import utils
+
+        # test square, symmetric areadef
+        area_id = 'meteosat_0deg'
+        area_name = 'Meteosat 0 degree Service'
+        proj_id = 'geos0'
+        x_size = 3712
+        y_size = 3712
+        area_extent = [-5570248.477339261, -5567248.074173444,
+                       5567248.074173444, 5570248.477339261]
+        proj_dict = {'a': '6378169.00',
+                     'b': '6356583.80',
+                     'h': '35785831.0',
+                     'lon_0': '0.0',
+                     'proj': 'geos'}
+        area = utils.get_area_def(area_id,
+                                  area_name,
+                                  proj_id,
+                                  proj_dict,
+                                  x_size, y_size,
+                                  area_extent)
+
+        # Imatra, Wiesbaden
+        cols = np.array([2304, 2040])
+        rows = np.array([186, 341])
+        lons__, lats__ = area.colrow2lonlat(cols, rows)
+
+        # test arrays
+        lon_expects = np.array([28.77763033, 8.23765962])
+        lat_expects = np.array([61.20120556, 50.05836402])
+        self.assertTrue(np.allclose(lons__, lon_expects, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lats__, lat_expects, rtol=0, atol=1e-7))
+
+        # test scalars
+        lon__, lat__ = area.colrow2lonlat(1567, 2375)
+        lon_expect = -8.125547604568746
+        lat_expect = -14.345524111874646
+        self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
+
+        # test rectangular areadef
         area_id = 'eurol'
         area_name = 'Euro 3.0km area - Europe'
         proj_id = 'eurol'
@@ -815,9 +855,10 @@ class Test(unittest.TestCase):
         self.assertTrue(np.allclose(lats__, lat_expects, rtol=0, atol=1e-7))
 
         # test scalars
-        lon__, lat__ = area.colrow2lonlat(1069, 1513)
-        lon_expect = -5.404744177829209
-        lat_expect = 36.00540657185169
+        # Selva di Val Gardena
+        lon__, lat__ = area.colrow2lonlat(1582, 1049)
+        lon_expect = 11.75721385976652
+        lat_expect = 46.56384754346095
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
