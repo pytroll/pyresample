@@ -1618,7 +1618,7 @@ class AreaDefinition(BaseDefinition):
         p = Proj(self.proj_str)
         x = self.projection_x_coords
         y = self.projection_y_coords
-        return p(y[y.size - cols], x[x.size - rows], inverse=True)
+        return p(x[cols],  y[rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
         """Return image columns and rows for the given lons and lats.

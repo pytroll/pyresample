@@ -784,6 +784,8 @@ class Test(unittest.TestCase):
     def test_colrow2lonlat(self):
         """Test colrow2lonlat."""
         from pyresample import utils
+
+        # test square, symmetric areadef
         area_id = 'meteosat_0deg'
         area_name = 'Meteosat 0 degree Service'
         proj_id = 'geos0'
@@ -818,6 +820,45 @@ class Test(unittest.TestCase):
         lon__, lat__ = area.colrow2lonlat(1567, 2375)
         lon_expect = -8.125547604568746
         lat_expect = -14.345524111874646
+        self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
+
+        # test rectangular areadef
+        area_id = 'eurol'
+        area_name = 'Euro 3.0km area - Europe'
+        proj_id = 'eurol'
+        x_size = 2560
+        y_size = 2048
+        area_extent = [-3780000.0, -7644000.0, 3900000.0, -1500000.0]
+        proj_dict = {
+            'lat_0': 90.0,
+            'lon_0': 0.0,
+            'lat_ts': 60.0,
+            'ellps': 'WGS84',
+            'proj': 'stere'}
+        area = utils.get_area_def(area_id,
+                                  area_name,
+                                  proj_id,
+                                  proj_dict,
+                                  x_size, y_size,
+                                  area_extent)
+
+        # Darmstadt, Gibraltar
+        cols = np.array([1477, 1069])
+        rows = np.array([938, 1513])
+        lons__, lats__ = area.colrow2lonlat(cols, rows)
+
+        # test arrays
+        lon_expects = np.array([8.597949006575268, -5.404744177829209])
+        lat_expects = np.array([49.79024658538765, 36.00540657185169])
+        self.assertTrue(np.allclose(lons__, lon_expects, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lats__, lat_expects, rtol=0, atol=1e-7))
+
+        # test scalars
+        # Selva di Val Gardena
+        lon__, lat__ = area.colrow2lonlat(1582, 1049)
+        lon_expect = 11.75721385976652
+        lat_expect = 46.56384754346095
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
