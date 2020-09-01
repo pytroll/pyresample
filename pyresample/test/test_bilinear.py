@@ -1001,7 +1001,7 @@ def test_check_fill_value():
     # None + integer dtype -> 0
     assert _check_fill_value(None, np.uint8) == 0
     # None + float dtype -> np.nan
-    assert _check_fill_value(None, np.double)
+    assert np.isnan(_check_fill_value(None, np.double))
 
     # integer fill value + integer dtype -> no change
     assert _check_fill_value(3, np.uint8) == 3
