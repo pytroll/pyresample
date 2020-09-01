@@ -558,6 +558,14 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue('bands' in resampler.out_coords)
         self.assertTrue(np.all(resampler.out_coords['bands'] == bands))
 
+        # Available coordinates from self.out_coords_x and self.out_coords_y
+        # should be set to self.out_coords
+        resampler.out_coords_x = [1]
+        resampler.out_coords_y = [2]
+        resampler._add_missing_coordinates(data)
+        self.assertEqual(resampler.out_coords['x'], resampler.out_coords_x)
+        self.assertEqual(resampler.out_coords['y'], resampler.out_coords_y)
+
     def test_slice_data(self):
         """Test slicing the data."""
         import dask.array as da
