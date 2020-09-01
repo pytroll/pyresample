@@ -209,15 +209,14 @@ class XArrayResamplerBilinear(object):
                     self.out_coords[dim] = data.coords[dim]
                 except KeyError:
                     pass
-        self._adjust_bands(data.coords)
+        self._adjust_bands_coordinates_to_match_data(data.coords)
 
     def _add_x_and_y_coordinates(self):
         if self.out_coords['x'] is None and self.out_coords_x is not None:
             self.out_coords['x'] = self.out_coords_x
             self.out_coords['y'] = self.out_coords_y
 
-    def _adjust_bands(self, data_coords):
-        """Adjust output band coordinates to match the data."""
+    def _adjust_bands_coordinates_to_match_data(self, data_coords):
         if 'bands' in data_coords:
             self.out_coords['bands'] = data_coords['bands']
 
