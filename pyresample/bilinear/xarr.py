@@ -162,11 +162,7 @@ class XArrayResamplerBilinear(object):
                                  output_shape=None):
         """Resample using pre-computed resampling LUTs."""
         del output_shape
-        if fill_value is None:
-            if np.issubdtype(data.dtype, np.integer):
-                fill_value = 0
-            else:
-                fill_value = np.nan
+        fill_value = _check_fill_value(fill_value, data.dtype)
 
         p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
         s__, t__ = self.bilinear_s, self.bilinear_t
@@ -206,15 +202,23 @@ class XArrayResamplerBilinear(object):
                 continue
 
     def _add_missing_coordinates(self, data):
-        if self.out_coords['x'] is None and self.out_coords_x is not None:
-            self.out_coords['x'] = self.out_coords_x
-            self.out_coords['y'] = self.out_coords_y
+        self._add_x_and_y_coordinates()
         for _, dim in enumerate(data.dims):
             if dim not in self.out_coords:
                 try:
                     self.out_coords[dim] = data.coords[dim]
                 except KeyError:
                     pass
+        self._adjust_bands_coordinates_to_match_data(data.coords)
+
+    def _add_x_and_y_coordinates(self):
+        if self.out_coords['x'] is None and self.out_coords_x is not None:
+            self.out_coords['x'] = self.out_coords_x
+            self.out_coords['y'] = self.out_coords_y
+
+    def _adjust_bands_coordinates_to_match_data(self, data_coords):
+        if 'bands' in data_coords:
+            self.out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
 
@@ -308,6 +312,22 @@ class XArrayResamplerBilinear(object):
                                 self.neighbours, self.epsilon,
                                 self.radius_of_influence)
         return res, None
+
+
+def _check_fill_value(fill_value, dtype):
+    """Check that fill value is usable for the data."""
+    if fill_value is None:
+        if np.issubdtype(dtype, np.integer):
+            fill_value = 0
+        else:
+            fill_value = np.nan
+    elif np.issubdtype(dtype, np.integer):
+        if np.isnan(fill_value):
+            fill_value = 0
+        elif np.issubdtype(type(fill_value), np.floating):
+            fill_value = int(fill_value)
+
+    return fill_value
 
 
 def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
