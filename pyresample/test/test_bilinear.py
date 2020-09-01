@@ -984,3 +984,23 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res.shape, (self.target_def.size, 3))
         vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
         self.assertTrue(np.allclose(res.compute()[0, :], vals))
+
+
+def test_check_fill_value():
+    """Test that fill_value replacement/adjustment works."""
+    from pyresample.bilinear.xarr import _check_fill_value
+
+    # None + integer dtype -> 0
+    assert _check_fill_value(None, np.uint8) == 0
+    # None + float dtype -> np.nan
+    assert _check_fill_value(None, np.double)
+
+    # integer fill value + integer dtype -> no change
+    assert _check_fill_value(3, np.uint8) == 3
+    # np.nan + integer dtype -> 0
+    assert _check_fill_value(np.nan, np.uint8) == 0
+    # float fill value + integer dtype -> int(fill_value)
+    assert _check_fill_value(3.3, np.uint16) == 3
+
+    # float fill value + float dtype -> no change
+    assert _check_fill_value(3.3, np.float32)

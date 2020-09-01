@@ -321,8 +321,11 @@ def _check_fill_value(fill_value, dtype):
             fill_value = 0
         else:
             fill_value = np.nan
-    if np.issubdtype(dtype, np.integer):
-        fill_value = 0
+    elif np.issubdtype(dtype, np.integer):
+        if np.isnan(fill_value):
+            fill_value = 0
+        elif np.issubdtype(type(fill_value), np.floating):
+            fill_value = int(fill_value)
 
     return fill_value
 
