@@ -217,11 +217,7 @@ class XArrayResamplerBilinear(BilinearBase):
         rcols = cols[vii][ia_]
 
         try:
-            coord_x, coord_y = self._target_geo_def.get_proj_vectors()
-            self._out_coords['y'] = coord_y
-            self._out_coords['x'] = coord_x
-            self.out_coords_y = self._out_coords['y']
-            self.out_coords_x = self._out_coords['x']
+            self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors()
         except AttributeError:
             pass
 

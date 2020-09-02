@@ -470,7 +470,6 @@ class TestXarrayBilinear(unittest.TestCase):
         s__ = resampler.bilinear_s
         slices = resampler._slices
         mask_slices = resampler.mask_slices
-        out_coords = resampler._out_coords
         _check_ts(t__.compute(), s__.compute(), [3, 10, 12, 13, 14, 15])
 
         # Nothing should be masked based on coordinates
@@ -485,14 +484,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(resampler._slices['x'] == slices['x']))
         self.assertTrue(resampler._slices['y'] is resampler.slices_y)
         self.assertTrue(np.all(resampler._slices['y'] == slices['y']))
-
-        # self.slices_{x,y} are used in self.slices dict so they
-        # should be the same (object)
-        self.assertTrue(isinstance(out_coords, dict))
-        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
-        self.assertTrue(np.all(resampler._out_coords['x'] == out_coords['x']))
-        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
-        self.assertTrue(np.all(resampler._out_coords['y'] == out_coords['y']))
 
         # Also some other attributes should have been set
         self.assertTrue(t__ is resampler.bilinear_t)
@@ -509,7 +500,6 @@ class TestXarrayBilinear(unittest.TestCase):
         s__ = resampler.bilinear_s
         slices = resampler._slices
         mask_slices = resampler.mask_slices
-        out_coords = resampler._out_coords
         _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
 
     def test_get_sample_from_bil_info(self):
@@ -544,6 +534,11 @@ class TestXarrayBilinear(unittest.TestCase):
         # Five values should be filled with zeros, which is the
         # default fill_value for integer data
         self.assertEqual(np.sum(res == 0), 6)
+
+        # Output coordinates should have been set
+        self.assertTrue(isinstance(resampler._out_coords, dict))
+        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
+        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
 
     @mock.patch('pyresample.bilinear.xarr.setattr')
     def test_compute_indices(self, mock_setattr):
@@ -661,8 +656,6 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler._get_slices()
         self.assertIsNotNone(resampler.out_coords_x)
         self.assertIsNotNone(resampler.out_coords_y)
-        self.assertTrue(resampler.out_coords_x is resampler._out_coords['x'])
-        self.assertTrue(resampler.out_coords_y is resampler._out_coords['y'])
         self.assertTrue(np.allclose(
             resampler.out_coords_x,
             [-1070912.72, -470912.72, 129087.28, 729087.28]))
