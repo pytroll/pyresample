@@ -666,3 +666,7 @@ class BilinearBase(object):
 
     def _get_slices(self):
         raise NotImplementedError
+
+    def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):
+        """Resample using pre-computed resampling LUTs."""
+        raise NotImplementedError
