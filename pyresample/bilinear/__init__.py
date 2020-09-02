@@ -629,3 +629,40 @@ class BilinearBase(object):
         self._resample_kdtree = None
         self._target_lons = None
         self._target_lats = None
+
+    def get_bil_info(self):
+        """Calculate bilinear neighbour info."""
+        if self._source_geo_def.size < self._neighbours:
+            warnings.warn('Searching for %s neighbours in %s data points' %
+                          (self._neighbours, self._source_geo_def.size))
+
+        self._get_valid_input_index_and_kdtree()
+        if self._resample_kdtree is None:
+            return
+
+        self._get_target_lonlats()
+        self._get_valid_output_indices()
+        self._get_index_array()
+
+        # Calculate vertical and horizontal fractional distances t and s
+        self._get_ts()
+
+        self._get_slices()
+
+    def _get_valid_input_index_and_kdtree(self):
+        raise NotImplementedError
+
+    def _get_target_lonlats(self):
+        raise NotImplementedError
+
+    def _get_valid_output_indices(self):
+        raise NotImplementedError
+
+    def _get_index_array(self):
+        raise NotImplementedError
+
+    def _get_ts(self):
+        raise NotImplementedError
+
+    def _get_slices(self):
+        raise NotImplementedError

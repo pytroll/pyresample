@@ -24,8 +24,6 @@
 
 """XArray version of bilinear interpolation."""
 
-import warnings
-
 try:
     from xarray import DataArray
     import dask.array as da
@@ -100,25 +98,6 @@ class XArrayResamplerBilinear(BilinearBase):
                                        out_x, out_y,
                                        self._neighbours, self._index_array)
         self.bilinear_t, self.bilinear_s = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
-
-    def get_bil_info(self):
-        """Calculate neighbour info."""
-        if self._source_geo_def.size < self._neighbours:
-            warnings.warn('Searching for %s neighbours in %s data points' %
-                          (self._neighbours, self._source_geo_def.size))
-
-        self._get_valid_input_index_and_kdtree()
-        if self._resample_kdtree is None:
-            return
-
-        self._get_target_lonlats()
-        self._get_valid_output_indices()
-        self._get_index_array()
-
-        # Calculate vertical and horizontal fractional distances t and s
-        self._get_ts()
-
-        self._get_slices()
 
     def _resample(self, data, fill_value):
         p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
