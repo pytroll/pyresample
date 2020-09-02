@@ -518,7 +518,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius)
-        _ = resampler.get_bil_info()
+        resampler.get_bil_info()
 
         # Sample from data1
         res = resampler.get_sample_from_bil_info(self.data1)

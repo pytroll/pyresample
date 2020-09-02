@@ -78,21 +78,17 @@ class XArrayResamplerBilinear(BilinearBase):
     def _get_target_lonlats(self):
         self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
 
+    def _get_index_array(self):
+        index_array, _ = self._query_resample_kdtree()
+        self._index_array = self._reduce_index_array(index_array)
+
+    def _reduce_index_array(self, index_array):
+        input_size = da.sum(self._valid_input_index)
+        index_mask = index_array == input_size
+        return da.where(index_mask, 0, index_array)
+
     def get_bil_info(self):
-        """Return neighbour info.
-
-        Returns
-        -------
-        t__ : numpy array
-            Vertical fractional distances from corner to the new points
-        s__ : numpy array
-            Horizontal fractional distances from corner to the new points
-        valid_input_index : numpy array
-            Valid indices in the input data
-        index_array : numpy array
-            Mapping array from valid source points to target points
-
-        """
+        """Calculate neighbour info."""
         if self._source_geo_def.size < self._neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self._neighbours, self._source_geo_def.size))
@@ -103,37 +99,24 @@ class XArrayResamplerBilinear(BilinearBase):
 
         self._get_target_lonlats()
         self._get_valid_output_indices()
-
-        index_array, distance_array = self._query_resample_kdtree()
-
-        # Reduce index reference
-        input_size = da.sum(self._valid_input_index)
-        index_mask = index_array == input_size
-        index_array = da.where(index_mask, 0, index_array)
-
-        # Get output projection as pyproj object
-        proj = Proj(self._target_geo_def.proj_str)
+        self._get_index_array()
 
         # Get output x/y coordinates
-        out_x, out_y = self._target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
-        out_x = da.ravel(out_x)
-        out_y = da.ravel(out_y)
+        out_x, out_y = _get_output_xy(self._target_geo_def)
 
         # Get input x/y coordinates
-        in_x, in_y = _get_input_xy_dask(self._source_geo_def, proj,
-                                        self._valid_input_index, index_array)
+        in_x, in_y = _get_input_xy_dask(self._source_geo_def,
+                                        Proj(self._target_geo_def.proj_str),
+                                        self._valid_input_index, self._index_array)
 
         # Get the four closest corner points around each output location
-        pt_1, pt_2, pt_3, pt_4, index_array = \
+        pt_1, pt_2, pt_3, pt_4, self._index_array = \
             _get_bounding_corners_dask(in_x, in_y, out_x, out_y,
-                                       self._neighbours, index_array)
+                                       self._neighbours, self._index_array)
 
         # Calculate vertical and horizontal fractional distances t and s
         t__, s__ = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
         self.bilinear_t, self.bilinear_s = t__, s__
-
-        self._index_array = index_array
-        self._distance_array = distance_array
 
         self._get_slices()
 
@@ -287,6 +270,11 @@ class XArrayResamplerBilinear(BilinearBase):
                                 self._neighbours, self._epsilon,
                                 self._radius_of_influence)
         return res, None
+
+
+def _get_output_xy(target_geo_def):
+    out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
+    return da.ravel(out_x),  da.ravel(out_y)
 
 
 def _check_fill_value(fill_value, dtype):
