@@ -669,4 +669,30 @@ class BilinearBase(object):
 
     def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):
         """Resample using pre-computed resampling LUTs."""
+        del output_shape
+        fill_value = _check_fill_value(fill_value, data.dtype)
+
+        res = self._resample(data, fill_value)
+        return self._finalize_output_data(data, res, fill_value)
+
+    def _resample(self, data, fill_value):
         raise NotImplementedError
+
+    def _finalize_output_data(self, data, res, fill_value):
+        raise NotImplementedError
+
+
+def _check_fill_value(fill_value, dtype):
+    """Check that fill value is usable for the data."""
+    if fill_value is None:
+        if np.issubdtype(dtype, np.integer):
+            fill_value = 0
+        else:
+            fill_value = np.nan
+    elif np.issubdtype(dtype, np.integer):
+        if np.isnan(fill_value):
+            fill_value = 0
+        elif np.issubdtype(type(fill_value), np.floating):
+            fill_value = int(fill_value)
+
+    return fill_value

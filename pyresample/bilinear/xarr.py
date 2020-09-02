@@ -126,21 +126,13 @@ class XArrayResamplerBilinear(BilinearBase):
 
         return res
 
-    def get_sample_from_bil_info(self, data, fill_value=None,
-                                 output_shape=None):
-        """Resample using pre-computed resampling LUTs."""
-        del output_shape
-        fill_value = _check_fill_value(fill_value, data.dtype)
-
-        res = self._resample(data, fill_value)
+    def _finalize_output_data(self, data, res, fill_value):
         res = self._limit_output_values_to_input(data, res, fill_value)
         res = self._reshape_to_target_area(res, data.ndim)
 
         self._add_missing_coordinates(data)
 
-        res = DataArray(res, dims=data.dims, coords=self._out_coords)
-
-        return res
+        return DataArray(res, dims=data.dims, coords=self._out_coords)
 
     def _compute_indices(self):
         for idx in CACHE_INDICES:
@@ -252,22 +244,6 @@ def _slice3d(values, sl_x, sl_y, mask, fill_value):
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
     return da.ravel(out_x),  da.ravel(out_y)
-
-
-def _check_fill_value(fill_value, dtype):
-    """Check that fill value is usable for the data."""
-    if fill_value is None:
-        if np.issubdtype(dtype, np.integer):
-            fill_value = 0
-        else:
-            fill_value = np.nan
-    elif np.issubdtype(dtype, np.integer):
-        if np.isnan(fill_value):
-            fill_value = 0
-        elif np.issubdtype(type(fill_value), np.floating):
-            fill_value = int(fill_value)
-
-    return fill_value
 
 
 def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
