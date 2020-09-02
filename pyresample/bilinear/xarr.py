@@ -87,6 +87,20 @@ class XArrayResamplerBilinear(BilinearBase):
         index_mask = index_array == input_size
         return da.where(index_mask, 0, index_array)
 
+    def _get_input_xy(self):
+        return _get_input_xy_dask(self._source_geo_def,
+                                  Proj(self._target_geo_def.proj_str),
+                                  self._valid_input_index, self._index_array)
+
+    def _get_ts(self):
+        out_x, out_y = _get_output_xy(self._target_geo_def)
+        # Get the four closest corner points around each output location
+        pt_1, pt_2, pt_3, pt_4, self._index_array = \
+            _get_bounding_corners_dask(*self._get_input_xy(),
+                                       out_x, out_y,
+                                       self._neighbours, self._index_array)
+        self.bilinear_t, self.bilinear_s = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+
     def get_bil_info(self):
         """Calculate neighbour info."""
         if self._source_geo_def.size < self._neighbours:
@@ -101,22 +115,8 @@ class XArrayResamplerBilinear(BilinearBase):
         self._get_valid_output_indices()
         self._get_index_array()
 
-        # Get output x/y coordinates
-        out_x, out_y = _get_output_xy(self._target_geo_def)
-
-        # Get input x/y coordinates
-        in_x, in_y = _get_input_xy_dask(self._source_geo_def,
-                                        Proj(self._target_geo_def.proj_str),
-                                        self._valid_input_index, self._index_array)
-
-        # Get the four closest corner points around each output location
-        pt_1, pt_2, pt_3, pt_4, self._index_array = \
-            _get_bounding_corners_dask(in_x, in_y, out_x, out_y,
-                                       self._neighbours, self._index_array)
-
         # Calculate vertical and horizontal fractional distances t and s
-        t__, s__ = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
-        self.bilinear_t, self.bilinear_s = t__, s__
+        self._get_ts()
 
         self._get_slices()
 
