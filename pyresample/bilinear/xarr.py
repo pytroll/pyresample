@@ -222,10 +222,8 @@ class XArrayResamplerBilinear(BilinearBase):
             pass
 
         self.mask_slices = ia_ >= self._source_geo_def.size
-        self._slices['y'] = rlines
-        self._slices['x'] = rcols
-        self.slices_y = self._slices['y']
-        self.slices_x = self._slices['x']
+        self.slices_y = rlines
+        self.slices_x = rcols
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input."""

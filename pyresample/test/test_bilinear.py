@@ -426,9 +426,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertIsNone(resampler.mask_slices)
         self.assertIsNone(resampler.out_coords_x)
         self.assertIsNone(resampler.out_coords_y)
-        # self.slices_{x,y} are used in self._slices dict
-        self.assertTrue(resampler._slices['x'] is resampler.slices_x)
-        self.assertTrue(resampler._slices['y'] is resampler.slices_y)
         # self._out_coords_{x,y} are used in self._out_coords dict
         self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
         self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
@@ -468,7 +465,6 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
         s__ = resampler.bilinear_s
-        slices = resampler._slices
         mask_slices = resampler.mask_slices
         _check_ts(t__.compute(), s__.compute(), [3, 10, 12, 13, 14, 15])
 
@@ -476,14 +472,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(~mask_slices))
         # Four values per output location
         self.assertEqual(mask_slices.shape, (self.target_def.size, 4))
-
-        # self.slices_{x,y} are used in self.slices dict so they
-        # should be the same (object)
-        self.assertTrue(isinstance(slices, dict))
-        self.assertTrue(resampler._slices['x'] is resampler.slices_x)
-        self.assertTrue(np.all(resampler._slices['x'] == slices['x']))
-        self.assertTrue(resampler._slices['y'] is resampler.slices_y)
-        self.assertTrue(np.all(resampler._slices['y'] == slices['y']))
 
         # Also some other attributes should have been set
         self.assertTrue(t__ is resampler.bilinear_t)
@@ -498,7 +486,6 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
         s__ = resampler.bilinear_s
-        slices = resampler._slices
         mask_slices = resampler.mask_slices
         _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
 
@@ -665,8 +652,6 @@ class TestXarrayBilinear(unittest.TestCase):
 
         self.assertIsNotNone(resampler.slices_x)
         self.assertIsNotNone(resampler.slices_y)
-        self.assertTrue(resampler.slices_x is resampler._slices['x'])
-        self.assertTrue(resampler.slices_y is resampler._slices['y'])
         self.assertTrue(resampler.slices_x.shape == (self.target_def.size, 32))
         self.assertTrue(resampler.slices_y.shape == (self.target_def.size, 32))
         self.assertEqual(np.sum(resampler.slices_x), 12471)

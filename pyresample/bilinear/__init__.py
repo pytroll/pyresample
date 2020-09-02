@@ -615,7 +615,6 @@ class BilinearBase(object):
         self.out_coords_x = None
         self.out_coords_y = None
 
-        self._slices = {'x': self.slices_x, 'y': self.slices_y}
         self._out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
         self._valid_input_index = None
         self._valid_output_index = None
