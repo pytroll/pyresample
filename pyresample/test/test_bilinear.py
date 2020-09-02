@@ -711,9 +711,12 @@ class TestXarrayBilinear(unittest.TestCase):
 
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius)
-        res, none = resampler._query_resample_kdtree(1, 2, 3, 4,
-                                                     reduce_data=5)
-        qnd.assert_called_with(2, 3, 4, 1, resampler._neighbours,
+        resampler._target_lons = 1
+        resampler._target_lats = 2
+        resampler._valid_output_index = 3
+        resampler._resample_kdtree = 4
+        res, none = resampler._query_resample_kdtree(reduce_data=5)
+        qnd.assert_called_with(1, 2, 3, 4, resampler._neighbours,
                                resampler._epsilon,
                                resampler._radius_of_influence)
 

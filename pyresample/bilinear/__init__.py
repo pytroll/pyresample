@@ -628,3 +628,5 @@ class BilinearBase(object):
         self._target_geo_def = target_geo_def
         self._radius_of_influence = radius_of_influence
         self._resample_kdtree = None
+        self._target_lons = None
+        self._target_lats = None

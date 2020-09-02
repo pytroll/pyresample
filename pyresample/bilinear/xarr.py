@@ -71,6 +71,13 @@ class XArrayResamplerBilinear(BilinearBase):
         self._valid_input_index = valid_input_index
         self._resample_kdtree = resample_kdtree
 
+    def _get_valid_output_indices(self):
+        self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
+                                    (self._target_lats <= 90) & (self._target_lats >= -90))
+
+    def _get_target_lonlats(self):
+        self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
+
     def get_bil_info(self):
         """Return neighbour info.
 
@@ -94,12 +101,10 @@ class XArrayResamplerBilinear(BilinearBase):
         if self._resample_kdtree is None:
             return
 
-        target_lons, target_lats = self._target_geo_def.get_lonlats()
-        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
-                            (target_lats <= 90) & (target_lats >= -90))
+        self._get_target_lonlats()
+        self._get_valid_output_indices()
 
-        index_array, distance_array = self._query_resample_kdtree(
-            self._resample_kdtree, target_lons, target_lats, valid_output_idx)
+        index_array, distance_array = self._query_resample_kdtree()
 
         # Reduce index reference
         input_size = da.sum(self._valid_input_index)
@@ -127,7 +132,6 @@ class XArrayResamplerBilinear(BilinearBase):
         t__, s__ = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
         self.bilinear_t, self.bilinear_s = t__, s__
 
-        self._valid_output_index = valid_output_idx
         self._index_array = index_array
         self._distance_array = distance_array
 
@@ -276,14 +280,10 @@ class XArrayResamplerBilinear(BilinearBase):
         return valid_input_index, KDTree(input_coords)
 
     def _query_resample_kdtree(self,
-                               resample_kdtree,
-                               tlons,
-                               tlats,
-                               valid_oi,
                                reduce_data=True):
         """Query kd-tree on slice of target coordinates."""
-        res = query_no_distance(tlons, tlats,
-                                valid_oi, resample_kdtree,
+        res = query_no_distance(self._target_lons, self._target_lats,
+                                self._valid_output_index, self._resample_kdtree,
                                 self._neighbours, self._epsilon,
                                 self._radius_of_influence)
         return res, None
