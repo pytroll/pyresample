@@ -120,34 +120,43 @@ class XArrayResamplerBilinear(BilinearBase):
 
         self._get_slices()
 
-    def get_sample_from_bil_info(self, data, fill_value=None,
-                                 output_shape=None):
-        """Resample using pre-computed resampling LUTs."""
-        del output_shape
-        fill_value = _check_fill_value(fill_value, data.dtype)
-
+    def _resample(self, data, fill_value):
         p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
         s__, t__ = self.bilinear_s, self.bilinear_t
 
-        res = (p_1 * (1 - s__) * (1 - t__) +
-               p_2 * s__ * (1 - t__) +
-               p_3 * (1 - s__) * t__ +
-               p_4 * s__ * t__)
+        return (p_1 * (1 - s__) * (1 - t__) +
+                p_2 * s__ * (1 - t__) +
+                p_3 * (1 - s__) * t__ +
+                p_4 * s__ * t__)
 
+    def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
         data_min = da.nanmin(data) - epsilon
         data_max = da.nanmax(data) + epsilon
 
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
-        res = da.where(np.isnan(res), fill_value, res)
+        return da.where(np.isnan(res), fill_value, res)
+
+    def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
-        if data.ndim == 3:
+        if ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
             res = da.reshape(res, (shp[0], shp[1]))
 
-        # Add missing coordinates
+        return res
+
+    def get_sample_from_bil_info(self, data, fill_value=None,
+                                 output_shape=None):
+        """Resample using pre-computed resampling LUTs."""
+        del output_shape
+        fill_value = _check_fill_value(fill_value, data.dtype)
+
+        res = self._resample(data, fill_value)
+        res = self._limit_output_values_to_input(data, res, fill_value)
+        res = self._reshape_to_target_area(res, data.ndim)
+
         self._add_missing_coordinates(data)
 
         res = DataArray(res, dims=data.dims, coords=self._out_coords)
