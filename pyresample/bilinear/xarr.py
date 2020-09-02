@@ -192,33 +192,14 @@ class XArrayResamplerBilinear(BilinearBase):
             self._out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
+        if data.ndim == 2:
+            slicer = _slice2d
+        elif data.ndim == 3:
+            slicer = _slice3d
+        else:
+            raise ValueError
 
-        def _slicer(values, sl_x, sl_y, mask, fill_value):
-            if values.ndim == 2:
-                arr = values[(sl_y, sl_x)]
-                arr[(mask, )] = fill_value
-                p_1 = arr[:, 0]
-                p_2 = arr[:, 1]
-                p_3 = arr[:, 2]
-                p_4 = arr[:, 3]
-            elif values.ndim == 3:
-                arr = values[(slice(None), sl_y, sl_x)]
-                arr[(slice(None), mask)] = fill_value
-                p_1 = arr[:, :, 0]
-                p_2 = arr[:, :, 1]
-                p_3 = arr[:, :, 2]
-                p_4 = arr[:, :, 3]
-            else:
-                raise ValueError
-
-            return p_1, p_2, p_3, p_4
-
-        values = data.values
-        sl_y = self.slices_y
-        sl_x = self.slices_x
-        mask = self.mask_slices
-
-        return _slicer(values, sl_x, sl_y, mask, fill_value)
+        return slicer(data.values, self.slices_x, self.slices_y, self.mask_slices, fill_value)
 
     def _get_slices(self):
         shp = self._source_geo_def.shape
@@ -279,6 +260,20 @@ class XArrayResamplerBilinear(BilinearBase):
                                 self._neighbours, self._epsilon,
                                 self._radius_of_influence)
         return res, None
+
+
+def _slice2d(values, sl_x, sl_y, mask, fill_value):
+    # Slice 2D data
+    arr = values[(sl_y, sl_x)]
+    arr[(mask, )] = fill_value
+    return arr[:, 0], arr[:, 1], arr[:, 2], arr[:, 3]
+
+
+def _slice3d(values, sl_x, sl_y, mask, fill_value):
+    # Slice 3D data
+    arr = values[(slice(None), sl_y, sl_x)]
+    arr[(slice(None), mask)] = fill_value
+    return arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
 
 
 def _get_output_xy(target_geo_def):
