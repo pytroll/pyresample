@@ -574,3 +574,55 @@ def _check_data_shape(data, input_idxs):
         data = np.expand_dims(data, 1)
 
     return data
+
+
+class BilinearBase(object):
+    """Base class for bilinear interpolation."""
+
+    def __init__(self,
+                 source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 neighbours=32,
+                 epsilon=0,
+                 reduce_data=True):
+        """
+        Initialize resampler.
+
+        Parameters
+        ----------
+        source_geo_def : object
+            Geometry definition of source
+        target_geo_def : object
+            Geometry definition of target
+        radius_of_influence : float
+            Cut off distance in meters
+        neighbours : int, optional
+            The number of neigbours to consider for each grid point
+        epsilon : float, optional
+            Allowed uncertainty in meters. Increasing uncertainty
+            reduces execution time
+        reduce_data : bool, optional
+            Perform initial coarse reduction of source dataset in order
+            to reduce execution time
+
+        """
+        self.valid_input_index = None
+        self.valid_output_index = None
+        self.index_array = None
+        self.distance_array = None
+        self.bilinear_t = None
+        self.bilinear_s = None
+        self.slices_x = None
+        self.slices_y = None
+        self.slices = {'x': self.slices_x, 'y': self.slices_y}
+        self.mask_slices = None
+        self.out_coords_x = None
+        self.out_coords_y = None
+        self.out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
+        self.neighbours = neighbours
+        self.epsilon = epsilon
+        self.reduce_data = reduce_data
+        self.source_geo_def = source_geo_def
+        self.target_geo_def = target_geo_def
+        self.radius_of_influence = radius_of_influence
