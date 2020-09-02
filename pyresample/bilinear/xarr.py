@@ -70,28 +70,28 @@ class XArrayResamplerBilinear(BilinearBase):
             Mapping array from valid source points to target points
 
         """
-        if self.source_geo_def.size < self.neighbours:
+        if self._source_geo_def.size < self._neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
-                          (self.neighbours, self.source_geo_def.size))
+                          (self._neighbours, self._source_geo_def.size))
 
         # Create kd-tree
         valid_input_index, resample_kdtree = self._create_resample_kdtree()
         # This is a numpy array
-        self.valid_input_index = valid_input_index
+        self._valid_input_index = valid_input_index
 
         if resample_kdtree.n == 0:
             # Handle if all input data is reduced away
             bilinear_t, bilinear_s, valid_input_index, index_array = \
-                _create_empty_bil_info(self.source_geo_def,
-                                       self.target_geo_def)
+                _create_empty_bil_info(self._source_geo_def,
+                                       self._target_geo_def)
             self.bilinear_t = bilinear_t
             self.bilinear_s = bilinear_s
-            self.valid_input_index = valid_input_index
-            self.index_array = index_array
+            self._valid_input_index = valid_input_index
+            self._index_array = index_array
 
             return bilinear_t, bilinear_s, valid_input_index, index_array
 
-        target_lons, target_lats = self.target_geo_def.get_lonlats()
+        target_lons, target_lats = self._target_geo_def.get_lonlats()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
                             (target_lats <= 90) & (target_lats >= -90))
 
@@ -99,40 +99,40 @@ class XArrayResamplerBilinear(BilinearBase):
             resample_kdtree, target_lons, target_lats, valid_output_idx)
 
         # Reduce index reference
-        input_size = da.sum(self.valid_input_index)
+        input_size = da.sum(self._valid_input_index)
         index_mask = index_array == input_size
         index_array = da.where(index_mask, 0, index_array)
 
         # Get output projection as pyproj object
-        proj = Proj(self.target_geo_def.proj_str)
+        proj = Proj(self._target_geo_def.proj_str)
 
         # Get output x/y coordinates
-        out_x, out_y = self.target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
+        out_x, out_y = self._target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
 
         # Get input x/y coordinates
-        in_x, in_y = _get_input_xy_dask(self.source_geo_def, proj,
-                                        self.valid_input_index, index_array)
+        in_x, in_y = _get_input_xy_dask(self._source_geo_def, proj,
+                                        self._valid_input_index, index_array)
 
         # Get the four closest corner points around each output location
         pt_1, pt_2, pt_3, pt_4, index_array = \
             _get_bounding_corners_dask(in_x, in_y, out_x, out_y,
-                                       self.neighbours, index_array)
+                                       self._neighbours, index_array)
 
         # Calculate vertical and horizontal fractional distances t and s
         t__, s__ = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
         self.bilinear_t, self.bilinear_s = t__, s__
 
-        self.valid_output_index = valid_output_idx
-        self.index_array = index_array
-        self.distance_array = distance_array
+        self._valid_output_index = valid_output_idx
+        self._index_array = index_array
+        self._distance_array = distance_array
 
         self._get_slices()
 
         return (self.bilinear_t, self.bilinear_s,
-                self.slices, self.mask_slices,
-                self.out_coords)
+                self._slices, self.mask_slices,
+                self._out_coords)
 
     def get_sample_from_bil_info(self, data, fill_value=None,
                                  output_shape=None):
@@ -155,7 +155,7 @@ class XArrayResamplerBilinear(BilinearBase):
         idxs = (res > data_max) | (res < data_min)
         res = da.where(idxs, fill_value, res)
         res = da.where(np.isnan(res), fill_value, res)
-        shp = self.target_geo_def.shape
+        shp = self._target_geo_def.shape
         if data.ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
@@ -164,7 +164,7 @@ class XArrayResamplerBilinear(BilinearBase):
         # Add missing coordinates
         self._add_missing_coordinates(data)
 
-        res = DataArray(res, dims=data.dims, coords=self.out_coords)
+        res = DataArray(res, dims=data.dims, coords=self._out_coords)
 
         return res
 
@@ -180,21 +180,21 @@ class XArrayResamplerBilinear(BilinearBase):
     def _add_missing_coordinates(self, data):
         self._add_x_and_y_coordinates()
         for _, dim in enumerate(data.dims):
-            if dim not in self.out_coords:
+            if dim not in self._out_coords:
                 try:
-                    self.out_coords[dim] = data.coords[dim]
+                    self._out_coords[dim] = data.coords[dim]
                 except KeyError:
                     pass
         self._adjust_bands_coordinates_to_match_data(data.coords)
 
     def _add_x_and_y_coordinates(self):
-        if self.out_coords['x'] is None and self.out_coords_x is not None:
-            self.out_coords['x'] = self.out_coords_x
-            self.out_coords['y'] = self.out_coords_y
+        if self._out_coords['x'] is None and self.out_coords_x is not None:
+            self._out_coords['x'] = self.out_coords_x
+            self._out_coords['y'] = self.out_coords_y
 
     def _adjust_bands_coordinates_to_match_data(self, data_coords):
         if 'bands' in data_coords:
-            self.out_coords['bands'] = data_coords['bands']
+            self._out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
 
@@ -226,14 +226,14 @@ class XArrayResamplerBilinear(BilinearBase):
         return _slicer(values, sl_x, sl_y, mask, fill_value)
 
     def _get_slices(self):
-        shp = self.source_geo_def.shape
+        shp = self._source_geo_def.shape
         cols, lines = np.meshgrid(np.arange(shp[1]),
                                   np.arange(shp[0]))
         cols = np.ravel(cols)
         lines = np.ravel(lines)
 
-        vii = self.valid_input_index
-        ia_ = self.index_array
+        vii = self._valid_input_index
+        ia_ = self._index_array
 
         # ia_ contains reduced (valid) indices of the source array, and has the
         # shape of the destination array
@@ -241,28 +241,28 @@ class XArrayResamplerBilinear(BilinearBase):
         rcols = cols[vii][ia_]
 
         try:
-            coord_x, coord_y = self.target_geo_def.get_proj_vectors()
-            self.out_coords['y'] = coord_y
-            self.out_coords['x'] = coord_x
-            self.out_coords_y = self.out_coords['y']
-            self.out_coords_x = self.out_coords['x']
+            coord_x, coord_y = self._target_geo_def.get_proj_vectors()
+            self._out_coords['y'] = coord_y
+            self._out_coords['x'] = coord_x
+            self.out_coords_y = self._out_coords['y']
+            self.out_coords_x = self._out_coords['x']
         except AttributeError:
             pass
 
-        self.mask_slices = ia_ >= self.source_geo_def.size
-        self.slices['y'] = rlines
-        self.slices['x'] = rcols
-        self.slices_y = self.slices['y']
-        self.slices_x = self.slices['x']
+        self.mask_slices = ia_ >= self._source_geo_def.size
+        self._slices['y'] = rlines
+        self._slices['x'] = rcols
+        self.slices_y = self._slices['y']
+        self.slices_x = self._slices['x']
 
     def _create_resample_kdtree(self):
         """Set up kd tree on input."""
         # Get input information
         valid_input_index, source_lons, source_lats = \
-            _get_valid_input_index_dask(self.source_geo_def,
-                                        self.target_geo_def,
-                                        self.reduce_data,
-                                        self.radius_of_influence)
+            _get_valid_input_index_dask(self._source_geo_def,
+                                        self._target_geo_def,
+                                        self._reduce_data,
+                                        self._radius_of_influence)
 
         # FIXME: Is dask smart enough to only compute the pixels we end up
         #        using even with this complicated indexing
@@ -285,8 +285,8 @@ class XArrayResamplerBilinear(BilinearBase):
         """Query kd-tree on slice of target coordinates."""
         res = query_no_distance(tlons, tlats,
                                 valid_oi, resample_kdtree,
-                                self.neighbours, self.epsilon,
-                                self.radius_of_influence)
+                                self._neighbours, self._epsilon,
+                                self._radius_of_influence)
         return res, None
 
 

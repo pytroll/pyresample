@@ -75,10 +75,10 @@ class TestNumpyBilinear(unittest.TestCase):
         cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
         radius = 50e3
-        cls.neighbours = 32
+        cls._neighbours = 32
         input_idxs, output_idxs, idx_ref, dists = \
             kd_tree.get_neighbour_info(cls.swath_def, target_def,
-                                       radius, neighbours=cls.neighbours,
+                                       radius, neighbours=cls._neighbours,
                                        nprocs=1)
         input_size = input_idxs.sum()
         index_mask = (idx_ref == input_size)
@@ -229,7 +229,7 @@ class TestNumpyBilinear(unittest.TestCase):
         in_x, in_y = _get_input_xy(self.swath_def, proj,
                                    self.input_idxs, self.idx_ref)
         res = _get_bounding_corners(in_x, in_y, out_x, out_y,
-                                    self.neighbours, self.idx_ref)
+                                    self._neighbours, self.idx_ref)
         for i in range(len(res) - 1):
             pt_ = res[i]
             for j in range(2):
@@ -385,17 +385,17 @@ class TestXarrayBilinear(unittest.TestCase):
         self.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
         self.radius = 50e3
-        self.neighbours = 32
+        self._neighbours = 32
         valid_input_index, output_idxs, index_array, dists = \
             kd_tree.get_neighbour_info(self.source_def, self.target_def,
-                                       self.radius, neighbours=self.neighbours,
+                                       self.radius, neighbours=self._neighbours,
                                        nprocs=1)
         input_size = valid_input_index.sum()
         index_mask = (index_array == input_size)
         index_array = np.where(index_mask, 0, index_array)
 
-        self.valid_input_index = valid_input_index
-        self.index_array = index_array
+        self._valid_input_index = valid_input_index
+        self._index_array = index_array
 
         shp = self.source_def.shape
         self.cols, self.lines = np.meshgrid(np.arange(shp[1]),
@@ -408,17 +408,17 @@ class TestXarrayBilinear(unittest.TestCase):
         # With defaults
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius)
-        self.assertTrue(resampler.source_geo_def == self.source_def)
-        self.assertTrue(resampler.target_geo_def == self.target_def)
-        self.assertEqual(resampler.radius_of_influence, self.radius)
-        self.assertEqual(resampler.neighbours, 32)
-        self.assertEqual(resampler.epsilon, 0)
-        self.assertTrue(resampler.reduce_data)
+        self.assertTrue(resampler._source_geo_def == self.source_def)
+        self.assertTrue(resampler._target_geo_def == self.target_def)
+        self.assertEqual(resampler._radius_of_influence, self.radius)
+        self.assertEqual(resampler._neighbours, 32)
+        self.assertEqual(resampler._epsilon, 0)
+        self.assertTrue(resampler._reduce_data)
         # These should be None
-        self.assertIsNone(resampler.valid_input_index)
-        self.assertIsNone(resampler.valid_output_index)
-        self.assertIsNone(resampler.index_array)
-        self.assertIsNone(resampler.distance_array)
+        self.assertIsNone(resampler._valid_input_index)
+        self.assertIsNone(resampler._valid_output_index)
+        self.assertIsNone(resampler._index_array)
+        self.assertIsNone(resampler._distance_array)
         self.assertIsNone(resampler.bilinear_t)
         self.assertIsNone(resampler.bilinear_s)
         self.assertIsNone(resampler.slices_x)
@@ -426,20 +426,20 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertIsNone(resampler.mask_slices)
         self.assertIsNone(resampler.out_coords_x)
         self.assertIsNone(resampler.out_coords_y)
-        # self.slices_{x,y} are used in self.slices dict
-        self.assertTrue(resampler.slices['x'] is resampler.slices_x)
-        self.assertTrue(resampler.slices['y'] is resampler.slices_y)
-        # self.out_coords_{x,y} are used in self.out_coords dict
-        self.assertTrue(resampler.out_coords['x'] is resampler.out_coords_x)
-        self.assertTrue(resampler.out_coords['y'] is resampler.out_coords_y)
+        # self.slices_{x,y} are used in self._slices dict
+        self.assertTrue(resampler._slices['x'] is resampler.slices_x)
+        self.assertTrue(resampler._slices['y'] is resampler.slices_y)
+        # self._out_coords_{x,y} are used in self._out_coords dict
+        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
+        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
 
         # Override defaults
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius, neighbours=16,
                                             epsilon=0.1, reduce_data=False)
-        self.assertEqual(resampler.neighbours, 16)
-        self.assertEqual(resampler.epsilon, 0.1)
-        self.assertFalse(resampler.reduce_data)
+        self.assertEqual(resampler._neighbours, 16)
+        self.assertEqual(resampler._epsilon, 0.1)
+        self.assertFalse(resampler._reduce_data)
 
     def test_get_bil_info(self):
         """Test calculation of bilinear info."""
@@ -476,25 +476,25 @@ class TestXarrayBilinear(unittest.TestCase):
         # self.slices_{x,y} are used in self.slices dict so they
         # should be the same (object)
         self.assertTrue(isinstance(slices, dict))
-        self.assertTrue(resampler.slices['x'] is resampler.slices_x)
-        self.assertTrue(np.all(resampler.slices['x'] == slices['x']))
-        self.assertTrue(resampler.slices['y'] is resampler.slices_y)
-        self.assertTrue(np.all(resampler.slices['y'] == slices['y']))
+        self.assertTrue(resampler._slices['x'] is resampler.slices_x)
+        self.assertTrue(np.all(resampler._slices['x'] == slices['x']))
+        self.assertTrue(resampler._slices['y'] is resampler.slices_y)
+        self.assertTrue(np.all(resampler._slices['y'] == slices['y']))
 
         # self.slices_{x,y} are used in self.slices dict so they
         # should be the same (object)
         self.assertTrue(isinstance(out_coords, dict))
-        self.assertTrue(resampler.out_coords['x'] is resampler.out_coords_x)
-        self.assertTrue(np.all(resampler.out_coords['x'] == out_coords['x']))
-        self.assertTrue(resampler.out_coords['y'] is resampler.out_coords_y)
-        self.assertTrue(np.all(resampler.out_coords['y'] == out_coords['y']))
+        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
+        self.assertTrue(np.all(resampler._out_coords['x'] == out_coords['x']))
+        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
+        self.assertTrue(np.all(resampler._out_coords['y'] == out_coords['y']))
 
         # Also some other attributes should have been set
         self.assertTrue(t__ is resampler.bilinear_t)
         self.assertTrue(s__ is resampler.bilinear_s)
-        self.assertIsNotNone(resampler.valid_output_index)
-        self.assertIsNotNone(resampler.index_array)
-        self.assertIsNotNone(resampler.valid_input_index)
+        self.assertIsNotNone(resampler._valid_output_index)
+        self.assertIsNotNone(resampler._index_array)
+        self.assertIsNotNone(resampler._valid_input_index)
 
         # Data reduction disabled
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
@@ -577,18 +577,18 @@ class TestXarrayBilinear(unittest.TestCase):
         # X and Y coordinates should not change
         self.assertIsNone(resampler.out_coords_x)
         self.assertIsNone(resampler.out_coords_y)
-        self.assertIsNone(resampler.out_coords['x'])
-        self.assertIsNone(resampler.out_coords['y'])
-        self.assertTrue('bands' in resampler.out_coords)
-        self.assertTrue(np.all(resampler.out_coords['bands'] == bands))
+        self.assertIsNone(resampler._out_coords['x'])
+        self.assertIsNone(resampler._out_coords['y'])
+        self.assertTrue('bands' in resampler._out_coords)
+        self.assertTrue(np.all(resampler._out_coords['bands'] == bands))
 
         # Available coordinates from self.out_coords_x and self.out_coords_y
-        # should be set to self.out_coords
+        # should be set to self._out_coords
         resampler.out_coords_x = [1]
         resampler.out_coords_y = [2]
         resampler._add_missing_coordinates(data)
-        self.assertEqual(resampler.out_coords['x'], resampler.out_coords_x)
-        self.assertEqual(resampler.out_coords['y'], resampler.out_coords_y)
+        self.assertEqual(resampler._out_coords['x'], resampler.out_coords_x)
+        self.assertEqual(resampler._out_coords['y'], resampler.out_coords_y)
 
     def test_slice_data(self):
         """Test slicing the data."""
@@ -645,14 +645,14 @@ class TestXarrayBilinear(unittest.TestCase):
 
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius)
-        resampler.valid_input_index = self.valid_input_index
-        resampler.index_array = self.index_array
+        resampler._valid_input_index = self._valid_input_index
+        resampler._index_array = self._index_array
 
         resampler._get_slices()
         self.assertIsNotNone(resampler.out_coords_x)
         self.assertIsNotNone(resampler.out_coords_y)
-        self.assertTrue(resampler.out_coords_x is resampler.out_coords['x'])
-        self.assertTrue(resampler.out_coords_y is resampler.out_coords['y'])
+        self.assertTrue(resampler.out_coords_x is resampler._out_coords['x'])
+        self.assertTrue(resampler.out_coords_y is resampler._out_coords['y'])
         self.assertTrue(np.allclose(
             resampler.out_coords_x,
             [-1070912.72, -470912.72, 129087.28, 729087.28]))
@@ -662,8 +662,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
         self.assertIsNotNone(resampler.slices_x)
         self.assertIsNotNone(resampler.slices_y)
-        self.assertTrue(resampler.slices_x is resampler.slices['x'])
-        self.assertTrue(resampler.slices_y is resampler.slices['y'])
+        self.assertTrue(resampler.slices_x is resampler._slices['x'])
+        self.assertTrue(resampler.slices_y is resampler._slices['y'])
         self.assertTrue(resampler.slices_x.shape == (self.target_def.size, 32))
         self.assertTrue(resampler.slices_y.shape == (self.target_def.size, 32))
         self.assertEqual(np.sum(resampler.slices_x), 12471)
@@ -673,11 +673,11 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # Ensure that source geo def is used in masking
         # Setting target_geo_def to 0-size shouldn't cause any masked values
-        resampler.target_geo_def = np.array([])
+        resampler._target_geo_def = np.array([])
         resampler._get_slices()
         self.assertFalse(np.any(resampler.mask_slices))
         # Setting source area def to 0-size should mask all values
-        resampler.source_geo_def = np.array([[]])
+        resampler._source_geo_def = np.array([[]])
         resampler._get_slices()
         self.assertTrue(np.all(resampler.mask_slices))
 
@@ -703,9 +703,9 @@ class TestXarrayBilinear(unittest.TestCase):
                                             self.radius)
         res, none = resampler._query_resample_kdtree(1, 2, 3, 4,
                                                      reduce_data=5)
-        qnd.assert_called_with(2, 3, 4, 1, resampler.neighbours,
-                               resampler.epsilon,
-                               resampler.radius_of_influence)
+        qnd.assert_called_with(2, 3, 4, 1, resampler._neighbours,
+                               resampler._epsilon,
+                               resampler._radius_of_influence)
 
     def test_get_input_xy_dask(self):
         """Test computation of input X and Y coordinates in target proj."""
@@ -715,8 +715,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self.valid_input_index),
-                                        da.from_array(self.index_array))
+                                        da.from_array(self._valid_input_index),
+                                        da.from_array(self._index_array))
 
         self.assertTrue(in_x.shape, (self.target_def.size, 32))
         self.assertTrue(in_y.shape, (self.target_def.size, 32))
@@ -749,12 +749,12 @@ class TestXarrayBilinear(unittest.TestCase):
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
         in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self.valid_input_index),
-                                        da.from_array(self.index_array))
+                                        da.from_array(self._valid_input_index),
+                                        da.from_array(self._index_array))
         pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners_dask(
             in_x, in_y, out_x, out_y,
-            self.neighbours,
-            da.from_array(self.index_array))
+            self._neighbours,
+            da.from_array(self._index_array))
 
         self.assertTrue(pt_1.shape == pt_2.shape ==
                         pt_3.shape == pt_4.shape ==
@@ -776,17 +776,17 @@ class TestXarrayBilinear(unittest.TestCase):
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self.valid_input_index),
-                                        da.from_array(self.index_array))
+                                        da.from_array(self._valid_input_index),
+                                        da.from_array(self._index_array))
         out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
 
         # Some copy&paste from the code to get the input
-        out_x_tile = np.reshape(np.tile(out_x, self.neighbours),
-                                (self.neighbours, out_x.size)).T
-        out_y_tile = np.reshape(np.tile(out_y, self.neighbours),
-                                (self.neighbours, out_y.size)).T
+        out_x_tile = np.reshape(np.tile(out_x, self._neighbours),
+                                (self._neighbours, out_x.size)).T
+        out_y_tile = np.reshape(np.tile(out_y, self._neighbours),
+                                (self._neighbours, out_y.size)).T
         x_diff = out_x_tile - in_x
         y_diff = out_y_tile - in_y
         stride = np.arange(x_diff.shape[0])
@@ -794,7 +794,7 @@ class TestXarrayBilinear(unittest.TestCase):
         # Use lower left source pixels for testing
         valid = (x_diff > 0) & (y_diff > 0)
         x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y,
-                                           da.from_array(self.index_array))
+                                           da.from_array(self._index_array))
 
         self.assertTrue(x_3.shape == y_3.shape == idx_3.shape ==
                         (self.target_def.size, ))
@@ -967,7 +967,7 @@ class TestXarrayBilinear(unittest.TestCase):
         kdtree.query.return_value = (1, 2)
         lons, lats = self.target_def.get_lonlats()
         voi = (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90)
-        res = query_no_distance(lons, lats, voi, kdtree, self.neighbours,
+        res = query_no_distance(lons, lats, voi, kdtree, self._neighbours,
                                 0., self.radius)
         # Only the second value from the query is returned
         self.assertEqual(res, 2)

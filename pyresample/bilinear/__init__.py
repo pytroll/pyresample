@@ -607,22 +607,23 @@ class BilinearBase(object):
             to reduce execution time
 
         """
-        self.valid_input_index = None
-        self.valid_output_index = None
-        self.index_array = None
-        self.distance_array = None
         self.bilinear_t = None
         self.bilinear_s = None
         self.slices_x = None
         self.slices_y = None
-        self.slices = {'x': self.slices_x, 'y': self.slices_y}
         self.mask_slices = None
         self.out_coords_x = None
         self.out_coords_y = None
-        self.out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
-        self.neighbours = neighbours
-        self.epsilon = epsilon
-        self.reduce_data = reduce_data
-        self.source_geo_def = source_geo_def
-        self.target_geo_def = target_geo_def
-        self.radius_of_influence = radius_of_influence
+
+        self._slices = {'x': self.slices_x, 'y': self.slices_y}
+        self._out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
+        self._valid_input_index = None
+        self._valid_output_index = None
+        self._index_array = None
+        self._distance_array = None
+        self._neighbours = neighbours
+        self._epsilon = epsilon
+        self._reduce_data = reduce_data
+        self._source_geo_def = source_geo_def
+        self._target_geo_def = target_geo_def
+        self._radius_of_influence = radius_of_influence
