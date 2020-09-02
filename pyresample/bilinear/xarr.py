@@ -55,6 +55,22 @@ CACHE_INDICES = ['bilinear_s',
 class XArrayResamplerBilinear(BilinearBase):
     """Bilinear interpolation using XArray."""
 
+    def _get_valid_input_index_and_kdtree(self):
+        valid_input_index, resample_kdtree = self._create_resample_kdtree()
+
+        if resample_kdtree.n == 0:
+            # Handle if all input data is reduced away
+            bilinear_t, bilinear_s, valid_input_index, index_array = \
+                _create_empty_bil_info(self._source_geo_def,
+                                       self._target_geo_def)
+            self.bilinear_t = bilinear_t
+            self.bilinear_s = bilinear_s
+            self._index_array = index_array
+            resample_kdtree = None
+
+        self._valid_input_index = valid_input_index
+        self._resample_kdtree = resample_kdtree
+
     def get_bil_info(self):
         """Return neighbour info.
 
@@ -74,21 +90,8 @@ class XArrayResamplerBilinear(BilinearBase):
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self._neighbours, self._source_geo_def.size))
 
-        # Create kd-tree
-        valid_input_index, resample_kdtree = self._create_resample_kdtree()
-        # This is a numpy array
-        self._valid_input_index = valid_input_index
-
-        if resample_kdtree.n == 0:
-            # Handle if all input data is reduced away
-            bilinear_t, bilinear_s, valid_input_index, index_array = \
-                _create_empty_bil_info(self._source_geo_def,
-                                       self._target_geo_def)
-            self.bilinear_t = bilinear_t
-            self.bilinear_s = bilinear_s
-            self._valid_input_index = valid_input_index
-            self._index_array = index_array
-
+        self._get_valid_input_index_and_kdtree()
+        if self._resample_kdtree is None:
             return
 
         target_lons, target_lats = self._target_geo_def.get_lonlats()
@@ -96,7 +99,7 @@ class XArrayResamplerBilinear(BilinearBase):
                             (target_lats <= 90) & (target_lats >= -90))
 
         index_array, distance_array = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx)
+            self._resample_kdtree, target_lons, target_lats, valid_output_idx)
 
         # Reduce index reference
         input_size = da.sum(self._valid_input_index)
