@@ -465,7 +465,12 @@ class TestXarrayBilinear(unittest.TestCase):
         # Data reduction enabled (default)
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius, reduce_data=True)
-        (t__, s__, slices, mask_slices, out_coords) = resampler.get_bil_info()
+        resampler.get_bil_info()
+        t__ = resampler.bilinear_t
+        s__ = resampler.bilinear_s
+        slices = resampler._slices
+        mask_slices = resampler.mask_slices
+        out_coords = resampler._out_coords
         _check_ts(t__.compute(), s__.compute(), [3, 10, 12, 13, 14, 15])
 
         # Nothing should be masked based on coordinates
@@ -499,7 +504,12 @@ class TestXarrayBilinear(unittest.TestCase):
         # Data reduction disabled
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius, reduce_data=False)
-        (t__, s__, slices, mask_slices, out_coords) = resampler.get_bil_info()
+        resampler.get_bil_info()
+        t__ = resampler.bilinear_t
+        s__ = resampler.bilinear_s
+        slices = resampler._slices
+        mask_slices = resampler.mask_slices
+        out_coords = resampler._out_coords
         _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
 
     def test_get_sample_from_bil_info(self):

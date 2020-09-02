@@ -89,7 +89,7 @@ class XArrayResamplerBilinear(BilinearBase):
             self._valid_input_index = valid_input_index
             self._index_array = index_array
 
-            return bilinear_t, bilinear_s, valid_input_index, index_array
+            return
 
         target_lons, target_lats = self._target_geo_def.get_lonlats()
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
@@ -129,10 +129,6 @@ class XArrayResamplerBilinear(BilinearBase):
         self._distance_array = distance_array
 
         self._get_slices()
-
-        return (self.bilinear_t, self.bilinear_s,
-                self._slices, self.mask_slices,
-                self._out_coords)
 
     def get_sample_from_bil_info(self, data, fill_value=None,
                                  output_shape=None):
