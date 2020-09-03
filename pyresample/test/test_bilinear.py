@@ -698,28 +698,28 @@ class TestXarrayBilinear(unittest.TestCase):
                                resampler._epsilon,
                                resampler._radius_of_influence)
 
-    def test_get_input_xy_dask(self):
+    def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
         import dask.array as da
-        from pyresample.bilinear.xarr import _get_input_xy_dask
+        from pyresample.bilinear.xarr import _get_input_xy
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self._valid_input_index),
-                                        da.from_array(self._index_array))
+        in_x, in_y = _get_input_xy(self.source_def, proj,
+                                   da.from_array(self._valid_input_index),
+                                   da.from_array(self._index_array))
 
         self.assertTrue(in_x.shape, (self.target_def.size, 32))
         self.assertTrue(in_y.shape, (self.target_def.size, 32))
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
-    def test_mask_coordinates_dask(self):
+    def test_mask_coordinates(self):
         """Test masking of invalid coordinates."""
         import dask.array as da
-        from pyresample.bilinear.xarr import _mask_coordinates_dask
+        from pyresample.bilinear.xarr import _mask_coordinates
 
-        lons, lats = _mask_coordinates_dask(
+        lons, lats = _mask_coordinates(
             da.from_array([-200., 0., 0., 0., 200.]),
             da.from_array([0., -100., 0, 100., 0.]))
         lons, lats = da.compute(lons, lats)
@@ -727,11 +727,11 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(np.sum(np.isnan(lons)), 4)
         self.assertEqual(np.sum(np.isnan(lats)), 4)
 
-    def test_get_bounding_corners_dask(self):
+    def test_get_bounding_corners(self):
         """Test finding surrounding bounding corners."""
         import dask.array as da
-        from pyresample.bilinear.xarr import (_get_input_xy_dask,
-                                              _get_bounding_corners_dask)
+        from pyresample.bilinear.xarr import (_get_input_xy,
+                                              _get_bounding_corners)
         from pyresample._spatial_mp import Proj
         from pyresample import CHUNK_SIZE
 
@@ -739,10 +739,10 @@ class TestXarrayBilinear(unittest.TestCase):
         out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
-        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self._valid_input_index),
-                                        da.from_array(self._index_array))
-        pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners_dask(
+        in_x, in_y = _get_input_xy(self.source_def, proj,
+                                   da.from_array(self._valid_input_index),
+                                   da.from_array(self._index_array))
+        pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners(
             in_x, in_y, out_x, out_y,
             self._neighbours,
             da.from_array(self._index_array))
@@ -757,18 +757,18 @@ class TestXarrayBilinear(unittest.TestCase):
         res = da.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1).compute()
         self.assertEqual(np.sum(~np.isnan(res)), 10)
 
-    def test_get_corner_dask(self):
+    def test_get_corner(self):
         """Test finding the closest corners."""
         import dask.array as da
-        from pyresample.bilinear.xarr import (_get_corner_dask,
-                                              _get_input_xy_dask)
+        from pyresample.bilinear.xarr import (_get_corner,
+                                              _get_input_xy)
         from pyresample import CHUNK_SIZE
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = _get_input_xy_dask(self.source_def, proj,
-                                        da.from_array(self._valid_input_index),
-                                        da.from_array(self._index_array))
+        in_x, in_y = _get_input_xy(self.source_def, proj,
+                                   da.from_array(self._valid_input_index),
+                                   da.from_array(self._index_array))
         out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
@@ -784,8 +784,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # Use lower left source pixels for testing
         valid = (x_diff > 0) & (y_diff > 0)
-        x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y,
-                                           da.from_array(self._index_array))
+        x_3, y_3, idx_3 = _get_corner(stride, valid, in_x, in_y,
+                                      da.from_array(self._index_array))
 
         self.assertTrue(x_3.shape == y_3.shape == idx_3.shape ==
                         (self.target_def.size, ))
@@ -793,18 +793,18 @@ class TestXarrayBilinear(unittest.TestCase):
         # bottom row of the area
         self.assertEqual(np.sum(np.isnan(x_3.compute())), 4)
 
-    @mock.patch('pyresample.bilinear.xarr._get_ts_parallellogram_dask')
-    @mock.patch('pyresample.bilinear.xarr._get_ts_uprights_parallel_dask')
-    @mock.patch('pyresample.bilinear.xarr._get_ts_irregular_dask')
-    def test_get_ts_dask(self, irregular, uprights, parallellogram):
+    @mock.patch('pyresample.bilinear.xarr._get_ts_parallellogram')
+    @mock.patch('pyresample.bilinear.xarr._get_ts_uprights_parallel')
+    @mock.patch('pyresample.bilinear.xarr._get_ts_irregular')
+    def test_get_ts(self, irregular, uprights, parallellogram):
         """Test that the three separate functions are called."""
-        from pyresample.bilinear.xarr import _get_ts_dask
+        from pyresample.bilinear.xarr import _get_ts
 
         # All valid values
         t_irr = np.array([0.1, 0.2, 0.3])
         s_irr = np.array([0.1, 0.2, 0.3])
         irregular.return_value = (t_irr, s_irr)
-        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
         irregular.assert_called_once()
         uprights.assert_not_called()
         parallellogram.assert_not_called()
@@ -819,7 +819,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_upr = np.array([3, 3, 0.3])
         s_upr = np.array([3, 3, 0.3])
         uprights.return_value = (t_upr, s_upr)
-        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 2)
         uprights.assert_called_once()
         parallellogram.assert_not_called()
@@ -840,7 +840,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = np.array([4, 0.2, 0.3])
         s_par = np.array([4, 0.2, 0.3])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 3)
         self.assertEqual(uprights.call_count, 2)
         parallellogram.assert_called_once()
@@ -862,29 +862,29 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = np.array([0.1, 0.2, 4.0])
         s_par = np.array([0.1, 0.2, 4.0])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_ts_dask(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
 
         t_res = np.array([0.1, 0.2, np.nan])
         s_res = np.array([0.1, 0.2, np.nan])
         self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
         self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
 
-    def test_get_ts_irregular_dask(self):
+    def test_get_ts_irregular(self):
         """Test calculations for irregular corner locations."""
-        from pyresample.bilinear.xarr import _get_ts_irregular_dask
+        from pyresample.bilinear.xarr import _get_ts_irregular
 
-        res = _get_ts_irregular_dask(self.pts_irregular[0],
-                                     self.pts_irregular[1],
-                                     self.pts_irregular[2],
-                                     self.pts_irregular[3],
-                                     0., 0.)
+        res = _get_ts_irregular(self.pts_irregular[0],
+                                self.pts_irregular[1],
+                                self.pts_irregular[2],
+                                self.pts_irregular[3],
+                                0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_ts_irregular_dask(self.pts_vert_parallel[0],
-                                     self.pts_vert_parallel[1],
-                                     self.pts_vert_parallel[2],
-                                     self.pts_vert_parallel[3],
-                                     0., 0.)
+        res = _get_ts_irregular(self.pts_vert_parallel[0],
+                                self.pts_vert_parallel[1],
+                                self.pts_vert_parallel[2],
+                                self.pts_vert_parallel[3],
+                                0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
@@ -913,41 +913,41 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_calc_abc(self):
         """Test calculation of quadratic coefficients."""
-        from pyresample.bilinear.xarr import _calc_abc_dask
+        from pyresample.bilinear.xarr import _calc_abc
 
         # No np.nan inputs
         pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
-        res = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
         self.assertFalse(np.isnan(res[0]))
         self.assertFalse(np.isnan(res[1]))
         self.assertFalse(np.isnan(res[2]))
         # np.nan input -> np.nan output
-        res = _calc_abc_dask(np.array([[np.nan, np.nan]]),
-                             pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(np.array([[np.nan, np.nan]]),
+                        pt_2, pt_3, pt_4, 0.0, 0.0)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
-        from pyresample.bilinear.xarr import (_solve_quadratic_dask,
-                                              _calc_abc_dask)
+        from pyresample.bilinear.xarr import (_solve_quadratic,
+                                              _calc_abc)
 
-        res = _solve_quadratic_dask(1, 0, 0).compute()
+        res = _solve_quadratic(1, 0, 0).compute()
         self.assertEqual(res, 0.0)
-        res = _solve_quadratic_dask(1, 2, 1).compute()
+        res = _solve_quadratic(1, 2, 1).compute()
         self.assertTrue(np.isnan(res))
-        res = _solve_quadratic_dask(1, 2, 1, min_val=-2.).compute()
+        res = _solve_quadratic(1, 2, 1, min_val=-2.).compute()
         self.assertEqual(res, -1.0)
         # Test that small adjustments work
         pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
         pt_1 = self.pts_vert_parallel[0].copy()
         pt_1[0][0] += 1e-7
-        res = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
-        res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
+        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _solve_quadratic(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
-        res = _calc_abc_dask(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
-        res = _solve_quadratic_dask(res[0], res[1], res[2]).compute()
+        res = _calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        res = _solve_quadratic(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
 
     def test_query_no_distance(self):
@@ -964,23 +964,23 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res, 2)
         kdtree.query.assert_called_once()
 
-    def test_get_valid_input_index_dask(self):
+    def test_get_valid_input_index(self):
         """Test finding valid indices for reduced input data."""
-        from pyresample.bilinear.xarr import _get_valid_input_index_dask
+        from pyresample.bilinear.xarr import _get_valid_input_index
 
         # Do not reduce data
-        vii, lons, lats = _get_valid_input_index_dask(self.source_def,
-                                                      self.target_def,
-                                                      False, self.radius)
+        vii, lons, lats = _get_valid_input_index(self.source_def,
+                                                 self.target_def,
+                                                 False, self.radius)
         self.assertEqual(vii.shape, (self.source_def.size, ))
         self.assertTrue(vii.dtype == np.bool)
         # No data has been reduced, whole input is used
         self.assertTrue(vii.compute().all())
 
         # Reduce data
-        vii, lons, lats = _get_valid_input_index_dask(self.source_def,
-                                                      self.target_def,
-                                                      True, self.radius)
+        vii, lons, lats = _get_valid_input_index(self.source_def,
+                                                 self.target_def,
+                                                 True, self.radius)
         # 2700 valid input points
         self.assertEqual(vii.compute().sum(), 2700)
 

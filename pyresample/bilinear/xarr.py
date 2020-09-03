@@ -86,18 +86,18 @@ class XArrayResamplerBilinear(BilinearBase):
         return da.where(index_mask, 0, index_array)
 
     def _get_input_xy(self):
-        return _get_input_xy_dask(self._source_geo_def,
-                                  Proj(self._target_geo_def.proj_str),
-                                  self._valid_input_index, self._index_array)
+        return _get_input_xy(self._source_geo_def,
+                             Proj(self._target_geo_def.proj_str),
+                             self._valid_input_index, self._index_array)
 
     def _get_ts(self):
         out_x, out_y = _get_output_xy(self._target_geo_def)
         # Get the four closest corner points around each output location
         pt_1, pt_2, pt_3, pt_4, self._index_array = \
-            _get_bounding_corners_dask(*self._get_input_xy(),
-                                       out_x, out_y,
-                                       self._neighbours, self._index_array)
-        self.bilinear_t, self.bilinear_s = _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+            _get_bounding_corners(*self._get_input_xy(),
+                                  out_x, out_y,
+                                  self._neighbours, self._index_array)
+        self.bilinear_t, self.bilinear_s = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
     def _resample(self, data, fill_value):
         p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
@@ -200,10 +200,10 @@ class XArrayResamplerBilinear(BilinearBase):
         """Set up kd tree on input."""
         # Get input information
         valid_input_index, source_lons, source_lats = \
-            _get_valid_input_index_dask(self._source_geo_def,
-                                        self._target_geo_def,
-                                        self._reduce_data,
-                                        self._radius_of_influence)
+            _get_valid_input_index(self._source_geo_def,
+                                   self._target_geo_def,
+                                   self._reduce_data,
+                                   self._radius_of_influence)
 
         # FIXME: Is dask smart enough to only compute the pixels we end up
         #        using even with this complicated indexing
@@ -246,12 +246,12 @@ def _get_output_xy(target_geo_def):
     return da.ravel(out_x),  da.ravel(out_y)
 
 
-def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
+def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
     in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
 
     # Mask invalid values
-    in_lons, in_lats = _mask_coordinates_dask(in_lons, in_lats)
+    in_lons, in_lats = _mask_coordinates(in_lons, in_lats)
 
     # Select valid locations
     # TODO: direct indexing w/o .compute() results in
@@ -275,7 +275,7 @@ def _get_input_xy_dask(source_geo_def, proj, valid_input_index, index_array):
     return in_x, in_y
 
 
-def _mask_coordinates_dask(lons, lats):
+def _mask_coordinates(lons, lats):
     """Mask invalid coordinate values."""
     idxs = ((lons < -180.) | (lons > 180.) |
             (lats < -90.) | (lats > 90.))
@@ -285,7 +285,7 @@ def _mask_coordinates_dask(lons, lats):
     return lons, lats
 
 
-def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array):
+def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
     """Get bounding corners.
 
     Get four closest locations from (in_x, in_y) so that they form a
@@ -311,19 +311,19 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array
 
     # Upper left source pixel
     valid = (x_diff > 0) & (y_diff < 0)
-    x_1, y_1, idx_1 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
+    x_1, y_1, idx_1 = _get_corner(stride, valid, in_x, in_y, index_array)
 
     # Upper right source pixel
     valid = (x_diff < 0) & (y_diff < 0)
-    x_2, y_2, idx_2 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
+    x_2, y_2, idx_2 = _get_corner(stride, valid, in_x, in_y, index_array)
 
     # Lower left source pixel
     valid = (x_diff > 0) & (y_diff > 0)
-    x_3, y_3, idx_3 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
+    x_3, y_3, idx_3 = _get_corner(stride, valid, in_x, in_y, index_array)
 
     # Lower right source pixel
     valid = (x_diff < 0) & (y_diff > 0)
-    x_4, y_4, idx_4 = _get_corner_dask(stride, valid, in_x, in_y, index_array)
+    x_4, y_4, idx_4 = _get_corner(stride, valid, in_x, in_y, index_array)
 
     # Combine sorted indices to index_array
     index_array = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
@@ -335,7 +335,7 @@ def _get_bounding_corners_dask(in_x, in_y, out_x, out_y, neighbours, index_array
             index_array)
 
 
-def _get_corner_dask(stride, valid, in_x, in_y, index_array):
+def _get_corner(stride, valid, in_x, in_y, index_array):
     """Get closest set of coordinates from the *valid* locations."""
     # Find the closest valid pixels, if any
     idxs = np.argmax(valid, axis=1)
@@ -356,7 +356,7 @@ def _get_corner_dask(stride, valid, in_x, in_y, index_array):
     return x__, y__, idx
 
 
-def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
+def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
     def invalid_to_nan(t__, s__):
         idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
@@ -365,7 +365,7 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         return t__, s__
 
     # General case, ie. where the the corners form an irregular rectangle
-    t__, s__ = _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+    t__, s__ = _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
     # Replace invalid values with NaNs
     t__, s__ = invalid_to_nan(t__, s__)
@@ -376,9 +376,9 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     idxs = da.ravel(idxs)
 
     if da.any(idxs):
-        t_new, s_new = _get_ts_uprights_parallel_dask(pt_1, pt_2,
-                                                      pt_3, pt_4,
-                                                      out_y, out_x)
+        t_new, s_new = _get_ts_uprights_parallel(pt_1, pt_2,
+                                                 pt_3, pt_4,
+                                                 out_y, out_x)
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
@@ -390,8 +390,8 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     # Remove extra dimensions
     idxs = da.ravel(idxs)
     if da.any(idxs):
-        t_new, s_new = _get_ts_parallellogram_dask(pt_1, pt_2, pt_3,
-                                                   out_y, out_x)
+        t_new, s_new = _get_ts_parallellogram(pt_1, pt_2, pt_3,
+                                              out_y, out_x)
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
@@ -401,24 +401,24 @@ def _get_ts_dask(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     return t__, s__
 
 
-def _get_ts_irregular_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
     # Get parameters for the quadratic equation
     # TODO: check if needs daskifying
-    a__, b__, c__ = _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+    a__, b__, c__ = _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
     # Get the valid roots from interval [0, 1]
-    t__ = _solve_quadratic_dask(a__, b__, c__, min_val=0., max_val=1.)
+    t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter s
-    s__ = _solve_another_fractional_distance_dask(t__, pt_1[:, 1], pt_3[:, 1],
-                                                  pt_2[:, 1], pt_4[:, 1], out_y)
+    s__ = _solve_another_fractional_distance(t__, pt_1[:, 1], pt_3[:, 1],
+                                             pt_2[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
 
 # Might not need daskifying
-def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Calculate coefficients for quadratic equation.
 
     In this order of arguments used for _get_ts_irregular() and
@@ -446,7 +446,7 @@ def _calc_abc_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return a__, b__, c__
 
 
-def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
+def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     """Solve quadratic equation.
 
     Solve quadratic equation and return the valid roots from interval
@@ -469,7 +469,7 @@ def _solve_quadratic_dask(a__, b__, c__, min_val=0.0, max_val=1.0):
     return x__
 
 
-def _solve_another_fractional_distance_dask(f__, y_1, y_2, y_3, y_4, out_y):
+def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
     """Solve parameter t__ from s__, or vice versa.
 
     For solving s__, switch order of y_2 and y_3.
@@ -487,22 +487,22 @@ def _solve_another_fractional_distance_dask(f__, y_1, y_2, y_3, y_4, out_y):
     return g__
 
 
-def _get_ts_uprights_parallel_dask(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Get parameters for the quadratic equation
-    a__, b__, c__ = _calc_abc_dask(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
+    a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
 
     # Get the valid roots from interval [0, 1]
-    s__ = _solve_quadratic_dask(a__, b__, c__, min_val=0., max_val=1.)
+    s__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
 
     # Calculate parameter t
-    t__ = _solve_another_fractional_distance_dask(s__, pt_1[:, 1], pt_2[:, 1],
-                                                  pt_3[:, 1], pt_4[:, 1], out_y)
+    t__ = _solve_another_fractional_distance(s__, pt_1[:, 1], pt_2[:, 1],
+                                             pt_3[:, 1], pt_4[:, 1], out_y)
 
     return t__, s__
 
 
-def _get_ts_parallellogram_dask(pt_1, pt_2, pt_3, out_y, out_x):
+def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -542,10 +542,10 @@ def query_no_distance(target_lons, target_lats,
     return index_array
 
 
-def _get_valid_input_index_dask(source_geo_def,
-                                target_geo_def,
-                                reduce_data,
-                                radius_of_influence):
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence):
     """Find indices of reduced input data."""
     source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
     source_lons = da.ravel(source_lons)
