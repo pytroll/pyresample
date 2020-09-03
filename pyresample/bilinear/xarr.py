@@ -89,8 +89,10 @@ class XArrayResamplerBilinear(BilinearBase):
         data_min = da.nanmin(data) - epsilon
         data_max = da.nanmax(data) + epsilon
 
-        idxs = (res > data_max) | (res < data_min)
-        res = da.where(idxs, fill_value, res)
+        res = da.where(
+            _find_indices_outside_min_and_max(res, data_min, data_max),
+            fill_value, res)
+
         return da.where(np.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
@@ -247,8 +249,8 @@ def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
 
 def _mask_coordinates(lons, lats):
     """Mask invalid coordinate values."""
-    idxs = ((lons < -180.) | (lons > 180.) |
-            (lats < -90.) | (lats > 90.))
+    idxs = (_find_indices_outside_min_and_max(lons, -180., 180.) |
+            _find_indices_outside_min_and_max(lats, -90., 90.))
     lons = da.where(idxs, np.nan, lons)
     lats = da.where(idxs, np.nan, lats)
 
@@ -329,7 +331,8 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
 def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
     def invalid_to_nan(t__, s__):
-        idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
+        idxs = (_find_indices_outside_min_and_max(t__, 0, 1) |
+                _find_indices_outside_min_and_max(s__, 0, 1))
         t__ = da.where(idxs, np.nan, t__)
         s__ = da.where(idxs, np.nan, s__)
         return t__, s__
@@ -416,6 +419,10 @@ def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return a__, b__, c__
 
 
+def _find_indices_outside_min_and_max(data, min_val, max_val):
+    return (data < min_val) | (data > max_val)
+
+
 def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     """Solve quadratic equation.
 
@@ -430,11 +437,13 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     x_2 = (-b__ - da.sqrt(discriminant)) / (2 * a__)
 
     # Find valid solutions, ie. 0 <= t <= 1
-    idxs = (x_1 < min_val) | (x_1 > max_val)
-    x__ = da.where(idxs, x_2, x_1)
+    x__ = da.where(
+        _find_indices_outside_min_and_max(x_1, min_val, max_val),
+        x_2, x_1)
 
-    idxs = (x__ < min_val) | (x__ > max_val)
-    x__ = da.where(idxs, np.nan, x__)
+    x__ = da.where(
+        _find_indices_outside_min_and_max(x__, min_val, max_val),
+        np.nan, x__)
 
     return x__
 
@@ -451,8 +460,9 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
            (y_3 + y_43 * f__ - y_1 - y_21 * f__))
 
     # Limit values to interval [0, 1]
-    idxs = (g__ < 0) | (g__ > 1)
-    g__ = da.where(idxs, np.nan, g__)
+    g__ = da.where(
+        _find_indices_outside_min_and_max(g__, 0, 1),
+        np.nan, g__)
 
     return g__
 
@@ -483,12 +493,14 @@ def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 
     t__ = (x_21 * (out_y - pt_1[:, 1]) - y_21 * (out_x - pt_1[:, 0])) / \
           (x_21 * y_31 - y_21 * x_31)
-    idxs = (t__ < 0.) | (t__ > 1.)
-    t__ = da.where(idxs, np.nan, t__)
+    t__ = da.where(
+        _find_indices_outside_min_and_max(t__, 0., 1.),
+        np.nan, t__)
 
     s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
-    idxs = (s__ < 0.) | (s__ > 1.)
-    s__ = da.where(idxs, np.nan, s__)
+    s__ = da.where(
+        _find_indices_outside_min_and_max(s__, 0., 1.),
+        np.nan, s__)
 
     return t__, s__
 
