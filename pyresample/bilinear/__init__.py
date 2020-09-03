@@ -646,7 +646,7 @@ class BilinearBase(object):
 
         # Calculate vertical and horizontal fractional distances t and s
         self._get_ts()
-
+        self._get_target_proj_vectors()
         self._get_slices()
 
     def _get_valid_input_index_and_kdtree(self):
@@ -680,6 +680,9 @@ class BilinearBase(object):
         raise NotImplementedError
 
     def _get_ts(self):
+        raise NotImplementedError
+
+    def _get_target_proj_vectors(self):
         raise NotImplementedError
 
     def _get_slices(self):

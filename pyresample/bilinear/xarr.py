@@ -147,6 +147,12 @@ class XArrayResamplerBilinear(BilinearBase):
 
         return slicer(data.values, self.slices_x, self.slices_y, self.mask_slices, fill_value)
 
+    def _get_target_proj_vectors(self):
+        try:
+            self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors(chunks=CHUNK_SIZE)
+        except AttributeError:
+            pass
+
     def _get_slices(self):
         shp = self._source_geo_def.shape
         cols, lines = np.meshgrid(np.arange(shp[1]),
@@ -161,11 +167,6 @@ class XArrayResamplerBilinear(BilinearBase):
         # shape of the destination array
         rlines = lines[vii][ia_]
         rcols = cols[vii][ia_]
-
-        try:
-            self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors()
-        except AttributeError:
-            pass
 
         self.mask_slices = ia_ >= self._source_geo_def.size
         self.slices_y = rlines

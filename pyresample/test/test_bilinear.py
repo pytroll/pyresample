@@ -490,6 +490,14 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertIsNotNone(resampler._valid_output_index)
         self.assertIsNotNone(resampler._index_array)
         self.assertIsNotNone(resampler._valid_input_index)
+        self.assertIsNotNone(resampler.out_coords_x)
+        self.assertIsNotNone(resampler.out_coords_y)
+        self.assertTrue(np.allclose(
+            resampler.out_coords_x,
+            [-1070912.72, -470912.72, 129087.28, 729087.28]))
+        self.assertTrue(np.allclose(
+            resampler.out_coords_y,
+            [1190031.36,  590031.36,   -9968.64, -609968.64]))
 
         # Data reduction disabled
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
@@ -664,14 +672,6 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler._index_array = self._index_array
 
         resampler._get_slices()
-        self.assertIsNotNone(resampler.out_coords_x)
-        self.assertIsNotNone(resampler.out_coords_y)
-        self.assertTrue(np.allclose(
-            resampler.out_coords_x,
-            [-1070912.72, -470912.72, 129087.28, 729087.28]))
-        self.assertTrue(np.allclose(
-            resampler.out_coords_y,
-            [1190031.36,  590031.36,   -9968.64, -609968.64]))
 
         self.assertIsNotNone(resampler.slices_x)
         self.assertIsNotNone(resampler.slices_y)
