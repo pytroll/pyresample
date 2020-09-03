@@ -64,13 +64,6 @@ class XArrayResamplerBilinear(BilinearBase):
         self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors(chunks=CHUNK_SIZE)
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
-    def _get_target_lonlats(self):
-        self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
-
-    def _get_index_array(self):
-        index_array, _ = self._query_resample_kdtree()
-        self._index_array = self._reduce_index_array(index_array)
-
     def _reduce_index_array(self, index_array):
         input_size = da.sum(self._valid_input_index)
         index_mask = index_array == input_size
@@ -89,15 +82,6 @@ class XArrayResamplerBilinear(BilinearBase):
                                   out_x, out_y,
                                   self._neighbours, self._index_array)
         self.bilinear_t, self.bilinear_s = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
-
-    def _resample(self, data, fill_value):
-        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
-        s__, t__ = self.bilinear_s, self.bilinear_t
-
-        return (p_1 * (1 - s__) * (1 - t__) +
-                p_2 * s__ * (1 - t__) +
-                p_3 * (1 - s__) * t__ +
-                p_4 * s__ * t__)
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6

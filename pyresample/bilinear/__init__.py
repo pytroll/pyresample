@@ -663,13 +663,20 @@ class BilinearBase(object):
         raise NotImplementedError
 
     def _get_target_lonlats(self):
-        raise NotImplementedError
+        self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
 
     def _get_valid_output_indices(self):
         self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
                                     (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
+        index_array, _ = self._query_resample_kdtree()
+        self._index_array = self._reduce_index_array(index_array)
+
+    def _query_resample_kdtree(self):
+        raise NotImplementedError
+
+    def _reduce_index_array(self, index_array):
         raise NotImplementedError
 
     def _get_ts(self):
@@ -690,6 +697,15 @@ class BilinearBase(object):
         return self._finalize_output_data(data, res, fill_value)
 
     def _resample(self, data, fill_value):
+        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
+        s__, t__ = self.bilinear_s, self.bilinear_t
+
+        return (p_1 * (1 - s__) * (1 - t__) +
+                p_2 * s__ * (1 - t__) +
+                p_3 * (1 - s__) * t__ +
+                p_4 * s__ * t__)
+
+    def _slice_data(self, data, fill_value):
         raise NotImplementedError
 
     def _finalize_output_data(self, data, res, fill_value):
