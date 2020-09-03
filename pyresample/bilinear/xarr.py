@@ -65,13 +65,13 @@ class XArrayResamplerBilinear(BilinearBase):
 
     def _create_empty_bil_info(self):
         """Create dummy info for empty result set."""
-        self._valid_input_index = np.ones(self._source_geo_def.size, dtype=np.bool)
-        self._index_array = np.ones((self._target_geo_def.size, 4), dtype=np.int32)
-        self.bilinear_s = np.nan * np.zeros(self._target_geo_def.size)
-        self.bilinear_t = np.nan * np.zeros(self._target_geo_def.size)
-        self.slices_x = np.zeros((self._target_geo_def.size, 4), dtype=np.int32)
-        self.slices_y = np.zeros((self._target_geo_def.size, 4), dtype=np.int32)
-        self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors()
+        self._valid_input_index = da.ones(self._source_geo_def.size, dtype=np.bool)
+        self._index_array = da.ones((self._target_geo_def.size, 4), dtype=np.int32)
+        self.bilinear_s = np.nan * da.zeros(self._target_geo_def.size)
+        self.bilinear_t = np.nan * da.zeros(self._target_geo_def.size)
+        self.slices_x = da.zeros((self._target_geo_def.size, 4), dtype=np.int32)
+        self.slices_y = da.zeros((self._target_geo_def.size, 4), dtype=np.int32)
+        self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors(chunks=CHUNK_SIZE)
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_output_indices(self):
