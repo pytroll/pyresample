@@ -375,12 +375,10 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
 
 def _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
-    # Get parameters for the quadratic equation
-    # TODO: check if needs daskifying
-    a__, b__, c__ = _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
-
     # Get the valid roots from interval [0, 1]
-    t__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
+    t__ = _solve_quadratic(
+        *_calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x),
+        min_val=0., max_val=1.)
 
     # Calculate parameter s
     s__ = _solve_another_fractional_distance(t__, pt_1[:, 1], pt_3[:, 1],
@@ -461,11 +459,10 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
 
 def _get_fractional_distances_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
-    # Get parameters for the quadratic equation
-    a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
-
     # Get the valid roots from interval [0, 1]
-    s__ = _solve_quadratic(a__, b__, c__, min_val=0., max_val=1.)
+    s__ = _solve_quadratic(
+        *_calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x),
+        min_val=0., max_val=1.)
 
     # Calculate parameter t
     t__ = _solve_another_fractional_distance(s__, pt_1[:, 1], pt_2[:, 1],
