@@ -171,24 +171,21 @@ class XArrayResamplerBilinear(BilinearBase):
         self.slices_y = rlines
         self.slices_x = rcols
 
-    def _create_resample_kdtree(self):
-        """Set up kd tree on input."""
-        # Get input information
+    def _get_valid_input_index_and_input_coords(self):
         valid_input_index, source_lons, source_lats = \
             _get_valid_input_index(self._source_geo_def,
                                    self._target_geo_def,
                                    self._reduce_data,
                                    self._radius_of_influence)
-
-        # FIXME: Is dask smart enough to only compute the pixels we end up
-        #        using even with this complicated indexing
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = da.ravel(valid_input_index)
-        input_coords = input_coords[valid_input_index, :]
-        # Build kd-tree on input
-        input_coords = input_coords.astype(np.float)
-        valid_input_index, input_coords = da.compute(valid_input_index,
-                                                     input_coords)
+        input_coords = input_coords[valid_input_index, :].astype(np.float)
+
+        return da.compute(valid_input_index, input_coords)
+
+    def _create_resample_kdtree(self):
+        """Set up kd tree on input."""
+        valid_input_index, input_coords = self._get_valid_input_index_and_input_coords()
         kdtree = None
         if input_coords.size:
             kdtree = KDTree(input_coords)
