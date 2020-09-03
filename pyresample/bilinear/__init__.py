@@ -666,7 +666,8 @@ class BilinearBase(object):
         raise NotImplementedError
 
     def _get_valid_output_indices(self):
-        raise NotImplementedError
+        self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
+                                    (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
         raise NotImplementedError

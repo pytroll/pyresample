@@ -64,10 +64,6 @@ class XArrayResamplerBilinear(BilinearBase):
         self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors(chunks=CHUNK_SIZE)
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
-    def _get_valid_output_indices(self):
-        self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
-                                    (self._target_lats <= 90) & (self._target_lats >= -90))
-
     def _get_target_lonlats(self):
         self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
 
