@@ -160,17 +160,11 @@ class XArrayResamplerBilinear(BilinearBase):
         cols = np.ravel(cols)
         lines = np.ravel(lines)
 
-        vii = self._valid_input_index
-        ia_ = self._index_array
-
         # ia_ contains reduced (valid) indices of the source array, and has the
         # shape of the destination array
-        rlines = lines[vii][ia_]
-        rcols = cols[vii][ia_]
-
-        self.mask_slices = ia_ >= self._source_geo_def.size
-        self.slices_y = rlines
-        self.slices_x = rcols
+        self.slices_y = lines[self._valid_input_index][self._index_array]
+        self.slices_x = cols[self._valid_input_index][self._index_array]
+        self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_input_index_and_input_coords(self):
         valid_input_index, source_lons, source_lats = \
