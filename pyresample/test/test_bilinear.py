@@ -105,73 +105,80 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
 
-    def test_get_ts_irregular(self):
+    def test_get_fractional_distances_irregular(self):
         """Test calculations for irregular corner locations."""
-        from pyresample.bilinear import _get_ts_irregular
+        from pyresample.bilinear import _get_fractional_distances_irregular
 
-        res = _get_ts_irregular(self.pts_irregular[0],
-                                self.pts_irregular[1],
-                                self.pts_irregular[2],
-                                self.pts_irregular[3],
-                                0., 0.)
+        res = _get_fractional_distances_irregular(
+            self.pts_irregular[0],
+            self.pts_irregular[1],
+            self.pts_irregular[2],
+            self.pts_irregular[3],
+            0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_ts_irregular(self.pts_vert_parallel[0],
-                                self.pts_vert_parallel[1],
-                                self.pts_vert_parallel[2],
-                                self.pts_vert_parallel[3],
-                                0., 0.)
+        res = _get_fractional_distances_irregular(
+            self.pts_vert_parallel[0],
+            self.pts_vert_parallel[1],
+            self.pts_vert_parallel[2],
+            self.pts_vert_parallel[3],
+            0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
-    def test_get_ts_uprights_parallel(self):
+    def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear import _get_ts_uprights_parallel
+        from pyresample.bilinear import _get_fractional_distances_uprights_parallel
 
-        res = _get_ts_uprights_parallel(self.pts_vert_parallel[0],
-                                        self.pts_vert_parallel[1],
-                                        self.pts_vert_parallel[2],
-                                        self.pts_vert_parallel[3],
-                                        0., 0.)
+        res = _get_fractional_distances_uprights_parallel(
+            self.pts_vert_parallel[0],
+            self.pts_vert_parallel[1],
+            self.pts_vert_parallel[2],
+            self.pts_vert_parallel[3],
+            0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
-    def test_get_ts_parallellogram(self):
+    def test_get_fractional_distances_parallellogram(self):
         """Test calculation when the corners form a parallellogram."""
-        from pyresample.bilinear import _get_ts_parallellogram
+        from pyresample.bilinear import _get_fractional_distances_parallellogram
 
-        res = _get_ts_parallellogram(self.pts_both_parallel[0],
-                                     self.pts_both_parallel[1],
-                                     self.pts_both_parallel[2],
-                                     0., 0.)
+        res = _get_fractional_distances_parallellogram(
+            self.pts_both_parallel[0],
+            self.pts_both_parallel[1],
+            self.pts_both_parallel[2],
+            0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
-    def test_get_ts(self):
+    def test_get_fractional_distances(self):
         """Test get_ts()."""
-        from pyresample.bilinear import _get_ts
+        from pyresample.bilinear import _get_fractional_distances
 
         out_x = np.array([[0.]])
         out_y = np.array([[0.]])
-        res = _get_ts(self.pts_irregular[0],
-                      self.pts_irregular[1],
-                      self.pts_irregular[2],
-                      self.pts_irregular[3],
-                      out_x, out_y)
+        res = _get_fractional_distances(
+            self.pts_irregular[0],
+            self.pts_irregular[1],
+            self.pts_irregular[2],
+            self.pts_irregular[3],
+            out_x, out_y)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_ts(self.pts_both_parallel[0],
-                      self.pts_both_parallel[1],
-                      self.pts_both_parallel[2],
-                      self.pts_both_parallel[3],
-                      out_x, out_y)
+        res = _get_fractional_distances(
+            self.pts_both_parallel[0],
+            self.pts_both_parallel[1],
+            self.pts_both_parallel[2],
+            self.pts_both_parallel[3],
+            out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
-        res = _get_ts(self.pts_vert_parallel[0],
-                      self.pts_vert_parallel[1],
-                      self.pts_vert_parallel[2],
-                      self.pts_vert_parallel[3],
-                      out_x, out_y)
+        res = _get_fractional_distances(
+            self.pts_vert_parallel[0],
+            self.pts_vert_parallel[1],
+            self.pts_vert_parallel[2],
+            self.pts_vert_parallel[3],
+            out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -816,18 +823,18 @@ class TestXarrayBilinear(unittest.TestCase):
         # bottom row of the area
         self.assertEqual(np.sum(np.isnan(x_3.compute())), 4)
 
-    @mock.patch('pyresample.bilinear.xarr._get_ts_parallellogram')
-    @mock.patch('pyresample.bilinear.xarr._get_ts_uprights_parallel')
-    @mock.patch('pyresample.bilinear.xarr._get_ts_irregular')
-    def test_get_ts(self, irregular, uprights, parallellogram):
+    @mock.patch('pyresample.bilinear.xarr._get_fractional_distances_parallellogram')
+    @mock.patch('pyresample.bilinear.xarr._get_fractional_distances_uprights_parallel')
+    @mock.patch('pyresample.bilinear.xarr._get_fractional_distances_irregular')
+    def test_get_fractional_distances(self, irregular, uprights, parallellogram):
         """Test that the three separate functions are called."""
-        from pyresample.bilinear.xarr import _get_ts
+        from pyresample.bilinear.xarr import _get_fractional_distances
 
         # All valid values
         t_irr = np.array([0.1, 0.2, 0.3])
         s_irr = np.array([0.1, 0.2, 0.3])
         irregular.return_value = (t_irr, s_irr)
-        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         irregular.assert_called_once()
         uprights.assert_not_called()
         parallellogram.assert_not_called()
@@ -842,7 +849,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_upr = np.array([3, 3, 0.3])
         s_upr = np.array([3, 3, 0.3])
         uprights.return_value = (t_upr, s_upr)
-        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 2)
         uprights.assert_called_once()
         parallellogram.assert_not_called()
@@ -863,7 +870,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = np.array([4, 0.2, 0.3])
         s_par = np.array([4, 0.2, 0.3])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 3)
         self.assertEqual(uprights.call_count, 2)
         parallellogram.assert_called_once()
@@ -885,52 +892,56 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = np.array([0.1, 0.2, 4.0])
         s_par = np.array([0.1, 0.2, 4.0])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_ts(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
 
         t_res = np.array([0.1, 0.2, np.nan])
         s_res = np.array([0.1, 0.2, np.nan])
         self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
         self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
 
-    def test_get_ts_irregular(self):
+    def test_get_fractional_distances_irregular(self):
         """Test calculations for irregular corner locations."""
-        from pyresample.bilinear.xarr import _get_ts_irregular
+        from pyresample.bilinear.xarr import _get_fractional_distances_irregular
 
-        res = _get_ts_irregular(self.pts_irregular[0],
-                                self.pts_irregular[1],
-                                self.pts_irregular[2],
-                                self.pts_irregular[3],
-                                0., 0.)
+        res = _get_fractional_distances_irregular(
+            self.pts_irregular[0],
+            self.pts_irregular[1],
+            self.pts_irregular[2],
+            self.pts_irregular[3],
+            0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_ts_irregular(self.pts_vert_parallel[0],
-                                self.pts_vert_parallel[1],
-                                self.pts_vert_parallel[2],
-                                self.pts_vert_parallel[3],
-                                0., 0.)
+        res = _get_fractional_distances_irregular(
+            self.pts_vert_parallel[0],
+            self.pts_vert_parallel[1],
+            self.pts_vert_parallel[2],
+            self.pts_vert_parallel[3],
+            0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
-    def test_get_ts_uprights_parallel(self):
+    def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear import _get_ts_uprights_parallel
+        from pyresample.bilinear import _get_fractional_distances_uprights_parallel
 
-        res = _get_ts_uprights_parallel(self.pts_vert_parallel[0],
-                                        self.pts_vert_parallel[1],
-                                        self.pts_vert_parallel[2],
-                                        self.pts_vert_parallel[3],
-                                        0., 0.)
+        res = _get_fractional_distances_uprights_parallel(
+            self.pts_vert_parallel[0],
+            self.pts_vert_parallel[1],
+            self.pts_vert_parallel[2],
+            self.pts_vert_parallel[3],
+            0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
-    def test_get_ts_parallellogram(self):
+    def test_get_fractional_distances_parallellogram(self):
         """Test calculation when the corners form a parallellogram."""
-        from pyresample.bilinear import _get_ts_parallellogram
+        from pyresample.bilinear import _get_fractional_distances_parallellogram
 
-        res = _get_ts_parallellogram(self.pts_both_parallel[0],
-                                     self.pts_both_parallel[1],
-                                     self.pts_both_parallel[2],
-                                     0., 0.)
+        res = _get_fractional_distances_parallellogram(
+            self.pts_both_parallel[0],
+            self.pts_both_parallel[1],
+            self.pts_both_parallel[2],
+            0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 

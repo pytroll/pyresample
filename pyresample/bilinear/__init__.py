@@ -250,7 +250,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref)
 
     # Calculate vertical and horizontal fractional distances t and s
-    t__, s__ = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+    t__, s__ = _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
     # Mask NaN values
     if masked:
@@ -261,10 +261,10 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     return t__, s__, input_idxs, idx_ref
 
 
-def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
+def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
     # General case, ie. where the the corners form an irregular rectangle
-    t__, s__ = _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+    t__, s__ = _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
     # Cases where verticals are parallel
     idxs = np.isnan(t__) | np.isnan(s__)
@@ -272,19 +272,19 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     idxs = idxs.ravel()
 
     if np.any(idxs):
-        t__[idxs], s__[idxs] = \
-            _get_ts_uprights_parallel(pt_1[idxs, :], pt_2[idxs, :],
-                                      pt_3[idxs, :], pt_4[idxs, :],
-                                      out_y[idxs], out_x[idxs])
+        t__[idxs], s__[idxs] = _get_fractional_distances_uprights_parallel(
+                pt_1[idxs, :], pt_2[idxs, :],
+                pt_3[idxs, :], pt_4[idxs, :],
+                out_y[idxs], out_x[idxs])
 
     # Cases where both verticals and horizontals are parallel
     idxs = np.isnan(t__) | np.isnan(s__)
     # Remove extra dimensions
     idxs = idxs.ravel()
     if np.any(idxs):
-        t__[idxs], s__[idxs] = \
-            _get_ts_parallellogram(pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
-                                   out_y[idxs], out_x[idxs])
+        t__[idxs], s__[idxs] = _get_fractional_distances_parallellogram(
+            pt_1[idxs, :], pt_2[idxs, :], pt_3[idxs, :],
+            out_y[idxs], out_x[idxs])
 
     with np.errstate(invalid='ignore'):
         idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
@@ -294,7 +294,7 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     return t__, s__
 
 
-def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
     # Get parameters for the quadratic equation
     a__, b__, c__ = _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
@@ -309,7 +309,7 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return t__, s__
 
 
-def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Get parameters for the quadratic equation
     a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
@@ -324,7 +324,7 @@ def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return t__, s__
 
 
-def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
+def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
@@ -371,9 +371,9 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
 
 
 def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
-    """Calculate coefficients for quadratic equation for _get_ts_irregular() and _get_ts_uprights().
+    """Calculate coefficients for quadratic equation for irregular and upright cases.
 
-    For _get_ts_uprights switch order of pt_2 and pt_3.
+    For _get_fractional_distances_uprights switch order of pt_2 and pt_3.
 
     """
     # Pairwise longitudal separations between reference points
@@ -645,7 +645,7 @@ class BilinearBase(object):
         self._get_index_array()
 
         # Calculate vertical and horizontal fractional distances t and s
-        self._get_ts()
+        self._get_fractional_distances()
         self._get_target_proj_vectors()
         self._get_slices()
 
@@ -679,7 +679,7 @@ class BilinearBase(object):
     def _reduce_index_array(self, index_array):
         raise NotImplementedError
 
-    def _get_ts(self):
+    def _get_fractional_distances(self):
         raise NotImplementedError
 
     def _get_target_proj_vectors(self):

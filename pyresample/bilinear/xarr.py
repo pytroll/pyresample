@@ -74,14 +74,15 @@ class XArrayResamplerBilinear(BilinearBase):
                              Proj(self._target_geo_def.proj_str),
                              self._valid_input_index, self._index_array)
 
-    def _get_ts(self):
+    def _get_fractional_distances(self):
         out_x, out_y = _get_output_xy(self._target_geo_def)
         # Get the four closest corner points around each output location
         pt_1, pt_2, pt_3, pt_4, self._index_array = \
             _get_bounding_corners(*self._get_input_xy(),
                                   out_x, out_y,
                                   self._neighbours, self._index_array)
-        self.bilinear_t, self.bilinear_s = _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+        self.bilinear_t, self.bilinear_s = _get_fractional_distances(
+            pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
@@ -325,7 +326,7 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
     return x__, y__, idx
 
 
-def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
+def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
     def invalid_to_nan(t__, s__):
         idxs = (t__ < 0) | (t__ > 1) | (s__ < 0) | (s__ > 1)
@@ -334,7 +335,7 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         return t__, s__
 
     # General case, ie. where the the corners form an irregular rectangle
-    t__, s__ = _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+    t__, s__ = _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
 
     # Replace invalid values with NaNs
     t__, s__ = invalid_to_nan(t__, s__)
@@ -345,9 +346,10 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     idxs = da.ravel(idxs)
 
     if da.any(idxs):
-        t_new, s_new = _get_ts_uprights_parallel(pt_1, pt_2,
-                                                 pt_3, pt_4,
-                                                 out_y, out_x)
+        t_new, s_new = _get_fractional_distances_uprights_parallel(
+            pt_1, pt_2,
+            pt_3, pt_4,
+            out_y, out_x)
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
@@ -359,8 +361,9 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     # Remove extra dimensions
     idxs = da.ravel(idxs)
     if da.any(idxs):
-        t_new, s_new = _get_ts_parallellogram(pt_1, pt_2, pt_3,
-                                              out_y, out_x)
+        t_new, s_new = _get_fractional_distances_parallellogram(
+            pt_1, pt_2, pt_3,
+            out_y, out_x)
         t__ = da.where(idxs, t_new, t__)
         s__ = da.where(idxs, s_new, s__)
 
@@ -370,7 +373,7 @@ def _get_ts(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     return t__, s__
 
 
-def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
     # Get parameters for the quadratic equation
     # TODO: check if needs daskifying
@@ -390,8 +393,8 @@ def _get_ts_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
 def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Calculate coefficients for quadratic equation.
 
-    In this order of arguments used for _get_ts_irregular() and
-    _get_ts_uprights().  For _get_ts_uprights switch order of pt_2 and
+    In this order of arguments used for _get_fractional_distances_irregular() and
+    _get_fractional_distances_uprights().  For _get_fractional_distances_uprights switch order of pt_2 and
     pt_3.
 
     """
@@ -456,7 +459,7 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
     return g__
 
 
-def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Get parameters for the quadratic equation
     a__, b__, c__ = _calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x)
@@ -471,7 +474,7 @@ def _get_ts_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return t__, s__
 
 
-def _get_ts_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
+def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
