@@ -652,6 +652,9 @@ class BilinearBase(object):
     def _get_valid_input_index_and_kdtree(self):
         raise NotImplementedError
 
+    def _create_empty_bil_info(self):
+        raise NotImplementedError
+
     def _get_target_lonlats(self):
         raise NotImplementedError
 

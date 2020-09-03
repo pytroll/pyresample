@@ -56,18 +56,23 @@ class XArrayResamplerBilinear(BilinearBase):
     def _get_valid_input_index_and_kdtree(self):
         valid_input_index, resample_kdtree = self._create_resample_kdtree()
 
-        if resample_kdtree.n == 0:
+        if resample_kdtree:
+            self._valid_input_index = valid_input_index
+            self._resample_kdtree = resample_kdtree
+        else:
             # Handle if all input data is reduced away
-            bilinear_t, bilinear_s, valid_input_index, index_array = \
-                _create_empty_bil_info(self._source_geo_def,
-                                       self._target_geo_def)
-            self.bilinear_t = bilinear_t
-            self.bilinear_s = bilinear_s
-            self._index_array = index_array
-            resample_kdtree = None
+            self._create_empty_bil_info()
 
-        self._valid_input_index = valid_input_index
-        self._resample_kdtree = resample_kdtree
+    def _create_empty_bil_info(self):
+        """Create dummy info for empty result set."""
+        self._valid_input_index = np.ones(self._source_geo_def.size, dtype=np.bool)
+        self._index_array = np.ones((self._target_geo_def.size, 4), dtype=np.int32)
+        self.bilinear_s = np.nan * np.zeros(self._target_geo_def.size)
+        self.bilinear_t = np.nan * np.zeros(self._target_geo_def.size)
+        self.slices_x = np.zeros((self._target_geo_def.size, 4), dtype=np.int32)
+        self.slices_y = np.zeros((self._target_geo_def.size, 4), dtype=np.int32)
+        self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors()
+        self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_output_indices(self):
         self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
@@ -210,12 +215,14 @@ class XArrayResamplerBilinear(BilinearBase):
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = da.ravel(valid_input_index)
         input_coords = input_coords[valid_input_index, :]
-        input_coords = input_coords.compute()
         # Build kd-tree on input
         input_coords = input_coords.astype(np.float)
         valid_input_index, input_coords = da.compute(valid_input_index,
                                                      input_coords)
-        return valid_input_index, KDTree(input_coords)
+        kdtree = None
+        if input_coords.size:
+            kdtree = KDTree(input_coords)
+        return valid_input_index, kdtree
 
     def _query_resample_kdtree(self,
                                reduce_data=True):
@@ -597,13 +604,3 @@ def lonlat2xyz(lons, lats):
 
     return da.stack(
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
-
-
-def _create_empty_bil_info(source_geo_def, target_geo_def):
-    """Create dummy info for empty result set."""
-    valid_input_index = np.ones(source_geo_def.size, dtype=np.bool)
-    index_array = np.ones((target_geo_def.size, 4), dtype=np.int32)
-    bilinear_s = np.nan * np.zeros(target_geo_def.size)
-    bilinear_t = np.nan * np.zeros(target_geo_def.size)
-
-    return bilinear_t, bilinear_s, valid_input_index, index_array

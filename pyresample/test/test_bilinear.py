@@ -359,7 +359,7 @@ class TestXarrayBilinear(unittest.TestCase):
                                   np.array([[-1., -1.], ]),
                                   np.array([[1., -1.], ]))
 
-        # Area definition with four pixels
+        # Area definition with 4x4 pixels
         self.target_def = geometry.AreaDefinition('areaD',
                                                   'Europe (3km, HRV, VTC)',
                                                   'areaD',
@@ -374,6 +374,17 @@ class TestXarrayBilinear(unittest.TestCase):
                                                    -909968.64000000001,
                                                    1029087.28,
                                                    1490031.3600000001])
+        # Area definition with 8x8 pixels, does not intersect with source data
+        self.target_def_outside = geometry.AreaDefinition('area_outside',
+                                                          'area outside the input data',
+                                                          'ease_sh',
+                                                          {'a': '6371228.0',
+                                                           'lat_0': '-90.0',
+                                                           'lon_0': '0.0',
+                                                           'proj': 'laea'},
+                                                          8, 8,
+                                                          [-5326849.0625, -5326849.0625,
+                                                           5326849.0625, 5326849.0625])
 
         # Input data around the target pixel at 0.63388324, 55.08234642,
         in_shape = (100, 100)
@@ -488,6 +499,18 @@ class TestXarrayBilinear(unittest.TestCase):
         s__ = resampler.bilinear_s
         mask_slices = resampler.mask_slices
         _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
+
+        # Target area and source data do not overlap
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def_outside,
+                                            self.radius, reduce_data=False)
+        resampler.get_bil_info()
+        self.assertEqual(resampler.bilinear_t.shape, (self.target_def_outside.size,))
+        self.assertEqual(resampler.bilinear_s.shape, (self.target_def_outside.size,))
+        self.assertEqual(resampler.slices_x.shape, (self.target_def_outside.size, 4))
+        self.assertEqual(resampler.slices_y.shape, (self.target_def_outside.size, 4))
+        self.assertEqual(resampler.out_coords_x.shape, (self.target_def_outside.shape[1],))
+        self.assertEqual(resampler.out_coords_y.shape, (self.target_def_outside.shape[0],))
+        self.assertEqual(resampler.mask_slices.shape, (self.target_def_outside.size, 4))
 
     def test_get_sample_from_bil_info(self):
         """Test bilinear interpolation as a whole."""
@@ -986,16 +1009,18 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
-        from pyresample.bilinear.xarr import _create_empty_bil_info
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear
 
-        t__, s__, vii, ia_ = _create_empty_bil_info(self.source_def,
-                                                    self.target_def)
-        self.assertEqual(t__.shape, (self.target_def.size,))
-        self.assertEqual(s__.shape, (self.target_def.size,))
-        self.assertEqual(ia_.shape, (self.target_def.size, 4))
-        self.assertTrue(ia_.dtype == np.int32)
-        self.assertEqual(vii.shape, (self.source_def.size,))
-        self.assertTrue(vii.dtype == np.bool)
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+
+        resampler._create_empty_bil_info()
+        self.assertEqual(resampler.bilinear_t.shape, (self.target_def.size,))
+        self.assertEqual(resampler.bilinear_s.shape, (self.target_def.size,))
+        self.assertEqual(resampler._index_array.shape, (self.target_def.size, 4))
+        self.assertTrue(resampler._index_array.dtype == np.int32)
+        self.assertEqual(resampler._valid_input_index.shape, (self.source_def.size,))
+        self.assertTrue(resampler._valid_input_index.dtype == np.bool)
 
     def test_lonlat2xyz(self):
         """Test conversion from geographic to cartesian 3D coordinates."""
