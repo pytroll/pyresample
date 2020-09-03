@@ -650,7 +650,14 @@ class BilinearBase(object):
         self._get_slices()
 
     def _get_valid_input_index_and_kdtree(self):
-        raise NotImplementedError
+        valid_input_index, resample_kdtree = self._create_resample_kdtree()
+
+        if resample_kdtree:
+            self._valid_input_index = valid_input_index
+            self._resample_kdtree = resample_kdtree
+        else:
+            # Handle if all input data is reduced away
+            self._create_empty_bil_info()
 
     def _create_empty_bil_info(self):
         raise NotImplementedError
@@ -668,6 +675,9 @@ class BilinearBase(object):
         raise NotImplementedError
 
     def _get_slices(self):
+        raise NotImplementedError
+
+    def _create_resample_kdtree(self):
         raise NotImplementedError
 
     def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):
