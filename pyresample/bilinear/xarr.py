@@ -218,21 +218,25 @@ def _get_output_xy(target_geo_def):
     return da.ravel(out_x),  da.ravel(out_y)
 
 
+def _get_raveled_lonlats(geo_def):
+    lons, lats = geo_def.get_lonlats(chunks=CHUNK_SIZE)
+    if lons.size == 0 or lats.size == 0:
+        raise ValueError('Cannot resample empty data set')
+    elif lons.size != lats.size or lons.shape != lats.shape:
+        raise ValueError('Mismatch between lons and lats')
+
+    return da.ravel(lons), da.ravel(lats)
+
+
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-
-    # Mask invalid values
-    in_lons, in_lats = _mask_coordinates(in_lons, in_lats)
+    in_lons, in_lats = _mask_coordinates(*_get_raveled_lonlats(source_geo_def))
 
     # Select valid locations
     # TODO: direct indexing w/o .compute() results in
     # "ValueError: object too deep for desired array
-
-    in_lons = da.ravel(in_lons)
     in_lons = in_lons.compute()
     in_lons = in_lons[valid_input_index]
-    in_lats = da.ravel(in_lats)
     in_lats = in_lats.compute()
     in_lats = in_lats[valid_input_index]
     index_array = index_array.compute()
@@ -521,44 +525,43 @@ def query_no_distance(target_lons, target_lats,
     return index_array
 
 
-def _get_valid_input_index(source_geo_def,
-                           target_geo_def,
-                           reduce_data,
-                           radius_of_influence):
-    """Find indices of reduced input data."""
-    source_lons, source_lats = source_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-    source_lons = da.ravel(source_lons)
-    source_lats = da.ravel(source_lats)
-
-    if source_lons.size == 0 or source_lats.size == 0:
-        raise ValueError('Cannot resample empty data set')
-    elif source_lons.size != source_lats.size or \
-            source_lons.shape != source_lats.shape:
-        raise ValueError('Mismatch between lons and lats')
-
-    # Remove illegal values
-    valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
-                         (source_lats <= 90) & (source_lats >= -90))
-
-    if reduce_data:
-        # Reduce dataset
-        if (isinstance(source_geo_def, geometry.CoordinateDefinition) and
+def _is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+    return (isinstance(source_geo_def, geometry.CoordinateDefinition) and
             isinstance(target_geo_def, (geometry.GridDefinition,
                                         geometry.AreaDefinition))) or \
            (isinstance(source_geo_def, (geometry.GridDefinition,
                                         geometry.AreaDefinition)) and
             isinstance(target_geo_def, (geometry.GridDefinition,
-                                        geometry.AreaDefinition))):
-            # Resampling from swath to grid or from grid to grid
-            lonlat_boundary = target_geo_def.get_boundary_lonlats()
+                                        geometry.AreaDefinition)))
 
-            # Combine reduced and legal values
-            valid_input_index &= \
-                data_reduce.get_valid_index_from_lonlat_boundaries(
-                    lonlat_boundary[0],
-                    lonlat_boundary[1],
-                    source_lons, source_lats,
-                    radius_of_influence)
+
+def _get_valid_indices_from_lonlat_boundaries(
+        target_geo_def, source_lons, source_lats, radius_of_influence):
+    # Resampling from swath to grid or from grid to grid
+    lonlat_boundary = target_geo_def.get_boundary_lonlats()
+
+    # Combine reduced and legal values
+    return data_reduce.get_valid_index_from_lonlat_boundaries(
+        lonlat_boundary[0],
+        lonlat_boundary[1],
+        source_lons, source_lats,
+        radius_of_influence)
+
+
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence):
+    """Find indices of reduced input data."""
+    source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
+
+    valid_input_index = da.invert(
+        _find_indices_outside_min_and_max(source_lons, -180., 180.)
+        | _find_indices_outside_min_and_max(source_lats, -90., 90.))
+
+    if reduce_data and _is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+        valid_input_index &= _get_valid_indices_from_lonlat_boundaries(
+            target_geo_def, source_lons, source_lats, radius_of_influence)
 
     if (isinstance(valid_input_index, np.ma.core.MaskedArray)):
         # Make sure valid_input_index is not a masked array
