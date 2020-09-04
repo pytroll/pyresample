@@ -261,6 +261,29 @@ def _mask_coordinates(lons, lats):
     return lons, lats
 
 
+def _tile_output_coordinate_vector(vector, neighbours):
+    # FIXME: how to daskify?
+    # Tile output coordinates to same shape as neighbour info
+    # Replacing with da.transpose and da.tile doesn't work
+    return np.reshape(np.tile(vector, neighbours), (neighbours, vector.size)).T
+
+
+def _get_stride_and_valid_corner_indices(out_x, out_y, in_x, in_y, neighbours):
+    out_x_tile = _tile_output_coordinate_vector(out_x, neighbours)
+    out_y_tile = _tile_output_coordinate_vector(out_y, neighbours)
+
+    # Get differences in both directions
+    x_diff = out_x_tile - in_x
+    y_diff = out_y_tile - in_y
+
+    return (np.arange(x_diff.shape[0]), (
+        (x_diff > 0) & (y_diff < 0),  # Upper left corners
+        (x_diff < 0) & (y_diff < 0),  # Upper right corners
+        (x_diff > 0) & (y_diff > 0),  # Lower left corners
+        (x_diff < 0) & (y_diff > 0))  # Lower right corners
+    )
+
+
 def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
     """Get bounding corners.
 
@@ -271,44 +294,17 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
     """
     # Find four closest pixels around the target location
 
-    # FIXME: how to daskify?
-    # Tile output coordinates to same shape as neighbour info
-    # Replacing with da.transpose and da.tile doesn't work
-    out_x_tile = np.reshape(np.tile(out_x, neighbours),
-                            (neighbours, out_x.size)).T
-    out_y_tile = np.reshape(np.tile(out_y, neighbours),
-                            (neighbours, out_y.size)).T
+    stride, valid_corners = _get_stride_and_valid_corner_indices(
+        out_x, out_y, in_x, in_y, neighbours)
+    res = []
+    indices = []
+    for valid in valid_corners:
+        x__, y__, idx = _get_corner(stride, valid, in_x, in_y, index_array)
+        res.append(np.transpose(np.vstack((x__, y__))))
+        indices.append(idx)
+    res.append(np.transpose(np.vstack(indices)))
 
-    # Get differences in both directions
-    x_diff = out_x_tile - in_x
-    y_diff = out_y_tile - in_y
-
-    stride = np.arange(x_diff.shape[0])
-
-    # Upper left source pixel
-    valid = (x_diff > 0) & (y_diff < 0)
-    x_1, y_1, idx_1 = _get_corner(stride, valid, in_x, in_y, index_array)
-
-    # Upper right source pixel
-    valid = (x_diff < 0) & (y_diff < 0)
-    x_2, y_2, idx_2 = _get_corner(stride, valid, in_x, in_y, index_array)
-
-    # Lower left source pixel
-    valid = (x_diff > 0) & (y_diff > 0)
-    x_3, y_3, idx_3 = _get_corner(stride, valid, in_x, in_y, index_array)
-
-    # Lower right source pixel
-    valid = (x_diff < 0) & (y_diff > 0)
-    x_4, y_4, idx_4 = _get_corner(stride, valid, in_x, in_y, index_array)
-
-    # Combine sorted indices to index_array
-    index_array = np.transpose(np.vstack((idx_1, idx_2, idx_3, idx_4)))
-
-    return (np.transpose(np.vstack((x_1, y_1))),
-            np.transpose(np.vstack((x_2, y_2))),
-            np.transpose(np.vstack((x_3, y_3))),
-            np.transpose(np.vstack((x_4, y_4))),
-            index_array)
+    return res
 
 
 def _get_corner(stride, valid, in_x, in_y, index_array):
@@ -348,9 +344,7 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     t__, s__ = invalid_to_nan(t__, s__)
 
     # Cases where verticals are parallel
-    idxs = da.isnan(t__) | da.isnan(s__)
-    # Remove extra dimensions
-    idxs = da.ravel(idxs)
+    idxs = da.ravel(da.isnan(t__) | da.isnan(s__))
 
     if da.any(idxs):
         t_new, s_new = _get_fractional_distances_uprights_parallel(
