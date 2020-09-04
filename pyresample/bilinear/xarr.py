@@ -508,14 +508,12 @@ def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
-    voi = valid_output_index
-    voir = da.ravel(voi)
+    voir = da.ravel(valid_output_index)
     target_lons_valid = da.ravel(target_lons)[voir]
     target_lats_valid = da.ravel(target_lats)[voir]
 
-    coords = lonlat2xyz(target_lons_valid, target_lats_valid)
-    distance_array, index_array = kdtree.query(
-        coords.compute(),
+    _, index_array = kdtree.query(
+        lonlat2xyz(target_lons_valid, target_lats_valid).compute(),
         k=neighbours,
         eps=epsilon,
         distance_upper_bound=radius)
