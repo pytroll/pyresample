@@ -27,6 +27,7 @@
 try:
     from xarray import DataArray
     import dask.array as da
+    from dask import delayed
 except ImportError:
     DataArray = None
     da = None
@@ -141,6 +142,20 @@ class XArrayResamplerBilinear(BilinearBase):
             self._out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
+        p_1, p_2, p_3, p_4 = self._delayed_slice_data(data, fill_value)
+        if data.ndim == 2:
+            shp = self.bilinear_s.shape
+        else:
+            shp = (data.shape[0],) + self.bilinear_s.shape
+        p_1 = da.from_delayed(p_1, shp, np.float32)
+        p_2 = da.from_delayed(p_2, shp, np.float32)
+        p_3 = da.from_delayed(p_3, shp, np.float32)
+        p_4 = da.from_delayed(p_4, shp, np.float32)
+
+        return p_1, p_2, p_3, p_4
+
+    @delayed(nout=4)
+    def _delayed_slice_data(self, data, fill_value):
         if data.ndim == 2:
             slicer = _slice2d
         elif data.ndim == 3:
