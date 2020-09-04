@@ -230,14 +230,9 @@ def _get_raveled_lonlats(geo_def):
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = _mask_coordinates(*_get_raveled_lonlats(source_geo_def))
+    in_lons, in_lats = da.compute(*_mask_coordinates(*_get_raveled_lonlats(source_geo_def)))
 
-    # Select valid locations
-    # TODO: direct indexing w/o .compute() results in
-    # "ValueError: object too deep for desired array
-    in_lons = in_lons.compute()
     in_lons = in_lons[valid_input_index]
-    in_lats = in_lats.compute()
     in_lats = in_lats[valid_input_index]
     index_array = index_array.compute()
 
