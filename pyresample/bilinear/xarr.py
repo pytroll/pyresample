@@ -245,19 +245,19 @@ def _get_raveled_lonlats(geo_def):
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = da.compute(*_mask_coordinates(*_get_raveled_lonlats(source_geo_def)))
+    return proj(
+        *_array_slice_for_multiple_arrays(
+            index_array,
+            _array_slice_for_multiple_arrays(
+                valid_input_index,
+                da.compute(*_mask_coordinates(*_get_raveled_lonlats(source_geo_def)))
+            )
+        )
+    )
 
-    in_lons = in_lons[valid_input_index]
-    in_lats = in_lats[valid_input_index]
 
-    # Expand input coordinates for each output location
-    in_lons = in_lons[index_array]
-    in_lats = in_lats[index_array]
-
-    # Convert coordinates to output projection x/y space
-    in_x, in_y = proj(in_lons, in_lats)
-
-    return in_x, in_y
+def _array_slice_for_multiple_arrays(idxs, data):
+    return [d[idxs] for d in data]
 
 
 def _da_where_for_multiple_arrays(idxs, values_for_idxs, otherwise_arrays):
