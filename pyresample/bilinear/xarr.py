@@ -260,14 +260,15 @@ def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     return in_x, in_y
 
 
+def _da_where_for_multiple_arrays(idxs, values_for_idxs, otherwise_arrays):
+    return [da.where(idxs, values_for_idxs[i], arr) for i, arr in enumerate(otherwise_arrays)]
+
+
 def _mask_coordinates(lons, lats):
     """Mask invalid coordinate values."""
     idxs = (_find_indices_outside_min_and_max(lons, -180., 180.) |
             _find_indices_outside_min_and_max(lats, -90., 90.))
-    lons = da.where(idxs, np.nan, lons)
-    lats = da.where(idxs, np.nan, lats)
-
-    return lons, lats
+    return _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (lons, lats))
 
 
 def _tile_output_coordinate_vector(vector, neighbours):
@@ -322,10 +323,8 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify
-    x__ = da.where(invalid, np.nan, x__)
     y__ = in_y[stride, idxs]  # TODO: daskify
-    y__ = da.where(invalid, np.nan, y__)
-
+    x__, y__ = _da_where_for_multiple_arrays(invalid, (np.nan, np.nan), (x__, y__))
     idx = index_array[stride, idxs]  # TODO: daskify
 
     return x__, y__, idx
@@ -336,9 +335,7 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     def invalid_to_nan(t__, s__):
         idxs = (_find_indices_outside_min_and_max(t__, 0, 1) |
                 _find_indices_outside_min_and_max(s__, 0, 1))
-        t__ = da.where(idxs, np.nan, t__)
-        s__ = da.where(idxs, np.nan, s__)
-        return t__, s__
+        return _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (t__, s__))
 
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
@@ -354,8 +351,7 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
             pt_1, pt_2,
             pt_3, pt_4,
             out_y, out_x)
-        t__ = da.where(idxs, t_new, t__)
-        s__ = da.where(idxs, s_new, s__)
+        t__, s__ = _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (t__, s__))
 
     # Replace invalid values with NaNs
     t__, s__ = invalid_to_nan(t__, s__)
@@ -368,8 +364,7 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
         t_new, s_new = _get_fractional_distances_parallellogram(
             pt_1, pt_2, pt_3,
             out_y, out_x)
-        t__ = da.where(idxs, t_new, t__)
-        s__ = da.where(idxs, s_new, s__)
+        t__, s__ = _da_where_for_multiple_arrays(idxs, (t_new, s_new), (t__, s__))
 
     # Replace invalid values with NaNs
     t__, s__ = invalid_to_nan(t__, s__)
