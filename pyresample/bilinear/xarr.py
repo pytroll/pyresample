@@ -262,9 +262,6 @@ def _mask_coordinates(lons, lats):
 
 
 def _tile_output_coordinate_vector(vector, neighbours):
-    # FIXME: how to daskify?
-    # Tile output coordinates to same shape as neighbour info
-    # Replacing with da.transpose and da.tile doesn't work
     return np.reshape(np.tile(vector, neighbours), (neighbours, vector.size)).T
 
 
