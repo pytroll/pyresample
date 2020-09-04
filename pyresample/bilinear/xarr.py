@@ -353,7 +353,7 @@ def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
             pt_1, pt_2,
             pt_3, pt_4,
             out_y, out_x)
-        t__, s__ = _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (t__, s__))
+        t__, s__ = _da_where_for_multiple_arrays(idxs, (t_new, s_new), (t__, s__))
 
     # Replace invalid values with NaNs
     t__, s__ = invalid_to_nan(t__, s__)
