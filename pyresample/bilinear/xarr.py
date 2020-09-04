@@ -142,7 +142,7 @@ class XArrayResamplerBilinear(BilinearBase):
             self._out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
-        p_1, p_2, p_3, p_4 = self._delayed_slice_data(data, fill_value)
+        p_1, p_2, p_3, p_4 = self._delayed_slice_data(_get_slicer(data), data, fill_value)
         if data.ndim == 2:
             shp = self.bilinear_s.shape
         else:
@@ -155,14 +155,7 @@ class XArrayResamplerBilinear(BilinearBase):
         return p_1, p_2, p_3, p_4
 
     @delayed(nout=4)
-    def _delayed_slice_data(self, data, fill_value):
-        if data.ndim == 2:
-            slicer = _slice2d
-        elif data.ndim == 3:
-            slicer = _slice3d
-        else:
-            raise ValueError
-
+    def _delayed_slice_data(self, slicer, data, fill_value):
         return slicer(data.values, self.slices_x, self.slices_y, self.mask_slices, fill_value)
 
     def _get_target_proj_vectors(self):
@@ -212,6 +205,15 @@ class XArrayResamplerBilinear(BilinearBase):
                                 self._neighbours, self._epsilon,
                                 self._radius_of_influence)
         return res, None
+
+
+def _get_slicer(data):
+    if data.ndim == 2:
+        return _slice2d
+    elif data.ndim == 3:
+        return _slice3d
+    else:
+        raise ValueError
 
 
 def _slice2d(values, sl_x, sl_y, mask, fill_value):
