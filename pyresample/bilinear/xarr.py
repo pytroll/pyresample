@@ -65,9 +65,9 @@ class XArrayResamplerBilinear(BilinearBase):
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _reduce_index_array(self, index_array):
-        input_size = da.sum(self._valid_input_index)
+        input_size = np.sum(self._valid_input_index)
         index_mask = index_array == input_size
-        return da.where(index_mask, 0, index_array)
+        return np.where(index_mask, 0, index_array)
 
     def _get_input_xy(self):
         return _get_input_xy(self._source_geo_def,
@@ -234,7 +234,6 @@ def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
 
     in_lons = in_lons[valid_input_index]
     in_lats = in_lats[valid_input_index]
-    index_array = index_array.compute()
 
     # Expand input coordinates for each output location
     in_lons = in_lons[index_array]
@@ -305,9 +304,6 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
     idxs = np.argmax(valid, axis=1)
     # Check which of these were actually valid
     invalid = np.invert(np.max(valid, axis=1))
-
-    # idxs = idxs.compute()
-    index_array = index_array.compute()
 
     # Replace invalid points with np.nan
     x__ = in_x[stride, idxs]  # TODO: daskify

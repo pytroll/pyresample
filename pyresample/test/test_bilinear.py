@@ -730,14 +730,13 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
-        import dask.array as da
         from pyresample.bilinear.xarr import _get_input_xy
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy(self.source_def, proj,
-                                   da.from_array(self._valid_input_index),
-                                   da.from_array(self._index_array))
+                                   self._valid_input_index,
+                                   self._index_array)
 
         self.assertTrue(in_x.shape, (self.target_def.size, 32))
         self.assertTrue(in_y.shape, (self.target_def.size, 32))
@@ -770,12 +769,12 @@ class TestXarrayBilinear(unittest.TestCase):
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
         in_x, in_y = _get_input_xy(self.source_def, proj,
-                                   da.from_array(self._valid_input_index),
-                                   da.from_array(self._index_array))
+                                   self._valid_input_index,
+                                   self._index_array)
         pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners(
             in_x, in_y, out_x, out_y,
             self._neighbours,
-            da.from_array(self._index_array))
+            self._index_array)
 
         self.assertTrue(pt_1.shape == pt_2.shape ==
                         pt_3.shape == pt_4.shape ==
@@ -797,8 +796,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy(self.source_def, proj,
-                                   da.from_array(self._valid_input_index),
-                                   da.from_array(self._index_array))
+                                   self._valid_input_index,
+                                   self._index_array)
         out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
         out_x = da.ravel(out_x)
         out_y = da.ravel(out_y)
@@ -815,7 +814,7 @@ class TestXarrayBilinear(unittest.TestCase):
         # Use lower left source pixels for testing
         valid = (x_diff > 0) & (y_diff > 0)
         x_3, y_3, idx_3 = _get_corner(stride, valid, in_x, in_y,
-                                      da.from_array(self._index_array))
+                                      self._index_array)
 
         self.assertTrue(x_3.shape == y_3.shape == idx_3.shape ==
                         (self.target_def.size, ))
