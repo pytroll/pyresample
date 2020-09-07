@@ -110,15 +110,6 @@ class XArrayResamplerBilinear(BilinearBase):
 
         return DataArray(res, dims=data.dims, coords=self._out_coords)
 
-    def _compute_indices(self):
-        for idx in CACHE_INDICES:
-            var = getattr(self, idx)
-            try:
-                var = var.compute()
-                setattr(self, idx, var)
-            except AttributeError:
-                continue
-
     def _add_missing_coordinates(self, data):
         self._add_x_and_y_coordinates()
         for _, dim in enumerate(data.dims):
