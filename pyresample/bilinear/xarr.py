@@ -332,44 +332,44 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
     return x__, y__, idx
 
 
+def _invalid_s_and_t_to_nan(t__, s__):
+    return _da_where_for_multiple_arrays(
+        (_find_indices_outside_min_and_max(t__, 0, 1) |
+         _find_indices_outside_min_and_max(s__, 0, 1)),
+        (np.nan, np.nan),
+        (t__, s__))
+
+
+def _update_fractional_distances(func, t__, s__, points, out_x, out_y):
+    idxs = da.ravel(da.isnan(t__) | da.isnan(s__))
+    if da.any(idxs):
+        t__, s__ = _invalid_s_and_t_to_nan(
+            *_da_where_for_multiple_arrays(
+                idxs,
+                func(
+                    *points, out_y, out_x),
+                (t__, s__)
+            )
+        )
+    return t__, s__
+
+
 def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
-    def invalid_to_nan(t__, s__):
-        idxs = (_find_indices_outside_min_and_max(t__, 0, 1) |
-                _find_indices_outside_min_and_max(s__, 0, 1))
-        return _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (t__, s__))
-
     # General case, ie. where the the corners form an irregular rectangle
-    t__, s__ = _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
-
-    # Replace invalid values with NaNs
-    t__, s__ = invalid_to_nan(t__, s__)
-
-    # Cases where verticals are parallel
-    idxs = da.ravel(da.isnan(t__) | da.isnan(s__))
-
-    if da.any(idxs):
-        t_new, s_new = _get_fractional_distances_uprights_parallel(
-            pt_1, pt_2,
-            pt_3, pt_4,
-            out_y, out_x)
-        t__, s__ = _da_where_for_multiple_arrays(idxs, (t_new, s_new), (t__, s__))
-
-    # Replace invalid values with NaNs
-    t__, s__ = invalid_to_nan(t__, s__)
-
-    # Cases where both verticals and horizontals are parallel
-    idxs = da.isnan(t__) | da.isnan(s__)
-    # Remove extra dimensions
-    idxs = da.ravel(idxs)
-    if da.any(idxs):
-        t_new, s_new = _get_fractional_distances_parallellogram(
-            pt_1, pt_2, pt_3,
-            out_y, out_x)
-        t__, s__ = _da_where_for_multiple_arrays(idxs, (t_new, s_new), (t__, s__))
-
-    # Replace invalid values with NaNs
-    t__, s__ = invalid_to_nan(t__, s__)
+    t__, s__ = _invalid_s_and_t_to_nan(
+        *_get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+    )
+    # Update where verticals are parallel
+    t__, s__ = _update_fractional_distances(
+        _get_fractional_distances_uprights_parallel,
+        t__, s__, (pt_1, pt_2, pt_3, pt_4), out_x, out_y
+    )
+    # Update where both verticals and horizontals are parallel
+    t__, s__ = _update_fractional_distances(
+        _get_fractional_distances_parallellogram,
+        t__, s__, (pt_1, pt_2, pt_3), out_x, out_y
+    )
 
     return t__, s__
 
