@@ -51,6 +51,7 @@ CACHE_INDICES = ['bilinear_s',
 class XArrayResamplerBilinear(BilinearBase):
     """Bilinear interpolation using XArray."""
 
+    # XARRAY
     def _create_empty_bil_info(self):
         """Create dummy info for empty result set."""
         self._valid_input_index = da.ones(self._source_geo_def.size, dtype=np.bool)
@@ -67,6 +68,7 @@ class XArrayResamplerBilinear(BilinearBase):
         index_mask = index_array == input_size
         return np.where(index_mask, 0, index_array)
 
+    # XARRAY
     def _get_input_xy(self):
         return _get_input_xy(self._source_geo_def,
                              Proj(self._target_geo_def.proj_str),
@@ -84,24 +86,25 @@ class XArrayResamplerBilinear(BilinearBase):
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
-        data_min = da.nanmin(data) - epsilon
-        data_max = da.nanmax(data) + epsilon
+        data_min = np.nanmin(data) - epsilon
+        data_max = np.nanmax(data) + epsilon
 
-        res = da.where(
+        res = np.where(
             _find_indices_outside_min_and_max(res, data_min, data_max),
             fill_value, res)
 
-        return da.where(np.isnan(res), fill_value, res)
+        return np.where(np.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
         if ndim == 3:
-            res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
+            res = np.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
-            res = da.reshape(res, (shp[0], shp[1]))
+            res = np.reshape(res, (shp[0], shp[1]))
 
         return res
 
+    # XARRAY
     def _finalize_output_data(self, data, res, fill_value):
         res = self._limit_output_values_to_input(data, res, fill_value)
         res = self._reshape_to_target_area(res, data.ndim)
@@ -170,6 +173,7 @@ class XArrayResamplerBilinear(BilinearBase):
         )
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
+    # XARRAY
     def _get_valid_input_index_and_input_coords(self):
         valid_input_index, source_lons, source_lats = \
             _get_valid_input_index(self._source_geo_def,
@@ -177,7 +181,7 @@ class XArrayResamplerBilinear(BilinearBase):
                                    self._reduce_data,
                                    self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
-        valid_input_index = da.ravel(valid_input_index)
+        valid_input_index = np.ravel(valid_input_index)
         input_coords = input_coords[valid_input_index, :].astype(np.float)
 
         return da.compute(valid_input_index, input_coords)
@@ -225,7 +229,7 @@ def _slice3d(values, sl_x, sl_y, mask, fill_value):
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
-    return da.ravel(out_x),  da.ravel(out_y)
+    return np.ravel(out_x),  np.ravel(out_y)
 
 
 def _get_raveled_lonlats(geo_def):
@@ -235,9 +239,10 @@ def _get_raveled_lonlats(geo_def):
     elif lons.size != lats.size or lons.shape != lats.shape:
         raise ValueError('Mismatch between lons and lats')
 
-    return da.ravel(lons), da.ravel(lats)
+    return np.ravel(lons), np.ravel(lats)
 
 
+# XARRAY
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
     return proj(
@@ -255,15 +260,15 @@ def _array_slice_for_multiple_arrays(idxs, data):
     return [d[idxs] for d in data]
 
 
-def _da_where_for_multiple_arrays(idxs, values_for_idxs, otherwise_arrays):
-    return [da.where(idxs, values_for_idxs[i], arr) for i, arr in enumerate(otherwise_arrays)]
+def _np_where_for_multiple_arrays(idxs, values_for_idxs, otherwise_arrays):
+    return [np.where(idxs, values_for_idxs[i], arr) for i, arr in enumerate(otherwise_arrays)]
 
 
 def _mask_coordinates(lons, lats):
     """Mask invalid coordinate values."""
     idxs = (_find_indices_outside_min_and_max(lons, -180., 180.) |
             _find_indices_outside_min_and_max(lats, -90., 90.))
-    return _da_where_for_multiple_arrays(idxs, (np.nan, np.nan), (lons, lats))
+    return _np_where_for_multiple_arrays(idxs, (np.nan, np.nan), (lons, lats))
 
 
 def _tile_output_coordinate_vector(vector, neighbours):
@@ -321,7 +326,7 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
         np.argmax(valid, axis=1)  # The closest valid locations
     )
     # Replace invalid points with np.nan
-    x__, y__ = _da_where_for_multiple_arrays(
+    x__, y__ = _np_where_for_multiple_arrays(
         np.invert(np.max(valid, axis=1)),
         (np.nan, np.nan),
         (x__, y__)
@@ -331,7 +336,7 @@ def _get_corner(stride, valid, in_x, in_y, index_array):
 
 
 def _invalid_s_and_t_to_nan(t__, s__):
-    return _da_where_for_multiple_arrays(
+    return _np_where_for_multiple_arrays(
         (_find_indices_outside_min_and_max(t__, 0, 1) |
          _find_indices_outside_min_and_max(s__, 0, 1)),
         (np.nan, np.nan),
@@ -339,10 +344,10 @@ def _invalid_s_and_t_to_nan(t__, s__):
 
 
 def _update_fractional_distances(func, t__, s__, points, out_x, out_y):
-    idxs = da.ravel(da.isnan(t__) | da.isnan(s__))
-    if da.any(idxs):
+    idxs = np.ravel(np.isnan(t__) | np.isnan(s__))
+    if np.any(idxs):
         t__, s__ = _invalid_s_and_t_to_nan(
-            *_da_where_for_multiple_arrays(
+            *_np_where_for_multiple_arrays(
                 idxs,
                 func(
                     *points, out_y, out_x),
@@ -429,15 +434,15 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     discriminant = b__ * b__ - 4 * a__ * c__
 
     # Solve the quadratic polynomial
-    x_1 = (-b__ + da.sqrt(discriminant)) / (2 * a__)
-    x_2 = (-b__ - da.sqrt(discriminant)) / (2 * a__)
+    x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
+    x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
 
     # Find valid solutions, ie. 0 <= t <= 1
-    x__ = da.where(
+    x__ = np.where(
         _find_indices_outside_min_and_max(x_1, min_val, max_val),
         x_2, x_1)
 
-    x__ = da.where(
+    x__ = np.where(
         _find_indices_outside_min_and_max(x__, min_val, max_val),
         np.nan, x__)
 
@@ -456,7 +461,7 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
            (y_3 + y_43 * f__ - y_1 - y_21 * f__))
 
     # Limit values to interval [0, 1]
-    g__ = da.where(
+    g__ = np.where(
         _find_indices_outside_min_and_max(g__, 0, 1),
         np.nan, g__)
 
@@ -489,12 +494,12 @@ def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 
     t__ = (x_21 * (out_y - pt_1[:, 1]) - y_21 * (out_x - pt_1[:, 0])) / \
           (x_21 * y_31 - y_21 * x_31)
-    t__ = da.where(
+    t__ = np.where(
         _find_indices_outside_min_and_max(t__, 0., 1.),
         np.nan, t__)
 
     s__ = (out_x - pt_1[:, 0] + x_31 * t__) / x_21
-    s__ = da.where(
+    s__ = np.where(
         _find_indices_outside_min_and_max(s__, 0., 1.),
         np.nan, s__)
 
@@ -504,12 +509,12 @@ def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
 def query_no_distance(target_lons, target_lats,
                       valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
-    voir = da.ravel(valid_output_index)
-    target_lons_valid = da.ravel(target_lons)[voir]
-    target_lats_valid = da.ravel(target_lats)[voir]
+    voir = np.ravel(valid_output_index)
+    target_lons_valid = np.ravel(target_lons)[voir]
+    target_lats_valid = np.ravel(target_lats)[voir]
 
     _, index_array = kdtree.query(
-        lonlat2xyz(target_lons_valid, target_lats_valid).compute(),
+        lonlat2xyz(target_lons_valid, target_lats_valid),
         k=neighbours,
         eps=epsilon,
         distance_upper_bound=radius)
@@ -547,7 +552,7 @@ def _get_valid_input_index(source_geo_def,
     """Find indices of reduced input data."""
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
-    valid_input_index = da.invert(
+    valid_input_index = np.invert(
         _find_indices_outside_min_and_max(source_lons, -180., 180.)
         | _find_indices_outside_min_and_max(source_lats, -90., 90.))
 
@@ -561,9 +566,12 @@ def _get_valid_input_index(source_geo_def,
 def lonlat2xyz(lons, lats):
     """Convert geographic coordinates to cartesian 3D coordinates."""
     R = 6370997.0
-    x_coords = R * da.cos(da.deg2rad(lats)) * da.cos(da.deg2rad(lons))
-    y_coords = R * da.cos(da.deg2rad(lats)) * da.sin(da.deg2rad(lons))
-    z_coords = R * da.sin(da.deg2rad(lats))
+    lats = np.deg2rad(lats)
+    r_cos_lats = R * np.cos(lats)
+    lons = np.deg2rad(lons)
+    x_coords = r_cos_lats * np.cos(lons)
+    y_coords = r_cos_lats * np.sin(lons)
+    z_coords = R * np.sin(lats)
 
-    return da.stack(
+    return np.stack(
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
