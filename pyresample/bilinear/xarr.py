@@ -316,18 +316,23 @@ def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
     return res
 
 
+def _slice_2d_with_stride_and_indices_for_multiple_arrays(arrays, stride, idxs):
+    return [arr[stride, idxs] for arr in arrays]
+
+
 def _get_corner(stride, valid, in_x, in_y, index_array):
     """Get closest set of coordinates from the *valid* locations."""
-    # Find the closest valid pixels, if any
-    idxs = np.argmax(valid, axis=1)
-    # Check which of these were actually valid
-    invalid = np.invert(np.max(valid, axis=1))
-
+    x__, y__, idx = _slice_2d_with_stride_and_indices_for_multiple_arrays(
+        (in_x, in_y, index_array),
+        stride,
+        np.argmax(valid, axis=1)  # The closest valid locations
+    )
     # Replace invalid points with np.nan
-    x__ = in_x[stride, idxs]  # TODO: daskify
-    y__ = in_y[stride, idxs]  # TODO: daskify
-    x__, y__ = _da_where_for_multiple_arrays(invalid, (np.nan, np.nan), (x__, y__))
-    idx = index_array[stride, idxs]  # TODO: daskify
+    x__, y__ = _da_where_for_multiple_arrays(
+        np.invert(np.max(valid, axis=1)),
+        (np.nan, np.nan),
+        (x__, y__)
+    )
 
     return x__, y__, idx
 
