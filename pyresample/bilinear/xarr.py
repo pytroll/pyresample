@@ -130,17 +130,21 @@ class XArrayResamplerBilinear(BilinearBase):
             self._out_coords['bands'] = data_coords['bands']
 
     def _slice_data(self, data, fill_value):
-        p_1, p_2, p_3, p_4 = self._delayed_slice_data(_get_slicer(data), data, fill_value)
+        def from_delayed(delayeds, shp):
+            return [da.from_delayed(d, shp, np.float32) for d in delayeds]
+
         if data.ndim == 2:
             shp = self.bilinear_s.shape
         else:
             shp = (data.shape[0],) + self.bilinear_s.shape
-        p_1 = da.from_delayed(p_1, shp, np.float32)
-        p_2 = da.from_delayed(p_2, shp, np.float32)
-        p_3 = da.from_delayed(p_3, shp, np.float32)
-        p_4 = da.from_delayed(p_4, shp, np.float32)
 
-        return p_1, p_2, p_3, p_4
+        return from_delayed(
+            self._delayed_slice_data(
+                _get_slicer(
+                    data),
+                data, fill_value),
+            shp
+        )
 
     @delayed(nout=4)
     def _delayed_slice_data(self, slicer, data, fill_value):
