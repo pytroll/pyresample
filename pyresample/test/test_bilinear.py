@@ -565,32 +565,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
         self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
 
-    @mock.patch('pyresample.bilinear.xarr.setattr')
-    def test_compute_indices(self, mock_setattr):
-        """Test running .compute() for indices."""
-        from pyresample.bilinear.xarr import (XArrayResamplerBilinear,
-                                              CACHE_INDICES)
-
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
-                                            self.radius)
-
-        # Set indices to Numpy arrays
-        for idx in CACHE_INDICES:
-            setattr(resampler, idx, np.array([]))
-        resampler._compute_indices()
-        # None of the indices shouldn't have been reassigned
-        mock_setattr.assert_not_called()
-
-        # Set indices to a Mock object
-        arr = mock.MagicMock()
-        for idx in CACHE_INDICES:
-            setattr(resampler, idx, arr)
-        resampler._compute_indices()
-        # All the indices should have been reassigned
-        self.assertEqual(mock_setattr.call_count, len(CACHE_INDICES))
-        # The compute should have been called the same amount of times
-        self.assertEqual(arr.compute.call_count, len(CACHE_INDICES))
-
     def test_add_missing_coordinates(self):
         """Test coordinate updating."""
         import dask.array as da
