@@ -31,14 +31,11 @@ try:
 except ImportError:
     DataArray = None
     da = None
-
 import numpy as np
+from pykdtree.kdtree import KDTree
 
 from pyresample._spatial_mp import Proj
-
-from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry, CHUNK_SIZE
-
 from pyresample.bilinear import BilinearBase
 
 
@@ -168,13 +165,14 @@ class XArrayResamplerBilinear(BilinearBase):
         shp = self._source_geo_def.shape
         cols, lines = np.meshgrid(np.arange(shp[1]),
                                   np.arange(shp[0]))
-        cols = np.ravel(cols)
-        lines = np.ravel(lines)
 
-        # ia_ contains reduced (valid) indices of the source array, and has the
-        # shape of the destination array
-        self.slices_y = lines[self._valid_input_index][self._index_array]
-        self.slices_x = cols[self._valid_input_index][self._index_array]
+        self.slices_y, self.slices_x = _array_slice_for_multiple_arrays(
+            self._index_array,
+            _array_slice_for_multiple_arrays(
+                self._valid_input_index,
+                (np.ravel(lines), np.ravel(cols))
+            )
+        )
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_input_index_and_input_coords(self):
