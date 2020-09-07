@@ -353,18 +353,18 @@ class TestXarrayBilinear(unittest.TestCase):
         from xarray import DataArray
         from pyresample import geometry, kd_tree
 
-        self.pts_irregular = (np.array([[-1., 1.], ]),
-                              np.array([[1., 2.], ]),
-                              np.array([[-2., -1.], ]),
-                              np.array([[2., -4.], ]))
-        self.pts_vert_parallel = (np.array([[-1., 1.], ]),
-                                  np.array([[1., 2.], ]),
-                                  np.array([[-1., -1.], ]),
-                                  np.array([[1., -2.], ]))
-        self.pts_both_parallel = (np.array([[-1., 1.], ]),
-                                  np.array([[1., 1.], ]),
-                                  np.array([[-1., -1.], ]),
-                                  np.array([[1., -1.], ]))
+        self.pts_irregular = (da.array([[-1., 1.], ]),
+                              da.array([[1., 2.], ]),
+                              da.array([[-2., -1.], ]),
+                              da.array([[2., -4.], ]))
+        self.pts_vert_parallel = (da.array([[-1., 1.], ]),
+                                  da.array([[1., 2.], ]),
+                                  da.array([[-1., -1.], ]),
+                                  da.array([[1., -2.], ]))
+        self.pts_both_parallel = (da.array([[-1., 1.], ]),
+                                  da.array([[1., 1.], ]),
+                                  da.array([[-1., -1.], ]),
+                                  da.array([[1., -1.], ]))
 
         # Area definition with 4x4 pixels
         self.target_def = geometry.AreaDefinition('areaD',
@@ -797,10 +797,11 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_get_fractional_distances(self, irregular, uprights, parallellogram):
         """Test that the three separate functions are called."""
         from pyresample.bilinear.xarr import _get_fractional_distances
+        import dask.array as da
 
         # All valid values
-        t_irr = np.array([0.1, 0.2, 0.3])
-        s_irr = np.array([0.1, 0.2, 0.3])
+        t_irr = da.array([0.1, 0.2, 0.3])
+        s_irr = da.array([0.1, 0.2, 0.3])
         irregular.return_value = (t_irr, s_irr)
         t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         irregular.assert_called_once()
@@ -811,59 +812,59 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # NaN in the first step, good value for that location from the
         # second step
-        t_irr = np.array([0.1, 0.2, np.nan])
-        s_irr = np.array([0.1, 0.2, np.nan])
+        t_irr = da.array([0.1, 0.2, np.nan])
+        s_irr = da.array([0.1, 0.2, np.nan])
         irregular.return_value = (t_irr, s_irr)
-        t_upr = np.array([3, 3, 0.3])
-        s_upr = np.array([3, 3, 0.3])
+        t_upr = da.array([3, 3, 0.3])
+        s_upr = da.array([3, 3, 0.3])
         uprights.return_value = (t_upr, s_upr)
         t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 2)
         uprights.assert_called_once()
         parallellogram.assert_not_called()
         # Only the last value of the first step should have been replaced
-        t_res = np.array([0.1, 0.2, 0.3])
-        s_res = np.array([0.1, 0.2, 0.3])
+        t_res = da.array([0.1, 0.2, 0.3])
+        s_res = da.array([0.1, 0.2, 0.3])
         self.assertTrue(np.allclose(t__.compute(), t_res))
         self.assertTrue(np.allclose(s__.compute(), s_res))
 
         # Two NaNs in the first step, one of which are found by the
         # second, and the last bad value is replaced by the third step
-        t_irr = np.array([0.1, np.nan, np.nan])
-        s_irr = np.array([0.1, np.nan, np.nan])
+        t_irr = da.array([0.1, np.nan, np.nan])
+        s_irr = da.array([0.1, np.nan, np.nan])
         irregular.return_value = (t_irr, s_irr)
-        t_upr = np.array([3, np.nan, 0.3])
-        s_upr = np.array([3, np.nan, 0.3])
+        t_upr = da.array([3, np.nan, 0.3])
+        s_upr = da.array([3, np.nan, 0.3])
         uprights.return_value = (t_upr, s_upr)
-        t_par = np.array([4, 0.2, 0.3])
-        s_par = np.array([4, 0.2, 0.3])
+        t_par = da.array([4, 0.2, 0.3])
+        s_par = da.array([4, 0.2, 0.3])
         parallellogram.return_value = (t_par, s_par)
         t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
         self.assertEqual(irregular.call_count, 3)
         self.assertEqual(uprights.call_count, 2)
         parallellogram.assert_called_once()
         # Only the last two values should have been replaced
-        t_res = np.array([0.1, 0.2, 0.3])
-        s_res = np.array([0.1, 0.2, 0.3])
+        t_res = da.array([0.1, 0.2, 0.3])
+        s_res = da.array([0.1, 0.2, 0.3])
         self.assertTrue(np.allclose(t__.compute(), t_res))
         self.assertTrue(np.allclose(s__.compute(), s_res))
 
         # Too large and small values should be set to NaN
-        t_irr = np.array([1.00001, -0.00001, 1e6])
-        s_irr = np.array([1.00001, -0.00001, -1e6])
+        t_irr = da.array([1.00001, -0.00001, 1e6])
+        s_irr = da.array([1.00001, -0.00001, -1e6])
         irregular.return_value = (t_irr, s_irr)
         # Second step also returns invalid values
-        t_upr = np.array([1.00001, 0.2, np.nan])
-        s_upr = np.array([-0.00001, 0.2, np.nan])
+        t_upr = da.array([1.00001, 0.2, np.nan])
+        s_upr = da.array([-0.00001, 0.2, np.nan])
         uprights.return_value = (t_upr, s_upr)
         # Third step has one new valid value, the last will stay invalid
-        t_par = np.array([0.1, 0.2, 4.0])
-        s_par = np.array([0.1, 0.2, 4.0])
+        t_par = da.array([0.1, 0.2, 4.0])
+        s_par = da.array([0.1, 0.2, 4.0])
         parallellogram.return_value = (t_par, s_par)
         t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
 
-        t_res = np.array([0.1, 0.2, np.nan])
-        s_res = np.array([0.1, 0.2, np.nan])
+        t_res = da.array([0.1, 0.2, np.nan])
+        s_res = da.array([0.1, 0.2, np.nan])
         self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
         self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
 
@@ -932,19 +933,21 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
+        import dask.array as da
         from pyresample.bilinear.xarr import (_solve_quadratic,
                                               _calc_abc)
 
-        res = _solve_quadratic(1, 0, 0).compute()
+        res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res, 0.0)
-        res = _solve_quadratic(1, 2, 1).compute()
+        res = _solve_quadratic(1, 2, 1)
         self.assertTrue(np.isnan(res))
-        res = _solve_quadratic(1, 2, 1, min_val=-2.).compute()
+        res = _solve_quadratic(1, 2, 1, min_val=-2.)
         self.assertEqual(res, -1.0)
         # Test that small adjustments work
         pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
-        pt_1 = self.pts_vert_parallel[0].copy()
+        pt_1 = self.pts_vert_parallel[0].compute()
         pt_1[0][0] += 1e-7
+        pt_1 = da.from_array(pt_1)
         res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
         res = _solve_quadratic(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
