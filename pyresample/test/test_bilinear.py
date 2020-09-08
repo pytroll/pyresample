@@ -187,11 +187,11 @@ class TestNumpyBilinear(unittest.TestCase):
         from pyresample.bilinear import (_solve_quadratic, _calc_abc)
 
         res = _solve_quadratic(1, 0, 0)
-        self.assertEqual(res[0], 0.0)
+        self.assertEqual(res, 0.0)
         res = _solve_quadratic(1, 2, 1)
-        self.assertTrue(np.isnan(res[0]))
+        self.assertTrue(np.isnan(res))
         res = _solve_quadratic(1, 2, 1, min_val=-2.)
-        self.assertEqual(res[0], -1.0)
+        self.assertEqual(res, -1.0)
         # Test that small adjustments work
         pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
         pt_1 = self.pts_vert_parallel[0].copy()
@@ -203,38 +203,38 @@ class TestNumpyBilinear(unittest.TestCase):
         res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
 
-    def test_get_output_xy(self):
+    def test_get_output_xy_masked(self):
         """Test calculation of output xy-coordinates."""
-        from pyresample.bilinear import _get_output_xy
+        from pyresample.bilinear import _get_output_xy_masked
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        out_x, out_y = _get_output_xy(self.target_def, proj)
+        out_x, out_y = _get_output_xy_masked(self.target_def, proj)
         self.assertTrue(out_x.all())
         self.assertTrue(out_y.all())
 
-    def test_get_input_xy(self):
+    def test_get_input_xy_masked(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample.bilinear import _get_input_xy
+        from pyresample.bilinear import _get_input_xy_masked
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = _get_input_xy(self.swath_def, proj,
-                                   self.input_idxs, self.idx_ref)
+        in_x, in_y = _get_input_xy_masked(self.swath_def, proj,
+                                          self.input_idxs, self.idx_ref)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_bounding_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear import (_get_output_xy,
-                                         _get_input_xy,
+        from pyresample.bilinear import (_get_output_xy_masked,
+                                         _get_input_xy_masked,
                                          _get_bounding_corners)
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        out_x, out_y = _get_output_xy(self.target_def, proj)
-        in_x, in_y = _get_input_xy(self.swath_def, proj,
-                                   self.input_idxs, self.idx_ref)
+        out_x, out_y = _get_output_xy_masked(self.target_def, proj)
+        in_x, in_y = _get_input_xy_masked(self.swath_def, proj,
+                                          self.input_idxs, self.idx_ref)
         res = _get_bounding_corners(in_x, in_y, out_x, out_y,
                                     self._neighbours, self.idx_ref)
         for i in range(len(res) - 1):
@@ -264,18 +264,18 @@ class TestNumpyBilinear(unittest.TestCase):
                     self.assertTrue(t__[i] <= 1.0)
                     self.assertTrue(s__[i] <= 1.0)
 
-        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
-                                                     self.target_def,
-                                                     50e5, neighbours=32,
-                                                     nprocs=1,
-                                                     reduce_data=False)
+        t__, s__, _, _ = get_bil_info(self.swath_def,
+                                      self.target_def,
+                                      50e5, neighbours=32,
+                                      nprocs=1,
+                                      reduce_data=False)
         _check_ts(t__, s__)
 
-        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
-                                                     self.target_def,
-                                                     50e5, neighbours=32,
-                                                     nprocs=1,
-                                                     reduce_data=True)
+        t__, s__, _, _ = get_bil_info(self.swath_def,
+                                      self.target_def,
+                                      50e5, neighbours=32,
+                                      nprocs=1,
+                                      reduce_data=True)
         _check_ts(t__, s__)
 
     def test_get_sample_from_bil_info(self):
