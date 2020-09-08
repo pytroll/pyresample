@@ -78,33 +78,22 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
         Source data resampled to target geometry
 
     """
-    # Calculate the resampling information
-    t__, s__, input_idxs, idx_ref = get_bil_info(source_geo_def,
-                                                 target_area_def,
-                                                 radius=radius,
-                                                 neighbours=neighbours,
-                                                 nprocs=nprocs,
-                                                 masked=False,
-                                                 reduce_data=reduce_data,
-                                                 segments=segments,
-                                                 epsilon=epsilon)
-
-    data = _check_data_shape(data, input_idxs)
-
-    result = np.nan * np.zeros((target_area_def.size, data.shape[1]))
-    for i in range(data.shape[1]):
-        result[:, i] = get_sample_from_bil_info(data[:, i], t__, s__,
-                                                input_idxs, idx_ref,
-                                                output_shape=None)
+    resampler = NumpyResamplerBilinear(
+        source_geo_def,
+        target_area_def,
+        radius,
+        neighbours=neighbours,
+        epsilon=epsilon,
+        reduce_data=reduce_data
+    )
+    resampler.get_bil_info()
+    result = resampler.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
 
     if fill_value is None:
         result = np.ma.masked_invalid(result)
     else:
         result[np.isnan(result)] = fill_value
 
-    # Reshape to target area shape
-    shp = target_area_def.shape
-    result = result.reshape((shp[0], shp[1], data.shape[1]))
     # Remove extra dimensions
     result = np.squeeze(result)
 
@@ -332,10 +321,8 @@ def _check_data_shape(data, input_idxs):
     """Check data shape and adjust if necessary."""
     # Handle multiple datasets
     if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
-        data = data.reshape(data.shape[0] * data.shape[1], data.shape[2])
-    # Also ravel single dataset
-    elif data.shape[0] != input_idxs.size:
-        data = data.ravel()
+        # Move the "channel" dimension first
+        data = np.moveaxis(data, -1, 0)
 
     # Ensure two dimensions
     if data.ndim == 1:
@@ -536,7 +523,7 @@ class BilinearBase(object):
         return get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
 
     def _finalize_output_data(self, data, res, fill_value):
-        raise NotImplementedError
+        return res
 
 
 def _check_fill_value(fill_value, dtype):
@@ -943,4 +930,21 @@ def query_no_distance(target_lons, target_lats,
 class NumpyResamplerBilinear(BilinearBase):
     """Bilinear interpolation using Numpy."""
 
-    pass
+    def _slice_data(self, data, fill_value):
+        data = _check_data_shape(data, self._valid_input_index)
+        res = get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
+
+        return res
+
+    def _finalize_output_data(self, data, res, fill_value):
+        return self._reshape_to_target_area(res, data.ndim)
+
+    def _reshape_to_target_area(self, res, ndim):
+        shp = self._target_geo_def.shape
+        if ndim == 3:
+            # Place the "channel" dimension last
+            res = np.reshape(res, (shp[0], shp[1], res.shape[0]))
+        else:
+            res = np.reshape(res, (shp[0], shp[1]))
+
+        return res
