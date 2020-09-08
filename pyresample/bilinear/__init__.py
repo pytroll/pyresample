@@ -512,10 +512,10 @@ class BilinearBase(object):
 
     def _get_valid_input_index_and_input_coords(self):
         valid_input_index, source_lons, source_lats = \
-            get_valid_input_index(self._source_geo_def,
-                                  self._target_geo_def,
-                                  self._reduce_data,
-                                  self._radius_of_influence)
+            _get_valid_input_index(self._source_geo_def,
+                                   self._target_geo_def,
+                                   self._reduce_data,
+                                   self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
         input_coords = input_coords[valid_input_index, :].astype(np.float)
@@ -841,10 +841,10 @@ def _np_where_for_multiple_arrays(idxs, values_for_idxs, otherwise_arrays):
     return [np.where(idxs, values_for_idxs[i], arr) for i, arr in enumerate(otherwise_arrays)]
 
 
-def get_valid_input_index(source_geo_def,
-                          target_geo_def,
-                          reduce_data,
-                          radius_of_influence):
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence):
     """Find indices of reduced input data."""
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
@@ -852,14 +852,15 @@ def get_valid_input_index(source_geo_def,
         find_indices_outside_min_and_max(source_lons, -180., 180.)
         | find_indices_outside_min_and_max(source_lats, -90., 90.))
 
-    if reduce_data and _is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
-        valid_input_index &= _get_valid_indices_from_lonlat_boundaries(
+    if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+        valid_input_index &= get_valid_indices_from_lonlat_boundaries(
             target_geo_def, source_lons, source_lats, radius_of_influence)
 
     return valid_input_index, source_lons, source_lats
 
 
-def _is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+def is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+    """Check whether the resampling is from swath or grid to grid."""
     return (isinstance(source_geo_def, geometry.CoordinateDefinition) and
             isinstance(target_geo_def, (geometry.GridDefinition,
                                         geometry.AreaDefinition))) or \
@@ -869,8 +870,9 @@ def _is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
                                         geometry.AreaDefinition)))
 
 
-def _get_valid_indices_from_lonlat_boundaries(
+def get_valid_indices_from_lonlat_boundaries(
         target_geo_def, source_lons, source_lats, radius_of_influence):
+    """Get valid indices from lonlat boundaries."""
     # Resampling from swath to grid or from grid to grid
     lonlat_boundary = target_geo_def.get_boundary_lonlats()
 

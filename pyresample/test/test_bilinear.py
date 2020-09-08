@@ -970,21 +970,21 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_valid_input_index(self):
         """Test finding valid indices for reduced input data."""
-        from pyresample.bilinear import get_valid_input_index
+        from pyresample.bilinear import _get_valid_input_index
 
         # Do not reduce data
-        vii, lons, lats = get_valid_input_index(self.source_def,
-                                                self.target_def,
-                                                False, self.radius)
+        vii, lons, lats = _get_valid_input_index(self.source_def,
+                                                 self.target_def,
+                                                 False, self.radius)
         self.assertEqual(vii.shape, (self.source_def.size, ))
         self.assertTrue(vii.dtype == np.bool)
         # No data has been reduced, whole input is used
         self.assertTrue(vii.all())
 
         # Reduce data
-        vii, lons, lats = get_valid_input_index(self.source_def,
-                                                self.target_def,
-                                                True, self.radius)
+        vii, lons, lats = _get_valid_input_index(self.source_def,
+                                                 self.target_def,
+                                                 True, self.radius)
         # 2700 valid input points
         self.assertEqual(vii.sum(), 2700)
 
