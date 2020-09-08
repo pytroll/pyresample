@@ -41,8 +41,9 @@ from pyresample.bilinear import (
     find_indices_outside_min_and_max,
     mask_coordinates,
     get_slicer,
-    get_valid_input_index,
-    lonlat2xyz
+    is_swath_to_grid_or_grid_to_grid,
+    lonlat2xyz,
+    get_valid_indices_from_lonlat_boundaries
 )
 
 
@@ -153,10 +154,10 @@ class XArrayResamplerBilinear(BilinearBase):
 
     def _get_valid_input_index_and_input_coords(self):
         valid_input_index, source_lons, source_lats = \
-            get_valid_input_index(self._source_geo_def,
-                                  self._target_geo_def,
-                                  self._reduce_data,
-                                  self._radius_of_influence)
+            _get_valid_input_index(self._source_geo_def,
+                                   self._target_geo_def,
+                                   self._reduce_data,
+                                   self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
         input_coords = input_coords[valid_input_index, :].astype(np.float)
@@ -189,4 +190,22 @@ def _get_raveled_lonlats(geo_def):
     elif lons.size != lats.size or lons.shape != lats.shape:
         raise ValueError('Mismatch between lons and lats')
 
-    return np.ravel(lons), np.ravel(lats)
+    return da.ravel(lons), np.ravel(lats)
+
+
+def _get_valid_input_index(source_geo_def,
+                           target_geo_def,
+                           reduce_data,
+                           radius_of_influence):
+    """Find indices of reduced input data."""
+    source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
+
+    valid_input_index = da.invert(
+        find_indices_outside_min_and_max(source_lons, -180., 180.)
+        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+
+    if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
+        valid_input_index &= get_valid_indices_from_lonlat_boundaries(
+            target_geo_def, source_lons, source_lats, radius_of_influence)
+
+    return valid_input_index, source_lons, source_lats
