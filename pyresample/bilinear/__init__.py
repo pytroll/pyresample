@@ -527,17 +527,12 @@ class BilinearBase(object):
         del output_shape
         fill_value = _check_fill_value(fill_value, data.dtype)
 
-        res = self._resample(data, fill_value)
+        res = _resample(
+            self._slice_data(data, fill_value),
+            (self.bilinear_s, self.bilinear_t)
+        )
+
         return self._finalize_output_data(data, res, fill_value)
-
-    def _resample(self, data, fill_value):
-        p_1, p_2, p_3, p_4 = self._slice_data(data, fill_value)
-        s__, t__ = self.bilinear_s, self.bilinear_t
-
-        return (p_1 * (1 - s__) * (1 - t__) +
-                p_2 * s__ * (1 - t__) +
-                p_3 * (1 - s__) * t__ +
-                p_4 * s__ * t__)
 
     def _slice_data(self, data, fill_value):
         return get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
@@ -920,6 +915,15 @@ def _slice3d(values, sl_x, sl_y, mask, fill_value):
     arr = values[(slice(None), sl_y, sl_x)]
     arr[(slice(None), mask)] = fill_value
     return arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
+
+
+def _resample(points, fractional_distances):
+    p_1, p_2, p_3, p_4 = points
+    s__, t__ = fractional_distances
+    return (p_1 * (1 - s__) * (1 - t__) +
+            p_2 * s__ * (1 - t__) +
+            p_3 * (1 - s__) * t__ +
+            p_4 * s__ * t__)
 
 
 def query_no_distance(target_lons, target_lats,
