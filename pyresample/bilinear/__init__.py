@@ -305,6 +305,7 @@ def _get_input_xy_masked(source_geo_def, proj, input_idxs, idx_ref):
 
     # Select valid locations
     in_lons = in_lons.ravel()[input_idxs]
+    in_lats = in_lats.ravel()[input_idxs]
     in_lons, in_lats = _mask_coordinates(in_lons, in_lats)
 
     # Expand input coordinates for each output location
