@@ -152,10 +152,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
     p_3 = new_data[:, 2]
     p_4 = new_data[:, 3]
 
-    result = (p_1 * (1 - s__) * (1 - t__) +
-              p_2 * s__ * (1 - t__) +
-              p_3 * (1 - s__) * t__ +
-              p_4 * s__ * t__)
+    result = _resample((p_1, p_2, p_3, p_4), (s__, t__))
 
     if hasattr(result, 'mask'):
         mask = result.mask
@@ -941,3 +938,9 @@ def query_no_distance(target_lons, target_lats,
         distance_upper_bound=radius)
 
     return index_array
+
+
+class NumpyResamplerBilinear(BilinearBase):
+    """Bilinear interpolation using Numpy."""
+
+    pass

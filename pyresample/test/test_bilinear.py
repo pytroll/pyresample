@@ -72,13 +72,13 @@ class TestNumpyBilinear(unittest.TestCase):
         cls.data3 = cls.data1 + 9.5
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
                                  np.linspace(45., 75., num=in_shape[1]))
-        cls.swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        cls.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
 
-        radius = 50e3
+        cls.radius = 50e3
         cls._neighbours = 32
         input_idxs, output_idxs, idx_ref, dists = \
-            kd_tree.get_neighbour_info(cls.swath_def, target_def,
-                                       radius, neighbours=cls._neighbours,
+            kd_tree.get_neighbour_info(cls.source_def, target_def,
+                                       cls.radius, neighbours=cls._neighbours,
                                        nprocs=1)
         input_size = input_idxs.sum()
         index_mask = (idx_ref == input_size)
@@ -87,6 +87,39 @@ class TestNumpyBilinear(unittest.TestCase):
         cls.input_idxs = input_idxs
         cls.target_def = target_def
         cls.idx_ref = idx_ref
+
+    def test_init(self):
+        """Test that the resampler has been initialized correctly."""
+        from pyresample.bilinear import NumpyResamplerBilinear
+
+        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+                                           self.radius)
+        self.assertTrue(resampler._source_geo_def == self.source_def)
+        self.assertTrue(resampler._target_geo_def == self.target_def)
+        self.assertEqual(resampler._radius_of_influence, self.radius)
+        self.assertEqual(resampler._neighbours, 32)
+        self.assertEqual(resampler._epsilon, 0)
+        self.assertTrue(resampler._reduce_data)
+        # These should be None
+        self.assertIsNone(resampler._valid_input_index)
+        self.assertIsNone(resampler._valid_output_index)
+        self.assertIsNone(resampler._index_array)
+        self.assertIsNone(resampler._distance_array)
+        self.assertIsNone(resampler.bilinear_t)
+        self.assertIsNone(resampler.bilinear_s)
+        self.assertIsNone(resampler.slices_x)
+        self.assertIsNone(resampler.slices_y)
+        self.assertIsNone(resampler.mask_slices)
+        self.assertIsNone(resampler.out_coords_x)
+        self.assertIsNone(resampler.out_coords_y)
+
+        # Override defaults
+        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+                                           self.radius, neighbours=16,
+                                           epsilon=0.1, reduce_data=False)
+        self.assertEqual(resampler._neighbours, 16)
+        self.assertEqual(resampler._epsilon, 0.1)
+        self.assertFalse(resampler._reduce_data)
 
     def test_calc_abc(self):
         """Test calculation of quadratic coefficients."""
@@ -219,7 +252,7 @@ class TestNumpyBilinear(unittest.TestCase):
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = _get_input_xy_masked(self.swath_def, proj,
+        in_x, in_y = _get_input_xy_masked(self.source_def, proj,
                                           self.input_idxs, self.idx_ref)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
@@ -233,7 +266,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = _get_output_xy_masked(self.target_def, proj)
-        in_x, in_y = _get_input_xy_masked(self.swath_def, proj,
+        in_x, in_y = _get_input_xy_masked(self.source_def, proj,
                                           self.input_idxs, self.idx_ref)
         res = _get_bounding_corners(in_x, in_y, out_x, out_y,
                                     self._neighbours, self.idx_ref)
@@ -264,14 +297,14 @@ class TestNumpyBilinear(unittest.TestCase):
                     self.assertTrue(t__[i] <= 1.0)
                     self.assertTrue(s__[i] <= 1.0)
 
-        t__, s__, _, _ = get_bil_info(self.swath_def,
+        t__, s__, _, _ = get_bil_info(self.source_def,
                                       self.target_def,
                                       50e5, neighbours=32,
                                       nprocs=1,
                                       reduce_data=False)
         _check_ts(t__, s__)
 
-        t__, s__, _, _ = get_bil_info(self.swath_def,
+        t__, s__, _, _ = get_bil_info(self.source_def,
                                       self.target_def,
                                       50e5, neighbours=32,
                                       nprocs=1,
@@ -282,7 +315,7 @@ class TestNumpyBilinear(unittest.TestCase):
         """Test resampling using resampling indices."""
         from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
 
-        t__, s__, input_idxs, idx_arr = get_bil_info(self.swath_def,
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.source_def,
                                                      self.target_def,
                                                      50e5, neighbours=32,
                                                      nprocs=1)
@@ -315,7 +348,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
         # Single array
         res = resample_bilinear(self.data1,
-                                self.swath_def,
+                                self.source_def,
                                 self.target_def,
                                 50e5, neighbours=32,
                                 nprocs=1)
@@ -326,7 +359,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
         # Single array with masked output
         res = resample_bilinear(self.data1,
-                                self.swath_def,
+                                self.source_def,
                                 self.target_def,
                                 50e5, neighbours=32,
                                 nprocs=1, fill_value=None)
@@ -337,7 +370,7 @@ class TestNumpyBilinear(unittest.TestCase):
         # Two stacked arrays
         data = np.dstack((self.data1, self.data2))
         res = resample_bilinear(data,
-                                self.swath_def,
+                                self.source_def,
                                 self.target_def)
         shp = res.shape
         self.assertEqual(shp[0:2], self.target_def.shape)
