@@ -79,21 +79,21 @@ class XArrayResamplerBilinear(BilinearBase):
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
-        data_min = np.nanmin(data) - epsilon
-        data_max = np.nanmax(data) + epsilon
+        data_min = da.nanmin(data) - epsilon
+        data_max = da.nanmax(data) + epsilon
 
-        res = np.where(
+        res = da.where(
             find_indices_outside_min_and_max(res, data_min, data_max),
             fill_value, res)
 
-        return np.where(np.isnan(res), fill_value, res)
+        return da.where(np.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
         if ndim == 3:
-            res = np.reshape(res, (res.shape[0], shp[0], shp[1]))
+            res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
         else:
-            res = np.reshape(res, (shp[0], shp[1]))
+            res = da.reshape(res, (shp[0], shp[1]))
 
         return res
 
