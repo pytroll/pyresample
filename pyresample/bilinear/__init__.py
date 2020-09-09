@@ -94,13 +94,6 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
     resampler.get_bil_info()
     result = resampler.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
 
-    if fill_value is None:
-        result = np.ma.masked_invalid(result)
-    else:
-        result[np.isnan(result)] = fill_value
-
-    result = np.squeeze(result)
-
     return result
 
 
@@ -944,6 +937,17 @@ def query_no_distance(target_lons, target_lats,
 class NumpyResamplerBilinear(BilinearBase):
     """Bilinear interpolation using Numpy."""
 
+    def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):
+        """Resample using pre-computed resampling LUTs."""
+        del output_shape
+
+        res = _resample(
+            self._slice_data(data, fill_value),
+            (self.bilinear_s, self.bilinear_t)
+        )
+
+        return self._finalize_output_data(data, res, fill_value)
+
     def _slice_data(self, data, fill_value):
         data = _check_data_shape(data, self._valid_input_index)
         res = get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
@@ -951,7 +955,10 @@ class NumpyResamplerBilinear(BilinearBase):
         return res
 
     def _finalize_output_data(self, data, res, fill_value):
-        return self._reshape_to_target_area(res, data.ndim)
+        return _apply_fill_value_or_mask_data(
+            self._reshape_to_target_area(res, data.ndim),
+            fill_value
+        )
 
     def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
@@ -962,3 +969,12 @@ class NumpyResamplerBilinear(BilinearBase):
             res = np.reshape(res, (shp[0], shp[1]))
 
         return res
+
+
+def _apply_fill_value_or_mask_data(result, fill_value):
+    if fill_value is None:
+        result = np.ma.masked_invalid(result)
+    else:
+        result[np.isnan(result)] = fill_value
+
+    return np.squeeze(result)
