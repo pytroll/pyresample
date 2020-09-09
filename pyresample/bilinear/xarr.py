@@ -124,6 +124,8 @@ class XArrayResamplerBilinear(BilinearBase):
     def _adjust_bands_coordinates_to_match_data(self, data_coords):
         if 'bands' in data_coords:
             self._out_coords['bands'] = data_coords['bands']
+        elif 'bands' in self._out_coords:
+            del self._out_coords['bands']
 
     def _slice_data(self, data, fill_value):
         def from_delayed(delayeds, shp):
