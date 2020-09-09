@@ -142,12 +142,9 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
     new_data = new_data[idx_arr]
 
     # Get neighbour data to separate variables
-    p_1 = new_data[:, 0]
-    p_2 = new_data[:, 1]
-    p_3 = new_data[:, 2]
-    p_4 = new_data[:, 3]
+    corner_points = (new_data[:, 0], new_data[:, 1], new_data[:, 2], new_data[:, 3])
 
-    result = _resample((p_1, p_2, p_3, p_4), (s__, t__))
+    result = _resample(corner_points, (s__, t__))
 
     if hasattr(result, 'mask'):
         mask = result.mask
@@ -442,12 +439,12 @@ class BilinearBase(object):
     def _get_fractional_distances(self):
         out_x, out_y = self._get_output_xy()
         # Get the four closest corner points around each output location
-        pt_1, pt_2, pt_3, pt_4, self._index_array = \
+        corner_points, self._index_array = \
             _get_four_closest_corners(*self._get_input_xy(),
                                       out_x, out_y,
                                       self._neighbours, self._index_array)
         self.bilinear_t, self.bilinear_s = _get_fractional_distances(
-            pt_1, pt_2, pt_3, pt_4, out_x, out_y)
+            corner_points, out_x, out_y)
 
     def _get_output_xy(self):
         return _get_output_xy(self._target_geo_def)
@@ -604,26 +601,26 @@ def _get_four_closest_corners(in_x, in_y, out_x, out_y, neighbours, index_array)
         x__, y__, idx = _get_corner(stride, valid, in_x, in_y, index_array)
         res.append(np.transpose(np.vstack((x__, y__))))
         indices.append(idx)
-    res.append(np.transpose(np.vstack(indices)))
 
-    return res
+    return res, np.transpose(np.vstack(indices))
 
 
-def _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y):
+def _get_fractional_distances(corner_points, out_x, out_y):
     """Calculate vertical and horizontal fractional distances t and s."""
     # General case, ie. where the the corners form an irregular rectangle
     t__, s__ = _invalid_s_and_t_to_nan(
-        *_get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x)
+        *_get_fractional_distances_irregular(corner_points, out_y, out_x)
     )
     # Update where verticals are parallel
     t__, s__ = _update_fractional_distances(
         _get_fractional_distances_uprights_parallel,
-        t__, s__, (pt_1, pt_2, pt_3, pt_4), out_x, out_y
+        t__, s__, corner_points, out_x, out_y
     )
     # Update where both verticals and horizontals are parallel
+    corner_points = (corner_points[0], corner_points[1], corner_points[2])
     t__, s__ = _update_fractional_distances(
         _get_fractional_distances_parallellogram,
-        t__, s__, (pt_1, pt_2, pt_3), out_x, out_y
+        t__, s__, corner_points, out_x, out_y
     )
 
     return t__, s__
@@ -637,16 +634,17 @@ def _invalid_s_and_t_to_nan(t__, s__):
         (t__, s__))
 
 
-def _get_fractional_distances_irregular(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_irregular(corner_points, out_y, out_x):
     """Get parameters for the case where none of the sides are parallel."""
     # Get the valid roots from interval [0, 1]
     t__ = _solve_quadratic(
-        *_calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x),
+        *_calc_abc(corner_points, out_y, out_x),
         min_val=0., max_val=1.)
 
     # Calculate parameter s
-    s__ = _solve_another_fractional_distance(t__, pt_1[:, 1], pt_3[:, 1],
-                                             pt_2[:, 1], pt_4[:, 1], out_y)
+    pt_1, pt_2, pt_3, pt_4 = corner_points
+    y_corners = (pt_1[:, 1], pt_3[:, 1], pt_2[:, 1], pt_4[:, 1])
+    s__ = _solve_another_fractional_distance(t__, y_corners, out_y)
 
     return t__, s__
 
@@ -676,7 +674,7 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     return x__
 
 
-def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _calc_abc(corner_points, out_y, out_x):
     """Calculate coefficients for quadratic equation.
 
     In this order of arguments used for _get_fractional_distances_irregular() and
@@ -684,6 +682,7 @@ def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     pt_3.
 
     """
+    pt_1, pt_2, pt_3, pt_4 = corner_points
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
     x_31 = pt_3[:, 0] - pt_1[:, 0]
@@ -704,11 +703,13 @@ def _calc_abc(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
     return a__, b__, c__
 
 
-def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
+def _solve_another_fractional_distance(f__, y_corners, out_y):
     """Solve parameter t__ from s__, or vice versa.
 
     For solving s__, switch order of y_2 and y_3.
     """
+    y_1, y_2, y_3, y_4 = y_corners
+
     y_21 = y_2 - y_1
     y_43 = y_4 - y_3
 
@@ -723,31 +724,34 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
     return g__
 
 
-def _update_fractional_distances(func, t__, s__, points, out_x, out_y):
+def _update_fractional_distances(func, t__, s__, corner_points, out_x, out_y):
     idxs = np.ravel(np.isnan(t__) | np.isnan(s__))
     if np.any(idxs):
-        new_values = func(*points, out_y, out_x)
+        new_values = func(corner_points, out_y, out_x)
         updated_t_and_s = _np_where_for_multiple_arrays(idxs, new_values, (t__, s__))
         t__, s__ = _invalid_s_and_t_to_nan(*updated_t_and_s)
     return t__, s__
 
 
-def _get_fractional_distances_uprights_parallel(pt_1, pt_2, pt_3, pt_4, out_y, out_x):
+def _get_fractional_distances_uprights_parallel(corner_points, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
+    pt_1, pt_2, pt_3, pt_4 = corner_points
     # Get the valid roots from interval [0, 1]
+    corner_points = (pt_1, pt_3, pt_2, pt_4)
     s__ = _solve_quadratic(
-        *_calc_abc(pt_1, pt_3, pt_2, pt_4, out_y, out_x),
+        *_calc_abc(corner_points, out_y, out_x),
         min_val=0., max_val=1.)
 
     # Calculate parameter t
-    t__ = _solve_another_fractional_distance(s__, pt_1[:, 1], pt_2[:, 1],
-                                             pt_3[:, 1], pt_4[:, 1], out_y)
+    y_corners = (pt_1[:, 1], pt_2[:, 1], pt_3[:, 1], pt_4[:, 1])
+    t__ = _solve_another_fractional_distance(s__, y_corners, out_y)
 
     return t__, s__
 
 
-def _get_fractional_distances_parallellogram(pt_1, pt_2, pt_3, out_y, out_x):
+def _get_fractional_distances_parallellogram(points, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
+    pt_1, pt_2, pt_3 = points
     # Pairwise longitudal separations between reference points
     x_21 = pt_2[:, 0] - pt_1[:, 0]
     x_31 = pt_3[:, 0] - pt_1[:, 0]
@@ -896,8 +900,8 @@ def _slice3d(values, sl_x, sl_y, mask, fill_value):
     return arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
 
 
-def _resample(points, fractional_distances):
-    p_1, p_2, p_3, p_4 = points
+def _resample(corner_points, fractional_distances):
+    p_1, p_2, p_3, p_4 = corner_points
     s__, t__ = fractional_distances
     return (p_1 * (1 - s__) * (1 - t__) +
             p_2 * s__ * (1 - t__) +

@@ -126,14 +126,14 @@ class TestNumpyBilinear(unittest.TestCase):
         from pyresample.bilinear import _calc_abc
 
         # No np.nan inputs
-        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
-        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(self.pts_irregular, 0.0, 0.0)
         self.assertFalse(np.isnan(res[0]))
         self.assertFalse(np.isnan(res[1]))
         self.assertFalse(np.isnan(res[2]))
         # np.nan input -> np.nan output
-        res = _calc_abc(np.array([[np.nan, np.nan]]),
-                        pt_2, pt_3, pt_4, 0.0, 0.0)
+        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
+        corner_points = (np.array([[np.nan, np.nan]]), pt_2, pt_3, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
@@ -142,20 +142,10 @@ class TestNumpyBilinear(unittest.TestCase):
         """Test calculations for irregular corner locations."""
         from pyresample.bilinear import _get_fractional_distances_irregular
 
-        res = _get_fractional_distances_irregular(
-            self.pts_irregular[0],
-            self.pts_irregular[1],
-            self.pts_irregular[2],
-            self.pts_irregular[3],
-            0., 0.)
+        res = _get_fractional_distances_irregular(self.pts_irregular, 0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_fractional_distances_irregular(
-            self.pts_vert_parallel[0],
-            self.pts_vert_parallel[1],
-            self.pts_vert_parallel[2],
-            self.pts_vert_parallel[3],
-            0., 0.)
+        res = _get_fractional_distances_irregular(self.pts_vert_parallel, 0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
@@ -163,12 +153,7 @@ class TestNumpyBilinear(unittest.TestCase):
         """Test calculation when uprights are parallel."""
         from pyresample.bilinear import _get_fractional_distances_uprights_parallel
 
-        res = _get_fractional_distances_uprights_parallel(
-            self.pts_vert_parallel[0],
-            self.pts_vert_parallel[1],
-            self.pts_vert_parallel[2],
-            self.pts_vert_parallel[3],
-            0., 0.)
+        res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -176,11 +161,7 @@ class TestNumpyBilinear(unittest.TestCase):
         """Test calculation when the corners form a parallellogram."""
         from pyresample.bilinear import _get_fractional_distances_parallellogram
 
-        res = _get_fractional_distances_parallellogram(
-            self.pts_both_parallel[0],
-            self.pts_both_parallel[1],
-            self.pts_both_parallel[2],
-            0., 0.)
+        res = _get_fractional_distances_parallellogram(self.pts_both_parallel[:3], 0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -190,28 +171,13 @@ class TestNumpyBilinear(unittest.TestCase):
 
         out_x = np.array([[0.]])
         out_y = np.array([[0.]])
-        res = _get_fractional_distances(
-            self.pts_irregular[0],
-            self.pts_irregular[1],
-            self.pts_irregular[2],
-            self.pts_irregular[3],
-            out_x, out_y)
+        res = _get_fractional_distances(self.pts_irregular, out_x, out_y)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
-        res = _get_fractional_distances(
-            self.pts_both_parallel[0],
-            self.pts_both_parallel[1],
-            self.pts_both_parallel[2],
-            self.pts_both_parallel[3],
-            out_x, out_y)
+        res = _get_fractional_distances(self.pts_both_parallel, out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
-        res = _get_fractional_distances(
-            self.pts_vert_parallel[0],
-            self.pts_vert_parallel[1],
-            self.pts_vert_parallel[2],
-            self.pts_vert_parallel[3],
-            out_x, out_y)
+        res = _get_fractional_distances(self.pts_vert_parallel, out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -229,10 +195,12 @@ class TestNumpyBilinear(unittest.TestCase):
         pt_1, pt_2, pt_3, pt_4 = self.pts_vert_parallel
         pt_1 = self.pts_vert_parallel[0].copy()
         pt_1[0][0] += 1e-7
-        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        corner_points = (pt_1, pt_2, pt_3, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
-        res = _calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        corner_points = (pt_1, pt_3, pt_2, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
 
@@ -268,13 +236,20 @@ class TestNumpyBilinear(unittest.TestCase):
         out_x, out_y = _get_output_xy_masked(self.target_def, proj)
         in_x, in_y = _get_input_xy_masked(self.source_def, proj,
                                           self.input_idxs, self.idx_ref)
-        res = _get_four_closest_corners(in_x, in_y, out_x, out_y,
-                                        self._neighbours, self.idx_ref)
-        for i in range(len(res) - 1):
-            pt_ = res[i]
-            for j in range(2):
-                # Only the sixth output location has four valid corners
-                self.assertTrue(np.isfinite(pt_[5, j]))
+        (pt_1, pt_2, pt_3, pt_4), ia_ = _get_four_closest_corners(
+            in_x, in_y, out_x, out_y,
+            self._neighbours,
+            self.idx_ref)
+
+        self.assertTrue(pt_1.shape == pt_2.shape ==
+                        pt_3.shape == pt_4.shape ==
+                        (self.target_def.size, 2))
+        self.assertTrue(ia_.shape == (self.target_def.size, 4))
+
+        # Check which of the locations has four valid X/Y pairs by
+        # finding where there are non-NaN values
+        res = np.sum(pt_1 + pt_2 + pt_3 + pt_4, axis=1)
+        self.assertEqual(np.sum(~np.isnan(res)), 10)
 
     def test_get_bil_info(self):
         """Test calculation of bilinear resampling indices."""
@@ -322,11 +297,11 @@ class TestNumpyBilinear(unittest.TestCase):
         # Sample from data1
         res = get_sample_from_bil_info(self.data1.ravel(), t__, s__,
                                        input_idxs, idx_arr)
-        self.assertEqual(res[5], 1.)
+        self.assertEqual(res.ravel()[5], 1.)
         # Sample from data2
         res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                        input_idxs, idx_arr)
-        self.assertEqual(res[5], 2.)
+        self.assertEqual(res.ravel()[5], 2.)
         # Reshaping
         res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                        input_idxs, idx_arr,
@@ -774,7 +749,7 @@ class TestXarrayBilinear(unittest.TestCase):
         in_x, in_y = _get_input_xy(self.source_def, proj,
                                    self._valid_input_index,
                                    self._index_array)
-        pt_1, pt_2, pt_3, pt_4, ia_ = _get_four_closest_corners(
+        (pt_1, pt_2, pt_3, pt_4), ia_ = _get_four_closest_corners(
             in_x, in_y, out_x, out_y,
             self._neighbours,
             self._index_array)
@@ -836,7 +811,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_irr = da.array([0.1, 0.2, 0.3])
         s_irr = da.array([0.1, 0.2, 0.3])
         irregular.return_value = (t_irr, s_irr)
-        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances((1, 2, 3, 4), 5, 6)
         irregular.assert_called_once()
         uprights.assert_not_called()
         parallellogram.assert_not_called()
@@ -851,7 +826,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_upr = da.array([3, 3, 0.3])
         s_upr = da.array([3, 3, 0.3])
         uprights.return_value = (t_upr, s_upr)
-        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances((1, 2, 3, 4), 5, 6)
         self.assertEqual(irregular.call_count, 2)
         uprights.assert_called_once()
         parallellogram.assert_not_called()
@@ -872,7 +847,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = da.array([4, 0.2, 0.3])
         s_par = da.array([4, 0.2, 0.3])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances((1, 2, 3, 4), 5, 6)
         self.assertEqual(irregular.call_count, 3)
         self.assertEqual(uprights.call_count, 2)
         parallellogram.assert_called_once()
@@ -894,7 +869,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t_par = da.array([0.1, 0.2, 4.0])
         s_par = da.array([0.1, 0.2, 4.0])
         parallellogram.return_value = (t_par, s_par)
-        t__, s__ = _get_fractional_distances(1, 2, 3, 4, 5, 6)
+        t__, s__ = _get_fractional_distances((1, 2, 3, 4), 5, 6)
 
         t_res = da.array([0.1, 0.2, np.nan])
         s_res = da.array([0.1, 0.2, np.nan])
@@ -905,20 +880,11 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test calculations for irregular corner locations."""
         from pyresample.bilinear import _get_fractional_distances_irregular
 
-        res = _get_fractional_distances_irregular(
-            self.pts_irregular[0],
-            self.pts_irregular[1],
-            self.pts_irregular[2],
-            self.pts_irregular[3],
-            0., 0.)
+        res = _get_fractional_distances_irregular(self.pts_irregular, 0., 0.)
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
         res = _get_fractional_distances_irregular(
-            self.pts_vert_parallel[0],
-            self.pts_vert_parallel[1],
-            self.pts_vert_parallel[2],
-            self.pts_vert_parallel[3],
-            0., 0.)
+            self.pts_vert_parallel, 0., 0.)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
 
@@ -926,12 +892,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test calculation when uprights are parallel."""
         from pyresample.bilinear import _get_fractional_distances_uprights_parallel
 
-        res = _get_fractional_distances_uprights_parallel(
-            self.pts_vert_parallel[0],
-            self.pts_vert_parallel[1],
-            self.pts_vert_parallel[2],
-            self.pts_vert_parallel[3],
-            0., 0.)
+        res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -939,11 +900,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test calculation when the corners form a parallellogram."""
         from pyresample.bilinear import _get_fractional_distances_parallellogram
 
-        res = _get_fractional_distances_parallellogram(
-            self.pts_both_parallel[0],
-            self.pts_both_parallel[1],
-            self.pts_both_parallel[2],
-            0., 0.)
+        res = _get_fractional_distances_parallellogram(self.pts_both_parallel[:3], 0., 0.)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
 
@@ -952,14 +909,14 @@ class TestXarrayBilinear(unittest.TestCase):
         from pyresample.bilinear import _calc_abc
 
         # No np.nan inputs
-        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
-        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        res = _calc_abc(self.pts_irregular, 0.0, 0.0)
         self.assertFalse(np.isnan(res[0]))
         self.assertFalse(np.isnan(res[1]))
         self.assertFalse(np.isnan(res[2]))
         # np.nan input -> np.nan output
-        res = _calc_abc(np.array([[np.nan, np.nan]]),
-                        pt_2, pt_3, pt_4, 0.0, 0.0)
+        pt_1, pt_2, pt_3, pt_4 = self.pts_irregular
+        corner_points = (np.array([[np.nan, np.nan]]), pt_2, pt_3, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         self.assertTrue(np.isnan(res[0]))
         self.assertTrue(np.isnan(res[1]))
         self.assertTrue(np.isnan(res[2]))
@@ -981,10 +938,12 @@ class TestXarrayBilinear(unittest.TestCase):
         pt_1 = self.pts_vert_parallel[0].compute()
         pt_1[0][0] += 1e-7
         pt_1 = da.from_array(pt_1)
-        res = _calc_abc(pt_1, pt_2, pt_3, pt_4, 0.0, 0.0)
+        corner_points = (pt_1, pt_2, pt_3, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         res = _solve_quadratic(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
-        res = _calc_abc(pt_1, pt_3, pt_2, pt_4, 0.0, 0.0)
+        corner_points = (pt_1, pt_3, pt_2, pt_4)
+        res = _calc_abc(corner_points, 0.0, 0.0)
         res = _solve_quadratic(res[0], res[1], res[2]).compute()
         self.assertAlmostEqual(res[0], 0.5, 5)
 
