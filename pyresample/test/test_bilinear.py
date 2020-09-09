@@ -367,11 +367,12 @@ class TestNumpyBilinear(unittest.TestCase):
         # There should be 12 valid pixels
         self.assertEqual(self.target_def.size - res.mask.sum(), 12)
 
-        # Two stacked arrays
+        # Two stacked arrays, multiprocessing
         data = np.dstack((self.data1, self.data2))
         res = resample_bilinear(data,
                                 self.source_def,
-                                self.target_def)
+                                self.target_def,
+                                nprocs=2)
         shp = res.shape
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)

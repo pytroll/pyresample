@@ -77,6 +77,11 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
         Source data resampled to target geometry
 
     """
+    if nprocs > 1:
+        from pyresample._spatial_mp import cKDTree_MP as kdtree_class
+    else:
+        kdtree_class = KDTree
+
     # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
     warnings.warn(
         "Usage of resample_bilinear() is deprecated, please use NumpyResamplerBilinear class instead",
@@ -90,7 +95,7 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
         epsilon=epsilon,
         reduce_data=reduce_data
     )
-    resampler.get_bil_info()
+    resampler.get_bil_info(kdtree_class=kdtree_class, nprocs=nprocs)
     result = resampler.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
 
     return result
@@ -184,9 +189,6 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     reduce_data : bool, optional
         Perform initial coarse reduction of source dataset in order
         to reduce execution time
-    segments : int or None
-        Number of segments to use when resampling.
-        If set to None an estimate will be calculated
     epsilon : float, optional
         Allowed uncertainty in meters. Increasing uncertainty
         reduces execution time
@@ -203,6 +205,11 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         Mapping array from valid source points to target points
 
     """
+    if nprocs > 1:
+        from pyresample._spatial_mp import cKDTree_MP as kdtree_class
+    else:
+        kdtree_class = KDTree
+
     # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
     warnings.warn(
         "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
@@ -216,7 +223,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         epsilon=epsilon,
         reduce_data=reduce_data
     )
-    numpy_resampler.get_bil_info()
+    numpy_resampler.get_bil_info(kdtree_class=kdtree_class, nprocs=nprocs)
 
     return (
         numpy_resampler.bilinear_t,
@@ -362,13 +369,16 @@ class BilinearBase(object):
         self._target_lons = None
         self._target_lats = None
 
-    def get_bil_info(self):
+    def get_bil_info(self, kdtree_class=KDTree, nprocs=1):
         """Calculate bilinear neighbour info."""
         if self._source_geo_def.size < self._neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
                           (self._neighbours, self._source_geo_def.size))
 
-        self._get_valid_input_index_and_kdtree()
+        self._get_valid_input_index_and_kdtree(
+            kdtree_class=kdtree_class,
+            nprocs=nprocs
+        )
         if self._resample_kdtree is None:
             return
 
@@ -381,8 +391,11 @@ class BilinearBase(object):
         self._get_target_proj_vectors()
         self._get_slices()
 
-    def _get_valid_input_index_and_kdtree(self):
-        valid_input_index, resample_kdtree = self._create_resample_kdtree()
+    def _get_valid_input_index_and_kdtree(self, kdtree_class=KDTree, nprocs=1):
+        valid_input_index, resample_kdtree = self._create_resample_kdtree(
+            kdtree_class=kdtree_class,
+            nprocs=nprocs
+        )
 
         if resample_kdtree:
             self._valid_input_index = valid_input_index
@@ -464,12 +477,15 @@ class BilinearBase(object):
         )
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
-    def _create_resample_kdtree(self):
+    def _create_resample_kdtree(self, kdtree_class=KDTree, nprocs=1):
         """Set up kd tree on input."""
         valid_input_index, input_coords = self._get_valid_input_index_and_input_coords()
         kdtree = None
         if input_coords.size:
-            kdtree = KDTree(input_coords)
+            if nprocs > 1:
+                kdtree = kdtree_class(input_coords, nprocs=nprocs)
+            else:
+                kdtree = KDTree(input_coords)
         return valid_input_index, kdtree
 
     def _get_valid_input_index_and_input_coords(self):
