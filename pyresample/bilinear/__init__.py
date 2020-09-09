@@ -468,12 +468,13 @@ class BilinearBase(object):
         cols, lines = np.meshgrid(np.arange(shp[1]),
                                   np.arange(shp[0]))
 
+        valid_lines_and_columns = array_slice_for_multiple_arrays(
+            self._valid_input_index,
+            (np.ravel(lines), np.ravel(cols))
+        )
         self.slices_y, self.slices_x = array_slice_for_multiple_arrays(
             self._index_array,
-            array_slice_for_multiple_arrays(
-                self._valid_input_index,
-                (np.ravel(lines), np.ravel(cols))
-            )
+            valid_lines_and_columns
         )
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
