@@ -518,6 +518,14 @@ class BilinearBase(object):
     def _finalize_output_data(self, data, res, fill_value):
         return res
 
+    def save_bil_info(self, filename):
+        """Save bilinear resampling look-up tables."""
+        raise NotImplementedError
+
+    def load_bil_info(self, filename):
+        """Load bilinear resampling look-up tables and initialize the resampler."""
+        raise NotImplementedError
+
 
 def _check_fill_value(fill_value, dtype):
     """Check that fill value is usable for the data."""
