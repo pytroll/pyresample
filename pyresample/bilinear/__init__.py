@@ -151,7 +151,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
 
     try:
         with np.errstate(invalid='ignore'):
-            idxs = (result > data_max) | (result < data_min)
+            idxs = find_indices_outside_min_and_max(result, data_min, data_max)
         result[idxs] = np.nan
     except TypeError:
         pass
