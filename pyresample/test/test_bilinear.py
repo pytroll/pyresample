@@ -257,19 +257,19 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
-    def test_get_bounding_corners(self):
+    def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
         from pyresample.bilinear import (_get_output_xy_masked,
                                          _get_input_xy_masked,
-                                         _get_bounding_corners)
+                                         _get_four_closest_corners)
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = _get_output_xy_masked(self.target_def, proj)
         in_x, in_y = _get_input_xy_masked(self.source_def, proj,
                                           self.input_idxs, self.idx_ref)
-        res = _get_bounding_corners(in_x, in_y, out_x, out_y,
-                                    self._neighbours, self.idx_ref)
+        res = _get_four_closest_corners(in_x, in_y, out_x, out_y,
+                                        self._neighbours, self.idx_ref)
         for i in range(len(res) - 1):
             pt_ = res[i]
             for j in range(2):
@@ -759,11 +759,11 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(np.sum(np.isnan(lons)), 4)
         self.assertEqual(np.sum(np.isnan(lats)), 4)
 
-    def test_get_bounding_corners(self):
+    def test_get_four_closest_corners(self):
         """Test finding surrounding bounding corners."""
         import dask.array as da
         from pyresample.bilinear.xarr import _get_input_xy
-        from pyresample.bilinear import _get_bounding_corners
+        from pyresample.bilinear import _get_four_closest_corners
         from pyresample._spatial_mp import Proj
         from pyresample import CHUNK_SIZE
 
@@ -774,7 +774,7 @@ class TestXarrayBilinear(unittest.TestCase):
         in_x, in_y = _get_input_xy(self.source_def, proj,
                                    self._valid_input_index,
                                    self._index_array)
-        pt_1, pt_2, pt_3, pt_4, ia_ = _get_bounding_corners(
+        pt_1, pt_2, pt_3, pt_4, ia_ = _get_four_closest_corners(
             in_x, in_y, out_x, out_y,
             self._neighbours,
             self._index_array)

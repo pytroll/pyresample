@@ -443,9 +443,9 @@ class BilinearBase(object):
         out_x, out_y = self._get_output_xy()
         # Get the four closest corner points around each output location
         pt_1, pt_2, pt_3, pt_4, self._index_array = \
-            _get_bounding_corners(*self._get_input_xy(),
-                                  out_x, out_y,
-                                  self._neighbours, self._index_array)
+            _get_four_closest_corners(*self._get_input_xy(),
+                                      out_x, out_y,
+                                      self._neighbours, self._index_array)
         self.bilinear_t, self.bilinear_s = _get_fractional_distances(
             pt_1, pt_2, pt_3, pt_4, out_x, out_y)
 
@@ -588,7 +588,7 @@ def _get_raveled_lonlats(geo_def):
     return np.ravel(lons), np.ravel(lats)
 
 
-def _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
+def _get_four_closest_corners(in_x, in_y, out_x, out_y, neighbours, index_array):
     """Get bounding corners.
 
     Get four closest locations from (in_x, in_y) so that they form a
