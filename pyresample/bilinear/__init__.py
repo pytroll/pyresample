@@ -78,6 +78,11 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
         Source data resampled to target geometry
 
     """
+    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    warnings.warn(
+        "Usage of resample_bilinear() is deprecated, please use NumpyResamplerBilinear class instead",
+        UserWarning)
+
     resampler = NumpyResamplerBilinear(
         source_geo_def,
         target_area_def,
@@ -94,7 +99,6 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
     else:
         result[np.isnan(result)] = fill_value
 
-    # Remove extra dimensions
     result = np.squeeze(result)
 
     return result
@@ -126,6 +130,11 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
         Source data resampled to target geometry
 
     """
+    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    warnings.warn(
+        "Usage of get_sample_from_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
+        UserWarning)
+
     # Reduce data
     new_data = data[input_idxs]
     # Add a small "machine epsilon" so that tiny variations are not discarded
@@ -202,6 +211,11 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         Mapping array from valid source points to target points
 
     """
+    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    warnings.warn(
+        "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
+        UserWarning)
+
     # Check source_geo_def
     # if isinstance(source_geo_def, tuple):
     #     from pyresample.geometry import SwathDefinition
