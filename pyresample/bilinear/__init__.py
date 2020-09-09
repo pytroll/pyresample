@@ -726,14 +726,9 @@ def _solve_another_fractional_distance(f__, y_1, y_2, y_3, y_4, out_y):
 def _update_fractional_distances(func, t__, s__, points, out_x, out_y):
     idxs = np.ravel(np.isnan(t__) | np.isnan(s__))
     if np.any(idxs):
-        t__, s__ = _invalid_s_and_t_to_nan(
-            *_np_where_for_multiple_arrays(
-                idxs,
-                func(
-                    *points, out_y, out_x),
-                (t__, s__)
-            )
-        )
+        new_values = func(*points, out_y, out_x)
+        updated_t_and_s = _np_where_for_multiple_arrays(idxs, new_values, (t__, s__))
+        t__, s__ = _invalid_s_and_t_to_nan(*updated_t_and_s)
     return t__, s__
 
 
