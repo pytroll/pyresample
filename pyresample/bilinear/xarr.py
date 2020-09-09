@@ -174,15 +174,12 @@ def _get_output_xy(target_geo_def):
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
     """Get x/y coordinates for the input area and reduce the data."""
-    return proj(
-        *array_slice_for_multiple_arrays(
-            index_array,
-            array_slice_for_multiple_arrays(
-                valid_input_index,
-                da.compute(*mask_coordinates(*_get_raveled_lonlats(source_geo_def)))
-            )
-        )
-    )
+    input_xy_coordinates = da.compute(*mask_coordinates(*_get_raveled_lonlats(source_geo_def)))
+    valid_xy_coordinates = array_slice_for_multiple_arrays(valid_input_index, input_xy_coordinates)
+    # Expand input coordinates for each output location
+    expanded_coordinates = array_slice_for_multiple_arrays(index_array, valid_xy_coordinates)
+
+    return proj(*expanded_coordinates)
 
 
 def _get_raveled_lonlats(geo_def):
