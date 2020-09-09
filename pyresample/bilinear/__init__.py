@@ -35,7 +35,6 @@ from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
 import warnings
 
-from pyresample import kd_tree
 from pykdtree.kdtree import KDTree
 
 
@@ -209,51 +208,22 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
         UserWarning)
 
-    # Check source_geo_def
-    # if isinstance(source_geo_def, tuple):
-    #     from pyresample.geometry import SwathDefinition
-    #     lons, lats = _mask_coordinates(source_geo_def[0], source_geo_def[1])
-    #     source_geo_def = SwathDefinition(lons, lats)
+    numpy_resampler = NumpyResamplerBilinear(
+        source_geo_def,
+        target_area_def,
+        radius,
+        neighbours=neighbours,
+        epsilon=epsilon,
+        reduce_data=reduce_data
+    )
+    numpy_resampler.get_bil_info()
 
-    # Calculate neighbour information
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        (input_idxs, output_idxs, idx_ref, dists) = \
-            kd_tree.get_neighbour_info(source_geo_def, target_area_def,
-                                       radius, neighbours=neighbours,
-                                       nprocs=nprocs, reduce_data=reduce_data,
-                                       segments=segments, epsilon=epsilon)
-
-    del output_idxs, dists
-
-    # Reduce index reference
-    input_size = input_idxs.sum()
-    index_mask = (idx_ref == input_size)
-    idx_ref = np.where(index_mask, 0, idx_ref)
-
-    # Get output projection as pyproj object
-    proj = Proj(target_area_def.proj_str)
-
-    # Get output x/y coordinates
-    out_x, out_y = _get_output_xy_masked(target_area_def, proj)
-
-    # Get input x/y coordinates
-    in_x, in_y = _get_input_xy_masked(source_geo_def, proj, input_idxs, idx_ref)
-
-    # Get the four closest corner points around each output location
-    pt_1, pt_2, pt_3, pt_4, idx_ref = \
-        _get_bounding_corners(in_x, in_y, out_x, out_y, neighbours, idx_ref)
-
-    # Calculate vertical and horizontal fractional distances t and s
-    t__, s__ = _get_fractional_distances(pt_1, pt_2, pt_3, pt_4, out_x, out_y)
-
-    # Mask NaN values
-    if masked:
-        mask = np.isnan(t__) | np.isnan(s__)
-        t__ = np.ma.masked_where(mask, t__)
-        s__ = np.ma.masked_where(mask, s__)
-
-    return t__, s__, input_idxs, idx_ref
+    return (
+        numpy_resampler.bilinear_t,
+        numpy_resampler.bilinear_s,
+        numpy_resampler._valid_input_index,
+        numpy_resampler._index_array
+    )
 
 
 def _mask_coordinates(lons, lats):
