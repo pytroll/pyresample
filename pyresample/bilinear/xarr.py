@@ -136,13 +136,11 @@ class XArrayResamplerBilinear(BilinearBase):
         else:
             shp = (data.shape[0],) + self.bilinear_s.shape
 
+        slicer = get_slicer(data)
+
         return from_delayed(
             self._delayed_slice_data(
-                get_slicer(
-                    data),
-                data, fill_value),
-            shp
-        )
+                slicer, data, fill_value), shp)
 
     @delayed(nout=4)
     def _delayed_slice_data(self, slicer, data, fill_value):
