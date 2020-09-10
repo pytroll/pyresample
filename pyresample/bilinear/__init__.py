@@ -954,10 +954,12 @@ class NumpyResamplerBilinear(BilinearBase):
     def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
         if ndim == 3:
-            # Place the "channel" dimension last
-            res = np.reshape(res, (shp[0], shp[1], res.shape[0]))
+            res = np.reshape(res, (res.shape[0],) + shp)
+            # Place the "channel" dimension last for backwards compatibility
+            res = np.moveaxis(res, 0, -1)
         else:
             res = np.reshape(res, (shp[0], shp[1]))
+        res = np.squeeze(res)
 
         return res
 
