@@ -82,10 +82,10 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
     else:
         kdtree_class = KDTree
 
-    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of resample_bilinear() is deprecated, please use NumpyResamplerBilinear class instead",
-        UserWarning)
+        FutureWarning)
 
     resampler = NumpyResamplerBilinear(
         source_geo_def,
@@ -127,10 +127,10 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
         Source data resampled to target geometry
 
     """
-    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of get_sample_from_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
-        UserWarning)
+        FutureWarning)
 
     # Reduce data
     new_data = data[input_idxs]
@@ -207,10 +207,10 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     else:
         kdtree_class = KDTree
 
-    # Deprecation warning is suppressed outside __main__ by default, so use UserWarning
+    # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
-        UserWarning)
+        FutureWarning)
 
     numpy_resampler = NumpyResamplerBilinear(
         source_geo_def,
