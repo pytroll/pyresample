@@ -7,7 +7,8 @@ pyresample.image
 ----------------
 
 .. note::
-   The pyresample.image module is deprecated.  Please use `pyresample.kd_tree` or `pyresample.bilinear` instead.
+   The pyresample.image module is deprecated.  Please use `pyresample.kd_tree` or `pyresample.bilinear`
+   instead.
 
 A grid can be stored in an object of type **ImageContainer** along with its area definition.
 An object of type **ImageContainer** allows for calculating resampling using preprocessed arrays

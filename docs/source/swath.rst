@@ -331,9 +331,11 @@ NumpyResamplerBilinear
 resample_bilinear
 *****************
 
-Convenience function for resampling using bilinear interpolation for irregular source grids.  Note that
-use of this function is deprecated, please use the **bilinear.NumpyResamplerBilinear** or
-**bilinear.XArrayResamplerBilinear** classes shown above directly depending on the input data format.
+Convenience function for resampling using bilinear interpolation for irregular source grids.
+
+..note:
+  The use of this function is deprecated. Depending on the input data format, please use directly
+  the **bilinear.NumpyResamplerBilinear** or **bilinear.XArrayResamplerBilinear** classes shown above.
 
 .. doctest::
 
@@ -384,8 +386,9 @@ The example above shows the default value for each keyword argument.
 Resampling from bilinear coefficients
 *************************************
 
-Note that this usage is deprecated, please use the **bilinear.NumpyResamplerBilinear** or
-**bilinear.XArrayResamplerBilinear** classes directly depending on the input data format.
+..note:
+  This usage is deprecated, please use the **bilinear.NumpyResamplerBilinear** or
+  **bilinear.XArrayResamplerBilinear** classes directly depending on the input data format.
 
 As for nearest neighbour resampling, also bilinear interpolation can
 be split in two steps.
