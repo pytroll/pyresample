@@ -1013,6 +1013,36 @@ class TestXarrayBilinear(unittest.TestCase):
         vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
         self.assertTrue(np.allclose(res.compute()[0, :], vals))
 
+    def test_save_and_load_bil_info(self):
+        """Test saving and loading the resampling info."""
+        import os
+        import shutil
+        from tempfile import mkdtemp
+        from pyresample.bilinear.xarr import XArrayResamplerBilinear, CACHE_INDICES
+
+        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        try:
+            tempdir = mkdtemp()
+            filename = os.path.join(tempdir, "test.zarr")
+
+            resampler.save_bil_info(filename)
+
+            assert os.path.exists(filename)
+
+            new_resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+                                                    self.radius)
+            new_resampler.load_bil_info(filename)
+
+            for attr in CACHE_INDICES:
+                orig = getattr(resampler, attr)
+                reloaded = getattr(new_resampler, attr).compute()
+                np.testing.assert_array_equal(orig, reloaded)
+        finally:
+            shutil.rmtree(tempdir, ignore_errors=True)
+
 
 def test_check_fill_value():
     """Test that fill_value replacement/adjustment works."""

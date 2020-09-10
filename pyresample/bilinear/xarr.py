@@ -24,14 +24,11 @@
 
 """XArray version of bilinear interpolation."""
 
-try:
-    from xarray import DataArray
-    import dask.array as da
-    from dask import delayed
-except ImportError:
-    DataArray = None
-    da = None
+from xarray import DataArray, Dataset
+import dask.array as da
+from dask import delayed
 import numpy as np
+import zarr
 
 from pyresample._spatial_mp import Proj
 from pyresample import CHUNK_SIZE
@@ -54,6 +51,14 @@ CACHE_INDICES = ['bilinear_s',
                  'mask_slices',
                  'out_coords_x',
                  'out_coords_y']
+
+BIL_COORDINATES = {'bilinear_s': ('x1', ),
+                   'bilinear_t': ('x1', ),
+                   'slices_x': ('x1', 'n'),
+                   'slices_y': ('x1', 'n'),
+                   'mask_slices': ('x1', 'n'),
+                   'out_coords_x': ('x2', ),
+                   'out_coords_y': ('y2', )}
 
 
 class XArrayResamplerBilinear(BilinearBase):
@@ -162,6 +167,28 @@ class XArrayResamplerBilinear(BilinearBase):
         input_coords = input_coords[valid_input_index, :].astype(np.float)
 
         return da.compute(valid_input_index, input_coords)
+
+    def save_bil_info(self, filename):
+        """Save bilinear resampling look-up tables."""
+        zarr_out = Dataset()
+        for idx_name, coord in BIL_COORDINATES.items():
+            var = getattr(self, idx_name)
+            if isinstance(var, np.ndarray):
+                var = da.from_array(var, chunks=CHUNK_SIZE)
+            else:
+                var = var.rechunk(CHUNK_SIZE)
+            zarr_out[idx_name] = (coord, var)
+        zarr_out.to_zarr(filename)
+
+    def load_bil_info(self, filename):
+        """Load bilinear resampling look-up tables and initialize the resampler."""
+        try:
+            fid = zarr.open(filename, 'r')
+            for val in BIL_COORDINATES.keys():
+                cache = da.array(fid[val])
+                setattr(self, val, cache)
+        except ValueError:
+            raise IOError
 
 
 def _get_output_xy(target_geo_def):
