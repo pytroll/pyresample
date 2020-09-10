@@ -736,7 +736,7 @@ def _update_fractional_distances(func, t__, s__, corner_points, out_x, out_y):
 def _get_fractional_distances_uprights_parallel(corner_points, out_y, out_x):
     """Get parameters for the case where uprights are parallel."""
     pt_1, pt_2, pt_3, pt_4 = corner_points
-    # Get the valid roots from interval [0, 1]
+    # Get the valid roots from interval [0, 1]. Note the different order needed here.
     corner_points = (pt_1, pt_3, pt_2, pt_4)
     s__ = _solve_quadratic(
         *_calc_abc(corner_points, out_y, out_x),
