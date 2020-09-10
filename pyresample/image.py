@@ -382,13 +382,7 @@ class ImageContainerBilinear(ImageContainer):
         image_container : object
             ImageContainerBilinear object of resampled geometry
         """
-
-        if self.image_data.ndim > 2 and self.ndim > 1:
-            image_data = self.image_data.reshape(self.image_data.shape[0] *
-                                                 self.image_data.shape[1],
-                                                 self.image_data.shape[2])
-        else:
-            image_data = self.image_data.ravel()
+        image_data = self.image_data
 
         try:
             mask = image_data.mask.copy()
