@@ -18,6 +18,7 @@
 """Handles resampling of images with assigned geometry definitions"""
 
 from __future__ import absolute_import
+import warnings
 
 import numpy as np
 
@@ -55,6 +56,11 @@ class ImageContainer(object):
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
+        """Initialize ImageContainer."""
+        warnings.warn(
+            "Usage of ImageContainer is deprecated, please use NumpyResamplerBilinear class instead",
+            FutureWarning)
+
         if type(geo_def).__name__ == "DynamicAreaDefinition":
             geo_def = geo_def.freeze()
         if not isinstance(image_data, (np.ndarray, np.ma.core.MaskedArray)):
