@@ -168,7 +168,7 @@ class XArrayResamplerBilinear(BilinearBase):
 
         return da.compute(valid_input_index, input_coords)
 
-    def save_bil_info(self, filename):
+    def save_resampling_info(self, filename):
         """Save bilinear resampling look-up tables."""
         zarr_out = Dataset()
         for idx_name, coord in BIL_COORDINATES.items():
@@ -180,7 +180,7 @@ class XArrayResamplerBilinear(BilinearBase):
             zarr_out[idx_name] = (coord, var)
         zarr_out.to_zarr(filename)
 
-    def load_bil_info(self, filename):
+    def load_resampling_info(self, filename):
         """Load bilinear resampling look-up tables and initialize the resampler."""
         try:
             fid = zarr.open(filename, 'r')
