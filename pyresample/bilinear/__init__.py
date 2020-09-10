@@ -438,11 +438,11 @@ class BilinearBase(object):
     def _finalize_output_data(self, data, res, fill_value):
         raise NotImplementedError
 
-    def save_bil_info(self, filename):
+    def save_resampling_info(self, filename):
         """Save bilinear resampling look-up tables."""
         raise NotImplementedError
 
-    def load_bil_info(self, filename):
+    def load_resampling_info(self, filename):
         """Load bilinear resampling look-up tables and initialize the resampler."""
         raise NotImplementedError
 

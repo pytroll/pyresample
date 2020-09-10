@@ -1028,13 +1028,13 @@ class TestXarrayBilinear(unittest.TestCase):
             tempdir = mkdtemp()
             filename = os.path.join(tempdir, "test.zarr")
 
-            resampler.save_bil_info(filename)
+            resampler.save_resampling_info(filename)
 
             assert os.path.exists(filename)
 
             new_resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                                     self.radius)
-            new_resampler.load_bil_info(filename)
+            new_resampler.load_resampling_info(filename)
 
             for attr in CACHE_INDICES:
                 orig = getattr(resampler, attr)
