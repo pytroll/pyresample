@@ -402,13 +402,6 @@ class ImageContainerBilinear(ImageContainer):
                                        nprocs=self.nprocs,
                                        reduce_data=self.reduce_data,
                                        segments=self.segments)
-        try:
-            resampled_image = resampled_image.reshape(target_geo_def.shape)
-        except ValueError:
-            # The input data was 3D
-            shp = target_geo_def.shape
-            new_shp = [shp[0], shp[1], image_data.shape[-1]]
-            resampled_image = resampled_image.reshape(new_shp)
 
         return ImageContainerBilinear(resampled_image, target_geo_def,
                                       self.radius_of_influence,
