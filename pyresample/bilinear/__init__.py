@@ -230,74 +230,6 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     )
 
 
-def _mask_coordinates(lons, lats):
-    """Mask invalid coordinate values."""
-    lons = lons.ravel()
-    lats = lats.ravel()
-    idxs = ((lons < -180.) | (lons > 180.) |
-            (lats < -90.) | (lats > 90.))
-    if hasattr(lons, 'mask'):
-        lons = np.ma.masked_where(idxs | lons.mask, lons)
-    else:
-        lons[idxs] = np.nan
-    if hasattr(lats, 'mask'):
-        lats = np.ma.masked_where(idxs | lats.mask, lats)
-    else:
-        lats[idxs] = np.nan
-
-    return lons, lats
-
-
-def _get_output_xy_masked(target_area_def, proj):
-    """Get x/y coordinates of the target grid."""
-    # Read output coordinates
-    out_lons, out_lats = target_area_def.get_lonlats()
-
-    # Replace masked arrays with np.nan'd ndarrays
-    out_lons = _convert_masks_to_nans(out_lons)
-    out_lats = _convert_masks_to_nans(out_lats)
-
-    # Mask invalid coordinates
-    out_lons, out_lats = _mask_coordinates(out_lons, out_lats)
-
-    # Convert coordinates to output projection x/y space
-    out_x, out_y = proj(out_lons, out_lats)
-
-    return out_x, out_y
-
-
-def _get_input_xy_masked(source_geo_def, proj, input_idxs, idx_ref):
-    """Get x/y coordinates for the input area and reduce the data."""
-    in_lons, in_lats = source_geo_def.get_lonlats()
-
-    # Select valid locations
-    in_lons = in_lons.ravel()[input_idxs]
-    in_lats = in_lats.ravel()[input_idxs]
-    in_lons, in_lats = _mask_coordinates(in_lons, in_lats)
-
-    # Expand input coordinates for each output location
-    in_lons = in_lons[idx_ref]
-    in_lats = in_lats[idx_ref]
-
-    # Replace masked arrays with np.nan'd ndarrays
-    in_lons = _convert_masks_to_nans(in_lons)
-    in_lats = _convert_masks_to_nans(in_lats)
-
-    # Convert coordinates to output projection x/y space
-    in_x, in_y = proj(in_lons, in_lats)
-
-    return in_x, in_y
-
-
-def _convert_masks_to_nans(arr):
-    """Remove masked array masks and replace corresponding values with nans."""
-    if hasattr(arr, 'mask'):
-        mask = arr.mask
-        arr = arr.data
-        arr[mask] = np.nan
-    return arr
-
-
 def _check_data_shape(data, input_idxs):
     """Check data shape and adjust if necessary."""
     # Handle multiple datasets
@@ -511,10 +443,10 @@ class BilinearBase(object):
         return self._finalize_output_data(data, res, fill_value)
 
     def _slice_data(self, data, fill_value):
-        return get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
+        raise NotImplementedError
 
     def _finalize_output_data(self, data, res, fill_value):
-        return res
+        raise NotImplementedError
 
     def save_bil_info(self, filename):
         """Save bilinear resampling look-up tables."""

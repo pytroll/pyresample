@@ -204,38 +204,28 @@ class TestNumpyBilinear(unittest.TestCase):
         res = _solve_quadratic(res[0], res[1], res[2])
         self.assertAlmostEqual(res[0], 0.5, 5)
 
-    def test_get_output_xy_masked(self):
-        """Test calculation of output xy-coordinates."""
-        from pyresample.bilinear import _get_output_xy_masked
-        from pyresample._spatial_mp import Proj
-
-        proj = Proj(self.target_def.proj_str)
-        out_x, out_y = _get_output_xy_masked(self.target_def, proj)
-        self.assertTrue(out_x.all())
-        self.assertTrue(out_y.all())
-
-    def test_get_input_xy_masked(self):
+    def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample.bilinear import _get_input_xy_masked
+        from pyresample.bilinear import _get_input_xy
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        in_x, in_y = _get_input_xy_masked(self.source_def, proj,
-                                          self.input_idxs, self.idx_ref)
+        in_x, in_y = _get_input_xy(self.source_def, proj,
+                                   self.input_idxs, self.idx_ref)
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear import (_get_output_xy_masked,
-                                         _get_input_xy_masked,
+        from pyresample.bilinear import (_get_output_xy,
+                                         _get_input_xy,
                                          _get_four_closest_corners)
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
-        out_x, out_y = _get_output_xy_masked(self.target_def, proj)
-        in_x, in_y = _get_input_xy_masked(self.source_def, proj,
-                                          self.input_idxs, self.idx_ref)
+        out_x, out_y = _get_output_xy(self.target_def)
+        in_x, in_y = _get_input_xy(self.source_def, proj,
+                                   self.input_idxs, self.idx_ref)
         (pt_1, pt_2, pt_3, pt_4), ia_ = _get_four_closest_corners(
             in_x, in_y, out_x, out_y,
             self._neighbours,
@@ -282,7 +272,7 @@ class TestNumpyBilinear(unittest.TestCase):
         t__, s__, _, _ = get_bil_info(self.source_def,
                                       self.target_def,
                                       50e5, neighbours=32,
-                                      nprocs=1,
+                                      nprocs=2,
                                       reduce_data=True)
         _check_ts(t__, s__)
 
@@ -720,19 +710,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(in_y.shape, (self.target_def.size, 32))
         self.assertTrue(in_x.all())
         self.assertTrue(in_y.all())
-
-    def test_mask_coordinates(self):
-        """Test masking of invalid coordinates."""
-        import dask.array as da
-        from pyresample.bilinear import mask_coordinates
-
-        lons, lats = mask_coordinates(
-            da.from_array([-200., 0., 0., 0., 200.]),
-            da.from_array([0., -100., 0, 100., 0.]))
-        lons, lats = da.compute(lons, lats)
-        self.assertTrue(lons[2] == lats[2] == 0.0)
-        self.assertEqual(np.sum(np.isnan(lons)), 4)
-        self.assertEqual(np.sum(np.isnan(lats)), 4)
 
     def test_get_four_closest_corners(self):
         """Test finding surrounding bounding corners."""
