@@ -465,8 +465,8 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertIsNone(resampler.out_coords_x)
         self.assertIsNone(resampler.out_coords_y)
         # self._out_coords_{x,y} are used in self._out_coords dict
-        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
-        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
+        self.assertTrue(np.all(resampler._out_coords['x'] == resampler.out_coords_x))
+        self.assertTrue(np.all(resampler._out_coords['y'] == resampler.out_coords_y))
 
         # Override defaults
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
@@ -504,7 +504,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t__ = resampler.bilinear_t
         s__ = resampler.bilinear_s
         mask_slices = resampler.mask_slices
-        _check_ts(t__.compute(), s__.compute(), [3, 10, 12, 13, 14, 15])
+        _check_ts(t__, s__, [3, 10, 12, 13, 14, 15])
 
         # Nothing should be masked based on coordinates
         self.assertTrue(np.all(~mask_slices))
@@ -533,7 +533,7 @@ class TestXarrayBilinear(unittest.TestCase):
         t__ = resampler.bilinear_t
         s__ = resampler.bilinear_s
         mask_slices = resampler.mask_slices
-        _check_ts(t__.compute(), s__.compute(), [10, 12, 13, 14, 15])
+        _check_ts(t__, s__, [10, 12, 13, 14, 15])
 
         # Target area and source data do not overlap
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def_outside,
@@ -584,8 +584,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
         # Output coordinates should have been set
         self.assertTrue(isinstance(resampler._out_coords, dict))
-        self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
-        self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
+        self.assertTrue(np.all(resampler._out_coords['x'] == resampler.out_coords_x))
+        self.assertTrue(np.all(resampler._out_coords['y'] == resampler.out_coords_y))
 
         # 3D data
         data = da.moveaxis(da.dstack((self.data1, self.data1)), -1, 0)
