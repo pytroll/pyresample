@@ -187,7 +187,7 @@ def _get_raveled_lonlats(geo_def):
     elif lons.size != lats.size or lons.shape != lats.shape:
         raise ValueError('Mismatch between lons and lats')
 
-    return da.ravel(lons), np.ravel(lats)
+    return da.ravel(lons), da.ravel(lats)
 
 
 def _get_valid_input_index(source_geo_def,
