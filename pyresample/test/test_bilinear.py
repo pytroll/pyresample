@@ -307,6 +307,12 @@ class TestNumpyBilinear(unittest.TestCase):
         # Four pixels are outside of the data
         self.assertEqual(np.isnan(res).sum(), 4)
 
+        # Masked array as input, result should be plain Numpy array
+        data = np.ma.masked_all(self.data1.shape)
+        res = get_sample_from_bil_info(data.ravel(), t__, s__,
+                                       input_idxs, idx_arr)
+        assert not hasattr(res, 'mask')
+
     def test_resample_bilinear(self):
         """Test whole bilinear resampling."""
         from pyresample.bilinear import resample_bilinear
@@ -341,6 +347,21 @@ class TestNumpyBilinear(unittest.TestCase):
         shp = res.shape
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
+
+    def test_create_empty_bil_info(self):
+        """Test creation of empty bilinear info."""
+        from pyresample.bilinear import NumpyResamplerBilinear
+
+        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+                                           self.radius)
+
+        resampler._create_empty_bil_info()
+        self.assertEqual(resampler.bilinear_t.shape, (self.target_def.size,))
+        self.assertEqual(resampler.bilinear_s.shape, (self.target_def.size,))
+        self.assertEqual(resampler._index_array.shape, (self.target_def.size, 4))
+        self.assertTrue(resampler._index_array.dtype == np.int32)
+        self.assertEqual(resampler._valid_input_index.shape, (self.source_def.size,))
+        self.assertTrue(resampler._valid_input_index.dtype == np.bool)
 
 
 class TestXarrayBilinear(unittest.TestCase):
