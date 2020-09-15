@@ -118,8 +118,7 @@ class XArrayResamplerBilinear(BilinearBase):
 
     def _add_x_and_y_coordinates(self):
         if self._out_coords['x'] is None and self.out_coords_x is not None:
-            self._out_coords['x'] = self.out_coords_x
-            self._out_coords['y'] = self.out_coords_y
+            self._out_coords['x'], self._out_coords['y'] = da.compute(self.out_coords_x, self.out_coords_y)
 
     def _adjust_bands_coordinates_to_match_data(self, data_coords):
         if 'bands' in data_coords:
@@ -167,7 +166,7 @@ class XArrayResamplerBilinear(BilinearBase):
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
-    return np.ravel(out_x),  np.ravel(out_y)
+    return da.compute(np.ravel(out_x),  np.ravel(out_y))
 
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
