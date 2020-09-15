@@ -528,6 +528,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_sample_from_bil_info(self):
         """Test bilinear interpolation as a whole."""
+        import dask.array as da
+        from xarray import DataArray
         from pyresample.bilinear.xarr import XArrayResamplerBilinear
 
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
@@ -563,6 +565,13 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(isinstance(resampler._out_coords, dict))
         self.assertTrue(resampler._out_coords['x'] is resampler.out_coords_x)
         self.assertTrue(resampler._out_coords['y'] is resampler.out_coords_y)
+
+        # 3D data
+        data = da.moveaxis(da.dstack((self.data1, self.data1)), -1, 0)
+        data = DataArray(data, dims=('bands', 'y', 'x'))
+        res = resampler.get_sample_from_bil_info(data)
+        assert res.shape == (2,) + self.target_def.shape
+        assert res.dims == data.dims
 
     def test_add_missing_coordinates(self):
         """Test coordinate updating."""
