@@ -333,7 +333,8 @@ resample_bilinear
 
 Convenience function for resampling using bilinear interpolation for irregular source grids.
 
-..note:
+.. note::
+
   The use of this function is deprecated. Depending on the input data format, please use directly
   the **bilinear.NumpyResamplerBilinear** or **bilinear.XArrayResamplerBilinear** classes shown above.
 
