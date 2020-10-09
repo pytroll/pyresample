@@ -273,7 +273,7 @@ XArrayResamplerBilinear
 ***********************
 
 **bilinear.XArrayResamplerBilinear** is a class that handles bilinear interpolation for data in
-`xarray.DataArray` arrays.  The parallelisation is done automatically using `dask`.
+`xarray.DataArray` arrays.  The parallelization is done automatically using `dask`.
 
 .. doctest::
 
