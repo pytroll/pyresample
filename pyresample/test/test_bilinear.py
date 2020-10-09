@@ -102,7 +102,6 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertTrue(resampler._reduce_data)
         # These should be None
         self.assertIsNone(resampler._valid_input_index)
-        self.assertIsNone(resampler._valid_output_index)
         self.assertIsNone(resampler._index_array)
         self.assertIsNone(resampler._distance_array)
         self.assertIsNone(resampler.bilinear_t)
@@ -454,7 +453,6 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(resampler._reduce_data)
         # These should be None
         self.assertIsNone(resampler._valid_input_index)
-        self.assertIsNone(resampler._valid_output_index)
         self.assertIsNone(resampler._index_array)
         self.assertIsNone(resampler._distance_array)
         self.assertIsNone(resampler.bilinear_t)
@@ -514,7 +512,6 @@ class TestXarrayBilinear(unittest.TestCase):
         # Also some other attributes should have been set
         self.assertTrue(t__ is resampler.bilinear_t)
         self.assertTrue(s__ is resampler.bilinear_s)
-        self.assertIsNotNone(resampler._valid_output_index)
         self.assertIsNotNone(resampler._index_array)
         self.assertIsNotNone(resampler._valid_input_index)
         self.assertIsNotNone(resampler.out_coords_x)
@@ -710,21 +707,23 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(vii.size, self.source_def.size)
         KDTree.assert_called_once()
 
+    @mock.patch('pyresample.bilinear.BilinearBase._reduce_index_array')
     @mock.patch('pyresample.bilinear.query_no_distance')
-    def test_query_resample_kdtree(self, qnd):
-        """Test that query_no_distance is called in _query_resample_kdtree()."""
+    def test_get_index_array(self, qnd, ria):
+        """Test that query_no_distance is called in __get_index_array()."""
         from pyresample.bilinear.xarr import XArrayResamplerBilinear
 
+        qnd.return_value = 'foo'
         resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
                                             self.radius)
         resampler._target_lons = 1
         resampler._target_lats = 2
-        resampler._valid_output_index = 3
-        resampler._resample_kdtree = 4
-        res, none = resampler._query_resample_kdtree(reduce_data=5)
-        qnd.assert_called_with(1, 2, 3, 4, resampler._neighbours,
+        resampler._resample_kdtree = 3
+        resampler._get_index_array()
+        qnd.assert_called_with(1, 2, True, 3, resampler._neighbours,
                                resampler._epsilon,
                                resampler._radius_of_influence)
+        ria.assert_called_with(qnd.return_value)
 
     def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
