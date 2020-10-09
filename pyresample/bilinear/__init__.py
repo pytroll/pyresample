@@ -285,7 +285,6 @@ class BilinearBase(object):
 
         self._out_coords = {'x': self.out_coords_x, 'y': self.out_coords_y}
         self._valid_input_index = None
-        self._valid_output_index = None
         self._index_array = None
         self._distance_array = None
         self._neighbours = neighbours
@@ -312,7 +311,6 @@ class BilinearBase(object):
             return
 
         self._get_target_lonlats()
-        self._get_valid_output_indices()
         self._get_index_array()
 
         # Calculate vertical and horizontal fractional distances t and s
@@ -347,8 +345,8 @@ class BilinearBase(object):
         self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
 
     def _get_valid_output_indices(self):
-        self._valid_output_index = ((self._target_lons >= -180) & (self._target_lons <= 180) &
-                                    (self._target_lats <= 90) & (self._target_lats >= -90))
+        return ((self._target_lons >= -180) & (self._target_lons <= 180) &
+                (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
         index_array, _ = self._query_resample_kdtree()
@@ -358,7 +356,7 @@ class BilinearBase(object):
                                reduce_data=True):
         """Query kd-tree on slice of target coordinates."""
         res = query_no_distance(self._target_lons, self._target_lats,
-                                self._valid_output_index, self._resample_kdtree,
+                                self._get_valid_output_indices(), self._resample_kdtree,
                                 self._neighbours, self._epsilon,
                                 self._radius_of_influence)
         return res, None
