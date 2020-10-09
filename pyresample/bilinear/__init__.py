@@ -868,10 +868,8 @@ class NumpyResamplerBilinear(BilinearBase):
         return res
 
     def _finalize_output_data(self, data, res, fill_value):
-        return _apply_fill_value_or_mask_data(
-            self._reshape_to_target_area(res, data.ndim),
-            fill_value
-        )
+        reshaped_res = self._reshape_to_target_area(res, data.ndim)
+        return _apply_fill_value_or_mask_data(reshaped_res, fill_value)
 
     def _reshape_to_target_area(self, res, ndim):
         shp = self._target_geo_def.shape
