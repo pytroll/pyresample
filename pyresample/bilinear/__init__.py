@@ -310,7 +310,7 @@ class BilinearBase(object):
         if self._resample_kdtree is None:
             return
 
-        self._get_target_lonlats()
+        self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
         self._get_index_array()
 
         # Calculate vertical and horizontal fractional distances t and s
@@ -340,9 +340,6 @@ class BilinearBase(object):
         self.slices_y = np.zeros((self._target_geo_def.size, 4), dtype=np.int32)
         self.out_coords_x, self.out_coords_y = self._target_geo_def.get_proj_vectors()
         self.mask_slices = self._index_array >= self._source_geo_def.size
-
-    def _get_target_lonlats(self):
-        self._target_lons, self._target_lats = self._target_geo_def.get_lonlats()
 
     def _get_valid_output_indices(self):
         return ((self._target_lons >= -180) & (self._target_lons <= 180) &
