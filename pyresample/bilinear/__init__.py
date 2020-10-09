@@ -346,17 +346,12 @@ class BilinearBase(object):
                 (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
-        index_array, _ = self._query_resample_kdtree()
+        index_array = query_no_distance(
+            self._target_lons, self._target_lats,
+            self._get_valid_output_indices(), self._resample_kdtree,
+            self._neighbours, self._epsilon,
+            self._radius_of_influence)
         self._index_array = self._reduce_index_array(index_array)
-
-    def _query_resample_kdtree(self,
-                               reduce_data=True):
-        """Query kd-tree on slice of target coordinates."""
-        res = query_no_distance(self._target_lons, self._target_lats,
-                                self._get_valid_output_indices(), self._resample_kdtree,
-                                self._neighbours, self._epsilon,
-                                self._radius_of_influence)
-        return res, None
 
     def _reduce_index_array(self, index_array):
         input_size = np.sum(self._valid_input_index)
