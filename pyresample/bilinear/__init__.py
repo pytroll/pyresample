@@ -805,7 +805,7 @@ def get_slicer(data):
     elif data.ndim == 3:
         return _slice3d
     else:
-        raise ValueError
+        raise ValueError("Only 2D and 3D arrays are supported")
 
 
 def _slice2d(values, sl_x, sl_y, mask, fill_value):
