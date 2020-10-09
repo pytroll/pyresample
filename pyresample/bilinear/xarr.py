@@ -61,7 +61,7 @@ BIL_COORDINATES = {'bilinear_s': ('x1', ),
                    'out_coords_y': ('y2', )}
 
 
-class XArrayResamplerBilinear(BilinearBase):
+class XArrayBilinearResampler(BilinearBase):
     """Bilinear interpolation using XArray."""
 
     def _create_empty_bil_info(self):

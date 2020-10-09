@@ -87,7 +87,7 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
         "Usage of resample_bilinear() is deprecated, please use NumpyResamplerBilinear class instead",
         FutureWarning)
 
-    resampler = NumpyResamplerBilinear(
+    resampler = NumpyBilinearResampler(
         source_geo_def,
         target_area_def,
         radius,
@@ -212,7 +212,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
         "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
         FutureWarning)
 
-    numpy_resampler = NumpyResamplerBilinear(
+    numpy_resampler = NumpyBilinearResampler(
         source_geo_def,
         target_area_def,
         radius,
@@ -847,7 +847,7 @@ def query_no_distance(target_lons, target_lats,
     return index_array
 
 
-class NumpyResamplerBilinear(BilinearBase):
+class NumpyBilinearResampler(BilinearBase):
     """Bilinear interpolation using Numpy."""
 
     def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):

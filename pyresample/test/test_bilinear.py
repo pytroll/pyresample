@@ -90,9 +90,9 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
-        from pyresample.bilinear import NumpyResamplerBilinear
+        from pyresample.bilinear import NumpyBilinearResampler
 
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius)
         self.assertTrue(resampler._source_geo_def == self.source_def)
         self.assertTrue(resampler._target_geo_def == self.target_def)
@@ -113,7 +113,7 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertIsNone(resampler.out_coords_y)
 
         # Override defaults
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius, neighbours=16,
                                            epsilon=0.1, reduce_data=False)
         self.assertEqual(resampler._neighbours, 16)
@@ -349,9 +349,9 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
-        from pyresample.bilinear import NumpyResamplerBilinear
+        from pyresample.bilinear import NumpyBilinearResampler
 
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius)
 
         resampler._create_empty_bil_info()
@@ -440,10 +440,10 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
         # With defaults
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         self.assertTrue(resampler._source_geo_def == self.source_def)
         self.assertTrue(resampler._target_geo_def == self.target_def)
@@ -467,7 +467,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(resampler._out_coords['y'] == resampler.out_coords_y))
 
         # Override defaults
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, neighbours=16,
                                             epsilon=0.1, reduce_data=False)
         self.assertEqual(resampler._neighbours, 16)
@@ -476,7 +476,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_bil_info(self):
         """Test calculation of bilinear info."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
         def _check_ts(t__, s__, nans):
             for i, _ in enumerate(t__):
@@ -496,7 +496,7 @@ class TestXarrayBilinear(unittest.TestCase):
                     self.assertTrue(s__[i] <= 1.0)
 
         # Data reduction enabled (default)
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, reduce_data=True)
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
@@ -524,7 +524,7 @@ class TestXarrayBilinear(unittest.TestCase):
             [1190031.36,  590031.36,   -9968.64, -609968.64]))
 
         # Data reduction disabled
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, reduce_data=False)
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
@@ -533,7 +533,7 @@ class TestXarrayBilinear(unittest.TestCase):
         _check_ts(t__, s__, [10, 12, 13, 14, 15])
 
         # Target area and source data do not overlap
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def_outside,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def_outside,
                                             self.radius, reduce_data=False)
         resampler.get_bil_info()
         self.assertEqual(resampler.bilinear_t.shape, (self.target_def_outside.size,))
@@ -548,9 +548,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test bilinear interpolation as a whole."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler.get_bil_info()
 
@@ -595,9 +595,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test coordinate updating."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         bands = ['R', 'G', 'B']
         data = DataArray(da.ones((3, 10, 10)), dims=('bands', 'y', 'x'),
@@ -624,9 +624,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test slicing the data."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler.get_bil_info()
 
@@ -664,11 +664,11 @@ class TestXarrayBilinear(unittest.TestCase):
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
         """Test slice array creation."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
         meshgrid.return_value = (self.cols, self.lines)
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler._valid_input_index = self._valid_input_index
         resampler._index_array = self._index_array
@@ -697,9 +697,9 @@ class TestXarrayBilinear(unittest.TestCase):
     @mock.patch('pyresample.bilinear.KDTree')
     def test_create_resample_kdtree(self, KDTree):
         """Test that KDTree creation is called."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
 
         vii, kdtree = resampler._create_resample_kdtree()
@@ -711,10 +711,10 @@ class TestXarrayBilinear(unittest.TestCase):
     @mock.patch('pyresample.bilinear.query_no_distance')
     def test_get_index_array(self, qnd, ria):
         """Test that query_no_distance is called in __get_index_array()."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
         qnd.return_value = 'foo'
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler._target_lons = 1
         resampler._target_lats = 2
@@ -989,9 +989,9 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
 
         resampler._create_empty_bil_info()
@@ -1018,9 +1018,9 @@ class TestXarrayBilinear(unittest.TestCase):
         import os
         import shutil
         from tempfile import mkdtemp
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear, CACHE_INDICES
+        from pyresample.bilinear.xarr import XArrayBilinearResampler, CACHE_INDICES
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler.get_bil_info()
 
@@ -1032,7 +1032,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
             assert os.path.exists(filename)
 
-            new_resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+            new_resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                                     self.radius)
             new_resampler.load_resampling_info(filename)
 
