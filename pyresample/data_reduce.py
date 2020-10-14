@@ -241,15 +241,14 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
 
     # Coarse reduction of data based on extrema analysis of the boundary
     # lon lat values of the target grid
-    illegal_lons = (((lons_side1 < -180) | (lons_side1 > 180)).any() or
-                    ((lons_side2 < -180) | (lons_side2 > 180)).any() or
-                    ((lons_side3 < -180) | (lons_side3 > 180)).any() or
-                    ((lons_side4 < -180) | (lons_side4 > 180)).any())
-
-    illegal_lats = (((lats_side1 < -90) | (lats_side1 > 90)).any() or
-                    ((lats_side2 < -90) | (lats_side2 > 90)).any() or
-                    ((lats_side3 < -90) | (lats_side3 > 90)).any() or
-                    ((lats_side4 < -90) | (lats_side4 > 90)).any())
+    illegal_lons = not (np.isfinite(lons_side1).all() and
+                        np.isfinite(lons_side2).all() and
+                        np.isfinite(lons_side3).all() and
+                        np.isfinite(lons_side4).all())
+    illegal_lats = not (np.isfinite(lats_side1).any() and
+                        np.isfinite(lats_side2).any() and
+                        np.isfinite(lats_side3).any() and
+                        np.isfinite(lats_side4).any())
 
     if illegal_lons or illegal_lats:
         # Grid boundaries are not safe to operate on
