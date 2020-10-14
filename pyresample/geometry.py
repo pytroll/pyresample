@@ -1016,6 +1016,23 @@ def invproj(data_x, data_y, proj_dict):
     return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
+def inf2nan(arr):
+    """Replace +/- infinity values with NaN.
+
+    Preserves the original data type.
+    """
+    if hasattr(arr, 'chunks'):
+        import dask.array as da
+        res = da.where(da.isfinite(arr), arr, np.nan)
+    else:
+        res = np.where(np.isfinite(arr), arr, np.nan)
+
+    # np.where(cond, arr, np.nan) converts to float64 if arr is of
+    # integer data type. Even if cond is always True and no value
+    # has been replaced.
+    return res.astype(arr.dtype)
+
+
 class AreaDefinition(BaseDefinition):
     """Holds definition of an area.
 
@@ -1958,6 +1975,7 @@ class AreaDefinition(BaseDefinition):
             res = map_blocks(invproj, target_x, target_y,
                              chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                              new_axis=[2], proj_dict=proj_def).astype(dtype)
+            res = inf2nan(res)
             return res[:, :, 0], res[:, :, 1]
 
         if nprocs > 1:
@@ -1967,8 +1985,8 @@ class AreaDefinition(BaseDefinition):
 
         # Get corresponding longitude and latitude values
         lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
-        lons = np.asanyarray(lons, dtype=dtype)
-        lats = np.asanyarray(lats, dtype=dtype)
+        lons = inf2nan(np.asanyarray(lons, dtype=dtype))
+        lats = inf2nan(np.asanyarray(lats, dtype=dtype))
 
         if cache and data_slice is None:
             # Cache the result if requested

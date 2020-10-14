@@ -1401,6 +1401,34 @@ class Test(unittest.TestCase):
         self.assertEqual(lon.dtype, np.dtype("f8"))
         self.assertIsInstance(lon, dask_array)
 
+    def test_get_lonlats_space(self):
+        """Test coordinates of space pixels in the geos projection."""
+        import pyresample.geometry
+
+        geos = pyresample.geometry.AreaDefinition(
+            area_id='geos',
+            description='geos',
+            proj_id='geos',
+            projection={'proj': 'geos', 'h': 35785831., 'a': 6378169., 'b': 6356583.8},
+            width=4, height=4,
+            area_extent=[-5570248.686685662, -5567248.28340708, 5567248.28340708,
+                         5570248.686685662])
+
+        # Center of the four edge pixels is in space and therefore we expect the
+        # coordinates to be NaN.
+        edges = ((0, 0, 3, 3), (0, 3, 0, 3))
+
+        # With numpy arrays
+        lons, lats = geos.get_lonlats(dtype=np.float32)
+        np.testing.assert_equal(lons[edges], np.nan)
+        np.testing.assert_equal(lats[edges], np.nan)
+
+        # With dask arrays
+        lons, lats = geos.get_lonlats(dtype=np.float32, chunks=2)
+        lons, lats = lons.compute(), lats.compute()
+        np.testing.assert_equal(lons[edges], np.nan)
+        np.testing.assert_equal(lats[edges], np.nan)
+
     def test_area_def_geocentric_resolution(self):
         """Test the AreaDefinition.geocentric_resolution method."""
         from pyresample import get_area_def
