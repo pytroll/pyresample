@@ -18,6 +18,7 @@
 """Handles resampling of images with assigned geometry definitions"""
 
 from __future__ import absolute_import
+import warnings
 
 import numpy as np
 
@@ -55,6 +56,11 @@ class ImageContainer(object):
     """
 
     def __init__(self, image_data, geo_def, fill_value=0, nprocs=1):
+        """Initialize ImageContainer."""
+        warnings.warn(
+            "Usage of ImageContainer is deprecated, please use NumpyResamplerBilinear class instead",
+            FutureWarning)
+
         if type(geo_def).__name__ == "DynamicAreaDefinition":
             geo_def = geo_def.freeze()
         if not isinstance(image_data, (np.ndarray, np.ma.core.MaskedArray)):
@@ -376,13 +382,7 @@ class ImageContainerBilinear(ImageContainer):
         image_container : object
             ImageContainerBilinear object of resampled geometry
         """
-
-        if self.image_data.ndim > 2 and self.ndim > 1:
-            image_data = self.image_data.reshape(self.image_data.shape[0] *
-                                                 self.image_data.shape[1],
-                                                 self.image_data.shape[2])
-        else:
-            image_data = self.image_data.ravel()
+        image_data = self.image_data
 
         try:
             mask = image_data.mask.copy()
@@ -402,13 +402,6 @@ class ImageContainerBilinear(ImageContainer):
                                        nprocs=self.nprocs,
                                        reduce_data=self.reduce_data,
                                        segments=self.segments)
-        try:
-            resampled_image = resampled_image.reshape(target_geo_def.shape)
-        except ValueError:
-            # The input data was 3D
-            shp = target_geo_def.shape
-            new_shp = [shp[0], shp[1], image_data.shape[-1]]
-            resampled_image = resampled_image.reshape(new_shp)
 
         return ImageContainerBilinear(resampled_image, target_geo_def,
                                       self.radius_of_influence,
