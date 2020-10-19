@@ -1,1 +1,3 @@
 git+https://github.com/pytroll/pykdtree.git@pre-master
+xarray
+dask
