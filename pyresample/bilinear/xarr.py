@@ -32,7 +32,7 @@ import zarr
 
 from pyresample._spatial_mp import Proj
 from pyresample import CHUNK_SIZE
-from pyresample.bilinear import (
+from pyresample.bilinear._base import (
     BilinearBase,
     array_slice_for_multiple_arrays,
     find_indices_outside_min_and_max,

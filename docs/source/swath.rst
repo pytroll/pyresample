@@ -278,7 +278,7 @@ XArrayBilinearResampler
 >>> import numpy as np
 >>> import dask.array as da
 >>> from xarray import DataArray
->>> from pyresample.bilinear.xarr import XArrayBilinearResampler
+>>> from pyresample.bilinear import XArrayBilinearResampler
 >>> from pyresample import geometry
 >>> target_def = geometry.AreaDefinition('areaD',
 ...                                      'Europe (3km, HRV, VTC)',
