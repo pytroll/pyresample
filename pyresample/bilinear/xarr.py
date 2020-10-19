@@ -64,6 +64,12 @@ BIL_COORDINATES = {'bilinear_s': ('x1', ),
 class XArrayBilinearResampler(BilinearBase):
     """Bilinear interpolation using XArray."""
 
+    def resample(self, data, fill_value=None, nprocs=1):
+        """Resample the given data."""
+        del nprocs
+        self.get_bil_info()
+        return self.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
+
     def _create_empty_bil_info(self):
         """Create dummy info for empty result set."""
         self._valid_input_index = da.ones(self._source_geo_def.size, dtype=np.bool)

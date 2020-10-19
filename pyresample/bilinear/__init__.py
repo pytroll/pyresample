@@ -297,6 +297,10 @@ class BilinearBase(object):
         self._target_lons = None
         self._target_lats = None
 
+    def resample(self, data, fill_value=None, nprocs=1):
+        """Resample the given data."""
+        raise NotImplementedError
+
     def get_bil_info(self, kdtree_class=KDTree, nprocs=1):
         """Calculate bilinear neighbour info."""
         if self._source_geo_def.size < self._neighbours:
@@ -849,6 +853,15 @@ def query_no_distance(target_lons, target_lats,
 
 class NumpyBilinearResampler(BilinearBase):
     """Bilinear interpolation using Numpy."""
+
+    def resample(self, data, fill_value=0, nprocs=1):
+        """Resample the given data."""
+        if nprocs > 1:
+            from pyresample._spatial_mp import cKDTree_MP as kdtree_class
+        else:
+            kdtree_class = KDTree
+        self.get_bil_info(kdtree_class=kdtree_class, nprocs=nprocs)
+        return self.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
 
     def get_sample_from_bil_info(self, data, fill_value=None, output_shape=None):
         """Resample using pre-computed resampling LUTs."""

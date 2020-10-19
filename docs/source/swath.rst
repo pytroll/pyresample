@@ -275,8 +275,6 @@ XArrayBilinearResampler
 **bilinear.XArrayBilinearResampler** is a class that handles bilinear interpolation for data in
 `xarray.DataArray` arrays.  The parallelization is done automatically using `dask`.
 
-.. doctest::
-
 >>> import dask.array as da
 >>> from xarray import DataArray
 >>> from pyresample.bilinear.xarr import XArrayBilinearResampler
@@ -295,17 +293,24 @@ XArrayBilinearResampler
 >>> lats = da.from_array(np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100)))
 >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
 >>> resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
->>> resampler.get_bil_info()
->>> result = resampler.get_sample_from_bil_info(data)
+>>> result = resampler.resample(data)
 
+The resampling info can be saved for later reuse and much faster processinf for a matching area. The
+data are saved to a ZARR arcive, so `zarr` Python package needs to be installed.
+
+>>> import os
+>>> from tempfile import gettempdir
+>>> cache_file = os.path.join(gettempdir(), "bilinear_resampling_luts.zarr")
+>>> resampler.save_resampling_info(cache_file)
+>>> new_resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
+>>> new_resampler.load_resampling_info(cache_file)
+>>> result = new_resampler.resample(data)
 
 NumpyBilinearResampler
 **********************
 
 **bilinear.NumpyBilinearResampler** is a plain Numpy version of **XArrayBilinearResampler**.  If
 `fill_value` isn't given to `get_sample_from_bil_info()`, a masked array will be returned.
-
-.. doctest::
 
 >>> from pyresample.bilinear import NumpyBilinearResampler
 >>> from pyresample import geometry
@@ -323,8 +328,7 @@ NumpyBilinearResampler
 >>> lats = np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100))
 >>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
 >>> resampler = NumpyBilinearResampler(source_def, target_def, 30e3)
->>> resampler.get_bil_info()
->>> result = resampler.get_sample_from_bil_info(data)
+>>> result = resampler.resample(data)
 
 
 
@@ -336,7 +340,8 @@ Convenience function for resampling using bilinear interpolation for irregular s
 .. note::
 
   The use of this function is deprecated. Depending on the input data format, please use directly
-  the **bilinear.NumpyBilinearResampler** or **bilinear.XArrayBilinearResampler** classes shown above.
+  the **bilinear.NumpyBilinearResampler** or **bilinear.XArrayBilinearResampler** classes and their
+  **.resample()** method shown above.
 
 .. doctest::
 

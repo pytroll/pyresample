@@ -347,6 +347,36 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
 
+    def test_class_resample_method(self):
+        """Test the 'resampler.resample()' method."""
+        from pyresample.bilinear import NumpyBilinearResampler
+
+        resampler = NumpyBilinearResampler(self.source_def,
+                                           self.target_def,
+                                           50e5,
+                                           neighbours=32,
+                                           epsilon=0)
+
+        # Single array, no fill value
+        res = resampler.resample(self.data1)
+        self.assertEqual(res.shape, self.target_def.shape)
+        # There are 12 pixels with value 1, all others are zero
+        self.assertEqual(res.sum(), 12)
+        self.assertEqual((res == 0).sum(), 4)
+
+        # Single array with masked output
+        res = resampler.resample(self.data1, fill_value=None)
+        self.assertTrue(hasattr(res, 'mask'))
+        # There should be 12 valid pixels
+        self.assertEqual(self.target_def.size - res.mask.sum(), 12)
+
+        # Two stacked arrays, multiprocessing
+        data = np.dstack((self.data1, self.data2))
+        res = resampler.resample(data, nprocs=2)
+        shp = res.shape
+        self.assertEqual(shp[0:2], self.target_def.shape)
+        self.assertEqual(shp[-1], 2)
+
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
         from pyresample.bilinear import NumpyBilinearResampler
@@ -1012,6 +1042,30 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res.shape, (self.target_def.size, 3))
         vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
         self.assertTrue(np.allclose(res.compute()[0, :], vals))
+
+    def test_class_resample_method(self):
+        """Test the 'resampler.resample()' method."""
+        from pyresample.bilinear.xarr import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def,
+                                            self.target_def,
+                                            50e5,
+                                            neighbours=32,
+                                            epsilon=0)
+
+        # Single array, no fill value
+        res = resampler.resample(self.data1)
+        self.assertEqual(res.shape, self.target_def.shape)
+        # There are 12 pixels with value 1, all others are NaN
+        res = res.compute()
+        self.assertEqual(np.nansum(res), 12)
+        self.assertEqual(np.isnan(res).sum(), 4)
+
+        # Single array with fill value
+        res = resampler.resample(self.data1, fill_value=0)
+        res = res.compute()
+        self.assertEqual(np.sum(res), 12)
+        self.assertEqual((res == 0).sum(), 4)
 
     def test_save_and_load_bil_info(self):
         """Test saving and loading the resampling info."""
