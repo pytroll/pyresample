@@ -275,6 +275,7 @@ XArrayBilinearResampler
 **bilinear.XArrayBilinearResampler** is a class that handles bilinear interpolation for data in
 `xarray.DataArray` arrays.  The parallelization is done automatically using `dask`.
 
+>>> import numpy as np
 >>> import dask.array as da
 >>> from xarray import DataArray
 >>> from pyresample.bilinear.xarr import XArrayBilinearResampler
@@ -312,6 +313,7 @@ NumpyBilinearResampler
 **bilinear.NumpyBilinearResampler** is a plain Numpy version of **XArrayBilinearResampler**.  If
 `fill_value` isn't given to `get_sample_from_bil_info()`, a masked array will be returned.
 
+>>> import numpy as np
 >>> from pyresample.bilinear import NumpyBilinearResampler
 >>> from pyresample import geometry
 >>> target_def = geometry.AreaDefinition('areaD',
