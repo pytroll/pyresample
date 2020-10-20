@@ -36,7 +36,13 @@ from ._numpy_resampler import (  # noqa: F401
     get_bil_info,
     NumpyBilinearResampler,
 )
-from .xarr import (  # noqa: F401
-    XArrayBilinearResampler,
-    CACHE_INDICES,
-)
+try:
+    from .xarr import (  # noqa: F401
+        XArrayBilinearResampler,
+        CACHE_INDICES,
+    )
+except ImportError:
+    import warnings
+    warnings.warn("XArray and/or zarr not found, XArrayBilinearResampler won't be available.")
+    XArrayBilinearResampler = None
+    CACHE_INDICES = None
