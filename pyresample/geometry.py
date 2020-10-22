@@ -2457,7 +2457,7 @@ def area_enclosure(*areas, area_id="joint-area"):
     """
 
     first = None
-    if len(areas) == 0:
+    if not areas:
         raise TypeError("Must pass at least one area, found zero.")
     for area in areas:
         if first is None:
