@@ -2,12 +2,7 @@
 # -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2016
-#
-# Authors:
-#    Esben S. Nielsen
-#    Thomas Lavergne
-#    Adam Dybbroe
+# Copyright (C) 2010-2020 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -24,6 +19,7 @@
 """Test the geometry objects."""
 import random
 import sys
+import pytest
 
 import numpy as np
 
@@ -2385,3 +2381,56 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         self.assertEqual(res.shape[0], area.shape[0] / 2)
         self.assertEqual(res.shape[1], area.shape[1] / 4)
+
+
+def test_area_enclosure():
+    from pyresample.geometry import (area_enclosure, create_area_def)
+    proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
+                 'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
+                 'no_defs': None, 'type': 'crs'}
+    proj_dict_alt = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0,
+                     'units': 'm'}
+
+    ar1 = create_area_def(
+            "test-area",
+            projection=proj_dict,
+            units="m",
+            area_extent=[0, 20, 100, 120],
+            shape=(10, 10))
+
+    ar2 = create_area_def(
+            "test-area",
+            projection=proj_dict,
+            units="m",
+            area_extent=[20, 40, 120, 140],
+            shape=(10, 10))
+
+    ar3 = create_area_def(
+            "test-area",
+            projection=proj_dict,
+            units="m",
+            area_extent=[20, 0, 120, 100],
+            shape=(10, 10))
+
+    ar4 = create_area_def(
+            "test-area",
+            projection=proj_dict_alt,
+            units="m",
+            area_extent=[20, 0, 120, 100],
+            shape=(10, 10))
+
+    ar5 = create_area_def(
+            "test-area",
+            projection=proj_dict,
+            units="m",
+            area_extent=[-50, -50, 50, 50],
+            shape=(100, 100))
+
+    ar_joined = area_enclosure(ar1, ar2, ar3)
+    np.testing.assert_allclose(ar_joined.area_extent, [0, 0, 120, 140])
+    with pytest.raises(ValueError):
+        area_enclosure(ar3, ar4)
+    with pytest.raises(ValueError):
+        area_enclosure(ar3, ar5)
+    with pytest.raises(TypeError):
+        area_enclosure()

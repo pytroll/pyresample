@@ -2,12 +2,7 @@
 # -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2016
-#
-# Authors:
-#    Esben S. Nielsen
-#    Thomas Lavergne
-#    Adam Dybbroe
+# Copyright (C) 2010-2020 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -2443,3 +2438,44 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
 
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
+
+
+def area_enclosure(*areas, area_id="joint-area"):
+    """Return the smallest areadefinition enclosing one or more others.
+
+    From one or more AreaDefinition objects (most usefully at least
+    two), which shall differ only in extent, calculate the smallest
+    AreaDefinition that encloses all.  Touches only the ``area_extent``;
+    projection and units must be identical in all input areas and will be
+    unchanged in the resulting area.  When the input areas :math:`i=1..n`
+    have extent :math:`(a_i, b_i, c_i, d_i)`, the resulting area will have
+    extent :math:`(\\min_i{a_i}, \\min_i{b_i}, \\max_i{c_i}, \\max_i{d_i})`.
+
+    Args:
+        *areas (AreaDefinition): AreaDefinition objects to enclose.
+        area_id (Optional[str]): Name of joint area, defaults to "joint-area".
+    """
+
+    first = None
+    if len(areas) == 0:
+        raise TypeError("Must pass at least one area, found zero.")
+    for area in areas:
+        if first is None:
+            first = area
+            largest_extent = list(area.area_extent)
+        else:
+            if not area.proj_dict == first.proj_dict:
+                raise ValueError("Inconsistent projections between areas")
+            if not np.isclose(area.resolution, first.resolution).all():
+                raise ValueError("Inconsistent resolution between areas")
+            largest_extent[0] = min(largest_extent[0], area.area_extent[0])
+            largest_extent[1] = min(largest_extent[1], area.area_extent[1])
+            largest_extent[2] = max(largest_extent[2], area.area_extent[2])
+            largest_extent[3] = max(largest_extent[3], area.area_extent[3])
+
+    return create_area_def(
+            area_id=area_id,
+            projection=first.proj_dict,
+            units=first.proj_dict["units"],
+            area_extent=largest_extent,
+            resolution=first.resolution)
