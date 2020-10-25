@@ -1545,8 +1545,15 @@ class AreaDefinition(BaseDefinition):
         crs = from_proj(proj_params, bounds=bounds)
         return crs
 
-    def create_areas_def(self):
-        """Generate YAML formatted representation of this area."""
+    def dump(self, file=None):
+        """Generate YAML formatted representation of this area.
+        
+        Args:
+            file (str or pathlib.Path or file-like object): Yaml file location to dump the area to.
+
+        Returns:
+            If file is None returns yaml str
+        """
         if hasattr(self, 'crs') and self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
@@ -1564,7 +1571,16 @@ class AreaDefinition(BaseDefinition):
             extent['units'] = units
         res['area_extent'] = extent
 
-        return ordered_dump(OrderedDict([(self.area_id, res)]))
+        yml_str = ordered_dump(OrderedDict([(self.area_id, res)]), default_flow_style=None)
+
+        if file is not None:
+            if hasattr(file, 'write'):
+                file.write(yml_str)
+            elif isinstance(file, str) or isinstance(file, Path):
+                with open(file, 'a') as fh:
+                    fh.write(yml_str)
+        else:
+            return yml_str
 
     def create_areas_def_legacy(self):
         """Create area definition in legacy format."""
