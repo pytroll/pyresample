@@ -1550,14 +1550,14 @@ class AreaDefinition(BaseDefinition):
         """Generate YAML formatted representation of this area."""
         warnings.warn("""'create_areas_def' is deprecated. Please use `dump` instead, which also
                       supports writing directly to a file.""", DeprecationWarning)
-        
+ 
         return self.dump()
 
-    def dump(self, file=None):
+    def dump(self, filename=None):
         """Generate YAML formatted representation of this area.
-        
+ 
         Args:
-            file (str or pathlib.Path or file-like object): Yaml file location to dump the area to.
+            filename (str or pathlib.Path or file-like object): Yaml file location to dump the area to.
 
         Returns:
             If file is None returns yaml str
@@ -1581,11 +1581,11 @@ class AreaDefinition(BaseDefinition):
 
         yml_str = ordered_dump(OrderedDict([(self.area_id, res)]), default_flow_style=None)
 
-        if file is not None:
+        if filename is not None:
             if hasattr(file, 'write'):
-                file.write(yml_str)
-            elif isinstance(file, (str, pathlib.Path)):
-                with open(file, 'a') as fh:
+                filename.write(yml_str)
+            elif isinstance(filename, (str, pathlib.Path)):
+                with open(filename, 'a') as fh:
                     fh.write(yml_str)
         else:
             return yml_str
