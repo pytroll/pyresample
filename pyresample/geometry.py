@@ -1548,8 +1548,8 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area."""
-        warnings.warn("""'create_areas_def' is deprecated. Please use `dump` instead, which also
-                      supports writing directly to a file.""", DeprecationWarning)
+        warnings.warn("'create_areas_def' is deprecated. Please use `dump` instead, which also "
+                      "supports writing directly to a file.", DeprecationWarning)
  
         return self.dump()
 
