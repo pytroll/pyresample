@@ -28,6 +28,7 @@ import hashlib
 import warnings
 from collections import OrderedDict
 from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -1583,7 +1584,7 @@ class AreaDefinition(BaseDefinition):
         if file is not None:
             if hasattr(file, 'write'):
                 file.write(yml_str)
-            elif isinstance(file, str) or isinstance(file, Path):
+            elif isinstance(file, (str, pathlib.Path)):
                 with open(file, 'a') as fh:
                     fh.write(yml_str)
         else:
