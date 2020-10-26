@@ -1582,7 +1582,7 @@ class AreaDefinition(BaseDefinition):
         yml_str = ordered_dump(OrderedDict([(self.area_id, res)]), default_flow_style=None)
 
         if filename is not None:
-            if hasattr(file, 'write'):
+            if hasattr(filename, 'write'):
                 filename.write(yml_str)
             elif isinstance(filename, (str, pathlib.Path)):
                 with open(filename, 'a') as fh:
