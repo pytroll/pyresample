@@ -230,7 +230,9 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     return (
         numpy_resampler.bilinear_t,
         numpy_resampler.bilinear_s,
+        #  deepcode ignore W0212: Legacy access
         numpy_resampler._valid_input_index,
+        #  deepcode ignore W0212: Legacy access
         numpy_resampler._index_array
     )
 

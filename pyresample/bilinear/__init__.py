@@ -29,6 +29,7 @@ The algorithm is taken from
 http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf
 
 """
+# file deepcode ignore W0611: sub-package imports
 
 import warnings
 

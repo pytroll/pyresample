@@ -30,12 +30,13 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 
 """
 
-import numpy as np
-from pyresample._spatial_mp import Proj
-from pyresample import data_reduce, geometry
 import warnings
 
+import numpy as np
 from pykdtree.kdtree import KDTree
+
+from pyresample._spatial_mp import Proj
+from pyresample import data_reduce, geometry
 
 
 class BilinearBase(object):
