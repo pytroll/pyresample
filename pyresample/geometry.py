@@ -1584,7 +1584,7 @@ class AreaDefinition(BaseDefinition):
         if filename is not None:
             if hasattr(filename, 'write'):
                 filename.write(yml_str)
-            elif isinstance(filename, (str, pathlib.Path)):
+            elif isinstance(filename, (str, Path)):
                 with open(filename, 'a') as fh:
                     fh.write(yml_str)
         else:
