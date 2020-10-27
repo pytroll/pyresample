@@ -30,6 +30,8 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 
 """
 
+import warnings
+
 from ._numpy_resampler import (  # noqa: F401
     resample_bilinear,
     get_sample_from_bil_info,
@@ -42,7 +44,40 @@ try:
         CACHE_INDICES,
     )
 except ImportError:
-    import warnings
     warnings.warn("XArray and/or zarr not found, XArrayBilinearResampler won't be available.")
     XArrayBilinearResampler = None
     CACHE_INDICES = None
+
+
+class XArrayResamplerBilinear(XArrayBilinearResampler):
+    """Wrapper for the old resampler class."""
+
+    def __init__(self, source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 **kwargs):
+        """Initialize resampler."""
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+
+        super(XArrayResamplerBilinear, self).__init__(
+            source_geo_def,
+            target_geo_def,
+            radius_of_influence,
+            **kwargs)
+
+
+class NumpyResamplerBilinear(NumpyBilinearResampler):
+    """Wrapper for the old resampler class."""
+
+    def __init__(self, source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 **kwargs):
+        """Initialize resampler."""
+        warnings.warn("Use of NumpyResamplerBilinear is deprecated, use NumpyBilinearResampler instead")
+
+        super(NumpyResamplerBilinear, self).__init__(
+            source_geo_def,
+            target_geo_def,
+            radius_of_influence,
+            **kwargs)
