@@ -162,9 +162,6 @@ class Test(unittest.TestCase):
                                               area_extent=(-180, -90, 180, 90)).to_cartopy_crs()
         self.assertTrue(np.allclose(latlong_crs.bounds, [-np.pi, np.pi, -np.pi/2, np.pi/2]))
 
-    def test_create_reas_def():
-        """Test exporting area def to yml."""
-
     def test_dump(self):
         """Test exporting area defs."""
         from pyresample import utils
