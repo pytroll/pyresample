@@ -24,6 +24,8 @@
 
 """XArray version of bilinear interpolation."""
 
+import warnings
+
 from xarray import DataArray, Dataset
 import dask.array as da
 from dask import delayed
@@ -238,3 +240,20 @@ def _get_valid_input_index(source_geo_def,
             target_geo_def, source_lons, source_lats, radius_of_influence)
 
     return valid_input_index, source_lons, source_lats
+
+
+class XArrayResamplerBilinear(XArrayBilinearResampler):
+    """Wrapper for the old resampler class."""
+
+    def __init__(self, source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 **kwargs):
+        """Initialize resampler."""
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+
+        super(XArrayResamplerBilinear, self).__init__(
+            source_geo_def,
+            target_geo_def,
+            radius_of_influence,
+            **kwargs)

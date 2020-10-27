@@ -304,3 +304,20 @@ def _check_data_shape(data, input_idxs):
         data = np.expand_dims(data, 1)
 
     return data
+
+
+class NumpyResamplerBilinear(NumpyBilinearResampler):
+    """Wrapper for the old resampler class."""
+
+    def __init__(self, source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 **kwargs):
+        """Initialize resampler."""
+        warnings.warn("Use of NumpyResamplerBilinear is deprecated, use NumpyBilinearResampler instead")
+
+        super(NumpyResamplerBilinear, self).__init__(
+            source_geo_def,
+            target_geo_def,
+            radius_of_influence,
+            **kwargs)
