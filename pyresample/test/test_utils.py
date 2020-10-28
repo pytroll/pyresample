@@ -523,8 +523,8 @@ class TestMisc(unittest.TestCase):
         source = tmptiff(crs=crs)
         area_def = utils.rasterio.get_area_def_from_raster(source)
         epsg3857_names = (
-            'WGS_1984_Web_Mercator_Auxiliary_Sphere', # gdal>=3.0 + proj>=6.0
-            'WGS 84 / Pseudo-Mercator',               # proj<6.0
+            'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
+            'WGS 84 / Pseudo-Mercator',                # proj<6.0
         )
         self.assertIn(area_def.proj_id, epsg3857_names)
 
