@@ -24,18 +24,17 @@
 
 """XArray version of bilinear interpolation."""
 
-try:
-    from xarray import DataArray
-    import dask.array as da
-    from dask import delayed
-except ImportError:
-    DataArray = None
-    da = None
+import warnings
+
+from xarray import DataArray, Dataset
+import dask.array as da
+from dask import delayed
 import numpy as np
+import zarr
 
 from pyresample._spatial_mp import Proj
 from pyresample import CHUNK_SIZE
-from pyresample.bilinear import (
+from pyresample.bilinear._base import (
     BilinearBase,
     array_slice_for_multiple_arrays,
     find_indices_outside_min_and_max,
@@ -55,9 +54,23 @@ CACHE_INDICES = ['bilinear_s',
                  'out_coords_x',
                  'out_coords_y']
 
+BIL_COORDINATES = {'bilinear_s': ('x1', ),
+                   'bilinear_t': ('x1', ),
+                   'slices_x': ('x1', 'n'),
+                   'slices_y': ('x1', 'n'),
+                   'mask_slices': ('x1', 'n'),
+                   'out_coords_x': ('x2', ),
+                   'out_coords_y': ('y2', )}
 
-class XArrayResamplerBilinear(BilinearBase):
+
+class XArrayBilinearResampler(BilinearBase):
     """Bilinear interpolation using XArray."""
+
+    def resample(self, data, fill_value=None, nprocs=1):
+        """Resample the given data."""
+        del nprocs
+        self.get_bil_info()
+        return self.get_sample_from_bil_info(data, fill_value=fill_value, output_shape=None)
 
     def _create_empty_bil_info(self):
         """Create dummy info for empty result set."""
@@ -163,6 +176,28 @@ class XArrayResamplerBilinear(BilinearBase):
 
         return da.compute(valid_input_index, input_coords)
 
+    def save_resampling_info(self, filename):
+        """Save bilinear resampling look-up tables."""
+        zarr_out = Dataset()
+        for idx_name, coord in BIL_COORDINATES.items():
+            var = getattr(self, idx_name)
+            if isinstance(var, np.ndarray):
+                var = da.from_array(var, chunks=CHUNK_SIZE)
+            else:
+                var = var.rechunk(CHUNK_SIZE)
+            zarr_out[idx_name] = (coord, var)
+        zarr_out.to_zarr(filename)
+
+    def load_resampling_info(self, filename):
+        """Load bilinear resampling look-up tables and initialize the resampler."""
+        try:
+            fid = zarr.open(filename, 'r')
+            for val in BIL_COORDINATES:
+                cache = da.array(fid[val])
+                setattr(self, val, cache)
+        except ValueError:
+            raise IOError
+
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
@@ -205,3 +240,20 @@ def _get_valid_input_index(source_geo_def,
             target_geo_def, source_lons, source_lats, radius_of_influence)
 
     return valid_input_index, source_lons, source_lats
+
+
+class XArrayResamplerBilinear(XArrayBilinearResampler):
+    """Wrapper for the old resampler class."""
+
+    def __init__(self, source_geo_def,
+                 target_geo_def,
+                 radius_of_influence,
+                 **kwargs):
+        """Initialize resampler."""
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+
+        super(XArrayResamplerBilinear, self).__init__(
+            source_geo_def,
+            target_geo_def,
+            radius_of_influence,
+            **kwargs)

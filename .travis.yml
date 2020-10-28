@@ -5,7 +5,7 @@ env:
   - NUMPY_VERSION=stable
   - MAIN_CMD='python setup.py'
   - CONDA_DEPENDENCIES='xarray dask toolz Cython pykdtree sphinx cartopy rasterio pillow matplotlib
-    pyyaml pyproj coveralls configobj coverage codecov pytest pytest-cov shapely'
+    pyyaml pyproj coveralls configobj coverage codecov pytest pytest-cov shapely zarr scipy'
   - SETUP_XVFB=False
   - EVENT_TYPE='push pull_request'
   - SETUP_CMD='test'
