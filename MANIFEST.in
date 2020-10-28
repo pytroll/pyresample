@@ -1,6 +1,6 @@
 include docs/Makefile
 recursive-include docs/source *
-include test/test_files/*
+include pyresample/test/test_files/*
 include LICENSE.txt
 include pyresample/ewa/*.h
 include versioneer.py

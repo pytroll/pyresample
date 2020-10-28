@@ -126,6 +126,7 @@ if __name__ == "__main__":
           author_email='t.lavergne@met.no',
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
+          package_data={'pyresample.test': ['test_files/*']},
           python_requires='>=3.4',
           setup_requires=setup_requires,
           install_requires=requirements,
