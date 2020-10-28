@@ -90,9 +90,9 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
-        from pyresample.bilinear import NumpyResamplerBilinear
+        from pyresample.bilinear import NumpyBilinearResampler
 
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius)
         self.assertTrue(resampler._source_geo_def == self.source_def)
         self.assertTrue(resampler._target_geo_def == self.target_def)
@@ -113,7 +113,7 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertIsNone(resampler.out_coords_y)
 
         # Override defaults
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius, neighbours=16,
                                            epsilon=0.1, reduce_data=False)
         self.assertEqual(resampler._neighbours, 16)
@@ -122,7 +122,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_calc_abc(self):
         """Test calculation of quadratic coefficients."""
-        from pyresample.bilinear import _calc_abc
+        from pyresample.bilinear._base import _calc_abc
 
         # No np.nan inputs
         res = _calc_abc(self.pts_irregular, 0.0, 0.0)
@@ -139,7 +139,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_irregular(self):
         """Test calculations for irregular corner locations."""
-        from pyresample.bilinear import _get_fractional_distances_irregular
+        from pyresample.bilinear._base import _get_fractional_distances_irregular
 
         res = _get_fractional_distances_irregular(self.pts_irregular, 0., 0.)
         self.assertEqual(res[0], 0.375)
@@ -150,7 +150,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear import _get_fractional_distances_uprights_parallel
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -158,7 +158,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_parallellogram(self):
         """Test calculation when the corners form a parallellogram."""
-        from pyresample.bilinear import _get_fractional_distances_parallellogram
+        from pyresample.bilinear._base import _get_fractional_distances_parallellogram
 
         res = _get_fractional_distances_parallellogram(self.pts_both_parallel[:3], 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -166,7 +166,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances(self):
         """Test get_ts()."""
-        from pyresample.bilinear import _get_fractional_distances
+        from pyresample.bilinear._base import _get_fractional_distances
 
         out_x = np.array([[0.]])
         out_y = np.array([[0.]])
@@ -182,7 +182,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
-        from pyresample.bilinear import (_solve_quadratic, _calc_abc)
+        from pyresample.bilinear._base import (_solve_quadratic, _calc_abc)
 
         res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res, 0.0)
@@ -205,7 +205,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample.bilinear import _get_input_xy
+        from pyresample.bilinear._base import _get_input_xy
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
@@ -216,9 +216,9 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear import (_get_output_xy,
-                                         _get_input_xy,
-                                         _get_four_closest_corners)
+        from pyresample.bilinear._base import (_get_output_xy,
+                                               _get_input_xy,
+                                               _get_four_closest_corners)
         from pyresample._spatial_mp import Proj
 
         proj = Proj(self.target_def.proj_str)
@@ -347,11 +347,41 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
 
+    def test_class_resample_method(self):
+        """Test the 'resampler.resample()' method."""
+        from pyresample.bilinear import NumpyBilinearResampler
+
+        resampler = NumpyBilinearResampler(self.source_def,
+                                           self.target_def,
+                                           50e5,
+                                           neighbours=32,
+                                           epsilon=0)
+
+        # Single array, no fill value
+        res = resampler.resample(self.data1)
+        self.assertEqual(res.shape, self.target_def.shape)
+        # There are 12 pixels with value 1, all others are zero
+        self.assertEqual(res.sum(), 12)
+        self.assertEqual((res == 0).sum(), 4)
+
+        # Single array with masked output
+        res = resampler.resample(self.data1, fill_value=None)
+        self.assertTrue(hasattr(res, 'mask'))
+        # There should be 12 valid pixels
+        self.assertEqual(self.target_def.size - res.mask.sum(), 12)
+
+        # Two stacked arrays, multiprocessing
+        data = np.dstack((self.data1, self.data2))
+        res = resampler.resample(data, nprocs=2)
+        shp = res.shape
+        self.assertEqual(shp[0:2], self.target_def.shape)
+        self.assertEqual(shp[-1], 2)
+
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
-        from pyresample.bilinear import NumpyResamplerBilinear
+        from pyresample.bilinear import NumpyBilinearResampler
 
-        resampler = NumpyResamplerBilinear(self.source_def, self.target_def,
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def,
                                            self.radius)
 
         resampler._create_empty_bil_info()
@@ -440,10 +470,10 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_init(self):
         """Test that the resampler has been initialized correctly."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
         # With defaults
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         self.assertTrue(resampler._source_geo_def == self.source_def)
         self.assertTrue(resampler._target_geo_def == self.target_def)
@@ -467,7 +497,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(resampler._out_coords['y'] == resampler.out_coords_y))
 
         # Override defaults
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, neighbours=16,
                                             epsilon=0.1, reduce_data=False)
         self.assertEqual(resampler._neighbours, 16)
@@ -476,7 +506,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_bil_info(self):
         """Test calculation of bilinear info."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
         def _check_ts(t__, s__, nans):
             for i, _ in enumerate(t__):
@@ -496,7 +526,7 @@ class TestXarrayBilinear(unittest.TestCase):
                     self.assertTrue(s__[i] <= 1.0)
 
         # Data reduction enabled (default)
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, reduce_data=True)
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
@@ -524,7 +554,7 @@ class TestXarrayBilinear(unittest.TestCase):
             [1190031.36,  590031.36,   -9968.64, -609968.64]))
 
         # Data reduction disabled
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, reduce_data=False)
         resampler.get_bil_info()
         t__ = resampler.bilinear_t
@@ -533,7 +563,7 @@ class TestXarrayBilinear(unittest.TestCase):
         _check_ts(t__, s__, [10, 12, 13, 14, 15])
 
         # Target area and source data do not overlap
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def_outside,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def_outside,
                                             self.radius, reduce_data=False)
         resampler.get_bil_info()
         self.assertEqual(resampler.bilinear_t.shape, (self.target_def_outside.size,))
@@ -548,9 +578,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test bilinear interpolation as a whole."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler.get_bil_info()
 
@@ -595,9 +625,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test coordinate updating."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         bands = ['R', 'G', 'B']
         data = DataArray(da.ones((3, 10, 10)), dims=('bands', 'y', 'x'),
@@ -624,9 +654,9 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test slicing the data."""
         import dask.array as da
         from xarray import DataArray
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler.get_bil_info()
 
@@ -664,11 +694,11 @@ class TestXarrayBilinear(unittest.TestCase):
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
         """Test slice array creation."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
         meshgrid.return_value = (self.cols, self.lines)
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler._valid_input_index = self._valid_input_index
         resampler._index_array = self._index_array
@@ -694,12 +724,12 @@ class TestXarrayBilinear(unittest.TestCase):
         resampler._get_slices()
         self.assertTrue(np.all(resampler.mask_slices))
 
-    @mock.patch('pyresample.bilinear.KDTree')
+    @mock.patch('pyresample.bilinear._base.KDTree')
     def test_create_resample_kdtree(self, KDTree):
         """Test that KDTree creation is called."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
 
         vii, kdtree = resampler._create_resample_kdtree()
@@ -707,14 +737,14 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(vii.size, self.source_def.size)
         KDTree.assert_called_once()
 
-    @mock.patch('pyresample.bilinear.BilinearBase._reduce_index_array')
-    @mock.patch('pyresample.bilinear.query_no_distance')
+    @mock.patch('pyresample.bilinear._base.BilinearBase._reduce_index_array')
+    @mock.patch('pyresample.bilinear._base._query_no_distance')
     def test_get_index_array(self, qnd, ria):
         """Test that query_no_distance is called in __get_index_array()."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
         qnd.return_value = 'foo'
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
         resampler._target_lons = 1
         resampler._target_lats = 2
@@ -744,7 +774,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test finding surrounding bounding corners."""
         import dask.array as da
         from pyresample.bilinear.xarr import _get_input_xy
-        from pyresample.bilinear import _get_four_closest_corners
+        from pyresample.bilinear._base import _get_four_closest_corners
         from pyresample._spatial_mp import Proj
         from pyresample import CHUNK_SIZE
 
@@ -773,7 +803,7 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_get_corner(self):
         """Test finding the closest corners."""
         import dask.array as da
-        from pyresample.bilinear import _get_corner, _get_input_xy
+        from pyresample.bilinear._base import _get_corner, _get_input_xy
         from pyresample import CHUNK_SIZE
         from pyresample._spatial_mp import Proj
 
@@ -805,12 +835,12 @@ class TestXarrayBilinear(unittest.TestCase):
         # bottom row of the area
         self.assertEqual(np.sum(np.isnan(x_3.compute())), 4)
 
-    @mock.patch('pyresample.bilinear._get_fractional_distances_parallellogram')
-    @mock.patch('pyresample.bilinear._get_fractional_distances_uprights_parallel')
-    @mock.patch('pyresample.bilinear._get_fractional_distances_irregular')
+    @mock.patch('pyresample.bilinear._base._get_fractional_distances_parallellogram')
+    @mock.patch('pyresample.bilinear._base._get_fractional_distances_uprights_parallel')
+    @mock.patch('pyresample.bilinear._base._get_fractional_distances_irregular')
     def test_get_fractional_distances(self, irregular, uprights, parallellogram):
         """Test that the three separate functions are called."""
-        from pyresample.bilinear import _get_fractional_distances
+        from pyresample.bilinear._base import _get_fractional_distances
         import dask.array as da
 
         # All valid values
@@ -884,7 +914,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_irregular(self):
         """Test calculations for irregular corner locations."""
-        from pyresample.bilinear import _get_fractional_distances_irregular
+        from pyresample.bilinear._base import _get_fractional_distances_irregular
 
         res = _get_fractional_distances_irregular(self.pts_irregular, 0., 0.)
         self.assertEqual(res[0], 0.375)
@@ -896,7 +926,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear import _get_fractional_distances_uprights_parallel
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -904,7 +934,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_parallellogram(self):
         """Test calculation when the corners form a parallellogram."""
-        from pyresample.bilinear import _get_fractional_distances_parallellogram
+        from pyresample.bilinear._base import _get_fractional_distances_parallellogram
 
         res = _get_fractional_distances_parallellogram(self.pts_both_parallel[:3], 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -912,7 +942,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_calc_abc(self):
         """Test calculation of quadratic coefficients."""
-        from pyresample.bilinear import _calc_abc
+        from pyresample.bilinear._base import _calc_abc
 
         # No np.nan inputs
         res = _calc_abc(self.pts_irregular, 0.0, 0.0)
@@ -930,8 +960,8 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
         import dask.array as da
-        from pyresample.bilinear import (_solve_quadratic,
-                                         _calc_abc)
+        from pyresample.bilinear._base import (_solve_quadratic,
+                                               _calc_abc)
 
         res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res, 0.0)
@@ -955,21 +985,21 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_query_no_distance(self):
         """Test KDTree querying."""
-        from pyresample.bilinear import query_no_distance
+        from pyresample.bilinear._base import _query_no_distance
 
         kdtree = mock.MagicMock()
         kdtree.query.return_value = (1, 2)
         lons, lats = self.target_def.get_lonlats()
         voi = (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90)
-        res = query_no_distance(lons, lats, voi, kdtree, self._neighbours,
-                                0., self.radius)
+        res = _query_no_distance(lons, lats, voi, kdtree, self._neighbours,
+                                 0., self.radius)
         # Only the second value from the query is returned
         self.assertEqual(res, 2)
         kdtree.query.assert_called_once()
 
     def test_get_valid_input_index(self):
         """Test finding valid indices for reduced input data."""
-        from pyresample.bilinear import _get_valid_input_index
+        from pyresample.bilinear._base import _get_valid_input_index
 
         # Do not reduce data
         vii, lons, lats = _get_valid_input_index(self.source_def,
@@ -989,9 +1019,9 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
-        from pyresample.bilinear.xarr import XArrayResamplerBilinear
+        from pyresample.bilinear import XArrayBilinearResampler
 
-        resampler = XArrayResamplerBilinear(self.source_def, self.target_def,
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)
 
         resampler._create_empty_bil_info()
@@ -1004,7 +1034,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_lonlat2xyz(self):
         """Test conversion from geographic to cartesian 3D coordinates."""
-        from pyresample.bilinear import lonlat2xyz
+        from pyresample.bilinear._base import lonlat2xyz
         from pyresample import CHUNK_SIZE
 
         lons, lats = self.target_def.get_lonlats(chunks=CHUNK_SIZE)
@@ -1013,10 +1043,64 @@ class TestXarrayBilinear(unittest.TestCase):
         vals = [3188578.91069278, -612099.36103276, 5481596.63569999]
         self.assertTrue(np.allclose(res.compute()[0, :], vals))
 
+    def test_class_resample_method(self):
+        """Test the 'resampler.resample()' method."""
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def,
+                                            self.target_def,
+                                            50e5,
+                                            neighbours=32,
+                                            epsilon=0)
+
+        # Single array, no fill value
+        res = resampler.resample(self.data1)
+        self.assertEqual(res.shape, self.target_def.shape)
+        # There are 12 pixels with value 1, all others are NaN
+        res = res.compute()
+        self.assertEqual(np.nansum(res), 12)
+        self.assertEqual(np.isnan(res).sum(), 4)
+
+        # Single array with fill value
+        res = resampler.resample(self.data1, fill_value=0)
+        res = res.compute()
+        self.assertEqual(np.sum(res), 12)
+        self.assertEqual((res == 0).sum(), 4)
+
+    def test_save_and_load_bil_info(self):
+        """Test saving and loading the resampling info."""
+        import os
+        import shutil
+        from tempfile import mkdtemp
+        from pyresample.bilinear import XArrayBilinearResampler, CACHE_INDICES
+
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        try:
+            tempdir = mkdtemp()
+            filename = os.path.join(tempdir, "test.zarr")
+
+            resampler.save_resampling_info(filename)
+
+            assert os.path.exists(filename)
+
+            new_resampler = XArrayBilinearResampler(self.source_def, self.target_def,
+                                                    self.radius)
+            new_resampler.load_resampling_info(filename)
+
+            for attr in CACHE_INDICES:
+                orig = getattr(resampler, attr)
+                reloaded = getattr(new_resampler, attr).compute()
+                np.testing.assert_array_equal(orig, reloaded)
+        finally:
+            shutil.rmtree(tempdir, ignore_errors=True)
+
 
 def test_check_fill_value():
     """Test that fill_value replacement/adjustment works."""
-    from pyresample.bilinear import _check_fill_value
+    from pyresample.bilinear._base import _check_fill_value
 
     # None + integer dtype -> 0
     assert _check_fill_value(None, np.uint8) == 0
