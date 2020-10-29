@@ -1016,21 +1016,40 @@ def invproj(data_x, data_y, proj_dict):
     return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
-def inf2nan(arr):
-    """Replace +/- infinity values with NaN.
+def mask_invalid_lonlats(coords, fill_value):
+    """Mask invalid longitude or latitude coordinates.
 
-    Preserves the original data type.
+    Parameters
+    ----------
+    coords : numpy or dask array
+        Coordinates array.
+    fill_value: scalar
+        Fill value to replace invalid coordinates.
+
     """
-    if hasattr(arr, 'chunks'):
-        import dask.array as da
-        res = da.where(da.isfinite(arr), arr, np.nan)
-    else:
-        res = np.where(np.isfinite(arr), arr, np.nan)
+    # FUTURE: Depending on the upstream developments in pyproj and PROJ
+    # this method can potentially be removed in the future. See
+    #
+    # https://github.com/pyproj4/pyproj/issues/721
+    # https://github.com/OSGeo/PROJ/issues/2376
 
-    # np.where(cond, arr, np.nan) converts to float64 if arr is of
-    # integer data type. Even if cond is always True and no value
-    # has been replaced.
-    return res.astype(arr.dtype)
+    if fill_value == np.inf:
+        # This is what PROJ returns by default at the moment for failed
+        # projection operations.
+        return coords
+
+    if hasattr(coords, 'chunks'):
+        import dask.array as da
+        res = da.where(da.isfinite(coords), coords, fill_value)
+    else:
+        res = np.where(np.isfinite(coords), coords, fill_value)
+
+    if res.dtype != coords.dtype:
+        warnings.warn(
+            "Data type {} does not support fill value {}. Converting to {}."
+                .format(coords.dtype, fill_value, res.dtype)
+        )
+    return res
 
 
 class AreaDefinition(BaseDefinition):
@@ -1920,7 +1939,8 @@ class AreaDefinition(BaseDefinition):
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_lonlats(chunks=chunks, dtype=dtype)
 
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None,
+                    fill_value=np.nan):
         """Return lon and lat arrays of area.
 
         Parameters
@@ -1936,6 +1956,8 @@ class AreaDefinition(BaseDefinition):
             Data type of the returned arrays
         chunks: int or tuple, optional
             Create dask arrays and use this chunk size
+        fill_value: scalar, optional
+            Fill value for points without valid geolocation.
 
         Returns
         -------
@@ -1975,7 +1997,7 @@ class AreaDefinition(BaseDefinition):
             res = map_blocks(invproj, target_x, target_y,
                              chunks=(target_x.chunks[0], target_x.chunks[1], 2),
                              new_axis=[2], proj_dict=proj_def).astype(dtype)
-            res = inf2nan(res)
+            res = mask_invalid_lonlats(res, fill_value=fill_value)
             return res[:, :, 0], res[:, :, 1]
 
         if nprocs > 1:
@@ -1985,8 +2007,10 @@ class AreaDefinition(BaseDefinition):
 
         # Get corresponding longitude and latitude values
         lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
-        lons = inf2nan(np.asanyarray(lons, dtype=dtype))
-        lats = inf2nan(np.asanyarray(lats, dtype=dtype))
+        lons = mask_invalid_lonlats(np.asanyarray(lons, dtype=dtype),
+                                    fill_value=fill_value)
+        lats = mask_invalid_lonlats(np.asanyarray(lats, dtype=dtype),
+                                    fill_value=fill_value)
 
         if cache and data_slice is None:
             # Cache the result if requested
@@ -2341,7 +2365,8 @@ class StackedAreaDefinition(BaseDefinition):
         except (IncompatibleAreas, IndexError):
             self.defs.append(definition)
 
-    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
+    def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None,
+                    fill_value=np.nan):
         """Return lon and lat arrays of the area."""
         if chunks is not None:
             from dask.array import vstack
@@ -2361,7 +2386,8 @@ class StackedAreaDefinition(BaseDefinition):
                                     min(max(row_slice.stop - offset, 0), definition.height),
                                     row_slice.step)
             lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks)
+                                                cache=cache, dtype=dtype, chunks=chunks,
+                                                fill_value=fill_value)
 
             llons.append(lons)
             llats.append(lats)

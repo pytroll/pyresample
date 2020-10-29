@@ -1401,8 +1401,8 @@ class Test(unittest.TestCase):
         self.assertEqual(lon.dtype, np.dtype("f8"))
         self.assertIsInstance(lon, dask_array)
 
-    def test_get_lonlats_space(self):
-        """Test coordinates of space pixels in the geos projection."""
+    def test_get_lonlats_invalid(self):
+        """Test points with invalid geolocation."""
         import pyresample.geometry
 
         geos = pyresample.geometry.AreaDefinition(
@@ -1414,20 +1414,31 @@ class Test(unittest.TestCase):
             area_extent=[-5570248.686685662, -5567248.28340708, 5567248.28340708,
                          5570248.686685662])
 
-        # Center of the four edge pixels is in space and therefore we expect the
-        # coordinates to be NaN.
+        # Center of the four edge pixels is in space and therefore they don't have
+        # a valid geolocation.
         edges = ((0, 0, 3, 3), (0, 3, 0, 3))
 
-        # With numpy arrays
-        lons, lats = geos.get_lonlats(dtype=np.float32)
+        # Numpy arrays, default fill value (NaN)
+        lons, lats = geos.get_lonlats()
         np.testing.assert_equal(lons[edges], np.nan)
         np.testing.assert_equal(lats[edges], np.nan)
 
-        # With dask arrays
-        lons, lats = geos.get_lonlats(dtype=np.float32, chunks=2)
+        # Numpy arrays, fill value Inf
+        lons, lats = geos.get_lonlats(fill_value=np.inf)
+        np.testing.assert_equal(lons[edges], np.inf)
+        np.testing.assert_equal(lats[edges], np.inf)
+
+        # Dask arrays, default fill value (NaN)
+        lons, lats = geos.get_lonlats(chunks=2)
         lons, lats = lons.compute(), lats.compute()
         np.testing.assert_equal(lons[edges], np.nan)
         np.testing.assert_equal(lats[edges], np.nan)
+
+        # Dask arrays, fill value Inf
+        lons, lats = geos.get_lonlats(chunks=2, fill_value=np.inf)
+        lons, lats = lons.compute(), lats.compute()
+        np.testing.assert_equal(lons[edges], np.inf)
+        np.testing.assert_equal(lats[edges], np.inf)
 
     def test_area_def_geocentric_resolution(self):
         """Test the AreaDefinition.geocentric_resolution method."""
