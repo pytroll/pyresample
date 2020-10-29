@@ -268,10 +268,82 @@ Click images to see the full resolution versions.
 
 The *perceived* sharpness of the bottom image is lower, but there is more detail present.
 
+
+XArrayBilinearResampler
+***********************
+
+**bilinear.XArrayBilinearResampler** is a class that handles bilinear interpolation for data in
+`xarray.DataArray` arrays.  The parallelization is done automatically using `dask`.
+
+>>> import numpy as np
+>>> import dask.array as da
+>>> from xarray import DataArray
+>>> from pyresample.bilinear import XArrayBilinearResampler
+>>> from pyresample import geometry
+>>> target_def = geometry.AreaDefinition('areaD',
+...                                      'Europe (3km, HRV, VTC)',
+...                                      'areaD',
+...                                      {'a': '6378144.0', 'b': '6356759.0',
+...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+...                                       'lon_0': '8.00', 'proj': 'stere'},
+...                                      800, 800,
+...                                      [-1370912.72, -909968.64,
+...                                       1029087.28, 1490031.36])
+>>> data = DataArray(da.from_array(np.fromfunction(lambda y, x: y*x, (500, 100))), dims=('y', 'x'))
+>>> lons = da.from_array(np.fromfunction(lambda y, x: 3 + x * 0.1, (500, 100)))
+>>> lats = da.from_array(np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100)))
+>>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+>>> resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
+>>> result = resampler.resample(data)
+
+The resampling info can be saved for later reuse and much faster processinf for a matching area. The
+data are saved to a ZARR arcive, so `zarr` Python package needs to be installed.
+
+>>> import os
+>>> from tempfile import gettempdir
+>>> cache_file = os.path.join(gettempdir(), "bilinear_resampling_luts.zarr")
+>>> resampler.save_resampling_info(cache_file)
+>>> new_resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
+>>> new_resampler.load_resampling_info(cache_file)
+>>> result = new_resampler.resample(data)
+
+NumpyBilinearResampler
+**********************
+
+**bilinear.NumpyBilinearResampler** is a plain Numpy version of **XArrayBilinearResampler**.  If
+`fill_value` isn't given to `get_sample_from_bil_info()`, a masked array will be returned.
+
+>>> import numpy as np
+>>> from pyresample.bilinear import NumpyBilinearResampler
+>>> from pyresample import geometry
+>>> target_def = geometry.AreaDefinition('areaD',
+...                                      'Europe (3km, HRV, VTC)',
+...                                      'areaD',
+...                                      {'a': '6378144.0', 'b': '6356759.0',
+...                                       'lat_0': '50.00', 'lat_ts': '50.00',
+...                                       'lon_0': '8.00', 'proj': 'stere'},
+...                                      800, 800,
+...                                      [-1370912.72, -909968.64,
+...                                       1029087.28, 1490031.36])
+>>> data = np.fromfunction(lambda y, x: y*x, (500, 100))
+>>> lons = np.fromfunction(lambda y, x: 3 + x * 0.1, (500, 100))
+>>> lats = np.fromfunction(lambda y, x: 75 - y * 0.1, (500, 100))
+>>> source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+>>> resampler = NumpyBilinearResampler(source_def, target_def, 30e3)
+>>> result = resampler.resample(data)
+
+
+
 resample_bilinear
 *****************
 
-Function for resampling using bilinear interpolation for irregular source grids.
+Convenience function for resampling using bilinear interpolation for irregular source grids.
+
+.. note::
+
+  The use of this function is deprecated. Depending on the input data format, please use directly
+  the **bilinear.NumpyBilinearResampler** or **bilinear.XArrayBilinearResampler** classes and their
+  **.resample()** method shown above.
 
 .. doctest::
 
@@ -315,13 +387,16 @@ Keyword arguments which are passed to **kd_tree**:
   **fill_value=None** is used, masked arrays will be returned
 * **reduce_data**: do/don't do preliminary data reduction before calculating
   the neigbour info
-* **segments**: number of segments to use in neighbour search
 * **epsilon**: maximum uncertainty allowed in neighbour search
 
 The example above shows the default value for each keyword argument.
 
 Resampling from bilinear coefficients
 *************************************
+
+..note:
+  This usage is deprecated, please use the **bilinear.NumpyBilinearResampler** or
+  **bilinear.XArrayBilinearResampler** classes directly depending on the input data format.
 
 As for nearest neighbour resampling, also bilinear interpolation can
 be split in two steps.
