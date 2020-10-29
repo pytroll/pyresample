@@ -1403,9 +1403,7 @@ class Test(unittest.TestCase):
 
     def test_get_lonlats_invalid(self):
         """Test points with invalid geolocation."""
-        import pyresample.geometry
-
-        geos = pyresample.geometry.AreaDefinition(
+        geos = geometry.AreaDefinition(
             area_id='geos',
             description='geos',
             proj_id='geos',
