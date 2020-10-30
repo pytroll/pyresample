@@ -986,11 +986,12 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_query_no_distance(self):
         """Test KDTree querying."""
         from pyresample.bilinear._base import _query_no_distance
+        from pyresample.geometry import is_valid_lonlats
 
         kdtree = mock.MagicMock()
         kdtree.query.return_value = (1, 2)
         lons, lats = self.target_def.get_lonlats()
-        voi = (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90)
+        voi = is_valid_lonlats(lons) & is_valid_lonlats(lats)
         res = _query_no_distance(lons, lats, voi, kdtree, self._neighbours,
                                  0., self.radius)
         # Only the second value from the query is returned

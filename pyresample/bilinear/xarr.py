@@ -44,6 +44,7 @@ from pyresample.bilinear._base import (
     lonlat2xyz,
     get_valid_indices_from_lonlat_boundaries
 )
+from pyresample.geometry import is_valid_lonlats
 
 
 CACHE_INDICES = ['bilinear_s',
@@ -231,9 +232,8 @@ def _get_valid_input_index(source_geo_def,
     """Find indices of reduced input data."""
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
-    valid_input_index = da.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+    valid_input_index = is_valid_lonlats(source_lons) & is_valid_lonlats(
+        source_lats)
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(

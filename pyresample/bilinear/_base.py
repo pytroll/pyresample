@@ -37,6 +37,7 @@ from pykdtree.kdtree import KDTree
 
 from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
+from pyresample.geometry import is_valid_lonlats
 
 
 class BilinearBase(object):
@@ -141,8 +142,8 @@ class BilinearBase(object):
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_output_indices(self):
-        return ((self._target_lons >= -180) & (self._target_lons <= 180) &
-                (self._target_lats <= 90) & (self._target_lats >= -90))
+        return is_valid_lonlats(self._target_lons) & is_valid_lonlats(
+            self._target_lats)
 
     def _get_index_array(self):
         index_array = _query_no_distance(
@@ -284,8 +285,7 @@ def array_slice_for_multiple_arrays(idxs, data):
 
 def mask_coordinates(lons, lats):
     """Mask invalid coordinate values."""
-    idxs = (find_indices_outside_min_and_max(lons, -180., 180.) |
-            find_indices_outside_min_and_max(lats, -90., 90.))
+    idxs = ~(is_valid_lonlats(lons) & is_valid_lonlats(lats))
     return _np_where_for_multiple_arrays(idxs, (np.nan, np.nan), (lons, lats))
 
 
@@ -547,9 +547,8 @@ def _get_valid_input_index(source_geo_def,
     """Find indices of reduced input data."""
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
-    valid_input_index = np.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+    valid_input_index = is_valid_lonlats(source_lons) & is_valid_lonlats(
+        source_lats)
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(

@@ -21,6 +21,9 @@ from __future__ import absolute_import
 
 import numpy as np
 
+from pyresample.geometry import is_valid_lonlats
+
+
 # Earth radius
 R = 6370997.0
 
@@ -241,14 +244,14 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
 
     # Coarse reduction of data based on extrema analysis of the boundary
     # lon lat values of the target grid
-    illegal_lons = not (np.isfinite(lons_side1).all() and
-                        np.isfinite(lons_side2).all() and
-                        np.isfinite(lons_side3).all() and
-                        np.isfinite(lons_side4).all())
-    illegal_lats = not (np.isfinite(lats_side1).any() and
-                        np.isfinite(lats_side2).any() and
-                        np.isfinite(lats_side3).any() and
-                        np.isfinite(lats_side4).any())
+    illegal_lons = not (is_valid_lonlats(lons_side1).all() and
+                        is_valid_lonlats(lons_side2).all() and
+                        is_valid_lonlats(lons_side3).all() and
+                        is_valid_lonlats(lons_side4).all())
+    illegal_lats = not (is_valid_lonlats(lats_side1).all() and
+                        is_valid_lonlats(lats_side2).all() and
+                        is_valid_lonlats(lats_side3).all() and
+                        is_valid_lonlats(lats_side4).all())
 
     if illegal_lons or illegal_lats:
         # Grid boundaries are not safe to operate on

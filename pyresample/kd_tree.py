@@ -30,6 +30,8 @@ import numpy as np
 
 from pykdtree.kdtree import KDTree
 from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
+from pyresample.geometry import is_valid_lonlats
+
 
 logger = getLogger(__name__)
 
@@ -407,8 +409,8 @@ def _get_valid_input_index(source_geo_def,
         raise ValueError('Mismatch between lons and lats')
 
     # Remove illegal values
-    valid_input_index = ((source_lons >= -180) & (source_lons <= 180) &
-                         (source_lats <= 90) & (source_lats >= -90))
+    valid_input_index = is_valid_lonlats(source_lons) & is_valid_lonlats(
+        source_lats)
 
     if reduce_data:
         # Reduce dataset
@@ -459,8 +461,8 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
             valid_output_index = valid_output_index.astype(np.bool)
 
     # Remove illegal values
-    valid_out = ((target_lons >= -180) & (target_lons <= 180) &
-                 (target_lats <= 90) & (target_lats >= -90))
+    valid_out = is_valid_lonlats(target_lons) & is_valid_lonlats(
+        target_lats)
 
     # Combine reduced and legal values
     valid_output_index = (valid_output_index & valid_out)
@@ -1027,8 +1029,8 @@ class XArrayResamplerNN(object):
         """Set up kd tree on input"""
         source_lons, source_lats = self.source_geo_def.get_lonlats(
             chunks=chunks)
-        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) &
-                           (source_lats <= 90) & (source_lats >= -90))
+        valid_input_idx = is_valid_lonlats(source_lons) & is_valid_lonlats(
+            source_lats)
         input_coords = lonlat2xyz(source_lons, source_lats)
         input_coords = input_coords[valid_input_idx.ravel(), :]
 
@@ -1082,8 +1084,8 @@ class XArrayResamplerNN(object):
 
         # TODO: Add 'chunks' keyword argument to this method and use it
         target_lons, target_lats = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) &
-                            (target_lats <= 90) & (target_lats >= -90))
+        valid_output_idx = is_valid_lonlats(target_lons) & is_valid_lonlats(
+            target_lats)
 
         if mask is not None:
             assert (mask.shape == self.source_geo_def.shape), \

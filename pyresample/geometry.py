@@ -1016,6 +1016,14 @@ def invproj(data_x, data_y, proj_dict):
     return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
+def is_valid_lonlats(coords):
+    """Determine valid longitude or latitude coordinates."""
+    if hasattr(coords, 'chunks'):
+        import dask.array as da
+        return da.isfinite(coords)
+    return np.isfinite(coords)
+
+
 def mask_invalid_lonlats(coords, fill_value):
     """Mask invalid longitude or latitude coordinates.
 
@@ -1038,11 +1046,12 @@ def mask_invalid_lonlats(coords, fill_value):
         # projection operations.
         return coords
 
+    is_valid = is_valid_lonlats(coords)
     if hasattr(coords, 'chunks'):
         import dask.array as da
-        res = da.where(da.isfinite(coords), coords, fill_value)
+        res = da.where(is_valid, coords, fill_value)
     else:
-        res = np.where(np.isfinite(coords), coords, fill_value)
+        res = np.where(is_valid, coords, fill_value)
 
     if res.dtype != coords.dtype:
         warnings.warn(
