@@ -1113,7 +1113,7 @@ class AreaDefinition(BaseDefinition):
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
-        self.area_extent = tuple(area_extent)
+        self._area_extent = tuple(area_extent)
         if CRS is not None:
             self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
@@ -1183,6 +1183,10 @@ class AreaDefinition(BaseDefinition):
             else:
                 self._proj_dict = proj4_str_to_dict(self.crs.to_proj4())
         return self._proj_dict
+
+    @property
+    def area_extent(self):
+        return self._area_extent
 
     def copy(self, **override_kwargs):
         """Make a copy of the current area.
