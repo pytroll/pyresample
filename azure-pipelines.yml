@@ -7,7 +7,7 @@ trigger:
       - v*
 variables:
   CIBW_BUILDING: "true"
-  CIBW_SKIP: "cp27-* cp34-* cp35-* cp39-* pp*"
+  CIBW_SKIP: "cp27-* cp34-* cp35-* pp* *-manylinux_i686"
   CIBW_TEST_REQUIRES: "pytest pytest-sugar"
   CIBW_TEST_COMMAND: "python -c \"import pyresample; from pyresample.ewa import *\""
   CIBW_BUILD_VERBOSITY: "2"
