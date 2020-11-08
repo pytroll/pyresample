@@ -26,8 +26,14 @@ __docformat__ = "restructuredtext en"
 try:
     from pyproj._proj import _Proj
 except ImportError:
-    # backward compatibility with PyProj < v2.6
-    from pyproj._proj import Proj as _Proj
+    try:
+        # backward compatibility with PyProj < v2.6
+        from pyproj._proj import Proj as _Proj
+    except ImportError:
+        # PyProj >= 3.0
+        # use public API
+        _Proj = None
+
 import numpy
 cimport cython
 from cpython cimport bool
@@ -54,7 +60,7 @@ class MyProj(BaseProj):
     def __call__(self, lons, lats, **kwargs):
         if self.is_latlong():
             return lons, lats
-        elif isinstance(lons, numpy.ndarray):
+        elif isinstance(lons, numpy.ndarray) and _Proj is not None:
             # Because we are doing this we know that we are getting a double array
             inverse = kwargs.get('inverse', False)
             errcheck = kwargs.get('errcheck', False)
