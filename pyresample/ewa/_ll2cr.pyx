@@ -23,14 +23,9 @@
 """
 __docformat__ = "restructuredtext en"
 
-try:
-    from pyproj._proj import _Proj
-except ImportError:
-    # backward compatibility with PyProj < v2.6
-    from pyproj._proj import Proj as _Proj
+from pyproj import Proj
 import numpy
 cimport cython
-from cpython cimport bool
 cimport numpy
 
 from pyresample._spatial_mp import BaseProj
@@ -43,30 +38,6 @@ ctypedef fused cr_dtype:
 
 cdef extern from "numpy/npy_math.h":
     bint npy_isnan(double x)
-
-
-class MyProj(BaseProj):
-    """Custom class to make ll2cr projection work faster without compiling against the PROJ.4 library itself.
-
-    THIS SHOULD NOT BE USED OUTSIDE OF LL2CR! It makes assumptions and has requirements that may not make sense outside
-    of the ll2cr modules.
-    """
-    def __call__(self, lons, lats, **kwargs):
-        if self.is_latlong():
-            return lons, lats
-        elif isinstance(lons, numpy.ndarray):
-            # Because we are doing this we know that we are getting a double array
-            inverse = kwargs.get('inverse', False)
-            errcheck = kwargs.get('errcheck', False)
-            # call proj4 functions. inx and iny modified in place.
-            if inverse:
-                _Proj._inv(self, lons, lats, errcheck=errcheck)
-            else:
-                _Proj._fwd(self, lons, lats, errcheck=errcheck)
-            # if inputs were lists, tuples or floats, convert back.
-            return lons, lats
-        else:
-            return super(MyProj, self).__call__(lons, lats, **kwargs)
 
 
 def projection_circumference(p):
@@ -127,7 +98,7 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
     of limitations in pyproj.
     """
     # pure python stuff for now
-    p = MyProj(proj4_definition)
+    p = Proj(proj4_definition)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
@@ -213,16 +184,16 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
             x_tmp = cols_out[row, col]
             y_tmp = rows_out[row, col]
             if x_tmp >= 1e30:
-                cols_out[row, col] = fill_in
-                rows_out[row, col] = fill_in
+                lon_arr[row, col] = fill_in
+                lat_arr[row, col] = fill_in
                 continue
 
             x_tmp = (x_tmp - ox) / cell_width
             y_tmp = (y_tmp - oy) / cell_height
             if x_tmp >= -1 and x_tmp <= w + 1 and y_tmp >= -1 and y_tmp <= h + 1:
                 points_in_grid += 1
-            cols_out[row, col] = x_tmp
-            rows_out[row, col] = y_tmp
+            lon_arr[row, col] = x_tmp
+            lat_arr[row, col] = y_tmp
 
     # return points_in_grid, x_arr, y_arr
     return points_in_grid, lon_arr, lat_arr, ox, oy, w, h
@@ -259,7 +230,7 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
 
     """
     # pure python stuff for now
-    p = MyProj(proj4_definition)
+    p = Proj(proj4_definition)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
@@ -282,8 +253,8 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
             x_tmp = cols_out[row, col]
             y_tmp = rows_out[row, col]
             if x_tmp >= 1e30:
-                cols_out[row, col] = fill_in
-                rows_out[row, col] = fill_in
+                lon_arr[row, col] = fill_in
+                lat_arr[row, col] = fill_in
                 continue
             elif proj_circum != 0 and abs(x_tmp - origin_x) >= (0.75 * proj_circum):
                 # if x is more than 75% around the projection space, it is probably crossing the anti-meridian
@@ -293,8 +264,8 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
             y_tmp = (y_tmp - origin_y) / cell_height
             if x_tmp >= -1 and x_tmp <= width + 1 and y_tmp >= -1 and y_tmp <= height + 1:
                 points_in_grid += 1
-            cols_out[row, col] = x_tmp
-            rows_out[row, col] = y_tmp
+            lon_arr[row, col] = x_tmp
+            lat_arr[row, col] = y_tmp
 
     # return points_in_grid, x_arr, y_arr
     return points_in_grid

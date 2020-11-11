@@ -1,4 +1,4 @@
-git+https://github.com/pytroll/pykdtree.git@pre-master
+git+https://github.com/storpipfugl/pykdtree.git@master
 xarray
 toolz
 dask
