@@ -94,7 +94,7 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     return target_filled.astype(target_image.dtype)
 
 
-def get_linesample(lons, lats, source_area_def, nprocs=1):
+def get_linesample(lons, lats, source_area_def, nprocs=1, subpixel=False):
     """Returns index row and col arrays for resampling
 
     Parameters
@@ -107,6 +107,9 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
         Source definition as AreaDefinition object
     nprocs : int, optional
         Number of processor cores to be used
+    subpixel : bool, optional
+        False (default) if the result should be truncated to integers,
+        True returns float values at subpixel accuracy
 
     Returns
     -------
@@ -125,10 +128,14 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
 
     # Find corresponding pixels (element by element conversion of ndarrays)
     source_pixel_x = (source_area_def.pixel_offset_x +
-                      source_x / source_area_def.pixel_size_x).astype(np.int32)
+                      source_x / source_area_def.pixel_size_x)
 
     source_pixel_y = (source_area_def.pixel_offset_y -
-                      source_y / source_area_def.pixel_size_y).astype(np.int32)
+                      source_y / source_area_def.pixel_size_y)
+
+    if not subpixel:
+        source_pixel_x = source_pixel_x.astype(np.int32)
+        source_pixel_y = source_pixel_y.astype(np.int32)
 
     return source_pixel_y, source_pixel_x
 

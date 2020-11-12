@@ -1633,7 +1633,7 @@ class AreaDefinition(BaseDefinition):
         """
         return self.get_xy_from_lonlat(lons, lats)
 
-    def get_xy_from_lonlat(self, lon, lat):
+    def get_xy_from_lonlat(self, lon, lat, subpixel=False):
         """Retrieve closest x and y coordinates.
 
         Retrieve closest x and y coordinates (column, row indices) for the
@@ -1646,10 +1646,13 @@ class AreaDefinition(BaseDefinition):
 
         lon : point or sequence (list or array) of longitudes
         lat : point or sequence (list or array) of latitudes
+        subpixel (bool) : False (default) to truncate the result to
+                           integers, True to return float values
 
         :Returns:
 
-        (x, y) : tuple of integer points/arrays
+        (x, y) : tuple of points/arrays (integers if subpixel==False,
+                  floats otherwise)
 
         """
         if isinstance(lon, list):
@@ -1669,9 +1672,9 @@ class AreaDefinition(BaseDefinition):
         pobj = Proj(self.proj_str)
         xm_, ym_ = pobj(lon, lat)
 
-        return self.get_xy_from_proj_coords(xm_, ym_)
+        return self.get_xy_from_proj_coords(xm_, ym_, subpixel=subpixel)
 
-    def get_xy_from_proj_coords(self, xm, ym):
+    def get_xy_from_proj_coords(self, xm, ym, subpixel=False):
         """Find closest grid cell index for a specified projection coordinate.
 
         If xm, ym is a tuple of sequences of projection coordinates, a tuple
@@ -1682,9 +1685,12 @@ class AreaDefinition(BaseDefinition):
                                  meters (map projection)
             ym (list or array): point or sequence of y-coordinates in
                                  meters (map projection)
+            subpixel (bool)   : False (default) to truncate the result to
+                                 integers, True to return float values
 
         Returns:
             x, y : column and row grid cell indexes as 2 scalars or arrays
+                    (integers if subpixel==False, floats otherwise)
 
         Raises:
             ValueError: if the return point is outside the area domain
@@ -1719,15 +1725,21 @@ class AreaDefinition(BaseDefinition):
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             mask = (((x__ < 0) | (x__ >= self.width)) |
                     ((y__ < 0) | (y__ >= self.height)))
-            return (np.ma.masked_array(x__.astype('int'), mask=mask,
+            if not subpixel:
+                x__ = x__.astype('int')
+                y__ = y__.astype('int')
+            return (np.ma.masked_array(x__, mask=mask,
                                        fill_value=-1, copy=False),
-                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                    np.ma.masked_array(y__, mask=mask,
                                        fill_value=-1, copy=False))
         else:
             if ((x__ < 0 or x__ >= self.width) or
                     (y__ < 0 or y__ >= self.height)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return int(x__), int(y__)
+            if not subpixel:
+                x__ = int(x__)
+                y__ = int(y__)
+            return x__, y__
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat values of single point in area grid.
