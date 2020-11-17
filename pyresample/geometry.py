@@ -2342,22 +2342,15 @@ class StackedAreaDefinition(BaseDefinition):
             row_slice = slice(0, self.height)
             col_slice = slice(0, self.width)
         offset = 0
-        for def_idx, definition in enumerate(self.defs):
-            # handle case of stacked area definitions where chunks need to be assigned to each areadef
-            if isinstance(chunks, tuple) and isinstance(chunks[0], int):
-                chunks_for_definition = chunks
-            elif isinstance(chunks, tuple) and len(chunks[0]) != len(self.defs):
-                chunks_for_definition = (definition.shape[0], chunks[1])
-            elif isinstance(chunks, tuple) and len(chunks[0]) == len(self.defs):
-                chunks_for_definition = (chunks[0][def_idx], chunks[1])
-            else:
-                chunks_for_definition = chunks
+        for def_idx, areadef in enumerate(self.defs):
+            # compute appropriate chunks for the current AreaDefinition
+            chunks_for_areadef = self._get_chunks_for_areadef_in_stacked_areadef(chunks, def_idx)
 
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0), definition.height),
+                                    min(max(row_slice.stop - offset, 0), areadef.height),
                                     row_slice.step)
-            lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks_for_definition)
+            lons, lats = areadef.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
+                                                cache=cache, dtype=dtype, chunks=chunks_for_areadef)
 
             llons.append(lons)
             llats.append(lats)
@@ -2367,6 +2360,24 @@ class StackedAreaDefinition(BaseDefinition):
         self.lats = vstack(llats)
 
         return self.lons, self.lats
+
+    def _get_chunks_for_areadef_in_stacked_areadef(self, chunks_stacked_areadef, areadef_idx):
+        """Return the chunks for the AreaDefinition with index `areadef_idx`, starting from the chunks defined in
+        `chunks_stacked_areadef`."""
+        if isinstance(chunks_stacked_areadef, tuple) and isinstance(chunks_stacked_areadef[0], int):
+            # defined chunk is just an integer, so use that for all areadefs
+            chunks_for_areadef = chunks_stacked_areadef
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) == len(self.defs):
+            # amount of chunks defined matches the amout of areadefs,
+            # so assign each chunk to each areadef following the array order
+            chunks_for_areadef = (chunks_stacked_areadef[0][areadef_idx], chunks_stacked_areadef[1])
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) != len(self.defs):
+            # too many/few chunks defined, assignment is ambiguous, so use the actual shape of the areadef instead
+            chunks_for_areadef = (self.defs[areadef_idx].shape[0], chunks_stacked_areadef[1])
+        else:
+            chunks_for_areadef = chunks_stacked_areadef
+
+        return chunks_for_areadef
 
     def get_lonlats_dask(self, chunks=None, dtype=None):
         """Return lon and lat dask arrays of the area."""
