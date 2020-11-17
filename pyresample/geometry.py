@@ -2350,7 +2350,7 @@ class StackedAreaDefinition(BaseDefinition):
                                     min(max(row_slice.stop - offset, 0), areadef.height),
                                     row_slice.step)
             lons, lats = areadef.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks_for_areadef)
+                                             cache=cache, dtype=dtype, chunks=chunks_for_areadef)
 
             llons.append(lons)
             llats.append(lats)
