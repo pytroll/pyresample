@@ -2342,12 +2342,20 @@ class StackedAreaDefinition(BaseDefinition):
             row_slice = slice(0, self.height)
             col_slice = slice(0, self.width)
         offset = 0
-        for definition in self.defs:
+        for def_idx, definition in enumerate(self.defs):
+            # handle case of stacked area definitions where chunks need to be assigned to each areadef
+            if isinstance(chunks, tuple) and len(chunks[0]) != len(self.defs):
+                chunks_for_definition = (definition.shape[0], chunks[1])
+            elif isinstance(chunks, tuple) and len(chunks[0]) == len(self.defs):
+                chunks_for_definition = (chunks[0][def_idx], chunks[1])
+            else:
+                chunks_for_definition = chunks
+
             local_row_slice = slice(max(row_slice.start - offset, 0),
                                     min(max(row_slice.stop - offset, 0), definition.height),
                                     row_slice.step)
             lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks)
+                                                cache=cache, dtype=dtype, chunks=chunks_for_definition)
 
             llons.append(lons)
             llats.append(lats)

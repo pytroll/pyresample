@@ -2037,6 +2037,24 @@ class TestStackedAreaDefinition(unittest.TestCase):
         np.testing.assert_allclose(lats[:464, :], lats0)
         np.testing.assert_allclose(lats[464:, :], lats1)
 
+        # check get_lonlats with chunks definition doesn't cause errors and arrays are equal
+        # too many chunks
+        lons_c, lats_c = final_area.get_lonlats(chunks=((2000, 3568, 5568), (464,)))
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
+        # too few chunk
+        lons_c, lats_c = final_area.get_lonlats(chunks=((5568,), (464,)))
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
+        # right amount of chunks, same shape
+        lons_c, lats_c = final_area.get_lonlats(chunks=((5568, 5568), (464,)))
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
+        # right amount of chunks, different shape
+        lons_c, lats_c = final_area.get_lonlats(chunks=((5568, 7000), (464,)))
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
+
     def test_combine_area_extents(self):
         """Test combination of area extents."""
         area1 = MagicMock()
