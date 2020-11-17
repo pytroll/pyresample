@@ -2344,7 +2344,9 @@ class StackedAreaDefinition(BaseDefinition):
         offset = 0
         for def_idx, definition in enumerate(self.defs):
             # handle case of stacked area definitions where chunks need to be assigned to each areadef
-            if isinstance(chunks, tuple) and len(chunks[0]) != len(self.defs):
+            if isinstance(chunks, tuple) and isinstance(chunks[0], int):
+                chunks_for_definition = chunks
+            elif isinstance(chunks, tuple) and len(chunks[0]) != len(self.defs):
                 chunks_for_definition = (definition.shape[0], chunks[1])
             elif isinstance(chunks, tuple) and len(chunks[0]) == len(self.defs):
                 chunks_for_definition = (chunks[0][def_idx], chunks[1])

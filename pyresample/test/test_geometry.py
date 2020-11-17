@@ -2054,6 +2054,14 @@ class TestStackedAreaDefinition(unittest.TestCase):
         lons_c, lats_c = final_area.get_lonlats(chunks=((5568, 7000), (464,)))
         np.testing.assert_array_equal(lons, lons_c)
         np.testing.assert_array_equal(lats, lats_c)
+        # only one set of chunks in a tuple
+        lons_c, lats_c = final_area.get_lonlats(chunks=(5568, 464))
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
+        # only one chunk value
+        lons_c, lats_c = final_area.get_lonlats(chunks=5568)
+        np.testing.assert_array_equal(lons, lons_c)
+        np.testing.assert_array_equal(lats, lats_c)
 
     def test_combine_area_extents(self):
         """Test combination of area extents."""
