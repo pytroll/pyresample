@@ -2037,6 +2037,20 @@ class TestStackedAreaDefinition(unittest.TestCase):
         np.testing.assert_allclose(lats[:464, :], lats0)
         np.testing.assert_allclose(lats[464:, :], lats1)
 
+        # check that get_lonlats with chunks definition doesn't cause errors and output arrays are equal
+        # too many chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((200, 264, 464), (5570,)))
+        # too few chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464,), (5568,)))
+        # right amount of chunks, same shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 464), (5568,)))
+        # right amount of chunks, different shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 470), (5568,)))
+        # only one set of chunks in a tuple
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=(464, 5568))
+        # only one chunk value
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=464)
+
     def test_combine_area_extents(self):
         """Test combination of area extents."""
         area1 = MagicMock()
@@ -2200,6 +2214,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
         area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
         self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
+
+
+def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
+    """Compute the lons and lats with chunk definition and check that they are as expected."""
+    lons_c, lats_c = final_area.get_lonlats(chunks=chunks)
+    np.testing.assert_array_equal(lons, lons_c)
+    np.testing.assert_array_equal(lats, lats_c)
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):
