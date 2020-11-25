@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.com/pytroll/pyresample.svg?branch=master)](https://travis-ci.org/pytroll/pyresample)
 [![Build Status](https://dev.azure.com/pytroll/pyresample/_apis/build/status/pytroll.pyresample?branchName=master)](https://dev.azure.com/pytroll/pyresample/_build/latest?definitionId=1&branchName=master)
 [![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=master)](https://coveralls.io/github/pytroll/pyresample?branch=master)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4270378.svg)](https://doi.org/10.5281/zenodo.4270378)
 
 
 Pyresample

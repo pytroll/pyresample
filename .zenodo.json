@@ -1,0 +1,115 @@
+David Hoese, Martin Raspaud, Panu Lahtinen, William Roberts, Lavergne, Stickler Bot, … qxang. (2020, June 10). . Zenodo. http://doi.org/10.5281/zenodo.3888692
+
+
+
+{
+  "title": "pytroll/pyresample
+  "version": "v1.17.0", 
+  "upload_type": "software", 
+  "publication_date": "2020-11-12", 
+  "date": [{"date": "2020-11-12", "type": "available"}],
+  "creators": [
+    {
+      "name": "Hoese, David",
+      "affiliation": "University of Wisconsin Madison",
+      "orcid": "0000-0003-1167-7829"
+    },
+    {
+      "name": "Raspaud, Martin",
+      "affiliation": "Swedish Meteorological and Hydrological Institute",
+    },
+    {
+      "name": "Lahtinen, Panu",
+      "affiliation": "Finnish Meteorological Institute",
+      "orcid": " "
+    },
+    {
+      "name": "Roberts, William",
+      "affiliation": "University of Bristol",
+    },
+    {
+      "name": "Lavergne, Thomas",
+      "affiliation": "CNRS / Université Grenoble Alpes",
+      "orcid": "0000-0002-0029-0015"
+    },
+    {
+      "name": "Stickler Bot",
+    },
+    {
+      "name": "Finke, Stephan",
+    },
+    {
+      "name": "Dybbroe, Adam",
+    },
+    {
+      "name": "Itkin, Mikhail",
+    },
+    {
+      "name": "Holl, Gerrit",
+    },
+    {
+      "name": "Nina",
+    }
+    {
+      "name": "Rasmussen, Lars Ørum",
+    }
+    {
+      "name": "Clementi, Lorenzo",
+    }
+    {
+      "name": "Valentino, Antonio",
+    }
+    {
+      "name": "Paulik, Christoph",
+    }
+    {
+      "name": "Valgur, Martin",
+    }
+    {
+      "name": "Rykov, Denis",
+    }
+    {
+      "name": "Florian",
+    }
+    {
+      "name": "storpipifugl",
+    }
+    {
+      "name": "Radar, Satellite and Nowcast",
+    }
+    {
+      "name": "Couwenberg, Bas",
+    }
+    {
+      "name": "Knezevic, Daniel",
+    }
+    {
+      "name": "owenlittlejohns",
+    }
+    {
+      "name": "Pareeth, Sajid",
+    }
+    {
+      "name": "frdcms",
+    }
+    {
+      "name": "Goodson, Ron",
+    }
+    {
+      "name": "qxang",
+    }
+  ],
+  "access_right": "open", 
+  "related_identifiers": [
+      {
+          "scheme": "url", 
+          "identifier": "https://github.com/pytroll/pyresample", 
+          "relation": "isSupplementTo"
+      }, 
+      {
+          "scheme": "doi", 
+          "identifier": "10.5281/zenodo.3372769", 
+          "relation": "isVersionOf"
+      }
+  ]
+}
