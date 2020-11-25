@@ -38,3 +38,8 @@ on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
 
 See [pytroll.github.io](http://pytroll.github.io/) for more information on the
 PyTroll group and related packages.
+
+Citation
+----------
+Hoese, D., Raspaud, M., Lahtinen, P., Roberts, W., Lavergne, Stickler Bot, et al. (2020). pytroll/pyresample: Version 1.16.0. Zenodo. [https://doi.org/10.5281/zenodo.3888692](https://doi.org/10.5281/zenodo.4270378)
+
