@@ -1,13 +1,13 @@
 import unittest
+import numpy as np
+import dask.array as da
+import dask
+import xarray as xr
 from unittest.mock import MagicMock, patch
 
-import dask
-import dask.array as da
-import numpy as np
-import xarray as xr
-from pyresample import bucket
 from pyresample import create_area_def
 from pyresample.geometry import AreaDefinition
+from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 
@@ -155,63 +155,50 @@ class Test(unittest.TestCase):
         self.assertEqual(np.sum(result == 2), 1)
         self.assertTrue(self.resampler.counts is not None)
 
+    def _get_average_result(self, data, **kwargs):
+        """Compute the bucket average with kwargs and check that no dask computation is performed."""
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data, **kwargs)
+        return result.compute()
+
     def test_get_average(self):
         """Test averaging bucket resampling."""
-        data = da.from_array(np.array([[2., 11.], [5., np.nan]]),
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
                              chunks=self.chunks)
-        # Without pre-calculated indices
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, skipna=True)
-        result = result.compute()
-        self.assertEqual(np.nanmax(result), 6.5)
-        self.assertTrue(np.any(np.isnan(result)))
-        # Use a fill value other than np.nan
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, fill_value=-1, skipna=True)
-        result = result.compute()
-        self.assertEqual(np.max(result), 6.5)
-        self.assertEqual(np.min(result), -1)
-        self.assertFalse(np.any(np.isnan(result)))
+        result = self._get_average_result(data)
+        # test multiple entries average
+        self.assertTrue(np.count_nonzero(result == 6.5) == 1)
+        # test single entry average
+        self.assertTrue(np.count_nonzero(result == 5) == 1)
+        # test that average of bucket with only nan is nan, and empty buckets are nan as default
+        self.assertTrue(np.count_nonzero(~np.isnan(result)) == 2)
 
-        # test skipna being False
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, skipna=False)
-        result = result.compute()
-        self.assertEqual(np.nanmax(result), 6.5)
-        self.assertTrue(np.all(result != 5.))
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, fill_value=-1, skipna=False)
-        result = result.compute()
-        self.assertEqual(np.nanmax(result), 6.5)
-        self.assertEqual(np.min(result), -1)
-        self.assertFalse(np.any(np.isnan(result)))
-        self.assertTrue(np.all(result != 5.))
+        # test fill_value other than np.nan
+        result = self._get_average_result(data, fill_value=-1)
+        # check that all empty buckets are fill_value
+        self.assertTrue(np.count_nonzero(result != -1) == 2)
 
-        # Test masking all-NaN bins
-        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+        # test skipna
+        data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, skipna=True)
-        result = result.compute()
+        result = self._get_average_result(data, skipna=True)
+        # test that average of 2 and np.nan is 2 for skipna=True
+        self.assertTrue(np.count_nonzero(result == 2) == 1)
+
+        data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_average_result(data, skipna=False)
+        # test that average of 2 and np.nan is nan for skipna=False
         self.assertTrue(np.all(np.isnan(result)))
-        # check that skipna False makes no difference here:
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result_sn = self.resampler.get_average(data, skipna=False)
-        result_sn = result_sn.compute()
-        self.assertEqual(result, result_sn)
 
-        # Test masking all-NaN bins with fill_value
-        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+        # test that fill_value in input is recognised as missing value
+        data = da.from_array(np.array([[2, -1], [-1, np.nan]]),
                              chunks=self.chunks)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, fill_value=-1, skipna=True)
-        result = result.compute()
-        self.assertTrue(np.all(result == -1))
-        # check that skipna False makes no difference here:
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result_sn = self.resampler.get_average(data, fill_value=-1, skipna=False)
-        result_sn = result_sn.compute()
-        self.assertEqual(result, result_sn)
+        result = self._get_average_result(data, fill_value=-1, skipna=True)
+        # test that average of 2 and -1 (missing value) is 2
+        self.assertTrue(np.count_nonzero(result == 2) == 1)
+        # test than all other buckets are -1
+        self.assertTrue(np.count_nonzero(result != -1) == 1)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""

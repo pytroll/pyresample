@@ -199,7 +199,7 @@ class BucketResampler(object):
 
         return self.counts
 
-    def get_average(self, data, fill_value=np.nan, mask_all_nan=False):
+    def get_average(self, data, fill_value=np.nan, skipna=True):
         """Calculate bin-averages using bucket resampling.
 
         Parameters
@@ -207,7 +207,15 @@ class BucketResampler(object):
         data : Numpy or Dask array
             Data to be binned and averaged
         fill_value : float
-            Fill value to replace missing values.  Default: np.nan
+            Fill value to mark missing/invalid values in the input data,
+            as well as in the binned and averaged output data.
+            Default: np.nan
+        skipna : bool
+            If True, skips missing values (as marked by NaN or `fill_value`) for the average calculation
+             (similarly to Numpy's `nanmean`).
+            If False, sets the bucket to NaN if one or more missing values are present in the bucket
+            (similarly to Numpy's `mean`).
+            Default: np.nan
 
         Returns
         -------
@@ -216,9 +224,16 @@ class BucketResampler(object):
         """
         LOG.info("Get average value for each location")
 
-        sums = self.get_sum(data, mask_all_nan=mask_all_nan)
+        if not np.isnan(fill_value):
+            data = da.where(data == fill_value, np.nan, data)
+
+        sums = self.get_sum(data, mask_all_nan=False)
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int),
                               mask_all_nan=False)
+
+        if not skipna:
+            nan_counts = self.get_sum(np.isnan(data).astype(int), mask_all_nan=False)
+            counts = da.where(nan_counts > 0, np.nan, counts)
 
         average = sums / da.where(counts == 0, np.nan, counts)
         average = da.where(np.isnan(average), fill_value, average)
