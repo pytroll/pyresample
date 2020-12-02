@@ -1,18 +1,17 @@
 import unittest
-import numpy as np
-import dask.array as da
-import dask
-import xarray as xr
 from unittest.mock import MagicMock, patch
 
+import dask
+import dask.array as da
+import numpy as np
+import xarray as xr
+from pyresample import bucket
 from pyresample import create_area_def
 from pyresample.geometry import AreaDefinition
-from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 
 class Test(unittest.TestCase):
-
     adef = AreaDefinition('eurol', 'description', '',
                           {'ellps': 'WGS84',
                            'lat_0': '90.0',
@@ -158,32 +157,61 @@ class Test(unittest.TestCase):
 
     def test_get_average(self):
         """Test averaging bucket resampling."""
-        data = da.from_array(np.array([[2., 4.], [3., np.nan]]),
+        data = da.from_array(np.array([[2., 11.], [5., np.nan]]),
                              chunks=self.chunks)
         # Without pre-calculated indices
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data)
+            result = self.resampler.get_average(data, skipna=True)
         result = result.compute()
-        self.assertEqual(np.nanmax(result), 3.)
+        self.assertEqual(np.nanmax(result), 6.5)
         self.assertTrue(np.any(np.isnan(result)))
         # Use a fill value other than np.nan
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, fill_value=-1)
+            result = self.resampler.get_average(data, fill_value=-1, skipna=True)
         result = result.compute()
-        self.assertEqual(np.max(result), 3.)
+        self.assertEqual(np.max(result), 6.5)
         self.assertEqual(np.min(result), -1)
         self.assertFalse(np.any(np.isnan(result)))
+
+        # test skipna being False
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data, skipna=False)
+        result = result.compute()
+        self.assertEqual(np.nanmax(result), 6.5)
+        self.assertTrue(np.all(result != 5.))
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data, fill_value=-1, skipna=False)
+        result = result.compute()
+        self.assertEqual(np.nanmax(result), 6.5)
+        self.assertEqual(np.min(result), -1)
+        self.assertFalse(np.any(np.isnan(result)))
+        self.assertTrue(np.all(result != 5.))
 
         # Test masking all-NaN bins
         data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, mask_all_nan=True)
+            result = self.resampler.get_average(data, skipna=True)
+        result = result.compute()
         self.assertTrue(np.all(np.isnan(result)))
-        # By default all-NaN bins have a value of NaN
+        # check that skipna False makes no difference here:
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data)
-        self.assertTrue(np.all(np.isnan(result)))
+            result_sn = self.resampler.get_average(data, skipna=False)
+        result_sn = result_sn.compute()
+        self.assertEqual(result, result_sn)
+
+        # Test masking all-NaN bins with fill_value
+        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result = self.resampler.get_average(data, fill_value=-1, skipna=True)
+        result = result.compute()
+        self.assertTrue(np.all(result == -1))
+        # check that skipna False makes no difference here:
+        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+            result_sn = self.resampler.get_average(data, fill_value=-1, skipna=False)
+        result_sn = result_sn.compute()
+        self.assertEqual(result, result_sn)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
