@@ -167,23 +167,23 @@ class Test(unittest.TestCase):
                              chunks=self.chunks)
         result = self._get_average_result(data)
         # test multiple entries average
-        self.assertTrue(np.count_nonzero(result == 6.5) == 1)
+        self.assertEqual(np.count_nonzero(result == 6.5), 1)
         # test single entry average
-        self.assertTrue(np.count_nonzero(result == 5) == 1)
+        self.assertEqual(np.count_nonzero(result == 5), 1)
         # test that average of bucket with only nan is nan, and empty buckets are nan as default
-        self.assertTrue(np.count_nonzero(~np.isnan(result)) == 2)
+        self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
 
         # test fill_value other than np.nan
         result = self._get_average_result(data, fill_value=-1)
         # check that all empty buckets are fill_value
-        self.assertTrue(np.count_nonzero(result != -1) == 2)
+        self.assertEqual(np.count_nonzero(result != -1), 2)
 
         # test skipna
         data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
         result = self._get_average_result(data, skipna=True)
         # test that average of 2 and np.nan is 2 for skipna=True
-        self.assertTrue(np.count_nonzero(result == 2) == 1)
+        self.assertEqual(np.count_nonzero(result == 2), 1)
 
         data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
@@ -196,9 +196,9 @@ class Test(unittest.TestCase):
                              chunks=self.chunks)
         result = self._get_average_result(data, fill_value=-1, skipna=True)
         # test that average of 2 and -1 (missing value) is 2
-        self.assertTrue(np.count_nonzero(result == 2) == 1)
+        self.assertEqual(np.count_nonzero(result == 2), 1)
         # test than all other buckets are -1
-        self.assertTrue(np.count_nonzero(result != -1) == 1)
+        self.assertEqual(np.count_nonzero(result != -1), 1)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
