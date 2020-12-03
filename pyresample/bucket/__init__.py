@@ -139,14 +139,22 @@ class BucketResampler(object):
         target_shape = self.target_area.shape
         self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
 
-    def get_sum(self, data, mask_all_nan=False):
+    def get_sum(self, data, mask_all_nan=False, skipna=True):
         """Calculate sums for each bin with drop-in-a-bucket resampling.
 
         Parameters
         ----------
         data : Numpy or Dask array
         mask_all_nan : boolean (optional)
-            Mask bins that have only NaN results, default: False
+                    If True, sets a bucket to NaN if all elements in the bucket are NaN.
+                    If False, a bucket containing only NaN values will have sum 0.
+                    Default: False
+        skipna : boolean (optional)
+                If True, skips NaN values for the sum calculation
+                    (similarly to Numpy's `nansum`).
+                    If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+                    (similarly to Numpy's `sum`).
+                    Default: True
 
         Returns
         -------
@@ -157,8 +165,13 @@ class BucketResampler(object):
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
+
+        if skipna:
+            # Remove NaN values from the data when used as weights
+            weights = da.where(np.isnan(data), 0, data)
+        else:
+            # Keep NaN values to make a histogram bin NaN if a NaN element is present
+            weights = data
 
         # Rechunk indices to match the data chunking
         if weights.chunks != self.idxs.chunks:
@@ -169,7 +182,7 @@ class BucketResampler(object):
         sums, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size),
                                weights=weights, density=False)
 
-        if mask_all_nan:
+        if mask_all_nan and skipna:
             nans = np.isnan(data)
             nan_sums, _ = da.histogram(self.idxs[nans], bins=out_size,
                                        range=(0, out_size))
@@ -215,7 +228,7 @@ class BucketResampler(object):
              (similarly to Numpy's `nanmean`).
             If False, sets the bucket to NaN if one or more missing values are present in the bucket
             (similarly to Numpy's `mean`).
-            Default: np.nan
+            Default: True
 
         Returns
         -------
@@ -227,13 +240,9 @@ class BucketResampler(object):
         if not np.isnan(fill_value):
             data = da.where(data == fill_value, np.nan, data)
 
-        sums = self.get_sum(data, mask_all_nan=False)
+        sums = self.get_sum(data, mask_all_nan=False, skipna=skipna)
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int),
                               mask_all_nan=False)
-
-        if not skipna:
-            nan_counts = self.get_sum(np.isnan(data).astype(int), mask_all_nan=False)
-            counts = da.where(nan_counts > 0, np.nan, counts)
 
         average = sums / da.where(counts == 0, np.nan, counts)
         average = da.where(np.isnan(average), fill_value, average)
