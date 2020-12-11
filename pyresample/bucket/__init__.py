@@ -176,14 +176,18 @@ class BucketResampler(object):
         sums, _ = da.histogram(self.idxs, bins=out_size, range=(0, out_size),
                                weights=weights, density=False)
 
-        # TODO remove following lines in favour of weights = data when dask histogram bug (issue #6935) is fixed
+        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
+        sums = self._mask_sums_with_nan_if_not_skipna(skipna, data, out_size, sums)
+
+        return sums.reshape(self.target_area.shape)
+
+    def _mask_sums_with_nan_if_not_skipna(self, skipna, data, out_size, sums):
         if not skipna:
             nans = np.isnan(data)
             nan_sums, _ = da.histogram(self.idxs[nans], bins=out_size,
                                        range=(0, out_size))
             sums = da.where(nan_sums > 0, np.nan, sums)
-
-        return sums.reshape(self.target_area.shape)
+        return sums
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket
