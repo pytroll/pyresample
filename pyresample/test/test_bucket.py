@@ -112,11 +112,13 @@ class Test(unittest.TestCase):
             result = self.resampler.get_sum(data, **kwargs)
         return result.compute()
 
-    def test_get_sum(self):
-        """Test drop-in-a-bucket sum."""
+    def test_get_sum_valid_data(self):
+        """Test drop-in-a-bucket sum for valid data input."""
         data = da.from_array(np.array([[2., 3.], [7., 16.]]),
                              chunks=self.chunks)
+
         result = self._get_sum_result(data)
+
         # first two values are in same bin
         self.assertEqual(np.count_nonzero(result == 5), 1)
         # others are in separate bins
@@ -125,18 +127,27 @@ class Test(unittest.TestCase):
 
         self.assertEqual(result.shape, self.adef.shape)
 
-        # Test that also xarray.DataArrays work
+        # Test that also xarray.DataArrays work (same output)
         data = xr.DataArray(data)
         np.testing.assert_array_equal(result, self._get_sum_result(data))
 
-        # Test skipna
+    def test_get_sum_nan_data_skipna_false(self):
+        """Test drop-in-a-bucket sum for data input with nan and skipna False."""
+
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
+
         result = self._get_sum_result(data, skipna=False)
         # 2 + nan is nan, all-nan bin is nan
         self.assertEqual(np.count_nonzero(np.isnan(result)), 2)
         # rest is 0
         self.assertEqual(np.nanmin(result), 0)
+
+    def test_get_sum_nan_data_skipna_true(self):
+        """Test drop-in-a-bucket sum for data input with nan and skipna True."""
+
+        data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
+                             chunks=self.chunks)
 
         result = self._get_sum_result(data, skipna=True)
         # 2 + nan is 2
@@ -161,7 +172,7 @@ class Test(unittest.TestCase):
             result = self.resampler.get_average(data, **kwargs)
         return result.compute()
 
-    def test_get_average(self):
+    def test_get_average_basic(self):
         """Test averaging bucket resampling."""
         data = da.from_array(np.array([[2, 11], [5, np.nan]]),
                              chunks=self.chunks)
@@ -173,11 +184,17 @@ class Test(unittest.TestCase):
         # test that average of bucket with only nan is nan, and empty buckets are nan
         self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
 
+    def test_get_average_with_fillvalue_for_output(self):
+        """Test averaging bucket resampling with defined fill_value for output."""
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
+                             chunks=self.chunks)
         # test fill_value other than np.nan
         result = self._get_average_result(data, fill_value=-1)
         # check that all empty buckets are fill_value
         self.assertEqual(np.count_nonzero(result != -1), 2)
 
+    def test_get_average_skipna_true(self):
+        """Test averaging bucket resampling with skipna True."""
         # test skipna
         data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
@@ -185,13 +202,16 @@ class Test(unittest.TestCase):
         # test that average of 2 and np.nan is 2 for skipna=True
         self.assertEqual(np.count_nonzero(result == 2), 1)
 
+    def test_get_average_skipna_false(self):
+        """Test averaging bucket resampling with skipna False."""
         data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
         result = self._get_average_result(data, skipna=False)
         # test that average of 2 and np.nan is nan for skipna=False
         self.assertTrue(np.all(np.isnan(result)))
 
-        # test only nan input
+    def test_get_average_only_nan_input(self):
+        """Test averaging bucket resampling with only NaN as input."""
         data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
         result = self._get_average_result(data, skipna=True)
@@ -199,6 +219,8 @@ class Test(unittest.TestCase):
         self.assertTrue(np.all(np.isnan(result)))
         np.testing.assert_array_equal(result, self._get_average_result(data, skipna=False))
 
+    def test_get_average_with_fill_value_in_input(self):
+        """Test averaging bucket resampling with fill_value in input and skipna True."""
         # test that fill_value in input is recognised as missing value
         data = da.from_array(np.array([[2, -1], [-1, np.nan]]),
                              chunks=self.chunks)
