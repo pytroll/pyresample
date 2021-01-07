@@ -467,9 +467,12 @@ class TestXarrayBilinear(unittest.TestCase):
         self.data1 = DataArray(da.ones((in_shape[0], in_shape[1])), dims=('y', 'x'))
         self.data2 = 2. * self.data1
         self.data3 = self.data1 + 9.5
+
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
                                  np.linspace(45., 75., num=in_shape[1]))
         self.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        self.source_def_1d = geometry.SwathDefinition(lons=np.ravel(lons),
+                                                      lats=np.ravel(lats))
 
         self.radius = 50e3
         self._neighbours = 32
@@ -710,6 +713,24 @@ class TestXarrayBilinear(unittest.TestCase):
         p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
         self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
                         np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
+
+    def test_slice_data_1d(self):
+        """Test slicing 1D data."""
+        import dask.array as da
+        from xarray import DataArray
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        # 1D data
+        data = DataArray(da.ones(self.source_def_1d.shape))
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
+        self.assertEqual(p_1.shape, resampler.bilinear_s.shape)
+        self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
+        self.assertTrue(np.all(p_1 == 1.0) and np.all(p_2 == 1.0) and
+                        np.all(p_3 == 1.0) and np.all(p_4 == 1.0))
 
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
