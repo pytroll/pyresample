@@ -70,9 +70,13 @@ class TestNumpyBilinear(unittest.TestCase):
         cls.data1 = np.ones((in_shape[0], in_shape[1]))
         cls.data2 = 2. * cls.data1
         cls.data3 = cls.data1 + 9.5
+        cls.data3_1d = np.ravel(cls.data3)
+
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
                                  np.linspace(45., 75., num=in_shape[1]))
         cls.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        cls.source_def_1d = geometry.SwathDefinition(lons=np.ravel(lons),
+                                                     lats=np.ravel(lats))
 
         cls.radius = 50e3
         cls._neighbours = 32
@@ -311,6 +315,22 @@ class TestNumpyBilinear(unittest.TestCase):
         res = get_sample_from_bil_info(data.ravel(), t__, s__,
                                        input_idxs, idx_arr)
         assert not hasattr(res, 'mask')
+
+    def test_get_sample_from_bil_info_1d(self):
+        """Test resampling using resampling indices for 1D data."""
+        from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
+
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.source_def_1d,
+                                                     self.target_def,
+                                                     50e5, neighbours=32,
+                                                     nprocs=1)
+        # Sample from 1D data
+        res = get_sample_from_bil_info(self.data3_1d, t__, s__,
+                                       input_idxs, idx_arr)
+        self.assertAlmostEqual(np.nanmin(res), 10.5)
+        self.assertAlmostEqual(np.nanmax(res), 10.5)
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum(), 4)
 
     def test_resample_bilinear(self):
         """Test whole bilinear resampling."""
