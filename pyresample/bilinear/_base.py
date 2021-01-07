@@ -188,7 +188,7 @@ class BilinearBase(object):
                                       np.arange(shp[0]))
             data = (np.ravel(lines), np.ravel(cols))
         except IndexError:
-            data = (np.zeros(shp[0]), np.arange(shp[0]))
+            data = (np.zeros(shp[0], dtype=np.uint32), np.arange(shp[0]))
 
         valid_lines_and_columns = array_slice_for_multiple_arrays(
             self._valid_input_index,
