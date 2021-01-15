@@ -12,7 +12,6 @@ from pyresample.test.utils import CustomScheduler
 
 
 class Test(unittest.TestCase):
-
     adef = AreaDefinition('eurol', 'description', '',
                           {'ellps': 'WGS84',
                            'lat_0': '90.0',
@@ -107,44 +106,55 @@ class Test(unittest.TestCase):
         np.testing.assert_equal(resampler.x_idxs, np.array([-1, 0, 0, 1, 1, 1, -1, -1, -1]))
         np.testing.assert_equal(resampler.y_idxs, np.array([-1, 1, 1, 1, 0, 0, -1, -1, -1]))
 
-    def test_get_sum(self):
-        """Test drop-in-a-bucket sum."""
-        data = da.from_array(np.array([[2., 2.], [2., 2.]]),
-                             chunks=self.chunks)
+    def _get_sum_result(self, data, **kwargs):
+        """Compute the bucket average with kwargs and check that no dask computation is performed."""
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_sum(data)
+            result = self.resampler.get_sum(data, **kwargs)
+        return result.compute()
 
-        result = result.compute()
-        # One bin with two hits, so max value is 2.0
-        self.assertTrue(np.max(result) == 4.)
-        # Two bins with the same value
-        self.assertEqual(np.sum(result == 2.), 2)
-        # One bin with double the value
-        self.assertEqual(np.sum(result == 4.), 1)
+    def test_get_sum_valid_data(self):
+        """Test drop-in-a-bucket sum for valid data input."""
+        data = da.from_array(np.array([[2., 3.], [7., 16.]]),
+                             chunks=self.chunks)
+
+        result = self._get_sum_result(data)
+
+        # first two values are in same bin
+        self.assertEqual(np.count_nonzero(result == 5), 1)
+        # others are in separate bins
+        self.assertEqual(np.count_nonzero(result == 7), 1)
+        self.assertEqual(np.count_nonzero(result == 16), 1)
+
         self.assertEqual(result.shape, self.adef.shape)
 
-        # Test that also Xarray.DataArrays work
+        # Test that also xarray.DataArrays work (same output)
         data = xr.DataArray(data)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_sum(data)
-        # One bin with two hits, so max value is 2.0
-        self.assertTrue(np.max(result) == 4.)
-        # Two bins with the same value
-        self.assertEqual(np.sum(result == 2.), 2)
-        # One bin with double the value
-        self.assertEqual(np.sum(result == 4.), 1)
-        self.assertEqual(result.shape, self.adef.shape)
+        np.testing.assert_array_equal(result, self._get_sum_result(data))
 
-        # Test masking all-NaN bins
-        data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
+    def test_get_sum_nan_data_skipna_false(self):
+        """Test drop-in-a-bucket sum for data input with nan and skipna False."""
+
+        data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_sum(data, mask_all_nan=True)
-        self.assertTrue(np.all(np.isnan(result)))
-        # By default all-NaN bins have a value of 0.0
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_sum(data)
-        self.assertEqual(np.nanmax(result), 0.0)
+
+        result = self._get_sum_result(data, skipna=False)
+        # 2 + nan is nan, all-nan bin is nan
+        self.assertEqual(np.count_nonzero(np.isnan(result)), 2)
+        # rest is 0
+        self.assertEqual(np.nanmin(result), 0)
+
+    def test_get_sum_nan_data_skipna_true(self):
+        """Test drop-in-a-bucket sum for data input with nan and skipna True."""
+
+        data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
+                             chunks=self.chunks)
+
+        result = self._get_sum_result(data, skipna=True)
+        # 2 + nan is 2
+        self.assertEqual(np.count_nonzero(result == 2.), 1)
+        # all-nan and rest is 0
+        self.assertEqual(np.count_nonzero(np.isnan(result)), 0)
+        self.assertEqual(np.nanmin(result), 0)
 
     def test_get_count(self):
         """Test drop-in-a-bucket sum."""
@@ -156,34 +166,69 @@ class Test(unittest.TestCase):
         self.assertEqual(np.sum(result == 2), 1)
         self.assertTrue(self.resampler.counts is not None)
 
-    def test_get_average(self):
-        """Test averaging bucket resampling."""
-        data = da.from_array(np.array([[2., 4.], [3., np.nan]]),
-                             chunks=self.chunks)
-        # Without pre-calculated indices
+    def _get_average_result(self, data, **kwargs):
+        """Compute the bucket average with kwargs and check that no dask computation is performed."""
         with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data)
-        result = result.compute()
-        self.assertEqual(np.nanmax(result), 3.)
-        self.assertTrue(np.any(np.isnan(result)))
-        # Use a fill value other than np.nan
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, fill_value=-1)
-        result = result.compute()
-        self.assertEqual(np.max(result), 3.)
-        self.assertEqual(np.min(result), -1)
-        self.assertFalse(np.any(np.isnan(result)))
+            result = self.resampler.get_average(data, **kwargs)
+        return result.compute()
 
-        # Test masking all-NaN bins
+    def test_get_average_basic(self):
+        """Test averaging bucket resampling."""
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_average_result(data)
+        # test multiple entries average
+        self.assertEqual(np.count_nonzero(result == 6.5), 1)
+        # test single entry average
+        self.assertEqual(np.count_nonzero(result == 5), 1)
+        # test that average of bucket with only nan is nan, and empty buckets are nan
+        self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
+
+    def test_get_average_with_fillvalue_for_output(self):
+        """Test averaging bucket resampling with defined fill_value for output."""
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
+                             chunks=self.chunks)
+        # test fill_value other than np.nan
+        result = self._get_average_result(data, fill_value=-1)
+        # check that all empty buckets are fill_value
+        self.assertEqual(np.count_nonzero(result != -1), 2)
+
+    def test_get_average_skipna_true(self):
+        """Test averaging bucket resampling with skipna True."""
+        # test skipna
+        data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_average_result(data, skipna=True)
+        # test that average of 2 and np.nan is 2 for skipna=True
+        self.assertEqual(np.count_nonzero(result == 2), 1)
+
+    def test_get_average_skipna_false(self):
+        """Test averaging bucket resampling with skipna False."""
+        data = da.from_array(np.array([[2, np.nan], [np.nan, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_average_result(data, skipna=False)
+        # test that average of 2 and np.nan is nan for skipna=False
+        self.assertTrue(np.all(np.isnan(result)))
+
+    def test_get_average_only_nan_input(self):
+        """Test averaging bucket resampling with only NaN as input."""
         data = da.from_array(np.array([[np.nan, np.nan], [np.nan, np.nan]]),
                              chunks=self.chunks)
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data, mask_all_nan=True)
+        result = self._get_average_result(data, skipna=True)
+        # test that average of np.nan and np.nan is np.nan for both skipna
         self.assertTrue(np.all(np.isnan(result)))
-        # By default all-NaN bins have a value of NaN
-        with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
-            result = self.resampler.get_average(data)
-        self.assertTrue(np.all(np.isnan(result)))
+        np.testing.assert_array_equal(result, self._get_average_result(data, skipna=False))
+
+    def test_get_average_with_fill_value_in_input(self):
+        """Test averaging bucket resampling with fill_value in input and skipna True."""
+        # test that fill_value in input is recognised as missing value
+        data = da.from_array(np.array([[2, -1], [-1, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_average_result(data, fill_value=-1, skipna=True)
+        # test that average of 2 and -1 (missing value) is 2
+        self.assertEqual(np.count_nonzero(result == 2), 1)
+        # test than all other buckets are -1
+        self.assertEqual(np.count_nonzero(result != -1), 1)
 
     def test_resample_bucket_fractions(self):
         """Test fraction calculations for categorical data."""
@@ -220,4 +265,4 @@ class Test(unittest.TestCase):
         # No categories given, need to compute the data once to get
         # the categories
         with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
-            result = self.resampler.get_fractions(data, categories=None)
+            _ = self.resampler.get_fractions(data, categories=None)

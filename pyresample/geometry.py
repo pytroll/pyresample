@@ -116,6 +116,8 @@ class BaseDefinition(object):
         """Test for approximate equality."""
         if self is other:
             return True
+        if not isinstance(other, BaseDefinition):
+            return False
         if other.lons is None or other.lats is None:
             other_lons, other_lats = other.get_lonlats()
         else:
@@ -711,9 +713,9 @@ class SwathDefinition(CoordinateDefinition):
 
         # We need to compute alpha-based omerc for geotiff support
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
-        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
+        az1, az2, _ = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
         azimuth = az1
-        az1, az2, dist = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
+        az1, az2, _ = Geod(**proj_dict2points).inv(lonc, lat0, lon1, lat1)
         if abs(az1 - azimuth) > 1:
             if abs(az2 - azimuth) > 1:
                 logger.warning("Can't find appropriate azimuth.")
@@ -1111,7 +1113,7 @@ class AreaDefinition(BaseDefinition):
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
-        self.area_extent = tuple(area_extent)
+        self._area_extent = tuple(area_extent)
         if CRS is not None:
             self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
@@ -1152,7 +1154,7 @@ class AreaDefinition(BaseDefinition):
 
     @property
     def _crs(self):
-        """Helper property for the `crs` property.
+        """Wrap the `crs` property in a helper property.
 
         The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
         accidentally passing it between threads, we only create it when it
@@ -1181,6 +1183,10 @@ class AreaDefinition(BaseDefinition):
             else:
                 self._proj_dict = proj4_str_to_dict(self.crs.to_proj4())
         return self._proj_dict
+
+    @property
+    def area_extent(self):
+        return self._area_extent
 
     def copy(self, **override_kwargs):
         """Make a copy of the current area.
@@ -1617,7 +1623,7 @@ class AreaDefinition(BaseDefinition):
         p = Proj(self.proj_str)
         x = self.projection_x_coords
         y = self.projection_y_coords
-        return p(y[y.size - cols], x[x.size - rows], inverse=True)
+        return p(x[cols],  y[rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
         """Return image columns and rows for the given lons and lats.
@@ -1984,6 +1990,26 @@ class AreaDefinition(BaseDefinition):
                       "instead.", DeprecationWarning)
         return proj4_dict_to_str(self.proj_dict)
 
+    def _get_slice_starts_stops(self, area_to_cover):
+        """Get x and y start and stop points for slicing."""
+        llx, lly, urx, ury = area_to_cover.area_extent
+        x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
+
+        if self.area_extent[0] > self.area_extent[2]:
+            xstart = 0 if x[1] is np.ma.masked else x[1]
+            xstop = self.width if x[0] is np.ma.masked else x[0] + 1
+        else:
+            xstart = 0 if x[0] is np.ma.masked else x[0]
+            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
+        if self.area_extent[1] > self.area_extent[3]:
+            ystart = 0 if y[0] is np.ma.masked else y[0]
+            ystop = self.height if y[1] is np.ma.masked else y[1] + 1
+        else:
+            ystart = 0 if y[1] is np.ma.masked else y[1]
+            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
+
+        return xstart, xstop, ystart, ystop
+
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
         if not isinstance(area_to_cover, AreaDefinition):
@@ -1996,14 +2022,9 @@ class AreaDefinition(BaseDefinition):
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s',
                          proj_def_to_cover)
-            # Get xy coordinates
-            llx, lly, urx, ury = area_to_cover.area_extent
-            x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
-
-            xstart = 0 if x[0] is np.ma.masked else x[0]
-            ystart = 0 if y[1] is np.ma.masked else y[1]
-            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
-            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
+            # Get slice parameters
+            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(
+                area_to_cover)
 
             return (check_slice_orientation(slice(xstart, xstop)),
                     check_slice_orientation(slice(ystart, ystop)))
@@ -2326,12 +2347,15 @@ class StackedAreaDefinition(BaseDefinition):
             row_slice = slice(0, self.height)
             col_slice = slice(0, self.width)
         offset = 0
-        for definition in self.defs:
+        for def_idx, areadef in enumerate(self.defs):
+            # compute appropriate chunks for the current AreaDefinition
+            chunks_for_areadef = self._get_chunks_for_areadef_in_stacked_areadef(chunks, def_idx)
+
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0), definition.height),
+                                    min(max(row_slice.stop - offset, 0), areadef.height),
                                     row_slice.step)
-            lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks)
+            lons, lats = areadef.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
+                                             cache=cache, dtype=dtype, chunks=chunks_for_areadef)
 
             llons.append(lons)
             llats.append(lats)
@@ -2341,6 +2365,24 @@ class StackedAreaDefinition(BaseDefinition):
         self.lats = vstack(llats)
 
         return self.lons, self.lats
+
+    def _get_chunks_for_areadef_in_stacked_areadef(self, chunks_stacked_areadef, areadef_idx):
+        """Return the chunks for the AreaDefinition with index `areadef_idx`, starting from the chunks defined in
+        `chunks_stacked_areadef`."""
+        if isinstance(chunks_stacked_areadef, tuple) and isinstance(chunks_stacked_areadef[0], int):
+            # defined chunk is just an integer, so use that for all areadefs
+            chunks_for_areadef = chunks_stacked_areadef
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) == len(self.defs):
+            # amount of chunks defined matches the amout of areadefs,
+            # so assign each chunk to each areadef following the array order
+            chunks_for_areadef = (chunks_stacked_areadef[0][areadef_idx], chunks_stacked_areadef[1])
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) != len(self.defs):
+            # too many/few chunks defined, assignment is ambiguous, so use the actual shape of the areadef instead
+            chunks_for_areadef = (self.defs[areadef_idx].shape[0], chunks_stacked_areadef[1])
+        else:
+            chunks_for_areadef = chunks_stacked_areadef
+
+        return chunks_for_areadef
 
     def get_lonlats_dask(self, chunks=None, dtype=None):
         """Return lon and lat dask arrays of the area."""

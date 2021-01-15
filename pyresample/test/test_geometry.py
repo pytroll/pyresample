@@ -203,7 +203,6 @@ class Test(unittest.TestCase):
             self.assertEqual(res['projection'][proj_key],
                              expected['projection'][proj_key])
 
-
         # EPSG
         projections = {'+init=epsg:3006': 'init: epsg:3006'}
         if utils.is_pyproj2():
@@ -516,6 +515,8 @@ class Test(unittest.TestCase):
                                            )
         self.assertFalse(
             area_def == msg_area, 'area_defs are not expected to be equal')
+        self.assertFalse(
+            area_def == "area", 'area_defs are not expected to be equal')
 
     def test_swath_equal_area(self):
         """Test equality swath area."""
@@ -783,6 +784,8 @@ class Test(unittest.TestCase):
     def test_colrow2lonlat(self):
         """Test colrow2lonlat."""
         from pyresample import utils
+
+        # test square, symmetric areadef
         area_id = 'meteosat_0deg'
         area_name = 'Meteosat 0 degree Service'
         proj_id = 'geos0'
@@ -817,6 +820,45 @@ class Test(unittest.TestCase):
         lon__, lat__ = area.colrow2lonlat(1567, 2375)
         lon_expect = -8.125547604568746
         lat_expect = -14.345524111874646
+        self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
+
+        # test rectangular areadef
+        area_id = 'eurol'
+        area_name = 'Euro 3.0km area - Europe'
+        proj_id = 'eurol'
+        x_size = 2560
+        y_size = 2048
+        area_extent = [-3780000.0, -7644000.0, 3900000.0, -1500000.0]
+        proj_dict = {
+            'lat_0': 90.0,
+            'lon_0': 0.0,
+            'lat_ts': 60.0,
+            'ellps': 'WGS84',
+            'proj': 'stere'}
+        area = utils.get_area_def(area_id,
+                                  area_name,
+                                  proj_id,
+                                  proj_dict,
+                                  x_size, y_size,
+                                  area_extent)
+
+        # Darmstadt, Gibraltar
+        cols = np.array([1477, 1069])
+        rows = np.array([938, 1513])
+        lons__, lats__ = area.colrow2lonlat(cols, rows)
+
+        # test arrays
+        lon_expects = np.array([8.597949006575268, -5.404744177829209])
+        lat_expects = np.array([49.79024658538765, 36.00540657185169])
+        self.assertTrue(np.allclose(lons__, lon_expects, rtol=0, atol=1e-7))
+        self.assertTrue(np.allclose(lats__, lat_expects, rtol=0, atol=1e-7))
+
+        # test scalars
+        # Selva di Val Gardena
+        lon__, lat__ = area.colrow2lonlat(1582, 1049)
+        lon_expect = 11.75721385976652
+        lat_expect = 46.56384754346095
         self.assertTrue(np.allclose(lon__, lon_expect, rtol=0, atol=1e-7))
         self.assertTrue(np.allclose(lat__, lat_expect, rtol=0, atol=1e-7))
 
@@ -1000,6 +1042,71 @@ class Test(unittest.TestCase):
         y_expects = np.array([1, 0])
         self.assertTrue((x__.data == x_expects).all())
         self.assertTrue((y__.data == y_expects).all())
+
+    def test_get_slice_starts_stops(self):
+        """Check area slice end-points."""
+        from pyresample import utils
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        target_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+
+        # Expected result is the same for all cases
+        expected = (3, 3709, 3, 3709)
+
+        # Source and target have the same orientation
+        area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in X direction
+        area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in Y direction
+        area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
+
+        # Source is flipped in both X and Y directions
+        area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
+        source_area = utils.get_area_def(area_id,
+                                         area_name,
+                                         proj_id,
+                                         proj_dict,
+                                         x_size, y_size,
+                                         area_extent)
+        res = source_area._get_slice_starts_stops(target_area)
+        assert res == expected
 
     def test_get_area_slices(self):
         """Check area slicing."""
@@ -1415,6 +1522,28 @@ class Test(unittest.TestCase):
                                             1029087.28, 1490031.3600000001])
         # WKT1 to WKT2 has some different naming of things so this fails
         # self.assertEqual(crs, area_def.crs)
+
+    def test_areadef_immutable(self):
+        import pytest
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           10,
+                                           10,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+        with pytest.raises(AttributeError):
+            area_def.shape = (10, 10)
+        with pytest.raises(AttributeError):
+            area_def.proj_str = "seaweed"
+        with pytest.raises(AttributeError):
+            area_def.area_extent = (-1000000, -900000, 1000000, 1500000)
 
 
 class TestMakeSliceDivisible(unittest.TestCase):
@@ -1908,6 +2037,20 @@ class TestStackedAreaDefinition(unittest.TestCase):
         np.testing.assert_allclose(lats[:464, :], lats0)
         np.testing.assert_allclose(lats[464:, :], lats1)
 
+        # check that get_lonlats with chunks definition doesn't cause errors and output arrays are equal
+        # too many chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((200, 264, 464), (5570,)))
+        # too few chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464,), (5568,)))
+        # right amount of chunks, same shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 464), (5568,)))
+        # right amount of chunks, different shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 470), (5568,)))
+        # only one set of chunks in a tuple
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=(464, 5568))
+        # only one chunk value
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=464)
+
     def test_combine_area_extents(self):
         """Test combination of area extents."""
         area1 = MagicMock()
@@ -2071,6 +2214,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
 
         area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
         self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
+
+
+def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
+    """Compute the lons and lats with chunk definition and check that they are as expected."""
+    lons_c, lats_c = final_area.get_lonlats(chunks=chunks)
+    np.testing.assert_array_equal(lons, lons_c)
+    np.testing.assert_array_equal(lats, lats_c)
 
 
 class TestDynamicAreaDefinition(unittest.TestCase):

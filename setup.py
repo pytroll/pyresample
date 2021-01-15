@@ -27,15 +27,18 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
 requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'configobj',
-                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0']
+                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+                ]
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1'],
-                  'cf': ['xarray']}
+                  'cf': ['xarray'],
+                  'gradient_search': ['shapely'],
+                  'xarray_bilinear': ['xarray', 'dask', 'zarr']}
 
 setup_requires = ['numpy>=1.10.0']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', ]
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
@@ -123,6 +126,7 @@ if __name__ == "__main__":
           author_email='t.lavergne@met.no',
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
+          package_data={'pyresample.test': ['test_files/*']},
           python_requires='>=3.4',
           setup_requires=setup_requires,
           install_requires=requirements,
