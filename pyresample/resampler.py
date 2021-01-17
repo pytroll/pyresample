@@ -175,6 +175,8 @@ def update_resampled_coords(old_data, new_data, new_area):
 
     # add crs, x, and y coordinates
     new_data = add_crs_xy_coords(new_data, new_area)
+    # make sure the new area is assigned to the attributes
+    new_data.attrs['area'] = new_area
     return new_data
 
 
