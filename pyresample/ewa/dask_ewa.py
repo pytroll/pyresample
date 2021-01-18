@@ -413,8 +413,8 @@ class DaskEWAResampler(BaseResampler):
                     "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
 
         data_out = []
-        for data in data_in:
-            res = self._run_fornav_single(data, out_chunks,
+        for data_subarr in data_in:
+            res = self._run_fornav_single(data_subarr, out_chunks,
                                           self.target_geo_def,
                                           fill_value,
                                           **fornav_kwargs)

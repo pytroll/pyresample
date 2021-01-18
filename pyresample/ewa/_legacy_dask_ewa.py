@@ -185,8 +185,8 @@ class LegacyDaskEWAResampler(BaseResampler):
                   "(need %f%%)" % (grid_covered_ratio * 100,
                                    grid_coverage * 100)
             raise RuntimeError(msg)
-        LOG.debug("EWA resampling found %f%% of the grid covered" %
-                  (grid_covered_ratio * 100))
+        LOG.debug("EWA resampling found %f%% of the grid covered",
+                  grid_covered_ratio * 100)
 
         return res
 

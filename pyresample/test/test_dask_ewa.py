@@ -18,7 +18,7 @@
 """Test EWA Dask-based resamplers."""
 
 import logging
-import unittest
+import numpy as np
 from unittest import mock
 
 try:
@@ -101,8 +101,26 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     return ds1, source, ds2, swath_def, target
 
 
-class TestLegacyDaskEWAResampler(unittest.TestCase):
+class TestLegacyDaskEWAResampler:
     """Test Legacy Dask EWA resampler class."""
+
+    @staticmethod
+    def _coord_and_crs_checks(new_data, target_area, has_bands=False):
+        assert 'y' in new_data.coords
+        assert 'x' in new_data.coords
+        if has_bands:
+            assert 'bands' in new_data.coords
+        if CRS is not None:
+            assert 'crs' in new_data.coords
+            assert isinstance(new_data.coords['crs'].item(), CRS)
+            assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+            assert new_data.coords['y'].attrs['units'] == 'meter'
+            assert new_data.coords['x'].attrs['units'] == 'meter'
+            if hasattr(target_area, 'crs'):
+                assert target_area.crs is new_data.coords['crs'].item()
+            if has_bands:
+                np.testing.assert_equal(new_data.coords['bands'].values,
+                                        ['R', 'G', 'B'])
 
     @mock.patch('pyresample.ewa._legacy_dask_ewa.fornav')
     @mock.patch('pyresample.ewa._legacy_dask_ewa.ll2cr')
@@ -124,10 +142,10 @@ class TestLegacyDaskEWAResampler(unittest.TestCase):
 
         resampler = LegacyDaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data)
-        self.assertTupleEqual(new_data.shape, (200, 100))
-        self.assertEqual(new_data.dtype, np.float32)
-        self.assertEqual(new_data.attrs['test'], 'test')
-        self.assertIs(new_data.attrs['area'], target_area)
+        assert new_data.shape == (200, 100)
+        assert new_data.dtype == np.float32
+        assert new_data.attrs['test'] == 'test'
+        assert new_data.attrs['area'] is target_area
         # make sure we can actually compute everything
         new_data.compute()
         lonlat_calls = get_lonlats.call_count
@@ -141,19 +159,10 @@ class TestLegacyDaskEWAResampler(unittest.TestCase):
         new_data = resampler.resample(data)
         new_data.compute()
         # ll2cr will be called once more because of the computation
-        self.assertEqual(ll2cr.call_count, ll2cr_calls + num_chunks)
+        assert ll2cr.call_count == ll2cr_calls + num_chunks
         # but we should already have taken the lonlats from the SwathDefinition
-        self.assertEqual(get_lonlats.call_count, lonlat_calls)
-        self.assertIn('y', new_data.coords)
-        self.assertIn('x', new_data.coords)
-        if CRS is not None:
-            self.assertIn('crs', new_data.coords)
-            self.assertIsInstance(new_data.coords['crs'].item(), CRS)
-            self.assertIn('lcc', new_data.coords['crs'].item().to_proj4())
-            self.assertEqual(new_data.coords['y'].attrs['units'], 'meter')
-            self.assertEqual(new_data.coords['x'].attrs['units'], 'meter')
-            if hasattr(target_area, 'crs'):
-                self.assertIs(target_area.crs, new_data.coords['crs'].item())
+        assert get_lonlats.call_count == lonlat_calls
+        self._coord_and_crs_checks(new_data, target_area)
 
     @mock.patch('pyresample.ewa._legacy_dask_ewa.fornav')
     @mock.patch('pyresample.ewa._legacy_dask_ewa.ll2cr')
@@ -176,10 +185,10 @@ class TestLegacyDaskEWAResampler(unittest.TestCase):
 
         resampler = LegacyDaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data)
-        self.assertTupleEqual(new_data.shape, (3, 200, 100))
-        self.assertEqual(new_data.dtype, np.float32)
-        self.assertEqual(new_data.attrs['test'], 'test')
-        self.assertIs(new_data.attrs['area'], target_area)
+        assert new_data.shape == (3, 200, 100)
+        assert new_data.dtype == np.float32
+        assert new_data.attrs['test'] == 'test'
+        assert new_data.attrs['area'] is target_area
         # make sure we can actually compute everything
         new_data.compute()
         lonlat_calls = get_lonlats.call_count
@@ -193,21 +202,7 @@ class TestLegacyDaskEWAResampler(unittest.TestCase):
         new_data = resampler.resample(swath_data)
         new_data.compute()
         # ll2cr will be called once more because of the computation
-        self.assertEqual(ll2cr.call_count, ll2cr_calls + num_chunks)
+        assert ll2cr.call_count == ll2cr_calls + num_chunks
         # but we should already have taken the lonlats from the SwathDefinition
-        self.assertEqual(get_lonlats.call_count, lonlat_calls)
-        self.assertIn('y', new_data.coords)
-        self.assertIn('x', new_data.coords)
-        self.assertIn('bands', new_data.coords)
-        if CRS is not None:
-            self.assertIn('crs', new_data.coords)
-            self.assertIsInstance(new_data.coords['crs'].item(), CRS)
-            self.assertIn('lcc', new_data.coords['crs'].item().to_proj4())
-            self.assertEqual(new_data.coords['y'].attrs['units'], 'meter')
-            self.assertEqual(new_data.coords['x'].attrs['units'], 'meter')
-            np.testing.assert_equal(new_data.coords['bands'].values,
-                                    ['R', 'G', 'B'])
-            if hasattr(target_area, 'crs'):
-                self.assertIs(target_area.crs, new_data.coords['crs'].item())
-
-
+        assert get_lonlats.call_count == lonlat_calls
+        self._coord_and_crs_checks(new_data, target_area, has_bands=True)
