@@ -20,6 +20,7 @@
 import logging
 import numpy as np
 from unittest import mock
+import pytest
 
 try:
     from pyproj import CRS
@@ -122,27 +123,47 @@ class TestLegacyDaskEWAResampler:
                 np.testing.assert_equal(new_data.coords['bands'].values,
                                         ['R', 'G', 'B'])
 
+    @pytest.mark.parametrize(
+        ('input_shape', 'input_dims'),
+        [
+            ((100, 50), ('y', 'x')),
+            ((3, 100, 50), ('bands', 'y', 'x')),
+        ]
+    )
     @mock.patch('pyresample.ewa._legacy_dask_ewa.fornav')
     @mock.patch('pyresample.ewa._legacy_dask_ewa.ll2cr')
     @mock.patch('pyresample.ewa._legacy_dask_ewa.SwathDefinition.get_lonlats')
-    def test_2d_ewa(self, get_lonlats, ll2cr, fornav):
-        """Test EWA with a 2D dataset."""
+    def test_basic_ewa(self, get_lonlats, ll2cr, fornav, input_shape, input_dims):
+        """Test EWA with basic xarray DataArrays."""
         import numpy as np
         import xarray as xr
         from pyresample.ewa import LegacyDaskEWAResampler
-        ll2cr.return_value = (100,
-                              np.zeros((10, 10), dtype=np.float32),
-                              np.zeros((10, 10), dtype=np.float32))
-        fornav.return_value = (100 * 200,
-                               np.zeros((200, 100), dtype=np.float32))
-        _, _, swath_data, source_swath, target_area = get_test_data()
+        output_shape = (200, 100)
+        ll2cr.return_value = (input_shape[-2],
+                              np.zeros(input_shape[-2:], dtype=np.float32),
+                              np.zeros(input_shape[-2:], dtype=np.float32))
+        if len(input_shape) == 3:
+            fornav.return_value = ([output_shape[-2] * output_shape[-1]] * input_shape[0],
+                                   [np.zeros(output_shape, dtype=np.float32)] * input_shape[0])
+            output_coords = {'bands': ['R', 'G', 'B']}
+            output_shape = (input_shape[0], output_shape[0], output_shape[1])
+            output_dims = ('bands', 'y', 'x')
+        else:
+            fornav.return_value = (output_shape[-2] * output_shape[-1],
+                                   np.zeros(output_shape, dtype=np.float32))
+            output_coords = {}
+            output_dims = ('y', 'x')
+        _, _, swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape[-2:],
+            input_dims=input_dims,
+        )
         get_lonlats.return_value = (source_swath.lons, source_swath.lats)
         swath_data.data = swath_data.data.astype(np.float32)
         num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
 
         resampler = LegacyDaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data)
-        assert new_data.shape == (200, 100)
+        assert new_data.shape == output_shape
         assert new_data.dtype == np.float32
         assert new_data.attrs['test'] == 'test'
         assert new_data.attrs['area'] is target_area
@@ -154,55 +175,14 @@ class TestLegacyDaskEWAResampler:
         # resample a different dataset and make sure cache is used
         data = xr.DataArray(
             swath_data.data,
-            dims=('y', 'x'), attrs={'area': source_swath, 'test': 'test2',
-                                    'name': 'test2'})
+            coords=output_coords,
+            dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
+                                     'name': 'test2'})
         new_data = resampler.resample(data)
         new_data.compute()
         # ll2cr will be called once more because of the computation
         assert ll2cr.call_count == ll2cr_calls + num_chunks
         # but we should already have taken the lonlats from the SwathDefinition
         assert get_lonlats.call_count == lonlat_calls
-        self._coord_and_crs_checks(new_data, target_area)
-
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.fornav')
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.ll2cr')
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.SwathDefinition.get_lonlats')
-    def test_3d_ewa(self, get_lonlats, ll2cr, fornav):
-        """Test EWA with a 3D dataset."""
-        import numpy as np
-        import xarray as xr
-        from pyresample.ewa import LegacyDaskEWAResampler
-        _, _, swath_data, source_swath, target_area = get_test_data(
-            input_shape=(3, 200, 100), input_dims=('bands', 'y', 'x'))
-        swath_data.data = swath_data.data.astype(np.float32)
-        ll2cr.return_value = (100,
-                              np.zeros((10, 10), dtype=np.float32),
-                              np.zeros((10, 10), dtype=np.float32))
-        fornav.return_value = ([100 * 200] * 3,
-                               [np.zeros((200, 100), dtype=np.float32)] * 3)
-        get_lonlats.return_value = (source_swath.lons, source_swath.lats)
-        num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
-
-        resampler = LegacyDaskEWAResampler(source_swath, target_area)
-        new_data = resampler.resample(swath_data)
-        assert new_data.shape == (3, 200, 100)
-        assert new_data.dtype == np.float32
-        assert new_data.attrs['test'] == 'test'
-        assert new_data.attrs['area'] is target_area
-        # make sure we can actually compute everything
-        new_data.compute()
-        lonlat_calls = get_lonlats.call_count
-        ll2cr_calls = ll2cr.call_count
-
-        # resample a different dataset and make sure cache is used
-        swath_data = xr.DataArray(
-            swath_data.data,
-            dims=('bands', 'y', 'x'), coords={'bands': ['R', 'G', 'B']},
-            attrs={'area': source_swath, 'test': 'test'})
-        new_data = resampler.resample(swath_data)
-        new_data.compute()
-        # ll2cr will be called once more because of the computation
-        assert ll2cr.call_count == ll2cr_calls + num_chunks
-        # but we should already have taken the lonlats from the SwathDefinition
-        assert get_lonlats.call_count == lonlat_calls
-        self._coord_and_crs_checks(new_data, target_area, has_bands=True)
+        self._coord_and_crs_checks(new_data, target_area,
+                                   has_bands='bands' in input_dims)
