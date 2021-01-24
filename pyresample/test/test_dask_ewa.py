@@ -35,9 +35,6 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     """Get common data objects used in testing.
 
     Returns: tuple with the following elements
-        input_data_on_area: DataArray with dimensions as if it is a gridded
-            dataset.
-        input_area_def: AreaDefinition of the above DataArray
         input_data_on_swath: DataArray with dimensions as if it is a swath.
         input_swath: SwathDefinition of the above DataArray
         target_area_def: AreaDefinition to be used as a target for resampling
@@ -47,44 +44,27 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     import dask.array as da
     from pyresample.geometry import AreaDefinition, SwathDefinition
     from pyresample.utils import proj4_str_to_dict
+    from pyresample.test.utils import create_test_longitude, create_test_latitude
     ds1 = DataArray(da.zeros(input_shape, chunks=85),
                     dims=input_dims,
                     attrs={'name': 'test_data_name', 'test': 'test'})
-    if input_dims and 'y' in input_dims:
-        ds1 = ds1.assign_coords(y=da.arange(input_shape[-2], chunks=85))
-    if input_dims and 'x' in input_dims:
-        ds1 = ds1.assign_coords(x=da.arange(input_shape[-1], chunks=85))
     if input_dims and 'bands' in input_dims:
         ds1 = ds1.assign_coords(bands=list('RGBA'[:ds1.sizes['bands']]))
 
-    input_proj_str = ('+proj=geos +lon_0=-95.0 +h=35786023.0 +a=6378137.0 '
-                      '+b=6356752.31414 +sweep=x +units=m +no_defs')
-    source = AreaDefinition(
-        'test_target',
-        'test_target',
-        'test_target',
-        proj4_str_to_dict(input_proj_str),
-        input_shape[1],  # width
-        input_shape[0],  # height
-        (-1000., -1500., 1000., 1500.))
-    ds1.attrs['area'] = source
-    if CRS is not None:
-        crs = CRS.from_string(input_proj_str)
-        ds1 = ds1.assign_coords(crs=crs)
-
-    ds2 = ds1.copy()
     input_area_shape = tuple(ds1.sizes[dim] for dim in ds1.dims
                              if dim in ['y', 'x'])
     geo_dims = ('y', 'x') if input_dims else None
-    lons = da.random.random(input_area_shape, chunks=50)
-    lats = da.random.random(input_area_shape, chunks=50)
+    lon_arr = create_test_longitude(-95.0, -75.0, input_area_shape, dtype=np.float64)
+    lat_arr = create_test_latitude(15.0, 30.0, input_area_shape, dtype=np.float64)
+    lons = da.from_array(lon_arr, chunks=50)
+    lats = da.from_array(lat_arr, chunks=50)
     swath_def = SwathDefinition(
         DataArray(lons, dims=geo_dims),
         DataArray(lats, dims=geo_dims))
-    ds2.attrs['area'] = swath_def
+    ds1.attrs['area'] = swath_def
     if CRS is not None:
         crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
-        ds2 = ds2.assign_coords(crs=crs)
+        ds1 = ds1.assign_coords(crs=crs)
 
     # set up target definition
     output_proj_str = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
@@ -99,7 +79,7 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
         output_shape[0],  # height
         (-1000., -1500., 1000., 1500.),
     )
-    return ds1, source, ds2, swath_def, target
+    return ds1, swath_def, target
 
 
 class TestLegacyDaskEWAResampler:
@@ -130,59 +110,51 @@ class TestLegacyDaskEWAResampler:
             ((3, 100, 50), ('bands', 'y', 'x')),
         ]
     )
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.fornav')
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.ll2cr')
-    @mock.patch('pyresample.ewa._legacy_dask_ewa.SwathDefinition.get_lonlats')
-    def test_basic_ewa(self, get_lonlats, ll2cr, fornav, input_shape, input_dims):
+    def test_basic_ewa(self, input_shape, input_dims):
         """Test EWA with basic xarray DataArrays."""
         import numpy as np
         import xarray as xr
         from pyresample.ewa import LegacyDaskEWAResampler
+        from pyresample.ewa import _legacy_dask_ewa
         output_shape = (200, 100)
-        ll2cr.return_value = (input_shape[-2],
-                              np.zeros(input_shape[-2:], dtype=np.float32),
-                              np.zeros(input_shape[-2:], dtype=np.float32))
         if len(input_shape) == 3:
-            fornav.return_value = ([output_shape[-2] * output_shape[-1]] * input_shape[0],
-                                   [np.zeros(output_shape, dtype=np.float32)] * input_shape[0])
             output_coords = {'bands': ['R', 'G', 'B']}
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
             output_dims = ('bands', 'y', 'x')
         else:
-            fornav.return_value = (output_shape[-2] * output_shape[-1],
-                                   np.zeros(output_shape, dtype=np.float32))
             output_coords = {}
             output_dims = ('y', 'x')
-        _, _, swath_data, source_swath, target_area = get_test_data(
+        swath_data, source_swath, target_area = get_test_data(
             input_shape=input_shape, output_shape=output_shape[-2:],
             input_dims=input_dims,
         )
-        get_lonlats.return_value = (source_swath.lons, source_swath.lats)
         swath_data.data = swath_data.data.astype(np.float32)
         num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
 
-        resampler = LegacyDaskEWAResampler(source_swath, target_area)
-        new_data = resampler.resample(swath_data)
-        assert new_data.shape == output_shape
-        assert new_data.dtype == np.float32
-        assert new_data.attrs['test'] == 'test'
-        assert new_data.attrs['area'] is target_area
-        # make sure we can actually compute everything
-        new_data.compute()
-        lonlat_calls = get_lonlats.call_count
-        ll2cr_calls = ll2cr.call_count
+        with mock.patch.object(_legacy_dask_ewa, 'll2cr', wraps=_legacy_dask_ewa.ll2cr) as ll2cr, \
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+            resampler = LegacyDaskEWAResampler(source_swath, target_area)
+            new_data = resampler.resample(swath_data, rows_per_scan=10)
+            assert new_data.shape == output_shape
+            assert new_data.dtype == np.float32
+            assert new_data.attrs['test'] == 'test'
+            assert new_data.attrs['area'] is target_area
+            # make sure we can actually compute everything
+            new_data.compute()
+            lonlat_calls = get_lonlats.call_count
+            ll2cr_calls = ll2cr.call_count
 
-        # resample a different dataset and make sure cache is used
-        data = xr.DataArray(
-            swath_data.data,
-            coords=output_coords,
-            dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
-                                     'name': 'test2'})
-        new_data = resampler.resample(data)
-        new_data.compute()
-        # ll2cr will be called once more because of the computation
-        assert ll2cr.call_count == ll2cr_calls + num_chunks
-        # but we should already have taken the lonlats from the SwathDefinition
-        assert get_lonlats.call_count == lonlat_calls
-        self._coord_and_crs_checks(new_data, target_area,
-                                   has_bands='bands' in input_dims)
+            # resample a different dataset and make sure cache is used
+            data = xr.DataArray(
+                swath_data.data,
+                coords=output_coords,
+                dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
+                                         'name': 'test2'})
+            new_data = resampler.resample(data, rows_per_scan=10)
+            new_data.compute()
+            # ll2cr will be called once more because of the computation
+            assert ll2cr.call_count == ll2cr_calls + num_chunks
+            # but we should already have taken the lonlats from the SwathDefinition
+            assert get_lonlats.call_count == lonlat_calls
+            self._coord_and_crs_checks(new_data, target_area,
+                                       has_bands='bands' in input_dims)
