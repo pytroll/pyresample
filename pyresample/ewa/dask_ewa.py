@@ -365,7 +365,6 @@ class DaskEWAResampler(BaseResampler):
         dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
-        # XXX: Should this use 'combine_fornav' instead?
         combine_fornav_with_kwargs = partial(
             average_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
