@@ -66,7 +66,7 @@ def call_ll2cr(lons, lats, target_geo_def):
     return res
 
 
-def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, kwargs):
+def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, fill_value, kwargs):
     # Adjust cols and rows for this sub-area
     subdef = target_geo_def[y_slice, x_slice]
     weights_dtype = np.float32
@@ -88,7 +88,7 @@ def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, kwargs
     accums = np.zeros(subdef.shape, dtype=accums_dtype)
     try:
         got_points = fornav_weights_and_sums_wrapper(
-            cols, rows, data, weights, accums, np.nan, np.nan,
+            cols, rows, data, weights, accums, fill_value, fill_value,
             **kwargs)
     except RuntimeError:
         return empty_weights, empty_accums
@@ -151,7 +151,7 @@ def average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
         return np.full(res[0], fill_value, dtype)
     weights, accums = res
     out = np.full(weights.shape, fill_value, dtype=dtype)
-    write_grid_image_single(out, weights, accums, np.nan,
+    write_grid_image_single(out, weights, accums, fill_value,
                             weight_sum_min=weight_sum_min,
                             maximum_weight_mode=maximum_weight_mode)
     return out
@@ -349,7 +349,6 @@ class DaskEWAResampler(BaseResampler):
         name = "fornav-{}".format(data.name)
         maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
         weight_sum_min = kwargs.get('weight_sum_min', -1.0)
-        fill_value = kwargs.pop('fill_value', 0)
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -362,7 +361,7 @@ class DaskEWAResampler(BaseResampler):
                     output_stack[key] = (_delayed_fornav,
                                          ll2cr_block,
                                          target_geo_def, y_slice, x_slice,
-                                         (data.name, in_row_idx, in_col_idx), kwargs)
+                                         (data.name, in_row_idx, in_col_idx), fill_value, kwargs)
                 x_start = x_end
             y_start = y_end
 
@@ -384,7 +383,7 @@ class DaskEWAResampler(BaseResampler):
     def compute(self, data, cache_id=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
                 weight_delta_max=1.0, weight_sum_min=-1.0,
-                maximum_weight_mode=False, grid_coverage=0, **kwargs):
+                maximum_weight_mode=None, grid_coverage=0, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
         # not used in this step
         kwargs.pop("persist", None)
@@ -395,6 +394,7 @@ class DaskEWAResampler(BaseResampler):
                                       shape=self.target_geo_def.shape,
                                       dtype=data.dtype)
         fornav_kwargs = kwargs.copy()
+        maximum_weight_mode = self._handle_mwm(data, maximum_weight_mode)
         fornav_kwargs.update(dict(
             weight_count=weight_count,
             weight_min=weight_min,
@@ -408,13 +408,7 @@ class DaskEWAResampler(BaseResampler):
         # determine a fill value if they didn't tell us what they have as a
         # fill value in the numpy arrays
         if fill_value is None:
-            if np.issubdtype(data_in[0].dtype, np.floating):
-                fill_value = np.nan
-            elif np.issubdtype(data_in[0].dtype, np.integer):
-                fill_value = -999
-            else:
-                raise ValueError(
-                    "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+            fill_value = self._get_default_fill(data_in[0])
 
         data_out = []
         for data_subarr in data_in:
@@ -436,3 +430,26 @@ class DaskEWAResampler(BaseResampler):
         if isinstance(data, np.ndarray):
             return out.compute()
         return out
+
+    @staticmethod
+    def _handle_mwm(data, maximum_weight_mode):
+        if np.issubdtype(data.dtype, np.integer):
+            if maximum_weight_mode is None:
+                return True
+            elif not maximum_weight_mode:
+                logger.warning("'maximum_weight_mode' is 'False' for integer "
+                               "data. This is not recommended and integer "
+                               "overflow may occur.")
+                return maximum_weight_mode
+        return maximum_weight_mode
+
+    @staticmethod
+    def _get_default_fill(data):
+        if np.issubdtype(data.dtype, np.floating):
+            fill_value = np.nan
+        elif np.issubdtype(data.dtype, np.integer):
+            fill_value = np.iinfo(data.dtype).min
+        else:
+            raise ValueError(
+                "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+        return fill_value
