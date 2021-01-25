@@ -451,5 +451,5 @@ class DaskEWAResampler(BaseResampler):
             fill_value = np.iinfo(data.dtype).min
         else:
             raise ValueError(
-                "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
+                "Unsupported input data type for EWA Resampling: {}".format(data.dtype))
         return fill_value

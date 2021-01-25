@@ -129,7 +129,6 @@ class TestLegacyDaskEWAResampler:
     )
     def test_basic_ewa(self, input_shape, input_dims, input_dtype):
         """Test EWA with basic xarray DataArrays."""
-        import numpy as np
         import xarray as xr
         from pyresample.ewa import LegacyDaskEWAResampler, _legacy_dask_ewa
         output_shape = (200, 100)
@@ -243,7 +242,6 @@ class TestDaskEWAResampler:
             assert np.count_nonzero(~np.isnan(result.values)) == 468 * band_mult
             _coord_and_crs_checks(new_data, target_area,
                                   has_bands='bands' in input_dims)
-
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'input_dtype'),
