@@ -77,7 +77,7 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
         proj4_str_to_dict(output_proj_str),
         output_shape[1],  # width
         output_shape[0],  # height
-        (-1000., -1500., 1000., 1500.),
+        (-100000., -150000., 100000., 150000.),
     )
     return ds1, swath_def, target
 
@@ -163,13 +163,15 @@ class TestDaskEWAResampler:
     """Test Dask EWA resampler class."""
 
     @pytest.mark.parametrize(
-        ('input_shape', 'input_dims'),
+        ('input_shape', 'input_dims', 'maximum_weight_mode'),
         [
-            ((100, 50), ('y', 'x')),
-            ((3, 100, 50), ('bands', 'y', 'x')),
+            ((100, 50), ('y', 'x'), False),
+            ((3, 100, 50), ('bands', 'y', 'x'), False),
+            ((100, 50), ('y', 'x'), True),
+            ((3, 100, 50), ('bands', 'y', 'x'), True),
         ]
     )
-    def test_basic_ewa(self, input_shape, input_dims):
+    def test_xarray_basic_ewa(self, input_shape, input_dims, maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
         import numpy as np
         import xarray as xr
@@ -192,7 +194,8 @@ class TestDaskEWAResampler:
         with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
             resampler = DaskEWAResampler(source_swath, target_area)
-            new_data = resampler.resample(swath_data, rows_per_scan=10)
+            new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                          maximum_weight_mode=maximum_weight_mode)
             assert new_data.shape == output_shape
             assert new_data.dtype == np.float32
             assert new_data.attrs['test'] == 'test'
@@ -208,23 +211,64 @@ class TestDaskEWAResampler:
                 coords=output_coords,
                 dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
                                          'name': 'test2'})
-            new_data = resampler.resample(data, rows_per_scan=10)
-            new_data.compute()
+            new_data = resampler.resample(data, rows_per_scan=10,
+                                          maximum_weight_mode=maximum_weight_mode)
+            result = new_data.compute()
             # ll2cr will be called once more because of the computation
             assert ll2cr.call_count == ll2cr_calls + num_chunks
             # but we should already have taken the lonlats from the SwathDefinition
             assert get_lonlats.call_count == lonlat_calls
+            # check how many valid pixels we have
+            band_mult = 3 if 'bands' in output_dims else 1
+            assert np.count_nonzero(~np.isnan(result.values)) == 468 * band_mult
             _coord_and_crs_checks(new_data, target_area,
                                   has_bands='bands' in input_dims)
 
     @pytest.mark.parametrize(
-        ('input_shape', 'input_dims'),
+        ('input_shape', 'input_dims', 'maximum_weight_mode'),
         [
-            ((100, 50), ('y', 'x')),
-            ((3, 100, 50), ('bands', 'y', 'x')),
+            ((100, 50), ('y', 'x'), False),
+            # ((3, 100, 50), ('bands', 'y', 'x'), False),
+            ((100, 50), ('y', 'x'), True),
+            # ((3, 100, 50), ('bands', 'y', 'x'), True),
         ]
     )
-    def test_compare_to_legacy(self, input_shape, input_dims):
+    def test_numpy_basic_ewa(self, input_shape, input_dims, maximum_weight_mode):
+        """Test EWA with basic xarray DataArrays."""
+        import numpy as np
+        from pyresample.ewa import DaskEWAResampler
+        from pyresample.geometry import SwathDefinition
+        output_shape = (200, 100)
+        if len(input_shape) == 3:
+            output_shape = (input_shape[0], output_shape[0], output_shape[1])
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape[-2:],
+            input_dims=input_dims,
+        )
+        swath_data = swath_data.data.astype(np.float32).compute()
+        source_swath = SwathDefinition(*source_swath.get_lonlats())
+
+        resampler = DaskEWAResampler(source_swath, target_area)
+        new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                      maximum_weight_mode=maximum_weight_mode)
+        assert new_data.shape == output_shape
+        assert new_data.dtype == np.float32
+        assert isinstance(new_data, np.ndarray)
+
+        # check how many valid pixels we have
+        band_mult = 3 if len(output_shape) == 3 else 1
+        assert np.count_nonzero(~np.isnan(new_data)) == 468 * band_mult
+
+    @pytest.mark.parametrize(
+        ('input_shape', 'input_dims', 'maximum_weight_mode'),
+        [
+            ((100, 50), ('y', 'x'), False),
+            ((3, 100, 50), ('bands', 'y', 'x'), False),
+            ((100, 50), ('y', 'x'), True),
+            ((3, 100, 50), ('bands', 'y', 'x'), True),
+        ]
+    )
+    def test_compare_to_legacy(self, input_shape, input_dims, maximum_weight_mode):
         """Make sure new and legacy EWA algorithms produce the same results."""
         import numpy as np
         from pyresample.ewa import DaskEWAResampler, LegacyDaskEWAResampler
@@ -238,11 +282,40 @@ class TestDaskEWAResampler:
         swath_data.data = swath_data.data.astype(np.float32)
 
         resampler = DaskEWAResampler(source_swath, target_area)
-        new_data = resampler.resample(swath_data, rows_per_scan=10)
+        new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                      maximum_weight_mode=maximum_weight_mode)
         new_arr = new_data.compute()
 
         legacy_resampler = LegacyDaskEWAResampler(source_swath, target_area)
-        legacy_data = legacy_resampler.resample(swath_data, rows_per_scan=10)
+        legacy_data = legacy_resampler.resample(swath_data, rows_per_scan=10,
+                                                maximum_weight_mode=maximum_weight_mode)
         legacy_arr = legacy_data.compute()
 
         np.testing.assert_allclose(new_arr, legacy_arr)
+
+    @pytest.mark.parametrize(
+        ('input_shape', 'input_dims', 'as_np'),
+        [
+            ((100,), ('y',), False),
+            ((4, 100, 50, 25), ('bands', 'y', 'x', 'time'), False),
+            ((100,), ('y',), True),
+            ((4, 100, 50, 25), ('bands', 'y', 'x', 'time'), True),
+        ]
+    )
+    def test_bad_input(self, input_shape, input_dims, as_np):
+        """Check that 1D array inputs are not currently supported."""
+        import numpy as np
+        from pyresample.ewa import DaskEWAResampler
+        output_shape = (200, 100)
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape,
+            input_dims=input_dims,
+        )
+        swath_data.data = swath_data.data.astype(np.float32)
+
+        resampler = DaskEWAResampler(source_swath, target_area)
+
+        exp_exc = ValueError if len(input_shape) != 4 else NotImplementedError
+        with pytest.raises(exp_exc):
+            resampler.resample(swath_data, rows_per_scan=10)
+

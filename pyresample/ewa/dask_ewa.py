@@ -223,10 +223,15 @@ class DaskEWAResampler(BaseResampler):
         """Determine a good scan-based chunk size."""
         if len(in_arr.shape) != 2:
             raise ValueError("Can only rechunk 2D arrays for EWA resampling.")
+        if xr is not None and isinstance(in_arr, xr.DataArray):
+            # get the dask or numpy array underneath
+            in_arr = in_arr.data
 
         # assume (y, x)
         num_cols = in_arr.shape[1]
-        num_row_chunks = in_arr.chunks[0][0]
+        prev_chunks = getattr(in_arr, 'chunks',
+                              tuple((x,) for x in in_arr.shape))
+        num_row_chunks = prev_chunks[0][0]
         if num_row_chunks % rows_per_scan == 0:
             row_chunks = num_row_chunks
         else:
@@ -234,7 +239,7 @@ class DaskEWAResampler(BaseResampler):
         # what do dask's settings give us for full width chunks
         auto_chunks = normalize_chunks({0: row_chunks, 1: num_cols},
                                        shape=in_arr.shape, dtype=in_arr.dtype,
-                                       previous_chunks=in_arr.chunks)
+                                       previous_chunks=prev_chunks)
         # let's make them scan-aligned
         chunk_rows = max(math.floor(auto_chunks[0][0] / rows_per_scan), 1) * rows_per_scan
         return {0: chunk_rows, 1: num_cols}
@@ -267,9 +272,8 @@ class DaskEWAResampler(BaseResampler):
         if cache_dir:
             logger.warning("'cache_dir' is not used by EWA resampling")
 
-        # Satpy/Pyresample don't support dynamic grids out of the box yet
         rows_per_scan = self._get_rows_per_scan(kwargs)
-        new_chunks = self._new_chunks(source_geo_def.lons.data, rows_per_scan)
+        new_chunks = self._new_chunks(source_geo_def.lons, rows_per_scan)
         lons, lats = source_geo_def.get_lonlats(chunks=new_chunks)
         # run ll2cr to get column/row indexes
         # if chunk does not overlap target area then None is returned
@@ -429,4 +433,6 @@ class DaskEWAResampler(BaseResampler):
             out = xr.DataArray(out, attrs=xr_obj.attrs.copy(),
                                dims=dims)
             out = update_resampled_coords(xr_obj, out, self.target_geo_def)
+        if isinstance(data, np.ndarray):
+            return out.compute()
         return out
