@@ -45,7 +45,7 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     from pyresample.geometry import AreaDefinition, SwathDefinition
     from pyresample.utils import proj4_str_to_dict
     from pyresample.test.utils import create_test_longitude, create_test_latitude
-    ds1 = DataArray(da.zeros(input_shape, chunks=85),
+    ds1 = DataArray(da.random.random(input_shape, chunks=85),
                     dims=input_dims,
                     attrs={'name': 'test_data_name', 'test': 'test'})
     if input_dims and 'bands' in input_dims:
@@ -82,26 +82,26 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     return ds1, swath_def, target
 
 
+def _coord_and_crs_checks(new_data, target_area, has_bands=False):
+    assert 'y' in new_data.coords
+    assert 'x' in new_data.coords
+    if has_bands:
+        assert 'bands' in new_data.coords
+    if CRS is not None:
+        assert 'crs' in new_data.coords
+        assert isinstance(new_data.coords['crs'].item(), CRS)
+        assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+        assert new_data.coords['y'].attrs['units'] == 'meter'
+        assert new_data.coords['x'].attrs['units'] == 'meter'
+        if hasattr(target_area, 'crs'):
+            assert target_area.crs is new_data.coords['crs'].item()
+        if has_bands:
+            np.testing.assert_equal(new_data.coords['bands'].values,
+                                    ['R', 'G', 'B'])
+
+
 class TestLegacyDaskEWAResampler:
     """Test Legacy Dask EWA resampler class."""
-
-    @staticmethod
-    def _coord_and_crs_checks(new_data, target_area, has_bands=False):
-        assert 'y' in new_data.coords
-        assert 'x' in new_data.coords
-        if has_bands:
-            assert 'bands' in new_data.coords
-        if CRS is not None:
-            assert 'crs' in new_data.coords
-            assert isinstance(new_data.coords['crs'].item(), CRS)
-            assert 'lcc' in new_data.coords['crs'].item().to_proj4()
-            assert new_data.coords['y'].attrs['units'] == 'meter'
-            assert new_data.coords['x'].attrs['units'] == 'meter'
-            if hasattr(target_area, 'crs'):
-                assert target_area.crs is new_data.coords['crs'].item()
-            if has_bands:
-                np.testing.assert_equal(new_data.coords['bands'].values,
-                                        ['R', 'G', 'B'])
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims'),
@@ -114,8 +114,7 @@ class TestLegacyDaskEWAResampler:
         """Test EWA with basic xarray DataArrays."""
         import numpy as np
         import xarray as xr
-        from pyresample.ewa import LegacyDaskEWAResampler
-        from pyresample.ewa import _legacy_dask_ewa
+        from pyresample.ewa import LegacyDaskEWAResampler, _legacy_dask_ewa
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_coords = {'bands': ['R', 'G', 'B']}
@@ -156,5 +155,94 @@ class TestLegacyDaskEWAResampler:
             assert ll2cr.call_count == ll2cr_calls + num_chunks
             # but we should already have taken the lonlats from the SwathDefinition
             assert get_lonlats.call_count == lonlat_calls
-            self._coord_and_crs_checks(new_data, target_area,
-                                       has_bands='bands' in input_dims)
+            _coord_and_crs_checks(new_data, target_area,
+                                  has_bands='bands' in input_dims)
+
+
+class TestDaskEWAResampler:
+    """Test Dask EWA resampler class."""
+
+    @pytest.mark.parametrize(
+        ('input_shape', 'input_dims'),
+        [
+            ((100, 50), ('y', 'x')),
+            ((3, 100, 50), ('bands', 'y', 'x')),
+        ]
+    )
+    def test_basic_ewa(self, input_shape, input_dims):
+        """Test EWA with basic xarray DataArrays."""
+        import numpy as np
+        import xarray as xr
+        from pyresample.ewa import DaskEWAResampler, dask_ewa
+        output_shape = (200, 100)
+        if len(input_shape) == 3:
+            output_coords = {'bands': ['R', 'G', 'B']}
+            output_shape = (input_shape[0], output_shape[0], output_shape[1])
+            output_dims = ('bands', 'y', 'x')
+        else:
+            output_coords = {}
+            output_dims = ('y', 'x')
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape[-2:],
+            input_dims=input_dims,
+        )
+        swath_data.data = swath_data.data.astype(np.float32)
+        num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
+
+        with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+            resampler = DaskEWAResampler(source_swath, target_area)
+            new_data = resampler.resample(swath_data, rows_per_scan=10)
+            assert new_data.shape == output_shape
+            assert new_data.dtype == np.float32
+            assert new_data.attrs['test'] == 'test'
+            assert new_data.attrs['area'] is target_area
+            # make sure we can actually compute everything
+            new_data.compute()
+            lonlat_calls = get_lonlats.call_count
+            ll2cr_calls = ll2cr.call_count
+
+            # resample a different dataset and make sure cache is used
+            data = xr.DataArray(
+                swath_data.data,
+                coords=output_coords,
+                dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
+                                         'name': 'test2'})
+            new_data = resampler.resample(data, rows_per_scan=10)
+            new_data.compute()
+            # ll2cr will be called once more because of the computation
+            assert ll2cr.call_count == ll2cr_calls + num_chunks
+            # but we should already have taken the lonlats from the SwathDefinition
+            assert get_lonlats.call_count == lonlat_calls
+            _coord_and_crs_checks(new_data, target_area,
+                                  has_bands='bands' in input_dims)
+
+    @pytest.mark.parametrize(
+        ('input_shape', 'input_dims'),
+        [
+            ((100, 50), ('y', 'x')),
+            ((3, 100, 50), ('bands', 'y', 'x')),
+        ]
+    )
+    def test_compare_to_legacy(self, input_shape, input_dims):
+        """Make sure new and legacy EWA algorithms produce the same results."""
+        import numpy as np
+        from pyresample.ewa import DaskEWAResampler, LegacyDaskEWAResampler
+        output_shape = (200, 100)
+        if len(input_shape) == 3:
+            output_shape = (input_shape[0], output_shape[0], output_shape[1])
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape[-2:],
+            input_dims=input_dims,
+        )
+        swath_data.data = swath_data.data.astype(np.float32)
+
+        resampler = DaskEWAResampler(source_swath, target_area)
+        new_data = resampler.resample(swath_data, rows_per_scan=10)
+        new_arr = new_data.compute()
+
+        legacy_resampler = LegacyDaskEWAResampler(source_swath, target_area)
+        legacy_data = legacy_resampler.resample(swath_data, rows_per_scan=10)
+        legacy_arr = legacy_data.compute()
+
+        np.testing.assert_allclose(new_arr, legacy_arr)

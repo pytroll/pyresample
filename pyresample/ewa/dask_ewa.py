@@ -150,7 +150,7 @@ def average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
     if isinstance(res[0], tuple):
         return np.full(res[0], fill_value, dtype)
     weights, accums = res
-    out = np.full(weights.shape, fill_value, dtype=dtype.dtype)
+    out = np.full(weights.shape, fill_value, dtype=dtype)
     write_grid_image_single(out, weights, accums, np.nan,
                             weight_sum_min=weight_sum_min,
                             maximum_weight_mode=maximum_weight_mode)
@@ -365,6 +365,7 @@ class DaskEWAResampler(BaseResampler):
         dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
+        # XXX: Should this use 'combine_fornav' instead?
         combine_fornav_with_kwargs = partial(
             average_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
