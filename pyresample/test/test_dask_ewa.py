@@ -34,7 +34,7 @@ def _fill_mask(data):
     if np.issubdtype(data.dtype, np.floating):
         return np.isnan(data)
     elif np.issubdtype(data.dtype, np.integer):
-        return data == np.iinfo(data.dtype).min
+        return data == np.iinfo(data.dtype).max
     else:
         raise ValueError("Not sure how to get fill mask.")
 

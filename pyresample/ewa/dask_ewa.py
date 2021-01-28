@@ -50,7 +50,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _call_ll2cr(lons, lats, target_geo_def, swath_usage=0):
+def _call_ll2cr(lons, lats, target_geo_def):
     """Wrap ll2cr() for handling dask delayed calls better."""
     new_src = SwathDefinition(lons, lats)
     swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
@@ -61,7 +61,7 @@ def _call_ll2cr(lons, lats, target_geo_def, swath_usage=0):
 
 def call_ll2cr(lons, lats, target_geo_def):
     res = da.map_blocks(_call_ll2cr, lons, lats,
-                        target_geo_def, 0,
+                        target_geo_def,
                         dtype=lons.dtype)
     return res
 
@@ -168,36 +168,6 @@ class DaskEWAResampler(BaseResampler):
     for non-scan based data provided `rows_per_scan` is set to the
     number of rows in the entire swath or by setting it to `None`.
 
-    Args:
-        rows_per_scan (int, None):
-            Number of data rows for every observed scanline. If None then the
-            entire swath is treated as one large scanline.
-        weight_count (int):
-            number of elements to create in the gaussian weight table.
-            Default is 10000. Must be at least 2
-        weight_min (float):
-            the minimum value to store in the last position of the
-            weight table. Default is 0.01, which, with a
-            `weight_distance_max` of 1.0 produces a weight of 0.01
-            at a grid cell distance of 1.0. Must be greater than 0.
-        weight_distance_max (float):
-            distance in grid cell units at which to
-            apply a weight of `weight_min`. Default is
-            1.0. Must be greater than 0.
-        weight_delta_max (float):
-            maximum distance in grid cells in each grid
-            dimension over which to distribute a single swath cell.
-            Default is 10.0.
-        weight_sum_min (float):
-            minimum weight sum value. Cells whose weight sums
-            are less than `weight_sum_min` are set to the grid fill value.
-            Default is EPSILON.
-        maximum_weight_mode (bool):
-            If False (default), a weighted average of
-            all swath cells that map to a particular grid cell is used.
-            If True, the swath cell having the maximum weight of all
-            swath cells that map to a particular grid cell is used. This
-            option should be used for coded/category data, i.e. snow cover.
     """
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -206,18 +176,6 @@ class DaskEWAResampler(BaseResampler):
         assert isinstance(source_geo_def, SwathDefinition), \
             "EWA resampling can only operate on SwathDefinitions"
         self.cache = {}
-
-    def resample(self, *args, **kwargs):
-        """Run precompute and compute methods.
-
-        .. note::
-
-            This sets the default of 'mask_area' to False since it is
-            not needed in EWA resampling currently.
-
-        """
-        kwargs.setdefault('mask_area', False)
-        return super(DaskEWAResampler, self).resample(*args, **kwargs)
 
     def _new_chunks(self, in_arr, rows_per_scan):
         """Determine a good scan-based chunk size."""
@@ -244,19 +202,18 @@ class DaskEWAResampler(BaseResampler):
         chunk_rows = max(math.floor(auto_chunks[0][0] / rows_per_scan), 1) * rows_per_scan
         return {0: chunk_rows, 1: num_cols}
 
-    def _get_rows_per_scan(self, kwargs):
-        rows_per_scan = kwargs.get('rows_per_scan')
+    def _get_rows_per_scan(self, rows_per_scan=None):
         if rows_per_scan is None and xr is not None and \
                 isinstance(self.source_geo_def.lons, xr.DataArray):
             rows_per_scan = self.source_geo_def.lons.attrs.get('rows_per_scan')
         if rows_per_scan is None:
-            # TODO: Should I allow full array as one scanline cases?
             raise ValueError("'rows_per_scan' keyword argument required if "
                              "not found in geolocation (i.e. "
                              "DataArray.attrs['rows_per_scan']).")
         return rows_per_scan
 
-    def precompute(self, cache_dir=None, swath_usage=0, **kwargs):
+    def precompute(self, cache_dir=None, rows_per_scan=None, persist=False,
+                   **kwargs):
         """Generate row and column arrays and store it for later use."""
         if self.cache:
             # this resampler should be used for one SwathDefinition
@@ -272,14 +229,13 @@ class DaskEWAResampler(BaseResampler):
         if cache_dir:
             logger.warning("'cache_dir' is not used by EWA resampling")
 
-        rows_per_scan = self._get_rows_per_scan(kwargs)
+        rows_per_scan = self._get_rows_per_scan(rows_per_scan)
         new_chunks = self._new_chunks(source_geo_def.lons, rows_per_scan)
         lons, lats = source_geo_def.get_lonlats(chunks=new_chunks)
         # run ll2cr to get column/row indexes
         # if chunk does not overlap target area then None is returned
         # otherwise a 3D array (2, y, x) of cols, rows are returned
         ll2cr_result = call_ll2cr(lons, lats, target_geo_def)
-        persist = kwargs.get('persist', False)
         if persist:
             ll2cr_delayeds = ll2cr_result.to_delayed()
             ll2cr_delayeds = dask.persist(*ll2cr_delayeds.tolist())
@@ -291,6 +247,7 @@ class DaskEWAResampler(BaseResampler):
                 if persist:
                     this_delayed = ll2cr_delayeds[in_row_idx][in_col_idx]
                     result = dask.compute(this_delayed)[0]
+                    # XXX: Is this optimization lost because the persisted keys in `ll2cr_delayeds` are used in future computations?
                     if not isinstance(result[0], tuple):
                         block_cache[key] = this_delayed.key
                 else:
@@ -303,7 +260,7 @@ class DaskEWAResampler(BaseResampler):
         }
         return None
 
-    def _get_input_tuples(self, data, kwargs):
+    def _get_input_tuples(self, data):
         if xr is not None and isinstance(data, xr.DataArray):
             xr_obj = data
             if data.ndim == 3 and 'bands' in data.dims:
@@ -380,15 +337,15 @@ class DaskEWAResampler(BaseResampler):
                            dtype=data.dtype, concatenate=False)
         return out
 
-    def compute(self, data, cache_id=None, chunks=None, fill_value=None,
+    def compute(self, data, cache_id=None, rows_per_scan=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
                 weight_delta_max=1.0, weight_sum_min=-1.0,
-                maximum_weight_mode=None, grid_coverage=0, **kwargs):
+                maximum_weight_mode=None, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
         # not used in this step
         kwargs.pop("persist", None)
-        data_in, xr_obj = self._get_input_tuples(data, kwargs)
-        rows_per_scan = self._get_rows_per_scan(kwargs)
+        data_in, xr_obj = self._get_input_tuples(data)
+        rows_per_scan = self._get_rows_per_scan(rows_per_scan)
         data_in = tuple(self._convert_to_dask(data_in, rows_per_scan))
         out_chunks = normalize_chunks(chunks or 'auto',
                                       shape=self.target_geo_def.shape,
@@ -440,16 +397,108 @@ class DaskEWAResampler(BaseResampler):
                 logger.warning("'maximum_weight_mode' is 'False' for integer "
                                "data. This is not recommended and integer "
                                "overflow may occur.")
-                return maximum_weight_mode
-        return maximum_weight_mode
+        return maximum_weight_mode or False
 
     @staticmethod
     def _get_default_fill(data):
         if np.issubdtype(data.dtype, np.floating):
             fill_value = np.nan
         elif np.issubdtype(data.dtype, np.integer):
-            fill_value = np.iinfo(data.dtype).min
+            fill_value = np.iinfo(data.dtype).max
         else:
             raise ValueError(
                 "Unsupported input data type for EWA Resampling: {}".format(data.dtype))
         return fill_value
+
+    def resample(self, data, cache_dir=None, mask_area=None,
+                 rows_per_scan=None, persist=False, chunks=None, fill_value=None,
+                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
+                 weight_delta_max=1.0, weight_sum_min=-1.0,
+                 maximum_weight_mode=None):
+        """Resample using an elliptical weighted averaging algorithm.
+
+        This algorithm does **not** use caching or any externally provided data
+        mask (unlike the 'nearest' resampler).
+        See the :class:`~satpy.ewa.dask_ewa.DaskEWAResampler` class docstring
+        for more information on how the algorithm works.
+
+        .. note::
+
+            This sets the default of 'mask_area' to False since it is
+            not needed in EWA resampling currently.
+
+
+        Args:
+            data (numpy.ndarray, dask.array.Array, xarray.DataArray):
+                Raster data to be resampled. Can be a numpy array, dask array,
+                or xarray DataArray backed by a numpy or dask array. If the
+                data is a numpy or dask array then only 2D (y, x) arrays are
+                permitted. DataArray objects may be 2D or 3D where the third
+                dimension is named "bands". Note that regardless of the input
+                type, data is converted to a dask array for internal
+                processing and converted back to the original data type on
+                return.
+            cache_dir (str, None): Not used by this resampler.
+            mask_area (bool, None): Not used by this resampler.
+            rows_per_scan (int, None): Number of array rows that represent a
+                single scan of the instrument. If ``None`` (default), then
+                the ``.attrs`` of the source swath longitude and latitude data
+                is checked for this value if they are DataArray objects.
+                Otherwise, this value must be provided. Decent results may be
+                possible if this value is set to the total number of rows in
+                the array.
+            persist (bool): Whether to persist (as in dask) the computations
+                during precompute or compute them on the fly during compute.
+                Persisting allows the resampler to determine which input
+                chunks will overlap with the target area. This can greatly
+                reduce the number of tasks and checks that will need to be
+                computed in cases where it is known that only a small amount
+                of input data will fall into the output area.
+            chunks (tuple, int, dict, string): Chunk size of resulting dask
+                array. See :func:`~dask.array.core.normalize_chunks` for more
+                information.
+            fill_value (int, float): Output value when no data is present.
+                Defaults to ``numpy.nan`` for float types or the maximum
+                value for any integer types.
+            weight_count (int):
+                number of elements to create in the gaussian weight table.
+                Default is 10000. Must be at least 2
+            weight_min (float):
+                the minimum value to store in the last position of the
+                weight table. Default is 0.01, which, with a
+                `weight_distance_max` of 1.0 produces a weight of 0.01
+                at a grid cell distance of 1.0. Must be greater than 0.
+            weight_distance_max (float):
+                distance in grid cell units at which to
+                apply a weight of `weight_min`. Default is
+                1.0. Must be greater than 0.
+            weight_delta_max (float):
+                maximum distance in grid cells in each grid
+                dimension over which to distribute a single swath cell.
+                Default is 10.0.
+            weight_sum_min (float):
+                minimum weight sum value. Cells whose weight sums
+                are less than `weight_sum_min` are set to the grid fill value.
+                Default is EPSILON.
+            maximum_weight_mode (bool):
+                If False (default), a weighted average of
+                all swath cells that map to a particular grid cell is used.
+                If True, the swath cell having the maximum weight of all
+                swath cells that map to a particular grid cell is used. This
+                option should be used for coded/category data, i.e. snow cover.
+
+        """
+        mask_area = False if mask_area is None else mask_area
+        return super().resample(data, cache_dir=cache_dir,
+                                mask_area=mask_area,
+                                rows_per_scan=rows_per_scan,
+                                persist=persist,
+                                chunks=chunks,
+                                fill_value=fill_value,
+                                weight_count=weight_count,
+                                weight_min=weight_min,
+                                weight_distance_max=weight_distance_max,
+                                weight_delta_max=weight_delta_max,
+                                weight_sum_min=weight_sum_min,
+                                maximum_weight_mode=maximum_weight_mode
+                                )
