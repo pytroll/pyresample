@@ -54,12 +54,13 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     from pyresample.geometry import AreaDefinition, SwathDefinition
     from pyresample.utils import proj4_str_to_dict
     from pyresample.test.utils import create_test_longitude, create_test_latitude
+    chunk_size = 10
     if np.issubdtype(input_dtype, np.integer):
         dinfo = np.iinfo(input_dtype)
         data = da.random.randint(dinfo.min + 1, dinfo.max, size=input_shape,
-                                 chunks=85, dtype=input_dtype)
+                                 chunks=chunk_size, dtype=input_dtype)
     else:
-        data = da.random.random(input_shape, chunks=85).astype(input_dtype)
+        data = da.random.random(input_shape, chunks=chunk_size).astype(input_dtype)
     ds1 = DataArray(data,
                     dims=input_dims,
                     attrs={'name': 'test_data_name', 'test': 'test'})
@@ -71,8 +72,8 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     geo_dims = ('y', 'x') if input_dims else None
     lon_arr = create_test_longitude(-95.0, -75.0, input_area_shape, dtype=np.float64)
     lat_arr = create_test_latitude(15.0, 30.0, input_area_shape, dtype=np.float64)
-    lons = da.from_array(lon_arr, chunks=50)
-    lats = da.from_array(lat_arr, chunks=50)
+    lons = da.from_array(lon_arr, chunks=chunk_size)
+    lats = da.from_array(lat_arr, chunks=chunk_size)
     swath_def = SwathDefinition(
         DataArray(lons, dims=geo_dims),
         DataArray(lats, dims=geo_dims))
@@ -208,7 +209,8 @@ class TestDaskEWAResampler:
             input_shape=input_shape, output_shape=output_shape[-2:],
             input_dims=input_dims, input_dtype=input_dtype,
         )
-        num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
+        # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
+        num_chunks = len(source_swath.lons.chunks[0])
 
         with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
@@ -261,7 +263,8 @@ class TestDaskEWAResampler:
             input_shape=input_shape, output_shape=output_shape[-2:],
             input_dims=input_dims, input_dtype=input_dtype,
         )
-        num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
+        # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
+        num_chunks = len(source_swath.lons.chunks[0])
 
         with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:

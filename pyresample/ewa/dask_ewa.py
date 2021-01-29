@@ -139,7 +139,7 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
 def average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
                    fill_value=None,
                    weight_sum_min=-1.0, maximum_weight_mode=False):
-    if not len(x_chunk):
+    if computing_meta or not len(x_chunk):
         return x_chunk
     # combine the arrays one last time
     res = combine_fornav(x_chunk, axis, keepdims,
@@ -347,7 +347,7 @@ class DaskEWAResampler(BaseResampler):
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, fornav_task_name, stack_chunks, data.dtype)
         combine_fornav_with_kwargs = partial(
-            average_fornav, maximum_weight_mode=maximum_weight_mode)
+            combine_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
             average_fornav, maximum_weight_mode=maximum_weight_mode,
             weight_sum_min=weight_sum_min, dtype=data.dtype,
