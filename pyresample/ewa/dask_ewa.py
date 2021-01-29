@@ -212,6 +212,29 @@ class DaskEWAResampler(BaseResampler):
                              "DataArray.attrs['rows_per_scan']).")
         return rows_per_scan
 
+    def _fill_block_cache_with_ll2cr_results(self, ll2cr_result,
+                                             num_row_blocks,
+                                             num_col_blocks,
+                                             persist):
+        if persist:
+            ll2cr_delayeds = ll2cr_result.to_delayed()
+            ll2cr_delayeds = dask.persist(*ll2cr_delayeds.tolist())
+
+        block_cache = {}
+        for in_row_idx in range(num_row_blocks):
+            for in_col_idx in range(num_col_blocks):
+                key = (ll2cr_result.name, in_row_idx, in_col_idx)
+                if persist:
+                    this_delayed = ll2cr_delayeds[in_row_idx][in_col_idx]
+                    result = dask.compute(this_delayed)[0]
+                    # XXX: Is this optimization lost because the persisted keys
+                    #  in `ll2cr_delayeds` are used in future computations?
+                    if not isinstance(result[0], tuple):
+                        block_cache[key] = this_delayed.key
+                else:
+                    block_cache[key] = key
+        return block_cache
+
     def precompute(self, cache_dir=None, rows_per_scan=None, persist=False,
                    **kwargs):
         """Generate row and column arrays and store it for later use."""
@@ -236,22 +259,8 @@ class DaskEWAResampler(BaseResampler):
         # if chunk does not overlap target area then None is returned
         # otherwise a 3D array (2, y, x) of cols, rows are returned
         ll2cr_result = call_ll2cr(lons, lats, target_geo_def)
-        if persist:
-            ll2cr_delayeds = ll2cr_result.to_delayed()
-            ll2cr_delayeds = dask.persist(*ll2cr_delayeds.tolist())
-
-        block_cache = {}
-        for in_row_idx in range(lons.numblocks[0]):
-            for in_col_idx in range(lons.numblocks[1]):
-                key = (ll2cr_result.name, in_row_idx, in_col_idx)
-                if persist:
-                    this_delayed = ll2cr_delayeds[in_row_idx][in_col_idx]
-                    result = dask.compute(this_delayed)[0]
-                    # XXX: Is this optimization lost because the persisted keys in `ll2cr_delayeds` are used in future computations?
-                    if not isinstance(result[0], tuple):
-                        block_cache[key] = this_delayed.key
-                else:
-                    block_cache[key] = key
+        block_cache = self._fill_block_cache_with_ll2cr_results(
+            ll2cr_result, lons.numblocks[0], lons.numblocks[1], persist)
 
         # save the dask arrays in the class instance cache
         self.cache = {
@@ -297,15 +306,9 @@ class DaskEWAResampler(BaseResampler):
             else:
                 yield data.rechunk(new_chunks)
 
-    def _run_fornav_single(self, data, out_chunks, target_geo_def, fill_value, **kwargs):
+    def _generate_fornav_dask_tasks(self, out_chunks, ll2cr_blocks, task_name, input_name, target_geo_def, fill_value, kwargs):
         y_start = 0
         output_stack = {}
-        ll2cr_result = self.cache['ll2cr_result']
-        ll2cr_blocks = self.cache['ll2cr_blocks'].items()
-        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
-        name = "fornav-{}".format(data.name)
-        maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
-        weight_sum_min = kwargs.get('weight_sum_min', -1.0)
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -314,17 +317,35 @@ class DaskEWAResampler(BaseResampler):
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
                 for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
-                    key = (name, z_idx, out_row_idx, out_col_idx)
+                    key = (task_name, z_idx, out_row_idx, out_col_idx)
                     output_stack[key] = (_delayed_fornav,
                                          ll2cr_block,
                                          target_geo_def, y_slice, x_slice,
-                                         (data.name, in_row_idx, in_col_idx), fill_value, kwargs)
+                                         (input_name, in_row_idx, in_col_idx), fill_value, kwargs)
                 x_start = x_end
             y_start = y_end
+        return output_stack
 
-        dsk_graph = HighLevelGraph.from_collections(name, output_stack, dependencies=[data, ll2cr_result])
+    def _run_fornav_single(self, data, out_chunks, target_geo_def, fill_value, **kwargs):
+        ll2cr_result = self.cache['ll2cr_result']
+        ll2cr_blocks = self.cache['ll2cr_blocks'].items()
+        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
+        fornav_task_name = "fornav-{}".format(data.name)
+        maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
+        weight_sum_min = kwargs.get('weight_sum_min', -1.0)
+        output_stack = self._generate_fornav_dask_tasks(out_chunks,
+                                                        ll2cr_blocks,
+                                                        fornav_task_name,
+                                                        data.name,
+                                                        target_geo_def,
+                                                        fill_value,
+                                                        kwargs)
+
+        dsk_graph = HighLevelGraph.from_collections(fornav_task_name,
+                                                    output_stack,
+                                                    dependencies=[data, ll2cr_result])
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
-        out_stack = da.Array(dsk_graph, name, stack_chunks, data.dtype)
+        out_stack = da.Array(dsk_graph, fornav_task_name, stack_chunks, data.dtype)
         combine_fornav_with_kwargs = partial(
             average_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
@@ -426,7 +447,6 @@ class DaskEWAResampler(BaseResampler):
 
             This sets the default of 'mask_area' to False since it is
             not needed in EWA resampling currently.
-
 
         Args:
             data (numpy.ndarray, dask.array.Array, xarray.DataArray):
