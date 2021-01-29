@@ -306,7 +306,9 @@ class DaskEWAResampler(BaseResampler):
             else:
                 yield data.rechunk(new_chunks)
 
-    def _generate_fornav_dask_tasks(self, out_chunks, ll2cr_blocks, task_name, input_name, target_geo_def, fill_value, kwargs):
+    @staticmethod
+    def _generate_fornav_dask_tasks(out_chunks, ll2cr_blocks, task_name,
+                                    input_name, target_geo_def, fill_value, kwargs):
         y_start = 0
         output_stack = {}
         for out_row_idx in range(len(out_chunks[0])):
