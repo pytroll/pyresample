@@ -1608,7 +1608,8 @@ class AreaDefinition(BaseDefinition):
         """Update a hash, or return a new one if needed."""
         if the_hash is None:
             the_hash = hashlib.sha1()
-        the_hash.update(self.proj_str.encode('utf-8'))
+        crs_wkt = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_str
+        the_hash.update(crs_wkt.encode('utf-8'))
         the_hash.update(np.array(self.shape))
         the_hash.update(np.array(self.area_extent))
         return the_hash

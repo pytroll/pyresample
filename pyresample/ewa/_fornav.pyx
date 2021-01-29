@@ -407,6 +407,7 @@ cdef int fornav_weights_and_sums(
     deinitialize_weight(&ewaw)
     if not got_point:
         raise RuntimeError("EWA Resampling: No swath pixels found inside grid to be resampled")
+    # -1 is raised on exception, 0 otherwise
     return 0
 
 
@@ -479,13 +480,14 @@ def fornav_weights_and_sums_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] co
     cdef accum_type *accums_pointer = &grid_accums[0, 0]
     cdef int got_point
 
-    got_point = fornav_weights_and_sums(swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
-                                        input_pointer, weights_pointer, accums_pointer,
-                                        input_fill, output_fill, rows_per_scan,
-                                        weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                                        <bint>maximum_weight_mode)
+    ret_val = fornav_weights_and_sums(swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
+                                      input_pointer, weights_pointer, accums_pointer,
+                                      input_fill, output_fill, rows_per_scan,
+                                      weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                      <bint>maximum_weight_mode)
 
-    return got_point
+    succeeded = ret_val == 0
+    return succeeded
 
 
 @cython.boundscheck(False)

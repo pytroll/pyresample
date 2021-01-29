@@ -92,7 +92,7 @@ def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, fill_v
             **kwargs)
     except RuntimeError:
         return empty_weights, empty_accums
-    if got_points:
+    if not got_points:
         return empty_weights, empty_accums
     return weights, accums
 
