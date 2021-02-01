@@ -206,8 +206,7 @@ def fornav(cols, rows, area_def, data_in,
     def _mask_helper(data, fill):
         if np.isnan(fill):
             return np.isnan(data)
-        else:
-            return data == fill
+        return data == fill
 
     if convert_to_masked:
         # they gave us masked arrays so give them masked arrays back

@@ -31,10 +31,13 @@ usage until necessary.
 import math
 import logging
 from functools import partial
-from .ewa import ll2cr
-from ._fornav import fornav_weights_and_sums_wrapper, write_grid_image_single
+
 from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler, update_resampled_coords
+from pyresample.ewa import ll2cr
+from pyresample.ewa._fornav import (fornav_weights_and_sums_wrapper,
+                                    write_grid_image_single)
+
 import dask
 import dask.array as da
 from dask.array.core import normalize_chunks
@@ -120,8 +123,7 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
         if keepdims:
             # split step - return "empty" chunk placeholder
             return x_chunk[0]
-        else:
-            return np.full(*x_chunk[0][0]), np.full(*x_chunk[0][1])
+        return np.full(*x_chunk[0][0]), np.full(*x_chunk[0][1])
     weights = [x[0] for x in valid_chunks]
     accums = [x[1] for x in valid_chunks]
     if maximum_weight_mode:

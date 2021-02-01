@@ -18,8 +18,8 @@
 """Test EWA Dask-based resamplers."""
 
 import logging
-import numpy as np
 from unittest import mock
+import numpy as np
 import pytest
 
 try:
@@ -194,7 +194,6 @@ class TestDaskEWAResampler:
     def test_xarray_basic_ewa(self, input_shape, input_dims, input_dtype,
                               maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
-        import numpy as np
         import xarray as xr
         from pyresample.ewa import DaskEWAResampler, dask_ewa
         output_shape = (200, 100)
@@ -253,7 +252,6 @@ class TestDaskEWAResampler:
     )
     def test_xarray_basic_ewa_int(self, input_shape, input_dims, input_dtype):
         """Test EWA with basic xarray DataArrays of integer type."""
-        import numpy as np
         import xarray as xr
         from pyresample.ewa import DaskEWAResampler, dask_ewa
         output_shape = (200, 100)
@@ -309,7 +307,6 @@ class TestDaskEWAResampler:
     )
     def test_numpy_basic_ewa(self, input_shape, input_dims, maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
-        import numpy as np
         from pyresample.ewa import DaskEWAResampler
         from pyresample.geometry import SwathDefinition
         output_shape = (200, 100)
@@ -344,7 +341,6 @@ class TestDaskEWAResampler:
     )
     def test_compare_to_legacy(self, input_shape, input_dims, maximum_weight_mode):
         """Make sure new and legacy EWA algorithms produce the same results."""
-        import numpy as np
         from pyresample.ewa import DaskEWAResampler, LegacyDaskEWAResampler
         output_shape = (200, 100)
         if len(input_shape) == 3:
@@ -378,7 +374,6 @@ class TestDaskEWAResampler:
     )
     def test_bad_input(self, input_shape, input_dims, as_np):
         """Check that 1D array inputs are not currently supported."""
-        import numpy as np
         from pyresample.ewa import DaskEWAResampler
         output_shape = (200, 100)
         swath_data, source_swath, target_area = get_test_data(
@@ -392,4 +387,3 @@ class TestDaskEWAResampler:
         exp_exc = ValueError if len(input_shape) != 4 else NotImplementedError
         with pytest.raises(exp_exc):
             resampler.resample(swath_data, rows_per_scan=10)
-

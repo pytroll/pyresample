@@ -255,5 +255,4 @@ class LegacyDaskEWAResampler(BaseResampler):
         if self._is_data_arr(data):
             res = xr.DataArray(data_arr, dims=dims, attrs=data.attrs.copy())
             return update_resampled_coords(data, res, self.target_geo_def)
-        else:
-            return data_arr
+        return data_arr
