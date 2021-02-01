@@ -31,13 +31,13 @@ usage until necessary.
 import math
 import logging
 from functools import partial
-import dask.array as da
-from dask.array.core import normalize_chunks
 from .ewa import ll2cr
 from ._fornav import fornav_weights_and_sums_wrapper, write_grid_image_single
 from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler, update_resampled_coords
 import dask
+import dask.array as da
+from dask.array.core import normalize_chunks
 from dask.highlevelgraph import HighLevelGraph
 import numpy as np
 
