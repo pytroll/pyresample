@@ -63,10 +63,9 @@ def add_xy_coords(data_arr, area, crs=None):
     Returns (xarray.DataArray): Updated DataArray object
 
     """
-    if 'x' in data_arr.coords and 'y' in data_arr.coords:
-        # x/y coords already provided
-        return data_arr
-    elif 'x' not in data_arr.dims or 'y' not in data_arr.dims:
+    coords_exist = 'x' in data_arr.coords and 'y' in data_arr.coords
+    no_xy_dims = 'x' not in data_arr.dims or 'y' not in data_arr.dims
+    if coords_exist or no_xy_dims:
         # no defined x and y dimensions
         return data_arr
 
