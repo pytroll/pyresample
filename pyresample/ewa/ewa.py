@@ -29,7 +29,6 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
 
     Parameters
     ----------
-
     swath_def : SwathDefinition
         Navigation definition for swath data to remap
     area_def : AreaDefinition
@@ -41,11 +40,9 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
 
     Returns
     -------
-
     (swath_points_in_grid, cols, rows) : tuple of integer, numpy array, numpy array
         Number of points from the input swath overlapping the destination
         area and the column and row arrays to pass to `fornav`.
-
 
     .. note::
 
@@ -92,7 +89,6 @@ def fornav(cols, rows, area_def, data_in,
 
     Parameters
     ----------
-
     cols : numpy array
         Column location for each input swath pixel (from `ll2cr`)
     rows : numpy array
@@ -142,7 +138,6 @@ def fornav(cols, rows, area_def, data_in,
 
     Returns
     -------
-
     (valid grid points, output arrays): tuple of integer tuples and numpy array tuples
         The valid_grid_points tuple holds the number of output grid pixels that
         were written with valid data. The second element in the tuple is a tuple of
