@@ -13,6 +13,7 @@ dependencies:
   - matplotlib
   - pyyaml
   - pyproj
+  - pykdtree
   - coveralls
   - coverage
   - codecov
