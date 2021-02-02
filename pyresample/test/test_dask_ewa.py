@@ -158,6 +158,15 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
                                     ['R', 'G', 'B'])
 
 
+def _get_num_chunks(source_swath, resampler_class):
+    if resampler_class is DaskEWAResampler:
+        # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
+        num_chunks = len(source_swath.lons.chunks[0])
+    else:
+        num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
+    return num_chunks
+
+
 class TestDaskEWAResampler:
     """Test Dask EWA resampler class."""
 
@@ -174,27 +183,25 @@ class TestDaskEWAResampler:
             ((3, 100, 50), ('bands', 'y', 'x')),
         ]
     )
-    @pytest.mark.parametrize('input_dtype', [np.float32, np.float64])
+    @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
     def test_xarray_basic_ewa(self, resampler_class, resampler_mod,
                               input_shape, input_dims, input_dtype,
                               maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
+        is_legacy = resampler_class is LegacyDaskEWAResampler
+        is_int = np.issubdtype(input_dtype, np.integer)
+        if is_legacy and is_int:
+            pytest.skip("Legacy dask resampler does not properly support "
+                        "integer inputs.")
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
-            output_dims = ('bands', 'y', 'x')
-        else:
-            output_dims = ('y', 'x')
         swath_data, source_swath, target_area = get_test_data(
             input_shape=input_shape, output_shape=output_shape[-2:],
             input_dims=input_dims, input_dtype=input_dtype,
         )
-        if resampler_class is DaskEWAResampler:
-            # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
-            num_chunks = len(source_swath.lons.chunks[0])
-        else:
-            num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
+        num_chunks = _get_num_chunks(source_swath, resampler_class)
 
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
@@ -214,65 +221,19 @@ class TestDaskEWAResampler:
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')
-            result = new_data.compute()
-            # ll2cr will be called once more because of the computation
-            print(ll2cr.call_count, ll2cr_calls, num_chunks, ll2cr_calls + num_chunks)
-            assert ll2cr.call_count == ll2cr_calls + num_chunks
-            # but we should already have taken the lonlats from the SwathDefinition
-            assert get_lonlats.call_count == lonlat_calls
-            # check how many valid pixels we have
-            band_mult = 3 if 'bands' in output_dims else 1
-            assert np.count_nonzero(~np.isnan(result.values)) == 468 * band_mult
             _coord_and_crs_checks(new_data, target_area,
                                   has_bands='bands' in input_dims)
-
-    @pytest.mark.parametrize(
-        ('input_shape', 'input_dims', 'input_dtype'),
-        [
-            ((100, 50), ('y', 'x'), np.int8),
-        ]
-    )
-    def test_xarray_basic_ewa_int(self, input_shape, input_dims, input_dtype):
-        """Test EWA with basic xarray DataArrays of integer type."""
-        import xarray as xr
-        from pyresample.ewa import DaskEWAResampler, dask_ewa
-        output_shape = (200, 100)
-        output_coords = {}
-        output_dims = ('y', 'x')
-        swath_data, source_swath, target_area = get_test_data(
-            input_shape=input_shape, output_shape=output_shape[-2:],
-            input_dims=input_dims, input_dtype=input_dtype,
-        )
-        # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
-        num_chunks = len(source_swath.lons.chunks[0])
-
-        with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
-                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
-            resampler = DaskEWAResampler(source_swath, target_area)
-            new_data = resampler.resample(swath_data, rows_per_scan=10)
-            _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
-                                      'test', 'test')
-            # make sure we can actually compute everything
-            new_data.compute()
-            lonlat_calls = get_lonlats.call_count
-            ll2cr_calls = ll2cr.call_count
-
-            # resample a different dataset and make sure cache is used
-            swath_data2 = _create_second_test_data(swath_data)
-            new_data = resampler.resample(swath_data2, rows_per_scan=10)
-            _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
-                                      'test2', 'test2')
             result = new_data.compute()
+
             # ll2cr will be called once more because of the computation
             assert ll2cr.call_count == ll2cr_calls + num_chunks
             # but we should already have taken the lonlats from the SwathDefinition
             assert get_lonlats.call_count == lonlat_calls
+
             # check how many valid pixels we have
-            band_mult = 3 if 'bands' in output_dims else 1
+            band_mult = 3 if 'bands' in result.dims else 1
             fill_mask = _fill_mask(result.values)
             assert np.count_nonzero(~fill_mask) == 468 * band_mult
-            _coord_and_crs_checks(new_data, target_area,
-                                  has_bands='bands' in input_dims)
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'maximum_weight_mode'),
