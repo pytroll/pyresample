@@ -246,7 +246,6 @@ class TestDaskEWAResampler:
     )
     def test_numpy_basic_ewa(self, input_shape, input_dims, maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
-        from pyresample.ewa import DaskEWAResampler
         from pyresample.geometry import SwathDefinition
         output_shape = (200, 100)
         if len(input_shape) == 3:
@@ -280,7 +279,6 @@ class TestDaskEWAResampler:
     )
     def test_compare_to_legacy(self, input_shape, input_dims, maximum_weight_mode):
         """Make sure new and legacy EWA algorithms produce the same results."""
-        from pyresample.ewa import DaskEWAResampler, LegacyDaskEWAResampler
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
@@ -313,7 +311,6 @@ class TestDaskEWAResampler:
     )
     def test_bad_input(self, input_shape, input_dims, as_np):
         """Check that 1D array inputs are not currently supported."""
-        from pyresample.ewa import DaskEWAResampler
         output_shape = (200, 100)
         swath_data, source_swath, target_area = get_test_data(
             input_shape=input_shape, output_shape=output_shape,
