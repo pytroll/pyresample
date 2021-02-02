@@ -62,7 +62,7 @@ def _call_ll2cr(lons, lats, target_geo_def):
     return np.stack([cols, rows], axis=0)
 
 
-def call_ll2cr(lons, lats, target_geo_def):
+def _call_mapped_ll2cr(lons, lats, target_geo_def):
     res = da.map_blocks(_call_ll2cr, lons, lats,
                         target_geo_def,
                         dtype=lons.dtype)
@@ -100,13 +100,13 @@ def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, fill_v
     return weights, accums
 
 
-def chunk_callable(x_chunk, axis, keepdims, **kwargs):
+def _chunk_callable(x_chunk, axis, keepdims, **kwargs):
     """No-op for reduction call."""
     return x_chunk
 
 
-def combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
-                   maximum_weight_mode=False):
+def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
+                    maximum_weight_mode=False):
     if isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple):
         # single "empty" chunk
         return x_chunk
@@ -138,15 +138,15 @@ def combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
     return sum(weights), sum(accums)
 
 
-def average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
-                   fill_value=None,
-                   weight_sum_min=-1.0, maximum_weight_mode=False):
+def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
+                    fill_value=None,
+                    weight_sum_min=-1.0, maximum_weight_mode=False):
     if computing_meta or not len(x_chunk):
         return x_chunk
     # combine the arrays one last time
-    res = combine_fornav(x_chunk, axis, keepdims,
-                         computing_meta=computing_meta,
-                         maximum_weight_mode=maximum_weight_mode)
+    res = _combine_fornav(x_chunk, axis, keepdims,
+                          computing_meta=computing_meta,
+                          maximum_weight_mode=maximum_weight_mode)
     # if we have only "empty" arrays at this point then the target chunk
     # has no valid input data in it.
     if isinstance(res[0], tuple):
@@ -260,7 +260,7 @@ class DaskEWAResampler(BaseResampler):
         # run ll2cr to get column/row indexes
         # if chunk does not overlap target area then None is returned
         # otherwise a 3D array (2, y, x) of cols, rows are returned
-        ll2cr_result = call_ll2cr(lons, lats, target_geo_def)
+        ll2cr_result = _call_mapped_ll2cr(lons, lats, target_geo_def)
         block_cache = self._fill_block_cache_with_ll2cr_results(
             ll2cr_result, lons.numblocks[0], lons.numblocks[1], persist)
 
@@ -351,12 +351,12 @@ class DaskEWAResampler(BaseResampler):
         stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
         out_stack = da.Array(dsk_graph, fornav_task_name, stack_chunks, data.dtype)
         combine_fornav_with_kwargs = partial(
-            combine_fornav, maximum_weight_mode=maximum_weight_mode)
+            _combine_fornav, maximum_weight_mode=maximum_weight_mode)
         average_fornav_with_kwargs = partial(
-            average_fornav, maximum_weight_mode=maximum_weight_mode,
+            _average_fornav, maximum_weight_mode=maximum_weight_mode,
             weight_sum_min=weight_sum_min, dtype=data.dtype,
             fill_value=fill_value)
-        out = da.reduction(out_stack, chunk_callable,
+        out = da.reduction(out_stack, _chunk_callable,
                            average_fornav_with_kwargs,
                            combine=combine_fornav_with_kwargs, axis=(0,),
                            dtype=data.dtype, concatenate=False)

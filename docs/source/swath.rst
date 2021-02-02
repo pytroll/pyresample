@@ -452,11 +452,11 @@ The EWA algorithm processes each input pixel mapping it to one or more output
 pixels. Once each input pixel has been analyzed, the intermediate results are
 averaged to produce the final gridded result.
 
-The EWA algorithm also has limitations on how the input data is structured
+The EWA algorithm also has limitations on how the input data are structured
 compared to the generic KDTree algorithms. EWA assumes that data in the array
 is organized geographically; adjacent data in the array is adjacent data
 geographically. The algorithm uses this to configure parameters based on the
-size and location of the swath pixels. It also assumes that data is
+size and location of the swath pixels. It also assumes that data are
 scan-based, recorded by a orbiting satellite scan by scan, and the user must
 provide scan size with the ``rows_per_scan`` option.
 
@@ -517,7 +517,7 @@ an xarray DataArray object.
     from pyresample.ewa import DaskEWAResampler
     resampler = DaskEWAResampler(swath_def, area_def)
 
-    # if the data is scan based, specify how many data rows make up one scan
+    # if the data are scan based, specify how many data rows make up one scan
     rows_per_scan = 5
     result = resampler.resample(data, rows_per_scan=rows_per_scan)
 
@@ -533,7 +533,7 @@ use it optimally and in most cases will use a lot of memory.
     from pyresample.ewa import LegacyDaskEWAResampler
     resampler = LegacyDaskEWAResampler(xr_swath_def, area_def)
 
-    # if the data is scan based, specify how many data rows make up one scan
+    # if the data are scan based, specify how many data rows make up one scan
     rows_per_scan = 5
     result = resampler.resample(xr_data, rows_per_scan=rows_per_scan)
 
@@ -551,7 +551,7 @@ target areas.
     from pyresample.ewa import ll2cr, fornav
     # ll2cr converts swath longitudes and latitudes to grid columns and rows
     swath_points_in_grid, cols, rows = ll2cr(swath_def, area_def)
-    # if the data is scan based, specify how many data rows make up one scan
+    # if the data are scan based, specify how many data rows make up one scan
     rows_per_scan = 5
     # fornav resamples the swath data to the gridded area
     num_valid_points, gridded_data = fornav(cols, rows, area_def, data, rows_per_scan=rows_per_scan)
