@@ -81,17 +81,19 @@ jobs:
           env_vars: OS,PYTHON_VERSION,UNSTABLE
 
       - name: Coveralls Parallel
-        uses: AndreMiras/coveralls-python-action@develop
+        uses: coverallsapp/github-action@master
         with:
           flag-name: run-${{ matrix.test_number }}
           parallel: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   coveralls:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
-        uses: AndreMiras/coveralls-python-action@develop
+        uses: coverallsapp/github-action@master
         with:
           parallel-finished: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
