@@ -19,13 +19,16 @@
 
 import logging
 from unittest import mock
-import numpy as np
 import pytest
+import numpy as np
 
 try:
     from pyproj import CRS
 except ImportError:
     CRS = None
+
+da = pytest.importorskip("dask.array")
+xr = pytest.importorskip("xarray")
 
 LOG = logging.getLogger(__name__)
 
@@ -39,6 +42,47 @@ def _fill_mask(data):
         raise ValueError("Not sure how to get fill mask.")
 
 
+def _get_test_array(input_shape, input_dtype, chunk_size):
+    if np.issubdtype(input_dtype, np.integer):
+        dinfo = np.iinfo(input_dtype)
+        data = da.random.randint(dinfo.min + 1, dinfo.max, size=input_shape,
+                                 chunks=chunk_size, dtype=input_dtype)
+    else:
+        data = da.random.random(input_shape, chunks=chunk_size).astype(input_dtype)
+    return data
+
+
+def _get_test_swath_def(input_shape, chunk_size, geo_dims):
+    from pyresample.geometry import SwathDefinition
+    from pyresample.test.utils import create_test_longitude, create_test_latitude
+    lon_arr = create_test_longitude(-95.0, -75.0, input_shape, dtype=np.float64)
+    lat_arr = create_test_latitude(15.0, 30.0, input_shape, dtype=np.float64)
+    lons = da.from_array(lon_arr, chunks=chunk_size)
+    lats = da.from_array(lat_arr, chunks=chunk_size)
+    swath_def = SwathDefinition(
+        xr.DataArray(lons, dims=geo_dims),
+        xr.DataArray(lats, dims=geo_dims))
+    return swath_def
+
+
+def _get_test_target_area(output_shape, output_proj=None):
+    from pyresample.geometry import AreaDefinition
+    from pyresample.utils import proj4_str_to_dict
+    if output_proj is None:
+        output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
+                       '+lon_0=-95. +lat_0=25 +lat_1=25 +units=m +no_defs')
+    target = AreaDefinition(
+        'test_target',
+        'test_target',
+        'test_target',
+        proj4_str_to_dict(output_proj),
+        output_shape[1],  # width
+        output_shape[0],  # height
+        (-100000., -150000., 100000., 150000.),
+    )
+    return target
+
+
 def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=None,
                   input_dims=('y', 'x'), input_dtype=np.float64):
     """Get common data objects used in testing.
@@ -49,53 +93,32 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
         target_area_def: AreaDefinition to be used as a target for resampling
 
     """
-    from xarray import DataArray
-    import dask.array as da
-    from pyresample.geometry import AreaDefinition, SwathDefinition
-    from pyresample.utils import proj4_str_to_dict
-    from pyresample.test.utils import create_test_longitude, create_test_latitude
     chunk_size = 10
-    if np.issubdtype(input_dtype, np.integer):
-        dinfo = np.iinfo(input_dtype)
-        data = da.random.randint(dinfo.min + 1, dinfo.max, size=input_shape,
-                                 chunks=chunk_size, dtype=input_dtype)
-    else:
-        data = da.random.random(input_shape, chunks=chunk_size).astype(input_dtype)
-    ds1 = DataArray(data,
-                    dims=input_dims,
-                    attrs={'name': 'test_data_name', 'test': 'test'})
+    data = _get_test_array(input_shape, input_dtype, chunk_size)
+    ds1 = xr.DataArray(data,
+                       dims=input_dims,
+                       attrs={'name': 'test_data_name', 'test': 'test'})
     if input_dims and 'bands' in input_dims:
         ds1 = ds1.assign_coords(bands=list('RGBA'[:ds1.sizes['bands']]))
 
     input_area_shape = tuple(ds1.sizes[dim] for dim in ds1.dims
                              if dim in ['y', 'x'])
     geo_dims = ('y', 'x') if input_dims else None
-    lon_arr = create_test_longitude(-95.0, -75.0, input_area_shape, dtype=np.float64)
-    lat_arr = create_test_latitude(15.0, 30.0, input_area_shape, dtype=np.float64)
-    lons = da.from_array(lon_arr, chunks=chunk_size)
-    lats = da.from_array(lat_arr, chunks=chunk_size)
-    swath_def = SwathDefinition(
-        DataArray(lons, dims=geo_dims),
-        DataArray(lats, dims=geo_dims))
+    swath_def = _get_test_swath_def(input_area_shape, chunk_size, geo_dims)
     ds1.attrs['area'] = swath_def
     if CRS is not None:
         crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
         ds1 = ds1.assign_coords(crs=crs)
 
-    # set up target definition
-    output_proj_str = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
-                       '+lon_0=-95. +lat_0=25 +lat_1=25 +units=m +no_defs')
-    output_proj_str = output_proj or output_proj_str
-    target = AreaDefinition(
-        'test_target',
-        'test_target',
-        'test_target',
-        proj4_str_to_dict(output_proj_str),
-        output_shape[1],  # width
-        output_shape[0],  # height
-        (-100000., -150000., 100000., 150000.),
-    )
-    return ds1, swath_def, target
+    target_area = _get_test_target_area(output_shape, output_proj)
+    return ds1, swath_def, target_area
+
+
+def _create_second_test_data(swath_data):
+    swath_data2 = swath_data.copy(deep=True)
+    swath_data2.attrs['test'] = 'test2'
+    swath_data2.attrs['name'] = 'test2'
+    return swath_data2
 
 
 def _coord_and_crs_checks(new_data, target_area, has_bands=False):
@@ -160,12 +183,8 @@ class TestLegacyDaskEWAResampler:
             ll2cr_calls = ll2cr.call_count
 
             # resample a different dataset and make sure cache is used
-            data = xr.DataArray(
-                swath_data.data,
-                coords=output_coords,
-                dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
-                                         'name': 'test2'})
-            new_data = resampler.resample(data, rows_per_scan=10)
+            swath_data2 = _create_second_test_data(swath_data)
+            new_data = resampler.resample(swath_data2, rows_per_scan=10)
             new_data.compute()
             # ll2cr will be called once more because of the computation
             assert ll2cr.call_count == ll2cr_calls + num_chunks
@@ -226,12 +245,8 @@ class TestDaskEWAResampler:
             ll2cr_calls = ll2cr.call_count
 
             # resample a different dataset and make sure cache is used
-            data = xr.DataArray(
-                swath_data.data,
-                coords=output_coords,
-                dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
-                                         'name': 'test2'})
-            new_data = resampler.resample(data, rows_per_scan=10,
+            swath_data2 = _create_second_test_data(swath_data)
+            new_data = resampler.resample(swath_data2, rows_per_scan=10,
                                           maximum_weight_mode=maximum_weight_mode)
             result = new_data.compute()
             # ll2cr will be called once more because of the computation
@@ -278,12 +293,8 @@ class TestDaskEWAResampler:
             ll2cr_calls = ll2cr.call_count
 
             # resample a different dataset and make sure cache is used
-            data = xr.DataArray(
-                swath_data.data,
-                coords=output_coords,
-                dims=output_dims, attrs={'area': source_swath, 'test': 'test2',
-                                         'name': 'test2'})
-            new_data = resampler.resample(data, rows_per_scan=10)
+            swath_data2 = _create_second_test_data(swath_data)
+            new_data = resampler.resample(swath_data2, rows_per_scan=10)
             result = new_data.compute()
             # ll2cr will be called once more because of the computation
             assert ll2cr.call_count == ll2cr_calls + num_chunks

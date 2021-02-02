@@ -47,6 +47,26 @@ def hash_dict(the_dict, the_hash=None):
     return the_hash
 
 
+def _data_arr_needs_xy_coords(data_arr, area):
+    coords_exist = 'x' in data_arr.coords and 'y' in data_arr.coords
+    no_xy_dims = 'x' not in data_arr.dims or 'y' not in data_arr.dims
+    has_proj_vectors = hasattr(area, 'get_proj_vectors')
+    return not (coords_exist or no_xy_dims or not has_proj_vectors)
+
+
+def _add_xy_units(crs, x_attrs, y_attrs):
+    if crs is not None:
+        units = crs.axis_info[0].unit_name
+        # fix udunits/CF standard units
+        units = units.replace('metre', 'meter')
+        if units == 'degree':
+            y_attrs['units'] = 'degrees_north'
+            x_attrs['units'] = 'degrees_east'
+        else:
+            y_attrs['units'] = units
+            x_attrs['units'] = units
+
+
 def add_xy_coords(data_arr, area, crs=None):
     """Assign x/y coordinates to DataArray from provided area.
 
@@ -63,33 +83,55 @@ def add_xy_coords(data_arr, area, crs=None):
     Returns (xarray.DataArray): Updated DataArray object
 
     """
-    coords_exist = 'x' in data_arr.coords and 'y' in data_arr.coords
-    no_xy_dims = 'x' not in data_arr.dims or 'y' not in data_arr.dims
-    if coords_exist or no_xy_dims:
-        # no defined x and y dimensions
+    if not _data_arr_needs_xy_coords(data_arr, area):
         return data_arr
 
-    if hasattr(area, 'get_proj_vectors'):
-        x, y = area.get_proj_vectors()
-    else:
-        return data_arr
-
+    x, y = area.get_proj_vectors()
     # convert to DataArrays
     y_attrs = {}
     x_attrs = {}
-    if crs is not None:
-        units = crs.axis_info[0].unit_name
-        # fix udunits/CF standard units
-        units = units.replace('metre', 'meter')
-        if units == 'degree':
-            y_attrs['units'] = 'degrees_north'
-            x_attrs['units'] = 'degrees_east'
-        else:
-            y_attrs['units'] = units
-            x_attrs['units'] = units
+    _add_xy_units(crs, x_attrs, y_attrs)
     y = xr.DataArray(y, dims=('y',), attrs=y_attrs)
     x = xr.DataArray(x, dims=('x',), attrs=x_attrs)
     return data_arr.assign_coords(y=y, x=x)
+
+
+def _find_and_assign_crs(data_arr, area):
+    # add CRS object if pyproj 2.0+
+    try:
+        from pyproj import CRS
+    except ImportError:
+        logger.debug("Could not add 'crs' coordinate with pyproj<2.0")
+        crs = None
+    else:
+        # default lat/lon projection
+        latlon_proj = "+proj=latlong +datum=WGS84 +ellps=WGS84"
+        # otherwise get it from the area definition
+        if hasattr(area, 'crs'):
+            crs = area.crs
+        else:
+            proj_str = getattr(area, 'proj_str', latlon_proj)
+            crs = CRS.from_string(proj_str)
+        data_arr = data_arr.assign_coords(crs=crs)
+    return data_arr, crs
+
+
+def _update_swath_lonlat_attrs(area):
+    # add lon/lat arrays for swath definitions
+    # SwathDefinitions created by Satpy should be assigning DataArray
+    # objects as the lons/lats attributes so use those directly to
+    # maintain original .attrs metadata (instead of converting to dask
+    # array).
+    lons = area.lons
+    lats = area.lats
+    lons.attrs.setdefault('standard_name', 'longitude')
+    lons.attrs.setdefault('long_name', 'longitude')
+    lons.attrs.setdefault('units', 'degrees_east')
+    lats.attrs.setdefault('standard_name', 'latitude')
+    lats.attrs.setdefault('long_name', 'latitude')
+    lats.attrs.setdefault('units', 'degrees_north')
+    # See https://github.com/pydata/xarray/issues/3068
+    # data_arr = data_arr.assign_coords(longitude=lons, latitude=lats)
 
 
 def add_crs_xy_coords(data_arr, area):
@@ -108,40 +150,11 @@ def add_crs_xy_coords(data_arr, area):
             information from.
 
     """
-    # add CRS object if pyproj 2.0+
-    try:
-        from pyproj import CRS
-    except ImportError:
-        logger.debug("Could not add 'crs' coordinate with pyproj<2.0")
-        crs = None
-    else:
-        # default lat/lon projection
-        latlon_proj = "+proj=latlong +datum=WGS84 +ellps=WGS84"
-        # otherwise get it from the area definition
-        if hasattr(area, 'crs'):
-            crs = area.crs
-        else:
-            proj_str = getattr(area, 'proj_str', latlon_proj)
-            crs = CRS.from_string(proj_str)
-        data_arr = data_arr.assign_coords(crs=crs)
+    data_arr, crs = _find_and_assign_crs(data_arr, area)
 
     # Add x/y coordinates if possible
     if isinstance(area, SwathDefinition):
-        # add lon/lat arrays for swath definitions
-        # SwathDefinitions created by Satpy should be assigning DataArray
-        # objects as the lons/lats attributes so use those directly to
-        # maintain original .attrs metadata (instead of converting to dask
-        # array).
-        lons = area.lons
-        lats = area.lats
-        lons.attrs.setdefault('standard_name', 'longitude')
-        lons.attrs.setdefault('long_name', 'longitude')
-        lons.attrs.setdefault('units', 'degrees_east')
-        lats.attrs.setdefault('standard_name', 'latitude')
-        lats.attrs.setdefault('long_name', 'latitude')
-        lats.attrs.setdefault('units', 'degrees_north')
-        # See https://github.com/pydata/xarray/issues/3068
-        # data_arr = data_arr.assign_coords(longitude=lons, latitude=lats)
+        _update_swath_lonlat_attrs(area)
     else:
         # Gridded data (AreaDefinition/StackedAreaDefinition)
         data_arr = add_xy_coords(data_arr, area, crs=crs)
