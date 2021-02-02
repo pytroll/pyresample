@@ -25,7 +25,7 @@ class GridFilter(object):
 
     def __init__(self, area_def, filter, nprocs=1):
         self.area_def = area_def
-        self._filter = filter.astype(np.bool)
+        self._filter = filter.astype(bool)
         self.nprocs = nprocs
 
     def get_valid_index(self, geometry_def):
@@ -69,7 +69,7 @@ class GridFilter(object):
         filter = self._filter[target_y, target_x]
 
         # Remove invalid pixels
-        filter = (filter & target_x_valid & target_y_valid).astype(np.bool)
+        filter = (filter & target_x_valid & target_y_valid).astype(bool)
 
         return filter
 
