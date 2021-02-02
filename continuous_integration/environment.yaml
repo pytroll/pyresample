@@ -14,6 +14,7 @@ dependencies:
   - pyyaml
   - pyproj
   - pykdtree
+  - rasterio
   - coveralls
   - coverage
   - codecov
