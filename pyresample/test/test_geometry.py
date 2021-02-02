@@ -2315,13 +2315,13 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
         geos_area = MagicMock()
-        del geos_area.crs_wkt
         lon_0 = 0
         geos_area.proj_dict = {'a': 6378169.00,
                                'b': 6356583.80,
                                'h': 35785831.00,
                                'lon_0': lon_0,
                                'proj': 'geos'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
@@ -2349,6 +2349,7 @@ class TestCrop(unittest.TestCase):
                                'lon_0': lon_0,
                                'proj': 'geos'}
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
         np.testing.assert_allclose(lon, elon + lon_0)
@@ -2356,7 +2357,6 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        del geos_area.crs_wkt
         geos_area.proj_dict = {
             'proj': 'geos',
             'sweep': 'x',
@@ -2365,6 +2365,7 @@ class TestCrop(unittest.TestCase):
             'b': 6356583.80,
             'h': 35785831.00,
             'units': 'm'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
 
         expected = (0.15185342867090912, 0.15133555510297725)
         np.testing.assert_allclose(expected,
@@ -2385,6 +2386,7 @@ class TestCrop(unittest.TestCase):
             'ellps': 'GRS80',
             'h': 35785831.00,
             'units': 'm'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
         expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
