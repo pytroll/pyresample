@@ -1,6 +1,9 @@
-name: Deploy sdist
+name: Deploy sdist and wheels
 
 on:
+  push:
+    branches:
+      - master
   release:
     types:
       - published
@@ -8,6 +11,8 @@ on:
 jobs:
   build_sdist:
     runs-on: ubuntu-latest
+    env:
+      USE_CYTHON: "1"
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
@@ -25,6 +30,8 @@ jobs:
 
   build_wheels:
     runs-on: ${{ matrix.os }}
+    env:
+      USE_CYTHON: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -54,18 +61,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U -q pip pytest wheel setuptools twine numpy
+          python -m pip install -U -q pip Cython wheel setuptools twine numpy
 
       - name: Build and install macOS/Windows wheel
         if: matrix.os != 'ubuntu-latest'
         run: |
           python setup.py -q bdist_wheel
           pip install --find-links=./dist/ pyresample
-
-      - name: Test
-        if: matrix.os != 'ubuntu-latest'
-        run: |
-          pytest -v --pyargs pyresample
 
       - name: Build Linux wheels inside docker
         if: matrix.os == 'ubuntu-latest'
@@ -75,7 +77,7 @@ jobs:
             -e USE_OMP=1 \
             -v `pwd`:/io \
             quay.io/pypa/${{ matrix.docker-image }} \
-            /io/scripts/build-manylinux-wheels.sh
+            /io/continuous_integration/build-manylinux-wheels.sh
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v2
@@ -96,28 +98,27 @@ jobs:
         with:
           name: wheels
       - name: Publish package to PyPI
-        if: github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
           repository_url: https://test.pypi.org/legacy/
 
-#  upload_pypi:
-#    needs: [build_sdist, build_wheels]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Download sdist artifact
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: sdist
-#      - name: Download wheels artifact
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: wheels
-#      - name: Publish package to PyPI
-#        if: github.event.action == 'published'
-#        uses: pypa/gh-action-pypi-publish@v1.4.1
-#        with:
-#          user: __token__
-#          password: ${{ secrets.pypi_password }}
+  upload_pypi:
+    needs: [build_sdist, build_wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sdist
+      - name: Download wheels artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: wheels
+      - name: Publish package to PyPI
+        if: github.event.action == 'published'
+        uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
