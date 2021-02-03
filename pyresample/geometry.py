@@ -684,7 +684,7 @@ class SwathDefinition(CoordinateDefinition):
         the_hash.update(get_array_hashable(self.lons))
         the_hash.update(get_array_hashable(self.lats))
         try:
-            if self.lons.mask is not np.bool_(False):
+            if self.lons.mask is not False:
                 the_hash.update(get_array_hashable(self.lons.mask))
         except AttributeError:
             pass

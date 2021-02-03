@@ -441,7 +441,7 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                             target_lats, reduce_data, radius_of_influence):
     """Find indices of reduced output data"""
 
-    valid_output_index = np.ones(target_lons.size, dtype=np.bool)
+    valid_output_index = np.ones(target_lons.size, dtype=bool)
 
     if reduce_data:
         if isinstance(source_geo_def, (geometry.GridDefinition,
@@ -456,7 +456,7 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                     target_lons,
                     target_lats,
                     radius_of_influence)
-            valid_output_index = valid_output_index.astype(np.bool)
+            valid_output_index = valid_output_index.astype(bool)
 
     # Remove illegal values
     valid_out = ((target_lons >= -180) & (target_lons <= 180) &
@@ -573,7 +573,7 @@ def _query_resample_kdtree(resample_kdtree,
 def _create_empty_info(source_geo_def, target_geo_def, neighbours):
     """Creates dummy info for empty result set"""
 
-    valid_output_index = np.ones(target_geo_def.size, dtype=np.bool)
+    valid_output_index = np.ones(target_geo_def.size, dtype=bool)
     if neighbours > 1:
         index_array = (np.ones((target_geo_def.size, neighbours),
                                dtype=np.int32) * source_geo_def.size)
@@ -649,7 +649,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         if fill_value is None:
             # Use masked array for fill values
             return np.ma.array(np.zeros(output_shape, data.dtype),
-                               mask=np.ones(output_shape, dtype=np.bool))
+                               mask=np.ones(output_shape, dtype=bool))
         else:
             # Return fill vaues for all pixels
             return np.ones(output_shape, dtype=data.dtype) * fill_value
@@ -935,8 +935,8 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     # index_array is 2D (valid output pixels, neighbors)
     # there are as many Trues in voi as rows in index_array
     good_pixels = index_array < kdtree.n
-    res_ia = np.empty(shape, dtype=np.int)
-    mask = np.zeros(shape, dtype=np.bool)
+    res_ia = np.empty(shape, dtype=int)
+    mask = np.zeros(shape, dtype=bool)
     mask[voi, :] = good_pixels
     res_ia[mask] = index_array[good_pixels]
     res_ia[~mask] = -1

@@ -117,6 +117,7 @@ if __name__ == "__main__":
 
     README = open('README.md', 'r').read()
     setup(name='pyresample',
+          url='https://github.com/pytroll/pyresample',
           version=versioneer.get_version(),
           cmdclass=cmdclass,
           description='Geospatial image resampling in Python',

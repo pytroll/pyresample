@@ -30,8 +30,8 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, self.tb37v.copy(), swath_def,
                                          radius_of_influence=70000, sigmas=56500)
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertEqual(len(w), 1,
+                             'Failed to create neighbour radius warning')
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
@@ -50,8 +50,8 @@ class Test(unittest.TestCase):
         with catch_warnings() as w:
             res = kd_tree.resample_gauss(swath_def, data, swath_def,
                                          radius_of_influence=70000, sigmas=[56500, 56500, 56500])
-            self.assertFalse(
-                len(w) != 1, 'Failed to create neighbour radius warning')
+            self.assertEqual(len(w), 1,
+                             'Failed to create neighbour radius warning')
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
