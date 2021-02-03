@@ -93,10 +93,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: sdist
+          path: dist
       - name: Download wheels artifact
         uses: actions/download-artifact@v2
         with:
           name: wheels
+          path: dist
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
@@ -112,10 +114,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: sdist
+          path: dist
       - name: Download wheels artifact
         uses: actions/download-artifact@v2
         with:
           name: wheels
+          path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@v1.4.1
