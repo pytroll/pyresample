@@ -11,13 +11,13 @@ on:
 jobs:
   build_sdist:
     runs-on: ubuntu-latest
-    env:
-      USE_CYTHON: "1"
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
 
       - name: Create sdist
+        env:
+          USE_CYTHON: "1"
         shell: bash -l {0}
         run: python setup.py sdist
 
