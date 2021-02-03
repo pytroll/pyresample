@@ -2,8 +2,8 @@ name: Deploy sdist and wheels
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - v*
   release:
     types:
       - published
@@ -16,10 +16,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Create sdist
-        env:
-          USE_CYTHON: "1"
         shell: bash -l {0}
-        run: python setup.py sdist
+        run: |
+          export USE_CYTHON="1";
+          python setup.py sdist;
 
       - name: Upload sdist to build artifacts
         uses: actions/upload-artifact@v2
