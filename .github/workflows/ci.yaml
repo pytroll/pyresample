@@ -67,7 +67,7 @@ jobs:
       - name: Run unit tests
         shell: bash -l {0}
         run: |
-          pytest --cov=pyresample pyresample/test --cov-report=xml
+          pytest --cov=pyresample pyresample/test --cov-report=xml --cov-report=
 
       - name: Test website
         shell: bash -l {0}
