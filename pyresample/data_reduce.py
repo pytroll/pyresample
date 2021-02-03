@@ -253,7 +253,7 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
 
     if illegal_lons or illegal_lats:
         # Grid boundaries are not safe to operate on
-        return np.ones(lons.size, dtype=np.bool)
+        return np.ones(lons.size, dtype=bool)
 
     # Find sum angle sum of grid boundary
     angle_sum = 0
@@ -316,6 +316,6 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
         valid_index = valid_lats * valid_lons
     else:
         # Covers both poles don't reduce
-        valid_index = np.ones(lons.size, dtype=np.bool)
+        valid_index = np.ones(lons.size, dtype=bool)
 
     return valid_index

@@ -131,7 +131,7 @@ class BilinearBase(object):
             self._create_empty_bil_info()
 
     def _create_empty_bil_info(self):
-        self._valid_input_index = np.ones(self._source_geo_def.size, dtype=np.bool)
+        self._valid_input_index = np.ones(self._source_geo_def.size, dtype=bool)
         self._index_array = np.ones((self._target_geo_def.size, 4), dtype=np.int32)
         self.bilinear_s = np.nan * np.zeros(self._target_geo_def.size)
         self.bilinear_t = np.nan * np.zeros(self._target_geo_def.size)
