@@ -84,7 +84,7 @@ jobs:
           path: dist/*.whl
 
   upload_test_pypi:
-    needs: [build_sdist, build_wheel]
+    needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
     steps:
       - name: Download sdist artifact
@@ -104,7 +104,7 @@ jobs:
           repository_url: https://test.pypi.org/legacy/
 
 #  upload_pypi:
-#    needs: [build_sdist, build_wheel]
+#    needs: [build_sdist, build_wheels]
 #    runs-on: ubuntu-latest
 #    steps:
 #      - name: Download sdist artifact
