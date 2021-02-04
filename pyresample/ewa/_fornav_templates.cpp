@@ -320,6 +320,118 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
   return got_point;
 }
 
+
+template<typename CR_TYPE, typename IMAGE_TYPE>
+int compute_ewa_single(int maximum_weight_mode,
+        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows, CR_TYPE *uimg, CR_TYPE *vimg,
+        IMAGE_TYPE *image, IMAGE_TYPE img_fill, accum_type *grid_accum, weight_type *grid_weight, ewa_weight *ewaw, ewa_parameters *ewap) {
+  // This was originally copied from a cython C file for 32-bit float inputs (that explains some of the weird parens and other syntax
+  int got_point;
+  unsigned int row;
+  unsigned int col;
+  ewa_parameters *this_ewap;
+  int iu1;
+  int iu2;
+  int iv1;
+  int iv2;
+  int iu;
+  int iv;
+  CR_TYPE u0;
+  CR_TYPE v0;
+  weight_type ddq;
+  weight_type dq;
+  weight_type q;
+  weight_type u;
+  weight_type v;
+  weight_type a2up1;
+  weight_type au2;
+  weight_type bu;
+  weight_type weight;
+
+  int iw;
+  IMAGE_TYPE this_val;
+  unsigned int swath_offset;
+  unsigned int grid_offset;
+  size_t chan;
+
+  got_point = 0;
+  for (row = 0, swath_offset=0; row < swath_rows; row+=1) {
+    for (col = 0, this_ewap = ewap; col < swath_cols; col++, this_ewap++, swath_offset++) {
+      u0 = uimg[swath_offset];
+      v0 = vimg[swath_offset];
+
+      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
+        continue;
+      }
+
+      iu1 = ((int)(u0 - this_ewap->u_del));
+      iu2 = ((int)(u0 + this_ewap->u_del));
+      iv1 = ((int)(v0 - this_ewap->v_del));
+      iv2 = ((int)(v0 + this_ewap->v_del));
+
+      if (iu1 < 0) {
+        iu1 = 0;
+      }
+      if (iu2 >= grid_cols) {
+        iu2 = (grid_cols - 1);
+      }
+      if (iv1 < 0) {
+        iv1 = 0;
+      }
+      if (iv2 >= grid_rows) {
+        iv2 = (grid_rows - 1);
+      }
+
+      if (iu1 < grid_cols && iu2 >= 0 && iv1 < grid_rows && iv2 >= 0) {
+        got_point = 1;
+        ddq = 2.0 * this_ewap->a;
+
+        u = (iu1 - u0);
+        a2up1 = (this_ewap->a * ((2.0 * u) + 1.0));
+        bu = this_ewap->b * u;
+        au2 = this_ewap->a * u * u;
+
+        for (iv = iv1; iv <= iv2; iv++) {
+          v = (iv - v0);
+          dq = (a2up1 + (this_ewap->b * v));
+          q = ((((this_ewap->c * v) + bu) * v) + au2);
+          for (iu = iu1; iu <= iu2; iu++) {
+            if ((q >= 0.0) && (q < this_ewap->f)) {
+              iw = ((int)(q * ewaw->qfactor));
+              if (iw >= ewaw->count) {
+                iw = (ewaw->count - 1);
+              }
+              weight = (ewaw->wtab[iw]);
+              grid_offset = ((iv * grid_cols) + iu);
+
+              this_val = (image[swath_offset]);
+              if (maximum_weight_mode) {
+                if (weight > grid_weight[grid_offset]) {
+                  grid_weight[grid_offset] = weight;
+                  if ((this_val == img_fill) || (__isnan(this_val))) {
+                    grid_accum[grid_offset] = (accum_type)NPY_NANF;
+                  } else {
+                    grid_accum[grid_offset] = (accum_type)this_val;
+                  }
+                }
+              } else {
+                if ((this_val != img_fill) && !(__isnan(this_val))) {
+                  grid_weight[grid_offset] += weight;
+                  grid_accum[grid_offset] += (accum_type)this_val * weight;
+                }
+              }
+            }
+            q += dq;
+            dq += ddq;
+          }
+        }
+      }
+    }
+  }
+
+  /* function exit code */
+  return got_point;
+}
 // Overloaded functions for specific types for `write_grid_image`
 //static void write_grid_pixel(npy_uint8 *output_image, accum_type chanf) {
 //  if (chanf < 0.0) {
@@ -455,6 +567,18 @@ template int compute_ewa_parameters<npy_float64>(size_t, size_t, npy_float64*, n
 template int compute_ewa<npy_float64, npy_float32>(size_t, int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_float32**, npy_float32, accum_type**, weight_type**, ewa_weight*, ewa_parameters*);
 template int compute_ewa<npy_float64, npy_float64>(size_t, int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_float64**, npy_float64, accum_type**, weight_type**, ewa_weight*, ewa_parameters*);
 template int compute_ewa<npy_float64, npy_int8>(size_t, int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_int8**, npy_int8, accum_type**, weight_type**, ewa_weight*, ewa_parameters*);
+
+// Single channel
+// Col/Row as 32-bit floats
+template int compute_ewa_single<npy_float32, npy_float32>(int, size_t, size_t, size_t, size_t, npy_float32*, npy_float32*, npy_float32*, npy_float32, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+template int compute_ewa_single<npy_float32, npy_float64>(int, size_t, size_t, size_t, size_t, npy_float32*, npy_float32*, npy_float64*, npy_float64, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+template int compute_ewa_single<npy_float32, npy_int8>(int, size_t, size_t, size_t, size_t, npy_float32*, npy_float32*, npy_int8*, npy_int8, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+
+// Col/Row as 64-bit floats
+template int compute_ewa_single<npy_float64, npy_float32>(int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_float32*, npy_float32, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+template int compute_ewa_single<npy_float64, npy_float64>(int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_float64*, npy_float64, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+template int compute_ewa_single<npy_float64, npy_int8>(int, size_t, size_t, size_t, size_t, npy_float64*, npy_float64*, npy_int8*, npy_int8, accum_type*, weight_type*, ewa_weight*, ewa_parameters*);
+
 
 // Output Grid types
 template unsigned int write_grid_image<npy_float32>(npy_float32*, npy_float32, size_t, size_t, accum_type*, weight_type*, int, weight_type);

@@ -2,7 +2,8 @@ include docs/Makefile
 recursive-include docs/source *
 include pyresample/test/test_files/*
 include LICENSE.txt
-include pyresample/ewa/*.h
+include pyresample/ewa/_fornav_templates.*
 include versioneer.py
 include pyresample/version.py
 include README.md
+recursive-include pyresample *.pyx
