@@ -382,11 +382,16 @@ def _solve_quadratic(a__, b__, c__, min_val=0.0, max_val=1.0):
     # Solve the quadratic polynomial
     x_1 = (-b__ + np.sqrt(discriminant)) / (2 * a__)
     x_2 = (-b__ - np.sqrt(discriminant)) / (2 * a__)
+    x_3 = -c__ / b__
 
     # Find valid solutions, ie. 0 <= t <= 1
     x__ = np.where(
-        find_indices_outside_min_and_max(x_1, min_val, max_val),
+        find_indices_outside_min_and_max(x_1, min_val, max_val) | np.isnan(x_1),
         x_2, x_1)
+
+    x__ = np.where(
+        find_indices_outside_min_and_max(x__, min_val, max_val) | np.isnan(x__),
+        x_3, x__)
 
     x__ = np.where(
         find_indices_outside_min_and_max(x__, min_val, max_val),
