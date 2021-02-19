@@ -2095,13 +2095,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
         x_size = random.randrange(6425)
         area1 = MagicMock()
         area1.area_extent = (1, 2, 3, 4)
-        area1.proj_dict = {"proj": 'A'}
+        area1.crs = 'some_crs'
         area1.height = random.randrange(6425)
         area1.width = x_size
 
         area2 = MagicMock()
         area2.area_extent = (1, 4, 3, 6)
-        area2.proj_dict = {"proj": 'A'}
+        area2.crs = 'some_crs'
         area2.height = random.randrange(6425)
         area2.width = x_size
 
@@ -2109,7 +2109,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area_extent = [1, 2, 3, 6]
         y_size = area1.height + area2.height
         adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
-                                     area1.proj_dict, area1.width, y_size, area_extent)
+                                     area1.crs, area1.width, y_size, area_extent)
 
     def test_create_area_def(self):
         """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
@@ -2316,12 +2316,12 @@ class TestCrop(unittest.TestCase):
         """Get the geostationary bbox."""
         geos_area = MagicMock()
         lon_0 = 0
-        geos_area.proj_dict = {'a': 6378169.00,
-                               'b': 6356583.80,
-                               'h': 35785831.00,
-                               'lon_0': lon_0,
-                               'proj': 'geos'}
-        geos_area._crs_or_proj_dict = geos_area.proj_dict
+        proj_dict = {'a': 6378169.00,
+                     'b': 6356583.80,
+                     'h': 35785831.00,
+                     'lon_0': lon_0,
+                     'proj': 'geos'}
+        geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
@@ -2341,15 +2341,14 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(lat, elat)
 
         geos_area = MagicMock()
-        del geos_area.crs_wkt
         lon_0 = 10
-        geos_area.proj_dict = {'a': 6378169.00,
-                               'b': 6356583.80,
-                               'h': 35785831.00,
-                               'lon_0': lon_0,
-                               'proj': 'geos'}
+        proj_dict = {'a': 6378169.00,
+                     'b': 6356583.80,
+                     'h': 35785831.00,
+                     'lon_0': lon_0,
+                     'proj': 'geos'}
+        geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
-        geos_area._crs_or_proj_dict = geos_area.proj_dict
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
         np.testing.assert_allclose(lon, elon + lon_0)
@@ -2357,7 +2356,7 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        geos_area.proj_dict = {
+        proj_dict = {
             'proj': 'geos',
             'sweep': 'x',
             'lon_0': -89.5,
@@ -2365,28 +2364,29 @@ class TestCrop(unittest.TestCase):
             'b': 6356583.80,
             'h': 35785831.00,
             'units': 'm'}
-        geos_area._crs_or_proj_dict = geos_area.proj_dict
+        geos_area.crs = CRS(proj_dict)
 
         expected = (0.15185342867090912, 0.15133555510297725)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
-        geos_area.proj_dict['a'] = 1000.0
-        geos_area.proj_dict['b'] = 1000.0
-        geos_area.proj_dict['h'] = np.sqrt(2) * 1000.0 - 1000.0
+        proj_dict['a'] = 1000.0
+        proj_dict['b'] = 1000.0
+        proj_dict['h'] = np.sqrt(2) * 1000.0 - 1000.0
+        geos_area.crs = CRS(proj_dict)
 
         expected = (np.deg2rad(45), np.deg2rad(45))
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
 
-        geos_area.proj_dict = {
+        proj_dict = {
             'proj': 'geos',
             'sweep': 'x',
             'lon_0': -89.5,
             'ellps': 'GRS80',
             'h': 35785831.00,
             'units': 'm'}
-        geos_area._crs_or_proj_dict = geos_area.proj_dict
+        geos_area.crs = CRS(proj_dict)
         expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))

@@ -145,17 +145,15 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
     assert 'x' in new_data.coords
     if has_bands:
         assert 'bands' in new_data.coords
-    if CRS is not None:
-        assert 'crs' in new_data.coords
-        assert isinstance(new_data.coords['crs'].item(), CRS)
-        assert 'lcc' in new_data.coords['crs'].item().to_proj4()
-        assert new_data.coords['y'].attrs['units'] == 'meter'
-        assert new_data.coords['x'].attrs['units'] == 'meter'
-        if hasattr(target_area, 'crs'):
-            assert target_area.crs is new_data.coords['crs'].item()
-        if has_bands:
-            np.testing.assert_equal(new_data.coords['bands'].values,
-                                    ['R', 'G', 'B'])
+    assert 'crs' in new_data.coords
+    assert isinstance(new_data.coords['crs'].item(), CRS)
+    assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+    assert new_data.coords['y'].attrs['units'] == 'meter'
+    assert new_data.coords['x'].attrs['units'] == 'meter'
+    assert target_area.crs == new_data.coords['crs'].item()
+    if has_bands:
+        np.testing.assert_equal(new_data.coords['bands'].values,
+                                ['R', 'G', 'B'])
 
 
 def _get_num_chunks(source_swath, resampler_class):

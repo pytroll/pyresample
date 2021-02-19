@@ -19,12 +19,12 @@
 
 import os
 import unittest
-from unittest import mock
 import io
 import pathlib
 from tempfile import NamedTemporaryFile
 
 import numpy as np
+from pyproj import CRS
 import uuid
 
 from pyresample.test.utils import create_test_longitude, create_test_latitude
@@ -353,14 +353,6 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378273)
         np.testing.assert_almost_equal(b, 6356889.44891)
 
-        # test again but force pyproj <2 behavior
-        with mock.patch.object(utils.proj4, 'CRS', None):
-            a, b = utils.proj4.proj4_radius_parameters(
-                '+proj=stere +a=6378273 +b=6356889.44891',
-            )
-            np.testing.assert_almost_equal(a, 6378273)
-            np.testing.assert_almost_equal(b, 6356889.44891)
-
     def test_proj4_radius_parameters_ellps(self):
         """Test proj4_radius_parameters with ellps."""
         from pyresample import utils
@@ -369,14 +361,6 @@ class TestMisc(unittest.TestCase):
         )
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
-
-        # test again but force pyproj <2 behavior
-        with mock.patch.object(utils.proj4, 'CRS', None):
-            a, b = utils.proj4.proj4_radius_parameters(
-                '+proj=stere +ellps=WGS84',
-            )
-            np.testing.assert_almost_equal(a, 6378137.)
-            np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
     def test_proj4_radius_parameters_default(self):
         """Test proj4_radius_parameters with default parameters."""
@@ -388,15 +372,6 @@ class TestMisc(unittest.TestCase):
         np.testing.assert_almost_equal(a, 6378137.)
         np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
 
-        # test again but force pyproj <2 behavior
-        with mock.patch.object(utils.proj4, 'CRS', None):
-            a, b = utils.proj4.proj4_radius_parameters(
-                '+proj=lcc +lat_0=10 +lat_1=10',
-            )
-            # WGS84
-            np.testing.assert_almost_equal(a, 6378137.)
-            np.testing.assert_almost_equal(b, 6356752.314245, decimal=6)
-
     def test_proj4_radius_parameters_spherical(self):
         """Test proj4_radius_parameters in case of a spherical earth."""
         from pyresample import utils
@@ -405,14 +380,6 @@ class TestMisc(unittest.TestCase):
         )
         np.testing.assert_almost_equal(a, 6378273.)
         np.testing.assert_almost_equal(b, 6378273.)
-
-        # test again but force pyproj <2 behavior
-        with mock.patch.object(utils.proj4, 'CRS', None):
-            a, b = utils.proj4.proj4_radius_parameters(
-                '+proj=stere +R=6378273',
-            )
-            np.testing.assert_almost_equal(a, 6378273.)
-            np.testing.assert_almost_equal(b, 6378273.)
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
@@ -431,38 +398,34 @@ class TestMisc(unittest.TestCase):
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
 
-        proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +no_defs"
+        proj_str = "+proj=lcc +ellps=WGS84 +lon_0=-95 +lat_1=25.5 +no_defs"
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
         self.assertDictEqual(proj_dict, proj_dict2)
-        self.assertIsInstance(proj_dict['lon_0'], float)
-        self.assertIsInstance(proj_dict2['lon_0'], float)
+        self.assertIsInstance(proj_dict['lon_0'], (float, int))
+        self.assertIsInstance(proj_dict2['lon_0'], (float, int))
+        self.assertIsInstance(proj_dict['lat_1'], float)
+        self.assertIsInstance(proj_dict2['lat_1'], float)
 
         # EPSG
         proj_str = '+init=EPSG:4326'
-        proj_dict_exp = {'init': 'EPSG:4326'}
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
-        self.assertEqual(proj_dict, proj_dict_exp)
-        self.assertEqual(utils.proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
+        proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
+        proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
+        # pyproj usually expands EPSG definitions so we can only round trip
+        self.assertEqual(proj_dict, proj_dict2)
 
         proj_str = 'EPSG:4326'
-        proj_dict_exp = {'init': 'EPSG:4326'}
         proj_dict_exp2 = {'proj': 'longlat', 'datum': 'WGS84', 'no_defs': None, 'type': 'crs'}
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
-        if 'init' in proj_dict:
-            # pyproj <2.0
-            self.assertEqual(proj_dict, proj_dict_exp)
-        else:
-            # pyproj 2.0+
-            self.assertEqual(proj_dict, proj_dict_exp2)
+        self.assertEqual(proj_dict, proj_dict_exp2)
         # input != output for this style of EPSG code
         # EPSG to PROJ.4 can be lossy
         # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
     def test_def2yaml_converter(self):
         from pyresample import parse_area_file, convert_def_to_yaml
-        from pyresample.utils import is_pyproj2
         import tempfile
         def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
@@ -471,14 +434,6 @@ class TestMisc(unittest.TestCase):
             convert_def_to_yaml(def_file, yaml_file)
             areas_new = set(parse_area_file(yaml_file))
             areas = parse_area_file(def_file)
-            for area in areas:
-                if is_pyproj2():
-                    # pyproj 2.0 adds units back in
-                    # pyproj <2 doesn't
-                    continue
-                # initialize _proj_dict
-                area.proj_dict  # noqa
-                area._proj_dict.pop('units', None)
             areas_old = set(areas)
             areas_new = {area.area_id: area for area in areas_new}
             areas_old = {area.area_id: area for area in areas_old}
@@ -488,19 +443,13 @@ class TestMisc(unittest.TestCase):
 
     def test_get_area_def_from_raster(self):
         from pyresample import utils
-        from rasterio.crs import CRS
+        from rasterio.crs import CRS as RCRS
         from affine import Affine
         x_size = 791
         y_size = 718
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
-        crs = CRS(init='epsg:3857')
-        if utils.is_pyproj2():
-            # pyproj 2.0+ expands CRS parameters
-            from pyproj import CRS
-            proj_dict = CRS(3857).to_dict()
-        else:
-            proj_dict = crs.to_dict()
+        crs = RCRS(init='epsg:3857')
         source = tmptiff(x_size, y_size, transform, crs=crs)
         area_id = 'area_id'
         proj_id = 'proj_id'
@@ -512,14 +461,14 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(area_def.description, description)
         self.assertEqual(area_def.width, x_size)
         self.assertEqual(area_def.height, y_size)
-        self.assertDictEqual(proj_dict, area_def.proj_dict)
+        self.assertEqual(crs, area_def.crs)
         self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
                                                      transform.c + transform.a * x_size, transform.f))
 
     def test_get_area_def_from_raster_extracts_proj_id(self):
-        from rasterio.crs import CRS
+        from rasterio.crs import CRS as RCRS
         from pyresample import utils
-        crs = CRS(init='epsg:3857')
+        crs = RCRS(init='epsg:3857')
         source = tmptiff(crs=crs)
         area_def = utils.rasterio.get_area_def_from_raster(source)
         epsg3857_names = (
@@ -552,10 +501,7 @@ class TestMisc(unittest.TestCase):
         source = tmptiff(transform=transform)
         proj_dict = {'init': 'epsg:3857'}
         area_def = utils.rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
-        if utils.is_pyproj2():
-            from pyproj import CRS
-            proj_dict = CRS(3857).to_dict()
-        self.assertDictEqual(area_def.proj_dict, proj_dict)
+        self.assertEqual(area_def.crs, CRS(3857))
 
 
 class TestProjRotation(unittest.TestCase):

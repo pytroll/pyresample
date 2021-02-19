@@ -26,7 +26,7 @@ import sys
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
-requirements = ['setuptools>=3.2', 'pyproj>=1.9.5.1', 'configobj',
+requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
                 ]
 extras_require = {'numexpr': ['numexpr'],

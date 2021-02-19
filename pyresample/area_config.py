@@ -545,6 +545,7 @@ def _get_proj_data(projection):
     config operations.
 
     """
+    # FIXME: Produce a CRS object instead and allow for WKT
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
 
