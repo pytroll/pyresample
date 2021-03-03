@@ -1527,7 +1527,6 @@ class AreaDefinition(BaseDefinition):
         else:
             proj_dict = self.crs.to_dict()
 
-        # TODO: Allow WKT
         res = OrderedDict(description=self.description,
                           projection=OrderedDict(proj_dict),
                           shape=OrderedDict([('height', self.height), ('width', self.width)]))
