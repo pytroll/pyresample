@@ -25,10 +25,7 @@ import pyresample.ewa
 import pytest
 import numpy as np
 
-try:
-    from pyproj import CRS
-except ImportError:
-    CRS = None
+from pyproj import CRS
 
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
@@ -114,9 +111,8 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     geo_dims = ('y', 'x') if input_dims else None
     swath_def = _get_test_swath_def(input_area_shape, chunk_size, geo_dims)
     ds1.attrs['area'] = swath_def
-    if CRS is not None:
-        crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
-        ds1 = ds1.assign_coords(crs=crs)
+    crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
+    ds1 = ds1.assign_coords(crs=crs)
 
     target_area = _get_test_target_area(output_shape, output_proj)
     return ds1, swath_def, target_area
