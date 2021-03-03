@@ -41,5 +41,5 @@ PyTroll group and related packages.
 
 Citation
 ----------
-Hoese, D., Raspaud, M., Lahtinen, P., Roberts, W., Lavergne, et al. (2020). pytroll/pyresample: Version 1.16.0. Zenodo. [https://doi.org/10.5281/zenodo.3888692](https://doi.org/10.5281/zenodo.3372769)
+Hoese, D., Raspaud, M., Lahtinen, P., Roberts, W., Lavergne, et al. (2020). pytroll/pyresample: Version 1.16.0. Zenodo. [https://doi.org/10.5281/zenodo.3372769](https://doi.org/10.5281/zenodo.3372769)
 
