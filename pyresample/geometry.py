@@ -28,6 +28,7 @@ import hashlib
 import warnings
 from collections import OrderedDict
 from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -1571,6 +1572,20 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area."""
+        warnings.warn("'create_areas_def' is deprecated. Please use `dump` instead, which also "
+                      "supports writing directly to a file.", DeprecationWarning)
+
+        return self.dump()
+
+    def dump(self, filename=None):
+        """Generate YAML formatted representation of this area.
+
+        Args:
+            filename (str or pathlib.Path or file-like object): Yaml file location to dump the area to.
+
+        Returns:
+            If file is None returns yaml str
+        """
         if hasattr(self, 'crs') and self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
@@ -1588,7 +1603,16 @@ class AreaDefinition(BaseDefinition):
             extent['units'] = units
         res['area_extent'] = extent
 
-        return ordered_dump(OrderedDict([(self.area_id, res)]))
+        yml_str = ordered_dump(OrderedDict([(self.area_id, res)]), default_flow_style=None)
+
+        if filename is not None:
+            if hasattr(filename, 'write'):
+                filename.write(yml_str)
+            elif isinstance(filename, (str, Path)):
+                with open(filename, 'a') as fh:
+                    fh.write(yml_str)
+        else:
+            return yml_str
 
     def create_areas_def_legacy(self):
         """Create area definition in legacy format."""
