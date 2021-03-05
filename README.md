@@ -1,5 +1,6 @@
 [![Build Status](https://github.com/pytroll/satpy/workflows/CI/badge.svg?branch=master)](https://github.com/pytroll/satpy/actions?query=workflow%3A%22CI%22)
 [![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=master)](https://coveralls.io/github/pytroll/pyresample?branch=master)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372769.svg)](https://doi.org/10.5281/zenodo.3372769)
 
 
 Pyresample
@@ -36,3 +37,8 @@ on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
 
 See [pytroll.github.io](http://pytroll.github.io/) for more information on the
 PyTroll group and related packages.
+
+Citation
+----------
+Hoese, D., Raspaud, M., Lahtinen, P., Roberts, W., Lavergne, et al. (2020). pytroll/pyresample: Version 1.16.0. Zenodo. [https://doi.org/10.5281/zenodo.3372769](https://doi.org/10.5281/zenodo.3372769)
+

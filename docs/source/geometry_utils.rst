@@ -487,6 +487,11 @@ Several area definitions can be read at once using the region names in an argume
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+Writing to disk
+---------------
+To write an area definition to a yaml file to disk use the :func:`~pyresample.geometry.AreaDefinition.dump` function
+of the :class:`~pyresample.geometry.AreaDefinition`.
+
 Loading from netCDF/CF
 ----------------------
 ``AreaDefinition`` objects can be loaded from netCDF CF_ files with function :func:`~pyresample.utils.cf.load_cf_area`.
