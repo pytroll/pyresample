@@ -242,11 +242,6 @@ def recursive_dict_update(d, u):
     return d
 
 
-def is_pyproj2():
-    """Determine whether the current pyproj version is >= 2.0"""
-    return pyproj.__version__ >= '2'
-
-
 def check_slice_orientation(sli):
     """Check that the slice is slicing the right way."""
     if sli.start > sli.stop:

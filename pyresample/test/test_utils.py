@@ -44,18 +44,13 @@ class TestLegacyAreaParser(unittest.TestCase):
     def test_area_parser_legacy(self):
         """Test legacy area parser."""
         from pyresample import parse_area_file
-        from pyresample.utils import is_pyproj2
         ease_nh, ease_sh = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'),
                                            'ease_nh', 'ease_sh')
 
-        if is_pyproj2():
-            # pyproj 2.0+ adds some extra parameters
-            projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
-                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        else:
-            projection = ("{'a': '6371228.0', 'lat_0': '90.0', "
-                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
+        # pyproj 2.0+ adds some extra parameters
+        projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
+                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
@@ -66,13 +61,9 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
         self.assertEqual(ease_nh.__str__(), nh_str)
         self.assertIsInstance(ease_nh.proj_dict['lat_0'], (int, float))
 
-        if is_pyproj2():
-            projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
-                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        else:
-            projection = ("{'a': '6371228.0', 'lat_0': '-90.0', "
-                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
+        projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
+                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
         sh_str = """Area ID: ease_sh
 Description: Antarctic EASE grid
 Projection ID: ease_sh
@@ -85,16 +76,11 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
 
     def test_load_area(self):
         from pyresample import load_area
-        from pyresample.utils import is_pyproj2
         ease_nh = load_area(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ease_nh')
-        if is_pyproj2():
-            # pyproj 2.0+ adds some extra parameters
-            projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
-                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        else:
-            projection = ("{'a': '6371228.0', 'lat_0': '90.0', "
-                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
+        # pyproj 2.0+ adds some extra parameters
+        projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
+                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection ID: ease_nh
@@ -131,15 +117,10 @@ class TestYAMLAreaParser(unittest.TestCase):
                                      'test_latlong')
         ease_nh, ease_sh, test_m, test_deg, test_latlong = test_areas
 
-        from pyresample.utils import is_pyproj2
-        if is_pyproj2():
-            # pyproj 2.0+ adds some extra parameters
-            projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
-                          "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                          "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        else:
-            projection = ("{'a': '6371228.0', 'lat_0': '-90.0', "
-                          "'lon_0': '0.0', 'proj': 'laea', 'units': 'm'}")
+        # pyproj 2.0+ adds some extra parameters
+        projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
+                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
+                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
         nh_str = """Area ID: ease_nh
 Description: Arctic EASE grid
 Projection: {}
@@ -172,14 +153,10 @@ Number of rows: 425
 Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
         self.assertEqual(test_deg.__str__(), deg_str)
 
-        if is_pyproj2():
-            # pyproj 2.0+ adds some extra parameters
-            projection = ("{'ellps': 'WGS84', 'no_defs': 'None', "
-                          "'pm': '-81.36', 'proj': 'longlat', "
-                          "'type': 'crs'}")
-        else:
-            projection = ("{'ellps': 'WGS84', 'lat_0': '27.12', "
-                          "'lon_0': '-81.36', 'proj': 'longlat'}")
+        # pyproj 2.0+ adds some extra parameters
+        projection = ("{'ellps': 'WGS84', 'no_defs': 'None', "
+                      "'pm': '-81.36', 'proj': 'longlat', "
+                      "'type': 'crs'}")
         latlong_str = """Area ID: test_latlong
 Description: Basic latlong grid
 Projection: {}

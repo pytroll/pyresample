@@ -135,10 +135,7 @@ class Test(unittest.TestCase):
             self.assertEqual(crs.threshold, thresh_exp)
 
         # EPSG projection
-        projections = ['+init=EPSG:6932']
-        if utils.is_pyproj2():
-            projections.append('EPSG:6932')
-
+        projections = ['+init=EPSG:6932', 'EPSG:6932']
         for projection in projections:
             area = geometry.AreaDefinition(
                 area_id='ease-sh-2.0',
@@ -207,9 +204,10 @@ class Test(unittest.TestCase):
                              expected['projection'][proj_key])
 
         # EPSG
-        projections = {'+init=epsg:3006': 'init: epsg:3006'}
-        if utils.is_pyproj2():
-            projections['EPSG:3006'] = 'EPSG: 3006'
+        projections = {
+            '+init=epsg:3006': 'init: epsg:3006',
+            'EPSG:3006': 'EPSG: 3006',
+        }
 
         for projection, epsg_yaml in projections.items():
             area_def = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
@@ -274,9 +272,10 @@ class Test(unittest.TestCase):
         self.assertEqual(area_def, expected)
 
         # EPSG
-        projections = {'+init=epsg:3006': 'init: epsg:3006'}
-        if utils.is_pyproj2():
-            projections['EPSG:3006'] = 'EPSG: 3006'
+        projections = {
+            '+init=epsg:3006': 'init: epsg:3006',
+            'EPSG:3006': 'EPSG: 3006',
+        }
         for projection, epsg_yaml in projections.items():
             expected = geometry.AreaDefinition('baws300_sweref99tm', 'BAWS, 300m resolution, sweref99tm',
                                                'sweref99tm',
@@ -1218,9 +1217,7 @@ class Test(unittest.TestCase):
         self.assertEqual(slice(0, y_size, None), slice_y)
 
         # totally different area
-        projections = [{"init": 'EPSG:4326'}]
-        if utils.is_pyproj2():
-            projections.append('EPSG:4326')
+        projections = [{"init": 'EPSG:4326'}, 'EPSG:4326']
         for projection in projections:
             area_to_cover = geometry.AreaDefinition(
                 'epsg4326', 'Global equal latitude/longitude grid for global sphere',
@@ -1308,18 +1305,13 @@ class Test(unittest.TestCase):
         )
 
         # EPSG
-        if utils.is_pyproj2():
-            # With pyproj 2.0+ we expand EPSG to full parameter list
-            full_proj = ('+datum=WGS84 +lat_0=-90 +lon_0=0 +no_defs '
-                         '+proj=laea +type=crs +units=m +x_0=0 +y_0=0')
-            projections = [
-                ('+init=EPSG:6932', full_proj),
-                ('EPSG:6932', full_proj)
-            ]
-        else:
-            projections = [
-                ('+init=EPSG:6932', '+init=EPSG:6932'),
-            ]
+        # With pyproj 2.0+ we expand EPSG to full parameter list
+        full_proj = ('+datum=WGS84 +lat_0=-90 +lon_0=0 +no_defs '
+                     '+proj=laea +type=crs +units=m +x_0=0 +y_0=0')
+        projections = [
+            ('+init=EPSG:6932', full_proj),
+            ('EPSG:6932', full_proj)
+        ]
         for projection, expected_proj in projections:
             area = geometry.AreaDefinition(
                 area_id='ease-sh-2.0',
@@ -1330,37 +1322,36 @@ class Test(unittest.TestCase):
                 area_extent=[-40000., -40000., 40000., 40000.])
             self.assertEqual(area.proj_str, expected_proj)
 
-        if utils.is_pyproj2():
-            # CRS with towgs84 in it
-            # we remove towgs84 if they are all 0s
-            projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
-                          'ellps': 'GRS80', 'towgs84': '0,0,0,0,0,0,0', 'units': 'm', 'no_defs': True}
-            area = geometry.AreaDefinition(
-                area_id='test_towgs84',
-                description='',
-                proj_id='',
-                projection=projection,
-                width=123, height=123,
-                area_extent=[-40000., -40000., 40000., 40000.])
-            self.assertEqual(area.proj_str,
-                             '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                             # '+towgs84=0.0,0.0,0.0,0.0,0.0,0.0,0.0 '
-                             '+type=crs +units=m '
-                             '+x_0=4321000 +y_0=3210000')
-            projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
-                          'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
-            area = geometry.AreaDefinition(
-                area_id='test_towgs84',
-                description='',
-                proj_id='',
-                projection=projection,
-                width=123, height=123,
-                area_extent=[-40000., -40000., 40000., 40000.])
-            self.assertEqual(area.proj_str,
-                             '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                             '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
-                             '+type=crs +units=m '
-                             '+x_0=4321000 +y_0=3210000')
+        # CRS with towgs84 in it
+        # we remove towgs84 if they are all 0s
+        projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
+                      'ellps': 'GRS80', 'towgs84': '0,0,0,0,0,0,0', 'units': 'm', 'no_defs': True}
+        area = geometry.AreaDefinition(
+            area_id='test_towgs84',
+            description='',
+            proj_id='',
+            projection=projection,
+            width=123, height=123,
+            area_extent=[-40000., -40000., 40000., 40000.])
+        self.assertEqual(area.proj_str,
+                         '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                         # '+towgs84=0.0,0.0,0.0,0.0,0.0,0.0,0.0 '
+                         '+type=crs +units=m '
+                         '+x_0=4321000 +y_0=3210000')
+        projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
+                      'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
+        area = geometry.AreaDefinition(
+            area_id='test_towgs84',
+            description='',
+            proj_id='',
+            projection=projection,
+            width=123, height=123,
+            area_extent=[-40000., -40000., 40000., 40000.])
+        self.assertEqual(area.proj_str,
+                         '+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                         '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
+                         '+type=crs +units=m '
+                         '+x_0=4321000 +y_0=3210000')
 
     def test_striding(self):
         """Test striding AreaDefinitions."""
@@ -1831,7 +1822,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_compute_optimal_bb(self):
         """Test computing the bb area."""
-        from pyresample.utils import is_pyproj2
         import xarray as xr
         nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                            [80.84000396728516, 60.74200439453125, 34.08500289916992],
@@ -1851,11 +1841,10 @@ class TestSwathDefinition(unittest.TestCase):
         proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
-        if is_pyproj2():
-            # pyproj2 adds some extra defaults
-            proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
-                              'k': 1, 'gamma': 0,
-                              'no_defs': None, 'type': 'crs'})
+        # pyproj2 adds some extra defaults
+        proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
+                          'k': 1, 'gamma': 0,
+                          'no_defs': None, 'type': 'crs'})
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
 
@@ -1868,11 +1857,10 @@ class TestSwathDefinition(unittest.TestCase):
         proj_dict = {'gamma': 0.0, 'lonc': -11.391744043133668,
                      'ellps': 'WGS84', 'proj': 'omerc',
                      'alpha': 9.185764390923012, 'lat_0': -0.2821013754097188}
-        if is_pyproj2():
-            # pyproj2 adds some extra defaults
-            proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
-                              'k': 1, 'gamma': 0,
-                              'no_defs': None, 'type': 'crs'})
+        # pyproj2 adds some extra defaults
+        proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
+                          'k': 1, 'gamma': 0,
+                          'no_defs': None, 'type': 'crs'})
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
 
