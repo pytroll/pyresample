@@ -207,7 +207,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
 
         self.assertIsInstance(test_area, DynamicAreaDefinition)
         self.assertTrue(hasattr(test_area, 'resolution'))
-        self.assertEqual(test_area.resolution, (1.0, 1.0))
+        np.testing.assert_allclose(test_area.resolution, (1.0, 1.0))
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file

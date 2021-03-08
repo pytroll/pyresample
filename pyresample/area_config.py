@@ -21,10 +21,13 @@ import os
 import io
 import warnings
 import pathlib
+from typing import Any, Union
 
 import numpy as np
 import yaml
 from pyresample.utils import proj4_str_to_dict
+from pyproj.crs import CRS, CRSError
+from pyproj import Proj
 
 
 try:
@@ -457,7 +460,6 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
       they represent [projection x distance from center[0] to center[0]+dx, projection y distance from center[1] to
       center[1]+dy]
     """
-    from pyresample._spatial_mp import Proj
     description = kwargs.pop('description', area_id)
     proj_id = kwargs.pop('proj_id', None)
 
@@ -466,16 +468,16 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
 
-    # Get a proj4_dict from either a proj4_dict or a proj4_string.
-    proj_dict = _get_proj_data(projection)
     try:
-        p = Proj(projection, preserve_units=True)
-    except RuntimeError:
+        crs = _get_proj_data(projection)
+        p = Proj(crs, preserve_units=True)
+    except (RuntimeError, CRSError) as e:
+        # Assume that an invalid projection will be "fixed" by a dynamic area definition later
         return _make_area(area_id, description, proj_id, projection, shape, area_extent, **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
-        units = proj_dict.get('units', 'm' if not p.is_latlong() else 'degrees')
+        units = _get_proj_units(crs)
 
     # Allow height and width to be provided for more consistency across functions in pyresample.
     if height is not None or width is not None:
@@ -490,14 +492,14 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     area_extent = _verify_list('area_extent', area_extent, 4)
 
     # Converts from lat/lon to projection coordinates (x,y) if not in projection coordinates. Returns tuples.
-    center = _convert_units(center, 'center', units, p, proj_dict)
-    upper_left_extent = _convert_units(upper_left_extent, 'upper_left_extent', units, p, proj_dict)
+    center = _convert_units(center, 'center', units, p, crs)
+    upper_left_extent = _convert_units(upper_left_extent, 'upper_left_extent', units, p, crs)
     if area_extent is not None:
         # convert area extent, pass as (X, Y)
         area_extent_ll = area_extent[:2]
         area_extent_ur = area_extent[2:]
-        area_extent_ll = _convert_units(area_extent_ll, 'area_extent', units, p, proj_dict)
-        area_extent_ur = _convert_units(area_extent_ur, 'area_extent', units, p, proj_dict)
+        area_extent_ll = _convert_units(area_extent_ll, 'area_extent', units, p, crs)
+        area_extent_ur = _convert_units(area_extent_ur, 'area_extent', units, p, crs)
         area_extent = area_extent_ll + area_extent_ur
 
     # Fills in missing information to attempt to create an area definition.
@@ -505,12 +507,16 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
         area_extent, shape, resolution = \
             _extrapolate_information(area_extent, shape, center, radius,
                                      resolution, upper_left_extent, units,
-                                     p, proj_dict)
+                                     p, crs)
     return _make_area(area_id, description, proj_id, projection, shape,
                       area_extent, resolution=resolution, **kwargs)
 
 
-def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **kwargs):
+def _make_area(area_id: str, description: str, proj_id: str,
+               projection: Union[dict, CRS],
+               shape: tuple,
+               area_extent: tuple,
+               **kwargs):
     """Handles the creation of an area definition for create_area_def."""
     from pyresample.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
@@ -523,14 +529,14 @@ def _make_area(area_id, description, proj_id, proj_dict, shape, area_extent, **k
     if shape is not None:
         height, width = shape
     if None not in (area_extent, shape):
-        return AreaDefinition(area_id, description, proj_id, proj_dict, width, height, area_extent, **kwargs)
+        return AreaDefinition(area_id, description, proj_id, projection, width, height, area_extent, **kwargs)
 
-    return DynamicAreaDefinition(area_id=area_id, description=description, projection=proj_dict, width=width,
+    return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
                                  height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
                                  resolution=resolution, optimize_projection=optimize_projection)
 
 
-def _get_proj_data(projection):
+def _get_proj_data(projection: Any) -> CRS:
     """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function.
 
     There is special handling for the "EPSG:XXXX" case where "XXXX" is an
@@ -547,14 +553,20 @@ def _get_proj_data(projection):
     """
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
+    return CRS.from_user_input(projection)
 
-    if isinstance(projection, str):
-        proj_dict = proj4_str_to_dict(projection)
-    elif isinstance(projection, dict):
-        proj_dict = projection
+
+def _get_proj_units(crs):
+    if crs.is_geographic:
+        unit_name = 'degrees'
     else:
-        raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
-    return proj_dict
+        unit_name = crs.axis_info[0].unit_name
+    return {
+        'metre': 'm',
+        'meter': 'm',
+        'kilometre': 'km',
+        'kilometer': 'km',
+    }.get(unit_name, unit_name)
 
 
 def _sign(num):
@@ -586,7 +598,7 @@ def _round_poles(center, units, p):
     return center
 
 
-def _distance_from_center_forward(var, center, p):
+def _distance_from_center_forward(var: tuple, center: tuple, p: Proj):
     """Convert distances in degrees to projection units."""
     # Interprets radius and resolution as distances between latitudes/longitudes.
     # Since the distance between longitudes and latitudes is not constant in
@@ -597,7 +609,7 @@ def _distance_from_center_forward(var, center, p):
     center_as_angle = p(*center, inverse=True, errcheck=True)
     pole = 90
     # If on a pole, use northern/southern latitude for both height and width.
-    if abs(abs(center_as_angle[1]) - pole) < 1e-8:
+    if abs(abs(center_as_angle[1]) - pole) < 1e-3:
         direction_of_poles = _sign(center_as_angle[1])
         var = (center[1] - p(0, center_as_angle[1] - direction_of_poles * abs(var[0]),
                              errcheck=True)[1],
@@ -611,20 +623,19 @@ def _distance_from_center_forward(var, center, p):
     return var
 
 
-def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
+def _convert_units(var, name: str, units: str, p: Proj, crs: CRS, inverse=False, center=None):
     """Converts units from lon/lat to projection coordinates (meters).
 
     If `inverse` it True then the inverse calculation is done.
 
     """
-    from pyproj import transform
-    from pyresample._spatial_mp import Proj
+    from pyproj import Transformer
     if var is None:
         return None
     if isinstance(var, DataArray):
         units = var.units
         var = tuple(var.data.tolist())
-    if p.is_latlong() and not ('deg' == units or 'degrees' == units):
+    if crs.is_geographic and not ('deg' == units or 'degrees' == units):
         raise ValueError('latlon/latlong projection cannot take {0} as units: {1}'.format(units, name))
     # Check if units are an angle.
     is_angle = ('deg' == units or 'degrees' == units)
@@ -634,10 +645,11 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if not is_angle:
         if units == 'meters' or units == 'metres':
             units = 'm'
-        if proj_dict.get('units', 'm') != units:
-            tmp_proj_dict = proj_dict.copy()
+        if _get_proj_units(crs) != units:
+            tmp_proj_dict = crs.to_dict()
             tmp_proj_dict['units'] = units
-            var = transform(Proj(tmp_proj_dict, preserve_units=True), p, *var)
+            transformer = Transformer.from_crs(tmp_proj_dict, p.crs)
+            var = transformer.transform(*var)
     if name == 'center':
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
@@ -646,7 +658,10 @@ def _convert_units(var, name, units, p, proj_dict, inverse=False, center=None):
     if is_angle and not inverse:
         if name in ('radius', 'resolution'):
             var = _distance_from_center_forward(var, center, p)
-        else:
+        elif not crs.is_geographic:
+            # only convert to meters
+            # this allows geographic projections to use coordinates outside
+            # normal lon/lat ranges (ex. -90/90)
             var = p(*var, errcheck=True)
     # Don't convert if inverse is False: Want meters.
     elif not is_angle and inverse:
@@ -706,13 +721,13 @@ def _validate_variable(var, new_var, var_name, input_list):
     return new_var
 
 
-def _extrapolate_information(area_extent, shape, center, radius, resolution, upper_left_extent, units, p, proj_dict):
+def _extrapolate_information(area_extent, shape, center, radius, resolution, upper_left_extent, units, p, crs):
     """Attempts to find shape and area_extent based on data provided.
 
     Parameters are used in a specific order to determine area_extent and shape.
     The area_extent and shape are later used to create an `AreaDefinition`.
     Providing some parameters may have no effect if other parameters could be
-    to used determine area_extent and shape. The order of the parameters used
+    used to determine area_extent and shape. The order of the parameters used
     is:
 
     1. area_extent
@@ -731,7 +746,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
         new_center = ((area_extent[2] + area_extent[0]) / 2, (area_extent[3] + area_extent[1]) / 2)
         center = _validate_variable(center, new_center, 'center', ['area_extent'])
         # If radius is given in an angle without center it will raise an exception, and to verify, it must be in meters.
-        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
+        radius = _convert_units(radius, 'radius', units, p, crs, center=center)
         new_radius = ((area_extent[2] - area_extent[0]) / 2, (area_extent[3] - area_extent[1]) / 2)
         radius = _validate_variable(radius, new_radius, 'radius', ['area_extent'])
         new_upper_left_extent = (area_extent[0], area_extent[3])
@@ -740,13 +755,13 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
     # Output used below, but nowhere else is upper_left_extent made. Thus it should go as early as possible.
     elif None not in (upper_left_extent, center):
         # Function 1-B
-        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
+        radius = _convert_units(radius, 'radius', units, p, crs, center=center)
         new_radius = (center[0] - upper_left_extent[0], upper_left_extent[1] - center[1])
         radius = _validate_variable(radius, new_radius, 'radius', ['upper_left_extent', 'center'])
     else:
-        radius = _convert_units(radius, 'radius', units, p, proj_dict, center=center)
+        radius = _convert_units(radius, 'radius', units, p, crs, center=center)
     # Convert resolution to meters if given as an angle. If center is not found, an exception is raised.
-    resolution = _convert_units(resolution, 'resolution', units, p, proj_dict, center=center)
+    resolution = _convert_units(resolution, 'resolution', units, p, crs, center=center)
     # Inputs unaffected by data below: area_extent is not an input. However, output is used below.
     if radius is not None and resolution is not None:
         # Function 2-A

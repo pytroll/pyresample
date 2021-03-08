@@ -35,6 +35,8 @@ from pyresample.test.utils import catch_warnings
 
 from unittest.mock import MagicMock, patch
 import unittest
+import pyproj
+import pytest
 
 try:
     from pyproj import CRS
@@ -1539,7 +1541,6 @@ class Test(unittest.TestCase):
         # self.assertEqual(crs, area_def.crs)
 
     def test_areadef_immutable(self):
-        import pytest
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                            {'a': '6378144.0',
                                             'b': '6356759.0',
@@ -1948,7 +1949,7 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
 
 
-class TestStackedAreaDefinition(unittest.TestCase):
+class TestStackedAreaDefinition:
     """Test the StackedAreaDefition."""
 
     def test_append(self):
@@ -1972,13 +1973,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                         )
 
         adef = geometry.StackedAreaDefinition(area1, area2)
-        self.assertEqual(len(adef.defs), 1)
-        self.assertTupleEqual(adef.defs[0].area_extent,
-                              (3738502.0095458371, 4179561.259167064,
-                               -1830246.0673044831, 3251436.5796920112))
+        assert len(adef.defs) == 1
+        assert adef.defs[0].area_extent == (3738502.0095458371,
+                                            4179561.259167064,
+                                            -1830246.0673044831,
+                                            3251436.5796920112)
 
         # same
-
         area3 = geometry.AreaDefinition("area3", 'area3', "geosmsg",
                                         {'a': '6378169.0', 'b': '6356583.8',
                                          'h': '35785831.0', 'lon_0': '0.0',
@@ -1987,12 +1988,12 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                         (3738502.0095458371, 3251436.5796920112,
                                          -1830246.0673044831, 2787374.2399544837))
         adef.append(area3)
-        self.assertEqual(len(adef.defs), 1)
-        self.assertTupleEqual(adef.defs[0].area_extent,
-                              (3738502.0095458371, 4179561.259167064,
-                               -1830246.0673044831, 2787374.2399544837))
-
-        self.assertIsInstance(adef.squeeze(), geometry.AreaDefinition)
+        assert len(adef.defs) == 1
+        assert adef.defs[0].area_extent == (3738502.0095458371,
+                                            4179561.259167064,
+                                            -1830246.0673044831,
+                                            2787374.2399544837)
+        assert isinstance(adef.squeeze(), geometry.AreaDefinition)
 
         # transition
         area4 = geometry.AreaDefinition("area4", 'area4', "geosmsg",
@@ -2004,24 +2005,26 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                          -1000.3358822065015, 2323311.9002169576))
 
         adef.append(area4)
-        self.assertEqual(len(adef.defs), 2)
-        self.assertTupleEqual(adef.defs[-1].area_extent,
-                              (5567747.7409681147, 2787374.2399544837,
-                               -1000.3358822065015, 2323311.9002169576))
+        assert len(adef.defs) == 2
+        assert adef.defs[-1].area_extent == (5567747.7409681147,
+                                             2787374.2399544837,
+                                             -1000.3358822065015,
+                                             2323311.9002169576)
 
-        self.assertEqual(adef.height, 4 * 464)
-        self.assertIsInstance(adef.squeeze(), geometry.StackedAreaDefinition)
+        assert adef.height == 4 * 464
+        assert isinstance(adef.squeeze(), geometry.StackedAreaDefinition)
 
         adef2 = geometry.StackedAreaDefinition()
-        self.assertEqual(len(adef2.defs), 0)
+        assert len(adef2.defs) == 0
 
         adef2.append(adef)
-        self.assertEqual(len(adef2.defs), 2)
-        self.assertTupleEqual(adef2.defs[-1].area_extent,
-                              (5567747.7409681147, 2787374.2399544837,
-                               -1000.3358822065015, 2323311.9002169576))
+        assert len(adef2.defs) == 2
+        assert adef2.defs[-1].area_extent == (5567747.7409681147,
+                                              2787374.2399544837,
+                                              -1000.3358822065015,
+                                              2323311.9002169576)
 
-        self.assertEqual(adef2.height, 4 * 464)
+        assert adef2.height == 4 * 464
 
     def test_get_lonlats(self):
         """Test get_lonlats on StackedAreaDefinition."""
@@ -2043,7 +2046,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
                                          -1000.3358822065015, 2323311.9002169576))
 
         final_area = geometry.StackedAreaDefinition(area3, area4)
-        self.assertEqual(len(final_area.defs), 2)
+        assert len(final_area.defs) == 2
         lons, lats = final_area.get_lonlats()
         lons0, lats0 = final_area.defs[0].get_lonlats()
         lons1, lats1 = final_area.defs[1].get_lonlats()
@@ -2073,22 +2076,22 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area2 = MagicMock()
         area2.area_extent = (1, 6, 3, 2)
         res = combine_area_extents_vertical(area1, area2)
-        self.assertListEqual(res, [1, 6, 3, 4])
+        assert res == [1, 6, 3, 4]
 
         area1 = MagicMock()
         area1.area_extent = (1, 2, 3, 4)
         area2 = MagicMock()
         area2.area_extent = (1, 4, 3, 6)
         res = combine_area_extents_vertical(area1, area2)
-        self.assertListEqual(res, [1, 2, 3, 6])
+        assert res == [1, 2, 3, 6]
 
         # Non contiguous area extends shouldn't be combinable
         area1 = MagicMock()
         area1.area_extent = (1, 2, 3, 4)
         area2 = MagicMock()
         area2.area_extent = (1, 5, 3, 7)
-        self.assertRaises(IncompatibleAreas,
-                          combine_area_extents_vertical, area1, area2)
+        pytest.raises(IncompatibleAreas, combine_area_extents_vertical,
+                      area1, area2)
 
     def test_append_area_defs_fail(self):
         """Fail appending areas."""
@@ -2101,8 +2104,7 @@ class TestStackedAreaDefinition(unittest.TestCase):
         area2.width = 4
         area2.height = 6
         # res = combine_area_extents_vertical(area1, area2)
-        self.assertRaises(IncompatibleAreas,
-                          concatenate_area_defs, area1, area2)
+        pytest.raises(IncompatibleAreas, concatenate_area_defs, area1, area2)
 
     @patch('pyresample.geometry.AreaDefinition')
     def test_append_area_defs(self, adef):
@@ -2126,109 +2128,177 @@ class TestStackedAreaDefinition(unittest.TestCase):
         adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
                                      area1.crs, area1.width, y_size, area_extent)
 
-    def test_create_area_def(self):
+    @staticmethod
+    def _compare_area_defs(actual, expected):
+        actual_dict = actual.proj_dict
+        if 'EPSG' in actual_dict or 'init' in actual_dict:
+            # Use formal definition of EPSG projections to make them comparable to the base definition
+            proj_def = pyproj.Proj(actual_dict).definition_string().strip()
+            actual = actual.copy(projection=proj_def)
+
+            # Remove extra attributes from the formal definition
+            # for key in ['x_0', 'y_0', 'no_defs', 'b', 'init']:
+            #     actual.proj_dict.pop(key, None)
+
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        'projection',
+        [
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m',
+            '+init=EPSG:3409',
+            'EPSG:3409',
+        ])
+    @pytest.mark.parametrize(
+        'center',
+        [
+            [0, 0],
+            'a',
+            (1, 2, 3),
+        ])
+    @pytest.mark.parametrize('units', ['meters', 'degrees'])
+    def test_create_area_def_base_combinations(self, projection, center, units):
         """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
         from pyresample.geometry import AreaDefinition
-        from pyresample.geometry import DynamicAreaDefinition
-        from pyresample.area_config import DataArray
         from pyresample.area_config import create_area_def as cad
-        from pyresample import utils
-        import pyproj
 
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
-        projection_list = [{'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
-                           '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m',
-                           '+init=EPSG:3409']
-        if utils.is_pyproj2():
-            projection_list.append('EPSG:3409')
         proj_id = 'ease_sh'
         shape = (425, 850)
-        upper_left_extent = (-5326849.0625, 5326849.0625)
-        center_list = [[0, 0], 'a', (1, 2, 3)]
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-        resolution = (12533.7625, 25067.525)
-        radius = [5326849.0625, 5326849.0625]
-        units_list = ['meters', 'degrees']
-        base_def = AreaDefinition(area_id, description, '', projection_list[0], shape[1], shape[0], area_extent)
+        base_def = AreaDefinition(
+            area_id, description, '',
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            shape[1], shape[0], area_extent)
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees and meters both create the same area definition.
         # area_list used to check that areas are all correct at the end.
-        area_list = []
-        from itertools import product
-        for projection, units, center in product(projection_list, units_list, center_list):
-            # essentials = center, radius, upper_left_extent, resolution, shape.
-            if 'm' in units:
-                # Meters.
-                essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
-                              (12533.7625, 25067.525), (425, 850)]
-            else:
-                # Degrees.
-                essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
-                              (0.11271481862984278, 0.22542974631297721), (425, 850)]
-            # If center is valid, use it.
-            if len(center) == 2:
-                center = essentials[0]
-            try:
-                area_list.append(cad(area_id, projection, proj_id=proj_id, upper_left_extent=essentials[2],
-                                     center=center, shape=essentials[4], resolution=essentials[3],
-                                     radius=essentials[1], description=description, units=units, rotation=45))
-            except ValueError:
-                pass
-        self.assertEqual(len(area_list), 8 if utils.is_pyproj2() else 6)
+        # essentials = center, radius, upper_left_extent, resolution, shape.
+        if 'm' in units:
+            # Meters.
+            essentials = [[0, 0], [5326849.0625, 5326849.0625], (-5326849.0625, 5326849.0625),
+                          (12533.7625, 25067.525), (425, 850)]
+        else:
+            # Degrees.
+            essentials = [(0.0, -90.0), 49.4217406986, (-45.0, -17.516001139327766),
+                          (0.11271481862984278, 0.22542974631297721), (425, 850)]
+        # If center is valid, use it.
+        if len(center) == 2:
+            center = essentials[0]
+
+        args = (area_id, projection)
+        kwargs = dict(
+            proj_id=proj_id,
+            upper_left_extent=essentials[2],
+            center=center,
+            shape=essentials[4],
+            resolution=essentials[3],
+            radius=essentials[1],
+            description=description,
+            units=units,
+            rotation=45,
+        )
+
+        should_fail = isinstance(center, str) or len(center) != 2
+        if should_fail:
+            pytest.raises(ValueError, cad, *args, **kwargs)
+        else:
+            area_def = cad(*args, **kwargs)
+            self._compare_area_defs(area_def, base_def)
+
+    def test_create_area_def_extra_combinations(self):
+        """Test extra combinations of create_area_def parameters."""
+        from xarray import DataArray
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import AreaDefinition
+
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        area_id = 'ease_sh'
+        description = 'Antarctic EASE grid'
+        shape = (425, 850)
+        upper_left_extent = (-5326849.0625, 5326849.0625)
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+        resolution = (12533.7625, 25067.525)
+        radius = [5326849.0625, 5326849.0625]
+        base_def = AreaDefinition(
+            area_id, description, '',
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            shape[1], shape[0], area_extent)
 
         # Tests that specifying units through xarrays works.
-        area_list.append(cad(area_id, projection_list[1], shape=shape,
-                             area_extent=DataArray((-135.0, -17.516001139327766,
-                                                    45.0, -17.516001139327766),
-                                                   attrs={'units': 'degrees'})))
+        area_def = cad(area_id, projection, shape=shape,
+                       area_extent=DataArray(
+                           (-135.0, -17.516001139327766, 45.0, -17.516001139327766),
+                           attrs={'units': 'degrees'}))
+        self._compare_area_defs(area_def, base_def)
+
         # Tests area functions 1-A and 2-A.
-        area_list.append(cad(area_id, projection_list[1], resolution=resolution, area_extent=area_extent))
+        area_def = cad(area_id, projection, resolution=resolution, area_extent=area_extent)
+        self._compare_area_defs(area_def, base_def)
+
         # Tests area function 1-B. Also test that DynamicAreaDefinition arguments don't crash AreaDefinition.
-        area_list.append(cad(area_id, projection_list[1], shape=shape, center=center_list[0],
-                             upper_left_extent=upper_left_extent, optimize_projection=None))
+        area_def = cad(area_id, projection, shape=shape, center=[0, 0],
+                       upper_left_extent=upper_left_extent, optimize_projection=None)
+        self._compare_area_defs(area_def, base_def)
+
         # Tests area function 1-C.
-        area_list.append(cad(area_id, projection_list[1], shape=shape, center=center_list[0], radius=radius))
+        area_def = cad(area_id, projection, shape=shape, center=[0, 0],
+                       radius=radius)
+        self._compare_area_defs(area_def, base_def)
+
         # Tests area function 1-D.
-        area_list.append(cad(area_id, projection_list[1], shape=shape,
-                             radius=radius, upper_left_extent=upper_left_extent))
+        area_def = cad(area_id, projection, shape=shape,
+                       radius=radius, upper_left_extent=upper_left_extent)
+        self._compare_area_defs(area_def, base_def)
+
         # Tests all 4 user cases.
-        area_list.append(AreaDefinition.from_extent(area_id, projection_list[1], shape, area_extent))
-        area_list.append(AreaDefinition.from_circle(area_id, projection_list[1], center_list[0], radius,
-                                                    resolution=resolution))
-        area_list.append(AreaDefinition.from_area_of_interest(area_id, projection_list[1], shape, center_list[0],
-                                                              resolution))
-        area_list.append(AreaDefinition.from_ul_corner(area_id, projection_list[1], shape, upper_left_extent,
-                                                       resolution))
-        # Tests non-poles using degrees and mercator.
-        area_def = cad(area_id, '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
-                       center=(0, 0), radius=45, resolution=(1, 0.9999291722135637), units='degrees')
-        self.assertTrue(isinstance(area_def, AreaDefinition))
-        self.assertTrue(np.allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761)))
-        self.assertEqual(area_def.shape, (101, 90))
-        # Checks every area definition made
-        for area_def in area_list:
-            if 'EPSG' in area_def.proj_dict or 'init' in area_def.proj_dict:
-                # Use formal definition of EPSG projections to make them comparable to the base definition
-                proj_def = pyproj.Proj(area_def.proj_str).definition_string().strip()
-                area_def = area_def.copy(projection=proj_def)
+        area_def = AreaDefinition.from_extent(area_id, projection, shape, area_extent)
+        self._compare_area_defs(area_def, base_def)
 
-                # Remove extra attributes from the formal definition
-                if 'R' in area_def.proj_dict:
-                    # pyproj < 2
-                    area_def.proj_dict['a'] = area_def.proj_dict.pop('R')
-                for key in ['x_0', 'y_0', 'no_defs', 'b', 'init']:
-                    area_def.proj_dict.pop(key, None)
+        area_def = AreaDefinition.from_circle(area_id, projection, [0, 0], radius,
+                                              resolution=resolution)
+        self._compare_area_defs(area_def, base_def)
+        area_def = AreaDefinition.from_area_of_interest(area_id, projection,
+                                                        shape, [0, 0],
+                                                        resolution)
+        self._compare_area_defs(area_def, base_def)
+        area_def = AreaDefinition.from_ul_corner(area_id, projection, shape,
+                                                 upper_left_extent,
+                                                 resolution)
+        self._compare_area_defs(area_def, base_def)
 
-            self.assertEqual(area_def, base_def)
+    def test_create_area_def_nonpole_center(self):
+        """Test that a non-pole center can be used."""
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import AreaDefinition
+        area_def = cad('ease_sh', '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
+                       center=(0, 0), radius=45,
+                       resolution=(1, 0.9999291722135637),
+                       units='degrees')
+        assert isinstance(area_def, AreaDefinition)
+        np.testing.assert_allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761))
+        assert area_def.shape == (101, 90)
 
-        # Makes sure if shape or area_extent is found/given, a DynamicAreaDefinition is made.
-        self.assertTrue(isinstance(cad(area_id, projection_list[1], shape=shape), DynamicAreaDefinition))
-        self.assertTrue(isinstance(cad(area_id, projection_list[1], area_extent=area_extent), DynamicAreaDefinition))
+    def test_create_area_def_dynamic_areas(self):
+        """Test certain parameter combinations produce a DynamicAreaDefinition."""
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import DynamicAreaDefinition
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        shape = (425, 850)
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+        assert isinstance(cad('ease_sh', projection, shape=shape), DynamicAreaDefinition)
+        assert isinstance(cad('ease_sh', projection, area_extent=area_extent), DynamicAreaDefinition)
+
+    def test_create_area_def_dynamic_omerc(self):
+        """Test 'omerc' projections work in 'create_area_def'."""
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import DynamicAreaDefinition
         area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
-        self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
+        assert isinstance(area_def, DynamicAreaDefinition)
 
 
 def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
