@@ -158,9 +158,10 @@ class Test(unittest.TestCase):
                                               area_extent=(-180, -90, 180, 90)).to_cartopy_crs()
         self.assertTrue(np.allclose(latlong_crs.bounds, [-np.pi, np.pi, -np.pi/2, np.pi/2]))
 
-    def test_create_areas_def(self):
+    def test_dump(self):
         """Test exporting area defs."""
         from pyresample import utils
+        from io import StringIO
         import yaml
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
@@ -177,7 +178,7 @@ class Test(unittest.TestCase):
                                             -909968.64000000001,
                                             1029087.28,
                                             1490031.3600000001])
-        res = yaml.safe_load(area_def.create_areas_def())
+        res = yaml.safe_load(area_def.dump())
         expected = yaml.safe_load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
                                    '    lat_0: 90.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
@@ -211,18 +212,32 @@ class Test(unittest.TestCase):
                                                4667,
                                                4667,
                                                [-49739, 5954123, 1350361, 7354223])
-            res = yaml.safe_load(area_def.create_areas_def())
-            expected = yaml.safe_load(('baws300_sweref99tm:\n'
-                                       '  description: BAWS, 300m resolution, sweref99tm\n'
-                                       '  projection:\n'
-                                       '    {epsg}\n'
-                                       '  shape:\n'
-                                       '    height: 4667\n'
-                                       '    width: 4667\n'
-                                       '  area_extent:\n'
-                                       '    lower_left_xy: [-49739, 5954123]\n'
-                                       '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml)))
+            res = yaml.safe_load(area_def.dump())
+            yaml_string = ('baws300_sweref99tm:\n'
+                           '  description: BAWS, 300m resolution, sweref99tm\n'
+                           '  projection:\n'
+                           '    {epsg}\n'
+                           '  shape:\n'
+                           '    height: 4667\n'
+                           '    width: 4667\n'
+                           '  area_extent:\n'
+                           '    lower_left_xy: [-49739, 5954123]\n'
+                           '    upper_right_xy: [1350361, 7354223]\n'.format(epsg=epsg_yaml))
+            expected = yaml.safe_load(yaml_string)
         self.assertDictEqual(res, expected)
+
+        # testing writing to file with file-like object
+        sio = StringIO()
+        area_def.dump(filename=sio)
+        res = yaml.safe_load(sio.getvalue())
+        self.assertDictEqual(res, expected)
+
+        # test writing to file with string filename
+        with patch('pyresample.geometry.open') as mock_open:
+            area_def.dump(filename='area_file.yml')
+            mock_open.assert_called_once_with('area_file.yml', 'a')
+            mock_open.return_value.__enter__().write.assert_called_once_with(yaml_string)
+
 
     def test_parse_area_file(self):
         """Test parsing the are file."""
