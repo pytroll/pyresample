@@ -165,7 +165,8 @@ def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32
     if start > stop:
         stop += 360.0
 
-    lon_row = np.linspace(start, stop, num=shape[1]).astype(dtype)
+    num_cols = 1 if len(shape) < 2 else shape[1]
+    lon_row = np.linspace(start, stop, num=num_cols).astype(dtype)
     twist_array = np.arange(shape[0]).reshape((shape[0], 1)) * twist_factor
     lon_array = np.repeat([lon_row], shape[0], axis=0)
     lon_array += twist_array
@@ -176,9 +177,10 @@ def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32
 
 
 def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
+    num_cols = 1 if len(shape) < 2 else shape[1]
     lat_col = np.linspace(start, stop, num=shape[0]).astype(dtype).reshape((shape[0], 1))
-    twist_array = np.arange(shape[1]) * twist_factor
-    lat_array = np.repeat(lat_col, shape[1], axis=1)
+    twist_array = np.arange(num_cols) * twist_factor
+    lat_array = np.repeat(lat_col, num_cols, axis=1)
     lat_array += twist_array
     return lat_array
 

@@ -1,3 +1,35 @@
+## Version 1.17.0 (2020/11/12)
+
+### Issues Closed
+
+* [Issue 299](https://github.com/pytroll/pyresample/issues/299) - Refactor bilinear interpolation ([PR 300](https://github.com/pytroll/pyresample/pull/300))
+* [Issue 297](https://github.com/pytroll/pyresample/issues/297) - Using CRS from `to_cartopy_crs()` triggers AttributeError in shapely
+* [Issue 291](https://github.com/pytroll/pyresample/issues/291) - Help text for the bucket resampler is incorrect
+* [Issue 289](https://github.com/pytroll/pyresample/issues/289) - AreaDefinition.area_extent mutability leads to hash violations ([PR 290](https://github.com/pytroll/pyresample/pull/290))
+* [Issue 287](https://github.com/pytroll/pyresample/issues/287) - AttributeError when comparing `AreaDefinition` against other type ([PR 288](https://github.com/pytroll/pyresample/pull/288))
+* [Issue 237](https://github.com/pytroll/pyresample/issues/237) - Test failure in test_kd_tree.Test.test_custom
+
+In this release 6 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 305](https://github.com/pytroll/pyresample/pull/305) - Add missing test data to package
+* [PR 304](https://github.com/pytroll/pyresample/pull/304) - Improve test compatibility with new pyproj
+* [PR 298](https://github.com/pytroll/pyresample/pull/298) - Fix fill value for integer datasets, fix band assignment
+* [PR 294](https://github.com/pytroll/pyresample/pull/294) - Fix colrow2lonlat working only for square areadefs
+
+#### Features added
+
+* [PR 310](https://github.com/pytroll/pyresample/pull/310) - Remove appveyor CI in favor of travis Windows and add Python 3.9 wheels
+* [PR 303](https://github.com/pytroll/pyresample/pull/303) - Add caching of bilinear information
+* [PR 300](https://github.com/pytroll/pyresample/pull/300) - Refactor bilinear ([299](https://github.com/pytroll/pyresample/issues/299))
+* [PR 290](https://github.com/pytroll/pyresample/pull/290) - Make AreaDefinition.area_extent read only ([289](https://github.com/pytroll/pyresample/issues/289))
+
+In this release 8 pull requests were closed.
+
+
 ## Version 1.16.0 (2020/06/10)
 
 ### Issues Closed

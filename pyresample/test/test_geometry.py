@@ -1519,6 +1519,28 @@ class Test(unittest.TestCase):
         # WKT1 to WKT2 has some different naming of things so this fails
         # self.assertEqual(crs, area_def.crs)
 
+    def test_areadef_immutable(self):
+        import pytest
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '50.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           10,
+                                           10,
+                                           [-1370912.72,
+                                               -909968.64000000001,
+                                               1029087.28,
+                                               1490031.3600000001])
+        with pytest.raises(AttributeError):
+            area_def.shape = (10, 10)
+        with pytest.raises(AttributeError):
+            area_def.proj_str = "seaweed"
+        with pytest.raises(AttributeError):
+            area_def.area_extent = (-1000000, -900000, 1000000, 1500000)
+
 
 class TestMakeSliceDivisible(unittest.TestCase):
     """Test the _make_slice_divisible."""
@@ -2011,6 +2033,20 @@ class TestStackedAreaDefinition(unittest.TestCase):
         np.testing.assert_allclose(lats[:464, :], lats0)
         np.testing.assert_allclose(lats[464:, :], lats1)
 
+        # check that get_lonlats with chunks definition doesn't cause errors and output arrays are equal
+        # too many chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((200, 264, 464), (5570,)))
+        # too few chunks
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464,), (5568,)))
+        # right amount of chunks, same shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 464), (5568,)))
+        # right amount of chunks, different shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 470), (5568,)))
+        # only one set of chunks in a tuple
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=(464, 5568))
+        # only one chunk value
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=464)
+
     def test_combine_area_extents(self):
         """Test combination of area extents."""
         area1 = MagicMock()
@@ -2176,6 +2212,13 @@ class TestStackedAreaDefinition(unittest.TestCase):
         self.assertTrue(isinstance(area_def, DynamicAreaDefinition))
 
 
+def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
+    """Compute the lons and lats with chunk definition and check that they are as expected."""
+    lons_c, lats_c = final_area.get_lonlats(chunks=chunks)
+    np.testing.assert_array_equal(lons, lons_c)
+    np.testing.assert_array_equal(lats, lats_c)
+
+
 class TestDynamicAreaDefinition(unittest.TestCase):
     """Test the DynamicAreaDefinition class."""
 
@@ -2274,6 +2317,7 @@ class TestCrop(unittest.TestCase):
                                'h': 35785831.00,
                                'lon_0': lon_0,
                                'proj': 'geos'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
@@ -2293,6 +2337,7 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(lat, elat)
 
         geos_area = MagicMock()
+        del geos_area.crs_wkt
         lon_0 = 10
         geos_area.proj_dict = {'a': 6378169.00,
                                'b': 6356583.80,
@@ -2300,6 +2345,7 @@ class TestCrop(unittest.TestCase):
                                'lon_0': lon_0,
                                'proj': 'geos'}
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
         np.testing.assert_allclose(lon, elon + lon_0)
@@ -2307,7 +2353,6 @@ class TestCrop(unittest.TestCase):
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
         geos_area = MagicMock()
-        del geos_area.crs
         geos_area.proj_dict = {
             'proj': 'geos',
             'sweep': 'x',
@@ -2316,6 +2361,7 @@ class TestCrop(unittest.TestCase):
             'b': 6356583.80,
             'h': 35785831.00,
             'units': 'm'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
 
         expected = (0.15185342867090912, 0.15133555510297725)
         np.testing.assert_allclose(expected,
@@ -2336,6 +2382,7 @@ class TestCrop(unittest.TestCase):
             'ellps': 'GRS80',
             'h': 35785831.00,
             'units': 'm'}
+        geos_area._crs_or_proj_dict = geos_area.proj_dict
         expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))

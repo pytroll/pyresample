@@ -390,7 +390,7 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(resampler._index_array.shape, (self.target_def.size, 4))
         self.assertTrue(resampler._index_array.dtype == np.int32)
         self.assertEqual(resampler._valid_input_index.shape, (self.source_def.size,))
-        self.assertTrue(resampler._valid_input_index.dtype == np.bool)
+        self.assertTrue(resampler._valid_input_index.dtype == bool)
 
 
 class TestXarrayBilinear(unittest.TestCase):
@@ -1006,7 +1006,7 @@ class TestXarrayBilinear(unittest.TestCase):
                                                  self.target_def,
                                                  False, self.radius)
         self.assertEqual(vii.shape, (self.source_def.size, ))
-        self.assertTrue(vii.dtype == np.bool)
+        self.assertTrue(vii.dtype == bool)
         # No data has been reduced, whole input is used
         self.assertTrue(vii.all())
 
@@ -1030,7 +1030,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(resampler._index_array.shape, (self.target_def.size, 4))
         self.assertTrue(resampler._index_array.dtype == np.int32)
         self.assertEqual(resampler._valid_input_index.shape, (self.source_def.size,))
-        self.assertTrue(resampler._valid_input_index.dtype == np.bool)
+        self.assertTrue(resampler._valid_input_index.dtype == bool)
 
     def test_lonlat2xyz(self):
         """Test conversion from geographic to cartesian 3D coordinates."""

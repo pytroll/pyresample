@@ -1,0 +1,128 @@
+name: Deploy sdist and wheels
+
+on:
+  push:
+    tags:
+      - v*
+  release:
+    types:
+      - published
+
+jobs:
+  build_sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Create sdist
+        shell: bash -l {0}
+        run: |
+          export USE_CYTHON="1";
+          python setup.py sdist;
+
+      - name: Upload sdist to build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+
+  build_wheels:
+    runs-on: ${{ matrix.os }}
+    env:
+      USE_CYTHON: "1"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        include:
+          # Using pythons inside a docker image to provide all the Linux
+          # python-versions permutations.
+          - name: manylinux 64-bit
+            os: ubuntu-latest
+            python-version: 3.8
+            docker-image: manylinux1_x86_64
+          - name: manylinux 32-bit
+            os: ubuntu-latest
+            python-version: 3.8
+            docker-image: manylinux1_i686
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          git fetch --prune --unshallow
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U -q pip Cython wheel setuptools twine numpy
+
+      - name: Build and install macOS/Windows wheel
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          python setup.py -q bdist_wheel
+          pip install --find-links=./dist/ pyresample
+
+      - name: Build Linux wheels inside docker
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          docker run \
+            -e PLAT=${{ matrix.docker-image }} \
+            -e USE_OMP=1 \
+            -v `pwd`:/io \
+            quay.io/pypa/${{ matrix.docker-image }} \
+            /io/continuous_integration/build-manylinux-wheels.sh
+
+      - name: Upload wheel(s) as build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheels
+          path: dist/*.whl
+
+  upload_test_pypi:
+    needs: [build_sdist, build_wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sdist
+          path: dist
+      - name: Download wheels artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: wheels
+          path: dist
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          user: __token__
+          password: ${{ secrets.test_pypi_password }}
+          repository_url: https://test.pypi.org/legacy/
+
+  upload_pypi:
+    needs: [build_sdist, build_wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sdist
+          path: dist
+      - name: Download wheels artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: wheels
+          path: dist
+      - name: Publish package to PyPI
+        if: github.event.action == 'published'
+        uses: pypa/gh-action-pypi-publish@v1.4.1
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}

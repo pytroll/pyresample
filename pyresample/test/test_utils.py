@@ -522,7 +522,11 @@ class TestMisc(unittest.TestCase):
         crs = CRS(init='epsg:3857')
         source = tmptiff(crs=crs)
         area_def = utils.rasterio.get_area_def_from_raster(source)
-        self.assertEqual(area_def.proj_id, 'WGS 84 / Pseudo-Mercator')
+        epsg3857_names = (
+            'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
+            'WGS 84 / Pseudo-Mercator',                # proj<6.0
+        )
+        self.assertIn(area_def.proj_id, epsg3857_names)
 
     def test_get_area_def_from_raster_rotated_value_err(self):
         from pyresample import utils

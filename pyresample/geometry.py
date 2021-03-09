@@ -679,7 +679,7 @@ class SwathDefinition(CoordinateDefinition):
         the_hash.update(get_array_hashable(self.lons))
         the_hash.update(get_array_hashable(self.lats))
         try:
-            if self.lons.mask is not np.bool_(False):
+            if self.lons.mask is not False:
                 the_hash.update(get_array_hashable(self.lons.mask))
         except AttributeError:
             pass
@@ -1108,7 +1108,7 @@ class AreaDefinition(BaseDefinition):
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
-        self.area_extent = tuple(area_extent)
+        self._area_extent = tuple(area_extent)
         if CRS is not None:
             self.crs_wkt = CRS(projection).to_wkt()
             self._proj_dict = None
@@ -1165,6 +1165,25 @@ class AreaDefinition(BaseDefinition):
         return CRS.from_wkt(self.crs_wkt)
 
     @property
+    def _crs_or_proj_dict(self):
+        return self.crs if hasattr(self, 'crs') else self.proj_dict
+
+    @property
+    def _wkt_or_proj_str(self):
+        return self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_str
+
+    @property
+    def is_geostationary(self):
+        """Whether this area is in a geostationary satellite projection or not."""
+        if hasattr(self, 'crs'):
+            coord_operation = self.crs.coordinate_operation
+            if coord_operation is None:
+                return False
+            return 'geostationary' in coord_operation.method_name.lower()
+        else:
+            return self.proj_dict.get('proj') == 'geos'
+
+    @property
     def proj_dict(self):
         """Return the PROJ projection dictionary.
 
@@ -1179,6 +1198,11 @@ class AreaDefinition(BaseDefinition):
                 self._proj_dict = proj4_str_to_dict(self.crs.to_proj4())
         return self._proj_dict
 
+    @property
+    def area_extent(self):
+        """Tuple of this area's extent (xmin, ymin, xmax, ymax)."""
+        return self._area_extent
+
     def copy(self, **override_kwargs):
         """Make a copy of the current area.
 
@@ -1187,7 +1211,7 @@ class AreaDefinition(BaseDefinition):
         kwargs = {'area_id': self.area_id,
                   'description': self.description,
                   'proj_id': self.proj_id,
-                  'projection': self.proj_dict,
+                  'projection': self._wkt_or_proj_str,
                   'width': self.width,
                   'height': self.height,
                   'area_extent': self.area_extent,
@@ -1598,7 +1622,8 @@ class AreaDefinition(BaseDefinition):
         """Update a hash, or return a new one if needed."""
         if the_hash is None:
             the_hash = hashlib.sha1()
-        the_hash.update(self.proj_str.encode('utf-8'))
+        crs_wkt = self._wkt_or_proj_str
+        the_hash.update(crs_wkt.encode('utf-8'))
         the_hash.update(np.array(self.shape))
         the_hash.update(np.array(self.area_extent))
         return the_hash
@@ -1878,7 +1903,8 @@ class AreaDefinition(BaseDefinition):
     def outer_boundary_corners(self):
         """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
-        proj = Proj(**self.proj_dict)
+        proj_def = self._wkt_or_proj_str
+        proj = Proj(proj_def)
 
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
                                          self.area_extent[2], self.area_extent[0]),
@@ -1946,7 +1972,7 @@ class AreaDefinition(BaseDefinition):
             raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
         # Proj.4 definition of target area projection
-        proj_def = self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_dict
+        proj_def = self._wkt_or_proj_str
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
@@ -2005,8 +2031,8 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
         # Intersection only required for two different projections
-        proj_def_to_cover = area_to_cover.crs if hasattr(area_to_cover, 'crs') else area_to_cover.proj_str
-        proj_def = self.crs if hasattr(self, 'crs') else self.proj_str
+        proj_def_to_cover = area_to_cover._crs_or_proj_dict
+        proj_def = self._crs_or_proj_dict
         if proj_def_to_cover == proj_def:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s',
@@ -2018,13 +2044,13 @@ class AreaDefinition(BaseDefinition):
             return (check_slice_orientation(slice(xstart, xstop)),
                     check_slice_orientation(slice(ystart, ystop)))
 
-        if self.proj_dict.get('proj') != 'geos':
+        if not self.is_geostationary:
             raise NotImplementedError("Source projection must be 'geos' if "
                                       "source/target projections are not "
                                       "equal.")
 
         data_boundary = Boundary(*get_geostationary_bounding_box(self))
-        if area_to_cover.proj_dict.get('proj') == 'geos':
+        if area_to_cover.is_geostationary:
             area_boundary = Boundary(
                 *get_geostationary_bounding_box(area_to_cover))
         else:
@@ -2072,8 +2098,9 @@ class AreaDefinition(BaseDefinition):
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
+        proj_def = self._wkt_or_proj_str
         new_area = AreaDefinition(self.area_id, self.description,
-                                  self.proj_id, self.proj_dict,
+                                  self.proj_id, proj_def,
                                   total_cols,
                                   total_rows,
                                   new_area_extent)
@@ -2110,7 +2137,8 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_proj_vectors()
         mid_col_x = np.repeat(x[mid_col], y.size)
         mid_row_y = np.repeat(y[mid_row], x.size)
-        src = Proj(getattr(self, 'crs', self.proj_dict))
+        proj_def = self._crs_or_proj_dict
+        src = Proj(proj_def)
         if radius:
             dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
         else:
@@ -2165,7 +2193,8 @@ def _make_slice_divisible(sli, max_size, factor=2):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    a, b = proj4_radius_parameters(geos_area.proj_dict)
+    proj_def = geos_area._crs_or_proj_dict
+    a, b = proj4_radius_parameters(proj_def)
     req = a / 1000.0
     rp = b / 1000.0
     h = geos_area.proj_dict['h'] / 1000.0 + req
@@ -2333,12 +2362,15 @@ class StackedAreaDefinition(BaseDefinition):
             row_slice = slice(0, self.height)
             col_slice = slice(0, self.width)
         offset = 0
-        for definition in self.defs:
+        for def_idx, areadef in enumerate(self.defs):
+            # compute appropriate chunks for the current AreaDefinition
+            chunks_for_areadef = self._get_chunks_for_areadef_in_stacked_areadef(chunks, def_idx)
+
             local_row_slice = slice(max(row_slice.start - offset, 0),
-                                    min(max(row_slice.stop - offset, 0), definition.height),
+                                    min(max(row_slice.stop - offset, 0), areadef.height),
                                     row_slice.step)
-            lons, lats = definition.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
-                                                cache=cache, dtype=dtype, chunks=chunks)
+            lons, lats = areadef.get_lonlats(nprocs=nprocs, data_slice=(local_row_slice, col_slice),
+                                             cache=cache, dtype=dtype, chunks=chunks_for_areadef)
 
             llons.append(lons)
             llats.append(lats)
@@ -2348,6 +2380,23 @@ class StackedAreaDefinition(BaseDefinition):
         self.lats = vstack(llats)
 
         return self.lons, self.lats
+
+    def _get_chunks_for_areadef_in_stacked_areadef(self, chunks_stacked_areadef, areadef_idx):
+        """Get the chunks for an AreaDefinition stored based on another chunked StackedAreaDefinition."""
+        if isinstance(chunks_stacked_areadef, tuple) and isinstance(chunks_stacked_areadef[0], int):
+            # defined chunk is just an integer, so use that for all areadefs
+            chunks_for_areadef = chunks_stacked_areadef
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) == len(self.defs):
+            # amount of chunks defined matches the amout of areadefs,
+            # so assign each chunk to each areadef following the array order
+            chunks_for_areadef = (chunks_stacked_areadef[0][areadef_idx], chunks_stacked_areadef[1])
+        elif isinstance(chunks_stacked_areadef, tuple) and len(chunks_stacked_areadef[0]) != len(self.defs):
+            # too many/few chunks defined, assignment is ambiguous, so use the actual shape of the areadef instead
+            chunks_for_areadef = (self.defs[areadef_idx].shape[0], chunks_stacked_areadef[1])
+        else:
+            chunks_for_areadef = chunks_stacked_areadef
+
+        return chunks_for_areadef
 
     def get_lonlats_dask(self, chunks=None, dtype=None):
         """Return lon and lat dask arrays of the area."""

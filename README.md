@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/pytroll/pyresample.svg?branch=master)](https://travis-ci.org/pytroll/pyresample)
-[![Build status](https://ci.appveyor.com/api/projects/status/a34o4utf8dqjsob1/branch/master?svg=true)](https://ci.appveyor.com/project/pytroll/pyresample/branch/master)
-[![Build Status](https://dev.azure.com/pytroll/pyresample/_apis/build/status/pytroll.pyresample?branchName=master)](https://dev.azure.com/pytroll/pyresample/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://github.com/pytroll/satpy/workflows/CI/badge.svg?branch=master)](https://github.com/pytroll/satpy/actions?query=workflow%3A%22CI%22)
 [![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=master)](https://coveralls.io/github/pytroll/pyresample?branch=master)
 
 

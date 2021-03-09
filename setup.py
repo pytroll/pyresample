@@ -117,6 +117,7 @@ if __name__ == "__main__":
 
     README = open('README.md', 'r').read()
     setup(name='pyresample',
+          url='https://github.com/pytroll/pyresample',
           version=versioneer.get_version(),
           cmdclass=cmdclass,
           description='Geospatial image resampling in Python',
@@ -126,6 +127,7 @@ if __name__ == "__main__":
           author_email='t.lavergne@met.no',
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
+          package_data={'pyresample.test': ['test_files/*']},
           python_requires='>=3.4',
           setup_requires=setup_requires,
           install_requires=requirements,
