@@ -26,8 +26,6 @@ from typing import Any, Union
 import numpy as np
 import yaml
 from pyresample.utils import proj4_str_to_dict
-from pyresample.geometry import AreaDefinition
-from pyresample.geometry import DynamicAreaDefinition
 from pyproj.crs import CRS, CRSError
 from pyproj import Proj, Transformer
 
@@ -523,6 +521,8 @@ def _make_area(
         area_extent: tuple,
         **kwargs):
     """Handles the creation of an area definition for create_area_def."""
+    from pyresample.geometry import AreaDefinition
+    from pyresample.geometry import DynamicAreaDefinition
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     resolution = kwargs.pop('resolution', None)
