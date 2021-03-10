@@ -37,8 +37,9 @@ from pyproj import Geod, transform
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import (proj4_str_to_dict, proj4_dict_to_str,
-                              convert_proj_floats, proj4_radius_parameters,
+from pyresample.utils import (proj4_dict_to_str,
+                              proj4_radius_parameters,
+                              get_geostationary_height,
                               check_slice_orientation, load_cf_area)
 from pyresample.area_config import create_area_def
 
@@ -47,10 +48,7 @@ try:
 except ImportError:
     DataArray = np.ndarray
 
-try:
-    from pyproj import CRS
-except ImportError:
-    CRS = None
+from pyproj import CRS
 
 logger = getLogger(__name__)
 
@@ -841,9 +839,9 @@ class DynamicAreaDefinition(object):
     description:
         The description of the area.
     projection:
-        The dictionary or string of projection parameters. Doesn't have to
-        be complete. If not complete, ``proj_info`` must be provided to
-        ``freeze`` to "fill in" any missing parameters.
+        The dictionary or string or CRS object of projection parameters.
+        Doesn't have to be complete. If not complete, ``proj_info`` must
+        be provided to ``freeze`` to "fill in" any missing parameters.
     width:
         x dimension in number of pixels, aka number of grid columns
     height:
@@ -885,31 +883,16 @@ class DynamicAreaDefinition(object):
         # check if non-dict projections are valid
         # dicts may be updated later
         if not isinstance(self._projection, dict):
-            Proj(projection)
+            CRS(projection)
 
     def _get_proj_dict(self):
         projection = self._projection
-        if CRS is not None:
-            try:
-                crs = CRS(projection)
-            except RuntimeError:
-                # could be incomplete dictionary
-                return projection
-            if hasattr(crs, 'to_dict'):
-                # pyproj 2.2+
-                proj_dict = crs.to_dict()
-            else:
-                proj_dict = proj4_str_to_dict(crs.to_proj4())
-        else:
-            if isinstance(projection, str):
-                proj_dict = proj4_str_to_dict(projection)
-            elif isinstance(projection, dict):
-                proj_dict = projection.copy()
-            else:
-                raise TypeError('Wrong type for projection: {0}. Expected '
-                                'dict or string.'.format(type(projection)))
-
-        return proj_dict
+        try:
+            crs = CRS(projection)
+        except RuntimeError:
+            # could be incomplete dictionary
+            return projection
+        return crs.to_dict()
 
     @property
     def pixel_size_x(self):
@@ -1115,20 +1098,8 @@ class AreaDefinition(BaseDefinition):
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self._area_extent = tuple(area_extent)
-        if CRS is not None:
-            self.crs_wkt = CRS(projection).to_wkt()
-            self._proj_dict = None
-            self.crs = self._crs  # see _crs property for details
-        else:
-            if isinstance(projection, str):
-                proj_dict = proj4_str_to_dict(projection)
-            elif isinstance(projection, dict):
-                # use the float-converted dict to pass to Proj
-                projection = convert_proj_floats(projection.items())
-                proj_dict = projection
-            else:
-                raise TypeError('Wrong type for projection: {0}. Expected dict or string.'.format(type(projection)))
-            self._proj_dict = proj_dict
+        self.crs_wkt = CRS(projection).to_wkt()
+        self._proj_dict = None
 
         # Calculate area_extent in lon lat
         proj = Proj(projection)
@@ -1154,7 +1125,7 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @property
-    def _crs(self):
+    def crs(self):
         """Wrap the `crs` property in a helper property.
 
         The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
@@ -1162,32 +1133,16 @@ class AreaDefinition(BaseDefinition):
         is requested (the `self.crs` property). The alternative of storing it
         as a normal instance attribute could cause issues between threads.
 
-        For backwards compatibility, we only create the `.crs` property if
-        pyproj 2.0+ is installed. Users can then check
-        `hasattr(area_def, 'crs')` to easily support older versions of
-        pyresample and pyproj.
-
         """
         return CRS.from_wkt(self.crs_wkt)
 
     @property
-    def _crs_or_proj_dict(self):
-        return self.crs if hasattr(self, 'crs') else self.proj_dict
-
-    @property
-    def _wkt_or_proj_str(self):
-        return self.crs_wkt if hasattr(self, 'crs_wkt') else self.proj_str
-
-    @property
     def is_geostationary(self):
         """Whether this area is in a geostationary satellite projection or not."""
-        if hasattr(self, 'crs'):
-            coord_operation = self.crs.coordinate_operation
-            if coord_operation is None:
-                return False
-            return 'geostationary' in coord_operation.method_name.lower()
-        else:
-            return self.proj_dict.get('proj') == 'geos'
+        coord_operation = self.crs.coordinate_operation
+        if coord_operation is None:
+            return False
+        return 'geostationary' in coord_operation.method_name.lower()
 
     @property
     def proj_dict(self):
@@ -1196,12 +1151,8 @@ class AreaDefinition(BaseDefinition):
         This is no longer the preferred way of describing CRS information.
         Switch to the `crs` or `crs_wkt` properties for the most flexibility.
         """
-        if self._proj_dict is None and hasattr(self, 'crs'):
-            if hasattr(self.crs, 'to_dict'):
-                # pyproj 2.2+
-                self._proj_dict = self.crs.to_dict()
-            else:
-                self._proj_dict = proj4_str_to_dict(self.crs.to_proj4())
+        if self._proj_dict is None:
+            self._proj_dict = self.crs.to_dict()
         return self._proj_dict
 
     @property
@@ -1217,7 +1168,7 @@ class AreaDefinition(BaseDefinition):
         kwargs = {'area_id': self.area_id,
                   'description': self.description,
                   'proj_id': self.proj_id,
-                  'projection': self._wkt_or_proj_str,
+                  'projection': self.crs_wkt,
                   'width': self.width,
                   'height': self.height,
                   'area_extent': self.area_extent,
@@ -1560,11 +1511,11 @@ class AreaDefinition(BaseDefinition):
                   self.area_extent[2],
                   self.area_extent[1],
                   self.area_extent[3])
-        if hasattr(self, 'crs') and self.crs.to_epsg() is not None:
+        if self.crs.to_epsg() is not None:
             proj_params = "EPSG:{}".format(self.crs.to_epsg())
         else:
-            proj_params = self.proj_str
-        if Proj(proj_params).is_latlong():
+            proj_params = self.crs.to_proj4()
+        if self.crs.is_geographic:
             # Convert area extent from degrees to radians
             bounds = np.deg2rad(bounds)
         crs = from_proj(proj_params, bounds=bounds)
@@ -1586,12 +1537,10 @@ class AreaDefinition(BaseDefinition):
         Returns:
             If file is None returns yaml str
         """
-        if hasattr(self, 'crs') and self.crs.to_epsg() is not None:
+        if self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
-            proj_dict = self.proj_dict
-            # pyproj 2.0+ adds a '+type=crs' parameter
-            proj_dict.pop('type', None)
+            proj_dict = self.crs.to_dict()
 
         res = OrderedDict(description=self.description,
                           projection=OrderedDict(proj_dict),
@@ -1616,6 +1565,8 @@ class AreaDefinition(BaseDefinition):
 
     def create_areas_def_legacy(self):
         """Create area definition in legacy format."""
+        warnings.warn("Pyresample's legacy areas file format is deprecated. "
+                      "Use the 'YAML' format instead.")
         proj_dict = self.proj_dict
         proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k]))
                              for k in sorted(proj_dict.keys())])
@@ -1651,8 +1602,7 @@ class AreaDefinition(BaseDefinition):
         """Update a hash, or return a new one if needed."""
         if the_hash is None:
             the_hash = hashlib.sha1()
-        crs_wkt = self._wkt_or_proj_str
-        the_hash.update(crs_wkt.encode('utf-8'))
+        the_hash.update(self.crs_wkt.encode('utf-8'))
         the_hash.update(np.array(self.shape))
         the_hash.update(np.array(self.area_extent))
         return the_hash
@@ -1932,9 +1882,7 @@ class AreaDefinition(BaseDefinition):
     def outer_boundary_corners(self):
         """Return the lon,lat of the outer edges of the corner points."""
         from pyresample.spherical_geometry import Coordinate
-        proj_def = self._wkt_or_proj_str
-        proj = Proj(proj_def)
-
+        proj = Proj(self.crs)
         corner_lons, corner_lats = proj((self.area_extent[0], self.area_extent[2],
                                          self.area_extent[2], self.area_extent[0]),
                                         (self.area_extent[3], self.area_extent[3],
@@ -2000,20 +1948,18 @@ class AreaDefinition(BaseDefinition):
             # but if the user provided nprocs then this doesn't make sense
             raise ValueError("Can't specify 'nprocs' and 'chunks' at the same time")
 
-        # Proj.4 definition of target area projection
-        proj_def = self._wkt_or_proj_str
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
             res = map_blocks(invproj, target_x, target_y,
                              chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                             new_axis=[2], proj_dict=proj_def).astype(dtype)
+                             new_axis=[2], proj_dict=self.crs_wkt).astype(dtype)
             return res[:, :, 0], res[:, :, 1]
 
         if nprocs > 1:
-            target_proj = Proj_MP(proj_def)
+            target_proj = Proj_MP(self.crs)
         else:
-            target_proj = Proj(proj_def)
+            target_proj = Proj(self.crs)
 
         # Get corresponding longitude and latitude values
         lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
@@ -2060,8 +2006,8 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError('Only AreaDefinitions can be used')
 
         # Intersection only required for two different projections
-        proj_def_to_cover = area_to_cover._crs_or_proj_dict
-        proj_def = self._crs_or_proj_dict
+        proj_def_to_cover = area_to_cover.crs
+        proj_def = self.crs
         if proj_def_to_cover == proj_def:
             logger.debug('Projections for data and slice areas are'
                          ' identical: %s',
@@ -2127,9 +2073,8 @@ class AreaDefinition(BaseDefinition):
                            (self.pixel_upper_left[0] + (xslice.stop - 0.5) * self.pixel_size_x),
                            (self.pixel_upper_left[1] - (yslice.start - 0.5) * self.pixel_size_y))
 
-        proj_def = self._wkt_or_proj_str
         new_area = AreaDefinition(self.area_id, self.description,
-                                  self.proj_id, proj_def,
+                                  self.proj_id, self.crs,
                                   total_cols,
                                   total_rows,
                                   new_area_extent)
@@ -2166,8 +2111,7 @@ class AreaDefinition(BaseDefinition):
         x, y = self.get_proj_vectors()
         mid_col_x = np.repeat(x[mid_col], y.size)
         mid_row_y = np.repeat(y[mid_row], x.size)
-        proj_def = self._crs_or_proj_dict
-        src = Proj(proj_def)
+        src = Proj(self.crs)
         if radius:
             dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
         else:
@@ -2222,11 +2166,11 @@ def _make_slice_divisible(sli, max_size, factor=2):
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
-    proj_def = geos_area._crs_or_proj_dict
-    a, b = proj4_radius_parameters(proj_def)
+    a, b = proj4_radius_parameters(geos_area.crs)
+    h = get_geostationary_height(geos_area.crs)
     req = a / 1000.0
     rp = b / 1000.0
-    h = geos_area.proj_dict['h'] / 1000.0 + req
+    h = h / 1000.0 + req
 
     # compute some constants
     aeq = 1 - req ** 2 / (h ** 2)
@@ -2247,6 +2191,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
+    h = get_geostationary_height(geos_area.crs)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
@@ -2255,13 +2200,13 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
-    x *= geos_area.proj_dict['h']
-    y *= geos_area.proj_dict['h']
+    x *= h
+    y *= h
 
     x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
-    return Proj(**geos_area.proj_dict)(x, y, inverse=True)
+    return Proj(geos_area.crs)(x, y, inverse=True)
 
 
 def combine_area_extents_vertical(area1, area2):
@@ -2287,13 +2232,12 @@ def combine_area_extents_vertical(area1, area2):
 
 def concatenate_area_defs(area1, area2, axis=0):
     """Append *area2* to *area1* and return the results."""
-    different_items = (set(area1.proj_dict.items()) ^
-                       set(area2.proj_dict.items()))
+    crs_is_equal = area1.crs == area2.crs
     if axis == 0:
         same_size = area1.width == area2.width
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
-    if different_items or not same_size:
+    if not crs_is_equal or not same_size:
         raise IncompatibleAreas("Can't concatenate area definitions with "
                                 "different projections: "
                                 "{0} and {1}".format(area1, area2))
@@ -2305,7 +2249,7 @@ def concatenate_area_defs(area1, area2, axis=0):
     else:
         raise NotImplementedError('Only vertical contatenation is supported.')
     return AreaDefinition(area1.area_id, area1.description, area1.proj_id,
-                          area1.proj_dict, x_size, y_size,
+                          area1.crs, x_size, y_size,
                           area_extent)
 
 
@@ -2322,9 +2266,17 @@ class StackedAreaDefinition(BaseDefinition):
         super(StackedAreaDefinition, self).__init__(nprocs=nprocs)
         self.dtype = kwargs.get('dtype', np.float64)
         self.defs = []
-        self.proj_dict = {}
+        self.crs_wkt = None
         for definition in definitions:
             self.append(definition)
+
+    @property
+    def crs(self):
+        return CRS.from_wkt(self.crs_wkt)
+
+    @property
+    def proj_dict(self):
+        return self.crs.to_dict()
 
     @property
     def width(self):
@@ -2367,10 +2319,10 @@ class StackedAreaDefinition(BaseDefinition):
         if definition.height == 0:
             return
         if not self.defs:
-            self.proj_dict = definition.proj_dict
-        elif self.proj_dict != definition.proj_dict:
+            self.crs_wkt = definition.crs_wkt
+        elif self.crs != definition.crs:
             raise NotImplementedError('Cannot append areas:'
-                                      ' Proj.4 dict mismatch')
+                                      ' CRS mismatch')
         try:
             self.defs[-1] = concatenate_area_defs(self.defs[-1], definition)
         except (IncompatibleAreas, IndexError):

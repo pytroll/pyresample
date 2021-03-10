@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 from collections import OrderedDict
 
-try:
-    from pyproj.crs import CRS
-except ImportError:
-    CRS = None
+from pyproj import CRS
 
 
 def convert_proj_floats(proj_pairs):
@@ -51,18 +49,8 @@ def proj4_str_to_dict(proj4_str):
     Note: Key only parameters will be assigned a value of `True`.
     """
     # convert EPSG codes to equivalent PROJ4 string definition
-    if proj4_str.startswith('EPSG:') and CRS is not None:
-        crs = CRS(proj4_str)
-        if hasattr(crs, 'to_dict'):
-            # pyproj 2.2+
-            return crs.to_dict()
-        proj4_str = crs.to_proj4()
-    elif proj4_str.startswith('EPSG:'):
-        # legacy +init= PROJ4 string and no pyproj 2.0+ to help convert
-        proj4_str = "+init={}".format(proj4_str)
-
-    pairs = (x.split('=', 1) for x in proj4_str.replace('+', '').split(" "))
-    return convert_proj_floats(pairs)
+    crs = CRS(proj4_str)
+    return crs.to_dict()
 
 
 def proj4_dict_to_str(proj4_dict, sort=False):
@@ -90,44 +78,16 @@ def proj4_radius_parameters(proj4_dict):
     Returns:
         a (float), b (float): equatorial and polar radius
     """
-    if CRS is not None:
-        import math
-        crs = CRS(proj4_dict)
-        a = crs.ellipsoid.semi_major_metre
-        b = crs.ellipsoid.semi_minor_metre
-        if not math.isnan(b):
-            return a, b
-        # older versions of pyproj didn't always have a valid minor radius
-        proj4_dict = crs.to_dict()
+    crs = proj4_dict
+    if not isinstance(crs, CRS):
+        crs = CRS(crs)
+    a = crs.ellipsoid.semi_major_metre
+    b = crs.ellipsoid.semi_minor_metre
+    if not math.isnan(b):
+        return a, b
 
-    if isinstance(proj4_dict, str):
-        new_info = proj4_str_to_dict(proj4_dict)
-    else:
-        new_info = proj4_dict.copy()
 
-    # load information from PROJ.4 about the ellipsis if possible
-
-    from pyproj import Geod
-
-    if 'ellps' in new_info:
-        geod = Geod(**new_info)
-        new_info['a'] = geod.a
-        new_info['b'] = geod.b
-    elif 'a' not in new_info or 'b' not in new_info:
-
-        if 'rf' in new_info and 'f' not in new_info:
-            new_info['f'] = 1. / float(new_info['rf'])
-
-        if 'a' in new_info and 'f' in new_info:
-            new_info['b'] = float(new_info['a']) * (1 - float(new_info['f']))
-        elif 'b' in new_info and 'f' in new_info:
-            new_info['a'] = float(new_info['b']) / (1 - float(new_info['f']))
-        elif 'R' in new_info:
-            new_info['a'] = new_info['R']
-            new_info['b'] = new_info['R']
-        else:
-            geod = Geod(**{'ellps': 'WGS84'})
-            new_info['a'] = geod.a
-            new_info['b'] = geod.b
-
-    return float(new_info['a']), float(new_info['b'])
+def get_geostationary_height(geos_area_crs):
+    params = geos_area_crs.coordinate_operation.params
+    h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
+    return h_param.value

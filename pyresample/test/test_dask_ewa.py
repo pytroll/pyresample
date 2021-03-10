@@ -25,10 +25,7 @@ import pyresample.ewa
 import pytest
 import numpy as np
 
-try:
-    from pyproj import CRS
-except ImportError:
-    CRS = None
+from pyproj import CRS
 
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
@@ -114,9 +111,8 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     geo_dims = ('y', 'x') if input_dims else None
     swath_def = _get_test_swath_def(input_area_shape, chunk_size, geo_dims)
     ds1.attrs['area'] = swath_def
-    if CRS is not None:
-        crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
-        ds1 = ds1.assign_coords(crs=crs)
+    crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
+    ds1 = ds1.assign_coords(crs=crs)
 
     target_area = _get_test_target_area(output_shape, output_proj)
     return ds1, swath_def, target_area
@@ -145,17 +141,15 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
     assert 'x' in new_data.coords
     if has_bands:
         assert 'bands' in new_data.coords
-    if CRS is not None:
-        assert 'crs' in new_data.coords
-        assert isinstance(new_data.coords['crs'].item(), CRS)
-        assert 'lcc' in new_data.coords['crs'].item().to_proj4()
-        assert new_data.coords['y'].attrs['units'] == 'meter'
-        assert new_data.coords['x'].attrs['units'] == 'meter'
-        if hasattr(target_area, 'crs'):
-            assert target_area.crs is new_data.coords['crs'].item()
-        if has_bands:
-            np.testing.assert_equal(new_data.coords['bands'].values,
-                                    ['R', 'G', 'B'])
+    assert 'crs' in new_data.coords
+    assert isinstance(new_data.coords['crs'].item(), CRS)
+    assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+    assert new_data.coords['y'].attrs['units'] == 'meter'
+    assert new_data.coords['x'].attrs['units'] == 'meter'
+    assert target_area.crs == new_data.coords['crs'].item()
+    if has_bands:
+        np.testing.assert_equal(new_data.coords['bands'].values,
+                                ['R', 'G', 'B'])
 
 
 def _get_num_chunks(source_swath, resampler_class):
