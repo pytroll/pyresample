@@ -512,8 +512,8 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
                       area_extent, resolution=resolution, **kwargs)
 
 
-def _make_area(area_id: str, 
-               description: str, 
+def _make_area(area_id: str,
+               description: str,
                proj_id: str,
                projection: Union[dict, CRS],
                shape: tuple,
