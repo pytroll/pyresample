@@ -26,8 +26,10 @@ from typing import Any, Union
 import numpy as np
 import yaml
 from pyresample.utils import proj4_str_to_dict
+from pyresample.geometry import AreaDefinition
+from pyresample.geometry import DynamicAreaDefinition
 from pyproj.crs import CRS, CRSError
-from pyproj import Proj
+from pyproj import Proj, Transformer
 
 
 try:
@@ -512,16 +514,15 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
                       area_extent, resolution=resolution, **kwargs)
 
 
-def _make_area(area_id: str,
-               description: str,
-               proj_id: str,
-               projection: Union[dict, CRS],
-               shape: tuple,
-               area_extent: tuple,
-               **kwargs):
+def _make_area(
+        area_id: str,
+        description: str,
+        proj_id: str,
+        projection: Union[dict, CRS],
+        shape: tuple,
+        area_extent: tuple,
+        **kwargs):
     """Handles the creation of an area definition for create_area_def."""
-    from pyresample.geometry import AreaDefinition
-    from pyresample.geometry import DynamicAreaDefinition
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     resolution = kwargs.pop('resolution', None)
@@ -600,7 +601,10 @@ def _round_poles(center, units, p):
     return center
 
 
-def _distance_from_center_forward(var: tuple, center: tuple, p: Proj):
+def _distance_from_center_forward(
+        var: tuple,
+        center: tuple,
+        p: Proj):
     """Convert distances in degrees to projection units."""
     # Interprets radius and resolution as distances between latitudes/longitudes.
     # Since the distance between longitudes and latitudes is not constant in
@@ -625,13 +629,19 @@ def _distance_from_center_forward(var: tuple, center: tuple, p: Proj):
     return var
 
 
-def _convert_units(var, name: str, units: str, p: Proj, crs: CRS, inverse=False, center=None):
+def _convert_units(
+        var,
+        name: str,
+        units: str,
+        p: Proj,
+        crs: CRS,
+        inverse: bool = False,
+        center=None):
     """Converts units from lon/lat to projection coordinates (meters).
 
     If `inverse` it True then the inverse calculation is done.
 
     """
-    from pyproj import Transformer
     if var is None:
         return None
     if isinstance(var, DataArray):
