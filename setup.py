@@ -20,11 +20,11 @@
 """The setup module."""
 import multiprocessing  # noqa: F401
 import versioneer
-import os
 import sys
+import numpy as np
 
 from setuptools import Extension, find_packages, setup
-from setuptools.command.build_ext import build_ext as _build_ext
+from Cython.Build import cythonize
 
 requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
@@ -37,7 +37,7 @@ extras_require = {'numexpr': ['numexpr'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr']}
 
-setup_requires = ['numpy>=1.10.0']
+setup_requires = ['numpy>=1.10.0', 'cython']
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr']
 
 if sys.platform.startswith("win"):
@@ -47,74 +47,23 @@ else:
 
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
+              include_dirs=[np.get_include()],
               extra_compile_args=extra_compile_args),
-    Extension("pyresample.ewa._fornav", sources=["pyresample/ewa/_fornav.pyx",
-                                                 "pyresample/ewa/_fornav_templates.cpp"],
+    Extension("pyresample.ewa._fornav",
+              sources=["pyresample/ewa/_fornav.pyx",
+                       "pyresample/ewa/_fornav_templates.cpp"],
+              include_dirs=[np.get_include()],
               language="c++", extra_compile_args=extra_compile_args,
               depends=["pyresample/ewa/_fornav_templates.h"]),
-    Extension("pyresample.gradient._gradient_search", sources=["pyresample/gradient/_gradient_search.pyx"],
+    Extension("pyresample.gradient._gradient_search",
+              sources=["pyresample/gradient/_gradient_search.pyx"],
+              include_dirs=[np.get_include()],
               extra_compile_args=extra_compile_args),
 ]
 
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    cythonize = None
-
-
-def set_builtin(name, value):
-    """Set builtin."""
-    if isinstance(__builtins__, dict):
-        __builtins__[name] = value
-    else:
-        setattr(__builtins__, name, value)
-
-
 cmdclass = versioneer.get_cmdclass()
-versioneer_build_ext = cmdclass.get('build_ext', _build_ext)
-
-
-class build_ext(_build_ext):
-    """Work around to bootstrap numpy includes in to extensions.
-
-    Copied from:
-
-        http://stackoverflow.com/questions/19919905/how-to-bootstrap-numpy-installation-in-setup-py
-
-    """
-
-    def finalize_options(self):
-        """Finalize options."""
-        versioneer_build_ext.finalize_options(self)
-        # Prevent numpy from thinking it is still in its setup process:
-        set_builtin('__NUMPY_SETUP__', False)
-        import numpy
-        self.include_dirs.append(numpy.get_include())
-
-
-cmdclass['build_ext'] = build_ext
 
 if __name__ == "__main__":
-    if not os.getenv("USE_CYTHON", False) or cythonize is None:
-        print(
-            "Cython will not be used. Use environment variable 'USE_CYTHON=True' to use it")
-
-        def cythonize(extensions, **_ignore):
-            """Fake function to compile from C/C++ files instead of compiling .pyx files with cython."""
-            for extension in extensions:
-                sources = []
-                for sfile in extension.sources:
-                    path, ext = os.path.splitext(sfile)
-                    if ext in ('.pyx', '.py'):
-                        if extension.language == 'c++':
-                            ext = '.cpp'
-                        else:
-                            ext = '.c'
-                        sfile = path + ext
-                    sources.append(sfile)
-                extension.sources[:] = sources
-            return extensions
-
     README = open('README.md', 'r').read()
     setup(name='pyresample',
           url='https://github.com/pytroll/pyresample',
@@ -134,7 +83,6 @@ if __name__ == "__main__":
           extras_require=extras_require,
           tests_require=test_requires,
           ext_modules=cythonize(extensions),
-          test_suite='pyresample.test.suite',
           zip_safe=False,
           classifiers=[
               'Development Status :: 5 - Production/Stable',

@@ -51,7 +51,7 @@ class BucketResampler(object):
 
     Initialize the resampler
 
-    >>> resampler = BucketResampler(adef, lons, lats)
+    >>> resampler = BucketResampler(target_area, lons, lats)
 
     Calculate the sum of all the data in each grid location:
 

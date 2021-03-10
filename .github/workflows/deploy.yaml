@@ -18,8 +18,8 @@ jobs:
       - name: Create sdist
         shell: bash -l {0}
         run: |
-          export USE_CYTHON="1";
-          python setup.py sdist;
+          python -m pip pip install -q build
+          python -m build -s
 
       - name: Upload sdist to build artifacts
         uses: actions/upload-artifact@v2
@@ -30,8 +30,6 @@ jobs:
 
   build_wheels:
     runs-on: ${{ matrix.os }}
-    env:
-      USE_CYTHON: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -61,12 +59,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U -q pip Cython wheel setuptools twine numpy
+          python -m pip install -U -q pip Cython wheel setuptools twine numpy build
 
       - name: Build and install macOS/Windows wheel
         if: matrix.os != 'ubuntu-latest'
         run: |
-          python setup.py -q bdist_wheel
+          python -m build -w
           pip install --find-links=./dist/ pyresample
 
       - name: Build Linux wheels inside docker

@@ -145,7 +145,7 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(res[0], 0.375)
         self.assertEqual(res[1], 0.5)
         res = _get_fractional_distances_irregular(self.pts_vert_parallel, 0., 0.)
-        self.assertTrue(np.isnan(res[0]))
+        self.assertEqual(res[0], 0.5)
         self.assertTrue(np.isnan(res[1]))
 
     def test_get_fractional_distances_uprights_parallel(self):
@@ -179,6 +179,20 @@ class TestNumpyBilinear(unittest.TestCase):
         res = _get_fractional_distances(self.pts_vert_parallel, out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
+
+    def test_get_fractional_distances_division_by_zero(self):
+        """Test that the correct result is found even when there's a division by zero when solving t and s."""
+        from pyresample.bilinear._base import _get_fractional_distances
+        corner_points = [np.array([[-64.9936752319336, -5.140199184417725]]),
+                         np.array([[-64.98487091064453, -5.142156600952148]]),
+                         np.array([[-64.98683166503906, -5.151054859161377]]),
+                         np.array([[-64.97802734375, -5.153012275695801]])]
+        out_x = np.array([-64.985])
+        out_y = np.array([-5.145])
+
+        t__, s__ = _get_fractional_distances(corner_points, out_x, out_y)
+        np.testing.assert_allclose(t__, np.array([0.30769689]))
+        np.testing.assert_allclose(s__, np.array([0.74616628]))
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
@@ -912,6 +926,20 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.allclose(t__.compute(), t_res, equal_nan=True))
         self.assertTrue(np.allclose(s__.compute(), s_res, equal_nan=True))
 
+    def test_get_fractional_distances_division_by_zero(self):
+        """Test that the correct result is found even when there's a division by zero when solving t and s."""
+        from pyresample.bilinear._base import _get_fractional_distances
+        corner_points = [np.array([[-64.9936752319336, -5.140199184417725]]),
+                         np.array([[-64.98487091064453, -5.142156600952148]]),
+                         np.array([[-64.98683166503906, -5.151054859161377]]),
+                         np.array([[-64.97802734375, -5.153012275695801]])]
+        out_x = np.array([-64.985])
+        out_y = np.array([-5.145])
+
+        t__, s__ = _get_fractional_distances(corner_points, out_x, out_y)
+        np.testing.assert_allclose(t__, np.array([0.30769689]))
+        np.testing.assert_allclose(s__, np.array([0.74616628]))
+
     def test_get_fractional_distances_irregular(self):
         """Test calculations for irregular corner locations."""
         from pyresample.bilinear._base import _get_fractional_distances_irregular
@@ -921,7 +949,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(res[1], 0.5)
         res = _get_fractional_distances_irregular(
             self.pts_vert_parallel, 0., 0.)
-        self.assertTrue(np.isnan(res[0]))
+        self.assertEqual(res[0], 0.5)
         self.assertTrue(np.isnan(res[1]))
 
     def test_get_fractional_distances_uprights_parallel(self):

@@ -28,7 +28,7 @@ To run tests from a source tarball:
 
     tar -zxf pyresample-<version>.tar.gz
     cd pyresample-<version>
-    python setup.py test
+    pytest pyresample/test/
 
 If all the tests passes the functionality of all pyresample functions on the system has been verified.
 
