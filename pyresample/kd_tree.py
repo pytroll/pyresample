@@ -476,15 +476,6 @@ def _create_resample_kdtree(source_lons,
                             valid_input_index,
                             nprocs=1):
     """Set up kd tree on input."""
-    if not isinstance(source_geo_def, geometry.BaseDefinition):
-        raise TypeError('source_geo_def must be of geometry type')
-
-    #Get reduced cartesian coordinates and flatten them
-    source_cartesian_coords = source_geo_def.get_cartesian_coords(nprocs=nprocs)
-    input_coords = geometry._flatten_cartesian_coords(source_cartesian_coords)
-    input_coords = input_coords[valid_input_index]
-    """
-
     source_lons_valid = source_lons[valid_input_index]
     source_lats_valid = source_lats[valid_input_index]
 
