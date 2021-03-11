@@ -23,7 +23,6 @@
 """Some generalized spherical functions.
 
 base type is a numpy array of size (n, 2) (2 for lon and lats)
-
 """
 
 import numpy as np
@@ -105,33 +104,28 @@ class SCoordinate(object):
 
 class CCoordinate(object):
 
-    """Cartesian coordinates
-    """
+    """Cartesian coordinates."""
 
     def __init__(self, cart):
         self.cart = np.array(cart)
 
     def norm(self):
-        """Euclidean norm of the vector.
-        """
+        """Euclidean norm of the vector."""
         return np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
 
     def normalize(self):
-        """normalize the vector.
-        """
+        """normalize the vector."""
 
         self.cart /= np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
 
         return self
 
     def cross(self, point):
-        """cross product with another vector.
-        """
+        """cross product with another vector."""
         return CCoordinate(np.cross(self.cart, point.cart))
 
     def dot(self, point):
-        """dot product with another vector.
-        """
+        """dot product with another vector."""
         return np.inner(self.cart, point.cart)
 
     def __ne__(self, other):
@@ -173,8 +167,7 @@ EPSILON = 0.0000001
 
 
 def modpi(val, mod=np.pi):
-    """Puts *val* between -*mod* and *mod*.
-    """
+    """Puts *val* between -*mod* and *mod*."""
     return (val + mod) % (2 * mod) - mod
 
 
@@ -200,8 +193,7 @@ class Arc(object):
         return (str(self.start) + " -> " + str(self.end))
 
     def angle(self, other_arc):
-        """Oriented angle between two arcs.
-        """
+        """Oriented angle between two arcs."""
         if self.start == other_arc.start:
             a__ = self.start
             b__ = self.end
@@ -240,8 +232,9 @@ class Arc(object):
 
     def intersections(self, other_arc):
         """Gives the two intersections of the greats circles defined by the
-       current arc and *other_arc*.
-       From http://williams.best.vwh.net/intersect.htm
+        current arc and *other_arc*.
+
+        From http://williams.best.vwh.net/intersect.htm
         """
 
         if self.end.lon - self.start.lon > np.pi:
@@ -275,8 +268,8 @@ class Arc(object):
     def intersection(self, other_arc):
         """Return where, if the current arc and the *other_arc* intersect.
 
-        None is returned if there is not intersection.
-        An arc is defined as the shortest tracks between two points.
+        None is returned if there is not intersection. An arc is defined
+        as the shortest tracks between two points.
         """
         if self == other_arc:
             return None
@@ -298,8 +291,7 @@ class Arc(object):
         return None
 
     def get_next_intersection(self, arcs, known_inter=None):
-        """Get the next intersection between the current arc and *arcs*
-        """
+        """Get the next intersection between the current arc and *arcs*"""
         res = []
         for arc in arcs:
             inter = self.intersection(arc)
@@ -309,8 +301,7 @@ class Arc(object):
                 res.append((inter, arc))
 
         def dist(args):
-            """distance key.
-            """
+            """distance key."""
             return self.start.distance(args[0])
 
         take_next = False
@@ -329,10 +320,9 @@ class Arc(object):
 class SphPolygon(object):
     """Spherical polygon.
 
-    Vertices as a 2-column array of (col 1) lons and (col 2) lats is given in
-    radians.
-    The inside of the polygon is defined by the vertices being defined
-    clockwise around it.
+    Vertices as a 2-column array of (col 1) lons and (col 2) lats is
+    given in radians. The inside of the polygon is defined by the
+    vertices being defined clockwise around it.
     """
 
     def __init__(self, vertices, radius=1):
@@ -412,7 +402,7 @@ class SphPolygon(object):
         return (sum(alpha) - (len(self.lon) - 2) * np.pi) * self.radius ** 2
 
     def _bool_oper(self, other, sign=1):
-        """Performs a boolean operation on this and *other* polygons.abs
+        """Performs a boolean operation on this and *other* polygons.abs.
 
         By default, or when sign is 1, the union is perfomed. If sign is -1,
         the intersection of the polygons is returned.
@@ -494,8 +484,10 @@ class SphPolygon(object):
         return self._bool_oper(other, -1)
 
     def _is_inside(self, other):
-        """Checks if the polygon is entirely inside the other. Should be used
-        with :meth:`inter` first to check if the is a known intersection.
+        """Checks if the polygon is entirely inside the other.
+
+        Should be used with :meth:`inter` first to check if the is a
+        known intersection.
         """
 
         anti_lon_0 = self.lon[0] + np.pi

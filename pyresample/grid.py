@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Resample image from one projection to another
-using nearest neighbour method in cartesian projection coordinate systems"""
+"""Resample image from one projection to another using nearest neighbour method
+in cartesian projection coordinate systems."""
 
 from __future__ import absolute_import
 
@@ -95,7 +95,7 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
 
 
 def get_linesample(lons, lats, source_area_def, nprocs=1):
-    """Returns index row and col arrays for resampling
+    """Returns index row and col arrays for resampling.
 
     Parameters
     ----------
@@ -135,8 +135,7 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
 
 def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
                            fill_value=0, nprocs=1):
-    """Samples from image based on lon lat arrays
-    using nearest neighbour method in cartesian projection coordinate systems.
+    """Sample from image based on lon lat arrays using nearest neighbour method in cartesian projection coordinates.
 
     Parameters
     ----------
@@ -172,8 +171,7 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
 
 def get_resampled_image(target_area_def, source_area_def, source_image_data,
                         fill_value=0, nprocs=1, segments=None):
-    """Resamples image using nearest neighbour method in cartesian
-    projection coordinate systems.
+    """Resample image using nearest neighbour method in cartesian projection coordinate systems.
 
     Parameters
     ----------

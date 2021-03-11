@@ -19,8 +19,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test the EWA ll2cr code.
-"""
+"""Test the EWA ll2cr code."""
 import logging
 import numpy as np
 from pyresample.test.utils import create_test_longitude, create_test_latitude
