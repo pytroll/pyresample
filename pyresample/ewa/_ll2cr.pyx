@@ -28,8 +28,6 @@ import numpy
 cimport cython
 cimport numpy
 
-from pyresample._spatial_mp import BaseProj
-
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
 ctypedef fused cr_dtype:

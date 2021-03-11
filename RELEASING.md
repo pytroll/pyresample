@@ -6,7 +6,7 @@
 4. run `loghub` and update the `CHANGELOG.md` file:
 
 ```
-loghub pytroll/pyresample --token $LOGHUB_GITHUB_TOKEN -st v0.8.0 -plg bug "Bugs fixed" -plg enhancement "Features added" -plg documentation "Documentation changes"
+loghub pytroll/pyresample --token $LOGHUB_GITHUB_TOKEN -st v0.8.0 -plg bug "Bugs fixed" -plg enhancement "Features added" -plg documentation "Documentation changes -plg backwards-incompatibility "Backward incompatible changes" -plg refactor "Refactoring"
 ```
 
 This uses a `LOGHUB_GITHUB_TOKEN` environment variable. This must be created

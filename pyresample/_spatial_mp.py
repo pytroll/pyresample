@@ -22,9 +22,6 @@ import ctypes
 import numpy as np
 import pyproj
 import multiprocessing as mp
-import warnings
-
-from pyresample.utils import proj4_str_to_dict, is_pyproj2
 
 
 try:
@@ -113,17 +110,11 @@ class BaseProj(pyproj.Proj):
     """Helper class for easier backwards compatibility."""
 
     def __init__(self, projparams=None, preserve_units=True, **kwargs):
-        if is_pyproj2():
-            # have to have this because pyproj uses __new__
-            # subclasses would fail when calling __init__ otherwise
-            super(BaseProj, self).__init__(projparams=projparams,
-                                           preserve_units=preserve_units,
-                                           **kwargs)
-
-    def is_latlong(self):
-        if is_pyproj2():
-            return self.crs.is_geographic
-        return super(BaseProj, self).is_latlong()
+        # have to have this because pyproj uses __new__
+        # subclasses would fail when calling __init__ otherwise
+        super(BaseProj, self).__init__(projparams=projparams,
+                                       preserve_units=preserve_units,
+                                       **kwargs)
 
 
 class Proj(BaseProj):
@@ -131,7 +122,7 @@ class Proj(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
-        if self.is_latlong():
+        if self.crs.is_geographic:
             return data1, data2
         return super(Proj, self).__call__(data1, data2, inverse=inverse,
                                           radians=radians, errcheck=errcheck)
@@ -146,7 +137,7 @@ class Proj_MP(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
-        if self.is_latlong():
+        if self.crs.is_geographic:
             return data1, data2
 
         grid_shape = data1.shape

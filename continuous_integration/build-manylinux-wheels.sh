@@ -28,8 +28,8 @@ find /io/temp-wheels/ -type f -delete
 for PYBIN in /opt/python/cp*/bin; do
     "${PYBIN}/pip" install -q -U setuptools wheel nose --cache-dir /io/pip-cache
     # Run the following in root of this repo.
-    (cd /io/ && USE_CYTHON=1 "${PYBIN}/pip" install -q .)
-    (cd /io/ && USE_CYTHON=1 "${PYBIN}/python" setup.py -q bdist_wheel -d /io/temp-wheels)
+    (cd /io/ && "${PYBIN}/pip" install -q .)
+    (cd /io/ && "${PYBIN}/python" -m build -w -o /io/temp-wheels)
 done
 
 "$PYBIN/pip" install -q auditwheel

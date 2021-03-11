@@ -57,3 +57,8 @@ nosetests.xml
 *~
 # PyCharm Settings
 .idea
+
+# don't include Cython C extensions
+pyresample/ewa/_fornav.cpp
+pyresample/ewa/_ll2cr.c
+pyresample/gradient/_gradient_search.c

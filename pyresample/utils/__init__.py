@@ -24,7 +24,8 @@ import numpy as np
 import pyproj
 import warnings
 
-from .proj4 import (proj4_dict_to_str, proj4_str_to_dict, convert_proj_floats, proj4_radius_parameters)  # noqa
+from .proj4 import (proj4_dict_to_str, proj4_str_to_dict, convert_proj_floats,  # noqa
+                    proj4_radius_parameters, get_geostationary_height)  # noqa
 from .rasterio import get_area_def_from_raster  # noqa
 from .cf import load_cf_area  # noqa
 
@@ -239,11 +240,6 @@ def recursive_dict_update(d, u):
         else:
             d[k] = u[k]
     return d
-
-
-def is_pyproj2():
-    """Determine whether the current pyproj version is >= 2.0"""
-    return pyproj.__version__ >= '2'
 
 
 def check_slice_orientation(sli):

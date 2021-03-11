@@ -315,11 +315,9 @@ def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variab
     # get area extent from the x and y info
     extent = _get_area_extent_from_cf_axis(axis_info['x'], axis_info['y'])
 
-    # transform the crs objecto a proj_dict (might not be needed in future versions of pyresample)
-    proj_dict = crs.to_dict()
-
     # finally prepare the AreaDefinition object
-    return geometry.AreaDefinition.from_extent(grid_mapping_variable, proj_dict, shape, extent, units=unit)
+    return geometry.AreaDefinition.from_extent(grid_mapping_variable, crs,
+                                               shape, extent, units=unit)
 
 
 def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
