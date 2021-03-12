@@ -2460,7 +2460,7 @@ def area_enclosure(*areas, area_id="joint-area"):
             first = area
             largest_extent = list(area.area_extent)
         else:
-            if not area.proj_dict == first.proj_dict:
+            if not area.crs == first.crs:
                 raise ValueError("Inconsistent projections between areas")
             if not np.isclose(area.resolution, first.resolution).all():
                 raise ValueError("Inconsistent resolution between areas")
@@ -2471,7 +2471,6 @@ def area_enclosure(*areas, area_id="joint-area"):
 
     return create_area_def(
             area_id=area_id,
-            projection=first.proj_dict,
-            units=first.proj_dict["units"],
+            projection=first.crs,
             area_extent=largest_extent,
             resolution=first.resolution)
