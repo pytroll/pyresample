@@ -2436,7 +2436,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 
-def area_enclosure(*areas, area_id="joint-area"):
+def enclose_areas(*areas, area_id="joint-area"):
     """Return the smallest areadefinition enclosing one or more others.
 
     From one or more AreaDefinition objects (most usefully at least

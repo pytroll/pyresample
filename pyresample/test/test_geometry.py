@@ -2504,8 +2504,8 @@ class TestCrop(unittest.TestCase):
         self.assertEqual(res.shape[1], area.shape[1] / 4)
 
 
-def test_area_enclosure():
-    from pyresample.geometry import (area_enclosure, create_area_def)
+def test_enclose_areas():
+    from pyresample.geometry import (enclose_areas, create_area_def)
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
                  'no_defs': None, 'type': 'crs'}
@@ -2547,11 +2547,11 @@ def test_area_enclosure():
             area_extent=[-50, -50, 50, 50],
             shape=(100, 100))
 
-    ar_joined = area_enclosure(ar1, ar2, ar3)
+    ar_joined = enclose_areas(ar1, ar2, ar3)
     np.testing.assert_allclose(ar_joined.area_extent, [0, 0, 120, 140])
     with pytest.raises(ValueError):
-        area_enclosure(ar3, ar4)
+        enclose_areas(ar3, ar4)
     with pytest.raises(ValueError):
-        area_enclosure(ar3, ar5)
+        enclose_areas(ar3, ar5)
     with pytest.raises(TypeError):
-        area_enclosure()
+        enclose_areas()
