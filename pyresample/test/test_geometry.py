@@ -32,7 +32,6 @@ from pyresample.test.utils import catch_warnings
 from unittest.mock import MagicMock, patch
 import unittest
 import pyproj
-import pytest
 
 try:
     from pyproj import CRS
