@@ -1,3 +1,45 @@
+## Version 1.18.0 (2021/03/12)
+
+### Issues Closed
+
+* [Issue 317](https://github.com/pytroll/pyresample/issues/317) - Fix mask_all_nan kwarg in Average Bucket Resampler ([PR 319](https://github.com/pytroll/pyresample/pull/319))
+* [Issue 315](https://github.com/pytroll/pyresample/issues/315) - Comparison of AreaDefinition to other types fails
+* [Issue 295](https://github.com/pytroll/pyresample/issues/295) - Undetermined values in bilinear resampling result when resampling swath to grid data with geographic output coordinates. ([PR 330](https://github.com/pytroll/pyresample/pull/330))
+* [Issue 293](https://github.com/pytroll/pyresample/issues/293) - Add Elliptical Weighted Nearest Neighbor option for swath resampling
+* [Issue 281](https://github.com/pytroll/pyresample/issues/281) - Dask-ify Elliptical Weighted Averaging (EWA) resampling ([PR 284](https://github.com/pytroll/pyresample/pull/284))
+* [Issue 152](https://github.com/pytroll/pyresample/issues/152) - Add dump/dumps methods to AreaDefinition ([PR 308](https://github.com/pytroll/pyresample/pull/308))
+
+In this release 6 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 330](https://github.com/pytroll/pyresample/pull/330) - Fix a division-by-zero failure causing missing data in bilinear interpolation ([295](https://github.com/pytroll/pyresample/issues/295))
+
+#### Features added
+
+* [PR 336](https://github.com/pytroll/pyresample/pull/336) - Switch to building cython extensions at installation time
+* [PR 332](https://github.com/pytroll/pyresample/pull/332) - Require pyproj 2.2+ and remove fallbacks when CRS objects can be used
+* [PR 330](https://github.com/pytroll/pyresample/pull/330) - Fix a division-by-zero failure causing missing data in bilinear interpolation ([295](https://github.com/pytroll/pyresample/issues/295))
+* [PR 308](https://github.com/pytroll/pyresample/pull/308) - Change create_areas_def to dump and set default yaml style ([152](https://github.com/pytroll/pyresample/issues/152))
+* [PR 306](https://github.com/pytroll/pyresample/pull/306) - Add a function to join/enclose areas. ([306](https://github.com/pytroll/pyresample/issues/306))
+* [PR 284](https://github.com/pytroll/pyresample/pull/284) - Add dask-friendly EWA resampler class (DaskEWAResampler) ([281](https://github.com/pytroll/pyresample/issues/281))
+
+#### Documentation changes
+
+* [PR 338](https://github.com/pytroll/pyresample/pull/338) - Add CRS option to create_area_def docs ([338](https://github.com/pytroll/pyresample/issues/338))
+* [PR 337](https://github.com/pytroll/pyresample/pull/337) - Switch docstrings to Google style
+* [PR 334](https://github.com/pytroll/pyresample/pull/334) - Fix wrong varname in bucket doc
+* [PR 314](https://github.com/pytroll/pyresample/pull/314) - Add citation information
+
+#### Backward incompatible changes
+
+* [PR 332](https://github.com/pytroll/pyresample/pull/332) - Require pyproj 2.2+ and remove fallbacks when CRS objects can be used
+
+In this release 12 pull requests were closed.
+
+
 ## Version 1.17.0 (2020/11/12)
 
 ### Issues Closed
