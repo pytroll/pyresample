@@ -397,8 +397,9 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     ----------
     area_id : str
         ID of area
-    projection : dict or str
-        Projection parameters as a proj4_dict or proj4_string
+    projection : pyproj CRS object, dict or str
+        Projection parameters as a pyproj CRS object, proj4_dict,
+        or proj4_string
     description : str, optional
         Description/name of area. Defaults to area_id
     proj_id : str, optional
