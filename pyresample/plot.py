@@ -44,7 +44,6 @@ def ellps2axis(ellps_name):
     Returns
     -------
     (a, b) : semi-major and semi-minor axis
-
     """
     ellps = {'helmert': {'a': 6378200.0, 'b': 6356818.1696278909},
              'intl': {'a': 6378388.0, 'b': 6356911.9461279465},
@@ -111,7 +110,6 @@ def area_def2basemap(area_def, **kwargs):
     Returns
     -------
     bmap : Basemap object
-
     """
     import warnings
     warnings.warn("Basemap is no longer maintained. Please switch to cartopy "
@@ -293,7 +291,6 @@ def show_quicklook(area_def, data, vmin=None, vmax=None,
     Returns
     -------
     bmap : Basemap object
-
     """
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,
@@ -329,7 +326,6 @@ def save_quicklook(filename, area_def, data, vmin=None, vmax=None,
         Number of parallels to plot on the globe
     coast_res : {'c', 'l', 'i', 'h', 'f'}, optional
         Resolution of coastlines
-
     """
     plt = _get_quicklook(area_def, data, vmin=vmin, vmax=vmax,
                          label=label, num_meridians=num_meridians,

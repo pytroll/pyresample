@@ -2387,6 +2387,7 @@ class TestCrop(unittest.TestCase):
 
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
+
         geos_area = MagicMock()
         lon_0 = 0
         proj_dict = {'a': 6378169.00,

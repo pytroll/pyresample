@@ -39,7 +39,7 @@ def convert_proj_floats(proj_pairs):
 
 
 def proj4_str_to_dict(proj4_str):
-    """Convert PROJ.4 compatible string definition to dict
+    """Convert PROJ.4 compatible string definition to dict.
 
     EPSG codes should be provided as "EPSG:XXXX" where "XXXX"
     is the EPSG number code. It can also be provided as
@@ -54,7 +54,7 @@ def proj4_str_to_dict(proj4_str):
 
 
 def proj4_dict_to_str(proj4_dict, sort=False):
-    """Convert a dictionary of PROJ.4 parameters to a valid PROJ.4 string"""
+    """Convert a dictionary of PROJ.4 parameters to a valid PROJ.4 string."""
     items = proj4_dict.items()
     if sort:
         items = sorted(items)

@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
         self.assertIsNone(resampler.counts)
 
     def test_round_to_resolution(self):
-        """Test rounding to given resolution"""
+        """Test rounding to given resolution."""
         # Scalar, integer resolution
         self.assertEqual(bucket.round_to_resolution(5.5, 2.), 6)
         # Scalar, non-integer resolution
