@@ -397,9 +397,10 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     ----------
     area_id : str
         ID of area
-    projection : pyproj CRS object, dict or str
-        Projection parameters as a pyproj CRS object, proj4_dict,
-        or proj4_string
+    projection : pyproj CRS object, dict, str, int, tuple, object
+        Projection parameters.  This can be in any format understood by
+        :func:`pyproj.crs.CRS.from_user_input`, such as a pyproj CRS object,
+        proj4 dict, proj4 string, EPSG integer code, or others.
     description : str, optional
         Description/name of area. Defaults to area_id
     proj_id : str, optional
@@ -541,18 +542,19 @@ def _make_area(
 
 
 def _get_proj_data(projection: Any) -> CRS:
-    """Takes a proj4_dict or proj4_string and returns a proj4_dict and a Proj function.
+    """Take projection information and returns a proj CRS.
 
-    There is special handling for the "EPSG:XXXX" case where "XXXX" is an
-    EPSG number code. It can be provided as a string `"EPSG:XXXX"` or as a
-    dictionary (when provided via YAML) as `{'EPSG': XXXX}`.
+    Takes projection information in any format understood by
+    :func:`pyproj.crs.CRS.from_user_input`.  There is special
+    handling for the "EPSG:XXXX" case where "XXXX" is an EPSG
+    number code. It can be provided as a string `"EPSG:XXXX"` or
+    as a dictionary (when provided via YAML) as `{'EPSG': XXXX}`.
     If it is passed as a string ("EPSG:XXXX") then the rules of
-    :func:`~pyresample.utils._proj.proj4_str_to_dict` are followed.
-    If a dictionary and pyproj 2.0+ is installed then the string
-    `"EPSG:XXXX"` is passed to ``proj4_str_to_dict``. If pyproj<2.0
-    is installed then the string ``+init=EPSG:XXXX`` is passed to
-    ``proj4_str_to_dict`` which provides limited information to area
-    config operations.
+    :func:`~pyresample.utils._proj.proj4_str_to_dict` are followed.  If a
+    dictionary and pyproj 2.0+ is installed then the string `"EPSG:XXXX"`
+    is passed to ``proj4_str_to_dict``. If pyproj<2.0 is installed then
+    the string ``+init=EPSG:XXXX`` is passed to ``proj4_str_to_dict``
+    which provides limited information to area config operations.
     """
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
