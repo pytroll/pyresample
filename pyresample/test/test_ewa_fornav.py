@@ -142,8 +142,7 @@ class TestFornavWrapper(unittest.TestCase):
     """Test the function wrapping the lower-level fornav code."""
 
     def test_fornav_swath_larger_float32(self):
-        """Test that a swath larger than the output grid fills the entire grid.
-        """
+        """Test that a swath larger than the output grid fills the entire grid."""
         from pyresample.ewa import fornav
         swath_shape = (1600, 3200)
         data_type = np.float32

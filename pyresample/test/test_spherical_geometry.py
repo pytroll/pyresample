@@ -7,13 +7,10 @@ from pyresample import geometry
 
 
 class TestOverlap(unittest.TestCase):
-
-    """Testing overlapping functions in pyresample.
-    """
+    """Testing overlapping functions in pyresample."""
 
     def assert_raises(self, exception, call_able, *args):
-        """assertRaises() has changed from py2.6 to 2.7! Here is an attempt to
-        cover both"""
+        """Cover assertRaises from both py2.6 and 2.7+."""
         import sys
         if sys.version_info < (2, 7):
             self.assertRaises(exception, call_able, *args)
@@ -22,8 +19,7 @@ class TestOverlap(unittest.TestCase):
                 call_able(*args)
 
     def test_inside(self):
-        """Testing if a point is inside an area.
-        """
+        """Testing if a point is inside an area."""
         lons = np.array([[-11, 11], [-11, 11]])
         lats = np.array([[11, 11], [-11, -11]])
         area = geometry.SwathDefinition(lons, lats)
@@ -61,8 +57,7 @@ class TestOverlap(unittest.TestCase):
         self.assertTrue(point in area)
 
     def test_overlaps(self):
-        """Test if two areas overlap.
-        """
+        """Test if two areas overlap."""
         lons1 = np.array([[0, 90], [-90, 180]])
         lats1 = np.array([[89, 89], [89, 89]])
         area1 = geometry.SwathDefinition(lons1, lats1)
@@ -108,8 +103,7 @@ class TestOverlap(unittest.TestCase):
         self.assertFalse(area2.overlaps(area1))
 
     def test_overlap_rate(self):
-        """Test how much two areas overlap.
-        """
+        """Test how much two areas overlap."""
 
         lons1 = np.array([[-1, 1], [-1, 1]])
         lats1 = np.array([[1, 1], [-1, -1]])
@@ -154,14 +148,10 @@ class TestOverlap(unittest.TestCase):
 
 
 class TestSphereGeometry(unittest.TestCase):
-
-    """Testing sphere geometry from this module.
-    """
+    """Testing sphere geometry from this module."""
 
     def test_angle(self):
-        """Testing the angle value between two arcs.
-        """
-
+        """Testing the angle value between two arcs."""
         base = 0
 
         p0_ = Coordinate(base, base)
@@ -302,8 +292,7 @@ class TestSphereGeometry(unittest.TestCase):
                                msg="this should be -pi/4")
 
     def test_intersects(self):
-        """Test if two arcs intersect.
-        """
+        """Test if two arcs intersect."""
         p0_ = Coordinate(0, 0)
         p1_ = Coordinate(0, 1)
         p2_ = Coordinate(1, 0)

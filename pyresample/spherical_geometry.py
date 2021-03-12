@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Classes for spherical geometry operations"""
+"""Classes for spherical geometry operations."""
 
 from __future__ import absolute_import
 
@@ -39,8 +39,7 @@ EPSILON = 0.0000001
 
 class Coordinate(object):
 
-    """Point on earth in terms of lat and lon.
-    """
+    """Point on earth in terms of lat and lon."""
     lat = None
     lon = None
     x__ = None
@@ -64,16 +63,14 @@ class Coordinate(object):
             self._update_lonlat()
 
     def _update_cart(self):
-        """Convert lon/lat to cartesian coordinates.
-        """
+        """Convert lon/lat to cartesian coordinates."""
 
         self.x__ = math.cos(self.lat) * math.cos(self.lon)
         self.y__ = math.cos(self.lat) * math.sin(self.lon)
         self.z__ = math.sin(self.lat)
 
     def _update_lonlat(self):
-        """Convert cartesian to lon/lat.
-        """
+        """Convert cartesian to lon/lat."""
 
         self.lat = math.degrees(math.asin(self.z__ / self.R__))
         self.lon = math.degrees(math.atan2(self.y__, self.x__))
@@ -96,8 +93,7 @@ class Coordinate(object):
 
     def cross2cart(self, point):
         """Compute the cross product, and convert to cartesian coordinates
-        (assuming radius 1).
-        """
+        (assuming radius 1)."""
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -115,8 +111,7 @@ class Coordinate(object):
         return res
 
     def distance(self, point):
-        """Vincenty formula.
-        """
+        """Vincenty formula."""
         dlambda = self.lon - point.lon
         num = ((math.cos(point.lat) * math.sin(dlambda)) ** 2 +
                (math.cos(self.lat) * math.sin(point.lat) -
@@ -128,13 +123,11 @@ class Coordinate(object):
         return math.atan2(math.sqrt(num), den)
 
     def norm(self):
-        """Return the norm of the vector.
-        """
+        """Return the norm of the vector."""
         return math.sqrt(self.x__ ** 2 + self.y__ ** 2 + self.z__ ** 2)
 
     def normalize(self):
-        """normalize the vector.
-        """
+        """normalize the vector."""
 
         norm = self.norm()
         self.x__ /= norm
@@ -144,8 +137,7 @@ class Coordinate(object):
         return self
 
     def cross(self, point):
-        """cross product with another vector.
-        """
+        """cross product with another vector."""
         x__ = self.y__ * point.z__ - self.z__ * point.y__
         y__ = self.z__ * point.x__ - self.x__ * point.z__
         z__ = self.x__ * point.y__ - self.y__ * point.x__
@@ -153,8 +145,7 @@ class Coordinate(object):
         return Coordinate(x__=x__, y__=y__, z__=z__)
 
     def dot(self, point):
-        """dot product with another vector.
-        """
+        """dot product with another vector."""
         return (self.x__ * point.x__ +
                 self.y__ * point.y__ +
                 self.z__ * point.z__)
@@ -162,8 +153,7 @@ class Coordinate(object):
 
 class Arc(object):
 
-    """An arc of the great circle between two points.
-    """
+    """An arc of the great circle between two points."""
     start = None
     end = None
 
@@ -171,8 +161,7 @@ class Arc(object):
         self.start, self.end = start, end
 
     def center_angle(self):
-        """Angle of an arc at the center of the sphere.
-        """
+        """Angle of an arc at the center of the sphere."""
         val = (math.cos(self.start.lat - self.end.lat) +
                math.cos(self.start.lon - self.end.lon) - 1)
 
@@ -251,8 +240,7 @@ class Arc(object):
 
     def intersections(self, other_arc):
         """Gives the two intersections of the greats circles defined by the
-       current arc and *other_arc*.
-        """
+        current arc and *other_arc*."""
         if self.end.lon - self.start.lon > math.pi:
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
@@ -275,12 +263,15 @@ class Arc(object):
 
     def intersects(self, other_arc):
         """Says if two arcs defined by the current arc and the *other_arc*
-        intersect. An arc is defined as the shortest tracks between two points.
+        intersect.
+
+        An arc is defined as the shortest tracks between two points.
         """
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
-        """Says where, if two arcs defined by the current arc and the
+        """Says where, if two arcs defined by the current arc and the.
+
         *other_arc* intersect. An arc is defined as the shortest tracks between
         two points.
         """
@@ -300,14 +291,12 @@ class Arc(object):
 
 
 def modpi(val):
-    """Puts *val* between -pi and pi.
-    """
+    """Puts *val* between -pi and pi."""
     return (val + math.pi) % (2 * math.pi) - math.pi
 
 
 def get_polygon_area(corners):
-    """Get the area of the convex area defined by *corners*.
-    """
+    """Get the area of the convex area defined by *corners*."""
     # We assume the earth is spherical !!!
     # Should be the radius of the earth at the observed position
     R = 1
@@ -328,7 +317,9 @@ def get_polygon_area(corners):
 
 def get_intersections(b__, boundaries):
     """Get the intersections of *b__* with *boundaries*.
-    Returns both the intersection coordinates and the concerned boundaries.
+
+    Returns both the intersection coordinates and the concerned
+    boundaries.
     """
     intersections = []
     bounds = []
@@ -341,8 +332,7 @@ def get_intersections(b__, boundaries):
 
 
 def get_first_intersection(b__, boundaries):
-    """Get the first intersection on *b__* with *boundaries*.
-    """
+    """Get the first intersection on *b__* with *boundaries*."""
     intersections, bounds = get_intersections(b__, boundaries)
     del bounds
     dists = np.array([b__.start.distance(p__) for p__ in intersections])
@@ -354,8 +344,7 @@ def get_first_intersection(b__, boundaries):
 
 def get_next_intersection(p__, b__, boundaries):
     """Get the next intersection from the intersection of arcs *p__* and *b__*
-    along segment *b__* with *boundaries*.
-    """
+    along segment *b__* with *boundaries*."""
     new_b = Arc(p__, b__.end)
     intersections, bounds = get_intersections(new_b, boundaries)
     dists = np.array([b__.start.distance(p2) for p2 in intersections])
@@ -368,8 +357,9 @@ def get_next_intersection(p__, b__, boundaries):
 
 
 def point_inside(point, corners):
-    """Is a point inside the 4 corners ? This uses great circle arcs as area
-    boundaries.
+    """Is a point inside the 4 corners ?
+
+    This uses great circle arcs as area boundaries.
     """
     arc1 = Arc(corners[0], corners[1])
     arc2 = Arc(corners[1], corners[2])
@@ -392,8 +382,7 @@ def point_inside(point, corners):
 
 
 def intersection_polygon(area_corners, segment_corners):
-    """Get the intersection polygon between two areas.
-    """
+    """Get the intersection polygon between two areas."""
     area_boundaries = [Arc(area_corners[0], area_corners[1]),
                        Arc(area_corners[1], area_corners[2]),
                        Arc(area_corners[2], area_corners[3]),

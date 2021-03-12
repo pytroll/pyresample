@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Handles resampling of images with assigned geometry definitions"""
+"""Handles resampling of images with assigned geometry definitions."""
 
 from __future__ import absolute_import
 import warnings
@@ -27,8 +27,8 @@ from pyresample import geometry, grid, kd_tree, bilinear
 
 class ImageContainer(object):
 
-    """Holds image with geometry definition.
-    Allows indexing with linesample arrays.
+    """Holds image with geometry definition. Allows indexing with linesample
+    arrays.
 
     Parameters
     ----------
@@ -95,7 +95,7 @@ class ImageContainer(object):
         return self.image_data.__repr__()
 
     def resample(self, target_geo_def):
-        """Base method for resampling"""
+        """Base method for resampling."""
 
         raise NotImplementedError('Method "resample" is not implemented '
                                   'in class %s' % self.__class__.__name__)
@@ -134,8 +134,7 @@ class ImageContainer(object):
 
 class ImageContainerQuick(ImageContainer):
 
-    """Holds image with area definition. '
-    Allows quick resampling within area.
+    """Holds image with area definition. ' Allows quick resampling within area.
 
     Parameters
     ----------
@@ -180,8 +179,8 @@ class ImageContainerQuick(ImageContainer):
         self.segments = segments
 
     def resample(self, target_area_def):
-        """Resamples image to area definition using nearest neighbour
-        approach in projection coordinates.
+        """Resamples image to area definition using nearest neighbour approach
+        in projection coordinates.
 
         Parameters
         ----------
@@ -208,8 +207,8 @@ class ImageContainerQuick(ImageContainer):
 
 class ImageContainerNearest(ImageContainer):
 
-    """Holds image with geometry definition.
-    Allows nearest neighbour to new geometry definition.
+    """Holds image with geometry definition. Allows nearest neighbour to new
+    geometry definition.
 
     Parameters
     ----------
@@ -267,8 +266,7 @@ class ImageContainerNearest(ImageContainer):
         self.segments = segments
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using nearest neighbour
-        approach
+        """Resamples image to area definition using nearest neighbour approach.
 
         Parameters
         ----------
@@ -309,8 +307,8 @@ class ImageContainerNearest(ImageContainer):
 
 class ImageContainerBilinear(ImageContainer):
 
-    """Holds image with geometry definition.
-    Allows bilinear to new geometry definition.
+    """Holds image with geometry definition. Allows bilinear to new geometry
+    definition.
 
     Parameters
     ----------
@@ -370,7 +368,7 @@ class ImageContainerBilinear(ImageContainer):
         self.neighbours = neighbours
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using bilinear approach
+        """Resamples image to area definition using bilinear approach.
 
         Parameters
         ----------

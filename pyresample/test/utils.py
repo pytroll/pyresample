@@ -18,7 +18,8 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utilities for testing.
 
-This mostly takes from astropy's method for checking warnings during tests.
+This mostly takes from astropy's method for checking warnings during
+tests.
 """
 import sys
 import types
@@ -38,11 +39,9 @@ AstropyPendingDeprecationWarning = None
 
 
 def treat_deprecations_as_exceptions():
-    """
-    Turn all DeprecationWarnings (which indicate deprecated uses of
-    Python itself or Numpy, but not within Astropy, where we use our
-    own deprecation warning class) into exceptions so that we find
-    out about them early.
+    """Turn all DeprecationWarnings (which indicate deprecated uses of Python
+    itself or Numpy, but not within Astropy, where we use our own deprecation
+    warning class) into exceptions so that we find out about them early.
 
     This completely resets the warning filters and any "already seen"
     warning state.
@@ -125,10 +124,9 @@ def treat_deprecations_as_exceptions():
 
 
 class catch_warnings(warnings.catch_warnings):
-    """
-    A high-powered version of warnings.catch_warnings to use for testing
-    and to make sure that there is no dependence on the order in which
-    the tests are run.
+    """A high-powered version of warnings.catch_warnings to use for testing and
+    to make sure that there is no dependence on the order in which the tests
+    are run.
 
     This completely blitzes any memory of any warnings that have
     appeared before so that all warnings will be caught and displayed.

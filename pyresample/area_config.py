@@ -63,7 +63,7 @@ def load_area(area_file_name, *regions):
     area_file_name : str, pathlib.Path, stream, or list thereof
         List of paths or streams.  Any str or pathlib.Path will be
         interpreted as a path to a file.  Any stream will be interpreted
-        as containing a yaml definition.  To read directly from a string,
+        as containing a yaml definition file.  To read directly from a string,
         use :func:`load_area_from_string`.
     regions : str argument list
         Regions to parse. If no regions are specified all
@@ -113,7 +113,7 @@ def load_area_from_string(area_strs, *regions):
 
 
 def parse_area_file(area_file_name, *regions):
-    """Parse area information from area file
+    """Parse area information from area file.
 
     Parameters
     -----------
@@ -311,7 +311,7 @@ def _parse_legacy_area_file(area_file_name, *regions):
 
 
 def _create_area(area_id, area_content):
-    """Parse area configuration"""
+    """Parse area configuration."""
     from configobj import ConfigObj
     config_obj = area_content.replace('{', '').replace('};', '')
     config_obj = ConfigObj([line.replace(':', '=', 1)
@@ -345,7 +345,7 @@ def _create_area(area_id, area_content):
 
 
 def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_extent, rotation=0):
-    """Construct AreaDefinition object from arguments
+    """Construct AreaDefinition object from arguments.
 
     Parameters
     -----------
@@ -552,7 +552,6 @@ def _get_proj_data(projection: Any) -> CRS:
     is installed then the string ``+init=EPSG:XXXX`` is passed to
     ``proj4_str_to_dict`` which provides limited information to area
     config operations.
-
     """
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
@@ -577,7 +576,6 @@ def _sign(num):
 
     Returns:
         1 if number is greater than 0, -1 otherwise
-
     """
     return -1 if num < 0 else 1
 
@@ -586,7 +584,6 @@ def _round_poles(center, units, p):
     """Round center to the nearest pole if it is extremely close to said pole.
 
     Used to work around floating point precision issues .
-
     """
     # For a laea projection, this allows for an error of 11 meters around the pole.
     error = .0001
@@ -640,7 +637,6 @@ def _convert_units(
     """Converts units from lon/lat to projection coordinates (meters).
 
     If `inverse` it True then the inverse calculation is done.
-
     """
     if var is None:
         return None
@@ -688,9 +684,8 @@ def _round_shape(shape, radius=None, resolution=None):
     """Make sure shape is an integer.
 
     Rounds down if shape is less than .01 above nearest whole number to
-    handle floating point precision issues. Otherwise the number is round
-    up.
-
+    handle floating point precision issues. Otherwise the number is
+    round up.
     """
     # Used for area definition to prevent indexing None.
     if shape is None:
@@ -724,7 +719,6 @@ def _validate_variable(var, new_var, var_name, input_list):
 
     If a variable that was given by the user contradicts other data provided, an exception is raised.
     Example: upper_left_extent is (-10, 10), but area_extent is (-20, -20, 20, 20).
-
     """
     if var is not None and not np.allclose(np.array(var, dtype=float), np.array(new_var, dtype=float), equal_nan=True):
         raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
@@ -748,7 +742,6 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
     4. resolution and shape
     5. radius and center
     6. upper_left_extent and radius
-
     """
     # Input unaffected by data below: When area extent is calculated, it's either with
     # shape (giving you an area definition) or with center/radius/upper_left_extent (which this produces).

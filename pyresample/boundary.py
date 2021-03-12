@@ -20,8 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The Boundary classes.
-"""
+"""The Boundary classes."""
 
 
 import logging
@@ -36,8 +35,7 @@ logger = logging.getLogger(__name__)
 
 class Boundary(object):
 
-    """Boundary objects.
-    """
+    """Boundary objects."""
 
     def __init__(self, lons=None, lats=None, frequency=1):
         self._contour_poly = None
@@ -51,23 +49,20 @@ class Boundary(object):
 
     @property
     def contour_poly(self):
-        """Get the Spherical polygon corresponding to the Boundary
-        """
+        """Get the Spherical polygon corresponding to the Boundary."""
         if self._contour_poly is None:
             self._contour_poly = SphPolygon(
                 np.deg2rad(np.vstack(self.contour()).T))
         return self._contour_poly
 
     def draw(self, mapper, options, **more_options):
-        """Draw the current boundary on the *mapper*
-        """
+        """Draw the current boundary on the *mapper*"""
         self.contour_poly.draw(mapper, options, **more_options)
 
 
 class AreaBoundary(Boundary):
 
-    """Area boundary objects.
-    """
+    """Area boundary objects."""
 
     def __init__(self, *sides):
         Boundary.__init__(self)
@@ -76,8 +71,7 @@ class AreaBoundary(Boundary):
         self.sides_lats = list(self.sides_lats)
 
     def decimate(self, ratio):
-        """Remove some points in the boundaries, but never the corners.
-        """
+        """Remove some points in the boundaries, but never the corners."""
         for i in range(len(self.sides_lons)):
             length = len(self.sides_lons[i])
             start = int((length % ratio) / 2)
@@ -91,8 +85,7 @@ class AreaBoundary(Boundary):
             self.sides_lats[i] = self.sides_lats[i][points]
 
     def contour(self):
-        """Get the (lons, lats) tuple of the boundary object.
-        """
+        """Get the (lons, lats) tuple of the boundary object."""
         lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
         lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
 
@@ -100,8 +93,7 @@ class AreaBoundary(Boundary):
 
 
 class AreaDefBoundary(AreaBoundary):
-    """Boundaries for area definitions (pyresample).
-    """
+    """Boundaries for area definitions (pyresample)."""
 
     def __init__(self, area, frequency=1):
         lons, lats = area.get_bbox_lonlats()
@@ -114,7 +106,9 @@ class AreaDefBoundary(AreaBoundary):
 
 class SimpleBoundary(object):
     """Container for geometry boundary.
-    Labelling starts in upper left corner and proceeds clockwise"""
+
+    Labelling starts in upper left corner and proceeds clockwise
+    """
 
     def __init__(self, side1, side2, side3, side4):
         self.side1 = side1

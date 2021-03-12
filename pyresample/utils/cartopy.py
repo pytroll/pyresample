@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Classes for geometry operations"""
+"""Classes for geometry operations."""
 
 from logging import getLogger
 import numpy as np
@@ -103,10 +103,9 @@ class _PROJ4Projection(ccrs.Projection):
 def _lesser_from_proj(proj4_terms, globe=None, bounds=None):
     """Not-as-good version of cartopy's 'from_proj' function.
 
-    The user doesn't have a newer version of Cartopy so there is
-    no `from_proj` function to use which does a fancier job of
-    creating CRS objects from PROJ.4 strings than this does.
-
+    The user doesn't have a newer version of Cartopy so there is no
+    `from_proj` function to use which does a fancier job of creating CRS
+    objects from PROJ.4 strings than this does.
     """
     return _PROJ4Projection(proj4_terms, globe=globe, bounds=bounds)
 

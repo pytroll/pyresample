@@ -946,7 +946,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
             self.assertEqual(cross_sum, expected)
 
     def test_nearest_area_2d_to_area_1n_3d_data(self):
-        """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
+        """Test 2D area definition to 2D area definition; 1 neighbor, 3d
+        data."""
         from pyresample.kd_tree import XArrayResamplerNN
         import xarray as xr
         import dask.array as da

@@ -64,7 +64,6 @@ are determined at run time.
 
 For more information on these steps see the documentation for the
 corresponding modules.
-
 """
 
 from .ewa import ll2cr, fornav  # noqa

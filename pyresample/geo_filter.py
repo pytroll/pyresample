@@ -29,7 +29,7 @@ class GridFilter(object):
         self.nprocs = nprocs
 
     def get_valid_index(self, geometry_def):
-        """Calculates valid_index array  based on lons and lats
+        """Calculates valid_index array  based on lons and lats.
 
         Args:
             lons (numpy array): Longitude degrees array
@@ -37,7 +37,6 @@ class GridFilter(object):
 
         Returns:
             Boolean numpy array of same shape as lons and lats
-
         """
 
         lons = geometry_def.lons[:]
