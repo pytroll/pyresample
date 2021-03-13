@@ -18,7 +18,7 @@ jobs:
       - name: Create sdist
         shell: bash -l {0}
         run: |
-          python -m pip pip install -q build
+          python -m pip install -q build
           python -m build -s
 
       - name: Upload sdist to build artifacts
