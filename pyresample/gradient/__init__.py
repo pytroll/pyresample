@@ -41,9 +41,10 @@ logger = logging.getLogger(__name__)
 
 
 @da.as_gufunc(signature='(),()->(),()')
-def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
+def transform(x_coords, y_coords, src_crs=None, dst_crs=None):
     """Calculate projection coordinates."""
-    return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
+    transformer = pyproj.Transformer.from_crs(src_crs, dst_crs)
+    return transformer.transform(x_coords, y_coords)
 
 
 class GradientSearchResampler(BaseResampler):
@@ -77,33 +78,29 @@ class GradientSearchResampler(BaseResampler):
             try:
                 self.src_x, self.src_y = self.source_geo_def.get_proj_coords(
                     chunks=datachunks)
-                src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                src_crs = self.source_geo_def.crs
                 self.use_input_coords = True
             except AttributeError:
                 self.src_x, self.src_y = self.source_geo_def.get_lonlats(
                     chunks=datachunks)
-                src_prj = pyproj.Proj("+proj=longlat")
+                src_crs = pyproj.CRS.from_string("+proj=longlat")
                 self.use_input_coords = False
             try:
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                dst_crs = self.target_geo_def.crs
             except AttributeError:
                 if self.use_input_coords is False:
                     raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj("+proj=longlat")
+                dst_crs = pyproj.CRS.from_string("+proj=longlat")
             if self.use_input_coords:
-                self.dst_x, self.dst_y = transform(
-                    self.dst_x, self.dst_y,
-                    src_prj=dst_prj, dst_prj=src_prj)
-                self.prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                self.dst_x, self.dst_y = transform(self.dst_x, self.dst_y, src_crs=dst_crs, dst_crs=src_crs)
+                self.prj = pyproj.Proj(self.source_geo_def.crs)
             else:
-                self.src_x, self.src_y = transform(
-                    self.src_x, self.src_y,
-                    src_prj=src_prj, dst_prj=dst_prj)
-                self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                self.src_x, self.src_y = transform(self.src_x, self.src_y, src_crs=src_crs, dst_crs=dst_crs)
+                self.prj = pyproj.Proj(self.target_geo_def.crs)
 
     def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
         """Get bounding polygon for source chunk."""
