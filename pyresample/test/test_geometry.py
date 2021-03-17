@@ -86,8 +86,6 @@ class Test(unittest.TestCase):
 
     def test_cartopy_crs(self):
         """Test conversion from area definition to cartopy crs."""
-        from pyresample import utils
-
         europe = geometry.AreaDefinition(area_id='areaD',
                                          description='Europe (3km, HRV, VTC)',
                                          proj_id='areaD',
@@ -158,7 +156,6 @@ class Test(unittest.TestCase):
 
     def test_dump(self):
         """Test exporting area defs."""
-        from pyresample import utils
         from io import StringIO
         import yaml
 
@@ -237,11 +234,8 @@ class Test(unittest.TestCase):
             mock_open.assert_called_once_with('area_file.yml', 'a')
             mock_open.return_value.__enter__().write.assert_called_once_with(yaml_string)
 
-
     def test_parse_area_file(self):
         """Test parsing the are file."""
-        from pyresample import utils
-
         expected = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
                                            'areaD',
                                            {'a': '6378144.0',
@@ -785,8 +779,8 @@ class Test(unittest.TestCase):
         # test arrays
         cols_expects = np.array([2304, 2040])
         rows_expects = np.array([186, 341])
-        self.assertTrue((cols__ == cols_expects).all())
-        self.assertTrue((rows__ == rows_expects).all())
+        self.assertTrue((cols__.astype(int) == cols_expects).all())
+        self.assertTrue((rows__.astype(int) == rows_expects).all())
 
         # test scalars
         lon, lat = (-8.125547604568746, -14.345524111874646)
@@ -1051,8 +1045,8 @@ class Test(unittest.TestCase):
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
-        self.assertTrue((x__.data == x_expects).all())
-        self.assertTrue((y__.data == y_expects).all())
+        self.assertTrue((x__.data.astype(int) == x_expects).all())
+        self.assertTrue((y__.data.astype(int) == y_expects).all())
 
     def test_get_slice_starts_stops(self):
         """Check area slice end-points."""
@@ -1119,152 +1113,9 @@ class Test(unittest.TestCase):
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
-    def test_get_area_slices(self):
-        """Check area slicing."""
-        from pyresample import utils
-
-        # The area of our source data
-        area_id = 'orig'
-        area_name = 'Test area'
-        proj_id = 'test'
-        x_size = 3712
-        y_size = 3712
-        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
-        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
-                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        area_def = utils.get_area_def(area_id,
-                                      area_name,
-                                      proj_id,
-                                      proj_dict,
-                                      x_size, y_size,
-                                      area_extent)
-
-        # An area that is a subset of the original one
-        area_to_cover = utils.get_area_def(
-            'cover_subset',
-            'Area to cover',
-            'test',
-            proj_dict,
-            1000, 1000,
-            area_extent=(area_extent[0] + 10000,
-                         area_extent[1] + 10000,
-                         area_extent[2] - 10000,
-                         area_extent[3] - 10000))
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice(3, 3709, None), slice_x)
-        self.assertEqual(slice(3, 3709, None), slice_y)
-
-        # An area similar to the source data but not the same
-        area_id = 'cover'
-        area_name = 'Area to cover'
-        proj_id = 'test'
-        x_size = 3712
-        y_size = 3712
-        area_extent = (-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261)
-        proj_dict = {'a': 6378169.5, 'b': 6356583.8, 'h': 35785831.0,
-                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-
-        area_to_cover = utils.get_area_def(area_id,
-                                           area_name,
-                                           proj_id,
-                                           proj_dict,
-                                           x_size, y_size,
-                                           area_extent)
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice(46, 3667, None), slice_x)
-        self.assertEqual(slice(52, 3663, None), slice_y)
-
-        area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                                {'a': 6378144.0,
-                                                 'b': 6356759.0,
-                                                 'lat_0': 50.00,
-                                                 'lat_ts': 50.00,
-                                                 'lon_0': 8.00,
-                                                 'proj': 'stere'},
-                                                10,
-                                                10,
-                                                [-1370912.72,
-                                                 -909968.64,
-                                                 1029087.28,
-                                                 1490031.36])
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice_x, slice(1610, 2343))
-        self.assertEqual(slice_y, slice(158, 515, None))
-
-        # The same as source area, but flipped in X and Y
-        area_id = 'cover'
-        area_name = 'Area to cover'
-        proj_id = 'test'
-        x_size = 3712
-        y_size = 3712
-        area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
-        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
-                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-
-        area_to_cover = utils.get_area_def(area_id,
-                                           area_name,
-                                           proj_id,
-                                           proj_dict,
-                                           x_size, y_size,
-                                           area_extent)
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice(0, x_size, None), slice_x)
-        self.assertEqual(slice(0, y_size, None), slice_y)
-
-        # totally different area
-        projections = [{"init": 'EPSG:4326'}, 'EPSG:4326']
-        for projection in projections:
-            area_to_cover = geometry.AreaDefinition(
-                'epsg4326', 'Global equal latitude/longitude grid for global sphere',
-                'epsg4326',
-                projection,
-                8192,
-                4096,
-                [-180.0, -90.0, 180.0, 90.0])
-
-            slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-            self.assertEqual(slice_x, slice(46, 3667, None))
-            self.assertEqual(slice_y, slice(52, 3663, None))
-
-    def test_get_area_slices_nongeos(self):
-        """Check area slicing for non-geos projections."""
-        from pyresample import utils
-
-        # The area of our source data
-        area_id = 'orig'
-        area_name = 'Test area'
-        proj_id = 'test'
-        x_size = 3712
-        y_size = 3712
-        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
-        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
-                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
-        area_def = utils.get_area_def(area_id,
-                                      area_name,
-                                      proj_id,
-                                      proj_dict,
-                                      x_size, y_size,
-                                      area_extent)
-
-        # An area that is a subset of the original one
-        area_to_cover = utils.get_area_def(
-            'cover_subset',
-            'Area to cover',
-            'test',
-            proj_dict,
-            1000, 1000,
-            area_extent=(area_extent[0] + 10000,
-                         area_extent[1] + 10000,
-                         area_extent[2] - 10000,
-                         area_extent[3] - 10000))
-        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        self.assertEqual(slice(3, 3709, None), slice_x)
-        self.assertEqual(slice(3, 3709, None), slice_y)
-
     def test_proj_str(self):
         """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
-        from pyresample import utils
         from pyresample.test.utils import friendly_crs_equal
 
         # pyproj 2.0+ adds a +type=crs parameter
@@ -1527,6 +1378,7 @@ class Test(unittest.TestCase):
         # self.assertEqual(crs, area_def.crs)
 
     def test_areadef_immutable(self):
+        """Test that some properties of an area definition are immutable."""
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                            {'a': '6378144.0',
                                             'b': '6356759.0',
@@ -2382,7 +2234,6 @@ class TestCrop(unittest.TestCase):
 
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
-
         geos_area = MagicMock()
         lon_0 = 0
         proj_dict = {'a': 6378169.00,
@@ -2504,6 +2355,7 @@ class TestCrop(unittest.TestCase):
 
 
 def test_enclose_areas():
+    """Test enclosing areas."""
     from pyresample.geometry import (enclose_areas, create_area_def)
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
@@ -2554,3 +2406,169 @@ def test_enclose_areas():
         enclose_areas(ar3, ar5)
     with pytest.raises(TypeError):
         enclose_areas()
+
+
+class TestAreaDefGetAreaSlices(unittest.TestCase):
+    """Test AreaDefinition's get_area_slices."""
+
+    def test_get_area_slices(self):
+        """Check area slicing."""
+        from pyresample import get_area_def
+
+        # The area of our source data
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+
+        # An area that is a subset of the original one
+        area_to_cover = get_area_def(
+            'cover_subset',
+            'Area to cover',
+            'test',
+            proj_dict,
+            1000, 1000,
+            area_extent=(area_extent[0] + 10000,
+                         area_extent[1] + 10000,
+                         area_extent[2] - 10000,
+                         area_extent[3] - 10000))
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(3, 3709, None), slice_x)
+        self.assertEqual(slice(3, 3709, None), slice_y)
+
+        # An area similar to the source data but not the same
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261)
+        proj_dict = {'a': 6378169.5, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = get_area_def(area_id,
+                                     area_name,
+                                     proj_id,
+                                     proj_dict,
+                                     x_size, y_size,
+                                     area_extent)
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(46, 3667, None), slice_x)
+        self.assertEqual(slice(52, 3663, None), slice_y)
+
+        area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                                {'a': 6378144.0,
+                                                 'b': 6356759.0,
+                                                 'lat_0': 50.00,
+                                                 'lat_ts': 50.00,
+                                                 'lon_0': 8.00,
+                                                 'proj': 'stere'},
+                                                10,
+                                                10,
+                                                [-1370912.72,
+                                                 -909968.64,
+                                                 1029087.28,
+                                                 1490031.36])
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice_x, slice(1610, 2343))
+        self.assertEqual(slice_y, slice(158, 515, None))
+
+        # The same as source area, but flipped in X and Y
+        area_id = 'cover'
+        area_name = 'Area to cover'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+
+        area_to_cover = get_area_def(area_id,
+                                     area_name,
+                                     proj_id,
+                                     proj_dict,
+                                     x_size, y_size,
+                                     area_extent)
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(0, x_size, None), slice_x)
+        self.assertEqual(slice(0, y_size, None), slice_y)
+
+        # totally different area
+        projections = [{"init": 'EPSG:4326'}, 'EPSG:4326']
+        for projection in projections:
+            area_to_cover = geometry.AreaDefinition(
+                'epsg4326', 'Global equal latitude/longitude grid for global sphere',
+                'epsg4326',
+                projection,
+                8192,
+                4096,
+                [-180.0, -90.0, 180.0, 90.0])
+
+            slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+            self.assertEqual(slice_x, slice(46, 3667, None))
+            self.assertEqual(slice_y, slice(52, 3663, None))
+
+    def test_get_area_slices_nongeos(self):
+        """Check area slicing for non-geos projections."""
+        from pyresample import get_area_def
+
+        # The area of our source data
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
+                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+
+        # An area that is a subset of the original one
+        area_to_cover = get_area_def(
+            'cover_subset',
+            'Area to cover',
+            'test',
+            proj_dict,
+            1000, 1000,
+            area_extent=(area_extent[0] + 10000,
+                         area_extent[1] + 10000,
+                         area_extent[2] - 10000,
+                         area_extent[3] - 10000))
+        slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        self.assertEqual(slice(3, 3709, None), slice_x)
+        self.assertEqual(slice(3, 3709, None), slice_y)
+
+    def test_on_flipped_geos_area(self):
+        """Test get_area_slices on flipped areas."""
+        from pyresample.geometry import AreaDefinition
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  100, 100,
+                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        expected_slice_lines = slice(60, 90)
+        expected_slice_cols = slice(90, 100)
+        cropped_area = src_area[expected_slice_lines, expected_slice_cols]
+        slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
+        assert slice_lines == expected_slice_lines
+        assert slice_cols == expected_slice_cols
+
+        expected_slice_cols = slice(30, 60)
+        cropped_area = src_area[expected_slice_lines, expected_slice_cols]
+        slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
+        assert slice_lines == expected_slice_lines
+        assert slice_cols == expected_slice_cols

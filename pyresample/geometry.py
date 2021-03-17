@@ -1605,7 +1605,7 @@ class AreaDefinition(BaseDefinition):
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates.
 
-        Retrieve closest x and y coordinates (column, row indices) for the
+        Retrieve x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
         lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
@@ -1618,7 +1618,7 @@ class AreaDefinition(BaseDefinition):
 
         :Returns:
 
-        (x, y) : tuple of integer points/arrays
+        (x, y) : tuple of points/arrays
         """
         if isinstance(lon, list):
             lon = np.array(lon)
@@ -1684,11 +1684,11 @@ class AreaDefinition(BaseDefinition):
         y__ = (ym - upl_y) / yscale
 
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            mask = (((x__ < 0) | (x__ >= self.width)) |
-                    ((y__ < 0) | (y__ >= self.height)))
-            return (np.ma.masked_array(x__.astype('int'), mask=mask,
+            x_mask = ((x__ < 0) | (x__ >= self.width))
+            y_mask = ((y__ < 0) | (y__ >= self.height))
+            return (np.ma.masked_array(x__, mask=x_mask,
                                        fill_value=-1, copy=False),
-                    np.ma.masked_array(y__.astype('int'), mask=mask,
+                    np.ma.masked_array(y__, mask=y_mask,
                                        fill_value=-1, copy=False))
         else:
             if ((x__ < 0 or x__ >= self.width) or
@@ -1953,20 +1953,20 @@ class AreaDefinition(BaseDefinition):
         llx, lly, urx, ury = area_to_cover.area_extent
         x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
 
-        if self.area_extent[0] > self.area_extent[2]:
+        if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
             xstart = 0 if x[1] is np.ma.masked else x[1]
-            xstop = self.width if x[0] is np.ma.masked else x[0] + 1
+            xstop = self.width if x[0] is np.ma.masked else np.ceil(x[0])
         else:
             xstart = 0 if x[0] is np.ma.masked else x[0]
-            xstop = self.width if x[1] is np.ma.masked else x[1] + 1
-        if self.area_extent[1] > self.area_extent[3]:
+            xstop = self.width if x[1] is np.ma.masked else np.ceil(x[1])
+        if (self.area_extent[1] > self.area_extent[3]) ^ (lly > ury):
             ystart = 0 if y[0] is np.ma.masked else y[0]
-            ystop = self.height if y[1] is np.ma.masked else y[1] + 1
+            ystop = self.height if y[1] is np.ma.masked else np.ceil(y[1])
         else:
             ystart = 0 if y[1] is np.ma.masked else y[1]
-            ystop = self.height if y[0] is np.ma.masked else y[0] + 1
+            ystop = self.height if y[0] is np.ma.masked else np.ceil(y[0])
 
-        return xstart, xstop, ystart, ystop
+        return int(xstart), int(xstop), int(ystart), int(ystop)
 
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
@@ -1981,8 +1981,7 @@ class AreaDefinition(BaseDefinition):
                          ' identical: %s',
                          proj_def_to_cover)
             # Get slice parameters
-            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(
-                area_to_cover)
+            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(area_to_cover)
 
             return (check_slice_orientation(slice(xstart, xstop)),
                     check_slice_orientation(slice(ystart, ystop)))
@@ -2007,8 +2006,8 @@ class AreaDefinition(BaseDefinition):
             raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
-        x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
-        y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+        x_slice = slice(int(np.ma.min(x)), int(np.ma.max(x)) + 1)
+        y_slice = slice(int(np.ma.min(y)), int(np.ma.max(y)) + 1)
         if shape_divisible_by is not None:
             x_slice = _make_slice_divisible(x_slice, self.width,
                                             factor=shape_divisible_by)
@@ -2238,10 +2237,12 @@ class StackedAreaDefinition(BaseDefinition):
 
     @property
     def crs(self):
+        """Return the CRS."""
         return CRS.from_wkt(self.crs_wkt)
 
     @property
     def proj_dict(self):
+        """Return the proj dictionary."""
         return self.crs.to_dict()
 
     @property
@@ -2437,7 +2438,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
 
 
 def enclose_areas(*areas, area_id="joint-area"):
-    """Return the smallest areadefinition enclosing one or more others.
+    r"""Return the smallest areadefinition enclosing one or more others.
 
     From one or more AreaDefinition objects (most usefully at least
     two), which shall differ only in extent, calculate the smallest
@@ -2451,7 +2452,6 @@ def enclose_areas(*areas, area_id="joint-area"):
         *areas (AreaDefinition): AreaDefinition objects to enclose.
         area_id (Optional[str]): Name of joint area, defaults to "joint-area".
     """
-
     first = None
     if not areas:
         raise TypeError("Must pass at least one area, found zero.")
