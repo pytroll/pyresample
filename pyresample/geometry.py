@@ -1694,7 +1694,7 @@ class AreaDefinition(BaseDefinition):
             if ((x__ < 0 or x__ >= self.width) or
                     (y__ < 0 or y__ >= self.height)):
                 raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return int(x__), int(y__)
+            return x__, y__
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat values of single point in area grid.
