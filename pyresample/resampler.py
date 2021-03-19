@@ -307,11 +307,11 @@ def _enumerate_chunk_slices(chunks):
 
 
 class DaskResampler:
-    """Resampler that uses dask for processing the data chunk wise.
+    """Resampler that uses dask for processing the data chunkwise.
 
-    This works by generating a dask graph based on the destination array (the
-    array that will contain the resampled data), and using cropped out version
-    of the input data as dependencies.
+    This works by generating a dask graph for the destination array (the array
+    that will contain the resampled data), and using cropped out versions of the
+    input data as dependencies.
     """
 
     def __init__(self, source_geo_def, target_geo_def, resampler):
@@ -320,7 +320,7 @@ class DaskResampler:
         self.target_geo_def = target_geo_def
         self.resampler = resampler
 
-    def resample(self, data, chunks=None):
+    def resample(self, data: da.Array, chunks=None) -> da.Array:
         """Resample the provided dask array.
 
         The input array has to be at least two-dimensional and expects the last
@@ -334,8 +334,8 @@ class DaskResampler:
         for position, slices in _enumerate_chunk_slices(dst_chunks):
             target_geo_def = self.target_geo_def[slices[-2:]]
             try:
-                smaller_data, source_geo_def = self._crop_data_to_area(data, target_geo_def)
-            except ValueError:  # no relevant data matching
+                smaller_data, source_geo_def = self.crop_data_around_area(data, target_geo_def)
+            except KeyError:  # no relevant data matching
                 chunk_shape = [chunk[pos] for pos, chunk in zip(position, dst_chunks)]
                 dask_graph[(name, *position)] = (
                     np.full,
@@ -353,16 +353,23 @@ class DaskResampler:
 
         return da.Array(dask_graph, name, chunks=dst_chunks, dtype=data.dtype, shape=output_shape)
 
-    def _crop_data_to_area(self, data, target_geo_def):
+    def crop_data_around_area(self, data, target_geo_def):
         """Crop the data around the provided area."""
         x_slice, y_slice = self.get_slices(self.source_geo_def, target_geo_def)  # this one is way faster
         # x_slice, y_slice = self.source_geo_def.get_area_slices(target_geo_def)
         source_geo_def = self.source_geo_def[y_slice, x_slice]
-        smaller_data = data[..., y_slice, x_slice].rechunk(data.chunksize[:-2] + (-1, -1))
+        smaller_data = data[..., y_slice, x_slice].rechunk(data.chunks[:-2] + (-1, -1))
         return smaller_data, source_geo_def
 
-    def get_slices(self, source_area, target_area):
-        """Get the slices from source_area to cover target_area with source_area."""
+    @staticmethod
+    def get_slices(source_area, target_area):
+        """Get the x and y slices from source_area to cover target_area with source_area."""
+        poly = DaskResampler._get_target_polygon_in_source_coords(source_area, target_area)
+        # TODO: np.max(target_area.resolution) should be applied before the transformation...
+        return DaskResampler._get_source_slices_from_target_polygon(poly, source_area, target_area)
+
+    @staticmethod
+    def _get_target_polygon_in_source_coords(source_area, target_area):
         x, y = target_area.get_bbox_coords(10)
         from pyproj.transformer import Transformer
         from shapely.geometry import Polygon
@@ -370,12 +377,19 @@ class DaskResampler:
         # x, y = zip(*before_poly.exterior.coords)
         transformer = Transformer.from_crs(target_area.crs, source_area.crs)
         poly = Polygon(zip(*transformer.transform(x, y)))
-        # TODO: np.max(target_area.resolution) should be applied before the transformation...
+        return poly
+
+    @staticmethod
+    def _get_source_slices_from_target_polygon(poly, source_area, target_area):
         (minx, miny, maxx, maxy) = poly.buffer(np.max(target_area.resolution)).bounds
-        x1, y1 = source_area.get_xy_from_proj_coords(minx, miny)
-        x2, y2 = source_area.get_xy_from_proj_coords(maxx, maxy)
-        slice_x = slice(int(np.floor(np.min((x1, x2)))),
-                        int(np.ceil(np.max((x1, x2)))))
-        slice_y = slice(int(np.floor(np.min((y1, y2)))),
-                        int(np.ceil(np.max((y1, y2)))))
+        x_bounds, y_bounds = source_area.get_xy_from_proj_coords(np.array([minx, maxx]), np.array([miny, maxy]))
+        x_bounds.mask = np.ma.nomask
+        y_bounds.mask = np.ma.nomask
+        y_size, x_size = source_area.shape
+        if np.all(x_bounds < 0) or np.all(y_bounds < 0) or np.all(x_bounds >= x_size) or np.all(y_bounds >= y_size):
+            raise KeyError('No slice on area.')
+        slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
+                        int(np.ceil(np.max(x_bounds))))
+        slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
+                        int(np.ceil(np.max(y_bounds))))
         return slice_x, slice_y

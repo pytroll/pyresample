@@ -26,6 +26,7 @@ import dask.array as da
 import numpy as np
 from pyresample.resampler import DaskResampler
 from pyresample.geometry import AreaDefinition, SwathDefinition
+import pytest
 
 
 def dummy_resampler(data, source_area, destination_area):
@@ -125,3 +126,49 @@ class TestDaskResampler(unittest.TestCase):
         assert res.ndim == 3
         assert res.shape[0] == 1
         assert np.nanmin(res - 8000) > 0
+
+
+class TestDaskResamplerSlices(unittest.TestCase):
+    """Test the get_slice function."""
+
+    def setUp(self):
+        """Set up the test case."""
+        self.dst_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+
+    def test_source_area_covers_dest_area(self):
+        """Test source area covers dest area."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  100, 100,
+                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+
+        x_slice, y_slice = DaskResampler.get_slices(src_area, self.dst_area)
+        assert x_slice.start > 0 and x_slice.stop < 100
+        assert y_slice.start > 0 and y_slice.stop < 100
+
+    def test_source_area_does_not_cover_dest_area_entirely(self):
+        """Test source area does not cover dest area entirely."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  100, 100,
+                                  (5550000.0, 4440000.0, -5550000.0, -6660000.0))
+
+        x_slice, y_slice = DaskResampler.get_slices(src_area, self.dst_area)
+        assert x_slice.start > 0 and x_slice.stop < 100
+        assert y_slice.start > 0 and y_slice.stop >= 100
+
+    def test_source_area_does_not_cover_dest_area_at_all(self):
+        """Test source area does not cover dest area at all."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  80, 100,
+                                  (5550000.0, 3330000.0, -5550000.0, -5550000.0))
+
+        with pytest.raises(KeyError):
+            DaskResampler.get_slices(src_area, self.dst_area)

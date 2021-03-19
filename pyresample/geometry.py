@@ -1706,10 +1706,8 @@ class AreaDefinition(BaseDefinition):
         if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
             x_mask = ((x__ < 0) | (x__ >= self.width))
             y_mask = ((y__ < 0) | (y__ >= self.height))
-            return (np.ma.masked_array(x__, mask=x_mask,
-                                       fill_value=-1, copy=False),
-                    np.ma.masked_array(y__, mask=y_mask,
-                                       fill_value=-1, copy=False))
+            return (np.ma.masked_array(x__, mask=x_mask, copy=False),
+                    np.ma.masked_array(y__, mask=y_mask, copy=False))
         else:
             if ((x__ < 0 or x__ >= self.width) or
                     (y__ < 0 or y__ >= self.height)):
