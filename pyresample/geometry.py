@@ -816,34 +816,34 @@ class DynamicAreaDefinition(object):
     of the area to a given set of longitudes and latitudes, such that e.g.
     polar satellite granules can be resampled optimally to a given projection.
 
-    Parameters
-    ----------
-    area_id:
-        The name of the area.
-    description:
-        The description of the area.
-    projection:
-        The dictionary or string or CRS object of projection parameters.
-        Doesn't have to be complete. If not complete, ``proj_info`` must
-        be provided to ``freeze`` to "fill in" any missing parameters.
-    width:
-        x dimension in number of pixels, aka number of grid columns
-    height:
-        y dimension in number of pixels, aka number of grid rows
-    shape:
-        Corresponding array shape as (height, width)
-    area_extent:
-        The area extent of the area.
-    pixel_size_x:
-        Pixel width in projection units
-    pixel_size_y:
-        Pixel height in projection units
-    resolution:
-        Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
-    optimize_projection:
-        Whether the projection parameters have to be optimized.
-    rotation:
-        Rotation in degrees (negative is cw)
+    Attributes:
+        area_id:
+            The name of the area.
+        description:
+            The description of the area.
+        projection:
+            The dictionary or string or CRS object of projection parameters.
+            Doesn't have to be complete. If not complete, ``proj_info`` must
+            be provided to ``freeze`` to "fill in" any missing parameters.
+        width:
+            x dimension in number of pixels, aka number of grid columns
+        height:
+            y dimension in number of pixels, aka number of grid rows
+        shape:
+            Corresponding array shape as (height, width)
+        area_extent:
+            The area extent of the area.
+        pixel_size_x:
+            Pixel width in projection units
+        pixel_size_y:
+            Pixel height in projection units
+        resolution:
+            Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
+        optimize_projection:
+            Whether the projection parameters have to be optimized.
+        rotation:
+            Rotation in degrees (negative is cw)
+
     """
 
     def __init__(self, area_id=None, description=None, projection=None,
@@ -958,20 +958,38 @@ class DynamicAreaDefinition(object):
         shape = None if None in shape else shape
         area_extent = self.area_extent
         if not area_extent or not width or not height:
-            proj4 = Proj(proj_dict)
-            try:
-                lons, lats = lonslats
-            except (TypeError, ValueError):
-                lons, lats = lonslats.get_lonlats()
-            xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
-            xarr[xarr > 9e29] = np.nan
-            yarr[yarr > 9e29] = np.nan
-            corners = [np.nanmin(xarr), np.nanmin(yarr),
-                       np.nanmax(xarr), np.nanmax(yarr)]
+            corners = self._compute_corners(proj_dict, lonslats)
             area_extent, width, height = self.compute_domain(corners, resolution, shape)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
                               area_extent, self.rotation)
+
+    def _compute_corners(self, proj_dict, lonslats):
+        proj4 = Proj(proj_dict)
+        lons, lats = self._extract_lons_lats(lonslats)
+        # TODO: Do more dask-friendly things here
+        xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
+        xarr[xarr > 9e29] = np.nan
+        yarr[yarr > 9e29] = np.nan
+        xmin = np.nanmin(xarr)
+        xmax = np.nanmax(xarr)
+        ymin = np.nanmin(yarr)
+        ymax = np.nanmax(yarr)
+        epsilon = 0.1
+        x_passes_antimeridian = (xmax - xmin) > 360 - epsilon
+        y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
+        if proj4.crs.is_geographic and x_passes_antimeridian and not y_is_pole:
+            # cross anti-meridian of projection
+            xmin = np.nanmin(xarr[xarr >= 0])
+            xmax = np.nanmax(xarr[xarr < 0]) + 360
+        return xmin, ymin, xmax, ymax
+
+    def _extract_lons_lats(self, lonslats):
+        try:
+            lons, lats = lonslats
+        except (TypeError, ValueError):
+            lons, lats = lonslats.get_lonlats()
+        return lons, lats
 
 
 def invproj(data_x, data_y, proj_dict):
