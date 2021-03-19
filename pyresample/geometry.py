@@ -254,6 +254,26 @@ class BaseDefinition(object):
                      (s3_lon.squeeze(), s3_lat.squeeze()),
                      (s4_lon.squeeze(), s4_lat.squeeze())])
 
+    def get_bbox_coords(self, frequency=None):
+        """Return the bounding box in projection coordinates."""
+        height, width = self.shape
+        if frequency is None:
+            line_step = 1
+            col_step = 1
+        else:
+            line_step = max(height // frequency, 1)
+            col_step = max(width // frequency, 1)
+
+        s1_x, s1_y = self.get_proj_coords(data_slice=(0, slice(0, width, col_step)))
+        s2_x, s2_y = self.get_proj_coords(data_slice=(slice(0, height, line_step), -1))
+        s3_x, s3_y = self.get_proj_coords(data_slice=(-1, slice(width - 1, None, -col_step)))
+        s4_x, s4_y = self.get_proj_coords(data_slice=(slice(height - 1, None, -line_step), 0))
+
+        x = np.hstack((s1_x, s2_x.T, s3_x, s4_x.T)).squeeze()
+        y = np.hstack((s1_y, s2_y.T, s3_y, s4_y.T)).squeeze()
+
+        return x, y
+
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
 
