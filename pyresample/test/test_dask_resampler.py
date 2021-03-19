@@ -25,20 +25,13 @@ import unittest
 import dask.array as da
 import numpy as np
 from pyresample.resampler import DaskResampler
-from pyresample.geometry import AreaDefinition, SwathDefinition
+from pyresample.geometry import AreaDefinition, SwathDefinition, IncompatibleAreas
 import pytest
 
 
 def dummy_resampler(data, source_area, destination_area):
     """Resample by filling an array with the sum of the data."""
     return np.full(destination_area.shape, data.sum())
-
-
-def chunk_copy_resampler(data, source_area, destination_area):
-    """Resample by doing a copy of the input data."""
-    after_y = destination_area.shape[0] - source_area.shape[0]
-    after_x = destination_area.shape[1] - source_area.shape[1]
-    return np.pad(data, ((0, after_y), (0, after_x)), 'constant', constant_values=np.nan)
 
 
 class TestDaskResampler(unittest.TestCase):
@@ -88,12 +81,6 @@ class TestDaskResampler(unittest.TestCase):
         res2 = self.dr.resample(input_data)
         assert res1.name != res2.name
         assert res1.name.startswith('dummy_resampler')
-
-    def test_resampling_follows_chunks(self):
-        """Test that resampling follows the chunking."""
-        dr = DaskResampler(self.src_area, self.src_area, chunk_copy_resampler)
-        res = dr.resample(self.input_data)
-        assert np.nanmax(np.abs(res - self.input_data)) < 210
 
     def test_resampling_reduces_input_data(self):
         """Test that resampling reduces the input data."""
@@ -170,5 +157,41 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   80, 100,
                                   (5550000.0, 3330000.0, -5550000.0, -5550000.0))
 
-        with pytest.raises(KeyError):
+        with pytest.raises(IncompatibleAreas):
             DaskResampler.get_slices(src_area, self.dst_area)
+
+    def test_dest_area_is_outside_source_area_domain(self):
+        """Test dest area is outside the source area domain (nan coordinates)."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  100, 100,
+                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        dst_area = AreaDefinition('merc', 'merc', None,
+                                  {'proj': 'merc', 'lon_0': 120.0,
+                                   'lat_0': 0,
+                                   'ellps': 'bessel'},
+                                  102, 102,
+                                  (-100000, -100000,
+                                   100000, 100000))
+        with pytest.raises(IncompatibleAreas):
+            DaskResampler.get_slices(src_area, dst_area)
+
+    def test_barely_touching_chunks_intersection(self):
+        """Test that barely touching chunks generate slices on intersection."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                  100, 100,
+                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        dst_area = AreaDefinition('moll', 'moll', None,
+                                  {
+                                      'ellps': 'WGS84',
+                                      'lon_0': '0',
+                                      'proj': 'moll',
+                                      'units': 'm'
+                                  },
+                                  102, 102,
+                                  (-18040095.6961, 4369712.0686,
+                                   18040095.6961, 9020047.8481))
+        x_slice, y_slice = DaskResampler.get_slices(src_area, dst_area)
+        assert x_slice.start > 0 and x_slice.stop < 100
+        assert y_slice.start > 0 and y_slice.stop >= 100

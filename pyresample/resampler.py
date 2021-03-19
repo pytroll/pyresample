@@ -40,7 +40,8 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.geometry import SwathDefinition
+from pyresample.geometry import SwathDefinition, IncompatibleAreas, get_geostationary_bounding_box_in_proj_coords
+from pyproj.transformer import Transformer
 
 
 logger = logging.getLogger(__name__)
@@ -335,7 +336,7 @@ class DaskResampler:
             target_geo_def = self.target_geo_def[slices[-2:]]
             try:
                 smaller_data, source_geo_def = self.crop_data_around_area(data, target_geo_def)
-            except KeyError:  # no relevant data matching
+            except IncompatibleAreas:  # no relevant data matching
                 chunk_shape = [chunk[pos] for pos, chunk in zip(position, dst_chunks)]
                 dask_graph[(name, *position)] = (
                     np.full,
@@ -365,29 +366,56 @@ class DaskResampler:
     def get_slices(source_area, target_area):
         """Get the x and y slices from source_area to cover target_area with source_area."""
         poly = DaskResampler._get_target_polygon_in_source_coords(source_area, target_area)
-        # TODO: np.max(target_area.resolution) should be applied before the transformation...
         return DaskResampler._get_source_slices_from_target_polygon(poly, source_area, target_area)
 
     @staticmethod
     def _get_target_polygon_in_source_coords(source_area, target_area):
-        x, y = target_area.get_bbox_coords(10)
-        from pyproj.transformer import Transformer
         from shapely.geometry import Polygon
+
+        x, y = target_area.get_bbox_coords(10)
         # before_poly = Polygon(zip(x, y)).buffer(np.max(target_area.resolution))
         # x, y = zip(*before_poly.exterior.coords)
         transformer = Transformer.from_crs(target_area.crs, source_area.crs)
+
+        if source_area.is_geostationary:
+            x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(source_area, 360)
+            x_geos, y_geos = transformer.transform(x_geos, y_geos, direction='INVERSE')
+            geos_poly = Polygon(zip(x_geos, y_geos))
+            poly = Polygon(zip(x, y))
+            poly = poly.intersection(geos_poly)
+            if poly.is_empty:
+                raise IncompatibleAreas('No slice on area.')
+            x, y = zip(*poly.exterior.coords)
+
         poly = Polygon(zip(*transformer.transform(x, y)))
         return poly
 
     @staticmethod
     def _get_source_slices_from_target_polygon(poly, source_area, target_area):
-        (minx, miny, maxx, maxy) = poly.buffer(np.max(target_area.resolution)).bounds
+        # TODO: np.max(target_area.resolution) should be applied before the transformation...
+        bounds = poly.buffer(np.max(target_area.resolution)).bounds
+
+        bounds = DaskResampler._sanitize_polygon_bounds(bounds, source_area)
+        slice_x, slice_y = DaskResampler._create_slices_from_bounds(bounds)
+        return slice_x, slice_y
+
+    @staticmethod
+    def _sanitize_polygon_bounds(bounds, source_area):
+        try:
+            (minx, miny, maxx, maxy) = bounds
+        except ValueError:
+            raise IncompatibleAreas('No slice on area.')
         x_bounds, y_bounds = source_area.get_xy_from_proj_coords(np.array([minx, maxx]), np.array([miny, maxy]))
         x_bounds.mask = np.ma.nomask
         y_bounds.mask = np.ma.nomask
         y_size, x_size = source_area.shape
         if np.all(x_bounds < 0) or np.all(y_bounds < 0) or np.all(x_bounds >= x_size) or np.all(y_bounds >= y_size):
-            raise KeyError('No slice on area.')
+            raise IncompatibleAreas('No slice on area.')
+        return x_bounds, y_bounds
+
+    @staticmethod
+    def _create_slices_from_bounds(bounds):
+        x_bounds, y_bounds = bounds
         slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
                         int(np.ceil(np.max(x_bounds))))
         slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),

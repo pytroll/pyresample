@@ -2168,8 +2168,8 @@ def get_geostationary_angle_extent(geos_area):
     return xmax, ymax
 
 
-def get_geostationary_bounding_box(geos_area, nb_points=50):
-    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
+    """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
     Args:
       nb_points: Number of points on the polygon
@@ -2189,6 +2189,17 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
+
+    return x, y
+
+
+def get_geostationary_bounding_box(geos_area, nb_points=50):
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
 
     return Proj(geos_area.crs)(x, y, inverse=True)
 
