@@ -46,7 +46,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResamplerOld(BaseResampler):
+class GradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -404,7 +404,7 @@ def _concatenate_chunks(chunks):
     return res
 
 
-class GradientSearchResampler(BaseResampler):
+class GradientSearchResamplerNew(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
