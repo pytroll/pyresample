@@ -1616,7 +1616,7 @@ class AreaDefinition(BaseDefinition):
         lon : point or sequence (list or array) of longitudes
         lat : point or sequence (list or array) of latitudes
 
-        :Returns:
+        Returns:
 
         (x, y) : tuple of points/arrays
         """
