@@ -46,7 +46,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResampler(BaseResampler):
+class GradientSearchResamplerOld(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -258,7 +258,7 @@ class GradientSearchResampler(BaseResampler):
                                        self.dst_slices,
                                        **kwargs)
 
-        # TODO: this will crash wen the target geo definition is a swath def.
+        # TODO: this will crash when the target geo definition is a swath def.
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
         for key in data_dims:
@@ -402,3 +402,70 @@ def _concatenate_chunks(chunks):
     res = da.concatenate(res, axis=2).squeeze()
 
     return res
+
+
+class GradientSearchResampler(BaseResampler):
+    """Resample using gradient search based bilinear interpolation."""
+
+    def __init__(self, source_geo_def, target_geo_def):
+        """Init GradientResampler."""
+        from pyresample.resampler import DaskResampler
+        self.source_geo_def = source_geo_def
+        self.target_geo_def = target_geo_def
+        self.dr = DaskResampler(self.source_geo_def, self.target_geo_def, gradient_resampler)
+
+    def compute(self, data, fill_value=None, **kwargs):
+        """Perform the resampling."""
+        res = self.dr.resample(data.data.astype(float))
+        print(self.source_geo_def)
+        print(self.target_geo_def)
+        x_coord, y_coord = self.target_geo_def.get_proj_vectors()
+        coords = []
+        for key in data.dims:
+            if key == 'x':
+                coords.append(x_coord)
+            elif key == 'y':
+                coords.append(y_coord)
+            else:
+                coords.append(data.coords[key])
+
+        res = xr.DataArray(res, dims=data.dims, coords=coords)
+        if fill_value is not None:
+            res = res.fillna(fill_value)
+        return res
+
+
+def ensure_3d_data(func):
+    """Ensure the data is in three dimensions."""
+    def wrapper(data, *args, **kwargs):
+        """Wrap around the original function."""
+        if data.ndim == 2:
+            data_3d = data[np.newaxis, :, :]
+        else:
+            data_3d = data
+
+        resampled = func(data_3d, *args, **kwargs)
+
+        if data.ndim == 2:
+            resampled = resampled.squeeze(0)
+        return resampled
+
+    return wrapper
+
+
+@ensure_3d_data
+def gradient_resampler(data, source_area, target_area):
+    """Do the gradient search resampling."""
+    from pyproj.transformer import Transformer
+    transformer = Transformer.from_crs(target_area.crs, source_area.crs)
+
+    src_x, src_y = source_area.get_proj_coords()
+    dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
+    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
+    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+
+    return _gradient_resample_data(data, src_x, src_y,
+                                   src_gradient_xl, src_gradient_xp,
+                                   src_gradient_yl, src_gradient_yp,
+                                   dst_x, dst_y,
+                                   method='bilinear')
