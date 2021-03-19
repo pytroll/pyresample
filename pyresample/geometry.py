@@ -838,7 +838,8 @@ class DynamicAreaDefinition(object):
         pixel_size_y:
             Pixel height in projection units
         resolution:
-            Resolution of the resulting area as (pixel_size_x, pixel_size_y) or a scalar if pixel_size_x == pixel_size_y.
+            Resolution of the resulting area as (pixel_size_x, pixel_size_y)
+            or a scalar if pixel_size_x == pixel_size_y.
         optimize_projection:
             Whether the projection parameters have to be optimized.
         rotation:
