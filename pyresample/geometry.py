@@ -967,13 +967,13 @@ class DynamicAreaDefinition(object):
         shape = None if None in shape else shape
         area_extent = self.area_extent
         if not area_extent or not width or not height:
-            corners = self._compute_corners(proj_dict, lonslats)
+            corners = self._compute_bound_centers(proj_dict, lonslats)
             area_extent, width, height = self.compute_domain(corners, resolution, shape)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
                               area_extent, self.rotation)
 
-    def _compute_corners(self, proj_dict, lonslats):
+    def _compute_bound_centers(self, proj_dict, lonslats):
         proj4 = Proj(proj_dict)
         lons, lats = self._extract_lons_lats(lonslats)
         # TODO: Do more dask-friendly things here
