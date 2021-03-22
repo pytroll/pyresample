@@ -241,7 +241,7 @@ class TestDaskEWAResampler:
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
     def test_xarray_ewa_empty(self, input_chunks, input_shape, input_dims,
                               input_dtype, maximum_weight_mode):
-        """Test EWA with basic xarray DataArrays."""
+        """Test EWA with xarray DataArrays where the result is all fills."""
         # projection that should result in no output pixels
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
                        '+lon_0=-55. +lat_0=25 +lat_1=25 +units=m +no_defs')
