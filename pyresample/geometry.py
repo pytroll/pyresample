@@ -998,7 +998,7 @@ class DynamicAreaDefinition(object):
             xmax = np.nanmax(xarr[xarr < 0]) + 360
         return xmin, ymin, xmax, ymax
 
-    def _compute_bound_centers_dask(self, proj_dict, lons,lats):
+    def _compute_bound_centers_dask(self, proj_dict, lons, lats):
         from pyresample.utils.proj4 import transform_dask
         import dask.array as da
         crs = CRS(proj_dict)
