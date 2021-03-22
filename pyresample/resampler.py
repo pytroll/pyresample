@@ -425,7 +425,7 @@ class SwathSlicer(AbstractSlicer):
             raise IncompatibleAreas
         return self._assemble_slices(intersecting_chunk_slices)
 
-    @lru_cache
+    @lru_cache(maxsize=10)
     def _get_chunk_polygons_for_area_to_crop(self):
         """Get the polygons for each chunk of the area_to_crop."""
         res = []
