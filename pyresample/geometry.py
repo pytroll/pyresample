@@ -816,6 +816,14 @@ class DynamicAreaDefinition(object):
     of the area to a given set of longitudes and latitudes, such that e.g.
     polar satellite granules can be resampled optimally to a given projection.
 
+    Note that if the provided projection is geographic (lon/lat degrees) and
+    the provided longitude and latitude data crosses the anti-meridian
+    (-180/180), the resulting area will be the smallest possible in order to
+    contain that data and avoid a large area spanning from -180 to 180
+    longitude. This means the resulting AreaDefinition will have a right-most
+    X extent greater than 180 degrees. This does not apply to data crossing
+    the north or south pole as there is no "smallest" area in this case.
+
     Attributes:
         area_id:
             The name of the area.
