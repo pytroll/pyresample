@@ -976,8 +976,8 @@ class DynamicAreaDefinition(object):
         xmax = np.nanmax(xarr)
         ymin = np.nanmin(yarr)
         ymax = np.nanmax(yarr)
+        x_passes_antimeridian = (xmax - xmin) > 355
         epsilon = 0.1
-        x_passes_antimeridian = (xmax - xmin) > 360 - epsilon
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if proj4.crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection

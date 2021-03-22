@@ -2328,6 +2328,36 @@ class TestDynamicAreaDefinition:
         assert result.width == 395
         assert result.height == 539
 
+    @pytest.mark.parametrize(
+        ('lats',),
+        [
+            (np.linspace(-25.0, -10.0, 10),),
+            (np.linspace(10.0, 25.0, 10),),
+            (np.linspace(75, 90.0, 10),),
+            (np.linspace(-75, -90.0, 10),),
+        ],
+    )
+    def test_freeze_longlat_antimeridian(self, lats):
+        """Test geographic areas over the antimeridian."""
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                              'EPSG:4326')
+        lons = np.linspace(175, 185, 10)
+        lons[lons > 180] -= 360
+        result = area.freeze((lons, lats),
+                             resolution=0.0056)
+
+        is_pole = (np.abs(lats) > 88).any()
+        extent = result.area_extent
+        if is_pole:
+            assert extent[0] < -178
+            assert extent[2] > 178
+            assert result.width == 64088
+        else:
+            assert extent[0] > 0
+            assert extent[2] > 0
+            assert result.width == 1787
+        assert result.height == 2680
+
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'omerc'},
