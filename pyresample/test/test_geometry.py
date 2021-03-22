@@ -33,10 +33,17 @@ from unittest.mock import MagicMock, patch
 import unittest
 import pyproj
 
+from pyproj import CRS
+
 try:
-    from pyproj import CRS
+    import dask.array as da
 except ImportError:
-    CRS = None
+    da = None
+
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
 
 
 class Test(unittest.TestCase):
@@ -237,7 +244,6 @@ class Test(unittest.TestCase):
             mock_open.assert_called_once_with('area_file.yml', 'a')
             mock_open.return_value.__enter__().write.assert_called_once_with(yaml_string)
 
-
     def test_parse_area_file(self):
         """Test parsing the are file."""
         from pyresample import utils
@@ -423,44 +429,37 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(hash(swath_def), int)
 
-        try:
-            import dask.array as da
-        except ImportError:
-            print("Not testing with dask arrays")
-        else:
-            dalons = da.from_array(lons, chunks=1000)
-            dalats = da.from_array(lats, chunks=1000)
-            swath_def = geometry.SwathDefinition(dalons, dalats)
+    @pytest.mark.skipif(da is None, reason="dask is not installed")
+    def test_swath_hash_dask(self):
+        """Test hashing SwathDefinitions with dask arrays underneath."""
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        dalons = da.from_array(lons, chunks=1000)
+        dalats = da.from_array(lats, chunks=1000)
+        swath_def = geometry.SwathDefinition(dalons, dalats)
+        self.assertIsInstance(hash(swath_def), int)
 
-            self.assertIsInstance(hash(swath_def), int)
+    @pytest.mark.skipif(xr is None, reason="xarray is not installed")
+    def test_swath_hash_xarray(self):
+        """Test hashing SwathDefinitions with DataArrays underneath."""
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        xrlons = xr.DataArray(lons)
+        xrlats = xr.DataArray(lats)
+        swath_def = geometry.SwathDefinition(xrlons, xrlats)
+        self.assertIsInstance(hash(swath_def), int)
 
-        try:
-            import xarray as xr
-        except ImportError:
-            print("Not testing with xarray")
-        else:
-            xrlons = xr.DataArray(lons)
-            xrlats = xr.DataArray(lats)
-            swath_def = geometry.SwathDefinition(xrlons, xrlats)
-
-            self.assertIsInstance(hash(swath_def), int)
-
-        try:
-            import xarray as xr
-            import dask.array as da
-        except ImportError:
-            print("Not testing with xarrays and dask arrays")
-        else:
-            xrlons = xr.DataArray(da.from_array(lons, chunks=1000))
-            xrlats = xr.DataArray(da.from_array(lats, chunks=1000))
-            swath_def = geometry.SwathDefinition(xrlons, xrlats)
-
-            self.assertIsInstance(hash(swath_def), int)
-
-        lons = np.ma.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.ma.array([65.9, 65.86, 65.82, 65.78])
-        swath_def = geometry.SwathDefinition(lons, lats)
-
+    @pytest.mark.skipif(da is None, reason="dask is not installed")
+    @pytest.mark.skipif(xr is None, reason="xarray is not installed")
+    def test_swath_hash_xarray_with_dask(self):
+        """Test hashing SwathDefinitions with DataArrays:dask underneath."""
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        dalons = da.from_array(lons, chunks=1000)
+        dalats = da.from_array(lats, chunks=1000)
+        xrlons = xr.DataArray(dalons)
+        xrlats = xr.DataArray(dalats)
+        swath_def = geometry.SwathDefinition(xrlons, xrlats)
         self.assertIsInstance(hash(swath_def), int)
 
     def test_area_equal(self):
@@ -2337,12 +2336,16 @@ class TestDynamicAreaDefinition:
             (np.linspace(-75, -90.0, 10),),
         ],
     )
-    def test_freeze_longlat_antimeridian(self, lats):
+    @pytest.mark.parametrize('use_dask', [False, True])
+    def test_freeze_longlat_antimeridian(self, lats, use_dask):
         """Test geographic areas over the antimeridian."""
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               'EPSG:4326')
         lons = np.linspace(175, 185, 10)
         lons[lons > 180] -= 360
+        if use_dask:
+            lons = da.from_array(lons)
+            lats = da.from_array(lats)
         result = area.freeze((lons, lats),
                              resolution=0.0056)
 
