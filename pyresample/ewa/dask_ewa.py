@@ -150,7 +150,9 @@ def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
     # if we have only "empty" arrays at this point then the target chunk
     # has no valid input data in it.
     if isinstance(res[0], tuple):
-        return np.full(res[0], fill_value, dtype)
+        # res is (weights_info, accums_info)
+        # weights_info is (shape, fill, dtype)
+        return np.full(res[0][0], fill_value, dtype)
     weights, accums = res
     out = np.full(weights.shape, fill_value, dtype=dtype)
     write_grid_image_single(out, weights, accums, fill_value,

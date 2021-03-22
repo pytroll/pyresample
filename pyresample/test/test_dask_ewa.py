@@ -89,6 +89,7 @@ def _get_test_target_area(output_shape, output_proj=None):
 
 
 def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=None,
+                  input_chunks=10,
                   input_dims=('y', 'x'), input_dtype=np.float64):
     """Get common data objects used in testing.
 
@@ -98,8 +99,7 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
         target_area_def: AreaDefinition to be used as a target for resampling
 
     """
-    chunk_size = 10
-    data = _get_test_array(input_shape, input_dtype, chunk_size)
+    data = _get_test_array(input_shape, input_dtype, input_chunks)
     ds1 = xr.DataArray(data,
                        dims=input_dims,
                        attrs={'name': 'test', 'test': 'test'})
@@ -109,7 +109,7 @@ def get_test_data(input_shape=(100, 50), output_shape=(200, 100), output_proj=No
     input_area_shape = tuple(ds1.sizes[dim] for dim in ds1.dims
                              if dim in ['y', 'x'])
     geo_dims = ('y', 'x') if input_dims else None
-    swath_def = _get_test_swath_def(input_area_shape, chunk_size, geo_dims)
+    swath_def = _get_test_swath_def(input_area_shape, input_chunks, geo_dims)
     ds1.attrs['area'] = swath_def
     crs = CRS.from_string('+proj=latlong +datum=WGS84 +ellps=WGS84')
     ds1 = ds1.assign_coords(crs=crs)
@@ -228,6 +228,46 @@ class TestDaskEWAResampler:
             band_mult = 3 if 'bands' in result.dims else 1
             fill_mask = _fill_mask(result.values)
             assert np.count_nonzero(~fill_mask) == 468 * band_mult
+
+    @pytest.mark.parametrize(
+        ('input_chunks', 'input_shape', 'input_dims'),
+        [
+            (10, (100, 50), ('y', 'x')),
+            ((100, 50), (100, 50), ('y', 'x')),
+            (10, (3, 100, 50), ('bands', 'y', 'x')),
+        ]
+    )
+    @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
+    @pytest.mark.parametrize('maximum_weight_mode', [False, True])
+    def test_xarray_ewa_empty(self,
+                              input_chunks, input_shape, input_dims, input_dtype,
+                              maximum_weight_mode):
+        """Test EWA with basic xarray DataArrays."""
+        # projection that should result in no output pixels
+        output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
+                       '+lon_0=-55. +lat_0=25 +lat_1=25 +units=m +no_defs')
+        output_shape = (200, 100)
+        if len(input_shape) == 3:
+            output_shape = (input_shape[0], output_shape[0], output_shape[1])
+        # different chunk sizes produces different behaviors for dask reduction
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=input_shape, output_shape=output_shape[-2:],
+            input_chunks=input_chunks,
+            input_dims=input_dims, input_dtype=input_dtype,
+            output_proj=output_proj
+        )
+
+        with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+            resampler = DaskEWAResampler(source_swath, target_area)
+            new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                          maximum_weight_mode=maximum_weight_mode)
+            _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
+                                      'test', 'test')
+            # make sure we can actually compute everything
+            computed_data = new_data.compute()
+            fill_value = 127 if np.issubdtype(input_dtype, np.integer) else np.nan
+            np.testing.assert_array_equal(computed_data, fill_value)
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'maximum_weight_mode'),
