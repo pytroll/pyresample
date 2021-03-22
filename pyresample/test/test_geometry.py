@@ -2291,7 +2291,7 @@ def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
     np.testing.assert_array_equal(lats, lats_c)
 
 
-class TestDynamicAreaDefinition(unittest.TestCase):
+class TestDynamicAreaDefinition:
     """Test the DynamicAreaDefinition class."""
 
     def test_freeze(self):
@@ -2308,10 +2308,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                                         -872594.690447,
                                                         432079.38952,
                                                         904633.303964))
-        self.assertEqual(result.proj_dict['lon_0'], 16)
-        self.assertEqual(result.proj_dict['lat_0'], 58)
-        self.assertEqual(result.width, 288)
-        self.assertEqual(result.height, 592)
+        assert result.proj_dict['lon_0'] == 16
+        assert result.proj_dict['lat_0'] == 58
+        assert result.width == 288
+        assert result.height == 592
 
         # make sure that setting `proj_info` once doesn't
         # set it in the dynamic area
@@ -2322,11 +2322,41 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                                         5380808.879250369,
                                                         1724415.6519203288,
                                                         6998895.701001488))
-        self.assertEqual(result.proj_dict['lon_0'], 0)
+        assert result.proj_dict['lon_0'] == 0
         # lat_0 could be provided or not depending on version of pyproj
-        self.assertEqual(result.proj_dict.get('lat_0', 0), 0)
-        self.assertEqual(result.width, 395)
-        self.assertEqual(result.height, 539)
+        assert result.proj_dict.get('lat_0', 0) == 0
+        assert result.width == 395
+        assert result.height == 539
+
+    @pytest.mark.parametrize(
+        ('lats',),
+        [
+            (np.linspace(-25.0, -10.0, 10),),
+            (np.linspace(10.0, 25.0, 10),),
+            (np.linspace(75, 90.0, 10),),
+            (np.linspace(-75, -90.0, 10),),
+        ],
+    )
+    def test_freeze_longlat_antimeridian(self, lats):
+        """Test geographic areas over the antimeridian."""
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                              'EPSG:4326')
+        lons = np.linspace(175, 185, 10)
+        lons[lons > 180] -= 360
+        result = area.freeze((lons, lats),
+                             resolution=0.0056)
+
+        is_pole = (np.abs(lats) > 88).any()
+        extent = result.area_extent
+        if is_pole:
+            assert extent[0] < -178
+            assert extent[2] > 178
+            assert result.width == 64088
+        else:
+            assert extent[0] > 0
+            assert extent[2] > 0
+            assert result.width == 1787
+        assert result.height == 2680
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
@@ -2345,36 +2375,36 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                    [-335439.956533, 5502125.451125,
                                     191991.313351, 7737532.343683])
 
-        self.assertEqual(result.width, 4)
-        self.assertEqual(result.height, 18)
+        assert result.width == 4
+        assert result.height == 18
         # Test for properties and shape usage in freeze.
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
                                               width=4, height=18)
-        self.assertEqual((18, 4), area.shape)
+        assert (18, 4) == area.shape
         result = area.freeze(sdef)
         np.testing.assert_allclose(result.area_extent,
                                    (996309.4426, 6287132.757981, 1931393.165263, 10837238.860543))
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
                                               resolution=1000)
-        self.assertEqual(1000, area.pixel_size_x)
-        self.assertEqual(1000, area.pixel_size_y)
+        assert 1000 == area.pixel_size_x
+        assert 1000 == area.pixel_size_y
 
     def test_compute_domain(self):
         """Test computing size and area extent."""
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               {'proj': 'laea'})
         corners = [1, 1, 9, 9]
-        self.assertRaises(ValueError, area.compute_domain, corners, 1, 1)
+        pytest.raises(ValueError, area.compute_domain, corners, 1, 1)
 
         area_extent, x_size, y_size = area.compute_domain(corners, shape=(5, 5))
-        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
-        self.assertEqual(x_size, 5)
-        self.assertEqual(y_size, 5)
+        assert area_extent == (0, 0, 10, 10)
+        assert x_size == 5
+        assert y_size == 5
 
         area_extent, x_size, y_size = area.compute_domain(corners, resolution=2)
-        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
-        self.assertEqual(x_size, 5)
-        self.assertEqual(y_size, 5)
+        assert area_extent == (0, 0, 10, 10)
+        assert x_size == 5
+        assert y_size == 5
 
 
 class TestCrop(unittest.TestCase):
