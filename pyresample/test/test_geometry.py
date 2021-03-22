@@ -2339,17 +2339,26 @@ class TestDynamicAreaDefinition:
     @pytest.mark.parametrize('use_dask', [False, True])
     def test_freeze_longlat_antimeridian(self, lats, use_dask):
         """Test geographic areas over the antimeridian."""
+        import dask
+        from pyresample.test.utils import CustomScheduler
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               'EPSG:4326')
         lons = np.linspace(175, 185, 10)
         lons[lons > 180] -= 360
+        is_pole = (np.abs(lats) > 88).any()
         if use_dask:
+            # if we aren't at a pole then we adjust the coordinates
+            # that takes a total of 2 computations
+            num_computes = 1 if is_pole else 2
             lons = da.from_array(lons)
             lats = da.from_array(lats)
-        result = area.freeze((lons, lats),
-                             resolution=0.0056)
+            with dask.config.set(scheduler=CustomScheduler(num_computes)):
+                result = area.freeze((lons, lats),
+                                     resolution=0.0056)
+        else:
+            result = area.freeze((lons, lats),
+                                 resolution=0.0056)
 
-        is_pole = (np.abs(lats) > 88).any()
         extent = result.area_extent
         if is_pole:
             assert extent[0] < -178

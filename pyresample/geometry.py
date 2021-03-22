@@ -974,9 +974,14 @@ class DynamicAreaDefinition(object):
                               area_extent, self.rotation)
 
     def _compute_bound_centers(self, proj_dict, lonslats):
-        proj4 = Proj(proj_dict)
         lons, lats = self._extract_lons_lats(lonslats)
+        if hasattr(lons, 'compute'):
+            return self._compute_bound_centers_dask(proj_dict, lons, lats)
+        return self._compute_bound_centers_numpy(proj_dict, lons, lats)
+
+    def _compute_bound_centers_numpy(self, proj_dict, lons, lats):
         # TODO: Do more dask-friendly things here
+        proj4 = Proj(proj_dict)
         xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
         xarr[xarr > 9e29] = np.nan
         yarr[yarr > 9e29] = np.nan
@@ -991,6 +996,33 @@ class DynamicAreaDefinition(object):
             # cross anti-meridian of projection
             xmin = np.nanmin(xarr[xarr >= 0])
             xmax = np.nanmax(xarr[xarr < 0]) + 360
+        return xmin, ymin, xmax, ymax
+
+    def _compute_bound_centers_dask(self, proj_dict, lons,lats):
+        from pyresample.utils.proj4 import transform_dask
+        import dask.array as da
+        crs = CRS(proj_dict)
+        xarr, yarr = transform_dask(crs, lons, lats)
+        xarr = da.where(xarr > 9e29, np.nan, xarr)
+        yarr = da.where(yarr > 9e29, np.nan, yarr)
+        _xmin = np.nanmin(xarr)
+        _xmax = np.nanmax(xarr)
+        _ymin = np.nanmin(yarr)
+        _ymax = np.nanmax(yarr)
+        xmin, xmax, ymin, ymax = da.compute(
+            _xmin,
+            _xmax,
+            _ymin,
+            _ymax)
+
+        x_passes_antimeridian = (xmax - xmin) > 355
+        epsilon = 0.1
+        y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
+        if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
+            # cross anti-meridian of projection
+            xmin = np.nanmin(xarr[xarr >= 0])
+            xmax = np.nanmax(xarr[xarr < 0]) + 360
+            xmin, xmax = da.compute(xmin, xmax)
         return xmin, ymin, xmax, ymax
 
     def _extract_lons_lats(self, lonslats):

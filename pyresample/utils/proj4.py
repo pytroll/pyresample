@@ -19,6 +19,7 @@
 import math
 from collections import OrderedDict
 
+import numpy as np
 from pyproj import CRS
 
 
@@ -91,3 +92,33 @@ def get_geostationary_height(geos_area_crs):
     params = geos_area_crs.coordinate_operation.params
     h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
     return h_param.value
+
+
+def _transform_dask_chunk(x, y, crs_from, crs_to):
+    from pyproj import Transformer
+    crs_from = CRS(crs_from)
+    crs_to = CRS(crs_to)
+    transformer = Transformer.from_crs(crs_from, crs_to,
+                                       always_xy=True)
+    return np.stack(transformer.transform(x, y), axis=-1)
+
+
+def transform_dask(crs, x, y, inverse=False):
+    """Transform coordinates using pyproj in a dask-friendly way."""
+    import dask.array as da
+    crs = CRS.from_user_input(crs)
+    if not inverse:
+        crs_to = crs
+        crs_from = CRS(4326)
+    else:
+        crs_to = CRS(4326)
+        crs_from = crs
+    # CRS objects aren't thread-safe until pyproj 3.1+
+    # convert to WKT strings to be safe
+    result = da.map_blocks(_transform_dask_chunk, x, y,
+                           crs_from.to_wkt(), crs_to.to_wkt(),
+                           dtype=x.dtype, chunks=x.chunks + ((2,),),
+                           new_axis=x.ndim)
+    x = result[..., 0]
+    y = result[..., 1]
+    return x, y
