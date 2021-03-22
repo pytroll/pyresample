@@ -1,3 +1,21 @@
+## Version 1.18.1 (2021/03/22)
+
+### Issues Closed
+
+* [Issue 345](https://github.com/pytroll/pyresample/issues/345) - Deprecated numpy data types (numpy >=1.20.0)
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 343](https://github.com/pytroll/pyresample/pull/343) - Fix EWA resampling when the result is all fill values
+* [PR 342](https://github.com/pytroll/pyresample/pull/342) - Fix DynamicAreaDefinition not handling lons over antimeridian
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.18.0 (2021/03/12)
 
 ### Issues Closed
