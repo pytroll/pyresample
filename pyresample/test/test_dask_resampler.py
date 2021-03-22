@@ -23,8 +23,9 @@
 
 import unittest
 import dask.array as da
+import xarray as xr
 import numpy as np
-from pyresample.resampler import DaskResampler
+from pyresample.resampler import DaskResampler, Slicer
 from pyresample.geometry import AreaDefinition, SwathDefinition, IncompatibleAreas
 import pytest
 
@@ -115,8 +116,8 @@ class TestDaskResampler(unittest.TestCase):
         assert np.nanmin(res - 8000) > 0
 
 
-class TestDaskResamplerSlices(unittest.TestCase):
-    """Test the get_slice function."""
+class TestAreaSlicer(unittest.TestCase):
+    """Test the get_slice method for AreaSlicers."""
 
     def setUp(self):
         """Set up the test case."""
@@ -134,8 +135,8 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                   100, 100,
                                   (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-
-        x_slice, y_slice = DaskResampler.get_slices(src_area, self.dst_area)
+        slicer = Slicer(src_area, self.dst_area)
+        x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop < 100
 
@@ -146,7 +147,8 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   100, 100,
                                   (5550000.0, 4440000.0, -5550000.0, -6660000.0))
 
-        x_slice, y_slice = DaskResampler.get_slices(src_area, self.dst_area)
+        slicer = Slicer(src_area, self.dst_area)
+        x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
 
@@ -157,8 +159,9 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   80, 100,
                                   (5550000.0, 3330000.0, -5550000.0, -5550000.0))
 
+        slicer = Slicer(src_area, self.dst_area)
         with pytest.raises(IncompatibleAreas):
-            DaskResampler.get_slices(src_area, self.dst_area)
+            slicer.get_slices()
 
     def test_dest_area_is_outside_source_area_domain(self):
         """Test dest area is outside the source area domain (nan coordinates)."""
@@ -173,8 +176,9 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   102, 102,
                                   (-100000, -100000,
                                    100000, 100000))
+        slicer = Slicer(src_area, dst_area)
         with pytest.raises(IncompatibleAreas):
-            DaskResampler.get_slices(src_area, dst_area)
+            slicer.get_slices()
 
     def test_barely_touching_chunks_intersection(self):
         """Test that barely touching chunks generate slices on intersection."""
@@ -192,6 +196,101 @@ class TestDaskResamplerSlices(unittest.TestCase):
                                   102, 102,
                                   (-18040095.6961, 4369712.0686,
                                    18040095.6961, 9020047.8481))
-        x_slice, y_slice = DaskResampler.get_slices(src_area, dst_area)
+        slicer = Slicer(src_area, dst_area)
+        x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
+
+
+class TestSlicer(unittest.TestCase):
+    """Test the get_slice function when input is a swath."""
+
+    def setUp(self):
+        """Set up the test case."""
+        chunks = 10
+        self.dst_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+        self.src_area = AreaDefinition(
+            'omerc_otf',
+            'On-the-fly omerc area',
+            None,
+            {'alpha': '8.99811271718795',
+             'ellps': 'sphere',
+             'gamma': '0',
+             'k': '1',
+             'lat_0': '0',
+             'lonc': '13.8096029486222',
+             'proj': 'omerc',
+             'units': 'm'},
+            50, 100,
+            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
+        )
+
+        lons, lats = self.src_area.get_lonlats(chunks=chunks)
+        lons = xr.DataArray(lons)
+        lats = xr.DataArray(lats)
+        self.src_swath = SwathDefinition(lons, lats)
+
+    def test_slicer_init(self):
+        """Test slicer initialization."""
+        slicer = Slicer(self.src_area, self.dst_area)
+        assert slicer.area_to_crop == self.src_area
+        assert slicer.area_to_contain == self.dst_area
+
+    def test_source_swath_slicing_does_not_return_full_dataset(self):
+        """Test source area covers dest area."""
+        slicer = Slicer(self.src_swath, self.dst_area)
+        x_slice, y_slice = slicer.get_slices()
+        assert x_slice.start == 0
+        assert x_slice.stop == 35
+        assert y_slice.start == 15
+        assert y_slice.stop == 90
+
+    def test_source_area_slicing_does_not_return_full_dataset(self):
+        """Test source area covers dest area."""
+        slicer = Slicer(self.src_area, self.dst_area)
+        x_slice, y_slice = slicer.get_slices()
+        assert x_slice.start == 0
+        assert x_slice.stop == 35
+        assert y_slice.start == 18
+        assert y_slice.stop == 94
+
+    def test_area_get_polygon_returns_a_polygon(self):
+        """Test getting a polygon returns a polygon."""
+        from shapely.geometry import Polygon
+        slicer = Slicer(self.src_area, self.dst_area)
+        poly = slicer.get_polygon()
+        assert isinstance(poly, Polygon)
+
+    def test_swath_get_polygon_returns_a_polygon(self):
+        """Test getting a polygon returns a polygon."""
+        from shapely.geometry import Polygon
+        slicer = Slicer(self.src_swath, self.dst_area)
+        poly = slicer.get_polygon()
+        assert isinstance(poly, Polygon)
+
+
+class TestDaskResamplerFromSwath(unittest.TestCase):
+    """Test case for the DaskResampler class swath to area."""
+
+    def setUp(self):
+        """Set up the test case."""
+        self.input_data = da.arange(100*100).reshape((100, 100)).rechunk(30).astype(float)
+        self.src_area = AreaDefinition('dst', 'dst area', None,
+                                       {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                       100, 100,
+                                       (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        self.src_swath = SwathDefinition(*self.src_area.get_lonlats(chunks=self.input_data.chunks))
+        self.dst_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+        self.dr = DaskResampler(self.src_area, self.dst_area, dummy_resampler)

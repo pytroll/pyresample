@@ -25,17 +25,18 @@
 
 import logging
 
-import dask.array as da
 import dask
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
+from pyproj import CRS
+from pyresample.gradient._gradient_search import one_step_gradient_search
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
-from pyresample.gradient._gradient_search import one_step_gradient_search
-from pyresample.resampler import BaseResampler
 from pyresample.geometry import get_geostationary_bounding_box
+from pyresample.resampler import BaseResampler
 
 logger = logging.getLogger(__name__)
 
@@ -416,9 +417,10 @@ class GradientSearchResamplerNew(BaseResampler):
 
     def compute(self, data, fill_value=None, **kwargs):
         """Perform the resampling."""
+        if fill_value is not None:
+            data = data.fillna(fill_value)
+        data.data = data.data.rechunk({0: -1})
         res = self.dr.resample(data.data.astype(float))
-        print(self.source_geo_def)
-        print(self.target_geo_def)
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
         for key in data.dims:
@@ -429,10 +431,7 @@ class GradientSearchResamplerNew(BaseResampler):
             else:
                 coords.append(data.coords[key])
 
-        res = xr.DataArray(res, dims=data.dims, coords=coords)
-        if fill_value is not None:
-            res = res.fillna(fill_value)
-        return res
+        return xr.DataArray(res, dims=data.dims, coords=coords)
 
 
 def ensure_3d_data(func):
@@ -457,9 +456,13 @@ def ensure_3d_data(func):
 def gradient_resampler(data, source_area, target_area):
     """Do the gradient search resampling."""
     from pyproj.transformer import Transformer
-    transformer = Transformer.from_crs(target_area.crs, source_area.crs)
 
-    src_x, src_y = source_area.get_proj_coords()
+    try:
+        src_x, src_y = source_area.get_proj_coords()
+        transformer = Transformer.from_crs(target_area.crs, source_area.crs)
+    except AttributeError:
+        src_x, src_y = source_area
+        transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
     dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])

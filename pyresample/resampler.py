@@ -23,11 +23,13 @@
 
 import hashlib
 import json
-import os
 import logging
+import os
+from abc import ABC
+from functools import lru_cache
+from uuid import uuid4
 
 import numpy as np
-from uuid import uuid4
 
 try:
     import dask.array as da
@@ -341,80 +343,159 @@ class DaskResampler:
                 dask_graph[(name, *position)] = (
                     np.full,
                     chunk_shape,
-                    np.nan)
+                    np.nan
+                )
             else:
+                deps.append(smaller_data)
+                if isinstance(source_geo_def, SwathDefinition):
+                    deps.append(source_geo_def.lons.data)
+                    deps.append(source_geo_def.lats.data)
+                    source_geo_def = [(source_geo_def.lons.data.name, 0, 0), (source_geo_def.lats.data.name, 0, 0)]
                 dask_graph[(name, *position)] = (
                     self.resampler,
                     (smaller_data.name, *position[:-2], 0, 0),
                     source_geo_def,
                     target_geo_def
                 )
-                deps.append(smaller_data)
+
         dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=deps)
 
         return da.Array(dask_graph, name, chunks=dst_chunks, dtype=data.dtype, shape=output_shape)
 
     def crop_data_around_area(self, data, target_geo_def):
         """Crop the data around the provided area."""
-        x_slice, y_slice = self.get_slices(self.source_geo_def, target_geo_def)  # this one is way faster
-        # x_slice, y_slice = self.source_geo_def.get_area_slices(target_geo_def)
+        slicer = Slicer(self.source_geo_def, target_geo_def)
+        x_slice, y_slice = slicer.get_slices()
+
         source_geo_def = self.source_geo_def[y_slice, x_slice]
+        if isinstance(source_geo_def, SwathDefinition):
+            source_geo_def.lons.data = source_geo_def.lons.data.rechunk((-1, -1))
+            source_geo_def.lats.data = source_geo_def.lats.data.rechunk((-1, -1))
         smaller_data = data[..., y_slice, x_slice].rechunk(data.chunks[:-2] + (-1, -1))
         return smaller_data, source_geo_def
 
-    @staticmethod
-    def get_slices(source_area, target_area):
-        """Get the x and y slices from source_area to cover target_area with source_area."""
-        poly = DaskResampler._get_target_polygon_in_source_coords(source_area, target_area)
-        return DaskResampler._get_source_slices_from_target_polygon(poly, source_area, target_area)
 
-    @staticmethod
-    def _get_target_polygon_in_source_coords(source_area, target_area):
+class Slicer:
+    """Slicer factory, returning a AreaSlicer or a SwathSlicer based on the first area type.
+
+    Provided an Area-to-crop and an Area-to-contain, a Slicer provides methods
+    to find slices that enclose Area-to-contain inside Area-to-crop.
+    """
+
+    def __new__(cls, area_to_crop, area_to_contain):
+        """Create a Slicer for cropping *area_to_crop* based on *area_to_contain*."""
+        if isinstance(area_to_crop, SwathDefinition):
+            return SwathSlicer(area_to_crop, area_to_contain)
+        else:
+            return AreaSlicer(area_to_crop, area_to_contain)
+
+
+class AbstractSlicer(ABC):
+    """A base, abstract slicer."""
+
+    def __init__(self, area_to_crop, area_to_contain):
+        """Set up the Slicer."""
+        self.area_to_crop = area_to_crop
+        self.area_to_contain = area_to_contain
+        self._transformer = Transformer.from_crs(self.area_to_contain.crs, self.area_to_crop.crs)
+
+    def get_slices(self):
+        """Get the slices to crop *area_to_crop* enclosing *area_to_contain*."""
+        poly = self.get_polygon()
+        return self.get_slices_from_polygon(poly)
+
+
+class SwathSlicer(AbstractSlicer):
+    """A Slicer for cropping SwathDefinitions."""
+
+    def get_polygon(self):
+        """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
+        x, y = self.area_to_contain.get_bbox_coords(10)
+        poly = Polygon(zip(*self._transformer.transform(x, y)))
+        return poly
 
-        x, y = target_area.get_bbox_coords(10)
+    def get_slices_from_polygon(self, poly):
+        """Get the slices based on the polygon."""
+        intersecting_chunk_slices = []
+        for smaller_poly, slices in self._get_chunk_polygons_for_area_to_crop():
+            if smaller_poly.intersects(poly):
+                intersecting_chunk_slices.append(slices)
+        if not intersecting_chunk_slices:
+            raise IncompatibleAreas
+        return self._assemble_slices(intersecting_chunk_slices)
+
+    @lru_cache
+    def _get_chunk_polygons_for_area_to_crop(self):
+        """Get the polygons for each chunk of the area_to_crop."""
+        res = []
+        from shapely.geometry import Polygon
+        chunks = np.array(self.area_to_crop.lons.data.chunksize) // 2
+        src_chunks = da.core.normalize_chunks(chunks, self.area_to_crop.shape)
+        for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
+            smaller_swath = self.area_to_crop[line_slice, col_slice]
+            lons, lats = smaller_swath.get_edge_lonlats(10)
+            lons = np.hstack(lons)
+            lats = np.hstack(lats)
+            smaller_poly = Polygon(zip(lons, lats))
+            res.append((smaller_poly, (line_slice, col_slice)))
+        return res
+
+    @staticmethod
+    def _assemble_slices(chunk_slices):
+        """Assemble slices to one slice per dimension."""
+        lines, cols = zip(*chunk_slices)
+        line_slice = slice(min(slc.start for slc in lines), max(slc.stop for slc in lines))
+        col_slice = slice(min(slc.start for slc in cols), max(slc.stop for slc in cols))
+        slices = col_slice, line_slice
+        return slices
+
+
+class AreaSlicer(AbstractSlicer):
+    """A Slicer for cropping AreaDefinitions."""
+
+    def get_polygon(self):
+        """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates."""
+        from shapely.geometry import Polygon
+        x, y = self.area_to_contain.get_bbox_coords(10)
         # before_poly = Polygon(zip(x, y)).buffer(np.max(target_area.resolution))
         # x, y = zip(*before_poly.exterior.coords)
-        transformer = Transformer.from_crs(target_area.crs, source_area.crs)
-
-        if source_area.is_geostationary:
-            x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(source_area, 360)
-            x_geos, y_geos = transformer.transform(x_geos, y_geos, direction='INVERSE')
+        if self.area_to_crop.is_geostationary:
+            x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
+            x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction='INVERSE')
             geos_poly = Polygon(zip(x_geos, y_geos))
             poly = Polygon(zip(x, y))
             poly = poly.intersection(geos_poly)
             if poly.is_empty:
                 raise IncompatibleAreas('No slice on area.')
             x, y = zip(*poly.exterior.coords)
-
-        poly = Polygon(zip(*transformer.transform(x, y)))
+        poly = Polygon(zip(*self._transformer.transform(x, y)))
         return poly
 
-    @staticmethod
-    def _get_source_slices_from_target_polygon(poly, source_area, target_area):
-        # TODO: np.max(target_area.resolution) should be applied before the transformation...
-        bounds = poly.buffer(np.max(target_area.resolution)).bounds
-
-        bounds = DaskResampler._sanitize_polygon_bounds(bounds, source_area)
-        slice_x, slice_y = DaskResampler._create_slices_from_bounds(bounds)
+    def get_slices_from_polygon(self, poly):
+        """Get the slices based on the polygon."""
+        bounds = poly.buffer(np.max(self.area_to_contain.resolution)).bounds
+        bounds = self._sanitize_polygon_bounds(bounds)
+        slice_x, slice_y = self._create_slices_from_bounds(bounds)
         return slice_x, slice_y
 
-    @staticmethod
-    def _sanitize_polygon_bounds(bounds, source_area):
+    def _sanitize_polygon_bounds(self, bounds):
+        """Reset the bounds within the shape of the area."""
         try:
             (minx, miny, maxx, maxy) = bounds
         except ValueError:
             raise IncompatibleAreas('No slice on area.')
-        x_bounds, y_bounds = source_area.get_xy_from_proj_coords(np.array([minx, maxx]), np.array([miny, maxy]))
+        x_bounds, y_bounds = self.area_to_crop.get_xy_from_proj_coords(np.array([minx, maxx]), np.array([miny, maxy]))
         x_bounds.mask = np.ma.nomask
         y_bounds.mask = np.ma.nomask
-        y_size, x_size = source_area.shape
+        y_size, x_size = self.area_to_crop.shape
         if np.all(x_bounds < 0) or np.all(y_bounds < 0) or np.all(x_bounds >= x_size) or np.all(y_bounds >= y_size):
             raise IncompatibleAreas('No slice on area.')
         return x_bounds, y_bounds
 
     @staticmethod
     def _create_slices_from_bounds(bounds):
+        """Create slices from bounds."""
         x_bounds, y_bounds = bounds
         slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
                         int(np.ceil(np.max(x_bounds))))

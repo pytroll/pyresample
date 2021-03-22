@@ -197,7 +197,7 @@ class BaseDefinition(object):
 
         Returns
         -------
-        (lon, lat) : tuple of numpy arrays
+        (lon, lat) : tuple of numpy or dask arrays
             If `chunks` is provided then the arrays will be dask arrays
             with the provided chunk size. If `chunks` is not provided then
             the returned arrays are the same as the internal data types
@@ -243,12 +243,19 @@ class BaseDefinition(object):
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self):
+    def get_bbox_lonlats(self, frequency=None):
         """Return the bounding box lons and lats."""
-        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
-        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
-        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
-        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
+        height, width = self.shape
+        if frequency is None:
+            line_step = 1
+            col_step = 1
+        else:
+            line_step = max(height // frequency, 1)
+            col_step = max(width // frequency, 1)
+        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(0, width, col_step)))
+        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(0, height, line_step), -1))
+        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(width - 1, None, -col_step)))
+        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(height - 1, None, -line_step), 0))
         return zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
                      (s2_lon.squeeze(), s2_lat.squeeze()),
                      (s3_lon.squeeze(), s3_lat.squeeze()),
@@ -630,6 +637,7 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+        self.crs = CRS(proj='longlat')
 
     def copy(self):
         """Copy the current swath."""
@@ -745,9 +753,9 @@ class SwathDefinition(CoordinateDefinition):
         return {'proj': projection, 'ellps': ellipsoid,
                 'lat_0': lat_0, 'lon_0': lon_0}
 
-    def get_edge_lonlats(self):
+    def get_edge_lonlats(self, frequency=None):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats()
+        lons, lats = self.get_bbox_lonlats(frequency)
         blons = np.ma.concatenate(lons)
         blats = np.ma.concatenate(lats)
         return blons, blats
