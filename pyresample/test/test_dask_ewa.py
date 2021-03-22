@@ -239,9 +239,8 @@ class TestDaskEWAResampler:
     )
     @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
-    def test_xarray_ewa_empty(self,
-                              input_chunks, input_shape, input_dims, input_dtype,
-                              maximum_weight_mode):
+    def test_xarray_ewa_empty(self, input_chunks, input_shape, input_dims,
+                              input_dtype, maximum_weight_mode):
         """Test EWA with basic xarray DataArrays."""
         # projection that should result in no output pixels
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
@@ -257,17 +256,15 @@ class TestDaskEWAResampler:
             output_proj=output_proj
         )
 
-        with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr, \
-                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
-            resampler = DaskEWAResampler(source_swath, target_area)
-            new_data = resampler.resample(swath_data, rows_per_scan=10,
-                                          maximum_weight_mode=maximum_weight_mode)
-            _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
-                                      'test', 'test')
-            # make sure we can actually compute everything
-            computed_data = new_data.compute()
-            fill_value = 127 if np.issubdtype(input_dtype, np.integer) else np.nan
-            np.testing.assert_array_equal(computed_data, fill_value)
+        resampler = DaskEWAResampler(source_swath, target_area)
+        new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                      maximum_weight_mode=maximum_weight_mode)
+        _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
+                                  'test', 'test')
+        # make sure we can actually compute everything
+        computed_data = new_data.compute()
+        fill_value = 127 if np.issubdtype(input_dtype, np.integer) else np.nan
+        np.testing.assert_array_equal(computed_data, fill_value)
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'maximum_weight_mode'),
