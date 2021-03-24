@@ -45,7 +45,10 @@ class TestDaskResampler(unittest.TestCase):
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,
                                        (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        self.src_swath = SwathDefinition(*self.src_area.get_lonlats(chunks=self.input_data.chunks))
+        lons, lats = self.src_area.get_lonlats(chunks=self.input_data.chunks)
+        lons = xr.DataArray(lons)
+        lats = xr.DataArray(lats)
+        self.src_swath = SwathDefinition(lons, lats)
         self.dst_area = AreaDefinition('euro40', 'euro40', None,
                                        {'proj': 'stere', 'lon_0': 14.0,
                                         'lat_0': 90.0, 'lat_ts': 60.0,
@@ -113,6 +116,15 @@ class TestDaskResampler(unittest.TestCase):
         res = dr.resample(input_data)
         assert res.ndim == 3
         assert res.shape[0] == 1
+        assert np.nanmin(res - 8000) > 0
+
+    def test_gradient_resampler_2d_chunked(self):
+        """Test gradient resampler in 3d with chunked data."""
+        from pyresample.gradient import gradient_resampler
+        dr = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
+        input_data = self.input_data.rechunk(20)
+        res = dr.resample(input_data)
+        assert res.ndim == 2
         assert np.nanmin(res - 8000) > 0
 
 
@@ -280,12 +292,8 @@ class TestDaskResamplerFromSwath(unittest.TestCase):
 
     def setUp(self):
         """Set up the test case."""
-        self.input_data = da.arange(100*100).reshape((100, 100)).rechunk(30).astype(float)
-        self.src_area = AreaDefinition('dst', 'dst area', None,
-                                       {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
-                                       100, 100,
-                                       (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        self.src_swath = SwathDefinition(*self.src_area.get_lonlats(chunks=self.input_data.chunks))
+        chunks = 30
+        self.input_data = da.arange(100*50).reshape((100, 50)).rechunk(chunks).astype(float)
         self.dst_area = AreaDefinition('euro40', 'euro40', None,
                                        {'proj': 'stere', 'lon_0': 14.0,
                                         'lat_0': 90.0, 'lat_ts': 60.0,
@@ -293,4 +301,32 @@ class TestDaskResamplerFromSwath(unittest.TestCase):
                                        102, 102,
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
-        self.dr = DaskResampler(self.src_area, self.dst_area, dummy_resampler)
+        self.src_area = AreaDefinition(
+            'omerc_otf',
+            'On-the-fly omerc area',
+            None,
+            {'alpha': '8.99811271718795',
+             'ellps': 'sphere',
+             'gamma': '0',
+             'k': '1',
+             'lat_0': '0',
+             'lonc': '13.8096029486222',
+             'proj': 'omerc',
+             'units': 'm'},
+            50, 100,
+            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
+        )
+
+        lons, lats = self.src_area.get_lonlats(chunks=chunks)
+        lons = xr.DataArray(lons)
+        lats = xr.DataArray(lats)
+        self.src_swath = SwathDefinition(lons, lats)
+
+    def test_gradient_resampler_2d_chunked(self):
+        """Test gradient resampler in 2d with chunked data."""
+        from pyresample.gradient import gradient_resampler
+        dr_area = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
+        res_area = dr_area.resample(self.input_data)
+        dr_swath = DaskResampler(self.src_swath, self.dst_area, gradient_resampler)
+        res_swath = dr_swath.resample(self.input_data)
+        np.testing.assert_allclose(res_area[:, 60:], res_swath[:, 60:], rtol=1e-2)

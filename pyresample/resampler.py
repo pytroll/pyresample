@@ -42,7 +42,8 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.geometry import SwathDefinition, IncompatibleAreas, get_geostationary_bounding_box_in_proj_coords
+from pyresample.geometry import (SwathDefinition, AreaDefinition, IncompatibleAreas,
+                                 get_geostationary_bounding_box_in_proj_coords)
 from pyproj.transformer import Transformer
 
 
@@ -375,8 +376,8 @@ class DaskResampler:
         return smaller_data, source_geo_def
 
 
-class Slicer:
-    """Slicer factory, returning a AreaSlicer or a SwathSlicer based on the first area type.
+class Slicer(ABC):
+    """Abstract Slicer and Slicer factory class, returning a AreaSlicer or a SwathSlicer based on the first area type.
 
     Provided an Area-to-crop and an Area-to-contain, a Slicer provides methods
     to find slices that enclose Area-to-contain inside Area-to-crop.
@@ -384,14 +385,15 @@ class Slicer:
 
     def __new__(cls, area_to_crop, area_to_contain):
         """Create a Slicer for cropping *area_to_crop* based on *area_to_contain*."""
-        if isinstance(area_to_crop, SwathDefinition):
-            return SwathSlicer(area_to_crop, area_to_contain)
+        if cls is Slicer:
+            if isinstance(area_to_crop, SwathDefinition):
+                return SwathSlicer(area_to_crop, area_to_contain)
+            elif isinstance(area_to_crop, AreaDefinition):
+                return AreaSlicer(area_to_crop, area_to_contain)
+            else:
+                raise NotImplementedError("Don't know how to slice a " + str(type(area_to_crop)))
         else:
-            return AreaSlicer(area_to_crop, area_to_contain)
-
-
-class AbstractSlicer(ABC):
-    """A base, abstract slicer."""
+            return super().__new__(cls)
 
     def __init__(self, area_to_crop, area_to_contain):
         """Set up the Slicer."""
@@ -405,7 +407,7 @@ class AbstractSlicer(ABC):
         return self.get_slices_from_polygon(poly)
 
 
-class SwathSlicer(AbstractSlicer):
+class SwathSlicer(Slicer):
     """A Slicer for cropping SwathDefinitions."""
 
     def get_polygon(self):
@@ -418,28 +420,12 @@ class SwathSlicer(AbstractSlicer):
     def get_slices_from_polygon(self, poly):
         """Get the slices based on the polygon."""
         intersecting_chunk_slices = []
-        for smaller_poly, slices in self._get_chunk_polygons_for_area_to_crop():
+        for smaller_poly, slices in _get_chunk_polygons_for_area_to_crop(self.area_to_crop):
             if smaller_poly.intersects(poly):
                 intersecting_chunk_slices.append(slices)
         if not intersecting_chunk_slices:
             raise IncompatibleAreas
         return self._assemble_slices(intersecting_chunk_slices)
-
-    @lru_cache(maxsize=10)
-    def _get_chunk_polygons_for_area_to_crop(self):
-        """Get the polygons for each chunk of the area_to_crop."""
-        res = []
-        from shapely.geometry import Polygon
-        chunks = np.array(self.area_to_crop.lons.data.chunksize) // 2
-        src_chunks = da.core.normalize_chunks(chunks, self.area_to_crop.shape)
-        for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
-            smaller_swath = self.area_to_crop[line_slice, col_slice]
-            lons, lats = smaller_swath.get_edge_lonlats(10)
-            lons = np.hstack(lons)
-            lats = np.hstack(lats)
-            smaller_poly = Polygon(zip(lons, lats))
-            res.append((smaller_poly, (line_slice, col_slice)))
-        return res
 
     @staticmethod
     def _assemble_slices(chunk_slices):
@@ -451,7 +437,24 @@ class SwathSlicer(AbstractSlicer):
         return slices
 
 
-class AreaSlicer(AbstractSlicer):
+@lru_cache(maxsize=10)
+def _get_chunk_polygons_for_area_to_crop(area_to_crop):
+    """Get the polygons for each chunk of the area_to_crop."""
+    res = []
+    from shapely.geometry import Polygon
+    chunks = np.array(area_to_crop.lons.data.chunksize) // 2
+    src_chunks = da.core.normalize_chunks(chunks, area_to_crop.shape)
+    for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
+        smaller_swath = area_to_crop[line_slice, col_slice]
+        lons, lats = smaller_swath.get_edge_lonlats(10)
+        lons = np.hstack(lons)
+        lats = np.hstack(lats)
+        smaller_poly = Polygon(zip(lons, lats))
+        res.append((smaller_poly, (line_slice, col_slice)))
+    return res
+
+
+class AreaSlicer(Slicer):
     """A Slicer for cropping AreaDefinitions."""
 
     def get_polygon(self):
