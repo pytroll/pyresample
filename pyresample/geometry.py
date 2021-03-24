@@ -43,6 +43,11 @@ try:
 except ImportError:
     DataArray = np.ndarray
 
+try:
+    import dask.array as da
+except ImportError:
+    da = None
+
 from pyproj import CRS
 
 logger = getLogger(__name__)
@@ -60,7 +65,7 @@ class IncompatibleAreas(ValueError):
     pass
 
 
-class BaseDefinition(object):
+class BaseDefinition:
     """Base class for geometry definitions.
 
     .. versionchanged:: 1.8.0
@@ -981,7 +986,101 @@ def invproj(data_x, data_y, proj_dict):
     return np.dstack(target_proj(data_x, data_y, inverse=True))
 
 
-class AreaDefinition(BaseDefinition):
+class _ProjectionDefinition(BaseDefinition):
+    """Base class for definitions based on CRS and area extents."""
+
+    @property
+    def x_size(self):
+        """Return area width."""
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        return self.width
+
+    @property
+    def y_size(self):
+        """Return area height."""
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        return self.height
+
+    @property
+    def crs(self):
+        """Wrap the `crs` property in a helper property.
+
+        The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
+        accidentally passing it between threads, we only create it when it
+        is requested (the `self.crs` property). The alternative of storing it
+        as a normal instance attribute could cause issues between threads.
+
+        """
+        return CRS.from_wkt(self.crs_wkt)
+
+    @property
+    def proj_dict(self):
+        """Return the PROJ projection dictionary.
+
+        This is no longer the preferred way of describing CRS information.
+        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
+        """
+        return self.crs.to_dict()
+
+    @property
+    def size(self):
+        """Return size of the definition."""
+        return self.height * self.width
+
+    @property
+    def shape(self):
+        """Return shape of the definition."""
+        return (self.height, self.width)
+
+
+def masked_ints(func):
+    """Return masked integer arrays when return array indices."""
+    def wrapper(self, xm, ym):
+        is_scalar = np.isscalar(xm) and np.isscalar(ym)
+
+        x__, y__ = func(self, xm, ym)
+
+        x_mask = ((x__ < 0) | (x__ >= self.width))
+        y_mask = ((y__ < 0) | (y__ >= self.height))
+        x__ = np.ma.masked_array(x__, mask=x_mask, copy=False)
+        y__ = np.ma.masked_array(y__, mask=y_mask, copy=False)
+        if is_scalar:
+            if x__.all() is np.ma.masked or y__.all() is np.ma.masked:
+                raise ValueError('Point(s) outside area')
+            return int(x__.item()), int(y__.item())
+
+        else:
+            return x__.astype(int), y__.astype(int)
+    return wrapper
+
+
+def preserve_scalars(func):
+    """Preserve scalars through the coordinate conversion functions."""
+    def wrapper(self, xm, ym):
+        x__, y__ = func(self, xm, ym)
+        try:
+            return x__.item(), y__.item()
+        except ValueError:
+            return x__, y__
+
+    return wrapper
+
+
+def daskify(func):
+    """Daskify the coordinate conversion functions."""
+    def wrapper(self, xm, ym):
+        if da is None or not (isinstance(xm, da.Array) or isinstance(ym, da.Array)):
+            return func(self, xm, ym)
+        from functools import partial
+        newfunc = partial(func, self)
+        dims = '(' + ', '.join('i_' + str(i) for i in range(xm.ndim)) + ')'
+        signature = dims + ', ' + dims + '->' + dims + ', ' + dims
+        return da.apply_gufunc(newfunc, signature, xm, ym, output_dtypes=(float, float))
+
+    return wrapper
+
+
+class AreaDefinition(_ProjectionDefinition):
     """Holds definition of an area.
 
     Parameters
@@ -1073,13 +1172,11 @@ class AreaDefinition(BaseDefinition):
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
                                  'area definition')
-        self.size = height * width
         self.ndim = 2
         self.pixel_size_x = (area_extent[2] - area_extent[0]) / float(width)
         self.pixel_size_y = (area_extent[3] - area_extent[1]) / float(height)
         self._area_extent = tuple(area_extent)
         self.crs_wkt = CRS(projection).to_wkt()
-        self._proj_dict = None
 
         # Calculate area_extent in lon lat
         proj = Proj(projection)
@@ -1105,35 +1202,12 @@ class AreaDefinition(BaseDefinition):
         self.dtype = dtype
 
     @property
-    def crs(self):
-        """Wrap the `crs` property in a helper property.
-
-        The :class:`pyproj.crs.CRS` object is not thread-safe. To avoid
-        accidentally passing it between threads, we only create it when it
-        is requested (the `self.crs` property). The alternative of storing it
-        as a normal instance attribute could cause issues between threads.
-
-        """
-        return CRS.from_wkt(self.crs_wkt)
-
-    @property
     def is_geostationary(self):
         """Whether this area is in a geostationary satellite projection or not."""
         coord_operation = self.crs.coordinate_operation
         if coord_operation is None:
             return False
         return 'geostationary' in coord_operation.method_name.lower()
-
-    @property
-    def proj_dict(self):
-        """Return the PROJ projection dictionary.
-
-        This is no longer the preferred way of describing CRS information.
-        Switch to the `crs` or `crs_wkt` properties for the most flexibility.
-        """
-        if self._proj_dict is None:
-            self._proj_dict = self.crs.to_dict()
-        return self._proj_dict
 
     @property
     def area_extent(self):
@@ -1163,11 +1237,6 @@ class AreaDefinition(BaseDefinition):
         return self.copy(height=height, width=width)
 
     @property
-    def shape(self):
-        """Return area shape."""
-        return self.height, self.width
-
-    @property
     def resolution(self):
         """Return area resolution in X and Y direction."""
         return self.pixel_size_x, self.pixel_size_y
@@ -1177,18 +1246,6 @@ class AreaDefinition(BaseDefinition):
         """Return area name."""
         warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning)
         return self.description
-
-    @property
-    def x_size(self):
-        """Return area width."""
-        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
-        return self.width
-
-    @property
-    def y_size(self):
-        """Return area height."""
-        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
-        return self.height
 
     @classmethod
     def from_epsg(cls, code, resolution):
@@ -1583,6 +1640,130 @@ class AreaDefinition(BaseDefinition):
         the_hash.update(np.array(self.area_extent))
         return the_hash
 
+    @daskify
+    def get_array_coordinates_from_lonlat(self, lon, lat):
+        """Retrieve the array coordinates (float) for a given lon/lat.
+
+        Retrieve array coordinates (floating-point column, row indices) for the
+        specified geolocation (lon,lat) if inside area. If lon,lat is a point a
+        ValueError is raised if it is outside the area domain. If
+        lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
+        masked arrays are returned.
+
+        Args:
+            lon : point or sequence (list or array) of longitudes
+            lat : point or sequence (list or array) of latitudes
+
+        Returns:
+            (x, y) : tuple of floating-point points/arrays
+        """
+        pobj = Proj(self.crs)
+        xm_, ym_ = pobj(lon, lat)
+
+        return self.get_array_coordinates_from_projection_coordinates(xm_, ym_)
+
+    @preserve_scalars
+    @daskify
+    def get_array_coordinates_from_projection_coordinates(self, xm, ym):
+        """Find closest grid cell index for a specified projection coordinate.
+
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
+        of masked arrays are returned.
+
+        Args:
+            xm (list or array): point or sequence of x-coordinates in
+                                 meters (map projection)
+            ym (list or array): point or sequence of y-coordinates in
+                                 meters (map projection)
+
+        Returns:
+            x, y : column and row grid cell indexes as 2 scalars or arrays
+
+        Raises:
+            ValueError: if the return point is outside the area domain
+        """
+        xm = np.asanyarray(xm)
+        ym = np.asanyarray(ym)
+
+        upl_x, upl_y, xscale, yscale = self._get_corner_and_scale()
+
+        x__ = (xm - upl_x) / xscale
+        y__ = (ym - upl_y) / yscale
+
+        return x__, y__
+
+    def _get_corner_and_scale(self):
+        xscale = (self.area_extent[2] -
+                  self.area_extent[0]) / float(self.width)
+        # because rows direction is the opposite of y's
+        yscale = (self.area_extent[1] -
+                  self.area_extent[3]) / float(self.height)
+        upl_x = self.area_extent[0] + xscale / 2
+        upl_y = self.area_extent[3] + yscale / 2
+        return upl_x, upl_y, xscale, yscale
+
+    @masked_ints
+    def get_array_indices_from_lonlat(self, lon, lat):
+        """Return image columns and rows for the given lons and lats.
+
+        Both scalars and arrays are supported.  Same as
+        get_xy_from_lonlat, renamed for convenience.
+        """
+        return self.get_array_coordinates_from_lonlat(lon, lat)
+
+    @masked_ints
+    def get_array_indices_from_projection_coordinates(self, xm, ym):
+        """Find closest grid cell index for a specified projection coordinate.
+
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
+        of masked arrays are returned.
+
+        Args:
+            xm (list or array): point or sequence of x-coordinates in
+                                 meters (map projection)
+            ym (list or array): point or sequence of y-coordinates in
+                                 meters (map projection)
+
+        Returns:
+            x, y : column and row grid cell indexes as 2 scalars or arrays
+
+        Raises:
+            ValueError: if the return point is outside the area domain
+        """
+        return self.get_array_coordinates_from_projection_coordinates(xm, ym)
+
+    @daskify
+    def get_projection_coordinates_from_lonlat(self, lon, lat):
+        """Get the projection coordinate from longitudes and latitudes."""
+        p = Proj(self.crs)
+        return p(lon, lat, inverse=True)
+
+    @daskify
+    def get_projection_coordinates_from_array_coordinates(self, xm, ym):
+        """Get the projection coordinate from the array coordinates."""
+        xm = np.asanyarray(xm)
+        ym = np.asanyarray(ym)
+
+        upl_x, upl_y, xscale, yscale = self._get_corner_and_scale()
+
+        x__ = xm * xscale + upl_x
+        y__ = ym * yscale + upl_y
+
+        return x__, y__
+
+    @daskify
+    def get_lonlat_from_array_coordinates(self, col, row):
+        """Get the longitude and latitude from (floating) column and row indices."""
+        x__, y__ = self.get_projection_coordinates_from_array_coordinates(col, row)
+        return self.get_lonlat_from_projection_coordinates(x__, y__)
+
+    @daskify
+    def get_lonlat_from_projection_coordinates(self, xm, ym):
+        """Get the lonlat from projection coordinates."""
+        p = Proj(self.crs)
+        return p(xm, ym, inverse=True)
+
+    # deprecated
     def colrow2lonlat(self, cols, rows):
         """Return lons and lats for the given image columns and rows.
 
@@ -1600,7 +1781,10 @@ class AreaDefinition(BaseDefinition):
         Both scalars and arrays are supported.  Same as
         get_xy_from_lonlat, renamed for convenience.
         """
-        return self.get_xy_from_lonlat(lons, lats)
+        warnings.warn("'lonlat2colrow' is deprecated, please use "
+                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning)
+
+        return self.get_array_indices_from_lonlat(lons, lats)
 
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates.
@@ -1611,33 +1795,17 @@ class AreaDefinition(BaseDefinition):
         lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
         masked arrays are returned.
 
-        :Input:
-
-        lon : point or sequence (list or array) of longitudes
-        lat : point or sequence (list or array) of latitudes
+        Args:
+            lon : point or sequence (list or array) of longitudes
+            lat : point or sequence (list or array) of latitudes
 
         Returns:
-
-        (x, y) : tuple of points/arrays
+            (x, y) : tuple of points/arrays
         """
-        if isinstance(lon, list):
-            lon = np.array(lon)
-        if isinstance(lat, list):
-            lat = np.array(lat)
+        warnings.warn("'get_xy_from_lonlat' is deprecated, please use "
+                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning)
 
-        if ((isinstance(lon, np.ndarray) and
-             not isinstance(lat, np.ndarray)) or (not isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray))):
-            raise ValueError("Both lon and lat needs to be of " +
-                             "the same type and have the same dimensions!")
-
-        if isinstance(lon, np.ndarray) and isinstance(lat, np.ndarray):
-            if lon.shape != lat.shape:
-                raise ValueError("lon and lat is not of the same shape!")
-
-        pobj = Proj(self.proj_str)
-        xm_, ym_ = pobj(lon, lat)
-
-        return self.get_xy_from_proj_coords(xm_, ym_)
+        return self.get_array_indices_from_lonlat(lon, lat)
 
     def get_xy_from_proj_coords(self, xm, ym):
         """Find closest grid cell index for a specified projection coordinate.
@@ -1657,44 +1825,10 @@ class AreaDefinition(BaseDefinition):
         Raises:
             ValueError: if the return point is outside the area domain
         """
-        if isinstance(xm, list):
-            xm = np.array(xm)
-        if isinstance(ym, list):
-            ym = np.array(ym)
+        warnings.warn("'get_xy_from_proj_coords' is deprecated, please use "
+                      "'get_array_indices_from_projection_coordinates' instead.", DeprecationWarning)
 
-        if ((isinstance(xm, np.ndarray) and
-             not isinstance(ym, np.ndarray)) or (not isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray))):
-            raise ValueError("Both projection coordinates xm and ym needs to be of " +
-                             "the same type and have the same dimensions!")
-
-        if isinstance(xm, np.ndarray) and isinstance(ym, np.ndarray):
-            if xm.shape != ym.shape:
-                raise ValueError(
-                    "projection coordinates xm and ym is not of the same shape!")
-
-        upl_x = self.area_extent[0]
-        upl_y = self.area_extent[3]
-        xscale = (self.area_extent[2] -
-                  self.area_extent[0]) / float(self.width)
-        # because rows direction is the opposite of y's
-        yscale = (self.area_extent[1] -
-                  self.area_extent[3]) / float(self.height)
-
-        x__ = (xm - upl_x) / xscale
-        y__ = (ym - upl_y) / yscale
-
-        if isinstance(x__, np.ndarray) and isinstance(y__, np.ndarray):
-            x_mask = ((x__ < 0) | (x__ >= self.width))
-            y_mask = ((y__ < 0) | (y__ >= self.height))
-            return (np.ma.masked_array(x__, mask=x_mask,
-                                       fill_value=-1, copy=False),
-                    np.ma.masked_array(y__, mask=y_mask,
-                                       fill_value=-1, copy=False))
-        else:
-            if ((x__ < 0 or x__ >= self.width) or
-                    (y__ < 0 or y__ >= self.height)):
-                raise ValueError('Point outside area:( %f %f)' % (x__, y__))
-            return x__, y__
+        return self.get_array_indices_from_projection_coordinates(self, xm, ym)
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat values of single point in area grid.
@@ -1708,8 +1842,9 @@ class AreaDefinition(BaseDefinition):
         -------
         (lon, lat) : tuple of floats
         """
-        lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
-        return lon.item(), lat.item()
+        warnings.warn("'get_lonlat' is deprecated, please use "
+                      "'get_lonlat_from_array_coordinates' instead.", DeprecationWarning)
+        return self.get_lonlat_from_array_coordinates(row, col)
 
     @staticmethod
     def _do_rotation(xspan, yspan, rot_deg=0):
@@ -1951,7 +2086,7 @@ class AreaDefinition(BaseDefinition):
     def _get_slice_starts_stops(self, area_to_cover):
         """Get x and y start and stop points for slicing."""
         llx, lly, urx, ury = area_to_cover.area_extent
-        x, y = self.get_xy_from_proj_coords([llx, urx], [lly, ury])
+        x, y = self.get_array_coordinates_from_projection_coordinates([llx, urx], [lly, ury])
 
         if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
             xstart = 0 if x[1] is np.ma.masked else x[1]
@@ -2071,7 +2206,7 @@ class AreaDefinition(BaseDefinition):
            edge averages.
 
         """
-        from pyproj import transform
+        from pyproj.transformer import Transformer
         rows, cols = self.shape
         mid_row = rows // 2
         mid_col = cols // 2
@@ -2086,9 +2221,10 @@ class AreaDefinition(BaseDefinition):
         # need some altitude, go with the surface (0)
         alt_x = np.zeros(x.size)
         alt_y = np.zeros(y.size)
+        transformer = Transformer.from_crs(src.crs, dst.crs)
         # convert our midlines to (X, Y, Z) geocentric coordinates
-        hor_xyz = np.stack(transform(src, dst, x, mid_row_y, alt_x), axis=1)
-        vert_xyz = np.stack(transform(src, dst, mid_col_x, y, alt_y), axis=1)
+        hor_xyz = np.stack(transformer.transform(x, mid_row_y, alt_x), axis=1)
+        vert_xyz = np.stack(transformer.transform(mid_col_x, y, alt_y), axis=1)
         # Find the distance in meters along our midlines
         hor_dist = np.linalg.norm(np.diff(hor_xyz, axis=0), axis=1)
         vert_dist = np.linalg.norm(np.diff(vert_xyz, axis=0), axis=1)
@@ -2219,7 +2355,7 @@ def concatenate_area_defs(area1, area2, axis=0):
                           area_extent)
 
 
-class StackedAreaDefinition(BaseDefinition):
+class StackedAreaDefinition(_ProjectionDefinition):
     """Definition based on muliple vertically stacked AreaDefinitions."""
 
     def __init__(self, *definitions, **kwargs):
@@ -2236,46 +2372,14 @@ class StackedAreaDefinition(BaseDefinition):
             self.append(definition)
 
     @property
-    def crs(self):
-        """Return the CRS."""
-        return CRS.from_wkt(self.crs_wkt)
-
-    @property
-    def proj_dict(self):
-        """Return the proj dictionary."""
-        return self.crs.to_dict()
-
-    @property
     def width(self):
         """Return width of the area definition."""
         return self.defs[0].width
 
     @property
-    def x_size(self):
-        """Return width of the area definition."""
-        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
-        return self.width
-
-    @property
     def height(self):
         """Return height of the area definition."""
         return sum(definition.height for definition in self.defs)
-
-    @property
-    def y_size(self):
-        """Return height of the area definition."""
-        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
-        return self.height
-
-    @property
-    def size(self):
-        """Return size of the area definition."""
-        return self.height * self.width
-
-    @property
-    def shape(self):
-        """Return shape of the area definition."""
-        return (self.height, self.width)
 
     def append(self, definition):
         """Append another definition to the area."""

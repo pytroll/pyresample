@@ -968,6 +968,86 @@ class Test(unittest.TestCase):
                                     np.array([47500., 37500., 27500., 17500.,
                                               7500.])))
 
+    def test_roundtrip_lonlat_array_coordinates(self):
+        """Test roundtrip."""
+        from pyresample import get_area_def
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lat, lon = 48.832222, 2.355556  # Paris, 13th arrondissement, France
+        x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
+        res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
+        np.testing.assert_allclose([res_lon, res_lat], [lon, lat])
+
+    def test_roundtrip_lonlat_array_coordinates_for_dask_array(self):
+        """Test roundrip for dask arrays."""
+        from pyresample import get_area_def
+        import dask.array as da
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lat1, lon1 = 48.832222, 2.355556  # Paris, 13th arrondissement, France
+        lat2, lon2 = 58.6, 16.2  # Norrköping, Sweden
+        lon = da.from_array([lon1, lon2])
+        lat = da.from_array([lat1, lat2])
+        x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
+        res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
+        assert isinstance(res_lon, da.Array)
+        assert isinstance(res_lat, da.Array)
+        np.testing.assert_allclose(res_lon, lon)
+        np.testing.assert_allclose(res_lat, lat)
+
+    def test_get_lonlats_vs_get_lonlat(self):
+        """Test that both function yield similar results."""
+        from pyresample import get_area_def
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lons, lats = area_def.get_lonlats()
+        x, y = np.meshgrid(np.arange(x_size), np.arange(y_size))
+        lon, lat = area_def.get_lonlat_from_array_coordinates(x, y)
+        np.testing.assert_allclose(lons, lon)
+        np.testing.assert_allclose(lats, lat)
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat."""
         from pyresample import utils
@@ -1045,8 +1125,8 @@ class Test(unittest.TestCase):
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
-        self.assertTrue((x__.data.astype(int) == x_expects).all())
-        self.assertTrue((y__.data.astype(int) == y_expects).all())
+        self.assertTrue((x__.data == x_expects).all())
+        self.assertTrue((y__.data == y_expects).all())
 
     def test_get_slice_starts_stops(self):
         """Check area slice end-points."""
