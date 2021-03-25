@@ -1790,7 +1790,7 @@ class AreaDefinition(_ProjectionDefinition):
     def get_xy_from_lonlat(self, lon, lat):
         """Retrieve closest x and y coordinates.
 
-        Retrieve x and y coordinates (column, row indices) for the
+        Retrieve the closest x and y coordinates (column, row indices) for the
         specified geolocation (lon,lat) if inside area. If lon,lat is a point a
         ValueError is raised if the return point is outside the area domain. If
         lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
