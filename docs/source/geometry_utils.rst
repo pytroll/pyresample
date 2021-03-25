@@ -615,15 +615,17 @@ Converting Coordinates
 ----------------------
 
 The ``AreaDefinition`` have a few handy coordinate conversion methods available:
-* :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_lonlat`
-* :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_projection_coordinates`
-* :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_lonlat`
-* :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_array_coordinates`
-* :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_projection_coordinates`
-* :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_array_coordinates`
+
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_projection_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_array_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_projection_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_array_coordinates`
 
 And for backwards compatibility, we have two returning integers:
-* :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_lonlat`
-* :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_projection_coordinates`
+
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_projection_coordinates`
 
 These two raise a ``ValueError`` if the scalar input coordinates are oustide the extent of the area.
