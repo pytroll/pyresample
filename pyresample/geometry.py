@@ -1862,7 +1862,7 @@ class AreaDefinition(_ProjectionDefinition):
     def get_xy_from_proj_coords(self, xm, ym):
         """Find closest grid cell index for a specified projection coordinate.
 
-        If cols, rows is a tuple of sequences of projection coordinates, a tuple
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
         of masked arrays are returned.
 
         Args:
@@ -2153,7 +2153,7 @@ class AreaDefinition(_ProjectionDefinition):
             ystart = max(0,  round(y[1]))
             ystop = min(self.height, round(y[0]) + 1)
 
-        return int(xstart), int(xstop), int(ystart), int(ystop)
+        return xstart, xstop, ystart, ystop
 
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
@@ -2193,8 +2193,8 @@ class AreaDefinition(_ProjectionDefinition):
             raise NotImplementedError
         x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
                                        np.rad2deg(intersection.lat))
-        x_slice = slice(int(np.ma.min(x)), int(np.ma.max(x)) + 1)
-        y_slice = slice(int(np.ma.min(y)), int(np.ma.max(y)) + 1)
+        x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
+        y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
         if shape_divisible_by is not None:
             x_slice = _make_slice_divisible(x_slice, self.width,
                                             factor=shape_divisible_by)
