@@ -1048,6 +1048,27 @@ class Test(unittest.TestCase):
         np.testing.assert_allclose(lons, lon)
         np.testing.assert_allclose(lats, lat)
 
+    def test_area_corners_around_south_pole(self):
+        """Test corner values for the ease-sh area."""
+        import numpy as np
+        from pyresample.geometry import AreaDefinition
+        area_id = 'ease_sh'
+        description = 'Antarctic EASE grid'
+        proj_id = 'ease_sh'
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        width = 425
+        height = 425
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+        area_def = AreaDefinition(area_id, description, proj_id, projection,
+                                  width, height, area_extent)
+
+        expected = [(-45.0, -17.713517415148853),
+                    (45.000000000000014, -17.71351741514884),
+                    (135.0, -17.713517415148825),
+                    (-135.00000000000003, -17.71351741514884)]
+        actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
+        np.testing.assert_allclose(actual, expected)
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat."""
         from pyresample import utils

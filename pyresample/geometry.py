@@ -1843,9 +1843,8 @@ class AreaDefinition(_ProjectionDefinition):
         -------
         (lon, lat) : tuple of floats
         """
-        warnings.warn("'get_lonlat' is deprecated, please use "
-                      "'get_lonlat_from_array_coordinates' instead.", DeprecationWarning)
-        return self.get_lonlat_from_array_coordinates(row, col)
+        lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
+        return lon.item(), lat.item()
 
     @staticmethod
     def _do_rotation(xspan, yspan, rot_deg=0):
