@@ -623,7 +623,7 @@ The ``AreaDefinition`` have a few handy coordinate conversion methods available:
 - :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_projection_coordinates`
 - :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_array_coordinates`
 
-And for backwards compatibility, we have two returning integers:
+We also have two methods returning integers for array indices:
 
 - :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_lonlat`
 - :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_projection_coordinates`
