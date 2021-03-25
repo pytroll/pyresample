@@ -1646,11 +1646,8 @@ class AreaDefinition(_ProjectionDefinition):
     def get_array_coordinates_from_lonlat(self, lon, lat):
         """Retrieve the array coordinates (float) for a given lon/lat.
 
-        Retrieve array coordinates (floating-point column, row indices) for the
-        specified geolocation (lon,lat) if inside area. If lon,lat is a point a
-        ValueError is raised if it is outside the area domain. If
-        lon,lat is a tuple of sequences of longitudes and latitudes, a tuple of
-        masked arrays are returned.
+        If lon,lat is a tuple of sequences of longitudes and latitudes, a tuple
+        of arrays is returned.
 
         Args:
             lon : point or sequence (list or array) of longitudes
@@ -1659,18 +1656,16 @@ class AreaDefinition(_ProjectionDefinition):
         Returns:
             (x, y) : tuple of floating-point points/arrays
         """
-        pobj = Proj(self.crs)
-        xm_, ym_ = pobj(lon, lat)
-
+        xm_, ym_ = self.get_projection_coordinates_from_lonlat(lon, lat)
         return self.get_array_coordinates_from_projection_coordinates(xm_, ym_)
 
     @preserve_scalars
     @daskify_2in_2out
     def get_array_coordinates_from_projection_coordinates(self, xm, ym):
-        """Find closest grid cell index for a specified projection coordinate.
+        """Find the floating-point grid cell index for a specified projection coordinate.
 
         If xm, ym is a tuple of sequences of projection coordinates, a tuple
-        of masked arrays are returned.
+        of arrays are returned.
 
         Args:
             xm (list or array): point or sequence of x-coordinates in
@@ -1679,10 +1674,7 @@ class AreaDefinition(_ProjectionDefinition):
                                  meters (map projection)
 
         Returns:
-            x, y : column and row grid cell indexes as 2 scalars or arrays
-
-        Raises:
-            ValueError: if the return point is outside the area domain
+            x, y : floating-point column and row grid cell indexes as 2 scalars or arrays
         """
         xm = np.asanyarray(xm)
         ym = np.asanyarray(ym)
@@ -1695,6 +1687,7 @@ class AreaDefinition(_ProjectionDefinition):
         return x__, y__
 
     def _get_corner_and_scale(self):
+        """Unpack pixel sizes and upper left pixel."""
         xscale = self.pixel_size_x
         # because rows direction is the opposite of y's
         yscale = -self.pixel_size_y
@@ -1703,19 +1696,28 @@ class AreaDefinition(_ProjectionDefinition):
 
     @masked_ints
     def get_array_indices_from_lonlat(self, lon, lat):
-        """Return image columns and rows for the given lons and lats.
+        """Find the closest integer grid cell index for a given lon/lat.
 
-        Both scalars and arrays are supported.  Same as
-        get_xy_from_lonlat, renamed for convenience.
+        If lon,lat is a point, a ValueError is raised if it is outside the area
+        domain. If lon,lat is a tuple of sequences of longitudes and latitudes,
+        a tuple of masked arrays are returned.
+
+        Args:
+            lon : point or sequence (list or array) of longitudes
+            lat : point or sequence (list or array) of latitudes
+
+        Returns:
+            (x, y) : tuple of floating-point points/arrays
         """
         return self.get_array_coordinates_from_lonlat(lon, lat)
 
     @masked_ints
     def get_array_indices_from_projection_coordinates(self, xm, ym):
-        """Find closest grid cell index for a specified projection coordinate.
+        """Find the closest integer grid cell index for a specified projection coordinate.
 
-        If xm, ym is a tuple of sequences of projection coordinates, a tuple
-        of masked arrays are returned.
+        If xm, ym is a point, a ValueError is raised if it is outside the area
+        domain. If xm, ym is a tuple of sequences of projection coordinates, a
+        tuple of masked arrays are returned.
 
         Args:
             xm (list or array): point or sequence of x-coordinates in
@@ -1735,7 +1737,7 @@ class AreaDefinition(_ProjectionDefinition):
     def get_projection_coordinates_from_lonlat(self, lon, lat):
         """Get the projection coordinate from longitudes and latitudes."""
         p = Proj(self.crs)
-        return p(lon, lat, inverse=True)
+        return p(lon, lat)
 
     @daskify_2in_2out
     def get_projection_coordinates_from_array_coordinates(self, xm, ym):
