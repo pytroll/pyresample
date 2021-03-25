@@ -24,6 +24,7 @@ import warnings
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
+from functools import partial
 
 import numpy as np
 import yaml
@@ -1066,16 +1067,15 @@ def preserve_scalars(func):
     return wrapper
 
 
-def daskify(func):
+def daskify_2in_2out(func):
     """Daskify the coordinate conversion functions."""
-    def wrapper(self, xm, ym):
-        if da is None or not (isinstance(xm, da.Array) or isinstance(ym, da.Array)):
-            return func(self, xm, ym)
-        from functools import partial
+    def wrapper(self, coord1, coord2):
+        if da is None or not (isinstance(coord1, da.Array) or isinstance(coord2, da.Array)):
+            return func(self, coord1, coord2)
         newfunc = partial(func, self)
-        dims = '(' + ', '.join('i_' + str(i) for i in range(xm.ndim)) + ')'
+        dims = '(' + ', '.join('i_' + str(i) for i in range(coord1.ndim)) + ')'
         signature = dims + ', ' + dims + '->' + dims + ', ' + dims
-        return da.apply_gufunc(newfunc, signature, xm, ym, output_dtypes=(float, float))
+        return da.apply_gufunc(newfunc, signature, coord1, coord2, output_dtypes=(float, float))
 
     return wrapper
 
@@ -1640,7 +1640,7 @@ class AreaDefinition(_ProjectionDefinition):
         the_hash.update(np.array(self.area_extent))
         return the_hash
 
-    @daskify
+    @daskify_2in_2out
     def get_array_coordinates_from_lonlat(self, lon, lat):
         """Retrieve the array coordinates (float) for a given lon/lat.
 
@@ -1663,7 +1663,7 @@ class AreaDefinition(_ProjectionDefinition):
         return self.get_array_coordinates_from_projection_coordinates(xm_, ym_)
 
     @preserve_scalars
-    @daskify
+    @daskify_2in_2out
     def get_array_coordinates_from_projection_coordinates(self, xm, ym):
         """Find closest grid cell index for a specified projection coordinate.
 
@@ -1693,13 +1693,10 @@ class AreaDefinition(_ProjectionDefinition):
         return x__, y__
 
     def _get_corner_and_scale(self):
-        xscale = (self.area_extent[2] -
-                  self.area_extent[0]) / float(self.width)
+        xscale = self.pixel_size_x
         # because rows direction is the opposite of y's
-        yscale = (self.area_extent[1] -
-                  self.area_extent[3]) / float(self.height)
-        upl_x = self.area_extent[0] + xscale / 2
-        upl_y = self.area_extent[3] + yscale / 2
+        yscale = -self.pixel_size_y
+        upl_x, upl_y = self.pixel_upper_left
         return upl_x, upl_y, xscale, yscale
 
     @masked_ints
@@ -1732,13 +1729,13 @@ class AreaDefinition(_ProjectionDefinition):
         """
         return self.get_array_coordinates_from_projection_coordinates(xm, ym)
 
-    @daskify
+    @daskify_2in_2out
     def get_projection_coordinates_from_lonlat(self, lon, lat):
         """Get the projection coordinate from longitudes and latitudes."""
         p = Proj(self.crs)
         return p(lon, lat, inverse=True)
 
-    @daskify
+    @daskify_2in_2out
     def get_projection_coordinates_from_array_coordinates(self, xm, ym):
         """Get the projection coordinate from the array coordinates."""
         xm = np.asanyarray(xm)
@@ -1751,13 +1748,13 @@ class AreaDefinition(_ProjectionDefinition):
 
         return x__, y__
 
-    @daskify
+    @daskify_2in_2out
     def get_lonlat_from_array_coordinates(self, col, row):
         """Get the longitude and latitude from (floating) column and row indices."""
         x__, y__ = self.get_projection_coordinates_from_array_coordinates(col, row)
         return self.get_lonlat_from_projection_coordinates(x__, y__)
 
-    @daskify
+    @daskify_2in_2out
     def get_lonlat_from_projection_coordinates(self, xm, ym):
         """Get the lonlat from projection coordinates."""
         p = Proj(self.crs)
