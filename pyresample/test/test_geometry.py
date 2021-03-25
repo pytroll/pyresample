@@ -774,17 +774,17 @@ class Test(unittest.TestCase):
         # Imatra, Wiesbaden
         longitudes = np.array([28.75242, 8.24932])
         latitudes = np.array([61.17185, 50.08258])
-        cols__, rows__ = area.lonlat2colrow(longitudes, latitudes)
+        cols__, rows__ = area.get_array_indices_from_lonlat(longitudes, latitudes)
 
         # test arrays
         cols_expects = np.array([2304, 2040])
         rows_expects = np.array([186, 341])
-        self.assertTrue((cols__.astype(int) == cols_expects).all())
-        self.assertTrue((rows__.astype(int) == rows_expects).all())
+        np.testing.assert_array_equal(cols__, cols_expects)
+        np.testing.assert_array_equal(rows__, rows_expects)
 
         # test scalars
         lon, lat = (-8.125547604568746, -14.345524111874646)
-        self.assertTrue(area.lonlat2colrow(lon, lat) == (1567, 2375))
+        self.assertEqual(area.get_array_indices_from_lonlat(lon, lat), (1567, 2375))
 
     def test_colrow2lonlat(self):
         """Test colrow2lonlat."""
@@ -2640,14 +2640,14 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                                   {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                   100, 100,
                                   (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        expected_slice_lines = slice(60, 90)
+        expected_slice_lines = slice(60, 91)
         expected_slice_cols = slice(90, 100)
         cropped_area = src_area[expected_slice_lines, expected_slice_cols]
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
 
-        expected_slice_cols = slice(30, 60)
+        expected_slice_cols = slice(30, 61)
         cropped_area = src_area[expected_slice_lines, expected_slice_cols]
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines

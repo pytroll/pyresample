@@ -1035,11 +1035,13 @@ class _ProjectionDefinition(BaseDefinition):
 
 
 def masked_ints(func):
-    """Return masked integer arrays when return array indices."""
+    """Return masked integer arrays when returning array indices."""
     def wrapper(self, xm, ym):
         is_scalar = np.isscalar(xm) and np.isscalar(ym)
 
         x__, y__ = func(self, xm, ym)
+        x__ = np.round(x__).astype(int)
+        y__ = np.round(y__).astype(int)
 
         x_mask = ((x__ < 0) | (x__ >= self.width))
         y_mask = ((y__ < 0) | (y__ >= self.height))
@@ -1048,10 +1050,10 @@ def masked_ints(func):
         if is_scalar:
             if x__.all() is np.ma.masked or y__.all() is np.ma.masked:
                 raise ValueError('Point(s) outside area')
-            return int(x__.item()), int(y__.item())
+            return x__.item(), y__.item()
 
         else:
-            return x__.astype(int), y__.astype(int)
+            return x__, y__
     return wrapper
 
 
@@ -2085,18 +2087,19 @@ class AreaDefinition(_ProjectionDefinition):
         llx, lly, urx, ury = area_to_cover.area_extent
         x, y = self.get_array_coordinates_from_projection_coordinates([llx, urx], [lly, ury])
 
+        # we use `round` because we want the *exterior* of the pixels to contain the area_to_cover's area extent.
         if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
-            xstart = 0 if x[1] is np.ma.masked else x[1]
-            xstop = self.width if x[0] is np.ma.masked else np.ceil(x[0])
+            xstart = max(0,  round(x[1]))
+            xstop = min(self.width, round(x[0]) + 1)
         else:
-            xstart = 0 if x[0] is np.ma.masked else x[0]
-            xstop = self.width if x[1] is np.ma.masked else np.ceil(x[1])
+            xstart = max(0,  round(x[0]))
+            xstop = min(self.width, round(x[1]) + 1)
         if (self.area_extent[1] > self.area_extent[3]) ^ (lly > ury):
-            ystart = 0 if y[0] is np.ma.masked else y[0]
-            ystop = self.height if y[1] is np.ma.masked else np.ceil(y[1])
+            ystart = max(0,  round(y[0]))
+            ystop = min(self.height, round(y[1]) + 1)
         else:
-            ystart = 0 if y[1] is np.ma.masked else y[1]
-            ystop = self.height if y[0] is np.ma.masked else np.ceil(y[0])
+            ystart = max(0,  round(y[1]))
+            ystop = min(self.height, round(y[0]) + 1)
 
         return int(xstart), int(xstop), int(ystart), int(ystop)
 
