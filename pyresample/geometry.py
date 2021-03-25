@@ -1646,7 +1646,7 @@ class AreaDefinition(_ProjectionDefinition):
         return the_hash
 
     @daskify_2in_2out
-    def get_array_coordinates_from_lonlat(self, lon, lat) -> (int, int):
+    def get_array_coordinates_from_lonlat(self, lon, lat):
         """Retrieve the array coordinates (float) for a given lon/lat.
 
         If lon,lat is a tuple of sequences of longitudes and latitudes, a tuple
