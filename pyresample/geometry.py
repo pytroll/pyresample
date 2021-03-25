@@ -1667,7 +1667,7 @@ class AreaDefinition(_ProjectionDefinition):
     def get_array_coordinates_from_projection_coordinates(self, xm, ym):
         """Find the floating-point grid cell index for a specified projection coordinate.
 
-        If cols, rows is a tuple of sequences of projection coordinates, a tuple
+        If xm, ym is a tuple of sequences of projection coordinates, a tuple
         of arrays are returned.
 
         Args:
@@ -1721,8 +1721,8 @@ class AreaDefinition(_ProjectionDefinition):
     def get_array_indices_from_projection_coordinates(self, xm, ym):
         """Find the closest integer grid cell index for a specified projection coordinate.
 
-        If cols, rows is a point, a ValueError is raised if it is outside the area
-        domain. If cols, rows is a tuple of sequences of projection coordinates, a
+        If xm, ym is a point, a ValueError is raised if it is outside the area
+        domain. If xm, ym is a tuple of sequences of projection coordinates, a
         tuple of masked arrays are returned.
 
         Args:
