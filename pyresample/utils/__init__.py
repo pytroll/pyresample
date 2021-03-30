@@ -21,7 +21,6 @@ try:
 except ImportError:
     from collections import Mapping
 import numpy as np
-import pyproj
 import warnings
 
 from .proj4 import (proj4_dict_to_str, proj4_str_to_dict, convert_proj_floats,  # noqa
@@ -31,32 +30,38 @@ from .cf import load_cf_area  # noqa
 
 
 def get_area_def(*args, **kwargs):
+    """Get an area definition."""
     from pyresample.area_config import get_area_def
-    warnings.warn("'get_area_def' has moved, import it with 'from pyresample import get_area_def'")
+    warnings.warn("'get_area_def' has moved, import it with 'from pyresample import get_area_def'", stacklevel=2)
     return get_area_def(*args, **kwargs)
 
 
 def create_area_def(*args, **kwargs):
+    """Create an area definition."""
     from pyresample.area_config import create_area_def
-    warnings.warn("'create_area_def' has moved, import it with 'from pyresample import create_area_def'")
+    warnings.warn("'create_area_def' has moved, import it with 'from pyresample import create_area_def'", stacklevel=2)
     return create_area_def(*args, **kwargs)
 
 
 def load_area(*args, **kwargs):
+    """Load an area."""
     from pyresample.area_config import load_area
-    warnings.warn("'load_area' has moved, import it with 'from pyresample import load_area'")
+    warnings.warn("'load_area' has moved, import it with 'from pyresample import load_area'", stacklevel=2)
     return load_area(*args, **kwargs)
 
 
 def convert_def_to_yaml(*args, **kwargs):
+    """Convert an area definition to yaml representation."""
     from pyresample.area_config import convert_def_to_yaml
-    warnings.warn("'convert_def_to_yaml' has moved, import it with 'from pyresample import convert_def_to_yaml'")
+    warnings.warn("'convert_def_to_yaml' has moved, import it with 'from pyresample import convert_def_to_yaml'",
+                  stacklevel=2)
     return convert_def_to_yaml(*args, **kwargs)
 
 
 def parse_area_file(*args, **kwargs):
+    """Parse an area file."""
     from pyresample.area_config import parse_area_file
-    warnings.warn("'parse_area_file' has moved, import it with 'from pyresample import parse_area_file'")
+    warnings.warn("'parse_area_file' has moved, import it with 'from pyresample import parse_area_file'", stacklevel=2)
     return parse_area_file(*args, **kwargs)
 
 
@@ -112,7 +117,6 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def,
     -------
     (row_indices, col_indices) : tuple of numpy arrays
     """
-
     from pyresample.kd_tree import get_neighbour_info
     valid_input_index, valid_output_index, index_array, distance_array = \
         get_neighbour_info(source_area_def,
@@ -152,7 +156,7 @@ def generate_nearest_neighbour_linesample_arrays(source_area_def,
 
 
 def fwhm2sigma(fwhm):
-    """Calculate sigma for gauss function from FWHM (3 dB level)
+    """Calculate sigma for gauss function from FWHM (3 dB level).
 
     Parameters
     ----------
@@ -164,7 +168,6 @@ def fwhm2sigma(fwhm):
     sigma : float
         sigma for use in resampling gauss function
     """
-
     return fwhm / (2 * np.sqrt(np.log(2)))
 
 
@@ -178,7 +181,7 @@ def _downcast_index_array(index_array, size):
 
 
 def wrap_longitudes(lons):
-    """Wrap longitudes to the [-180:+180[ validity range (preserves dtype)
+    """Wrap longitudes to the [-180:+180[ validity range (preserves dtype).
 
     Parameters
     ----------
@@ -221,7 +224,7 @@ def check_and_wrap(lons, lats):
 
 
 def recursive_dict_update(d, u):
-    """Recursive dictionary update using
+    """Update dictionary recursively.
 
     Copied from:
 

@@ -551,7 +551,7 @@ Consider the following netCDF/CF file: ::
    // global attributes:
                 :Conventions = "CF-1.7"
 
-   } 
+   }
 
 The three call forms are:
 
@@ -580,7 +580,7 @@ This will look through the whole netCDF/CF file, and guess all information neede
 
    The CF convention allows that a single file defines several different `grid_mappings`. At present,
    the 3rd call form of ``load_cf_area()`` will raise a ``ValueError`` exception when this happens.
-   
+
    If you have several `grid_mappings` in your CF file, be specific which one you want to access with the 1st or 2nd call form.
 
 
@@ -609,3 +609,23 @@ variable and its coordinate axes.
 
 
 .. _CF: http://cfconventions.org/cf-conventions/cf-conventions.html
+
+
+Converting Coordinates
+----------------------
+
+The ``AreaDefinition`` have a few handy coordinate conversion methods available:
+
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_coordinates_from_projection_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_array_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_lonlat_from_projection_coordinates`
+- :meth:`~pyresample.geometry.AreaDefinition.get_projection_coordinates_from_array_coordinates`
+
+We also have two methods returning integers for array indices:
+
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_lonlat`
+- :meth:`~pyresample.geometry.AreaDefinition.get_array_indices_from_projection_coordinates`
+
+These two raise a ``ValueError`` if the scalar input coordinates are oustide the extent of the area.
