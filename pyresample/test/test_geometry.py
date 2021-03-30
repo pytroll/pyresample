@@ -774,17 +774,17 @@ class Test(unittest.TestCase):
         # Imatra, Wiesbaden
         longitudes = np.array([28.75242, 8.24932])
         latitudes = np.array([61.17185, 50.08258])
-        cols__, rows__ = area.lonlat2colrow(longitudes, latitudes)
+        cols__, rows__ = area.get_array_indices_from_lonlat(longitudes, latitudes)
 
         # test arrays
         cols_expects = np.array([2304, 2040])
         rows_expects = np.array([186, 341])
-        self.assertTrue((cols__.astype(int) == cols_expects).all())
-        self.assertTrue((rows__.astype(int) == rows_expects).all())
+        np.testing.assert_array_equal(cols__, cols_expects)
+        np.testing.assert_array_equal(rows__, rows_expects)
 
         # test scalars
         lon, lat = (-8.125547604568746, -14.345524111874646)
-        self.assertTrue(area.lonlat2colrow(lon, lat) == (1567, 2375))
+        self.assertEqual(area.get_array_indices_from_lonlat(lon, lat), (1567, 2375))
 
     def test_colrow2lonlat(self):
         """Test colrow2lonlat."""
@@ -968,6 +968,107 @@ class Test(unittest.TestCase):
                                     np.array([47500., 37500., 27500., 17500.,
                                               7500.])))
 
+    def test_roundtrip_lonlat_array_coordinates(self):
+        """Test roundtrip."""
+        from pyresample import get_area_def
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lat, lon = 48.832222, 2.355556  # Paris, 13th arrondissement, France
+        x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
+        res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
+        np.testing.assert_allclose([res_lon, res_lat], [lon, lat])
+
+    def test_roundtrip_lonlat_array_coordinates_for_dask_array(self):
+        """Test roundrip for dask arrays."""
+        from pyresample import get_area_def
+        import dask.array as da
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lat1, lon1 = 48.832222, 2.355556  # Paris, 13th arrondissement, France
+        lat2, lon2 = 58.6, 16.2  # Norrköping, Sweden
+        lon = da.from_array([lon1, lon2])
+        lat = da.from_array([lat1, lat2])
+        x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
+        res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
+        assert isinstance(res_lon, da.Array)
+        assert isinstance(res_lat, da.Array)
+        np.testing.assert_allclose(res_lon, lon)
+        np.testing.assert_allclose(res_lat, lat)
+
+    def test_get_lonlats_vs_get_lonlat(self):
+        """Test that both function yield similar results."""
+        from pyresample import get_area_def
+        area_id = 'test'
+        area_name = 'Test area with 2x2 pixels'
+        proj_id = 'test'
+        x_size = 100
+        y_size = 100
+        area_extent = [0, -500000, 1000000, 500000]
+        proj_dict = {"proj": 'laea',
+                     'lat_0': '50',
+                     'lon_0': '0',
+                     'a': '6371228.0', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+        lons, lats = area_def.get_lonlats()
+        x, y = np.meshgrid(np.arange(x_size), np.arange(y_size))
+        lon, lat = area_def.get_lonlat_from_array_coordinates(x, y)
+        np.testing.assert_allclose(lons, lon)
+        np.testing.assert_allclose(lats, lat)
+
+    def test_area_corners_around_south_pole(self):
+        """Test corner values for the ease-sh area."""
+        import numpy as np
+        from pyresample.geometry import AreaDefinition
+        area_id = 'ease_sh'
+        description = 'Antarctic EASE grid'
+        proj_id = 'ease_sh'
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        width = 425
+        height = 425
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+        area_def = AreaDefinition(area_id, description, proj_id, projection,
+                                  width, height, area_extent)
+
+        expected = [(-45.0, -17.713517415148853),
+                    (45.000000000000014, -17.71351741514884),
+                    (135.0, -17.713517415148825),
+                    (-135.00000000000003, -17.71351741514884)]
+        actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
+        np.testing.assert_allclose(actual, expected)
+
     def test_get_xy_from_lonlat(self):
         """Test the function get_xy_from_lonlat."""
         from pyresample import utils
@@ -1045,8 +1146,8 @@ class Test(unittest.TestCase):
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
-        self.assertTrue((x__.data.astype(int) == x_expects).all())
-        self.assertTrue((y__.data.astype(int) == y_expects).all())
+        self.assertTrue((x__.data == x_expects).all())
+        self.assertTrue((y__.data == y_expects).all())
 
     def test_get_slice_starts_stops(self):
         """Check area slice end-points."""
@@ -2143,7 +2244,7 @@ def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
     np.testing.assert_array_equal(lats, lats_c)
 
 
-class TestDynamicAreaDefinition(unittest.TestCase):
+class TestDynamicAreaDefinition:
     """Test the DynamicAreaDefinition class."""
 
     def test_freeze(self):
@@ -2160,10 +2261,10 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                                         -872594.690447,
                                                         432079.38952,
                                                         904633.303964))
-        self.assertEqual(result.proj_dict['lon_0'], 16)
-        self.assertEqual(result.proj_dict['lat_0'], 58)
-        self.assertEqual(result.width, 288)
-        self.assertEqual(result.height, 592)
+        assert result.proj_dict['lon_0'] == 16
+        assert result.proj_dict['lat_0'] == 58
+        assert result.width == 288
+        assert result.height == 592
 
         # make sure that setting `proj_info` once doesn't
         # set it in the dynamic area
@@ -2174,11 +2275,41 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                                         5380808.879250369,
                                                         1724415.6519203288,
                                                         6998895.701001488))
-        self.assertEqual(result.proj_dict['lon_0'], 0)
+        assert result.proj_dict['lon_0'] == 0
         # lat_0 could be provided or not depending on version of pyproj
-        self.assertEqual(result.proj_dict.get('lat_0', 0), 0)
-        self.assertEqual(result.width, 395)
-        self.assertEqual(result.height, 539)
+        assert result.proj_dict.get('lat_0', 0) == 0
+        assert result.width == 395
+        assert result.height == 539
+
+    @pytest.mark.parametrize(
+        ('lats',),
+        [
+            (np.linspace(-25.0, -10.0, 10),),
+            (np.linspace(10.0, 25.0, 10),),
+            (np.linspace(75, 90.0, 10),),
+            (np.linspace(-75, -90.0, 10),),
+        ],
+    )
+    def test_freeze_longlat_antimeridian(self, lats):
+        """Test geographic areas over the antimeridian."""
+        area = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                              'EPSG:4326')
+        lons = np.linspace(175, 185, 10)
+        lons[lons > 180] -= 360
+        result = area.freeze((lons, lats),
+                             resolution=0.0056)
+
+        is_pole = (np.abs(lats) > 88).any()
+        extent = result.area_extent
+        if is_pole:
+            assert extent[0] < -178
+            assert extent[2] > 178
+            assert result.width == 64088
+        else:
+            assert extent[0] > 0
+            assert extent[2] > 0
+            assert result.width == 1787
+        assert result.height == 2680
 
     def test_freeze_with_bb(self):
         """Test freezing the area with bounding box computation."""
@@ -2197,36 +2328,36 @@ class TestDynamicAreaDefinition(unittest.TestCase):
                                    [-335439.956533, 5502125.451125,
                                     191991.313351, 7737532.343683])
 
-        self.assertEqual(result.width, 4)
-        self.assertEqual(result.height, 18)
+        assert result.width == 4
+        assert result.height == 18
         # Test for properties and shape usage in freeze.
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
                                               width=4, height=18)
-        self.assertEqual((18, 4), area.shape)
+        assert (18, 4) == area.shape
         result = area.freeze(sdef)
         np.testing.assert_allclose(result.area_extent,
                                    (996309.4426, 6287132.757981, 1931393.165263, 10837238.860543))
         area = geometry.DynamicAreaDefinition('test_area', 'A test area', {'proj': 'merc'},
                                               resolution=1000)
-        self.assertEqual(1000, area.pixel_size_x)
-        self.assertEqual(1000, area.pixel_size_y)
+        assert 1000 == area.pixel_size_x
+        assert 1000 == area.pixel_size_y
 
     def test_compute_domain(self):
         """Test computing size and area extent."""
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               {'proj': 'laea'})
         corners = [1, 1, 9, 9]
-        self.assertRaises(ValueError, area.compute_domain, corners, 1, 1)
+        pytest.raises(ValueError, area.compute_domain, corners, 1, 1)
 
         area_extent, x_size, y_size = area.compute_domain(corners, shape=(5, 5))
-        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
-        self.assertEqual(x_size, 5)
-        self.assertEqual(y_size, 5)
+        assert area_extent == (0, 0, 10, 10)
+        assert x_size == 5
+        assert y_size == 5
 
         area_extent, x_size, y_size = area.compute_domain(corners, resolution=2)
-        self.assertTupleEqual(area_extent, (0, 0, 10, 10))
-        self.assertEqual(x_size, 5)
-        self.assertEqual(y_size, 5)
+        assert area_extent == (0, 0, 10, 10)
+        assert x_size == 5
+        assert y_size == 5
 
 
 class TestCrop(unittest.TestCase):
@@ -2560,14 +2691,14 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                                   {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                   100, 100,
                                   (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        expected_slice_lines = slice(60, 90)
+        expected_slice_lines = slice(60, 91)
         expected_slice_cols = slice(90, 100)
         cropped_area = src_area[expected_slice_lines, expected_slice_cols]
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
 
-        expected_slice_cols = slice(30, 60)
+        expected_slice_cols = slice(30, 61)
         cropped_area = src_area[expected_slice_lines, expected_slice_cols]
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines
