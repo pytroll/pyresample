@@ -128,7 +128,7 @@ class GetNonOverlapUnions(GetNonOverlapUnionsBaseClass):
 
     def __init__(self, polygons):
         """Init the GetNonOverlapUnions."""
-        super(NonOverlapUnions, self).__init__(polygons)
+        super(GetNonOverlapUnions, self).__init__(polygons)
 
     def _intersects(self, polygon1, polygon2):
         """Do two polygons intersects (have anything in common)?
