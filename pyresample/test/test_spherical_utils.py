@@ -25,9 +25,12 @@
 
 import pytest
 from unittest.mock import patch
+import numpy as np
 from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
 from pyresample.spherical_utils import merge_tuples
 from pyresample.spherical_utils import check_keys_int_or_tuple
+from pyresample.spherical_utils import check_if_two_polygons_overlap
+from pyresample.spherical import SphPolygon
 
 
 SET_A = {1, 3, 5, 7, 9}
@@ -59,6 +62,45 @@ def fake_merge_tuples(intuple):
         return (5, 4, 6)
 
     return None
+
+
+def test_check_if_two_polygons_overlap():
+    """Test the function to check if two polygons overlap each other."""
+
+    # First Case: One polygon entirely inside the other:
+    vertices = np.array([[1, 1, 20, 20],
+                         [1, 20, 20, 1]]).T
+    poly1 = SphPolygon(np.deg2rad(vertices))
+    vertices = np.array([[0, 0, 30, 30],
+                         [0, 30, 30, 0]]).T
+    poly2 = SphPolygon(np.deg2rad(vertices))
+
+    res = check_if_two_polygons_overlap(poly1, poly2)
+
+    assert res is True
+
+    # Second Case: Polygons overlaps and one is not entirely inside the other:
+    vertices = np.array([[180, 90, 0, -90],
+                         [89, 89, 89, 89]]).T
+    poly1 = SphPolygon(np.deg2rad(vertices))
+
+    vertices = np.array([[-45, -135, 135, 45],
+                         [89, 89, 89, 89]]).T
+    poly2 = SphPolygon(np.deg2rad(vertices))
+
+    assert res is True
+
+    # Third Case: Polygons do not have any overlap:
+    vertices = np.array([[10, 10, 20, 20],
+                         [10, 20, 20, 10]]).T
+    poly1 = SphPolygon(np.deg2rad(vertices))
+    vertices = np.array([[25, 25, 40, 40],
+                         [25, 40, 40, 25]]).T
+    poly2 = SphPolygon(np.deg2rad(vertices))
+
+    res = check_if_two_polygons_overlap(poly1, poly2)
+
+    assert res is False
 
 
 @patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions1)

@@ -67,8 +67,8 @@ class GetNonOverlapUnionsBaseClass():
         """Get a list of identifiers identifying the gemoetry objects in each polygon union."""
         return list(self._geoms.keys())
 
-    def _intersects(self, set1, set2):
-        """Do the two sets intersects (have anything in common)?"""
+    def _overlaps(self, set1, set2):
+        """Do the two sets overlap each other (have anything in common)?"""
         if set1 != set1.difference(set2):
             return True
 
@@ -91,7 +91,7 @@ class GetNonOverlapUnionsBaseClass():
 
         for id_, komb_pair in zip(itertools.combinations(geoms.keys(), 2),
                                   itertools.combinations(geoms.values(), 2)):
-            if self._intersects(komb_pair[0], komb_pair[1]):
+            if self._overlaps(komb_pair[0], komb_pair[1]):
                 return id_, komb_pair[0].union(komb_pair[1])
 
         return None
@@ -127,8 +127,8 @@ class GetNonOverlapUnions(GetNonOverlapUnionsBaseClass):
         """Init the GetNonOverlapUnions."""
         super(GetNonOverlapUnions, self).__init__(polygons)
 
-    def _intersects(self, polygon1, polygon2):
-        """Do two polygons intersects (have anything in common)?
+    def _overlaps(self, polygon1, polygon2):
+        """Do two polygons overlap each other (have anything in common)?
 
         Return True if they do overlap, otherwise False.
 
@@ -138,10 +138,7 @@ class GetNonOverlapUnions(GetNonOverlapUnionsBaseClass):
         the same behaviour.
 
         """
-        if polygon1.union(polygon2):
-            return True
-
-        return False
+        return check_if_two_polygons_overlap(polygon1, polygon2)
 
 
 def merge_tuples(atuple):
@@ -180,3 +177,11 @@ def check_keys_int_or_tuple(adict):
     for key in adict:
         if not isinstance(key, (int, tuple)):
             raise KeyError("Key must be integer or a tuple (of integers)")
+
+
+def check_if_two_polygons_overlap(polygon1, polygon2):
+    """Check if two SphPolygons overlaps."""
+    if polygon1.union(polygon2):
+        return True
+
+    return False
