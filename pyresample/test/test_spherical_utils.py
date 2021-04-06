@@ -5,7 +5,7 @@
 
 # Author(s):
 
-#   Adam.Dybbroe <a000680@c21856.ad.smhi.se>
+#   Adam Dybbroe <Firstname.Lastname@smhi.se>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,14 +23,10 @@
 """
 """
 
-
-from pyresample.spherical_utils import find_union_pair
-from pyresample.spherical_utils import merge_unions
-#from pyresample.spherical_utils import make_tupled_keys
-
-import itertools
-import unittest
-import numpy as np
+import pytest
+from unittest.mock import patch
+from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
+from pyresample.spherical_utils import merge_tuples
 
 
 SET_A = {1, 3, 5, 7, 9}
@@ -42,113 +38,190 @@ SET_F = set(range(21, 30, 3))
 SET_G = set(range(22, 30, 2))
 
 
-class TestPolygonUnions(unittest.TestCase):
+def fake_merge_unions1(self, aset):
+    return_value = {0: {1, 3, 5, 7, 9},
+                    1: {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+    return return_value
 
-    def setUp(self):
-        pass
 
-    # def test_make_tupled_keys(self):
-    #     """Test changing a dictionary with interger keys into having keys of tupled integers."""
+def fake_merge_unions2(self, aset):
+    return_value = {0: {1, 3, 5, 7, 9},
+                    (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                    (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
+    return return_value
 
-    #     listed_sets = dict(enumerate((SET_A, SET_B)))
-    #     retv = make_tupled_keys(listed_sets)
 
-    #     assert retv == {(0,): {1, 3, 5, 7, 9}, (1,): {2, 4, 6, 8, 10}}
+def fake_merge_tuples(intuple):
+    if intuple == (2, (1, 3)):
+        return (2, 1, 3)
+    elif intuple == (5, (4, 6)):
+        return (5, 4, 6)
 
-    #     mixed_key_sets = {0: {1, 3, 5, 7, 9}, 2: {16, 18, 12, 14},
-    #                       (1, 3): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
-    #     retv = make_tupled_keys(mixed_key_sets)
+    return None
 
-    #     assert retv == {(0,): {1, 3, 5, 7, 9}, (2,): {16, 18, 12, 14},
-    #                     (1, 3): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
 
-    def test_find_union_pairs(self):
-        """Test finding a union pair."""
+@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions1)
+def test_merge_when_input_objects_do_not_overlap():
+    """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
 
-        listed_sets = dict(enumerate((SET_A, )))
-        retv = find_union_pair(listed_sets)
+    mysets = [{1, 3, 5, 7, 9}, {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}]
+    this = GetNonOverlapUnionsBaseClass(mysets)
 
-        assert retv is None
+    with patch('pyresample.spherical_utils.merge_tuples', return_value=0):
+        this.merge()
 
-        listed_sets = dict(enumerate((SET_A, SET_B)))
-        retv = find_union_pair(listed_sets)
+    polygons = this.get_polygons()
 
-        assert retv is None
+    assert polygons == mysets
 
-        listed_sets = dict(enumerate((SET_C, SET_D)))
-        retv = find_union_pair(listed_sets)
 
-        assert retv == ((0, 1), set(range(10, 20)))
+@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions2)
+def test_merge_overlapping_and_nonoverlapping_objects():
+    """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
+    mysets = [SET_A, SET_B, SET_C, SET_D, SET_E, SET_F, SET_G]
+    this = GetNonOverlapUnionsBaseClass(mysets)
 
-        listed_sets = dict(enumerate((SET_A, SET_B, SET_D)))
-        retv = find_union_pair(listed_sets)
+    with patch('pyresample.spherical_utils.merge_tuples') as mypatch:
+        mypatch.side_effect = fake_merge_tuples
+        this.merge()
 
-        assert retv == ((1, 2), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+    polygons = this.get_polygons()
+    ids = this.get_ids()
 
-        listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D)))
-        retv = find_union_pair(listed_sets)
+    expected = [{1, 3, 5, 7, 9},
+                {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                {20, 21, 22, 23, 24, 26, 27, 28, 29}]
 
-        assert retv == ((1, 3), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+    assert polygons == expected
 
-        listed_sets = {0: {1, 3, 5, 7, 9},
-                       4: {0, 10},
-                       (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+    expected = [0, (2, 1, 3), (5, 4, 6)]
+    assert ids == expected
 
-        retv = find_union_pair(listed_sets)
-        assert retv == ((4, (2, (1, 3))), {0, 2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
 
-        listed_sets = {0: {1, 3, 5, 7, 9},
-                       (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+def test_flatten_tuple():
+    """Test flatten a nested tuple of integers"""
 
-        retv = find_union_pair(listed_sets)
+    with pytest.raises(TypeError) as exec_info:
+        _ = merge_tuples(7)
 
-        assert retv is None
+    exception_raised = exec_info.value
+    assert str(exception_raised) == "Function argument must be a tuple!"
 
-    # def test_find_union_pairs_tuplekeys(self):
-    #     """Test finding union pairs if one key is a tuple."""
+    intuple = (((0, 1), (2, 3)), ((4, 5), (6, 7)))
+    res = merge_tuples(intuple)
 
-    #     mixed_key_sets = {0: {1, 3, 5, 7, 9}, 2: {16, 18, 12, 14},
-    #                       (1, 3): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
-    #     retv = find_union_pair(mixed_key_sets)
+    assert res == (0, 1, 2, 3, 4, 5, 6, 7)
 
-    #     # assert retv == ((2, 1, 3), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
-    #     assert retv == ((2, (1, 3)), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+    intuple = (3, (1, 2))
+    res = merge_tuples(intuple)
 
-    #     mixed_key_sets = {0: {1, 3, 5, 7, 9},
-    #                       (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+    assert res == (3, 1, 2)
 
-    #     retv = find_union_pair(mixed_key_sets)
+    intuple = (0, (1, 2), (3, (4, 5)))
+    res = merge_tuples(intuple)
 
-    #     assert retv is None
+    assert res == (0, 1, 2, 3, 4, 5)
 
-    def test_merge_unions(self):
-        """Test merging union pairs iteratively"""
+    intuple = (0, (1, 2), (3, (4, 5)), (6,))
+    res = merge_tuples(intuple)
 
-        listed_sets = dict(enumerate((SET_A, SET_B, SET_C)))
-        retv = merge_unions(listed_sets)
+    assert res == (0, 1, 2, 3, 4, 5, 6)
 
-        assert retv == {0: SET_A, 1: SET_B, 2: SET_C}
+    intuple = (0, (1, 2), (3, (4, 5)), (6,), )
+    res = merge_tuples(intuple)
 
-        listed_sets = dict(enumerate((SET_C, SET_D)))
-        retv = merge_unions(listed_sets)
+    assert res == (0, 1, 2, 3, 4, 5, 6)
 
-        assert retv == {(0, 1): set(range(10, 20))}
+    intuple = (0,)
+    res = merge_tuples(intuple)
 
-        listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D)))
-        retv = merge_unions(listed_sets)
+    assert res == (0,)
 
-        assert retv == {0: {1, 3, 5, 7, 9},
-                        (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
 
-        listed_sets = {0: {1, 3, 5, 7, 9},
-                       (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
-        retv = merge_unions(listed_sets)
+def test_find_union_pairs():
+    """Test finding a union pair."""
 
-        assert retv == listed_sets
+    listed_sets = dict(enumerate((SET_A, )))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
 
-        listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D, SET_E, SET_F, SET_G)))
-        retv = merge_unions(listed_sets)
+    assert retv is None
 
-        assert retv == {0: {1, 3, 5, 7, 9},
-                        (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
-                        (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
+    listed_sets = dict(enumerate((SET_A, SET_B)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv is None
+
+    listed_sets = dict(enumerate((SET_C, SET_D)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv == ((0, 1), set(range(10, 20)))
+
+    listed_sets = dict(enumerate((SET_A, SET_B, SET_D)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv == ((1, 2), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+
+    listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv == ((1, 3), {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+
+    listed_sets = {0: {1, 3, 5, 7, 9},
+                   4: {0, 10},
+                   (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv == ((4, (2, (1, 3))), {0, 2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19})
+
+    listed_sets = {0: {1, 3, 5, 7, 9},
+                   (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+
+    this = GetNonOverlapUnionsBaseClass([])
+    retv = this._find_union_pair(listed_sets)
+
+    assert retv is None
+
+
+def test_merge_unions():
+    """Test merging union pairs iteratively"""
+
+    listed_sets = dict(enumerate((SET_A, SET_B, SET_C)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._merge_unions(listed_sets)
+
+    assert retv == {0: SET_A, 1: SET_B, 2: SET_C}
+
+    listed_sets = dict(enumerate((SET_C, SET_D)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._merge_unions(listed_sets)
+
+    assert retv == {(0, 1): set(range(10, 20))}
+
+    listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._merge_unions(listed_sets)
+
+    assert retv == {0: {1, 3, 5, 7, 9},
+                    (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+
+    listed_sets = {0: {1, 3, 5, 7, 9},
+                   (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._merge_unions(listed_sets)
+
+    assert retv == listed_sets
+
+    listed_sets = dict(enumerate((SET_A, SET_B, SET_C, SET_D, SET_E, SET_F, SET_G)))
+    this = GetNonOverlapUnionsBaseClass(listed_sets)
+    retv = this._merge_unions(listed_sets)
+
+    assert retv == {0: {1, 3, 5, 7, 9},
+                    (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                    (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
