@@ -27,6 +27,7 @@ import pytest
 from unittest.mock import patch
 from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
 from pyresample.spherical_utils import merge_tuples
+from pyresample.spherical_utils import check_keys_int_or_tuple
 
 
 SET_A = {1, 3, 5, 7, 9}
@@ -61,32 +62,38 @@ def fake_merge_tuples(intuple):
 
 
 @patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions1)
-def test_merge_when_input_objects_do_not_overlap():
+@patch('pyresample.spherical_utils.check_keys_int_or_tuple')
+def test_merge_when_input_objects_do_not_overlap(check_keys_int_or_tuple):
     """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
 
     mysets = [{1, 3, 5, 7, 9}, {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}]
-    this = GetNonOverlapUnionsBaseClass(mysets)
+    myobjects = GetNonOverlapUnionsBaseClass(mysets)
+
+    check_keys_int_or_tuple.return_code = None
 
     with patch('pyresample.spherical_utils.merge_tuples', return_value=0):
-        this.merge()
+        myobjects.merge()
 
-    polygons = this.get_polygons()
+    polygons = myobjects.get_polygons()
 
     assert polygons == mysets
 
 
 @patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions2)
-def test_merge_overlapping_and_nonoverlapping_objects():
+@patch('pyresample.spherical_utils.check_keys_int_or_tuple')
+def test_merge_overlapping_and_nonoverlapping_objects(check_keys_int_or_tuple):
     """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
     mysets = [SET_A, SET_B, SET_C, SET_D, SET_E, SET_F, SET_G]
-    this = GetNonOverlapUnionsBaseClass(mysets)
+    myobjects = GetNonOverlapUnionsBaseClass(mysets)
+
+    check_keys_int_or_tuple.return_code = None
 
     with patch('pyresample.spherical_utils.merge_tuples') as mypatch:
         mypatch.side_effect = fake_merge_tuples
-        this.merge()
+        myobjects.merge()
 
-    polygons = this.get_polygons()
-    ids = this.get_ids()
+    polygons = myobjects.get_polygons()
+    ids = myobjects.get_ids()
 
     expected = [{1, 3, 5, 7, 9},
                 {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
@@ -95,6 +102,7 @@ def test_merge_overlapping_and_nonoverlapping_objects():
     assert polygons == expected
 
     expected = [0, (2, 1, 3), (5, 4, 6)]
+
     assert ids == expected
 
 
@@ -225,3 +233,30 @@ def test_merge_unions():
     assert retv == {0: {1, 3, 5, 7, 9},
                     (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
                     (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
+
+
+def test_check_keys_int_or_tuple_input_okay():
+    """Test the check for dictionary keys and input only a dict with the accepted keys of integers and tuples."""
+
+    adict = {1: [1, 2, 3], (2, 3): [1, 2, 3, 4], (6, (4, 5)): [1, 2, 3, 4, 5]}
+    res = check_keys_int_or_tuple(adict)
+    assert res is None
+
+
+def test_check_keys_int_or_tuple_input_not_okay():
+    """Test the check for dictionary keys and input a dict with keys that are not an integer or a tuple."""
+
+    adict = {1: [1, 2, 3], 'set B': [1, 2, 3, 4]}
+    with pytest.raises(KeyError) as exec_info:
+        _ = check_keys_int_or_tuple(adict)
+
+    exception_raised = exec_info.value
+
+    assert str(exception_raised) == "'Key must be integer or a tuple (of integers)'"
+
+    adict = {1.1: [1, 2, 3]}
+    with pytest.raises(KeyError) as exec_info:
+        _ = check_keys_int_or_tuple(adict)
+
+    exception_raised = exec_info.value
+    assert str(exception_raised) == "'Key must be integer or a tuple (of integers)'"

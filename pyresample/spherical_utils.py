@@ -49,18 +49,15 @@ class GetNonOverlapUnionsBaseClass():
 
         """
         all_unions = self._merge_unions(self._geoms)
+        check_keys_int_or_tuple(all_unions)
 
-        # Fix the labels:
         self._geoms = {}
         for key, value in all_unions.items():
             if isinstance(key, int):
                 self._geoms[key] = value
-            elif isinstance(key, tuple):
-                print("Called... : ", key)
+            else:
                 newkey = merge_tuples(key)
                 self._geoms[newkey] = value
-            else:
-                raise KeyError("Key must be integer or a tuple of integers")
 
     def get_polygons(self):
         """Get a list of all non-overlapping polygon unions."""
@@ -173,3 +170,13 @@ def merge_tuples(atuple):
             atuple = sum(atuple, ())
         except TypeError:
             return atuple
+
+
+def check_keys_int_or_tuple(adict):
+    """Check if the dictionary keys are integers or tuples.
+
+    If they are not, raise a KeyError
+    """
+    for key in adict:
+        if not isinstance(key, (int, tuple)):
+            raise KeyError("Key must be integer or a tuple (of integers)")
