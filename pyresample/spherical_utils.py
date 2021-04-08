@@ -156,17 +156,24 @@ def merge_tuples(atuple):
         else:
             return atuple
 
-        newtup = []
-        for item in atuple:
-            if isinstance(item, int):
-                newtup.append((item,))
-            else:
-                newtup.append(item)
-        atuple = tuple(newtup)
+        atuple = int_items_to_tuples(atuple)
+
         try:
             atuple = sum(atuple, ())
         except TypeError:
             return atuple
+
+
+def int_items_to_tuples(mytuple):
+    """Turn integer scalars in a tuple into tuples."""
+    newtup = []
+    for item in mytuple:
+        if isinstance(item, int):
+            newtup.append((item,))
+        else:
+            newtup.append(item)
+
+    return tuple(newtup)
 
 
 def check_keys_int_or_tuple(adict):

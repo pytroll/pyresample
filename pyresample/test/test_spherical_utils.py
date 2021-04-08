@@ -28,6 +28,7 @@ from unittest.mock import patch
 import numpy as np
 from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
 from pyresample.spherical_utils import merge_tuples
+from pyresample.spherical_utils import int_items_to_tuples
 from pyresample.spherical_utils import check_keys_int_or_tuple
 from pyresample.spherical_utils import check_if_two_polygons_overlap
 from pyresample.spherical import SphPolygon
@@ -42,26 +43,55 @@ SET_F = set(range(21, 30, 3))
 SET_G = set(range(22, 30, 2))
 
 
-def fake_merge_unions1(self, aset):
-    return_value = {0: {1, 3, 5, 7, 9},
-                    1: {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
-    return return_value
+def fake_merge_unions(self, aset):
+    """Fake the method to merge unions - take care of two test cases."""
 
+    input_case1 = {0: {1, 3, 5, 7, 9},
+                   1: {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+    input_case2 = {0: {1, 3, 5, 7, 9},
+                   1: {2, 4, 6, 8, 10},
+                   2: {16, 18, 12, 14}, 3: {10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                   4: {26, 20, 29, 23}, 5: {24, 27, 21}, 6: {24, 26, 28, 22}}
 
-def fake_merge_unions2(self, aset):
-    return_value = {0: {1, 3, 5, 7, 9},
-                    (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
-                    (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
+    if aset == input_case1:
+        return_value = {0: {1, 3, 5, 7, 9},
+                        1: {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}}
+
+    elif aset == input_case2:
+        return_value = {0: {1, 3, 5, 7, 9},
+                        (2, (1, 3)): {2, 4, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                        (5, (4, 6)): {20, 21, 22, 23, 24, 26, 27, 28, 29}}
+
+    else:
+        raise AttributeError("Input dataset not covered in fake method! Input = {}".format(str(aset)))
+
     return return_value
 
 
 def fake_merge_tuples(intuple):
+    """Fake the merge tuples method."""
     if intuple == (2, (1, 3)):
         return (2, 1, 3)
     elif intuple == (5, (4, 6)):
         return (5, 4, 6)
 
     return None
+
+
+def fake_int_items_to_tuples(intuple):
+    """Fake the function to turn int salars in a tuple into tuples of int scalars."""
+    if intuple == (3, (1, 2)):
+        return ((3,), (1, 2))
+    elif intuple == (0, (1, 2), (3, (4, 5))):
+        return ((0,), (1, 2), (3, (4, 5)))
+    elif intuple == (0, (1, 2), (3, (4, 5)), (6,)):
+        return ((0,), (1, 2), (3, (4, 5)), (6,))
+    elif intuple == (0, 1, 2, 3, (4, 5)):
+        return ((0,), (1,), (2,), (3,), (4, 5))
+    elif intuple == (0, 1, 2, 3, (4, 5), 6):
+        return ((0,), (1,), (2,), (3,), (4, 5), (6,))
+    else:
+        return intuple
 
 
 def test_check_if_two_polygons_overlap():
@@ -103,7 +133,7 @@ def test_check_if_two_polygons_overlap():
     assert res is False
 
 
-@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions1)
+@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions)
 @patch('pyresample.spherical_utils.check_keys_int_or_tuple')
 def test_merge_when_input_objects_do_not_overlap(check_keys_int_or_tuple):
     """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
@@ -121,7 +151,7 @@ def test_merge_when_input_objects_do_not_overlap(check_keys_int_or_tuple):
     assert polygons == mysets
 
 
-@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions2)
+@patch.object(GetNonOverlapUnionsBaseClass, '_merge_unions', fake_merge_unions)
 @patch('pyresample.spherical_utils.check_keys_int_or_tuple')
 def test_merge_overlapping_and_nonoverlapping_objects(check_keys_int_or_tuple):
     """Test main method (merge) of the GetNonOverlapUnionsBaseClass class."""
@@ -158,34 +188,61 @@ def test_flatten_tuple():
     assert str(exception_raised) == "Function argument must be a tuple!"
 
     intuple = (((0, 1), (2, 3)), ((4, 5), (6, 7)))
-    res = merge_tuples(intuple)
+
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (0, 1, 2, 3, 4, 5, 6, 7)
 
     intuple = (3, (1, 2))
-    res = merge_tuples(intuple)
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (3, 1, 2)
 
     intuple = (0, (1, 2), (3, (4, 5)))
-    res = merge_tuples(intuple)
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (0, 1, 2, 3, 4, 5)
 
     intuple = (0, (1, 2), (3, (4, 5)), (6,))
-    res = merge_tuples(intuple)
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (0, 1, 2, 3, 4, 5, 6)
 
     intuple = (0, (1, 2), (3, (4, 5)), (6,), )
-    res = merge_tuples(intuple)
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (0, 1, 2, 3, 4, 5, 6)
 
     intuple = (0,)
-    res = merge_tuples(intuple)
+    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
+        mypatch.side_effect = fake_int_items_to_tuples
+        res = merge_tuples(intuple)
 
     assert res == (0,)
+
+
+def test_int_items_to_tuples():
+    """Test the function to turn integer scalars in a tuple into tuples."""
+
+    res = int_items_to_tuples(((1,), (2, 3)))
+    expected = ((1,), (2, 3))
+    assert res == expected
+
+    res = int_items_to_tuples((1, (2, 3)))
+    assert res == expected
+
+    res = int_items_to_tuples((1, 2))
+    assert res == ((1,), (2,))
 
 
 def test_find_union_pairs():
