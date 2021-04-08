@@ -90,8 +90,8 @@ def fake_int_items_to_tuples(intuple):
         return ((0,), (1,), (2,), (3,), (4, 5))
     elif intuple == (0, 1, 2, 3, (4, 5), 6):
         return ((0,), (1,), (2,), (3,), (4, 5), (6,))
-    else:
-        return intuple
+
+    return intuple
 
 
 def test_check_if_two_polygons_overlap():
