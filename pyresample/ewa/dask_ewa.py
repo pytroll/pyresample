@@ -214,6 +214,8 @@ class DaskEWAResampler(BaseResampler):
             raise ValueError("'rows_per_scan' keyword argument required if "
                              "not found in geolocation (i.e. "
                              "DataArray.attrs['rows_per_scan']).")
+        if rows_per_scan == 0:
+            rows_per_scan = self.source_geo_def.shape[0]
         return rows_per_scan
 
     def _fill_block_cache_with_ll2cr_results(self, ll2cr_result,
@@ -472,7 +474,8 @@ class DaskEWAResampler(BaseResampler):
                 is checked for this value if they are DataArray objects.
                 Otherwise, this value must be provided. Decent results may be
                 possible if this value is set to the total number of rows in
-                the array.
+                the array. As a convenience, providing ``0`` will result in
+                the total number of rows being used.
             persist (bool): Whether to persist (as in dask) the computations
                 during precompute or compute them on the fly during compute.
                 Persisting allows the resampler to determine which input
