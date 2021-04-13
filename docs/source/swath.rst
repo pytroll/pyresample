@@ -521,6 +521,13 @@ an xarray DataArray object.
     rows_per_scan = 5
     result = resampler.resample(data, rows_per_scan=rows_per_scan)
 
+.. note::
+
+    As a convenience, you can set rows_per_scan to 0 to have it set to the
+    number of rows in the input data. This can be helpful when testing EWA
+    on data that is not necessarily scan based, but still has nice results
+    with EWA.
+
 Legacy Dask Resampler
 *********************
 
