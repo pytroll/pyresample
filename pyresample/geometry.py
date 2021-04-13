@@ -999,10 +999,12 @@ class DynamicAreaDefinition(object):
         return xmin, ymin, xmax, ymax
 
     def _compute_bound_centers_dask(self, proj_dict, lons, lats):
-        from pyresample.utils.proj4 import transform_dask
+        from pyresample.utils.proj4 import DaskFriendlyTransformer
         import dask.array as da
         crs = CRS(proj_dict)
-        xarr, yarr = transform_dask(crs, lons, lats)
+        transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs,
+                                                       always_xy=True)
+        xarr, yarr = transformer.transform(lons, lats)
         xarr = da.where(xarr > 9e29, np.nan, xarr)
         yarr = da.where(yarr > 9e29, np.nan, yarr)
         _xmin = np.nanmin(xarr)

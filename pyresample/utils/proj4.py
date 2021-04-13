@@ -20,7 +20,7 @@ import math
 from collections import OrderedDict
 
 import numpy as np
-from pyproj import CRS
+from pyproj import CRS, Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):
@@ -94,31 +94,48 @@ def get_geostationary_height(geos_area_crs):
     return h_param.value
 
 
-def _transform_dask_chunk(x, y, crs_from, crs_to):
-    from pyproj import Transformer
+def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs):
     crs_from = CRS(crs_from)
     crs_to = CRS(crs_to)
-    transformer = Transformer.from_crs(crs_from, crs_to,
-                                       always_xy=True)
+    transformer = PROJTransformer.from_crs(crs_from, crs_to, **kwargs)
     return np.stack(transformer.transform(x, y), axis=-1)
 
 
-def transform_dask(crs, x, y, inverse=False):
-    """Transform coordinates using pyproj in a dask-friendly way."""
-    import dask.array as da
-    crs = CRS.from_user_input(crs)
-    if not inverse:
-        crs_to = crs
-        crs_from = CRS(4326)
-    else:
-        crs_to = CRS(4326)
-        crs_from = crs
-    # CRS objects aren't thread-safe until pyproj 3.1+
-    # convert to WKT strings to be safe
-    result = da.map_blocks(_transform_dask_chunk, x, y,
-                           crs_from.to_wkt(), crs_to.to_wkt(),
-                           dtype=x.dtype, chunks=x.chunks + ((2,),),
-                           new_axis=x.ndim)
-    x = result[..., 0]
-    y = result[..., 1]
-    return x, y
+class DaskFriendlyTransformer:
+    """Wrapper around the pyproj Transformer class that uses dask."""
+
+    def __init__(self, src_crs, dst_crs, **kwargs):
+        """Initialize the transformer with CRS objects.
+
+        This method should not be used directly, just like pyproj.Transformer
+        should not be created directly.
+
+        """
+        self.src_crs = src_crs
+        self.dst_crs = dst_crs
+        self.kwargs = kwargs
+
+    @classmethod
+    def from_crs(cls, crs_from, crs_to, **kwargs):
+        """Create transformer object from two CRS objects."""
+        return cls(crs_from, crs_to, **kwargs)
+
+    def transform(self, x, y, inverse=False):
+        """Transform coordinates."""
+        import dask.array as da
+        if not inverse:
+            crs_to = self.src_crs
+            crs_from = self.dst_crs
+        else:
+            crs_to = self.dst_crs
+            crs_from = self.src_crs
+        # CRS objects aren't thread-safe until pyproj 3.1+
+        # convert to WKT strings to be safe
+        result = da.map_blocks(_transform_dask_chunk, x, y,
+                               crs_from.to_wkt(), crs_to.to_wkt(),
+                               dtype=x.dtype, chunks=x.chunks + ((2,),),
+                               kwargs=self.kwargs,
+                               new_axis=x.ndim)
+        x = result[..., 0]
+        y = result[..., 1]
+        return x, y
