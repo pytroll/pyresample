@@ -35,15 +35,8 @@ import pyproj
 
 from pyproj import CRS
 
-try:
-    import dask.array as da
-except ImportError:
-    da = None
-
-try:
-    import xarray as xr
-except ImportError:
-    xr = None
+import dask.array as da
+import xarray as xr
 
 
 class Test(unittest.TestCase):
@@ -429,7 +422,6 @@ class Test(unittest.TestCase):
 
         self.assertIsInstance(hash(swath_def), int)
 
-    @pytest.mark.skipif(da is None, reason="dask is not installed")
     def test_swath_hash_dask(self):
         """Test hashing SwathDefinitions with dask arrays underneath."""
         lons = np.array([1.2, 1.3, 1.4, 1.5])
@@ -439,7 +431,6 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(dalons, dalats)
         self.assertIsInstance(hash(swath_def), int)
 
-    @pytest.mark.skipif(xr is None, reason="xarray is not installed")
     def test_swath_hash_xarray(self):
         """Test hashing SwathDefinitions with DataArrays underneath."""
         lons = np.array([1.2, 1.3, 1.4, 1.5])
@@ -449,8 +440,6 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(xrlons, xrlats)
         self.assertIsInstance(hash(swath_def), int)
 
-    @pytest.mark.skipif(da is None, reason="dask is not installed")
-    @pytest.mark.skipif(xr is None, reason="xarray is not installed")
     def test_swath_hash_xarray_with_dask(self):
         """Test hashing SwathDefinitions with DataArrays:dask underneath."""
         lons = np.array([1.2, 1.3, 1.4, 1.5])
