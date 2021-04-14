@@ -1,3 +1,25 @@
+## Version 1.19.0 (2021/04/14)
+
+### Issues Closed
+
+* [Issue 344](https://github.com/pytroll/pyresample/issues/344) - Improve handling of dask arrays in DynamicAreaDefinition ([PR 346](https://github.com/pytroll/pyresample/pull/346))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 348](https://github.com/pytroll/pyresample/pull/348) - Allow rows_per_scan=0 convenience in EWA resampler
+* [PR 340](https://github.com/pytroll/pyresample/pull/340) - Fix get_area_slices for flipped areas
+
+#### Features added
+
+* [PR 346](https://github.com/pytroll/pyresample/pull/346) - Add better dask handling to DynamicAreaDefinitions ([344](https://github.com/pytroll/pyresample/issues/344))
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.18.1 (2021/03/22)
 
 ### Issues Closed
