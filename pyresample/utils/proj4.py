@@ -19,7 +19,8 @@
 import math
 from collections import OrderedDict
 
-from pyproj import CRS
+import numpy as np
+from pyproj import CRS, Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):
@@ -91,3 +92,47 @@ def get_geostationary_height(geos_area_crs):
     params = geos_area_crs.coordinate_operation.params
     h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
     return h_param.value
+
+
+def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs, transform_kwargs):
+    crs_from = CRS(crs_from)
+    crs_to = CRS(crs_to)
+    transformer = PROJTransformer.from_crs(crs_from, crs_to, **kwargs)
+    return np.stack(transformer.transform(x, y, **transform_kwargs), axis=-1)
+
+
+class DaskFriendlyTransformer:
+    """Wrapper around the pyproj Transformer class that uses dask."""
+
+    def __init__(self, src_crs, dst_crs, **kwargs):
+        """Initialize the transformer with CRS objects.
+
+        This method should not be used directly, just like pyproj.Transformer
+        should not be created directly.
+
+        """
+        self.src_crs = src_crs
+        self.dst_crs = dst_crs
+        self.kwargs = kwargs
+
+    @classmethod
+    def from_crs(cls, crs_from, crs_to, **kwargs):
+        """Create transformer object from two CRS objects."""
+        return cls(crs_from, crs_to, **kwargs)
+
+    def transform(self, x, y, **kwargs):
+        """Transform coordinates."""
+        import dask.array as da
+        crs_from = self.src_crs
+        crs_to = self.dst_crs
+        # CRS objects aren't thread-safe until pyproj 3.1+
+        # convert to WKT strings to be safe
+        result = da.map_blocks(_transform_dask_chunk, x, y,
+                               crs_from.to_wkt(), crs_to.to_wkt(),
+                               dtype=x.dtype, chunks=x.chunks + ((2,),),
+                               kwargs=self.kwargs,
+                               transform_kwargs=kwargs,
+                               new_axis=x.ndim)
+        x = result[..., 0]
+        y = result[..., 1]
+        return x, y
