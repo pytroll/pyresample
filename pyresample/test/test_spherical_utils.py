@@ -78,20 +78,20 @@ def fake_merge_tuples(intuple):
     return None
 
 
-def fake_int_items_to_tuples(intuple):
-    """Fake the function to turn int salars in a tuple into tuples of int scalars."""
-    if intuple == (3, (1, 2)):
-        return ((3,), (1, 2))
-    elif intuple == (0, (1, 2), (3, (4, 5))):
-        return ((0,), (1, 2), (3, (4, 5)))
-    elif intuple == (0, (1, 2), (3, (4, 5)), (6,)):
-        return ((0,), (1, 2), (3, (4, 5)), (6,))
-    elif intuple == (0, 1, 2, 3, (4, 5)):
-        return ((0,), (1,), (2,), (3,), (4, 5))
-    elif intuple == (0, 1, 2, 3, (4, 5), 6):
-        return ((0,), (1,), (2,), (3,), (4, 5), (6,))
+# def fake_int_items_to_tuples(intuple):
+#     """Fake the function to turn int salars in a tuple into tuples of int scalars."""
+#     if intuple == (3, (1, 2)):
+#         return ((3,), (1, 2))
+#     elif intuple == (0, (1, 2), (3, (4, 5))):
+#         return ((0,), (1, 2), (3, (4, 5)))
+#     elif intuple == (0, (1, 2), (3, (4, 5)), (6,)):
+#         return ((0,), (1, 2), (3, (4, 5)), (6,))
+#     elif intuple == (0, 1, 2, 3, (4, 5)):
+#         return ((0,), (1,), (2,), (3,), (4, 5))
+#     elif intuple == (0, 1, 2, 3, (4, 5), 6):
+#         return ((0,), (1,), (2,), (3,), (4, 5), (6,))
 
-    return intuple
+#     return intuple
 
 
 def test_check_if_two_polygons_overlap():
@@ -188,61 +188,42 @@ def test_flatten_tuple():
     assert str(exception_raised) == "Function argument must be a tuple!"
 
     intuple = (((0, 1), (2, 3)), ((4, 5), (6, 7)))
-
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (0, 1, 2, 3, 4, 5, 6, 7)
 
     intuple = (3, (1, 2))
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (3, 1, 2)
 
     intuple = (0, (1, 2), (3, (4, 5)))
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (0, 1, 2, 3, 4, 5)
 
     intuple = (0, (1, 2), (3, (4, 5)), (6,))
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (0, 1, 2, 3, 4, 5, 6)
 
     intuple = (0, (1, 2), (3, (4, 5)), (6,), )
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (0, 1, 2, 3, 4, 5, 6)
 
     intuple = (0,)
-    with patch('pyresample.spherical_utils.int_items_to_tuples') as mypatch:
-        mypatch.side_effect = fake_int_items_to_tuples
-        res = merge_tuples(intuple)
-
+    res = merge_tuples(intuple)
     assert res == (0,)
 
 
-def test_int_items_to_tuples():
-    """Test the function to turn integer scalars in a tuple into tuples."""
+# def test_int_items_to_tuples():
+#     """Test the function to turn integer scalars in a tuple into tuples."""
 
-    res = int_items_to_tuples(((1,), (2, 3)))
-    expected = ((1,), (2, 3))
-    assert res == expected
+#     res = int_items_to_tuples(((1,), (2, 3)))
+#     expected = ((1,), (2, 3))
+#     assert res == expected
 
-    res = int_items_to_tuples((1, (2, 3)))
-    assert res == expected
+#     res = int_items_to_tuples((1, (2, 3)))
+#     assert res == expected
 
-    res = int_items_to_tuples((1, 2))
-    assert res == ((1,), (2,))
+#     res = int_items_to_tuples((1, 2))
+#     assert res == ((1,), (2,))
 
 
 def test_find_union_pairs():

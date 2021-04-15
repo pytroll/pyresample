@@ -156,7 +156,7 @@ def merge_tuples(atuple):
         else:
             return atuple
 
-        atuple = int_items_to_tuples(atuple)
+        atuple = _int_items_to_tuples(atuple)
 
         try:
             atuple = sum(atuple, ())
@@ -164,7 +164,7 @@ def merge_tuples(atuple):
             return atuple
 
 
-def int_items_to_tuples(mytuple):
+def _int_items_to_tuples(mytuple):
     """Turn integer scalars in a tuple into tuples."""
     newtup = []
     for item in mytuple:
