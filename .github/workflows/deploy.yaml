@@ -98,6 +98,7 @@ jobs:
           name: wheels
           path: dist
       - name: Publish package to PyPI
+        if: github.event.action != 'published'
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           user: __token__
