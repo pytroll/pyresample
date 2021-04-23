@@ -1764,7 +1764,9 @@ class AreaDefinition(_ProjectionDefinition):
 
         If lon,lat is a point, a ValueError is raised if it is outside the area
         domain. If lon,lat is a tuple of sequences of longitudes and latitudes,
-        a tuple of masked arrays are returned.
+        a tuple of masked arrays are returned. The masked values are the actual
+        row and col indexing the grid cell if the area had been big enough, or
+        the numpy default (999999) if invalid.
 
         Args:
             lon (array_like) : point or sequence of longitudes

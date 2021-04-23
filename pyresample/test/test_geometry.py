@@ -738,6 +738,31 @@ class Test(unittest.TestCase):
         self.assertEqual(lons[0, 0], -179.5)
         self.assertEqual(lats[0, 0], 89.5)
 
+    def test_get_array_indices_from_lonlat_mask_actual_values(self):
+        """Test that the masked values of get_array_indices_from_lonlat can be valid."""
+        from pyresample import get_area_def
+
+        # The area of our source data
+        area_id = 'orig'
+        area_name = 'Test area'
+        proj_id = 'test'
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
+                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
+        area_def = get_area_def(area_id,
+                                area_name,
+                                proj_id,
+                                proj_dict,
+                                x_size, y_size,
+                                area_extent)
+
+        # Choose a point just outside the area
+        x, y = area_def.get_array_indices_from_lonlat([33.5], [-40.5])
+        assert x.item() == 3723
+        assert y.item() == 3746
+
     def test_lonlat2colrow(self):
         """Test lonlat2colrow."""
         from pyresample import utils
