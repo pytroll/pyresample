@@ -25,7 +25,7 @@ import hashlib
 import json
 import logging
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import lru_cache, partial
 from uuid import uuid4
 
@@ -407,6 +407,16 @@ class Slicer(ABC):
         poly = self.get_polygon()
         return self.get_slices_from_polygon(poly)
 
+    @abstractmethod
+    def get_polygon(self):
+        """Get the shapely Polygon corresponding to *area_to_contain*."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_slices_from_polygon(self, poly):
+        """Get the slices based on the polygon."""
+        raise NotImplementedError
+
 
 class SwathSlicer(Slicer):
     """A Slicer for cropping SwathDefinitions."""
@@ -507,9 +517,11 @@ class AreaSlicer(Slicer):
     def _create_slices_from_bounds(bounds):
         """Create slices from bounds."""
         x_bounds, y_bounds = bounds
-        slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
-                        int(np.ceil(np.max(x_bounds))))
-        slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
-                        int(np.ceil(np.max(y_bounds))))
-
+        try:
+            slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
+                            int(np.ceil(np.max(x_bounds))))
+            slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
+                            int(np.ceil(np.max(y_bounds))))
+        except OverflowError:
+            raise IncompatibleAreas("Area not within finite bounds.")
         return expand_slice(slice_x), expand_slice(slice_y)

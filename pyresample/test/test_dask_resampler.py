@@ -213,6 +213,28 @@ class TestAreaSlicer(unittest.TestCase):
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
 
+    def test_slicing_an_area_with_infinite_bounds(self):
+        """Test slicing an area with infinite bounds."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'proj': 'merc'},
+                                  100, 100,
+                                  (-10000.0, -10000.0, 0.0, 0.0))
+
+        dst_area = AreaDefinition('moll', 'moll', None,
+                                  {
+                                      'ellps': 'WGS84',
+                                      'lon_0': '0',
+                                      'proj': 'moll',
+                                      'units': 'm'
+                                  },
+                                  102, 102,
+                                  (-100000.0, -4369712.0686,
+                                   18040096.0, 9020047.8481))
+
+        slicer = Slicer(src_area, dst_area)
+        with pytest.raises(IncompatibleAreas):
+            slicer.get_slices()
+
 
 class TestSlicer(unittest.TestCase):
     """Test the get_slice function when input is a swath."""
@@ -285,6 +307,11 @@ class TestSlicer(unittest.TestCase):
         slicer = Slicer(self.src_swath, self.dst_area)
         poly = slicer.get_polygon()
         assert isinstance(poly, Polygon)
+
+    def test_cannot_slice_a_string(self):
+        """Test that we cannot slice a string."""
+        with pytest.raises(NotImplementedError):
+            Slicer("my_funky_area", self.dst_area)
 
 
 class TestDaskResamplerFromSwath(unittest.TestCase):
