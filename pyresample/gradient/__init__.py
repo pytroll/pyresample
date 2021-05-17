@@ -453,7 +453,7 @@ def ensure_3d_data(func):
 
 
 @ensure_3d_data
-def gradient_resampler(data, source_area, target_area):
+def gradient_resampler(data, source_area, target_area, method='bilinear'):
     """Do the gradient search resampling."""
     from pyproj.transformer import Transformer
 
@@ -471,4 +471,4 @@ def gradient_resampler(data, source_area, target_area):
                                    src_gradient_xl, src_gradient_xp,
                                    src_gradient_yl, src_gradient_yp,
                                    dst_x, dst_y,
-                                   method='bilinear')
+                                   method=method)

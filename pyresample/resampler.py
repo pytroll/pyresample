@@ -26,7 +26,7 @@ import json
 import logging
 import os
 from abc import ABC
-from functools import lru_cache
+from functools import lru_cache, partial
 from uuid import uuid4
 
 import numpy as np
@@ -318,11 +318,12 @@ class DaskResampler:
     input data as dependencies.
     """
 
-    def __init__(self, source_geo_def, target_geo_def, resampler):
+    def __init__(self, source_geo_def, target_geo_def, resampler, **resampler_kwargs):
         """Initialize the class."""
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
-        self.resampler = resampler
+        self.resampler = partial(resampler, **resampler_kwargs)
+        self.resampler.__name__ = resampler.__name__
 
     def resample(self, data: da.Array, chunks=None) -> da.Array:
         """Resample the provided dask array.
@@ -356,7 +357,7 @@ class DaskResampler:
                     self.resampler,
                     (smaller_data.name, *position[:-2], 0, 0),
                     source_geo_def,
-                    target_geo_def
+                    target_geo_def,
                 )
 
         dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=deps)

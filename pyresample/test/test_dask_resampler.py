@@ -325,8 +325,8 @@ class TestDaskResamplerFromSwath(unittest.TestCase):
     def test_gradient_resampler_2d_chunked(self):
         """Test gradient resampler in 2d with chunked data."""
         from pyresample.gradient import gradient_resampler
-        dr_area = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
+        dr_area = DaskResampler(self.src_area, self.dst_area, gradient_resampler, method='bilinear')
         res_area = dr_area.resample(self.input_data)
-        dr_swath = DaskResampler(self.src_swath, self.dst_area, gradient_resampler)
+        dr_swath = DaskResampler(self.src_swath, self.dst_area, gradient_resampler, method='bilinear')
         res_swath = dr_swath.resample(self.input_data)
-        np.testing.assert_allclose(res_area[:, 60:], res_swath[:, 60:], rtol=1e-2)
+        np.testing.assert_allclose(res_area[:, 60:], res_swath[:, 60:], rtol=1e-1)
