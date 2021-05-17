@@ -149,8 +149,8 @@ class TestAreaSlicer(unittest.TestCase):
                                   (5550000.0, 5550000.0, -5550000.0, -5550000.0))
         slicer = Slicer(src_area, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
-        assert x_slice.start > 0 and x_slice.stop < 100
-        assert y_slice.start > 0 and y_slice.stop < 100
+        assert x_slice.start > 0 and x_slice.stop <= 100
+        assert y_slice.start > 0 and y_slice.stop <= 100
 
     def test_source_area_does_not_cover_dest_area_entirely(self):
         """Test source area does not cover dest area entirely."""
@@ -259,9 +259,9 @@ class TestSlicer(unittest.TestCase):
         slicer = Slicer(self.src_swath, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start == 0
-        assert x_slice.stop == 35
-        assert y_slice.start == 15
-        assert y_slice.stop == 90
+        assert x_slice.stop == 36
+        assert y_slice.start == 14
+        assert y_slice.stop == 91
 
     def test_source_area_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""
@@ -269,7 +269,7 @@ class TestSlicer(unittest.TestCase):
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start == 0
         assert x_slice.stop == 35
-        assert y_slice.start == 18
+        assert y_slice.start == 17
         assert y_slice.stop == 94
 
     def test_area_get_polygon_returns_a_polygon(self):

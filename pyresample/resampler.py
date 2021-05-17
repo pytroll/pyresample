@@ -446,6 +446,8 @@ def _get_chunk_polygons_for_area_to_crop(area_to_crop):
     chunks = np.array(area_to_crop.lons.data.chunksize) // 2
     src_chunks = da.core.normalize_chunks(chunks, area_to_crop.shape)
     for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
+        line_slice = expand_slice(line_slice)
+        col_slice = expand_slice(col_slice)
         smaller_swath = area_to_crop[line_slice, col_slice]
         lons, lats = smaller_swath.get_edge_lonlats(10)
         lons = np.hstack(lons)
@@ -453,6 +455,11 @@ def _get_chunk_polygons_for_area_to_crop(area_to_crop):
         smaller_poly = Polygon(zip(lons, lats))
         res.append((smaller_poly, (line_slice, col_slice)))
     return res
+
+
+def expand_slice(small_slice):
+    """Expand slice by one."""
+    return slice(max(small_slice.start - 1, 0), small_slice.stop + 1, small_slice.step)
 
 
 class AreaSlicer(Slicer):
@@ -478,7 +485,7 @@ class AreaSlicer(Slicer):
 
     def get_slices_from_polygon(self, poly):
         """Get the slices based on the polygon."""
-        bounds = poly.buffer(np.max(self.area_to_contain.resolution)).bounds
+        bounds = poly.bounds
         bounds = self._sanitize_polygon_bounds(bounds)
         slice_x, slice_y = self._create_slices_from_bounds(bounds)
         return slice_x, slice_y
@@ -489,9 +496,8 @@ class AreaSlicer(Slicer):
             (minx, miny, maxx, maxy) = bounds
         except ValueError:
             raise IncompatibleAreas('No slice on area.')
-        x_bounds, y_bounds = self.area_to_crop.get_xy_from_proj_coords(np.array([minx, maxx]), np.array([miny, maxy]))
-        x_bounds.mask = np.ma.nomask
-        y_bounds.mask = np.ma.nomask
+        x_bounds, y_bounds = self.area_to_crop.get_array_coordinates_from_projection_coordinates(np.array([minx, maxx]),
+                                                                                                 np.array([miny, maxy]))
         y_size, x_size = self.area_to_crop.shape
         if np.all(x_bounds < 0) or np.all(y_bounds < 0) or np.all(x_bounds >= x_size) or np.all(y_bounds >= y_size):
             raise IncompatibleAreas('No slice on area.')
@@ -505,4 +511,5 @@ class AreaSlicer(Slicer):
                         int(np.ceil(np.max(x_bounds))))
         slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
                         int(np.ceil(np.max(y_bounds))))
-        return slice_x, slice_y
+
+        return expand_slice(slice_x), expand_slice(slice_y)
