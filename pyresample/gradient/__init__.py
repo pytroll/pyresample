@@ -24,6 +24,7 @@
 """Implementation of the gradient search algorithm as described by Trishchenko."""
 
 import logging
+from functools import wraps
 
 import dask
 import dask.array as da
@@ -47,12 +48,12 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResampler(BaseResampler):
+class GradientSearchResamplerOriginal(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
-        super(GradientSearchResampler, self).__init__(source_geo_def, target_geo_def)
+        super().__init__(source_geo_def, target_geo_def)
         import warnings
         warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
         self.use_input_coords = None
@@ -405,21 +406,36 @@ def _concatenate_chunks(chunks):
     return res
 
 
-class GradientSearchResamplerNew(BaseResampler):
+def ensure_chunked_data_array(func):
+    """Ensure the data is an instance of a an xarray.DataArray with correct chunking."""
+    @wraps(func)
+    def wrapper(self, data, *args, **kwargs):
+        if not isinstance(data, xr.DataArray):
+            if data.ndim != 2:
+                raise TypeError("Use a xarray.DataArray to label the dimension of array with other than 2 dimensions.")
+            else:
+                data = xr.DataArray(data, dims=["y", "x"])
+        else:
+            other_dims = {dim: -1 for dim in data.dims if dim not in ["x", "y"]}
+            data = data.chunk(other_dims)
+        return func(self, data, *args, **kwargs)
+    return wrapper
+
+
+class GradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
         from pyresample.resampler import DaskResampler
-        self.source_geo_def = source_geo_def
-        self.target_geo_def = target_geo_def
+        super().__init__(source_geo_def, target_geo_def)
         self.dr = DaskResampler(self.source_geo_def, self.target_geo_def, gradient_resampler)
 
+    @ensure_chunked_data_array
     def compute(self, data, fill_value=None, **kwargs):
         """Perform the resampling."""
         if fill_value is not None:
             data = data.fillna(fill_value)
-        data.data = data.data.rechunk({0: -1})
         res = self.dr.resample(data.data.astype(float))
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
@@ -436,6 +452,7 @@ class GradientSearchResamplerNew(BaseResampler):
 
 def ensure_3d_data(func):
     """Ensure the data is in three dimensions."""
+    @wraps(func)
     def wrapper(data, *args, **kwargs):
         """Wrap around the original function."""
         if data.ndim == 2:
