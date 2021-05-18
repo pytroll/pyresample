@@ -26,7 +26,7 @@ import dask.array as da
 import xarray as xr
 import numpy as np
 from pyresample.resampler import DaskResampler, Slicer
-from pyresample.geometry import AreaDefinition, SwathDefinition, IncompatibleAreas
+from pyresample.geometry import AreaDefinition, SwathDefinition, IncompatibleAreas, InvalidArea
 import pytest
 
 
@@ -232,7 +232,7 @@ class TestAreaSlicer(unittest.TestCase):
                                    18040096.0, 9020047.8481))
 
         slicer = Slicer(src_area, dst_area)
-        with pytest.raises(IncompatibleAreas):
+        with pytest.raises(InvalidArea):
             slicer.get_slices()
 
 
@@ -291,7 +291,7 @@ class TestSlicer(unittest.TestCase):
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start == 0
         assert x_slice.stop == 35
-        assert y_slice.start == 17
+        assert y_slice.start == 16
         assert y_slice.stop == 94
 
     def test_area_get_polygon_returns_a_polygon(self):

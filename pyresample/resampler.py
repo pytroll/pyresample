@@ -43,7 +43,7 @@ except ImportError:
     xr = None
 
 from pyresample.geometry import (SwathDefinition, AreaDefinition, IncompatibleAreas,
-                                 get_geostationary_bounding_box_in_proj_coords)
+                                 get_geostationary_bounding_box_in_proj_coords, InvalidArea)
 from pyproj.transformer import Transformer
 
 
@@ -495,7 +495,11 @@ class AreaSlicer(Slicer):
 
     def get_slices_from_polygon(self, poly):
         """Get the slices based on the polygon."""
-        bounds = poly.bounds
+        # We take a little margin around the polygon to ensure all needed pixels will be included.
+        try:
+            bounds = poly.buffer(np.max(self.area_to_contain.resolution)).bounds
+        except ValueError as err:
+            raise InvalidArea(str(err))
         bounds = self._sanitize_polygon_bounds(bounds)
         slice_x, slice_y = self._create_slices_from_bounds(bounds)
         return slice_x, slice_y
