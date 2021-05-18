@@ -66,6 +66,12 @@ class IncompatibleAreas(ValueError):
     pass
 
 
+class InvalidArea(ValueError):
+    """Error to be raised when an area is invalid for a given purpose."""
+
+    pass
+
+
 class BaseDefinition:
     """Base class for geometry definitions.
 
