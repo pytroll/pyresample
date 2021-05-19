@@ -190,6 +190,35 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
+    def _call_scipy_binned_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+        """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
+        from scipy.stats import binned_statistic
+
+        if isinstance(data, xr.DataArray):
+            data = data.data
+        data = data.ravel()
+
+        # Remove NaN values from the data when used as weights
+        weights = da.where(np.isnan(data), 0, data)
+
+        # Rechunk indices to match the data chunking
+        if weights.chunks != self.idxs.chunks:
+            self.idxs = da.rechunk(self.idxs, weights.chunks)
+
+        # Calculate the min of the data falling to each bin
+        out_size = self.target_area.size
+        statistics, _, _ = binned_statistic(self.idxs, values=weights, statistic=scipy_method,
+                                            bins=out_size, range=(0, out_size))
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
+
+        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
+        statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
+
+        # set bin without data to fill value
+        statistics = da.where(counts == 0, fill_value, statistics)
+
+        return statistics.reshape(self.target_area.shape)
+
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
 
@@ -211,32 +240,7 @@ class BucketResampler(object):
             Bin-wise minimums in the target grid
         """
         LOG.info("Get min of values in each location")
-        from scipy.stats import binned_statistic
-
-        if isinstance(data, xr.DataArray):
-            data = data.data
-        data = data.ravel()
-
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
-
-        # Rechunk indices to match the data chunking
-        if weights.chunks != self.idxs.chunks:
-            self.idxs = da.rechunk(self.idxs, weights.chunks)
-
-        # Calculate the min of the data falling to each bin
-        out_size = self.target_area.size
-        mins, _, _ = binned_statistic(self.idxs, values=weights, statistic='min',
-                                      bins=out_size, range=(0, out_size))
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
-
-        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        mins = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, mins)
-
-        # set bin without data to fill value
-        mins = da.where(counts == 0, fill_value, mins)
-
-        return mins.reshape(self.target_area.shape)
+        return self._call_scipy_binned_statistics('min', data, fill_value, skipna)
 
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
@@ -259,32 +263,7 @@ class BucketResampler(object):
             Bin-wise maximums in the target grid
         """
         LOG.info("Get max of values in each location")
-        from scipy.stats import binned_statistic
-
-        if isinstance(data, xr.DataArray):
-            data = data.data
-        data = data.ravel()
-
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
-
-        # Rechunk indices to match the data chunking
-        if weights.chunks != self.idxs.chunks:
-            self.idxs = da.rechunk(self.idxs, weights.chunks)
-
-        # Calculate the max of the data falling to each bin
-        out_size = self.target_area.size
-        maxs, _, _ = binned_statistic(self.idxs, values=weights, statistic='max',
-                                      bins=out_size, range=(0, out_size))
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
-
-        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        maxs = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, maxs)
-
-        # set bin without data to fill value
-        maxs = da.where(counts == 0, fill_value, maxs)
-
-        return maxs.reshape(self.target_area.shape)
+        return self._call_scipy_binned_statistics('max', data, fill_value, skipna)
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket
