@@ -192,8 +192,6 @@ class BucketResampler(object):
 
     def _call_scipy_binned_statistics(self, scipy_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
-        from scipy.stats import binned_statistic
-
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
@@ -207,8 +205,14 @@ class BucketResampler(object):
 
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
-        statistics, _, _ = binned_statistic(self.idxs, values=weights, statistic=scipy_method,
-                                            bins=out_size, range=(0, out_size))
+        weights = xr.DataArray(weights)
+        if scipy_method == 'min':
+            statistics = weights.groupby_bins('dim_0', bins=np.linspace(0, out_size, out_size+1),
+                                              right=False, include_lowest=True).min()
+        if scipy_method == 'max':
+            statistics = weights.groupby_bins('dim_0', bins=np.linspace(0, out_size, out_size+1),
+                                              right=False, include_lowest=True).max()
+
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
