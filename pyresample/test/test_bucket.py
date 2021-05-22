@@ -170,7 +170,7 @@ class Test(unittest.TestCase):
 
     def _get_min_result(self, data, **kwargs):
         """Compute the bucket average with kwargs and check that no dask computation is performed."""
-        with dask.config.set(scheduler=CustomScheduler(max_computes=3)):
+        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
             result = self.resampler.get_min(data, **kwargs)
         return result.compute()
 
@@ -188,7 +188,7 @@ class Test(unittest.TestCase):
 
     def _get_max_result(self, data, **kwargs):
         """Compute the bucket average with kwargs and check that no dask computation is performed."""
-        with dask.config.set(scheduler=CustomScheduler(max_computes=3)):
+        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
             result = self.resampler.get_max(data, **kwargs)
         return result.compute()
 
