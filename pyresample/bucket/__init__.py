@@ -192,6 +192,9 @@ class BucketResampler(object):
 
     def _call_scipy_binned_statistics(self, scipy_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
+        import dask.dataframe as dd
+        import pandas as pd
+
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
@@ -205,13 +208,28 @@ class BucketResampler(object):
 
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
-        weights = xr.DataArray(weights)
+
+        # merge into one Dataframe
+        df = dd.concat([dd.from_dask_array(self.idxs), dd.from_dask_array(weights)],
+                       axis=1)
+        df.columns = ['x', 'values']
+
         if scipy_method == 'min':
-            statistics = weights.groupby_bins('dim_0', bins=np.linspace(0, out_size, out_size+1),
-                                              right=False, include_lowest=True).min()
-        if scipy_method == 'max':
-            statistics = weights.groupby_bins('dim_0', bins=np.linspace(0, out_size, out_size+1),
-                                              right=False, include_lowest=True).max()
+            statistics = df.map_partitions(lambda part: part.groupby(
+                                           np.digitize(part.x,
+                                                       bins=np.linspace(0, out_size, out_size)
+                                                       )
+                                           )['values'].min())
+
+        elif scipy_method == 'max':
+            statistics = df.map_partitions(lambda part: part.groupby(
+                                           np.digitize(part.x,
+                                                       bins=np.linspace(0, out_size, out_size)
+                                                       )
+                                           )['values'].max())
+
+        # fill missed index
+        statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
