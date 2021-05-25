@@ -64,7 +64,7 @@ _valid_cf_coordinate_standardnames['geostationary']['y'] = (
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """Convert XY values from CF to PROJ convention. With CF =< 1.9 only affects geostrationary projection."""
     crs_dict = crs.to_dict()
-    if crs_dict['proj'] == 'geos':
+    if crs_dict['proj'] == 'geos' and crs_dict.get('units', 'meters') in ['radians', 'rads']:
         # for geostationary projection, the values stored as x/y in CF are not directly
         #  the x/y along the projection axes, but are rather the scanning angles from
         #  the satellite. We must multiply them by the height of the satellite.
@@ -72,7 +72,7 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
         for k in ('first', 'last', 'spacing'):
             axis_info[k] *= satellite_height
         # the unit is now the default (meters)
-        axis_info['units'] = None
+        axis_info['units'] = 'meters'
 
     return axis_info
 
