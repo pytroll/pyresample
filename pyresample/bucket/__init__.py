@@ -246,8 +246,7 @@ class BucketResampler(object):
 
         .. warning::
 
-            The slow :func:`~pyresample.bucket.BucketResampler._call_pandas_groupby_statistics`
-            method is temporarily used here,
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
             as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
@@ -275,8 +274,7 @@ class BucketResampler(object):
 
         .. warning::
 
-            The slow :func:`~pyresample.bucket.BucketResampler._call_pandas_groupby_statistics`
-            method is temporarily used here,
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
             as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
