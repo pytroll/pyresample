@@ -190,7 +190,7 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
-    def _call_scipy_binned_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
         import dask.dataframe as dd
         import pandas as pd
@@ -244,6 +244,12 @@ class BucketResampler(object):
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
 
+        .. warning::
+
+            The slow :func:`~pyresample.bucket.BucketResampler._call_pandas_groupby_statistics`
+            method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
         Parameters
         ----------
         data : Numpy or Dask array
@@ -262,10 +268,16 @@ class BucketResampler(object):
             Bin-wise minimums in the target grid
         """
         LOG.info("Get min of values in each location")
-        return self._call_scipy_binned_statistics('min', data, fill_value, skipna)
+        return self._call_pandas_groupby_statistics('min', data, fill_value, skipna)
 
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
+
+        .. warning::
+
+            The slow :func:`~pyresample.bucket.BucketResampler._call_pandas_groupby_statistics`
+            method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
         ----------
@@ -285,7 +297,7 @@ class BucketResampler(object):
             Bin-wise maximums in the target grid
         """
         LOG.info("Get max of values in each location")
-        return self._call_scipy_binned_statistics('max', data, fill_value, skipna)
+        return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket
