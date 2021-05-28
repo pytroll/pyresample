@@ -139,13 +139,17 @@ class BucketResampler(object):
         target_shape = self.target_area.shape
         self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
 
-    def get_sum(self, data, skipna=True):
+    def get_sum(self, data, fill_value=np.nan, skipna=True):
         """Calculate sums for each bin with drop-in-a-bucket resampling.
 
         Parameters
         ----------
         data : Numpy or Dask array
             Data to be binned and summed.
+        fill_value : float
+            Fill value to mark missing/invalid values in the input data,
+            as well as in the binned and averaged output data.
+            Default: np.nan
         skipna : boolean (optional)
                 If True, skips NaN values for the sum calculation
                     (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
@@ -180,6 +184,10 @@ class BucketResampler(object):
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
         sums = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, sums)
 
+        # set bin without data to fill_value if fill_value exists
+        if ~np.isnan(fill_value):
+            sums = da.where(sums == 0, fill_value, sums)
+
         return sums.reshape(self.target_area.shape)
 
     def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic):
@@ -190,7 +198,7 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
-    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=np.nan, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
         import dask.dataframe as dd
         import pandas as pd
@@ -236,8 +244,8 @@ class BucketResampler(object):
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
         statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
 
-        # set bin without data to fill value
-        statistics = da.where(counts == 0, fill_value, statistics)
+        # set bin without data to fill_value
+        statistics = da.where(np.in1d(counts, [0, fill_value]), fill_value, statistics)
 
         return statistics.reshape(self.target_area.shape)
 
