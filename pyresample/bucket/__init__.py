@@ -245,7 +245,7 @@ class BucketResampler(object):
         statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
 
         # set bin without data to fill_value
-        statistics = da.where(np.in1d(counts, [0, fill_value]), fill_value, statistics)
+        statistics = da.where(np.isin(counts, [0, fill_value]), fill_value, statistics)
 
         return statistics.reshape(self.target_area.shape)
 
