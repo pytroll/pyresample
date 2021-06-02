@@ -72,7 +72,7 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
         for k in ('first', 'last', 'spacing'):
             axis_info[k] *= satellite_height
         # the unit is now the default (meters)
-        axis_info['units'] = 'meters'
+        axis_info['units'] = 'm'
 
     return axis_info
 
