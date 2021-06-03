@@ -619,7 +619,7 @@ def _prepare_cf_goes():
     goes_area = AreaDefinition(area_id, description, proj_id, projection,
                                width, height, area_extent)
     x = np.linspace(goes_area.area_extent[0], goes_area.area_extent[2], goes_area.shape[1])
-    y = np.linspace(goes_area.area_extent[1], goes_area.area_extent[3], goes_area.shape[0])
+    y = np.linspace(goes_area.area_extent[3], goes_area.area_extent[1], goes_area.shape[0])
     ds = xr.Dataset({'C13': (('y', 'x'), np.ma.masked_all((height, width)),
                              {'grid_mapping': 'GOES-East'})},
                     coords={'y': y, 'x': x})
@@ -785,9 +785,9 @@ class TestLoadCFArea_Public(unittest.TestCase):
             self.assertEqual(cf_info['grid_mapping_variable'], 'GOES-East')
             self.assertEqual(cf_info['type_of_grid_mapping'], 'geostationary')
             self.assertEqual(cf_info['x']['varname'], 'x')
-            self.assertEqual(cf_info['x']['first'], -129805613857701.5)
+            self.assertEqual(cf_info['x']['first'], -3627271.2913)
             self.assertEqual(cf_info['y']['varname'], 'y')
-            self.assertEqual(cf_info['y']['last'], 164229202061437.56)
+            self.assertEqual(cf_info['y']['last'], 1583173.6575)
 
         # prepare xarray Dataset
         cf_file = _prepare_cf_goes()
