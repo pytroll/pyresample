@@ -604,6 +604,53 @@ def _prepare_cf_nh10km():
     return ds
 
 
+def _prepare_cf_goes():
+    import xarray as xr
+    from pyresample.geometry import AreaDefinition
+    area_id = 'GOES-East'
+    description = '2km at nadir'
+    proj_id = 'abi_fixed_grid'
+    projection = {'ellps': 'GRS80', 'h': '35786023', 'lon_0': '-75', 'no_defs': 'None',
+                  'proj': 'geos', 'sweep': 'x', 'type': 'crs',
+                  'units': 'm', 'x_0': '0', 'y_0': '0'}
+    width = 2500
+    height = 1500
+    area_extent = (-3627271.2913, 1583173.6575, 1382771.9287, 4589199.5895)
+    goes_area = AreaDefinition(area_id, description, proj_id, projection,
+                               width, height, area_extent)
+    x = np.linspace(goes_area.area_extent[0], goes_area.area_extent[2], goes_area.shape[1])
+    y = np.linspace(goes_area.area_extent[1], goes_area.area_extent[3], goes_area.shape[0])
+    ds = xr.Dataset({'C13': (('y', 'x'), np.ma.masked_all((height, width)),
+                             {'grid_mapping': 'GOES-East'})},
+                    coords={'y': y, 'x': x})
+
+    ds['x'].attrs['units'] = 'm'
+    ds['x'].attrs['standard_name'] = 'projection_x_coordinate'
+    ds['y'].attrs['units'] = 'm'
+    ds['y'].attrs['standard_name'] = 'projection_y_coordinate'
+
+    ds['GOES-East'] = 0
+    ds['GOES-East'].attrs['grid_mapping_name'] = 'geostationary'
+    ds['GOES-East'].attrs['false_easting'] = 0.0
+    ds['GOES-East'].attrs['false_northing'] = 0.0
+    ds['GOES-East'].attrs['semi_major_axis'] = 6378137.0
+    ds['GOES-East'].attrs['semi_minor_axis'] = 6356752.31414
+    ds['GOES-East'].attrs['geographic_crs_name'] = 'unknown'
+    ds['GOES-East'].attrs['horizontal_datum_name'] = 'unknown'
+    ds['GOES-East'].attrs['inverse_flattening'] = 298.257222096042
+    ds['GOES-East'].attrs['latitude_of_projection_origin'] = 0.0
+    ds['GOES-East'].attrs['long_name'] = 'GOES-East'
+    ds['GOES-East'].attrs['longitude_of_prime_meridian'] = 0.0
+    ds['GOES-East'].attrs['longitude_of_projection_origin'] = -75.0
+    ds['GOES-East'].attrs['perspective_point_height'] = 35786023.0
+    ds['GOES-East'].attrs['prime_meridian_name'] = 'Greenwich'
+    ds['GOES-East'].attrs['projected_crs_name'] = 'unknown'
+    ds['GOES-East'].attrs['reference_ellipsoid_name'] = 'GRS 1980'
+    ds['GOES-East'].attrs['sweep_angle_axis'] = 'x'
+
+    return ds
+
+
 def _prepare_cf_llwgs84():
     import xarray as xr
     nlat = 19
@@ -729,6 +776,33 @@ class TestLoadCFArea_Public(unittest.TestCase):
         # load without using a variable=
         _, cf_info = load_cf_area(cf_file)
         validate_nh10km_cfinfo(cf_info)
+
+    def test_load_cf_goes(self):
+        from pyresample.utils import load_cf_area
+
+        def validate_goes(adef, cfinfo, y='y', x='x'):
+            # test some of the fields
+            self.assertEqual(cf_info['grid_mapping_variable'], 'GOES-East')
+            self.assertEqual(cf_info['type_of_grid_mapping'], 'geostationary')
+            self.assertEqual(cf_info['x']['varname'], 'x')
+            self.assertEqual(cf_info['x']['first'], -129805613857701.5)
+            self.assertEqual(cf_info['y']['varname'], 'y')
+            self.assertEqual(cf_info['y']['last'], 164229202061437.56)
+
+        # prepare xarray Dataset
+        cf_file = _prepare_cf_goes()
+
+        # load using a variable= that is a valid grid_mapping container
+        adef, cf_info = load_cf_area(cf_file)
+        validate_goes(adef, cf_info, y=None, x=None)
+
+        # load using a variable=temp
+        adef, cf_info = load_cf_area(cf_file, 'C13')
+        validate_goes(adef, cf_info)
+
+        # load using a variable=None
+        adef, cf_info = load_cf_area(cf_file)
+        validate_goes(adef, cf_info)
 
     def test_load_cf_llwgs84(self):
         from pyresample.utils import load_cf_area
