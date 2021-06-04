@@ -1,3 +1,34 @@
+## Version 1.20.0 (2021/06/04)
+
+### Issues Closed
+
+* [Issue 365](https://github.com/pytroll/pyresample/issues/365) - `get_proj_coords` result of Satpy is different from that of `load_cf_area`
+* [Issue 361](https://github.com/pytroll/pyresample/issues/361) - __version__ in pip wheel  is mangled ([PR 363](https://github.com/pytroll/pyresample/pull/363))
+* [Issue 355](https://github.com/pytroll/pyresample/issues/355) - Handle X/Y in meters for CF conversion ([PR 362](https://github.com/pytroll/pyresample/pull/362))
+* [Issue 350](https://github.com/pytroll/pyresample/issues/350) - Breaking change for fill value in area.lonlat2colrow ([PR 351](https://github.com/pytroll/pyresample/pull/351))
+* [Issue 296](https://github.com/pytroll/pyresample/issues/296) - Add CITATION information
+
+In this release 5 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 367](https://github.com/pytroll/pyresample/pull/367) - Fix AreaDefinition.get_area_slices returning non-integer slices
+* [PR 363](https://github.com/pytroll/pyresample/pull/363) - Fix version number not being preserved in wheels ([361](https://github.com/pytroll/pyresample/issues/361))
+* [PR 362](https://github.com/pytroll/pyresample/pull/362) - Fix handling of geostationary x/y units in CF conversion ([355](https://github.com/pytroll/pyresample/issues/355))
+
+#### Features added
+
+* [PR 356](https://github.com/pytroll/pyresample/pull/356) - Add `get_min` and `get_max` to Bucket resampler (experimental)
+
+#### Documentation changes
+
+* [PR 351](https://github.com/pytroll/pyresample/pull/351) - Fix the documentation of get_array_indices_from_lonlat and add a test ([350](https://github.com/pytroll/pyresample/issues/350))
+
+In this release 5 pull requests were closed.
+
+
 ## Version 1.19.0 (2021/04/14)
 
 ### Issues Closed
