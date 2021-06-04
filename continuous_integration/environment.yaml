@@ -2,7 +2,6 @@ name: test-environment
 channels:
   - conda-forge
 dependencies:
-  - numpy >= 1.19.0
   - xarray
   - dask
   - distributed

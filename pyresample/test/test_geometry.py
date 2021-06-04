@@ -2601,6 +2601,8 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                          area_extent[2] - 10000,
                          area_extent[3] - 10000))
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        assert isinstance(slice_x.start, int)
+        assert isinstance(slice_y.start, int)
         self.assertEqual(slice(3, 3709, None), slice_x)
         self.assertEqual(slice(3, 3709, None), slice_y)
 
@@ -2621,6 +2623,8 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                                      x_size, y_size,
                                      area_extent)
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        assert isinstance(slice_x.start, int)
+        assert isinstance(slice_y.start, int)
         self.assertEqual(slice(46, 3667, None), slice_x)
         self.assertEqual(slice(52, 3663, None), slice_y)
 
@@ -2638,6 +2642,8 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                                                  1029087.28,
                                                  1490031.36])
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        assert isinstance(slice_x.start, int)
+        assert isinstance(slice_y.start, int)
         self.assertEqual(slice_x, slice(1610, 2343))
         self.assertEqual(slice_y, slice(158, 515, None))
 
@@ -2658,6 +2664,8 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                                      x_size, y_size,
                                      area_extent)
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+        assert isinstance(slice_x.start, int)
+        assert isinstance(slice_y.start, int)
         self.assertEqual(slice(0, x_size, None), slice_x)
         self.assertEqual(slice(0, y_size, None), slice_y)
 
@@ -2673,6 +2681,8 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
                 [-180.0, -90.0, 180.0, 90.0])
 
             slice_x, slice_y = area_def.get_area_slices(area_to_cover)
+            assert isinstance(slice_x.start, int)
+            assert isinstance(slice_y.start, int)
             self.assertEqual(slice_x, slice(46, 3667, None))
             self.assertEqual(slice_y, slice(52, 3663, None))
 
