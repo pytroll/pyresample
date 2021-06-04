@@ -610,12 +610,13 @@ def _prepare_cf_goes():
     area_id = 'GOES-East'
     description = '2km at nadir'
     proj_id = 'abi_fixed_grid'
-    projection = {'ellps': 'GRS80', 'h': '35786023', 'lon_0': '-75', 'no_defs': 'None',
+    h = 35786023
+    projection = {'ellps': 'GRS80', 'h': h, 'lon_0': '-75', 'no_defs': 'None',
                   'proj': 'geos', 'sweep': 'x', 'type': 'crs',
                   'units': 'm', 'x_0': '0', 'y_0': '0'}
     width = 2500
     height = 1500
-    area_extent = (-3627271.2913, 1583173.6575, 1382771.9287, 4589199.5895)
+    area_extent = (-3627271.2913/h, 1583173.6575/h, 1382771.9287/h, 4589199.5895/h)
     goes_area = AreaDefinition(area_id, description, proj_id, projection,
                                width, height, area_extent)
     x = np.linspace(goes_area.area_extent[0], goes_area.area_extent[2], goes_area.shape[1])
@@ -624,9 +625,9 @@ def _prepare_cf_goes():
                              {'grid_mapping': 'GOES-East'})},
                     coords={'y': y, 'x': x})
 
-    ds['x'].attrs['units'] = 'm'
+    ds['x'].attrs['units'] = 'radians'
     ds['x'].attrs['standard_name'] = 'projection_x_coordinate'
-    ds['y'].attrs['units'] = 'm'
+    ds['y'].attrs['units'] = 'radians'
     ds['y'].attrs['standard_name'] = 'projection_y_coordinate'
 
     ds['GOES-East'] = 0
