@@ -793,10 +793,6 @@ class TestLoadCFArea_Public(unittest.TestCase):
         # prepare xarray Dataset
         cf_file = _prepare_cf_goes()
 
-        # load using a variable= that is a valid grid_mapping container
-        adef, cf_info = load_cf_area(cf_file)
-        validate_goes(adef, cf_info, y=None, x=None)
-
         # load using a variable=temp
         adef, cf_info = load_cf_area(cf_file, 'C13')
         validate_goes(adef, cf_info)
