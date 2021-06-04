@@ -20,6 +20,7 @@
 """Classes for geometry operations."""
 
 import hashlib
+import math
 import warnings
 from collections import OrderedDict
 from logging import getLogger
@@ -2233,8 +2234,11 @@ class AreaDefinition(_ProjectionDefinition):
             # Get slice parameters
             xstart, xstop, ystart, ystop = self._get_slice_starts_stops(area_to_cover)
 
-            return (check_slice_orientation(slice(xstart, xstop)),
-                    check_slice_orientation(slice(ystart, ystop)))
+            x_slice = check_slice_orientation(slice(xstart, xstop))
+            y_slice = check_slice_orientation(slice(ystart, ystop))
+            x_slice = _ensure_integer_slice(x_slice)
+            y_slice = _ensure_integer_slice(y_slice)
+            return x_slice, y_slice
 
         if not self.is_geostationary:
             raise NotImplementedError("Source projection must be 'geos' if "
@@ -2254,10 +2258,12 @@ class AreaDefinition(_ProjectionDefinition):
             logger.debug('Cannot determine appropriate slicing. '
                          "Data and projection area do not overlap.")
             raise NotImplementedError
-        x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
-                                       np.rad2deg(intersection.lat))
+        x, y = self.get_array_indices_from_lonlat(
+            np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
         x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
         y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+        x_slice = _ensure_integer_slice(x_slice)
+        y_slice = _ensure_integer_slice(y_slice)
         if shape_divisible_by is not None:
             x_slice = _make_slice_divisible(x_slice, self.width,
                                             factor=shape_divisible_by)
@@ -2379,6 +2385,17 @@ def _make_slice_divisible(sli, max_size, factor=2):
             sli = slice(sli.start, sli.stop - rem)
 
     return sli
+
+
+def _ensure_integer_slice(sli):
+    start = sli.start
+    stop = sli.stop
+    step = sli.step
+    return slice(
+        math.floor(start) if start is not None else None,
+        math.ceil(stop) if stop is not None else None,
+        math.floor(step) if step is not None else None
+    )
 
 
 def get_geostationary_angle_extent(geos_area):
