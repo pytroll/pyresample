@@ -781,7 +781,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
     def test_load_cf_goes(self):
         from pyresample.utils import load_cf_area
 
-        def validate_goes(adef, cfinfo, y='y', x='x'):
+        def validate_goes(adef, cfinfo):
             # test some of the fields
             self.assertEqual(cf_info['grid_mapping_variable'], 'GOES-East')
             self.assertEqual(cf_info['type_of_grid_mapping'], 'geostationary')
