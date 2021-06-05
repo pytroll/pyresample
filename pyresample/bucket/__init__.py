@@ -190,7 +190,7 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
-    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+    def _call_bin_statistic(self, statistic_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
         if isinstance(data, xr.DataArray):
             data = data.data
@@ -235,7 +235,7 @@ class BucketResampler(object):
                                         dask="parallelized",
                                         output_dtypes=[weights.dtype],
                                         dask_gufunc_kwargs={'allow_rechunk': True},
-                                    )
+                                        )
         statistics[:end_index] = statistics_sub
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
@@ -274,7 +274,7 @@ class BucketResampler(object):
             Bin-wise minimums in the target grid
         """
         LOG.info("Get min of values in each location")
-        return self._call_pandas_groupby_statistics('min', data, fill_value, skipna)
+        return self._call_bin_statistic('min', data, fill_value, skipna)
 
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
@@ -302,7 +302,7 @@ class BucketResampler(object):
             Bin-wise maximums in the target grid
         """
         LOG.info("Get max of values in each location")
-        return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
+        return self._call_bin_statistic('max', data, fill_value, skipna)
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket
