@@ -192,9 +192,6 @@ class BucketResampler(object):
 
     def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
-        import dask.dataframe as dd
-        import pandas as pd
-
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
@@ -209,27 +206,37 @@ class BucketResampler(object):
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
 
-        # merge into one Dataframe
-        df = dd.concat([dd.from_dask_array(self.idxs), dd.from_dask_array(weights)],
-                       axis=1)
-        df.columns = ['x', 'values']
+        def numpy_reduceat(data, bins, statistic_method):
+            '''Calculate the bin_statistic using numpy.ufunc.reduceat'''
+            if statistic_method == 'min':
+                return np.minimum.reduceat(data, bins)
+            elif statistic_method == 'max':
+                return np.maximum.reduceat(data, bins)
 
-        if scipy_method == 'min':
-            statistics = df.map_partitions(lambda part: part.groupby(
-                                           np.digitize(part.x,
-                                                       bins=np.linspace(0, out_size, out_size)
-                                                       )
-                                           )['values'].min())
+        # initialize the output DataArray with np.nan
+        statistics = xr.DataArray(da.from_array(np.full((out_size), np.nan)), dims=['x'])
 
-        elif scipy_method == 'max':
-            statistics = df.map_partitions(lambda part: part.groupby(
-                                           np.digitize(part.x,
-                                                       bins=np.linspace(0, out_size, out_size)
-                                                       )
-                                           )['values'].max())
+        # if the bins is longer than the data, we need to crop the bins
+        # because "if indices[i] >= len(array) or indices[i] < 0, an error is raised."
+        # https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduceat.html
+        end_index = len(weights) if out_size >= len(weights) else out_size
 
-        # fill missed index
-        statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
+        # dask='parallelized' needs an xarray object
+        weights = xr.DataArray(weights, dims=['x'])
+
+        # calculate the statistics using apply_ufunc
+        statistics_sub = xr.apply_ufunc(numpy_reduceat,
+                                        weights,
+                                        np.linspace(0, out_size-1, out_size).astype('int')[:end_index],
+                                        kwargs={'statistic_method': statistic_method},
+                                        input_core_dims=[['x'], ['new_x']],
+                                        exclude_dims=set(('x',)),
+                                        output_core_dims=[['new_x']],
+                                        dask="parallelized",
+                                        output_dtypes=[weights.dtype],
+                                        dask_gufunc_kwargs={'allow_rechunk': True},
+                                    )
+        statistics[:end_index] = statistics_sub
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
@@ -244,9 +251,9 @@ class BucketResampler(object):
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
 
-        .. warning::
+        .. note::
 
-            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            The :meth:`numpy.ufunc.reduceat` method is used here,
             as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
@@ -272,9 +279,9 @@ class BucketResampler(object):
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
 
-        .. warning::
+        .. note::
 
-            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            The :meth:`numpy.ufunc.reduceat`  method is temporarily used here,
             as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
