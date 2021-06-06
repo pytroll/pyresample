@@ -212,31 +212,44 @@ class BucketResampler(object):
                 return np.minimum.reduceat(data, bins)
             elif statistic_method == 'max':
                 return np.maximum.reduceat(data, bins)
+        # create the output bins
+        bins = da.linspace(0, out_size-1, out_size).astype('int')
 
-        # initialize the output DataArray with np.nan
-        statistics = xr.DataArray(da.from_array(np.full((out_size), np.nan)), dims=['x'])
+        # get the indices of the bins to which each value in self.idxs belongs
+        slices = da.digitize(self.idxs, bins)
 
-        # if the bins is longer than the data, we need to crop the bins
-        # because "if indices[i] >= len(array) or indices[i] < 0, an error is raised."
-        # https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduceat.html
-        end_index = len(weights) if out_size >= len(weights) else out_size
-
-        # dask='parallelized' needs an xarray object
+        # convert to DataArray using idxs as coords
         weights = xr.DataArray(weights, dims=['x'])
+        slices = xr.DataArray(slices, dims=['x'])
 
-        # calculate the statistics using apply_ufunc
+        # set out of range value to nan
+        mask = xr.DataArray((self.idxs >= bins.min()) & (self.idxs <= bins.max()), dims=['x'])
+        weights = weights.where(mask, drop=True)
+        slices = slices.where(mask, drop=True)
+
+        # sort the slices
+        sort_index = da.map_blocks(np.argsort, slices.data)
+        slices = slices[sort_index]
+        weights = weights[sort_index]
+
+        # get the unique slices (for assignment later) and bins (for numpy_reduceat)
+        unique_slices, unique_bins = da.unique(slices.data, return_index=True)
         statistics_sub = xr.apply_ufunc(numpy_reduceat,
                                         weights,
-                                        np.linspace(0, out_size-1, out_size).astype('int')[:end_index],
+                                        unique_bins.compute_chunk_sizes(),
                                         kwargs={'statistic_method': statistic_method},
                                         input_core_dims=[['x'], ['new_x']],
                                         exclude_dims=set(('x',)),
-                                        output_core_dims=[['new_x']],
+                                        output_core_dims=[['new_x'], ],
                                         dask="parallelized",
                                         output_dtypes=[weights.dtype],
                                         dask_gufunc_kwargs={'allow_rechunk': True},
                                         )
-        statistics[:end_index] = statistics_sub
+
+        # initialize the output DataArray with np.nan
+        statistics = xr.DataArray(da.from_array(np.full((out_size), np.nan)), dims=['x'])
+        # assign the binned statistics
+        statistics.loc[unique_slices.astype('int')-1] = statistics_sub
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
