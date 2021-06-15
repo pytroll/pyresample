@@ -206,50 +206,39 @@ class BucketResampler(object):
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
 
-        def numpy_reduceat(data, bins, statistic_method):
-            '''Calculate the bin_statistic using numpy.ufunc.reduceat'''
-            if statistic_method == 'min':
-                return np.minimum.reduceat(data, bins)
-            elif statistic_method == 'max':
-                return np.maximum.reduceat(data, bins)
         # create the output bins
         bins = da.linspace(0, out_size-1, out_size).astype('int')
 
-        # get the indices of the bins to which each value in self.idxs belongs
-        slices = da.digitize(self.idxs, bins)
+        # sort idxs and weights based on weights
+        if statistic_method == 'min':
+            order = da.map_blocks(np.argsort, weights)
+        elif statistic_method == 'max':
+            order = da.map_blocks(np.argsort, weights)[::-1]
 
-        # convert to DataArray using idxs as coords
-        weights = xr.DataArray(weights, dims=['x'])
-        slices = xr.DataArray(slices, dims=['x'])
+        weights_sorted = da.empty((len(weights) + 1), dtype=weights.dtype)
+        weights_sorted[:-1] = weights[order]
+        weights_sorted[-1] = np.nan
+        idxs_sorted = self.idxs[order]
 
-        # set out of range value to nan
-        mask = xr.DataArray((self.idxs >= bins.min()) & (self.idxs <= bins.max()), dims=['x'])
-        weights = weights.where(mask, drop=True)
-        slices = slices.where(mask, drop=True)
+        extended_bins = da.empty(len(bins) + 1, dtype=bins.dtype)
+        extended_bins[:-1] = bins
+        extended_bins[-1] = np.iinfo(bins.dtype).max  # last bin goes to infinity
 
-        # sort the slices
-        sort_index = da.map_blocks(np.argsort, slices.data)
-        slices = slices[sort_index]
-        weights = weights[sort_index]
+        # preallocate buffers to avoid array creation in main loop
+        chunk_size = max(len(weights)//int(1e3), len(bins))
+        mask_buffer = da.empty((chunk_size, len(self.idxs) + 1), dtype=bool)
+        mask_buffer[:, -1] = True
+        statistics = da.empty_like(bins, dtype=np.float64)
 
-        # get the unique slices (for assignment later) and bins (for numpy_reduceat)
-        unique_slices, unique_bins = da.unique(slices.data, return_index=True)
-        statistics_sub = xr.apply_ufunc(numpy_reduceat,
-                                        weights,
-                                        unique_bins.compute_chunk_sizes(),
-                                        kwargs={'statistic_method': statistic_method},
-                                        input_core_dims=[['x'], ['new_x']],
-                                        exclude_dims=set(('x',)),
-                                        output_core_dims=[['new_x'], ],
-                                        dask="parallelized",
-                                        output_dtypes=[weights.dtype],
-                                        dask_gufunc_kwargs={'allow_rechunk': True},
-                                        )
-
-        # initialize the output DataArray with np.nan
-        statistics = xr.DataArray(da.from_array(np.full((out_size), np.nan)), dims=['x'])
-        # assign the binned statistics
-        statistics.loc[unique_slices.astype('int')-1] = statistics_sub
+        # calculate the statistics in each chunk
+        for low in range(0, len(bins), chunk_size):
+            high = min(low + chunk_size, len(bins))
+            chunk_size = high - low
+            mask_buffer[:chunk_size, :-1] = (bins[low:high, None] <= idxs_sorted[None, :]) &\
+                                            (extended_bins[low+1:high+1, None] > idxs_sorted[None, :])
+            mask = mask_buffer[:chunk_size, ...]
+            weight_idx = np.argmax(mask, axis=-1)
+            statistics[low:high] = weights_sorted[weight_idx]
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
