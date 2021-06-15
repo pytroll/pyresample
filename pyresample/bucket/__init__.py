@@ -225,7 +225,8 @@ class BucketResampler(object):
         extended_bins[-1] = np.iinfo(bins.dtype).max  # last bin goes to infinity
 
         # preallocate buffers to avoid array creation in main loop
-        chunk_size = max(len(weights)//int(1e3), len(bins))
+        chunk_size = len(weights)//int(1e3)
+        chunk_size = len(bins) if chunk_size == 0 else chunk_size
         mask_buffer = da.empty((chunk_size, len(self.idxs) + 1), dtype=bool)
         mask_buffer[:, -1] = True
         statistics = da.empty_like(bins, dtype=np.float64)
