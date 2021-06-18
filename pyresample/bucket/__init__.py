@@ -214,8 +214,6 @@ class BucketResampler(object):
 
     def _call_bin_statistic(self, statistic_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
-        import dask
-
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
