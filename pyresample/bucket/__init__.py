@@ -17,6 +17,7 @@
 
 """Code for resampling using bucket resampling."""
 
+import dask
 import dask.array as da
 import xarray as xr
 import numpy as np
@@ -190,6 +191,27 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
+    @dask.delayed
+    def _sort_weights(self, statistic_method, weights):
+        '''sort idxs and weights based on weights'''
+        if statistic_method == 'min':
+            order = np.argsort(weights)
+        elif statistic_method == 'max':
+            order = np.argsort(weights)[::-1]
+
+        return order
+
+    @dask.delayed
+    def _get_bin_statistic(self, bins, idxs_sorted, weights_sorted):
+        '''get the statistic of each bin'''
+        extended_bins = np.append(bins, np.iinfo(bins.dtype).max)
+        mask_buffer = (bins[:, None] <= idxs_sorted[None, :-1]) &\
+                      (extended_bins[1:, None] > idxs_sorted[None, :-1])
+        mask = np.hstack((mask_buffer, np.ones((mask_buffer.shape[0], 1), dtype=mask_buffer.dtype)))
+        weight_idx = np.argmax(mask, axis=-1)
+
+        return weights_sorted[weight_idx]
+
     def _call_bin_statistic(self, statistic_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
         import dask
@@ -208,47 +230,20 @@ class BucketResampler(object):
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
 
-        # create the output bins
-        bins = da.linspace(0, out_size-1, out_size).astype('int')
-
-        # sort idxs and weights based on weights
-        if statistic_method == 'min':
-            order = np.argsort(weights)
-        elif statistic_method == 'max':
-            order = np.argsort(weights)[::-1]
-
-        @dask.delayed
-        def get_block_statistic(block, mask_buffer, idxs_sorted, weights_sorted):
-            extended_bins = np.append(block, np.iinfo(block.dtype).max)
-            # use the preallocated buffers
-            mask_buffer[:len(bins), :-1] = (bins[:, None] <= idxs_sorted[None, :]) &\
-                                           (extended_bins[1:, None] > idxs_sorted[None, :])
-            mask = mask_buffer[:len(bins), ...]
-            weight_idx = np.argmax(mask, axis=-1)
-
-            return weights_sorted[weight_idx]
-
+        # sort idxs and weights
+        order = da.from_delayed(self._sort_weights(statistic_method, weights),
+                                shape=(len(weights), ),
+                                dtype=np.int64)
         idxs_sorted = self.idxs[order]
         weights_sorted = np.append(weights[order], np.nan)
 
-        bins = np.linspace(0, out_size-1, out_size).astype('int')
-        chunk_size = len(bins)//int(1e3)
-        chunk_size = len(bins) if chunk_size == 0 else chunk_size
-
-        # preallocate buffers to avoid array creation in main loop
-        mask_buffer = np.empty((chunk_size, len(self.idxs) + 1), dtype=bool)
-        mask_buffer[:, -1] = True
+        # create the output bins
+        bins = da.linspace(0, out_size-1, out_size).astype('int')
 
         # calculate the statistics in each block
-        blocks = da.from_array(bins, chunks=chunk_size).to_delayed()
-        results = [da.from_delayed(get_block_statistic(block, mask_buffer,
-                                                       idxs_sorted, weights_sorted),
-                                   shape=(chunk_size,),
-                                   dtype=np.float64)
-                   for block in blocks]
-
-        # combine into the 1D statistic
-        statistics = da.concatenate(results, axis=0, allow_unknown_chunksizes=True)
+        statistics = da.from_delayed(self._get_bin_statistic(bins, idxs_sorted, weights_sorted),
+                                     shape=(len(bins),),
+                                     dtype=np.float64)
 
         counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
 
