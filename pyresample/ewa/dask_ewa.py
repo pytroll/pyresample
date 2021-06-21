@@ -53,8 +53,12 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _call_ll2cr(lons, lats, target_geo_def):
+def _call_ll2cr(lons, lats, target_geo_def, computing_meta=False):
     """Wrap ll2cr() for handling dask delayed calls better."""
+    if computing_meta:
+        # produce a representative meta array in the best case
+        # avoids errors when we return our "empty" tuples below
+        return np.zeros((2, *lons.shape), dtype=lons.dtype)
     new_src = SwathDefinition(lons, lats)
     swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
     if swath_points_in_grid == 0:
@@ -107,7 +111,8 @@ def _chunk_callable(x_chunk, axis, keepdims, **kwargs):
 
 def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
                     maximum_weight_mode=False):
-    if isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple):
+    is_empty_chunk = isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple)
+    if computing_meta or is_empty_chunk:
         # single "empty" chunk
         return x_chunk
     if not isinstance(x_chunk, list):
