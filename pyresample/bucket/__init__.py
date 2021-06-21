@@ -204,11 +204,21 @@ class BucketResampler(object):
     @dask.delayed
     def _get_bin_statistic(self, bins, idxs_sorted, weights_sorted):
         '''get the statistic of each bin'''
-        extended_bins = np.append(bins, np.iinfo(bins.dtype).max)
-        mask_buffer = (bins[:, None] <= idxs_sorted[None, :-1]) &\
-                      (extended_bins[1:, None] > idxs_sorted[None, :-1])
-        mask = np.hstack((mask_buffer, np.ones((mask_buffer.shape[0], 1), dtype=mask_buffer.dtype)))
-        weight_idx = np.argmax(mask, axis=-1)
+        # get where the `idxs_sorted` located in `bins`
+        binned_values = np.digitize(idxs_sorted, bins, right=True)
+
+        # mask value outside of bin
+        binned_values_masked = np.ma.masked_array(binned_values,
+                                                  (idxs_sorted < bins.min()) | (idxs_sorted > bins.max()))
+
+        # get the first index and value in each bin
+        unique_bin, unique_idx = np.unique(binned_values_masked,  return_index=True)
+
+        # create the full index array
+        weight_idx = np.zeros(len(bins), dtype='int')
+
+        # assign the valid index to array
+        weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
 
         return weights_sorted[weight_idx]
 
@@ -231,14 +241,12 @@ class BucketResampler(object):
         # sort idxs and weights
         order = da.from_delayed(self._sort_weights(statistic_method, weights),
                                 shape=(len(weights), ),
-                                dtype=np.int64)
+                                dtype='int')
         idxs_sorted = self.idxs[order]
         weights_sorted = np.append(weights[order], np.nan)
 
-        # create the output bins
-        bins = da.linspace(0, out_size-1, out_size).astype('int')
+        bins = np.linspace(0, out_size-1, out_size).astype('int')
 
-        # calculate the statistics in each block
         statistics = da.from_delayed(self._get_bin_statistic(bins, idxs_sorted, weights_sorted),
                                      shape=(len(bins),),
                                      dtype=np.float64)
