@@ -77,6 +77,14 @@ jobs:
             quay.io/pypa/${{ matrix.docker-image }} \
             /io/continuous_integration/build-manylinux-wheels.sh
 
+      - name: Check version number from inside wheel
+        if:  matrix.docker-image != 'manylinux1_i686'
+        run: |
+          mv pyresample unused_src_to_prevent_local_import
+          python -m pip install --find-links=./dist/ pyresample
+          python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
+          python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
+
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -98,6 +106,7 @@ jobs:
           name: wheels
           path: dist
       - name: Publish package to PyPI
+        if: github.event.action != 'published'
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           user: __token__

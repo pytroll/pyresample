@@ -152,10 +152,10 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
                                 ['R', 'G', 'B'])
 
 
-def _get_num_chunks(source_swath, resampler_class):
+def _get_num_chunks(source_swath, resampler_class, rows_per_scan=10):
     if resampler_class is DaskEWAResampler:
         # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
-        num_chunks = len(source_swath.lons.chunks[0])
+        num_chunks = len(source_swath.lons.chunks[0]) if rows_per_scan == 10 else 1
     else:
         num_chunks = len(source_swath.lons.chunks[0]) * len(source_swath.lons.chunks[1])
     return num_chunks
@@ -179,15 +179,19 @@ class TestDaskEWAResampler:
     )
     @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
+    @pytest.mark.parametrize('rows_per_scan', [10, 0, 100])
     def test_xarray_basic_ewa(self, resampler_class, resampler_mod,
                               input_shape, input_dims, input_dtype,
-                              maximum_weight_mode):
+                              maximum_weight_mode, rows_per_scan):
         """Test EWA with basic xarray DataArrays."""
         is_legacy = resampler_class is LegacyDaskEWAResampler
         is_int = np.issubdtype(input_dtype, np.integer)
         if is_legacy and is_int:
             pytest.skip("Legacy dask resampler does not properly support "
                         "integer inputs.")
+        if is_legacy and rows_per_scan == 0:
+            pytest.skip("Legacy dask resampler does not support rows_per_scan "
+                        "of 0.")
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
@@ -195,12 +199,12 @@ class TestDaskEWAResampler:
             input_shape=input_shape, output_shape=output_shape[-2:],
             input_dims=input_dims, input_dtype=input_dtype,
         )
-        num_chunks = _get_num_chunks(source_swath, resampler_class)
+        num_chunks = _get_num_chunks(source_swath, resampler_class, rows_per_scan)
 
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
             resampler = resampler_class(source_swath, target_area)
-            new_data = resampler.resample(swath_data, rows_per_scan=10,
+            new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test', 'test')
@@ -211,7 +215,7 @@ class TestDaskEWAResampler:
 
             # resample a different dataset and make sure cache is used
             swath_data2 = _create_second_test_data(swath_data)
-            new_data = resampler.resample(swath_data2, rows_per_scan=10,
+            new_data = resampler.resample(swath_data2, rows_per_scan=rows_per_scan,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')

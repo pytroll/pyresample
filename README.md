@@ -1,5 +1,5 @@
-[![Build Status](https://github.com/pytroll/pyresample/workflows/CI/badge.svg?branch=master)](https://github.com/pytroll/pyresample/actions?query=workflow%3A%22CI%22)
-[![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=master)](https://coveralls.io/github/pytroll/pyresample?branch=master)
+[![Build Status](https://github.com/pytroll/pyresample/workflows/CI/badge.svg?branch=main)](https://github.com/pytroll/pyresample/actions?query=workflow%3A%22CI%22)
+[![Coverage Status](https://coveralls.io/repos/github/pytroll/pyresample/badge.svg?branch=main)](https://coveralls.io/github/pytroll/pyresample?branch=main)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372769.svg)](https://doi.org/10.5281/zenodo.3372769)
 
 

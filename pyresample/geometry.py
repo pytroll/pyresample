@@ -20,6 +20,7 @@
 """Classes for geometry operations."""
 
 import hashlib
+import math
 import warnings
 from collections import OrderedDict
 from logging import getLogger
@@ -980,9 +981,14 @@ class DynamicAreaDefinition(object):
                               area_extent, self.rotation)
 
     def _compute_bound_centers(self, proj_dict, lonslats):
-        proj4 = Proj(proj_dict)
         lons, lats = self._extract_lons_lats(lonslats)
+        if hasattr(lons, 'compute'):
+            return self._compute_bound_centers_dask(proj_dict, lons, lats)
+        return self._compute_bound_centers_numpy(proj_dict, lons, lats)
+
+    def _compute_bound_centers_numpy(self, proj_dict, lons, lats):
         # TODO: Do more dask-friendly things here
+        proj4 = Proj(proj_dict)
         xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
         xarr[xarr > 9e29] = np.nan
         yarr[yarr > 9e29] = np.nan
@@ -997,6 +1003,35 @@ class DynamicAreaDefinition(object):
             # cross anti-meridian of projection
             xmin = np.nanmin(xarr[xarr >= 0])
             xmax = np.nanmax(xarr[xarr < 0]) + 360
+        return xmin, ymin, xmax, ymax
+
+    def _compute_bound_centers_dask(self, proj_dict, lons, lats):
+        from pyresample.utils.proj4 import DaskFriendlyTransformer
+        import dask.array as da
+        crs = CRS(proj_dict)
+        transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs,
+                                                       always_xy=True)
+        xarr, yarr = transformer.transform(lons, lats)
+        xarr = da.where(xarr > 9e29, np.nan, xarr)
+        yarr = da.where(yarr > 9e29, np.nan, yarr)
+        _xmin = np.nanmin(xarr)
+        _xmax = np.nanmax(xarr)
+        _ymin = np.nanmin(yarr)
+        _ymax = np.nanmax(yarr)
+        xmin, xmax, ymin, ymax = da.compute(
+            _xmin,
+            _xmax,
+            _ymin,
+            _ymax)
+
+        x_passes_antimeridian = (xmax - xmin) > 355
+        epsilon = 0.1
+        y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
+        if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
+            # cross anti-meridian of projection
+            xmin = np.nanmin(xarr[xarr >= 0])
+            xmax = np.nanmax(xarr[xarr < 0]) + 360
+            xmin, xmax = da.compute(xmin, xmax)
         return xmin, ymin, xmax, ymax
 
     def _extract_lons_lats(self, lonslats):
@@ -1730,7 +1765,9 @@ class AreaDefinition(_ProjectionDefinition):
 
         If lon,lat is a point, a ValueError is raised if it is outside the area
         domain. If lon,lat is a tuple of sequences of longitudes and latitudes,
-        a tuple of masked arrays are returned.
+        a tuple of masked arrays are returned. The masked values are the actual
+        row and col indexing the grid cell if the area had been big enough, or
+        the numpy default (999999) if invalid.
 
         Args:
             lon (array_like) : point or sequence of longitudes
@@ -2197,8 +2234,11 @@ class AreaDefinition(_ProjectionDefinition):
             # Get slice parameters
             xstart, xstop, ystart, ystop = self._get_slice_starts_stops(area_to_cover)
 
-            return (check_slice_orientation(slice(xstart, xstop)),
-                    check_slice_orientation(slice(ystart, ystop)))
+            x_slice = check_slice_orientation(slice(xstart, xstop))
+            y_slice = check_slice_orientation(slice(ystart, ystop))
+            x_slice = _ensure_integer_slice(x_slice)
+            y_slice = _ensure_integer_slice(y_slice)
+            return x_slice, y_slice
 
         if not self.is_geostationary:
             raise NotImplementedError("Source projection must be 'geos' if "
@@ -2218,10 +2258,12 @@ class AreaDefinition(_ProjectionDefinition):
             logger.debug('Cannot determine appropriate slicing. '
                          "Data and projection area do not overlap.")
             raise NotImplementedError
-        x, y = self.get_xy_from_lonlat(np.rad2deg(intersection.lon),
-                                       np.rad2deg(intersection.lat))
+        x, y = self.get_array_indices_from_lonlat(
+            np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
         x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
         y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+        x_slice = _ensure_integer_slice(x_slice)
+        y_slice = _ensure_integer_slice(y_slice)
         if shape_divisible_by is not None:
             x_slice = _make_slice_divisible(x_slice, self.width,
                                             factor=shape_divisible_by)
@@ -2343,6 +2385,17 @@ def _make_slice_divisible(sli, max_size, factor=2):
             sli = slice(sli.start, sli.stop - rem)
 
     return sli
+
+
+def _ensure_integer_slice(sli):
+    start = sli.start
+    stop = sli.stop
+    step = sli.step
+    return slice(
+        math.floor(start) if start is not None else None,
+        math.ceil(stop) if stop is not None else None,
+        math.floor(step) if step is not None else None
+    )
 
 
 def get_geostationary_angle_extent(geos_area):
