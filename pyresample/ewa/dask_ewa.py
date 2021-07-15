@@ -111,8 +111,7 @@ def _chunk_callable(x_chunk, axis, keepdims, **kwargs):
 
 def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
                     maximum_weight_mode=False):
-    is_empty_chunk = isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple)
-    if computing_meta or is_empty_chunk:
+    if computing_meta or _is_empty_chunk(x_chunk):
         # single "empty" chunk
         return x_chunk
     if not isinstance(x_chunk, list):
@@ -141,6 +140,10 @@ def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
     # NOTE: We use the builtin "sum" function below because it does not copy
     #       the numpy arrays. Using numpy.sum would do that.
     return sum(weights), sum(accums)
+
+
+def _is_empty_chunk(x_chunk):
+    return isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple)
 
 
 def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
