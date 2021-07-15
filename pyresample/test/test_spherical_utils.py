@@ -28,7 +28,7 @@ from unittest.mock import patch
 import numpy as np
 from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
 from pyresample.spherical_utils import merge_tuples
-from pyresample.spherical_utils import int_items_to_tuples
+from pyresample.spherical_utils import _int_items_to_tuples
 from pyresample.spherical_utils import check_keys_int_or_tuple
 from pyresample.spherical_utils import check_if_two_polygons_overlap
 from pyresample.spherical import SphPolygon
