@@ -4,7 +4,7 @@ toolz
 dask
 zarr
 numpy
-Cython
-Proj
-cartopy
+cython>=0.29
+proj>=4.9
+cartopy>=0.18
 shapely
