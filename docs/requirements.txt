@@ -5,6 +5,6 @@ dask
 zarr
 numpy
 cython>=0.29
-proj>=4.9
+pyproj
 cartopy>=0.18
 shapely
