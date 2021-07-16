@@ -66,7 +66,7 @@ coverage by one or more swaths over an area of interest.
 
 Below is an example calculating how much of an area of interest is covered by
 two satellite overpasses. It operates on a list of `trollsched.satpass.Pass`
-satellite passes. See trollschedule_ how to generate a list over satellite overpasses.
+satellite passes. See trollschedule_ how to generate a list of satellite overpasses.
 `area_def` is an :class:`~pyresample.geometry.AreaDefinition` object.
 
 .. code-block:: python
@@ -84,7 +84,6 @@ satellite passes. See trollschedule_ how to generate a list over satellite overp
    non_overlaps.merge()
 
    polygons = non_overlaps.get_polygons()
-   pass_ids = non_overlaps.get_ids()
 
    coverage = 0
    for polygon in polygons:
