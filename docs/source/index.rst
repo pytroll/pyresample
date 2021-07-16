@@ -37,6 +37,7 @@ Documentation
 
    installation
    geo_def
+   spherical_geometry
    geometry_utils
    geo_filter
    grid
