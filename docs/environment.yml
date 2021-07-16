@@ -1,6 +1,6 @@
 name: readthedocs
 dependencies:
-  - python=3.8
+  - python
   - xarray
   - zarr
   - dask
