@@ -73,26 +73,26 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
 
    from pyresample.spherical_utils import GetNonOverlapUnions
    
-   area_boundary = AreaDefBoundary(area_def, frequency=100)
-   area_boundary = area_boundary.contour_poly
+   area_boundary = AreaDefBoundary(area_def, frequency=100) # doctest: +SKIP 
+   area_boundary = area_boundary.contour_poly # doctest: +SKIP 
 
    list_of_polygons = []
-   for mypass in passes:
-       list_of_polygons.append(mypass.boundary.contour_poly)
+   for mypass in passes: # doctest: +SKIP 
+       list_of_polygons.append(mypass.boundary.contour_poly) # doctest: +SKIP 
 
-   non_overlaps = GetNonOverlapUnions(list_of_polygons)
-   non_overlaps.merge()
+   non_overlaps = GetNonOverlapUnions(list_of_polygons) # doctest: +SKIP
+   non_overlaps.merge() # doctest: +SKIP 
 
-   polygons = non_overlaps.get_polygons()
+   polygons = non_overlaps.get_polygons() # doctest: +SKIP 
 
    coverage = 0
-   for polygon in polygons:
-       isect = polygon.intersection(area_boundary)
-       if isect:
-           coverage = coverage + isect.area()
+   for polygon in polygons: # doctest: +SKIP 
+       isect = polygon.intersection(area_boundary) # doctest: +SKIP
+       if isect: # doctest: +SKIP 
+           coverage = coverage + isect.area() # doctest: +SKIP 
 
-   area_cov = coverage / area_boundary.area()
-   print("Area coverage = {0}".format(area_cov))
+   area_cov = coverage / area_boundary.area() # doctest: +SKIP 
+   print("Area coverage = {0}".format(area_cov)) # doctest: +SKIP
 
 
 .. image:: _static/images/2_passes_between_202001051137_and_202001051156.png
