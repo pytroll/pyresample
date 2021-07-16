@@ -4,3 +4,5 @@ toolz
 dask
 zarr
 numpy
+cartopy
+shapely
