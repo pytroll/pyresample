@@ -4,5 +4,7 @@ toolz
 dask
 zarr
 numpy
+Cython
+Proj
 cartopy
 shapely
