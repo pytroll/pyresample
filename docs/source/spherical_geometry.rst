@@ -17,6 +17,8 @@ Geometries can be checked for overlap:
 .. doctest::
 
  >>> import numpy as np
+ >>> from pyresample.geometry import AreaDefinition
+ >>> from pyresample.geometry import SwathDefinition
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
@@ -70,6 +72,7 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
 `area_def` is an :class:`~pyresample.geometry.AreaDefinition` object.
 
  >>> from pyresample.spherical_utils import GetNonOverlapUnions
+ >>> from pyresample.boundary import AreaDefBoundary
    
  >>> area_boundary = AreaDefBoundary(area_def, frequency=100) # doctest: +SKIP 
  >>> area_boundary = area_boundary.contour_poly # doctest: +SKIP 
@@ -90,8 +93,8 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
  >>>         coverage = coverage + isect.area() # doctest: +SKIP 
 
  >>> area_cov = coverage / area_boundary.area() # doctest: +SKIP 
- >>>  print("Area coverage = {0}".format(area_cov)) # doctest: +SKIP
-
+ >>> print("Area coverage = {0}".format(area_cov)) # doctest: +SKIP
+ 0.889317815
 
 .. image:: _static/images/2_passes_between_202001051137_and_202001051156.png
    
