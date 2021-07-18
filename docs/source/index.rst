@@ -37,13 +37,13 @@ Documentation
 
    installation
    geo_def
-   spherical_geometry
    geometry_utils
    geo_filter
    grid
    swath
    multi
    preproc
+   spherical_geometry
    plot
    data_reduce
    API <api/pyresample>
