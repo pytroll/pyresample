@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013, 2014, 2015 Martin Raspaud
+# Copyright (c) 2013 - 2021 Pyresample developers
 
 # Author(s):
 
@@ -259,7 +259,6 @@ class Arc(object):
 
     def intersects(self, other_arc):
         """Check if the current arc and the *other_arc* intersect.
-
         An arc is defined as the shortest tracks between two points.
         """
 
@@ -407,7 +406,7 @@ class SphPolygon(object):
         By default, or when sign is 1, the union is perfomed. If sign is -1,
         the intersection of the polygons is returned.
 
-        The algorithm works this way: find an intersection between the two
+        The algorithm works this way: Find an intersection between the two
         polygons. If none can be found, then the two polygons are either not
         overlapping, or one is entirely included in the other. Otherwise,
         follow the edges of a polygon until another intersection is
@@ -476,7 +475,10 @@ class SphPolygon(object):
         return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]), radius=self.radius)
 
     def union(self, other):
-        """Return the union of this and `other` polygon."""
+        """Return the union of this and `other` polygon.
+
+        NB! If the two polygons do not overlap (they have nothing in common) None is returned.
+        """
         return self._bool_oper(other, 1)
 
     def intersection(self, other):

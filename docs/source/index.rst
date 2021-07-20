@@ -43,6 +43,7 @@ Documentation
    swath
    multi
    preproc
+   spherical_geometry
    plot
    data_reduce
    API <api/pyresample>
