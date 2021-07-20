@@ -389,8 +389,8 @@ def test_check_keys_int_or_tuple_input_okay():
     check_keys_int_or_tuple(adict)
 
 
-def test_check_keys_int_or_tuple_input_not_okay():
-    """Test the check for dictionary keys and input a dict with keys that are not an integer or a tuple."""
+def test_check_keys_int_or_tuple_input_string():
+    """Test the check for dictionary keys and input a dict with a key which is a string."""
 
     adict = {1: [1, 2, 3], 'set B': [1, 2, 3, 4]}
     with pytest.raises(KeyError) as exec_info:
@@ -400,6 +400,9 @@ def test_check_keys_int_or_tuple_input_not_okay():
 
     assert str(exception_raised) == "'Key must be integer or a tuple (of integers)'"
 
+
+def test_check_keys_int_or_tuple_input_float():
+    """Test the check for dictionary keys and input a dict with a key which is a float."""
     adict = {1.1: [1, 2, 3]}
     with pytest.raises(KeyError) as exec_info:
         check_keys_int_or_tuple(adict)

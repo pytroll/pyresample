@@ -104,7 +104,6 @@ class GetNonOverlapUnionsBaseClass():
         same as the output:
 
         """
-
         retv = self._find_union_pair(geoms)
         if retv is None:
             return geoms
