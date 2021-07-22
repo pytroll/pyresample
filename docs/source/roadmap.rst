@@ -153,10 +153,10 @@ Indexes
 From our survey we learned that a lot of users use the indexes returned by
 ``get_neighbour_info`` for their own custom analyses. We recognize this need
 and while Cache objects could be written to get the same result, we think
-there is a better way. We'd like to explore the idea of "Index" generating
-objects. Like Resamplers, these would provide you a way of relating a source
-geometry to a destination geometry. However, these objects would only be
-responsible for returning the index information.
+there is a better way. We plan to implement this functionality through a
+separate "Index" interface. Like Resamplers, these would provide you a way
+of relating a source geometry to a destination geometry. However, these
+objects would only be responsible for returning the index information.
 
 We haven't defined the interface for these yet, but hope that having something
 separate from resamplers will serve more people.
