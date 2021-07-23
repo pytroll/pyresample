@@ -78,8 +78,8 @@ Resamplers
 ^^^^^^^^^^
 
 Currently there are different interfaces for calling the different resampling
-options in Pyresample. Some times you call a function, sometimes you create a
-class and call a "resample" method on it, and sometimes if you want finer
+options in Pyresample. Sometimes you call a function, sometimes you create a
+class and call a "resample" method on it, and sometimes if you want finer control
 you call multiple functions and have to pass things between them. In Pyresample
 2.0 we want to get things down to a few consistent interfaces all wrapped up
 into a series of Resampler classes.
