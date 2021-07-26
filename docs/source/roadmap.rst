@@ -160,3 +160,33 @@ objects would only be responsible for returning the index information.
 
 We haven't defined the interface for these yet, but hope that having something
 separate from resamplers will serve more people.
+
+Xarray and Geoxarray
+^^^^^^^^^^^^^^^^^^^^
+
+We would like to support pyresample users who use the xarray and dask libraries
+more. Behind the scenes over the last couple years we've added a lot of
+dask-based support to pyresample through the Satpy library. We've slowly moved
+that functionality over to Pyresample and the Resampler objects mentioned above
+are the first defined interface for that. However, there is still a lot of work
+to be done to completely take advantage of the parallel nature that dask arrays
+provide us.
+
+It should also be easier for users with data in xarray DataArray or Dataset
+objects to access pyresample functionality; even without knowing the
+metadata that pyresample will need to do some resampling (ex. CRS, extents,
+etc). Usually that type of information is held in the metadata of the xarray
+object already. New tools are in development to make this information easier
+to access; mainly
+`the Geoxarray project <https://geoxarray.github.io/latest/>`_.
+We will be working on Geoxarray and Pyresample to simplify common resampling
+tasks for xarray users.
+
+Documentation
+^^^^^^^^^^^^^
+
+The documentation for Pyresample is in need of a lot of love. As Pyresample
+has grown the documentation hasn't really been restructured to best present
+the new information it has taken on. We hope that as part of Pyresample 2.0
+we can clean out the cobwebs and make it easier to find the information you
+are looking for.
