@@ -21,6 +21,7 @@ from pyresample.geometry import AreaDefinition
 from pyresample import create_area_def
 from pyresample.resampler import BaseResampler
 
+
 class TestResampler(BaseResampler):
     """Fake resampler class to test out different caching needs."""
 

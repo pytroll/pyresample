@@ -21,7 +21,7 @@
 from abc import ABC, abstractmethod
 
 
-class BaseCache(ABC):
+class ResampleCache(ABC):
     """Base class for all BaseResampler cache classes."""
 
     @abstractmethod
@@ -33,7 +33,7 @@ class BaseCache(ABC):
         ...
 
 
-class InMemoryCache(BaseCache):
+class InMemoryCache(ResampleCache):
     """Basic cache that stores everything in-memory."""
 
     def __init__(self):
