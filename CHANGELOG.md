@@ -1,3 +1,22 @@
+## Version 1.21.0 (2021/08/19)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 370](https://github.com/pytroll/pyresample/pull/370) - Fix dask ewa issues with newer versions of dask
+
+#### Features added
+
+* [PR 347](https://github.com/pytroll/pyresample/pull/347) - Add spherical geometry support for deriving total/common area coverage of several satellite overpasses
+
+#### Documentation changes
+
+* [PR 373](https://github.com/pytroll/pyresample/pull/373) - Add initial draft of a Roadmap page
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.20.0 (2021/06/04)
 
 ### Issues Closed
