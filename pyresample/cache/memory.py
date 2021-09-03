@@ -17,6 +17,8 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Parent cache classes and utilities for Resampler classes."""
 
+from typing import Any, Hashable
+
 from .base import ResampleCache
 
 
@@ -33,3 +35,15 @@ class InMemoryCache(ResampleCache):
     def load(self, key):
         """Retrieve data from the cache using the unique ``key``."""
         return self._store[key]
+
+    def clear(self) -> None:
+        """Remove all contents managed by this cache."""
+        self._store.clear()
+
+    def pop(self, key: Hashable) -> Any:
+        """Retrieve data and remove its entry from the cache."""
+        return self._store.pop(key)
+
+    def __len__(self) -> int:
+        """Get number of items in the cache."""
+        return len(self._store)

@@ -45,6 +45,9 @@ class ResampleCache(ABC):
         """Retrieve data and remove its entry from the cache."""
 
     @abstractmethod
+    def __len__(self) -> int:
+        """Get number of items in the cache."""
+
     def __repr__(self):
         """Summarize the current state of the cache as a string.
 
@@ -55,3 +58,6 @@ class ResampleCache(ABC):
         * Important settings for the cache (ex. expiration time, on-disk path)
 
         """
+        mod = self.__class__.__module__
+        qualname = self.__class__.__qualname__
+        return f"<{mod}.{qualname} cache with {len(self)} item(s) at {hex(id(self))}>"
