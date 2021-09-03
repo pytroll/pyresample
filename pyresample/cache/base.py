@@ -18,7 +18,7 @@
 """Parent cache classes and utilities for Resampler classes."""
 
 from abc import ABC, abstractmethod
-from typing import Hashable, Any
+from typing import Any, Hashable
 
 
 class ResampleCache(ABC):
@@ -26,15 +26,15 @@ class ResampleCache(ABC):
 
     @abstractmethod
     def store(self, key: Hashable, value: Any) -> None:
-        ...
+        """Write ``value`` data identified by the unique ``key`` to the cache."""
 
     @abstractmethod
     def load(self, key: Hashable) -> Any:
-        ...
+        """Retrieve data from the cache using the unique ``key``."""
 
     @abstractmethod
     def clear(self) -> None:
-        ...
+        """Remove all contents managed by this cache."""
 
     def remove(self, key: Hashable) -> None:
         """Remove an item from the cache's internal storage."""
@@ -42,8 +42,16 @@ class ResampleCache(ABC):
 
     @abstractmethod
     def pop(self, key: Hashable) -> Any:
-        ...
+        """Retrieve data and remove its entry from the cache."""
 
     @abstractmethod
     def __repr__(self):
-        ...
+        """Summarize the current state of the cache as a string.
+
+        Information that would be good to include is:
+
+        * Number of items in the cache
+        * Total size (in-memory or on-disk)
+        * Important settings for the cache (ex. expiration time, on-disk path)
+
+        """

@@ -27,7 +27,9 @@ class InMemoryCache(ResampleCache):
         self._store = {}
 
     def store(self, key, value):
+        """Write ``value`` data identified by the unique ``key`` to the cache."""
         self._store[key] = value
 
     def load(self, key):
+        """Retrieve data from the cache using the unique ``key``."""
         return self._store[key]
