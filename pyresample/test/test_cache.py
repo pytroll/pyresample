@@ -17,7 +17,6 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test various builtin cache classes."""
 
-from pyresample.geometry import AreaDefinition
 from pyresample import create_area_def
 from pyresample.resampler import BaseResampler
 
@@ -65,7 +64,7 @@ class TestInMemoryCache:
     """Tests for the InMemoryCache class."""
 
     def test_create(self):
-        from pyresample._cache import InMemoryCache
+        from pyresample.cache import InMemoryCache
         cache_inst = InMemoryCache()
         resampler = _create_resampler_with_cache(cache_inst)
         resampler.precompute()
