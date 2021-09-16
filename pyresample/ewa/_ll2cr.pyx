@@ -232,7 +232,6 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
     cdef cr_dtype [:, ::1] rows_out = projected_tuple[1]
     cdef cr_dtype [:, ::1] cols_out = projected_tuple[0]
-    cdef double proj_circum = projection_circumference(p)
 
     # indexes
     cdef unsigned int row
@@ -252,9 +251,6 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
                 lon_arr[row, col] = fill_in
                 lat_arr[row, col] = fill_in
                 continue
-            elif proj_circum != 0 and abs(x_tmp - origin_x) >= (0.75 * proj_circum):
-                # if x is more than 75% around the projection space, it is probably crossing the anti-meridian
-                x_tmp += proj_circum
 
             x_tmp = (x_tmp - origin_x) / cell_width
             y_tmp = (y_tmp - origin_y) / cell_height
