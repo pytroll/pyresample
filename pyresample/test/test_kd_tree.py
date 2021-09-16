@@ -1,3 +1,21 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test kd_tree operations."""
 import os
 import numpy as np
 
@@ -9,6 +27,7 @@ from unittest import mock
 
 
 class Test(unittest.TestCase):
+    """Test nearest neighbor resampling on numpy arrays."""
 
     @classmethod
     def setUpClass(cls):
@@ -329,8 +348,7 @@ class Test(unittest.TestCase):
         expected_stddev = [0.44621800779801657, 0.44363137712896705,
                            0.43861019464274459]
         expected_counts = 4934802.0
-        self.assertTrue(res.shape == stddev.shape and stddev.shape ==
-                        counts.shape and counts.shape == (800, 800, 3))
+        self.assertTrue(res.shape == stddev.shape and stddev.shape == counts.shape and counts.shape == (800, 800, 3))
         self.assertAlmostEqual(cross_sum, expected)
 
         for i, e_stddev in enumerate(expected_stddev):
@@ -881,13 +899,16 @@ class TestXArrayResamplerNN(unittest.TestCase):
     def test_nearest_area_2d_to_area_1n(self):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
+        from pyresample.test.utils import CustomScheduler
         import xarray as xr
         import dask.array as da
+        import dask
         data = self.data_2d
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       radius_of_influence=50000,
                                       neighbours=1)
-        ninfo = resampler.get_neighbour_info()
+        with dask.config.set(scheduler=CustomScheduler(0)):
+            ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
@@ -896,7 +917,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
-        res = resampler.get_sample_from_neighbour_info(data)
+        with dask.config.set(scheduler=CustomScheduler(0)):
+            res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
         res = res.values
@@ -946,8 +968,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
             self.assertEqual(cross_sum, expected)
 
     def test_nearest_area_2d_to_area_1n_3d_data(self):
-        """Test 2D area definition to 2D area definition; 1 neighbor, 3d
-        data."""
+        """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
         from pyresample.kd_tree import XArrayResamplerNN
         import xarray as xr
         import dask.array as da
