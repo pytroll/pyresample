@@ -24,6 +24,7 @@ tests.
 import sys
 import types
 import warnings
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -39,10 +40,9 @@ AstropyPendingDeprecationWarning = None
 
 
 def treat_deprecations_as_exceptions():
-    """Turn all DeprecationWarnings (which indicate deprecated uses of Python
-    itself or Numpy, but not within Astropy, where we use our own deprecation
-    warning class) into exceptions so that we find out about them early.
+    """Turn all DeprecationWarnings into exceptions.
 
+    Deprecation warnings indicate deprecated uses of Python itself or Numpy.
     This completely resets the warning filters and any "already seen"
     warning state.
     """
@@ -124,8 +124,9 @@ def treat_deprecations_as_exceptions():
 
 
 class catch_warnings(warnings.catch_warnings):
-    """A high-powered version of warnings.catch_warnings to use for testing and
-    to make sure that there is no dependence on the order in which the tests
+    """A high-powered version of warnings.catch_warnings to use for testing.
+
+    Makes sure that there is no dependence on the order in which the tests
     are run.
 
     This completely blitzes any memory of any warnings that have
@@ -140,11 +141,14 @@ class catch_warnings(warnings.catch_warnings):
             do.something.bad()
         assert len(w) > 0
     """
+
     def __init__(self, *classes):
+        """Initialize the classes of warnings to catch."""
         super(catch_warnings, self).__init__(record=True)
         self.classes = classes
 
     def __enter__(self):
+        """Catch any warnings during this context."""
         warning_list = super(catch_warnings, self).__enter__()
         treat_deprecations_as_exceptions()
         if len(self.classes) == 0:
@@ -156,10 +160,12 @@ class catch_warnings(warnings.catch_warnings):
         return warning_list
 
     def __exit__(self, type, value, traceback):
+        """Raise any warnings as errors."""
         treat_deprecations_as_exceptions()
 
 
 def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
+    """Get basic sample of longitude data."""
     if start > stop:
         stop += 360.0
 
@@ -175,6 +181,7 @@ def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32
 
 
 def create_test_latitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
+    """Get basic sample of latitude data."""
     num_cols = 1 if len(shape) < 2 else shape[1]
     lat_col = np.linspace(start, stop, num=shape[0]).astype(dtype).reshape((shape[0], 1))
     twist_array = np.arange(num_cols) * twist_factor
@@ -199,6 +206,14 @@ class CustomScheduler(object):
             raise RuntimeError("Too many dask computations were scheduled: "
                                "{}".format(self.total_computes))
         return dask.get(dsk, keys, **kwargs)
+
+
+@contextmanager
+def assert_maximum_dask_computes(max_computes=1):
+    """Context manager to make sure dask computations are not executed more than ``max_computes`` times."""
+    import dask
+    with dask.config.set(scheduler=CustomScheduler(max_computes=max_computes)) as new_config:
+        yield new_config
 
 
 def friendly_crs_equal(expected, actual, keys=None, use_obj=True, use_wkt=True):

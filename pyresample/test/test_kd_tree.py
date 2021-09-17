@@ -899,15 +899,14 @@ class TestXArrayResamplerNN(unittest.TestCase):
     def test_nearest_area_2d_to_area_1n(self):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
-        from pyresample.test.utils import CustomScheduler
+        from pyresample.test.utils import assert_maximum_dask_computes
         import xarray as xr
         import dask.array as da
-        import dask
         data = self.data_2d
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       radius_of_influence=50000,
                                       neighbours=1)
-        with dask.config.set(scheduler=CustomScheduler(0)):
+        with assert_maximum_dask_computes(0):
             ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
@@ -917,7 +916,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
-        with dask.config.set(scheduler=CustomScheduler(0)):
+        with assert_maximum_dask_computes(0):
             res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
