@@ -410,7 +410,7 @@ def _get_valid_input_index(source_geo_def,
         source_is_griddish = isinstance(source_geo_def, griddish_types)
         target_is_griddish = isinstance(target_geo_def, griddish_types)
         source_is_coord = isinstance(source_geo_def, geometry.CoordinateDefinition)
-        if (source_is_coord and target_is_griddish) or (source_is_griddish and target_is_griddish):
+        if (source_is_coord or source_is_griddish) and target_is_griddish:
             # Resampling from swath to grid or from grid to grid
             lonlat_boundary = target_geo_def.get_boundary_lonlats()
 
