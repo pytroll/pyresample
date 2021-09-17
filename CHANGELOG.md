@@ -1,3 +1,21 @@
+## Version 1.21.1 (2021/09/17)
+
+### Issues Closed
+
+* [Issue 374](https://github.com/pytroll/pyresample/issues/374) - Geographic EWA projection for swaths crossing the anti-meridian omits values for 90 ≤ longitude (degrees east) ≤ 180. ([PR 376](https://github.com/pytroll/pyresample/pull/376))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 377](https://github.com/pytroll/pyresample/pull/377) - Remove unnecessary dask computation in 'nearest' resampler
+* [PR 376](https://github.com/pytroll/pyresample/pull/376) - Update EWA ll2cr_static to handle swaths crossing the anti-meridian. ([374](https://github.com/pytroll/pyresample/issues/374))
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.21.0 (2021/08/19)
 
 ### Pull Requests Merged
