@@ -139,8 +139,8 @@ class Test(unittest.TestCase):
                 area_extent=[-40000., -40000., 40000., 40000.])
             with patch('pyresample.utils.cartopy.warnings.warn') as warn:
                 # Test that user warning has been issued (EPSG to proj4 string is potentially lossy)
-                area.to_cartopy_crs()
-                if projection.startswith('EPSG'):
+                cart_crs = area.to_cartopy_crs()
+                if not isinstance(cart_crs, CRS) and projection.startswith('EPSG'):
                     # we'll only get this for the new EPSG:XXXX syntax
                     warn.assert_called()
 
@@ -152,7 +152,7 @@ class Test(unittest.TestCase):
                                               width=360,
                                               height=180,
                                               area_extent=(-180, -90, 180, 90)).to_cartopy_crs()
-        self.assertTrue(np.allclose(latlong_crs.bounds, [-np.pi, np.pi, -np.pi/2, np.pi/2]))
+        np.testing.assert_allclose(latlong_crs.bounds, [-180, 180, -90, 90])
 
     def test_dump(self):
         """Test exporting area defs."""

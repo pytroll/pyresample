@@ -1607,19 +1607,28 @@ class AreaDefinition(_ProjectionDefinition):
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""
         from pyresample.utils.cartopy import from_proj
+        import cartopy.crs as ccrs
         bounds = (self.area_extent[0],
                   self.area_extent[2],
                   self.area_extent[1],
                   self.area_extent[3])
-        if self.crs.to_epsg() is not None:
-            proj_params = "EPSG:{}".format(self.crs.to_epsg())
-        else:
-            proj_params = self.crs.to_proj4()
+        if issubclass(ccrs.Projection, CRS):
+            # cartopy 0.20+ are subclasses of Pyproj CRS class
+            from pyresample.utils.cartopy import Projection
+            crs = Projection(self.crs, bounds=bounds)
+            return crs
+
         if self.crs.is_geographic:
             # Convert area extent from degrees to radians
             bounds = np.deg2rad(bounds)
+        proj_params = self._cartopy_proj_params()
         crs = from_proj(proj_params, bounds=bounds)
         return crs
+
+    def _cartopy_proj_params(self):
+        if self.crs.to_epsg() is not None:
+            return "EPSG:{}".format(self.crs.to_epsg())
+        return self.crs.to_proj4()
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area."""

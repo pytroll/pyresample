@@ -14,8 +14,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Classes for geometry operations."""
+from __future__ import annotations
 
 from logging import getLogger
 import numpy as np
@@ -31,10 +31,6 @@ from pyresample.utils.proj4 import proj4_str_to_dict
 import cartopy.crs as ccrs
 import shapely.geometry as sgeom
 
-try:
-    from cartopy.crs import from_proj
-except ImportError:
-    from_proj = None
 
 logger = getLogger(__name__)
 
@@ -57,7 +53,6 @@ def _globe_from_proj4(proj4_terms):
     return globe
 
 
-# copy of class in cartopy (before it was released)
 class _PROJ4Projection(ccrs.Projection):
 
     def __init__(self, proj4_terms, globe=None, bounds=None):
@@ -100,6 +95,41 @@ class _PROJ4Projection(ccrs.Projection):
         return min(abs(x1 - x0), abs(y1 - y0)) / 100.
 
 
+class _Projection(ccrs.Projection):
+    def __init__(self,
+                 crs: pyproj.CRS,
+                 bounds: list[float, float, float, float] = None,
+                 transform_bounds: bool = False):
+        # NOTE: Skip the base cartopy Projection class __init__
+        super(ccrs.Projection, self).__init__(crs)
+        if bounds is None and self.area_of_use is not None:
+            bounds = (
+                self.area_of_use.west,
+                self.area_of_use.east,
+                self.area_of_use.south,
+                self.area_of_use.north,
+            )
+            transform_bounds = True
+
+        self.bounds = bounds
+        if bounds is not None and transform_bounds:
+            # Convert lat/lon bounds to projected bounds.
+            # Geographic area of the entire dataset referenced to WGS 84
+            # NB. We can't use a polygon transform at this stage because
+            # that relies on the existence of the map boundary... the very
+            # thing we're trying to work out! ;-)
+            x0, x1, y0, y1 = bounds
+            lons = np.array([x0, x0, x1, x1])
+            lats = np.array([y0, y1, y1, y0])
+            points = self.transform_points(self.as_geodetic(), lons, lats)
+            x = points[:, 0]
+            y = points[:, 1]
+            self.bounds = (x.min(), x.max(), y.min(), y.max())
+        if self.bounds is not None:
+            x0, x1, y0, y1 = self.bounds
+            self.threshold = min(abs(x1 - x0), abs(y1 - y0)) / 100.
+
+
 def _lesser_from_proj(proj4_terms, globe=None, bounds=None):
     """Not-as-good version of cartopy's 'from_proj' function.
 
@@ -110,5 +140,7 @@ def _lesser_from_proj(proj4_terms, globe=None, bounds=None):
     return _PROJ4Projection(proj4_terms, globe=globe, bounds=bounds)
 
 
-if from_proj is None:
-    from_proj = _lesser_from_proj
+from_proj = _lesser_from_proj
+
+if issubclass(ccrs.Projection, pyproj.CRS):
+    Projection = _Projection
