@@ -28,21 +28,23 @@ them, this implementation should avoid unnecessary array creation and memory
 usage until necessary.
 
 """
-import math
 import logging
+import math
 from functools import partial
-
-from pyresample.geometry import SwathDefinition
-from pyresample.resampler import BaseResampler, update_resampled_coords
-from pyresample.ewa import ll2cr
-from pyresample.ewa._fornav import (fornav_weights_and_sums_wrapper,
-                                    write_grid_image_single)
 
 import dask
 import dask.array as da
+import numpy as np
 from dask.array.core import normalize_chunks
 from dask.highlevelgraph import HighLevelGraph
-import numpy as np
+
+from pyresample.ewa import ll2cr
+from pyresample.ewa._fornav import (
+    fornav_weights_and_sums_wrapper,
+    write_grid_image_single,
+)
+from pyresample.geometry import SwathDefinition
+from pyresample.resampler import Resampler, update_resampled_coords
 
 try:
     import xarray as xr
@@ -169,7 +171,7 @@ def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
     return out
 
 
-class DaskEWAResampler(BaseResampler):
+class DaskEWAResampler(Resampler):
     """Resample using an elliptical weighted averaging algorithm.
 
     This algorithm does **not** use caching or any externally provided data
@@ -332,7 +334,7 @@ class DaskEWAResampler(BaseResampler):
                 x_end = x_start + out_chunks[1][out_col_idx]
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
-                for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
+                for z_idx, ((_, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
                     key = (task_name, z_idx, out_row_idx, out_col_idx)
                     output_stack[key] = (_delayed_fornav,
                                          ll2cr_block,

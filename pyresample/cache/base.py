@@ -22,7 +22,7 @@ from typing import Any, Hashable
 
 
 class ResampleCache(ABC):
-    """Base class for all BaseResampler cache classes."""
+    """Base class for all Resampler cache classes."""
 
     @abstractmethod
     def store(self, key: Hashable, value: Any) -> None:

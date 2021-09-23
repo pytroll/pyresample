@@ -18,15 +18,15 @@
 """EWA algorithms operating on numpy arrays."""
 
 import logging
-import numpy as np
-
-from pyresample.ewa import ll2cr, fornav
-from pyresample.resampler import BaseResampler, update_resampled_coords
-from pyresample.geometry import SwathDefinition
-from pyresample import CHUNK_SIZE
 
 import dask
 import dask.array as da
+import numpy as np
+
+from pyresample import CHUNK_SIZE
+from pyresample.ewa import fornav, ll2cr
+from pyresample.geometry import SwathDefinition
+from pyresample.resampler import Resampler, update_resampled_coords
 
 try:
     import xarray as xr
@@ -37,7 +37,7 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
-class LegacyDaskEWAResampler(BaseResampler):
+class LegacyDaskEWAResampler(Resampler):
     """Resample using an elliptical weighted averaging algorithm.
 
     This algorithm does **not** use caching or any externally provided data

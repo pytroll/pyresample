@@ -23,8 +23,8 @@
 
 import hashlib
 import json
-import os
 import logging
+import os
 
 import numpy as np
 
@@ -34,7 +34,6 @@ except ImportError:
     xr = None
 
 from pyresample.geometry import SwathDefinition
-
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +191,7 @@ def update_resampled_coords(old_data, new_data, new_area):
     return new_data
 
 
-class BaseResampler(object):
+class Resampler(object):
     """Base abstract resampler class."""
 
     def __init__(self, source_geo_def, target_geo_def):

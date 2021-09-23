@@ -18,14 +18,14 @@
 """Test various builtin cache classes."""
 
 from pyresample import create_area_def
-from pyresample.resampler import BaseResampler
+from pyresample.resampler import Resampler
 
 
-class TestResampler(BaseResampler):
+class TestResampler(Resampler):
     """Fake resampler class to test out different caching needs."""
 
     def __init__(self, src_geom, dst_geom, cache=None):
-        # TODO: This is a Pyresample 2.0 interface, but BaseResampler is currently 1.x
+        # TODO: This is a Pyresample 2.0 interface, but Resampler is currently 1.x
         super().__init__(src_geom, dst_geom)
         self.cache = cache
 
