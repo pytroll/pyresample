@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2019
-
-# Author(s):
-
-#   Martin Raspaud <martin.raspaud@smhi.se>
-
+#
+# Copyright (c) 2019-2021 Pyresample developers
+#
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or (at your option) any
@@ -20,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Base resampler class made for subclassing."""
+from __future__ import annotations
 
 import hashlib
 import json
 import logging
 import os
+from typing import Optional, Union
 
 import numpy as np
 
@@ -33,7 +31,8 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.geometry import SwathDefinition
+from pyresample.cache import ResampleCache
+from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -191,21 +190,32 @@ def update_resampled_coords(old_data, new_data, new_area):
     return new_data
 
 
-class Resampler(object):
+class Resampler:
     """Base abstract resampler class."""
 
-    def __init__(self, source_geo_def, target_geo_def):
+    def __init__(self,
+                 source_geo_def: Union[SwathDefinition, AreaDefinition],
+                 target_geo_def: Union[CoordinateDefinition, AreaDefinition],
+                 cache: Optional[Union[ResampleCache, str]] = None,
+                 ):
         """Initialize resampler with geolocation information.
 
         Args:
-            source_geo_def (SwathDefinition, AreaDefinition):
+            source_geo_def:
                 Geolocation definition for the data to be resampled
-            target_geo_def (CoordinateDefinition, AreaDefinition):
+            target_geo_def:
                 Geolocation definition for the area to resample data to.
+            cache:
+                :class:`~pyresample.cache.ResampleCache` instance used by
+                the resampler to cache.
 
         """
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
+        if isinstance(cache, str):
+            # TODO: convenience for file based caching
+            raise NotImplementedError()
+        self.cache = cache
 
     def get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs):
         """Get hash for the current resample with the given *kwargs*."""
