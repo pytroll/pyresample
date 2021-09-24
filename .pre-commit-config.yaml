@@ -11,3 +11,7 @@ repos:
   hooks:
     - id: isort
       language_version: python3
+ci:
+  # To trigger manually, comment on a pull request with "pre-commit.ci autofix"
+  autofix_prs: false
+
