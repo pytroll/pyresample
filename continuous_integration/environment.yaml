@@ -24,3 +24,4 @@ dependencies:
   - scipy
   - pytest
   - pytest-cov
+  - pytest-lazy-fixture

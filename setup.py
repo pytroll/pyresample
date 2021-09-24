@@ -19,26 +19,29 @@
 # remove when python 2 support is dropped
 """The setup module."""
 import multiprocessing  # noqa: F401
-import versioneer
 import sys
-import numpy as np
 
-from setuptools import Extension, find_packages, setup
+import numpy as np
 from Cython.Build import cythonize
+from setuptools import Extension, find_packages, setup
+
+import versioneer
 
 requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
                 ]
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixtures']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
-                  'xarray_bilinear': ['xarray', 'dask', 'zarr']}
+                  'xarray_bilinear': ['xarray', 'dask', 'zarr'],
+                  'tests': test_requires}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
@@ -81,7 +84,6 @@ if __name__ == "__main__":
           setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,
-          tests_require=test_requires,
           ext_modules=cythonize(extensions),
           zip_safe=False,
           classifiers=[

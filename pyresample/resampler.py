@@ -246,7 +246,7 @@ class Resampler:
         """
         raise NotImplementedError
 
-    def resample(self, data, cache_dir=None, mask_area=None, **kwargs):
+    def resample(self, data, cache_dir=None, mask_area=None, mask=None, **kwargs):
         """Resample `data` by calling `precompute` and `compute` methods.
 
         Only certain resampling classes may use `cache_dir` and the `mask`
@@ -257,35 +257,62 @@ class Resampler:
         is used.
 
         Args:
-            data (xarray.DataArray): Data to be resampled
+            data (ArrayLike): Data to be resampled
             cache_dir (str): directory to cache precomputed results
-                             (default False, optional)
+                (default False, optional)
             mask_area (bool): Mask geolocation data where data values are
-                              invalid. This should be used when data values
-                              may affect what neighbors are considered valid.
+                invalid. This should be used when data values may affect what
+                neighbors are considered valid.
+            mask (ArrayLike): For complex masking behavior specify the exact
+                mask to use instead of the resampler computing it on the fly.
+                Useful for non-xarray DataArrays that don't have related
+                metadata like "_FillValue".
 
         Returns (xarray.DataArray): Data resampled to the target area
 
         """
         # default is to mask areas for SwathDefinitions
-        if mask_area is None and isinstance(
-                self.source_geo_def, SwathDefinition):
+        if mask is not None or (mask_area is None and isinstance(self.source_geo_def, SwathDefinition)):
             mask_area = True
 
-        if mask_area:
-            if isinstance(self.source_geo_def, SwathDefinition):
-                geo_dims = self.source_geo_def.lons.dims
-            else:
-                geo_dims = ('y', 'x')
-            flat_dims = [dim for dim in data.dims if dim not in geo_dims]
-            if np.issubdtype(data.dtype, np.integer):
-                kwargs['mask'] = data == data.attrs.get('_FillValue', np.iinfo(data.dtype.type).max)
-            else:
-                kwargs['mask'] = data.isnull()
-            kwargs['mask'] = kwargs['mask'].all(dim=flat_dims)
+        if mask_area and mask is None:
+            self._add_area_mask(data, kwargs)
+        else:
+            kwargs["mask"] = mask
 
         cache_id = self.precompute(cache_dir=cache_dir, **kwargs)
         return self.compute(data, cache_id=cache_id, **kwargs)
+
+    def _add_area_mask(self, data, kwargs):
+        if not isinstance(self.source_geo_def, SwathDefinition):
+            return
+        if xr is not None and isinstance(data, xr.DataArray):
+            mask = self._get_mask_area_xarray(data)
+        else:
+            mask = self._get_mask_area_numpy(data)
+        if mask is not None:
+            kwargs["mask"] = mask
+
+    def _get_mask_area_xarray(self, data):
+        sgeo = self.source_geo_def
+        if isinstance(sgeo, SwathDefinition) and hasattr(sgeo.lons, "dims"):
+            geo_dims = sgeo.lons.dims
+        else:
+            geo_dims = ('y', 'x')
+        flat_dims = [dim for dim in data.dims if dim not in geo_dims]
+        if np.issubdtype(data.dtype, np.integer):
+            mask = data == data.attrs.get('_FillValue', np.iinfo(data.dtype.type).max)
+        else:
+            mask = data.isnull()
+        mask = mask.all(dim=flat_dims)
+        return mask
+
+    def _get_mask_area_numpy(self, data):
+        if data.ndim > 2:
+            raise ValueError("Can't mask area with numpy array data with more than two dimensions.")
+        if np.issubdtype(data.dtype, np.integer):
+            raise ValueError("Can't mask area with integer numpy array (pass 'mask' directly).")
+        return np.isnan(data)
 
     def _create_cache_filename(self, cache_dir=None, prefix='',
                                fmt='.zarr', **kwargs):
