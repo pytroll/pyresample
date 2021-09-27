@@ -3,6 +3,37 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  website:
+    name: build website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: continuous_integration/environment.yaml
+          activate-environment: test-environment
+
+      - name: Install Satpy
+        shell: bash -l {0}
+        run: |
+          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc; \
+          pip install --no-deps -e .
+
+      - name: Run Sphinx Build
+        shell: bash -l {0}
+        run: |
+          cd doc; \
+          make html SPHINXOPTS="-W"
+
   test:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
@@ -30,10 +61,10 @@ jobs:
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: "latest"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge,defaults
           environment-file: continuous_integration/environment.yaml
           activate-environment: test-environment
 
