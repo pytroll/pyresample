@@ -15,12 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Test cases for spherical geometry."""
 
-from pyresample.spherical import SphPolygon, Arc, SCoordinate, CCoordinate
 import unittest
+
 import numpy as np
+
+from pyresample.spherical import Arc, CCoordinate, SCoordinate, SphPolygon
 
 VERTICES_TEST_IS_INSIDE1 = np.array([[-1.54009253, 82.62402855],
                                      [3.4804808, 82.8105746],
@@ -130,7 +131,6 @@ class TestSCoordinate(unittest.TestCase):
 
 
 class TestCCoordinate(unittest.TestCase):
-
     """Test SCoordinates."""
 
     def test_str(self):
@@ -206,7 +206,6 @@ class TestCCoordinate(unittest.TestCase):
 
 
 class TestArc(unittest.TestCase):
-
     """Test arcs."""
 
     def test_eq(self):
@@ -371,7 +370,6 @@ class TestSphericalPolygon(unittest.TestCase):
 
     def test_is_inside(self):
         """Test checking if a polygon is inside of another."""
-
         vertices = np.array([[1, 1, 20, 20],
                              [1, 20, 20, 1]]).T
 
@@ -438,22 +436,22 @@ class TestSphericalPolygon(unittest.TestCase):
                              [89, 89, 89, 89]]).T
         poly2 = SphPolygon(np.deg2rad(vertices))
 
-        uni = np.array([[157.5,   89.23460094],
-                        [-225.,   89.],
-                        [112.5,   89.23460094],
-                        [90.,   89.],
-                        [67.5,   89.23460094],
-                        [45.,   89.],
-                        [22.5,   89.23460094],
-                        [0.,   89.],
-                        [-22.5,   89.23460094],
-                        [-45.,   89.],
-                        [-67.5,   89.23460094],
-                        [-90.,   89.],
-                        [-112.5,   89.23460094],
-                        [-135.,   89.],
-                        [-157.5,   89.23460094],
-                        [-180.,   89.]])
+        uni = np.array([[157.5, 89.23460094],
+                        [-225., 89.],
+                        [112.5, 89.23460094],
+                        [90., 89.],
+                        [67.5, 89.23460094],
+                        [45., 89.],
+                        [22.5, 89.23460094],
+                        [0., 89.],
+                        [-22.5, 89.23460094],
+                        [-45., 89.],
+                        [-67.5, 89.23460094],
+                        [-90., 89.],
+                        [-112.5, 89.23460094],
+                        [-135., 89.],
+                        [-157.5, 89.23460094],
+                        [-180., 89.]])
 
         poly_union = poly1.union(poly2)
 
@@ -489,14 +487,14 @@ class TestSphericalPolygon(unittest.TestCase):
                              [89, 89, 89, 89]]).T
         poly2 = SphPolygon(np.deg2rad(vertices))
 
-        inter = np.array([[157.5,   89.23460094],
-                          [112.5,   89.23460094],
-                          [67.5,   89.23460094],
-                          [22.5,   89.23460094],
-                          [-22.5,   89.23460094],
-                          [-67.5,   89.23460094],
-                          [-112.5,   89.23460094],
-                          [-157.5,   89.23460094]])
+        inter = np.array([[157.5, 89.23460094],
+                          [112.5, 89.23460094],
+                          [67.5, 89.23460094],
+                          [22.5, 89.23460094],
+                          [-22.5, 89.23460094],
+                          [-67.5, 89.23460094],
+                          [-112.5, 89.23460094],
+                          [-157.5, 89.23460094]])
         poly_inter = poly1.intersection(poly2)
 
         self.assertTrue(np.allclose(poly_inter.vertices,
@@ -504,25 +502,25 @@ class TestSphericalPolygon(unittest.TestCase):
 
         # Test 2 polygons sharing 2 contiguous edges.
 
-        vertices1 = np.array([[-10,  10],
-                              [-5,  10],
-                              [0,  10],
-                              [5,  10],
-                              [10,  10],
+        vertices1 = np.array([[-10, 10],
+                              [-5, 10],
+                              [0, 10],
+                              [5, 10],
+                              [10, 10],
                               [10, -10],
                               [-10, -10]])
 
-        vertices2 = np.array([[-5,  10],
-                              [0,  10],
-                              [5,  10],
-                              [5,  -5],
-                              [-5,  -5]])
+        vertices2 = np.array([[-5, 10],
+                              [0, 10],
+                              [5, 10],
+                              [5, -5],
+                              [-5, -5]])
 
-        vertices3 = np.array([[5,  10],
-                              [5,  -5],
-                              [-5,  -5],
-                              [-5,  10],
-                              [0,  10]])
+        vertices3 = np.array([[5, 10],
+                              [5, -5],
+                              [-5, -5],
+                              [-5, 10],
+                              [0, 10]])
 
         poly1 = SphPolygon(np.deg2rad(vertices1))
         poly2 = SphPolygon(np.deg2rad(vertices2))
@@ -534,26 +532,26 @@ class TestSphericalPolygon(unittest.TestCase):
         # Test when last node of the intersection is the last vertice of the
         # second polygon.
 
-        swath_vertices = np.array([[-115.32268301,   66.32946139],
-                                   [-61.48397172,  58.56799254],
+        swath_vertices = np.array([[-115.32268301, 66.32946139],
+                                   [-61.48397172, 58.56799254],
                                    [-60.25004314, 58.00754686],
-                                   [-71.35057076,   49.60229517],
-                                   [-113.746486,  56.03008985]])
-        area_vertices = np.array([[-68.32812107,  52.3480829],
-                                  [-67.84993896,  53.07015692],
-                                  [-55.54651296,  64.9254637],
-                                  [-24.63341856,  74.24628796],
-                                  [-31.8996363,  27.99907764],
-                                  [-39.581043,  37.0639821],
-                                  [-50.90185988,  45.56296169],
-                                  [-67.43022017,  52.12399581]])
+                                   [-71.35057076, 49.60229517],
+                                   [-113.746486, 56.03008985]])
+        area_vertices = np.array([[-68.32812107, 52.3480829],
+                                  [-67.84993896, 53.07015692],
+                                  [-55.54651296, 64.9254637],
+                                  [-24.63341856, 74.24628796],
+                                  [-31.8996363, 27.99907764],
+                                  [-39.581043, 37.0639821],
+                                  [-50.90185988, 45.56296169],
+                                  [-67.43022017, 52.12399581]])
 
-        res = np.array([[-62.77837918,   59.12607053],
-                        [-61.48397172,   58.56799254],
-                        [-60.25004314,   58.00754686],
-                        [-71.35057076,   49.60229517],
-                        [-113.746486,     56.03008985],
-                        [-115.32268301,   66.32946139]])
+        res = np.array([[-62.77837918, 59.12607053],
+                        [-61.48397172, 58.56799254],
+                        [-60.25004314, 58.00754686],
+                        [-71.35057076, 49.60229517],
+                        [-113.746486, 56.03008985],
+                        [-115.32268301, 66.32946139]])
 
         poly1 = SphPolygon(np.deg2rad(swath_vertices))
         poly2 = SphPolygon(np.deg2rad(area_vertices))

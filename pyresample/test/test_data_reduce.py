@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2018  Pytroll Developers
+# Copyright (C) 2018 Pyresample Developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -17,17 +18,20 @@
 """Testing the data_reduce module."""
 
 import unittest
+
 import numpy as np
+
 from pyresample import geometry
-from pyresample.data_reduce import (get_valid_index_from_cartesian_grid,
-                                    swath_from_lonlat_grid,
-                                    swath_from_lonlat_boundaries,
-                                    swath_from_cartesian_grid,
-                                    get_valid_index_from_lonlat_grid)
+from pyresample.data_reduce import (
+    get_valid_index_from_cartesian_grid,
+    get_valid_index_from_lonlat_grid,
+    swath_from_cartesian_grid,
+    swath_from_lonlat_boundaries,
+    swath_from_lonlat_grid,
+)
 
 
 class Test(unittest.TestCase):
-
     """Unit testing the data_reduce module."""
 
     @classmethod
@@ -120,7 +124,6 @@ class Test(unittest.TestCase):
 
     def test_reduce_north_pole(self):
         """Test reducing around the poles."""
-
         from pyresample import utils
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'

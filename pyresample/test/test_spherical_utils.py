@@ -1,37 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2021 Adam.Dybbroe
-
-# Author(s):
-
-#   Adam Dybbroe <Firstname.Lastname@smhi.se>
-
+#
+# Copyright (c) 2021 Pyresample developers
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
-"""
+"""Test for spherical calculations."""
 
 from unittest.mock import patch
-import pytest
-import numpy as np
-from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
-from pyresample.spherical_utils import merge_tuples
-from pyresample.spherical_utils import check_keys_int_or_tuple
-from pyresample.spherical_utils import check_if_two_polygons_overlap
-from pyresample.spherical import SphPolygon
 
+import numpy as np
+import pytest
+
+from pyresample.spherical import SphPolygon
+from pyresample.spherical_utils import (
+    GetNonOverlapUnionsBaseClass,
+    check_if_two_polygons_overlap,
+    check_keys_int_or_tuple,
+    merge_tuples,
+)
 
 SET_A = {1, 3, 5, 7, 9}
 SET_B = {2, 4, 6, 8, 10}
@@ -384,14 +381,12 @@ def test_merge_unions_input_seven_sets_with_overlaps():
 
 def test_check_keys_int_or_tuple_input_okay():
     """Test the check for dictionary keys and input only a dict with the accepted keys of integers and tuples."""
-
     adict = {1: [1, 2, 3], (2, 3): [1, 2, 3, 4], (6, (4, 5)): [1, 2, 3, 4, 5]}
     check_keys_int_or_tuple(adict)
 
 
 def test_check_keys_int_or_tuple_input_string():
     """Test the check for dictionary keys and input a dict with a key which is a string."""
-
     adict = {1: [1, 2, 3], 'set B': [1, 2, 3, 4]}
     with pytest.raises(KeyError) as exec_info:
         check_keys_int_or_tuple(adict)

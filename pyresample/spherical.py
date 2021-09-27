@@ -1,38 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#
 # Copyright (c) 2013 - 2021 Pyresample developers
-
-# Author(s):
-
-#   Martin Raspaud <martin.raspaud@smhi.se>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Some generalized spherical functions.
 
 base type is a numpy array of size (n, 2) (2 for lon and lats)
 """
 
-import numpy as np
 import logging
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 class SCoordinate(object):
-
     """Spherical coordinates."""
 
     def __init__(self, lon, lat):
@@ -41,7 +36,6 @@ class SCoordinate(object):
 
     def cross2cart(self, point):
         """Compute the cross product, and convert to cartesian coordinates."""
-
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -67,8 +61,7 @@ class SCoordinate(object):
                                      np.sin(self.lat)]))
 
     def distance(self, point):
-        """Vincenty formula."""
-
+        """Get distance using Vincenty formula."""
         dlambda = self.lon - point.lon
         num = ((np.cos(point.lat) * np.sin(dlambda)) ** 2 +
                (np.cos(self.lat) * np.sin(point.lat) -
@@ -80,85 +73,96 @@ class SCoordinate(object):
         return np.arctan2(num ** .5, den)
 
     def hdistance(self, point):
-        """Haversine formula."""
-
+        """Get distance using Haversine formula."""
         return 2 * np.arcsin((np.sin((point.lat - self.lat) / 2.0) ** 2.0 +
                               np.cos(point.lat) * np.cos(self.lat) *
                               np.sin((point.lon - self.lon) / 2.0) ** 2.0) ** .5)
 
     def __ne__(self, other):
+        """Check inequality."""
         return not self.__eq__(other)
 
     def __eq__(self, other):
+        """Check equality."""
         return np.allclose((self.lon, self.lat), (other.lon, other.lat))
 
     def __str__(self):
+        """Get simplified representation of lon/lat arrays in degrees."""
         return str((np.rad2deg(self.lon), np.rad2deg(self.lat)))
 
     def __repr__(self):
+        """Get simplified representation of lon/lat arrays in degrees."""
         return str((np.rad2deg(self.lon), np.rad2deg(self.lat)))
 
     def __iter__(self):
+        """Get iterator over lon/lat pairs."""
         return zip([self.lon, self.lat]).__iter__()
 
 
 class CCoordinate(object):
-
     """Cartesian coordinates."""
 
     def __init__(self, cart):
         self.cart = np.array(cart)
 
     def norm(self):
-        """Euclidean norm of the vector."""
+        """Get Euclidean norm of the vector."""
         return np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
 
     def normalize(self):
-        """normalize the vector."""
-
+        """Normalize the vector."""
         self.cart /= np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
 
         return self
 
     def cross(self, point):
-        """cross product with another vector."""
+        """Get cross product with another vector."""
         return CCoordinate(np.cross(self.cart, point.cart))
 
     def dot(self, point):
-        """dot product with another vector."""
+        """Get dot product with another vector."""
         return np.inner(self.cart, point.cart)
 
     def __ne__(self, other):
+        """Check inequality."""
         return not self.__eq__(other)
 
     def __eq__(self, other):
+        """Check equality."""
         return np.allclose(self.cart, other.cart)
 
     def __str__(self):
+        """Get simplified representation."""
         return str(self.cart)
 
     def __repr__(self):
+        """Get simplified representation."""
         return str(self.cart)
 
     def __add__(self, other):
+        """Add."""
         try:
             return CCoordinate(self.cart + other.cart)
         except AttributeError:
             return CCoordinate(self.cart + np.array(other))
 
     def __radd__(self, other):
+        """Add."""
         return self.__add__(other)
 
     def __mul__(self, other):
+        """Multiply."""
         try:
             return CCoordinate(self.cart * other.cart)
         except AttributeError:
             return CCoordinate(self.cart * np.array(other))
 
     def __rmul__(self, other):
+        """Multiply."""
         return self.__mul__(other)
 
     def to_spherical(self):
+        """Convert to Spherical coordinate object."""
         return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
                            np.arcsin(self.cart[2]))
 
@@ -167,30 +171,33 @@ EPSILON = 0.0000001
 
 
 def modpi(val, mod=np.pi):
-    """Puts *val* between -*mod* and *mod*."""
+    """Put *val* between -*mod* and *mod*."""
     return (val + mod) % (2 * mod) - mod
 
 
 class Arc(object):
-
     """An arc of the great circle between two points."""
 
     def __init__(self, start, end):
         self.start, self.end = start, end
 
     def __eq__(self, other):
-        if(self.start == other.start and self.end == other.end):
+        """Check equality."""
+        if self.start == other.start and self.end == other.end:
             return 1
         return 0
 
     def __ne__(self, other):
+        """Check not equal comparison."""
         return not self.__eq__(other)
 
     def __str__(self):
-        return (str(self.start) + " -> " + str(self.end))
+        """Get simplified representation."""
+        return str(self.start) + " -> " + str(self.end)
 
     def __repr__(self):
-        return (str(self.start) + " -> " + str(self.end))
+        """Get simplified representation."""
+        return str(self.start) + " -> " + str(self.end)
 
     def angle(self, other_arc):
         """Oriented angle between two arcs."""
@@ -231,12 +238,10 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the
-        current arc and *other_arc*.
+        """Give the two intersections of the greats circles defined by the current arc and *other_arc*.
 
         From http://williams.best.vwh.net/intersect.htm
         """
-
         if self.end.lon - self.start.lon > np.pi:
             self.end.lon -= 2 * np.pi
         if other_arc.end.lon - other_arc.start.lon > np.pi:
@@ -259,9 +264,9 @@ class Arc(object):
 
     def intersects(self, other_arc):
         """Check if the current arc and the *other_arc* intersect.
+
         An arc is defined as the shortest tracks between two points.
         """
-
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
@@ -290,7 +295,7 @@ class Arc(object):
         return None
 
     def get_next_intersection(self, arcs, known_inter=None):
-        """Get the next intersection between the current arc and *arcs*"""
+        """Get the next intersection between the current arc and *arcs*."""
         res = []
         for arc in arcs:
             inter = self.intersection(arc)
@@ -300,7 +305,7 @@ class Arc(object):
                 res.append((inter, arc))
 
         def dist(args):
-            """distance key."""
+            """Get distance key."""
             return self.start.distance(args[0])
 
         take_next = False
@@ -351,13 +356,13 @@ class SphPolygon(object):
         return SphPolygon(np.flipud(self.vertices), radius=self.radius)
 
     def aedges(self):
-        """Iterator over the edges, in arcs of Coordinates."""
+        """Get generator over the edges, in arcs of Coordinates."""
         for (lon_start, lat_start), (lon_stop, lat_stop) in self.edges():
             yield Arc(SCoordinate(lon_start, lat_start),
                       SCoordinate(lon_stop, lat_stop))
 
     def edges(self):
-        """Iterator over the edges, in geographical coordinates."""
+        """Get generator over the edges, in geographical coordinates."""
         for i in range(len(self.lon) - 1):
             yield (self.lon[i], self.lat[i]), (self.lon[i + 1], self.lat[i + 1])
         yield (self.lon[i + 1], self.lat[i + 1]), (self.lon[0], self.lat[0])
@@ -377,7 +382,6 @@ class SphPolygon(object):
         Note: The article mixes up longitudes and latitudes in equation 3! Look
         at the fortran code appendix for the correct version.
         """
-
         phi_a = self.lat
         phi_p = self.lat.take(np.arange(len(self.lat)) + 1, mode="wrap")
         phi_b = self.lat.take(np.arange(len(self.lat)) + 2, mode="wrap")
@@ -386,14 +390,14 @@ class SphPolygon(object):
         lam_b = self.lon.take(np.arange(len(self.lon)) + 2, mode="wrap")
 
         new_lons_a = np.arctan2(np.sin(lam_a - lam_p) * np.cos(phi_a),
-                                np.sin(phi_a) * np.cos(phi_p)
-                                - np.cos(phi_a) * np.sin(phi_p)
-                                * np.cos(lam_a - lam_p))
+                                np.sin(phi_a) * np.cos(phi_p) -
+                                np.cos(phi_a) * np.sin(phi_p) *
+                                np.cos(lam_a - lam_p))
 
         new_lons_b = np.arctan2(np.sin(lam_b - lam_p) * np.cos(phi_b),
-                                np.sin(phi_b) * np.cos(phi_p)
-                                - np.cos(phi_b) * np.sin(phi_p)
-                                * np.cos(lam_b - lam_p))
+                                np.sin(phi_b) * np.cos(phi_p) -
+                                np.cos(phi_b) * np.sin(phi_p) *
+                                np.cos(lam_b - lam_p))
 
         alpha = new_lons_a - new_lons_b
         alpha[alpha < 0] += 2 * np.pi
@@ -401,7 +405,7 @@ class SphPolygon(object):
         return (sum(alpha) - (len(self.lon) - 2) * np.pi) * self.radius ** 2
 
     def _bool_oper(self, other, sign=1):
-        """Performs a boolean operation on this and *other* polygons.abs.
+        """Perform a boolean operation on this and *other* polygons.abs.
 
         By default, or when sign is 1, the union is perfomed. If sign is -1,
         the intersection of the polygons is returned.
@@ -486,12 +490,11 @@ class SphPolygon(object):
         return self._bool_oper(other, -1)
 
     def _is_inside(self, other):
-        """Checks if the polygon is entirely inside the other.
+        """Check if the polygon is entirely inside the other.
 
         Should be used with :meth:`inter` first to check if the is a
         known intersection.
         """
-
         anti_lon_0 = self.lon[0] + np.pi
         if anti_lon_0 > np.pi:
             anti_lon_0 -= np.pi * 2
@@ -525,4 +528,5 @@ class SphPolygon(object):
         return other.area() > (2 * np.pi * other.radius ** 2)
 
     def __str__(self):
+        """Get numpy representation of vertices."""
         return str(np.rad2deg(self.vertices))

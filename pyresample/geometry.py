@@ -1685,10 +1685,9 @@ class AreaDefinition(_ProjectionDefinition):
     def __eq__(self, other):
         """Test for equality."""
         try:
-            same_crs = self.crs == other.crs
-            same_shape = self.shape == other.shape
-            same_extents = np.allclose(self.area_extent, other.area_extent)
-            return same_crs and same_shape and same_extents
+            return ((self.proj_str == other.proj_str) and
+                    (self.shape == other.shape) and
+                    (np.allclose(self.area_extent, other.area_extent)))
         except AttributeError:
             return super(AreaDefinition, self).__eq__(other)
 
