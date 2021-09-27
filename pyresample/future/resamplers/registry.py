@@ -26,8 +26,7 @@ from pyresample.future.cache import ResampleCache
 from pyresample.future.resamplers.resampler import Resampler
 from pyresample.kd_tree import XArrayResamplerNN
 
-# TODO: Allow the resampler classes to register themselves
-RESAMPLER_REGISTRY = {
+RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {
     "nearest": XArrayResamplerNN,
 }
 
