@@ -29,7 +29,7 @@ class TestResamplerRegistryManipulation:
 
     def setup_method(self):
         """Mock the registry container so we don't effect the "real" registry."""
-        self.mock_reg = mock.patch("pyresample.future.resamplers.registry", "RESAMPLER_REGISTRY", {})
+        self.mock_reg = mock.patch("pyresample.future.resamplers.registry.RESAMPLER_REGISTRY", {})
         self.mock_reg.start()
 
     def teardown_method(self):
@@ -45,6 +45,45 @@ class TestResamplerRegistryManipulation:
         assert rname in list_resamplers()
         unregister_resampler(rname)
         assert rname not in list_resamplers()
+
+    @pytest.mark.parametrize(
+        "names",
+        [
+            ["my_decorated_resampler"],
+            ["my_decorated_resampler", "my_decorated_resampler2"]
+        ]
+    )
+    def test_decorator_registration(self, names):
+        from pyresample.future import register_resampler, list_resamplers, create_resampler
+        for rname in names:
+            assert rname not in list_resamplers()
+
+        my_cls = _custom_resampler_class()
+        reg_cls = my_cls
+        for rname in names:
+            reg_cls = register_resampler(rname)(reg_cls)
+            assert reg_cls is my_cls
+
+        for rname in names:
+            assert rname in list_resamplers()
+            inst = create_resampler(None, None, resampler=rname)
+            assert isinstance(inst, my_cls)
+
+
+def _custom_resampler_class():
+    from pyresample.future import Resampler
+
+    class _MyResampler(Resampler):
+        """Fake resampler class."""
+
+        def precompute(self):
+            """Pretend to be a precompute method."""
+            return "PRECOMPUTE"
+
+        def compute(self):
+            """Pretend to be a compute method."""
+            return None
+    return _MyResampler
 
 
 class TestBuiltinResamplerRegistry:

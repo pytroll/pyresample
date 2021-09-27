@@ -31,9 +31,50 @@ RESAMPLER_REGISTRY = {
 }
 
 
-def register_resampler(resampler_name: str, resampler_cls: Type[Resampler]) -> None:
-    """Register :class:`~pyresample.future.resampler.Resampler` subclass for future use."""
-    RESAMPLER_REGISTRY[resampler_name] = resampler_cls
+def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampler]] = None) -> None:
+    """Register :class:`~pyresample.future.resampler.Resampler` subclass for future use.
+
+    This function can also be used as a decorator (see examples below).
+
+    Args:
+        resampler_name:
+            Name of the resampler in the registry. This name can then be used
+            in functions like
+            :func:`~pyresample.future.resamplers.registry.create_resampler`.
+        resampler_cls:
+            Subclass of
+            :class:`~pyresample.future.resamplers.resampler.Resampler` that
+            will be added to the registry. This must be provided when not using
+            this function as a decorator.
+
+    Examples:
+        Register a custom class::
+
+            register_resampler("my_resampler", MyResamplerClass)
+
+        Register a custom class using a decorator::
+
+            @register_resampler("my_resampler")
+            class MyResamplerClass(Resampler):
+                ...
+
+        Register a custom class with multiple names using a decorator::
+
+            @register_resampler("my_resampler2")
+            @register_resampler("my_resampler")
+            class MyResamplerClass(Resampler):
+                ...
+
+    """
+    def _register_class(resampler_cls: Type[Resampler]):
+        RESAMPLER_REGISTRY[resampler_name] = resampler_cls
+        return resampler_cls
+
+    if resampler_cls is None:
+        # decorator
+        return _register_class
+
+    _register_class(resampler_cls)
 
 
 def unregister_resampler(resampler_name: str) -> None:
