@@ -17,18 +17,19 @@
 
 """Code for resampling using bucket resampling."""
 
-import dask.array as da
-import xarray as xr
-import numpy as np
 import logging
+
+import dask.array as da
+import numpy as np
+import xarray as xr
+
 from pyresample._spatial_mp import Proj
 
 LOG = logging.getLogger(__name__)
 
 
 class BucketResampler(object):
-
-    """Class for bucket resampling.
+    """Bucket resampler.
 
     Bucket resampling is useful for calculating averages and hit-counts
     when aggregating data to coarser scale grids.
@@ -79,7 +80,6 @@ class BucketResampler(object):
     """
 
     def __init__(self, target_area, source_lons, source_lats):
-
         self.target_area = target_area
         self.source_lons = source_lons
         self.source_lats = source_lats
@@ -130,8 +130,7 @@ class BucketResampler(object):
         y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int)
 
         # Get valid index locations
-        mask = ((x_idxs >= 0) & (x_idxs < adef.width) &
-                (y_idxs >= 0) & (y_idxs < adef.height))
+        mask = (x_idxs >= 0) & (x_idxs < adef.width) & (y_idxs >= 0) & (y_idxs < adef.height)
         self.y_idxs = da.where(mask, y_idxs, -1)
         self.x_idxs = da.where(mask, x_idxs, -1)
 
@@ -148,9 +147,9 @@ class BucketResampler(object):
             Data to be binned and summed.
         skipna : boolean (optional)
                 If True, skips NaN values for the sum calculation
-                    (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
+                (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
                 If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                    (similarly to Numpy's `sum`).
+                (similarly to Numpy's `sum`).
                 In both cases, empty buckets are set to 0.
                 Default: True
 
@@ -255,9 +254,9 @@ class BucketResampler(object):
             Data to be binned.
         skipna : boolean (optional)
                 If True, skips NaN values for the minimum calculation
-                    (similarly to Numpy's `nanmin`). Buckets containing only NaN are set to zero.
+                (similarly to Numpy's `nanmin`). Buckets containing only NaN are set to zero.
                 If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                    (similarly to Numpy's `min`).
+                (similarly to Numpy's `min`).
                 In both cases, empty buckets are set to 0.
                 Default: True
 
@@ -283,9 +282,9 @@ class BucketResampler(object):
             Data to be binned.
         skipna : boolean (optional)
                 If True, skips NaN values for the maximum calculation
-                    (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
+                (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
                 If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                    (similarly to Numpy's `max`).
+                (similarly to Numpy's `max`).
                 In both cases, empty buckets are set to 0.
                 Default: True
 
@@ -298,8 +297,7 @@ class BucketResampler(object):
         return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
 
     def get_count(self):
-        """Count the number of occurrences for each bin using drop-in-a-bucket
-        resampling.
+        """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
 
         Returns
         -------
@@ -331,7 +329,7 @@ class BucketResampler(object):
             Default: np.nan
         skipna : bool
             If True, skips missing values (as marked by NaN or `fill_value`) for the average calculation
-             (similarly to Numpy's `nanmean`). Buckets containing only missing values are set to fill_value.
+            (similarly to Numpy's `nanmean`). Buckets containing only missing values are set to fill_value.
             If False, sets the bucket to fill_value if one or more missing values are present in the bucket
             (similarly to Numpy's `mean`).
             In both cases, empty buckets are set to NaN.
