@@ -217,7 +217,7 @@ class Resampler:
             raise NotImplementedError()
         self.cache = cache
 
-    def get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs):
+    def _get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs):
         """Get hash for the current resample with the given *kwargs*."""
         if source_geo_def is None:
             source_geo_def = self.source_geo_def
@@ -318,6 +318,6 @@ class Resampler:
                                fmt='.zarr', **kwargs):
         """Create filename for the cached resampling parameters."""
         cache_dir = cache_dir or '.'
-        hash_str = self.get_hash(**kwargs)
+        hash_str = self._get_hash(**kwargs)
 
         return os.path.join(cache_dir, prefix + hash_str + fmt)
