@@ -23,8 +23,8 @@
 
 import hashlib
 import json
-import os
 import logging
+import os
 
 import numpy as np
 
@@ -34,7 +34,6 @@ except ImportError:
     xr = None
 
 from pyresample.geometry import SwathDefinition
-
 
 logger = logging.getLogger(__name__)
 
