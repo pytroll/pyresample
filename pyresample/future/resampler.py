@@ -190,7 +190,7 @@ def update_resampled_coords(old_data, new_data, new_area):
     return new_data
 
 
-class BaseResampler:
+class Resampler:
     """Base abstract resampler class."""
 
     def __init__(self,

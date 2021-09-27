@@ -35,7 +35,7 @@ from shapely.geometry import Polygon
 from pyresample import CHUNK_SIZE
 from pyresample.geometry import get_geostationary_bounding_box
 from pyresample.gradient._gradient_search import one_step_gradient_search
-from pyresample.resampler import Resampler
+from pyresample.resampler import BaseResampler
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResampler(Resampler):
+class GradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):

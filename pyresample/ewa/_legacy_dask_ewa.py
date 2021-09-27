@@ -26,7 +26,7 @@ import numpy as np
 from pyresample import CHUNK_SIZE
 from pyresample.ewa import fornav, ll2cr
 from pyresample.geometry import SwathDefinition
-from pyresample.resampler import Resampler, update_resampled_coords
+from pyresample.resampler import BaseResampler, update_resampled_coords
 
 try:
     import xarray as xr
@@ -37,7 +37,7 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
-class LegacyDaskEWAResampler(Resampler):
+class LegacyDaskEWAResampler(BaseResampler):
     """Resample using an elliptical weighted averaging algorithm.
 
     This algorithm does **not** use caching or any externally provided data

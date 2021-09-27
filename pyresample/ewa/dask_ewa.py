@@ -44,7 +44,7 @@ from pyresample.ewa._fornav import (
     write_grid_image_single,
 )
 from pyresample.geometry import SwathDefinition
-from pyresample.resampler import Resampler, update_resampled_coords
+from pyresample.resampler import BaseResampler, update_resampled_coords
 
 try:
     import xarray as xr
@@ -171,7 +171,7 @@ def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
     return out
 
 
-class DaskEWAResampler(Resampler):
+class DaskEWAResampler(BaseResampler):
     """Resample using an elliptical weighted averaging algorithm.
 
     This algorithm does **not** use caching or any externally provided data
