@@ -20,20 +20,13 @@ try:
     from collections.abc import Mapping
 except ImportError:
     from collections import Mapping
-
+import numpy as np
 import warnings
 
-import numpy as np
-
-from .cf import load_cf_area  # noqa
-from .proj4 import (  # noqa
-    convert_proj_floats,
-    get_geostationary_height,
-    proj4_dict_to_str,
-    proj4_radius_parameters,
-    proj4_str_to_dict,
-)
+from .proj4 import (proj4_dict_to_str, proj4_str_to_dict, convert_proj_floats,  # noqa
+                    proj4_radius_parameters, get_geostationary_height)  # noqa
 from .rasterio import get_area_def_from_raster  # noqa
+from .cf import load_cf_area  # noqa
 
 
 def get_area_def(*args, **kwargs):

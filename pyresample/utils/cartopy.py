@@ -17,21 +17,19 @@
 
 """Classes for geometry operations."""
 
-import warnings
 from logging import getLogger
-
 import numpy as np
 import pyproj
+import warnings
 
 try:
     from xarray import DataArray
 except ImportError:
     DataArray = np.ndarray
 
+from pyresample.utils.proj4 import proj4_str_to_dict
 import cartopy.crs as ccrs
 import shapely.geometry as sgeom
-
-from pyresample.utils.proj4 import proj4_str_to_dict
 
 try:
     from cartopy.crs import from_proj

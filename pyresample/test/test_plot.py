@@ -18,11 +18,10 @@
 """Test the quicklook plotting functions."""
 
 import os
+import numpy as np
 import sys
 import unittest
 from unittest import mock
-
-import numpy as np
 
 try:
     import matplotlib
@@ -78,7 +77,8 @@ class Test(unittest.TestCase):
     @unittest.skipIf(Basemap is None, "basemap is not available")
     def test_area_def2basemap(self):
         """Test the area to Basemap object conversion function."""
-        from pyresample import parse_area_file, plot
+        from pyresample import plot
+        from pyresample import parse_area_file
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'ease_sh')[0]
         bmap = plot.area_def2basemap(area_def)
         self.assertTrue(bmap.rmajor == bmap.rminor and bmap.rmajor == 6371228.0,
@@ -119,10 +119,8 @@ class Test(unittest.TestCase):
 
     def test_translate_coast_res(self):
         """Test the translation of coast resolution arguments from old basemap notation to cartopy."""
-        from pyresample.plot import (
-            BASEMAP_NOT_CARTOPY,
-            _translate_coast_resolution_to_cartopy,
-        )
+        from pyresample.plot import _translate_coast_resolution_to_cartopy
+        from pyresample.plot import BASEMAP_NOT_CARTOPY
 
         with self.assertRaises(KeyError) as raises:
             if sys.version_info > (3,):
@@ -157,7 +155,8 @@ class Test(unittest.TestCase):
 
     def test_plate_carreeplot(self):
         """Test the Plate Caree plotting functionality."""
-        from pyresample import geometry, kd_tree, parse_area_file, plot
+        from pyresample import plot, kd_tree, geometry
+        from pyresample import parse_area_file
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'pc_world')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
@@ -170,7 +169,8 @@ class Test(unittest.TestCase):
 
     def test_easeplot(self):
         """Test the plotting on the ease grid area."""
-        from pyresample import geometry, kd_tree, parse_area_file, plot
+        from pyresample import plot, kd_tree, geometry
+        from pyresample import parse_area_file
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'ease_sh')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
@@ -180,7 +180,8 @@ class Test(unittest.TestCase):
 
     def test_orthoplot(self):
         """Test the ortho plotting."""
-        from pyresample import geometry, kd_tree, parse_area_file, plot
+        from pyresample import plot, kd_tree, geometry
+        from pyresample import parse_area_file
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ortho')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,

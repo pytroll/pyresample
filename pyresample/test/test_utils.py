@@ -17,17 +17,17 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test various utility functions."""
 
-import io
 import os
-import pathlib
 import unittest
-import uuid
+import io
+import pathlib
 from tempfile import NamedTemporaryFile
 
 import numpy as np
 from pyproj import CRS
+import uuid
 
-from pyresample.test.utils import create_test_latitude, create_test_longitude
+from pyresample.test.utils import create_test_longitude, create_test_latitude
 
 
 def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
@@ -234,7 +234,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
 
 class TestPreprocessing(unittest.TestCase):
     def test_nearest_neighbor_area_area(self):
-        from pyresample import geometry, utils
+        from pyresample import utils, geometry
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 5000, 1000. * 5000]
@@ -247,7 +247,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, area_def2, 12000.)
 
     def test_nearest_neighbor_area_grid(self):
-        from pyresample import geometry, utils
+        from pyresample import utils, geometry
         lon_arr = create_test_longitude(-94.9, -90.0, (50, 100), dtype=np.float64)
         lat_arr = create_test_latitude(25.1, 30.0, (50, 100), dtype=np.float64)
         grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
@@ -260,7 +260,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, grid, 12000.)
 
     def test_nearest_neighbor_grid_area(self):
-        from pyresample import geometry, utils
+        from pyresample import utils, geometry
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 2500., 1000. * 2000.]
@@ -273,7 +273,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(grid, area_def, 12000.)
 
     def test_nearest_neighbor_grid_grid(self):
-        from pyresample import geometry, utils
+        from pyresample import utils, geometry
         lon_arr = create_test_longitude(-95.0, -85.0, (40, 50), dtype=np.float64)
         lat_arr = create_test_latitude(25.0, 35.0, (40, 50), dtype=np.float64)
         grid_dst = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
@@ -360,7 +360,6 @@ class TestMisc(unittest.TestCase):
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
-
         import pyresample.utils as utils
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
@@ -403,9 +402,8 @@ class TestMisc(unittest.TestCase):
         # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
     def test_def2yaml_converter(self):
+        from pyresample import parse_area_file, convert_def_to_yaml
         import tempfile
-
-        from pyresample import convert_def_to_yaml, parse_area_file
         def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
         os.close(filehandle)
@@ -421,10 +419,9 @@ class TestMisc(unittest.TestCase):
             os.remove(yaml_file)
 
     def test_get_area_def_from_raster(self):
-        from affine import Affine
-        from rasterio.crs import CRS as RCRS
-
         from pyresample import utils
+        from rasterio.crs import CRS as RCRS
+        from affine import Affine
         x_size = 791
         y_size = 718
         transform = Affine(300.0379266750948, 0.0, 101985.0,
@@ -447,7 +444,6 @@ class TestMisc(unittest.TestCase):
 
     def test_get_area_def_from_raster_extracts_proj_id(self):
         from rasterio.crs import CRS as RCRS
-
         from pyresample import utils
         crs = RCRS(init='epsg:3857')
         source = tmptiff(crs=crs)
@@ -459,27 +455,24 @@ class TestMisc(unittest.TestCase):
         self.assertIn(area_def.proj_id, epsg3857_names)
 
     def test_get_area_def_from_raster_rotated_value_err(self):
-        from affine import Affine
-
         from pyresample import utils
+        from affine import Affine
         transform = Affine(300.0379266750948, 0.1, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
         self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
 
     def test_get_area_def_from_raster_non_georef_value_err(self):
-        from affine import Affine
-
         from pyresample import utils
+        from affine import Affine
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
         self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
 
     def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
-        from affine import Affine
-
         from pyresample import utils
+        from affine import Affine
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
@@ -613,7 +606,6 @@ def _prepare_cf_nh10km():
 
 def _prepare_cf_goes():
     import xarray as xr
-
     from pyresample.geometry import AreaDefinition
     area_id = 'GOES-East'
     description = '2km at nadir'
@@ -917,10 +909,8 @@ class TestLoadCFArea_Private(unittest.TestCase):
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
     def test_cf_is_valid_coordinate_standardname(self):
-        from pyresample.utils.cf import (
-            _is_valid_coordinate_standardname,
-            _valid_cf_type_of_grid_mapping,
-        )
+        from pyresample.utils.cf import _is_valid_coordinate_standardname
+        from pyresample.utils.cf import _valid_cf_type_of_grid_mapping
 
         # nominal
         for proj_type in _valid_cf_type_of_grid_mapping:

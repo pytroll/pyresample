@@ -26,24 +26,25 @@
 
 import warnings
 
+from xarray import DataArray, Dataset
 import dask.array as da
+from dask import delayed
 import numpy as np
 import zarr
-from dask import delayed
-from xarray import DataArray, Dataset
 
-from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Proj
+from pyresample import CHUNK_SIZE
 from pyresample.bilinear._base import (
     BilinearBase,
     array_slice_for_multiple_arrays,
     find_indices_outside_min_and_max,
+    mask_coordinates,
     get_slicer,
-    get_valid_indices_from_lonlat_boundaries,
     is_swath_to_grid_or_grid_to_grid,
     lonlat2xyz,
-    mask_coordinates,
+    get_valid_indices_from_lonlat_boundaries
 )
+
 
 CACHE_INDICES = ['bilinear_s',
                  'bilinear_t',

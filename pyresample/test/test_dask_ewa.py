@@ -20,11 +20,12 @@
 import logging
 from unittest import mock
 
-import numpy as np
-import pytest
-from pyproj import CRS
-
 import pyresample.ewa
+
+import pytest
+import numpy as np
+
+from pyproj import CRS
 
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
@@ -58,7 +59,7 @@ def _get_test_array(input_shape, input_dtype, chunk_size):
 
 def _get_test_swath_def(input_shape, chunk_size, geo_dims):
     from pyresample.geometry import SwathDefinition
-    from pyresample.test.utils import create_test_latitude, create_test_longitude
+    from pyresample.test.utils import create_test_longitude, create_test_latitude
     lon_arr = create_test_longitude(-95.0, -75.0, input_shape, dtype=np.float64)
     lat_arr = create_test_latitude(15.0, 30.0, input_shape, dtype=np.float64)
     lons = da.from_array(lon_arr, chunks=chunk_size)

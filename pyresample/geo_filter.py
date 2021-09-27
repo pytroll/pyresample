@@ -1,6 +1,7 @@
 import numpy as np
 
-from . import _spatial_mp, geometry
+from . import _spatial_mp
+from . import geometry
 
 
 class GridFilter(object):

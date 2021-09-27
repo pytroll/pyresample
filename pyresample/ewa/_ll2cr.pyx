@@ -22,9 +22,8 @@
 """Map longitude/latitude points to column/rows of a grid."""
 __docformat__ = "restructuredtext en"
 
-import numpy
 from pyproj import Proj
-
+import numpy
 cimport cython
 cimport numpy
 

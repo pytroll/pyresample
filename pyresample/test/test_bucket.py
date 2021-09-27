@@ -1,13 +1,13 @@
 import unittest
+import numpy as np
+import dask.array as da
+import dask
+import xarray as xr
 from unittest.mock import MagicMock, patch
 
-import dask
-import dask.array as da
-import numpy as np
-import xarray as xr
-
-from pyresample import bucket, create_area_def
+from pyresample import create_area_def
 from pyresample.geometry import AreaDefinition
+from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 

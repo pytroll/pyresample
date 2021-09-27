@@ -18,11 +18,9 @@
 
 """Test cases for spherical geometry."""
 
+from pyresample.spherical import SphPolygon, Arc, SCoordinate, CCoordinate
 import unittest
-
 import numpy as np
-
-from pyresample.spherical import Arc, CCoordinate, SCoordinate, SphPolygon
 
 VERTICES_TEST_IS_INSIDE1 = np.array([[-1.54009253, 82.62402855],
                                      [3.4804808, 82.8105746],

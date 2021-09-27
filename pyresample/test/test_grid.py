@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from pyresample import geometry, grid, utils
+from pyresample import grid, geometry, utils
 
 
 def mp(f):
