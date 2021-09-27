@@ -310,6 +310,7 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
 def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable):
     """Prepare the AreaDefinition object."""
     from pyresample import geometry
+
     # create shape
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
 
@@ -451,6 +452,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
 
     """
     import xarray as xr
+
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")

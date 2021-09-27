@@ -17,10 +17,12 @@
 
 """Code for resampling using bucket resampling."""
 
-import dask.array as da
-import xarray as xr
-import numpy as np
 import logging
+
+import dask.array as da
+import numpy as np
+import xarray as xr
+
 from pyresample._spatial_mp import Proj
 
 LOG = logging.getLogger(__name__)

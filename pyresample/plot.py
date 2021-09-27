@@ -23,6 +23,7 @@
 """Utility functions for quick and easy display."""
 
 from __future__ import absolute_import
+
 import numpy as np
 
 try:

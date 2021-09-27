@@ -19,24 +19,23 @@
 """Test the geometry objects."""
 import random
 import sys
-import pytest
-
-import numpy as np
-
-from pyresample import geo_filter, geometry, parse_area_file
-from pyresample.geometry import (IncompatibleAreas,
-                                 combine_area_extents_vertical,
-                                 concatenate_area_defs)
-from pyresample.test.utils import catch_warnings
-
-from unittest.mock import MagicMock, patch
 import unittest
-import pyproj
-
-from pyproj import CRS
+from unittest.mock import MagicMock, patch
 
 import dask.array as da
+import numpy as np
+import pyproj
+import pytest
 import xarray as xr
+from pyproj import CRS
+
+from pyresample import geo_filter, geometry, parse_area_file
+from pyresample.geometry import (
+    IncompatibleAreas,
+    combine_area_extents_vertical,
+    concatenate_area_defs,
+)
+from pyresample.test.utils import catch_warnings
 
 
 class Test(unittest.TestCase):
@@ -157,6 +156,7 @@ class Test(unittest.TestCase):
     def test_dump(self):
         """Test exporting area defs."""
         from io import StringIO
+
         import yaml
 
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
@@ -1008,8 +1008,9 @@ class Test(unittest.TestCase):
 
     def test_roundtrip_lonlat_array_coordinates_for_dask_array(self):
         """Test roundrip for dask arrays."""
-        from pyresample import get_area_def
         import dask.array as da
+
+        from pyresample import get_area_def
         area_id = 'test'
         area_name = 'Test area with 2x2 pixels'
         proj_id = 'test'
@@ -1065,6 +1066,7 @@ class Test(unittest.TestCase):
     def test_area_corners_around_south_pole(self):
         """Test corner values for the ease-sh area."""
         import numpy as np
+
         from pyresample.geometry import AreaDefinition
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
@@ -1231,6 +1233,7 @@ class Test(unittest.TestCase):
     def test_proj_str(self):
         """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
+
         from pyresample.test.utils import friendly_crs_equal
 
         # pyproj 2.0+ adds a +type=crs parameter
@@ -1419,9 +1422,10 @@ class Test(unittest.TestCase):
 
     def test_from_cf(self):
         """Test the from_cf class method."""
-        from pyresample.geometry import AreaDefinition
         # prepare a netCDF/CF lookalike with xarray
         import xarray as xr
+
+        from pyresample.geometry import AreaDefinition
         nlat = 19
         nlon = 37
         ds = xr.Dataset({'temp': (('lat', 'lon'), np.ma.masked_all((nlat, nlon)))},
@@ -1829,8 +1833,8 @@ class TestSwathDefinition(unittest.TestCase):
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
         import dask.array as da
-        import xarray as xr
         import numpy as np
+        import xarray as xr
         window_size = 2
         resolution = 3
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
@@ -1850,8 +1854,8 @@ class TestSwathDefinition(unittest.TestCase):
     def test_striding(self):
         """Test striding."""
         import dask.array as da
-        import xarray as xr
         import numpy as np
+        import xarray as xr
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
         xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
@@ -1865,8 +1869,9 @@ class TestSwathDefinition(unittest.TestCase):
     def test_swath_def_geocentric_resolution(self):
         """Test the SwathDefinition.geocentric_resolution method."""
         import dask.array as da
-        import xarray as xr
         import numpy as np
+        import xarray as xr
+
         from pyresample.geometry import SwathDefinition
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
@@ -2110,8 +2115,8 @@ class TestStackedAreaDefinition:
     @pytest.mark.parametrize('units', ['meters', 'degrees'])
     def test_create_area_def_base_combinations(self, projection, center, units):
         """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
-        from pyresample.geometry import AreaDefinition
         from pyresample.area_config import create_area_def as cad
+        from pyresample.geometry import AreaDefinition
 
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
@@ -2162,6 +2167,7 @@ class TestStackedAreaDefinition:
     def test_create_area_def_extra_combinations(self):
         """Test extra combinations of create_area_def parameters."""
         from xarray import DataArray
+
         from pyresample import create_area_def as cad
         from pyresample.geometry import AreaDefinition
 
@@ -2308,6 +2314,7 @@ class TestDynamicAreaDefinition:
     def test_freeze_longlat_antimeridian(self, lats, use_dask):
         """Test geographic areas over the antimeridian."""
         import dask
+
         from pyresample.test.utils import CustomScheduler
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               'EPSG:4326')
@@ -2514,7 +2521,7 @@ class TestCrop(unittest.TestCase):
 
 def test_enclose_areas():
     """Test enclosing areas."""
-    from pyresample.geometry import (enclose_areas, create_area_def)
+    from pyresample.geometry import create_area_def, enclose_areas
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
                  'no_defs': None, 'type': 'crs'}

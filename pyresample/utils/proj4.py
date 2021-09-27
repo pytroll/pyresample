@@ -20,7 +20,8 @@ import math
 from collections import OrderedDict
 
 import numpy as np
-from pyproj import CRS, Transformer as PROJTransformer
+from pyproj import CRS
+from pyproj import Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):

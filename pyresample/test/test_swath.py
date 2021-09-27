@@ -2,11 +2,13 @@ import os
 import sys
 import unittest
 import warnings
+
 warnings.simplefilter("always")
 
 import numpy as np
+
+from pyresample import geometry, kd_tree
 from pyresample.test.utils import catch_warnings
-from pyresample import kd_tree, geometry
 
 
 class Test(unittest.TestCase):

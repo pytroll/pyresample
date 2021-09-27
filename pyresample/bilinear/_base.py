@@ -35,8 +35,8 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
+from pyresample._spatial_mp import Proj
 
 
 class BilinearBase(object):

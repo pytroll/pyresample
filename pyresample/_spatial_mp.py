@@ -18,18 +18,17 @@
 from __future__ import absolute_import
 
 import ctypes
+import multiprocessing as mp
 
 import numpy as np
 import pyproj
-import multiprocessing as mp
-
 
 try:
     import numexpr as ne
 except ImportError:
     ne = None
 
-from ._multi_proc import shmem_as_ndarray, Scheduler
+from ._multi_proc import Scheduler, shmem_as_ndarray
 
 # Earth radius
 R = 6370997.0

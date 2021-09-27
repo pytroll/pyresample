@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test EWA fornav module."""
 import logging
-import numpy as np
 import unittest
+
+import numpy as np
 
 LOG = logging.getLogger(__name__)
 

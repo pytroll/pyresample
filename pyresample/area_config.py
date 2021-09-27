@@ -15,20 +15,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+import io
 import logging
 import math
 import os
-import io
-import warnings
 import pathlib
+import warnings
 from typing import Any, Union
 
 import numpy as np
 import yaml
-from pyresample.utils import proj4_str_to_dict
-from pyproj.crs import CRS, CRSError
 from pyproj import Proj, Transformer
+from pyproj.crs import CRS, CRSError
 
+from pyresample.utils import proj4_str_to_dict
 
 try:
     from xarray import DataArray
@@ -523,8 +523,8 @@ def _make_area(
         area_extent: tuple,
         **kwargs):
     """Handles the creation of an area definition for create_area_def."""
-    from pyresample.geometry import AreaDefinition
-    from pyresample.geometry import DynamicAreaDefinition
+    from pyresample.geometry import AreaDefinition, DynamicAreaDefinition
+
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     resolution = kwargs.pop('resolution', None)

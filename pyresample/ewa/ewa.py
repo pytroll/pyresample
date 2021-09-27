@@ -18,8 +18,10 @@
 """EWA algorithms operating on numpy arrays."""
 
 import logging
+
 import numpy as np
-from pyresample.ewa import _ll2cr, _fornav
+
+from pyresample.ewa import _fornav, _ll2cr
 
 LOG = logging.getLogger(__name__)
 

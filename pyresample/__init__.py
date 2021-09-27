@@ -24,16 +24,23 @@ from pyresample import geometry  # noqa
 from pyresample import grid  # noqa
 from pyresample import image  # noqa
 from pyresample import kd_tree  # noqa
-from pyresample import utils  # noqa
 from pyresample import plot  # noqa
+from pyresample import utils  # noqa
+from pyresample.area_config import (  # noqa
+    convert_def_to_yaml,
+    create_area_def,
+    get_area_def,
+    load_area,
+    parse_area_file,
+)
+
 # Easy access
-from pyresample.geometry import (SwathDefinition,  # noqa
-                                 AreaDefinition,  # noqa
-                                 DynamicAreaDefinition)  # noqa
-from pyresample.area_config import load_area, create_area_def, get_area_def, \
-                                   parse_area_file, convert_def_to_yaml  # noqa
+from pyresample.geometry import AreaDefinition  # noqa
+from pyresample.geometry import DynamicAreaDefinition  # noqa
+from pyresample.geometry import SwathDefinition  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
-from pyresample.plot import save_quicklook, area_def2basemap  # noqa
+from pyresample.plot import area_def2basemap, save_quicklook  # noqa
+
 from .version import get_versions  # noqa
 
 __all__ = ['grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',

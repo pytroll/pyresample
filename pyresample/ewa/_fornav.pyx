@@ -24,11 +24,15 @@
 __docformat__ = "restructuredtext en"
 
 import cython
+
 cimport cython
+
 import numpy
-cimport numpy
+
 cimport cpython
-from libc.stdlib cimport calloc, malloc, free
+cimport numpy
+from libc.stdlib cimport calloc, free, malloc
+
 
 cdef extern from "_fornav_templates.h":
     ctypedef float weight_type

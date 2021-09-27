@@ -33,17 +33,18 @@ http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/Inter
 import warnings
 
 from ._numpy_resampler import (  # noqa: F401
-    resample_bilinear,
-    get_sample_from_bil_info,
-    get_bil_info,
     NumpyBilinearResampler,
     NumpyResamplerBilinear,
+    get_bil_info,
+    get_sample_from_bil_info,
+    resample_bilinear,
 )
+
 try:
     from .xarr import (  # noqa: F401
+        CACHE_INDICES,
         XArrayBilinearResampler,
         XArrayResamplerBilinear,
-        CACHE_INDICES,
     )
 except ImportError:
     warnings.warn("XArray and/or zarr not found, XArrayBilinearResampler won't be available.")

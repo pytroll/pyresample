@@ -66,11 +66,11 @@ For more information on these steps see the documentation for the
 corresponding modules.
 """
 
-from .ewa import ll2cr, fornav  # noqa
+from .ewa import fornav, ll2cr  # noqa
 
 try:
-    from .dask_ewa import DaskEWAResampler  # noqa
     from ._legacy_dask_ewa import LegacyDaskEWAResampler  # noqa
+    from .dask_ewa import DaskEWAResampler  # noqa
 except ImportError:
     # dask is required but not installed
     # fallback to old numpy-only implementation (ll2cr, fornav above)

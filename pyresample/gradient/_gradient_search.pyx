@@ -22,15 +22,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+
 cimport numpy as np
+
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
 cimport cython
-
-from libc.math cimport fabs
+from libc.math cimport fabs, isinf, isnan
 from libc.stdio cimport printf
-from libc.math cimport isnan
-from libc.math cimport isinf
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

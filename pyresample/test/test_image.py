@@ -3,7 +3,7 @@ import unittest
 
 import numpy
 
-from pyresample import image, geometry, utils
+from pyresample import geometry, image, utils
 
 
 def mask(f):

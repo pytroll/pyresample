@@ -35,12 +35,7 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from ._base import (
-    BilinearBase,
-    _resample,
-    find_indices_outside_min_and_max,
-    get_slicer
-)
+from ._base import BilinearBase, _resample, find_indices_outside_min_and_max, get_slicer
 
 
 def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,

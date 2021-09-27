@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 import numpy as np
 
-from pyresample import geometry, _spatial_mp
+from pyresample import _spatial_mp, geometry
 
 try:
     range = xrange
