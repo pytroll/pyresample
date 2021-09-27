@@ -17,17 +17,13 @@
 """Testing the data_reduce module."""
 
 import unittest
-
 import numpy as np
-
 from pyresample import geometry
-from pyresample.data_reduce import (
-    get_valid_index_from_cartesian_grid,
-    get_valid_index_from_lonlat_grid,
-    swath_from_cartesian_grid,
-    swath_from_lonlat_boundaries,
-    swath_from_lonlat_grid,
-)
+from pyresample.data_reduce import (get_valid_index_from_cartesian_grid,
+                                    swath_from_lonlat_grid,
+                                    swath_from_lonlat_boundaries,
+                                    swath_from_cartesian_grid,
+                                    get_valid_index_from_lonlat_grid)
 
 
 class Test(unittest.TestCase):

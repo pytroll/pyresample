@@ -21,10 +21,10 @@
 
 # from unittest import mock
 import unittest
-
 import numpy as np
 
 import pyresample._spatial_mp as sp
+
 
 # class SpatialMPTest(unittest.TestCase):
 #     @mock.patch('pyresample._spatial_mp.pyproj.Proj.__init__', return_value=None)

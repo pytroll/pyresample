@@ -1,10 +1,9 @@
-import math
-import unittest
-
 import numpy as np
+import unittest
+import math
 
+from pyresample.spherical_geometry import Coordinate, Arc
 from pyresample import geometry
-from pyresample.spherical_geometry import Arc, Coordinate
 
 
 class TestOverlap(unittest.TestCase):

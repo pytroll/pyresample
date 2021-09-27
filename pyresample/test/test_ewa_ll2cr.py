@@ -21,11 +21,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the EWA ll2cr code."""
 import logging
-import unittest
-
 import numpy as np
-
-from pyresample.test.utils import create_test_latitude, create_test_longitude
+from pyresample.test.utils import create_test_longitude, create_test_latitude
+import unittest
 
 LOG = logging.getLogger(__name__)
 
@@ -192,7 +190,7 @@ class TestLL2CRDynamic(unittest.TestCase):
 class TestLL2CRWrapper(unittest.TestCase):
     def test_basic1(self):
         from pyresample.ewa import ll2cr
-        from pyresample.geometry import AreaDefinition, SwathDefinition
+        from pyresample.geometry import SwathDefinition, AreaDefinition
         from pyresample.utils import proj4_str_to_dict
         lon_arr = create_test_longitude(-95.0, -75.0, (50, 100), dtype=np.float64)
         lat_arr = create_test_latitude(18.0, 40.0, (50, 100), dtype=np.float64)

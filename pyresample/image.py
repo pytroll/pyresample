@@ -18,12 +18,11 @@
 """Handles resampling of images with assigned geometry definitions."""
 
 from __future__ import absolute_import
-
 import warnings
 
 import numpy as np
 
-from pyresample import bilinear, geometry, grid, kd_tree
+from pyresample import geometry, grid, kd_tree, bilinear
 
 
 class ImageContainer(object):

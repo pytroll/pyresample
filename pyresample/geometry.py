@@ -23,9 +23,9 @@ import hashlib
 import math
 import warnings
 from collections import OrderedDict
-from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
+from functools import partial, wraps
 
 import numpy as np
 import yaml
@@ -33,15 +33,12 @@ from pyproj import Geod, transform
 
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
-from pyresample.area_config import create_area_def
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import (
-    check_slice_orientation,
-    get_geostationary_height,
-    load_cf_area,
-    proj4_dict_to_str,
-    proj4_radius_parameters,
-)
+from pyresample.utils import (proj4_dict_to_str,
+                              proj4_radius_parameters,
+                              get_geostationary_height,
+                              check_slice_orientation, load_cf_area)
+from pyresample.area_config import create_area_def
 
 try:
     from xarray import DataArray
@@ -331,7 +328,7 @@ class BaseDefinition:
 
         This uses great circle arcs as area boundaries.
         """
-        from pyresample.spherical_geometry import Coordinate, point_inside
+        from pyresample.spherical_geometry import point_inside, Coordinate
         corners = self.corners
 
         if isinstance(point, tuple):
@@ -637,8 +634,8 @@ class SwathDefinition(CoordinateDefinition):
         For example, averaging over 2x2 windows:
         `sd.aggregate(x=2, y=2)`
         """
-        import dask.array as da
         import pyproj
+        import dask.array as da
 
         geocent = pyproj.Proj(proj='geocent')
         latlong = pyproj.Proj(proj='latlong')
@@ -1009,9 +1006,8 @@ class DynamicAreaDefinition(object):
         return xmin, ymin, xmax, ymax
 
     def _compute_bound_centers_dask(self, proj_dict, lons, lats):
-        import dask.array as da
-
         from pyresample.utils.proj4 import DaskFriendlyTransformer
+        import dask.array as da
         crs = CRS(proj_dict)
         transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs,
                                                        always_xy=True)

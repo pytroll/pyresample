@@ -24,17 +24,14 @@
 """
 
 from unittest.mock import patch
-
-import numpy as np
 import pytest
-
+import numpy as np
+from pyresample.spherical_utils import GetNonOverlapUnionsBaseClass
+from pyresample.spherical_utils import merge_tuples
+from pyresample.spherical_utils import check_keys_int_or_tuple
+from pyresample.spherical_utils import check_if_two_polygons_overlap
 from pyresample.spherical import SphPolygon
-from pyresample.spherical_utils import (
-    GetNonOverlapUnionsBaseClass,
-    check_if_two_polygons_overlap,
-    check_keys_int_or_tuple,
-    merge_tuples,
-)
+
 
 SET_A = {1, 3, 5, 7, 9}
 SET_B = {2, 4, 6, 8, 10}
