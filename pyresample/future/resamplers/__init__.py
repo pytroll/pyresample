@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Future features that are backwards incompatible with current functionality."""
+"""Collection of resampler subclasses."""
 
-from .cache import ResampleCache  # noqa
-from .resamplers import Resampler  # noqa
-from .resamplers import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa
+from __future__ import annotations
+
+from .registry import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa
+from .resampler import Resampler  # noqa

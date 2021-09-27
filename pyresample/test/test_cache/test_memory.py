@@ -18,7 +18,7 @@
 """Test various builtin cache classes."""
 
 from pyresample import create_area_def
-from pyresample.future.resampler import Resampler
+from pyresample.future.resamplers.resampler import Resampler
 
 
 class TestResampler(Resampler):

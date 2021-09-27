@@ -29,7 +29,7 @@ class TestResamplerRegistryManipulation:
 
     def setup_method(self):
         """Mock the registry container so we don't effect the "real" registry."""
-        self.mock_reg = mock.patch("pyresample.future.resampler_registry", "RESAMPLER_REGISTRY", {})
+        self.mock_reg = mock.patch("pyresample.future.resamplers.registry", "RESAMPLER_REGISTRY", {})
         self.mock_reg.start()
 
     def teardown_method(self):

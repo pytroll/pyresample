@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from pytest_lazyfixture import lazy_fixture
 
-from pyresample.future.resampler import Resampler
+from pyresample.future.resamplers.resampler import Resampler
 
 
 class FakeResampler(Resampler):

@@ -21,8 +21,8 @@ from __future__ import annotations
 
 from typing import Optional, Type
 
-from .cache import ResampleCache
-from .resampler import Resampler
+from pyresample.future.cache import ResampleCache
+from pyresample.future.resamplers.resampler import Resampler
 from pyresample.kd_tree import XArrayResamplerNN
 
 # TODO: Allow the resampler classes to register themselves
