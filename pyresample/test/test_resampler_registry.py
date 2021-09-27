@@ -46,6 +46,29 @@ class TestResamplerRegistryManipulation:
         unregister_resampler(rname)
         assert rname not in list_resamplers()
 
+    def test_multiple_registration_warning(self):
+        import warnings
+        from pyresample.future import register_resampler, list_resamplers
+        from pyresample.future import Resampler
+        rname = "my_resampler"
+        assert rname not in list_resamplers()
+        register_resampler(rname, Resampler)
+        assert rname in list_resamplers()
+
+        with warnings.catch_warnings(record=True) as w:
+            # same class
+            register_resampler(rname, Resampler)
+        assert len(w) >= 1
+        msgs = [msg.message.args[0].lower() for msg in w]
+        assert any("already registered" in msg for msg in msgs)
+
+        with warnings.catch_warnings(record=True) as w:
+            # different class
+            register_resampler(rname, _custom_resampler_class())
+        assert len(w) >= 1
+        msgs = [msg.message.args[0].lower() for msg in w]
+        assert any("replacing" in msg for msg in msgs)
+
     @pytest.mark.parametrize(
         "names",
         [

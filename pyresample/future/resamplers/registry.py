@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Optional, Type
 
 from pyresample.future.cache import ResampleCache
@@ -67,6 +68,12 @@ def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampl
 
     """
     def _register_class(resampler_cls: Type[Resampler]):
+        if resampler_name in RESAMPLER_REGISTRY and RESAMPLER_REGISTRY[resampler_name] is resampler_cls:
+            warnings.warn(f"Resampler '{resampler_name} is already registered.", RuntimeWarning)
+        elif resampler_name in RESAMPLER_REGISTRY:
+            warnings.warn(f"Resampler with name '{resampler_name} is already "
+                          f"registered. Replacing with new resampler class.", RuntimeWarning)
+
         RESAMPLER_REGISTRY[resampler_name] = resampler_cls
         return resampler_cls
 
