@@ -25,13 +25,13 @@ jobs:
       - name: Install Satpy
         shell: bash -l {0}
         run: |
-          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc; \
+          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc
           pip install --no-deps -e .
 
       - name: Run Sphinx Build
         shell: bash -l {0}
         run: |
-          cd doc; \
+          cd docs
           make html SPHINXOPTS="-W"
 
   test:
