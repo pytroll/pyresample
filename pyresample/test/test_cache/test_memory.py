@@ -64,14 +64,14 @@ class TestInMemoryCache:
     """Tests for the InMemoryCache class."""
 
     def test_resampler_usage(self):
-        from pyresample.cache import InMemoryCache
+        from pyresample.future.cache import InMemoryCache
         cache_inst = InMemoryCache()
         resampler = _create_resampler_with_cache(cache_inst)
         resampler.precompute()
         resampler.compute(None)
 
     def test_repr(self):
-        from pyresample.cache import InMemoryCache
+        from pyresample.future.cache import InMemoryCache
         x = InMemoryCache()
         assert "0 item(s)" in repr(x)
         x.store(1, "something")

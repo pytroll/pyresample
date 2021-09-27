@@ -31,7 +31,7 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.cache import ResampleCache
+from pyresample.future.cache import ResampleCache
 from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 
 logger = logging.getLogger(__name__)
