@@ -15,32 +15,6 @@
 import os
 import sys
 
-
-class Mock:
-    """Simplified mock object specified to pyresample's use cases."""
-
-    def __init__(self, *args, **kwargs):
-        """Accept but don't use all arguments."""
-
-    def __call__(self, *args, **kwargs):
-        """Return new Mock object when called."""
-        return Mock()
-
-    @classmethod
-    def __getattr__(cls, name):
-        """Handle special cases of getting important attributes used in pyresample."""
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        elif name == "inf":
-            return 0
-        else:
-            return Mock()
-
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
