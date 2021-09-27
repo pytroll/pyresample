@@ -24,11 +24,6 @@ from pyresample.future.resampler import Resampler
 class TestResampler(Resampler):
     """Fake resampler class to test out different caching needs."""
 
-    def __init__(self, src_geom, dst_geom, cache=None):
-        # TODO: This is a Pyresample 2.0 interface, but Resampler is currently 1.x
-        super().__init__(src_geom, dst_geom)
-        self.cache = cache
-
     def precompute(self, **kwargs):
         self.cache.store("scalar_int", 5)
         self.cache.store("scalar_float", 10.0)
