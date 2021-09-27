@@ -16,3 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Future features that are backwards incompatible with current functionality."""
+
+from .cache import ResampleCache  # noqa
+from .resampler import Resampler  # noqa
+from .resampler_registry import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa
