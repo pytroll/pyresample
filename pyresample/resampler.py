@@ -22,7 +22,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
@@ -31,7 +31,6 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.future.cache import ResampleCache
 from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 
 logger = logging.getLogger(__name__)
@@ -196,7 +195,6 @@ class BaseResampler:
     def __init__(self,
                  source_geo_def: Union[SwathDefinition, AreaDefinition],
                  target_geo_def: Union[CoordinateDefinition, AreaDefinition],
-                 cache: Optional[Union[ResampleCache, str]] = None,
                  ):
         """Initialize resampler with geolocation information.
 
@@ -212,10 +210,6 @@ class BaseResampler:
         """
         self.source_geo_def = source_geo_def
         self.target_geo_def = target_geo_def
-        if isinstance(cache, str):
-            # TODO: convenience for file based caching
-            raise NotImplementedError()
-        self.cache = cache
 
     def get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs):
         """Get hash for the current resample with the given *kwargs*."""
