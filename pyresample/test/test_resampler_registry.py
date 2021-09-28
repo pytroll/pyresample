@@ -36,6 +36,16 @@ class TestResamplerRegistryManipulation:
         """Undo mock of registry."""
         self.mock_reg.stop()
 
+    def test_no_builtins_warning(self):
+        """Test that if no builtins are found that a warning is issued."""
+        import warnings
+        from pyresample.future import list_resamplers
+        with warnings.catch_warnings(record=True) as w:
+            avail_resamplers = list_resamplers()
+            # the mocking should have made this empty
+            assert len(avail_resamplers) == 0
+        _warn_message_in_warnings(w, "reinstall")
+
     def test_manual_resampler_registration(self):
         from pyresample.future import unregister_resampler, list_resamplers
         from pyresample.future import Resampler

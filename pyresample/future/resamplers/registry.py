@@ -90,6 +90,7 @@ def unregister_resampler(resampler_name: str) -> None:
 
 def list_resamplers() -> list[str, ...]:
     """Get sorted list of registered resamplers."""
+    _validate_registry()
     resampler_names = sorted(RESAMPLER_REGISTRY.keys())
     return resampler_names
 
@@ -129,5 +130,13 @@ def create_resampler(
     """
     if resampler is None:
         resampler = "nearest"
+    _validate_registry()
     rcls = RESAMPLER_REGISTRY[resampler]
     return rcls(src_geom, dst_geom, cache=cache, **kwargs)
+
+
+def _validate_registry():
+    if not RESAMPLER_REGISTRY:
+        warnings.warn("No builtin resamplers found. This probably means you "
+                      "pyresample installed in editable mode. Try reinstalling "
+                      "pyresample to ensure builtin resamplers are included.")
