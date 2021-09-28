@@ -137,12 +137,11 @@ class TestNearestNeighborResampler:
         resampler = NearestNeighborResampler(
             swath_def_1d_xarray_dask, coord_def_2d_dask,
             radius_of_influence=100000, neighbours=1)
-        data = data_1d_xarray_dask
-        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        ninfo = resampler.get_neighbour_info(mask=data_1d_xarray_dask.isnull())
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data)
+        res = resampler.get_sample_from_neighbour_info(data_1d_xarray_dask)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         actual = res.values
@@ -283,17 +282,16 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
 
     @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
-    def test_nearest_swath_1d_mask_to_grid_8n(self, coord_def_2d_dask):
+    def test_nearest_swath_1d_mask_to_grid_8n(self, swath_def_1d_xarray_dask, data_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 8 neighbors."""
         resampler = NearestNeighborResampler(
-            self.tswath_1d, coord_def_2d_dask,
+            swath_def_1d_xarray_dask, coord_def_2d_dask,
             radius_of_influence=100000, neighbours=8)
-        data = self.tdata_1d
-        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        ninfo = resampler.get_neighbour_info(mask=data_1d_xarray_dask.isnull())
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data)
+        res = resampler.get_sample_from_neighbour_info(data_1d_xarray_dask)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         # actual = res.values
