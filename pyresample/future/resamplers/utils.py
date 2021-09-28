@@ -15,9 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Collection of resampler subclasses."""
+"""Shared utilities for resamplers."""
 
 from __future__ import annotations
 
-from .resampler import Resampler  # noqa
-from .registry import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
+
+try:
+    import dask.array as da
+except ImportError:
+    da = None

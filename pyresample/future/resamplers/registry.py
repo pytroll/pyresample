@@ -19,16 +19,15 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from typing import Optional, Type
 
 from pyresample.future.cache import ResampleCache
 from pyresample.future.resamplers.resampler import Resampler
-from pyresample.kd_tree import XArrayResamplerNN
 
-RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {
-    "nearest": XArrayResamplerNN,
-}
+RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {}
+ENTRY_POINTS_LOADED: bool = False
 
 
 def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampler]] = None) -> None:
@@ -90,7 +89,7 @@ def unregister_resampler(resampler_name: str) -> None:
 
 def list_resamplers() -> list[str, ...]:
     """Get sorted list of registered resamplers."""
-    _validate_registry()
+    _load_and_validate_registry()
     resampler_names = sorted(RESAMPLER_REGISTRY.keys())
     return resampler_names
 
@@ -130,13 +129,40 @@ def create_resampler(
     """
     if resampler is None:
         resampler = "nearest"
-    _validate_registry()
+    _load_and_validate_registry()
     rcls = RESAMPLER_REGISTRY[resampler]
     return rcls(src_geom, dst_geom, cache=cache, **kwargs)
 
 
-def _validate_registry():
+def _load_and_validate_registry():
+    _load_entry_point_resamplers()
     if not RESAMPLER_REGISTRY:
         warnings.warn("No builtin resamplers found. This probably means you "
                       "pyresample installed in editable mode. Try reinstalling "
                       "pyresample to ensure builtin resamplers are included.")
+
+
+def _load_entry_point_resamplers():
+    """Load setuptools plugins via entry_points.
+
+    Based on https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata.
+
+    """
+    global ENTRY_POINTS_LOADED
+    if sys.version_info < (3, 10):
+        from importlib_metadata import entry_points
+    else:
+        from importlib.metadata import entry_points
+
+    if ENTRY_POINTS_LOADED:
+        return
+    ENTRY_POINTS_LOADED = True
+
+    discovered_plugins = entry_points(group="pyresample.resamplers")
+    for entry_point in discovered_plugins:
+        try:
+            loaded_resampler = entry_point.load()
+        except ImportError:
+            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
+        else:
+            register_resampler(entry_point.name, loaded_resampler)

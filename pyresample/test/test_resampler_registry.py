@@ -23,23 +23,27 @@ from unittest import mock
 
 import pytest
 
+from pyresample.future import list_resamplers
+
 
 class TestResamplerRegistryManipulation:
     """Test basic behavior of the resampler registry when it is modified."""
 
     def setup_method(self):
         """Mock the registry container so we don't effect the "real" registry."""
+        self.mock_ep = mock.patch("pyresample.future.resamplers.registry.ENTRY_POINTS_LOADED", True)
         self.mock_reg = mock.patch("pyresample.future.resamplers.registry.RESAMPLER_REGISTRY", {})
+        self.mock_ep.start()
         self.mock_reg.start()
 
     def teardown_method(self):
         """Undo mock of registry."""
+        self.mock_ep.stop()
         self.mock_reg.stop()
 
     def test_no_builtins_warning(self):
         """Test that if no builtins are found that a warning is issued."""
         import warnings
-        from pyresample.future import list_resamplers
         with warnings.catch_warnings(record=True) as w:
             avail_resamplers = list_resamplers()
             # the mocking should have made this empty
