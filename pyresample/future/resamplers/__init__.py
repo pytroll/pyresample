@@ -20,4 +20,5 @@
 from __future__ import annotations
 
 from .resampler import Resampler  # noqa
+from .nearest import NearestNeighborResampler  # noqa
 from .registry import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa

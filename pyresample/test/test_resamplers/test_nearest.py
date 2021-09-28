@@ -20,6 +20,7 @@
 import numpy as np
 
 from pyresample import geometry
+from pyresample.future.resamplers import NearestNeighborResampler
 
 from unittest import mock
 import pytest
@@ -133,10 +134,9 @@ class TestNearestNeighborResampler:
 
     def test_nearest_swath_1d_mask_to_grid_1n(self, swath_def_1d_xarray_dask, data_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(swath_def_1d_xarray_dask, coord_def_2d_dask,
-                                      radius_of_influence=100000,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            swath_def_1d_xarray_dask, coord_def_2d_dask,
+            radius_of_influence=100000, neighbours=1)
         data = data_1d_xarray_dask
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
         for val in ninfo[:3]:
@@ -156,10 +156,9 @@ class TestNearestNeighborResampler:
 
     def test_nearest_type_preserve(self, swath_def_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(swath_def_1d_xarray_dask, coord_def_2d_dask,
-                                      radius_of_influence=100000,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            swath_def_1d_xarray_dask, coord_def_2d_dask,
+            radius_of_influence=100000, neighbours=1)
         data = xr.DataArray(da.from_array(np.array([1, 2, 3]),
                                           chunks=5),
                             dims=('my_dim1',))
@@ -182,10 +181,9 @@ class TestNearestNeighborResampler:
     def test_nearest_swath_2d_mask_to_area_1n(self, swath_def_2d_xarray_dask, data_2d_xarray_dask,
                                               area_def_stere_800x800_target):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(swath_def_2d_xarray_dask, area_def_stere_800x800_target,
-                                      radius_of_influence=50000,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            swath_def_2d_xarray_dask, area_def_stere_800x800_target,
+            radius_of_influence=50000, neighbours=1)
         ninfo = resampler.get_neighbour_info(mask=data_2d_xarray_dask.isnull())
         for val in ninfo[:3]:
             # vii, ia, voi
@@ -201,11 +199,10 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n(self, area_def_stere_50x10_source, data_2d_xarray_dask,
                                         area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
         from pyresample.test.utils import assert_maximum_dask_computes
-        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
-                                      radius_of_influence=50000,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            area_def_stere_50x10_source, area_def_stere_800x800_target,
+            radius_of_influence=50000, neighbours=1)
         with assert_maximum_dask_computes(0):
             ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
@@ -227,9 +224,9 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_50x10_source, data_2d_xarray_dask,
                                                area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            area_def_stere_50x10_source, area_def_stere_800x800_target,
+            neighbours=1)
         ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
@@ -251,8 +248,8 @@ class TestNearestNeighborResampler:
                 mock.patch.object(area_def_stere_800x800_target, 'geocentric_resolution') as dgr:
             sgr.side_effect = RuntimeError
             dgr.side_effect = RuntimeError
-            resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
-                                          neighbours=1)
+            resampler = NearestNeighborResampler(
+                area_def_stere_50x10_source, area_def_stere_800x800_target, neighbours=1)
             resampler.get_neighbour_info()
             res = resampler.get_sample_from_neighbour_info(data)
             assert isinstance(res, xr.DataArray)
@@ -265,10 +262,9 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_50x10_source, data_3d_xarray_dask,
                                                 area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
-                                      radius_of_influence=50000,
-                                      neighbours=1)
+        resampler = NearestNeighborResampler(
+            area_def_stere_50x10_source, area_def_stere_800x800_target,
+            radius_of_influence=50000, neighbours=1)
         ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
@@ -289,10 +285,9 @@ class TestNearestNeighborResampler:
     @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
     def test_nearest_swath_1d_mask_to_grid_8n(self, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 8 neighbors."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        resampler = XArrayResamplerNN(self.tswath_1d, coord_def_2d_dask,
-                                      radius_of_influence=100000,
-                                      neighbours=8)
+        resampler = NearestNeighborResampler(
+            self.tswath_1d, coord_def_2d_dask,
+            radius_of_influence=100000, neighbours=8)
         data = self.tdata_1d
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
         for val in ninfo[:3]:
