@@ -21,95 +21,123 @@ import numpy as np
 
 from pyresample import geometry
 
-import pytest
 from unittest import mock
+import pytest
+
+import xarray as xr
+import dask.array as da
+
+
+@pytest.fixture(scope="session")
+def area_def_stere_800x800_target():
+    return geometry.AreaDefinition(
+        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '50.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        },
+        800, 800,
+        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+    )
+
+
+@pytest.fixture(scope="session")
+def coord_def_2d_dask():
+    chunks = 5
+    lons = da.from_array(np.array([
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+    ]), chunks=chunks)
+    lats = da.from_array(np.array([
+        [55.715613, 55.715613, 55.715613],
+        [55.715613, 55.715613, 55.715613],
+        [55.715613, np.nan, 55.715613],
+        [55.715613, 55.715613, 55.715613],
+    ]), chunks=chunks)
+    return geometry.CoordinateDefinition(lons=lons, lats=lats)
+
+
+@pytest.fixture(scope="session")
+def swath_def_1d_xarray_dask():
+    chunks = 5
+    tlons_1d = xr.DataArray(
+        da.from_array(np.array([11.280789, 12.649354, 12.080402]), chunks=chunks),
+        dims=('my_dim1',))
+    tlats_1d = xr.DataArray(
+        da.from_array(np.array([56.011037, 55.629675, 55.641535]), chunks=chunks),
+        dims=('my_dim1',))
+    return geometry.SwathDefinition(lons=tlons_1d, lats=tlats_1d)
+
+
+@pytest.fixture(scope="session")
+def data_1d_xarray_dask():
+    return xr.DataArray(
+        da.from_array(np.array([1., 2., 3.]), chunks=5), dims=('my_dim1',))
+
+
+@pytest.fixture(scope="session")
+def data_2d_xarray_dask():
+    return xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10)),
+                      chunks=5),
+        dims=('my_dim_y', 'my_dim_x'))
+
+
+@pytest.fixture(scope="session")
+def data_3d_xarray_dask():
+    return xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x, b: y * x * b, (50, 10, 3)),
+                      chunks=5),
+        dims=('my_dim_y', 'my_dim_x', 'bands'),
+        coords={'bands': ['r', 'g', 'b']})
+
+
+@pytest.fixture(scope="session")
+def swath_def_2d_xarray_dask():
+    lons_2d = xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10)),
+                      chunks=5),
+        dims=('my_dim_y', 'my_dim_x'))
+    lats_2d = xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x: 75 - y, (50, 10)),
+                      chunks=5),
+        dims=('my_dim_y', 'my_dim_x'))
+    return geometry.SwathDefinition(lons=lons_2d, lats=lats_2d)
+
+
+@pytest.fixture(scope="session")
+def area_def_stere_50x10_source():
+    return geometry.AreaDefinition(
+        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '52.00',
+            'lat_ts': '52.00',
+            'lon_0': '5.00',
+            'proj': 'stere'
+        },
+        50, 10,
+        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+    )
 
 
 class TestNearestNeighborResampler:
     """Test the NearestNeighborResampler class."""
 
-    @classmethod
-    def setup_class(cls):
-        import xarray as xr
-        import dask.array as da
-        cls.area_def = geometry.AreaDefinition('areaD',
-                                               'Europe (3km, HRV, VTC)',
-                                               'areaD',
-                                               {'a': '6378144.0',
-                                                'b': '6356759.0',
-                                                'lat_0': '50.00',
-                                                'lat_ts': '50.00',
-                                                'lon_0': '8.00',
-                                                'proj': 'stere'},
-                                               800,
-                                               800,
-                                               [-1370912.72,
-                                                -909968.64000000001,
-                                                1029087.28,
-                                                1490031.3600000001])
-
-        dfa = da.from_array  # shortcut
-        cls.chunks = chunks = 5
-        cls.tgrid = geometry.CoordinateDefinition(
-            lons=dfa(np.array([
-                [11.5, 12.562036, 12.9],
-                [11.5, 12.562036, 12.9],
-                [11.5, 12.562036, 12.9],
-                [11.5, 12.562036, 12.9],
-            ]), chunks=chunks),
-            lats=dfa(np.array([
-                [55.715613, 55.715613, 55.715613],
-                [55.715613, 55.715613, 55.715613],
-                [55.715613, np.nan, 55.715613],
-                [55.715613, 55.715613, 55.715613],
-            ]), chunks=chunks))
-
-        cls.tdata_1d = xr.DataArray(
-            dfa(np.array([1., 2., 3.]), chunks=chunks), dims=('my_dim1',))
-        cls.tlons_1d = xr.DataArray(
-            dfa(np.array([11.280789, 12.649354, 12.080402]), chunks=chunks),
-            dims=('my_dim1',))
-        cls.tlats_1d = xr.DataArray(
-            dfa(np.array([56.011037, 55.629675, 55.641535]), chunks=chunks),
-            dims=('my_dim1',))
-        cls.tswath_1d = geometry.SwathDefinition(lons=cls.tlons_1d,
-                                                 lats=cls.tlats_1d)
-
-        cls.data_2d = xr.DataArray(
-            da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10)),
-                          chunks=5),
-            dims=('my_dim_y', 'my_dim_x'))
-        cls.data_3d = xr.DataArray(
-            da.from_array(np.fromfunction(lambda y, x, b: y * x * b, (50, 10, 3)),
-                          chunks=5),
-            dims=('my_dim_y', 'my_dim_x', 'bands'),
-            coords={'bands': ['r', 'g', 'b']})
-        cls.lons_2d = xr.DataArray(
-            da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10)),
-                          chunks=5),
-            dims=('my_dim_y', 'my_dim_x'))
-        cls.lats_2d = xr.DataArray(
-            da.from_array(np.fromfunction(lambda y, x: 75 - y, (50, 10)),
-                          chunks=5),
-            dims=('my_dim_y', 'my_dim_x'))
-        cls.swath_def_2d = geometry.SwathDefinition(lons=cls.lons_2d,
-                                                    lats=cls.lats_2d)
-        cls.src_area_2d = geometry.AreaDefinition(
-            'areaD_src', 'Europe (3km, HRV, VTC)', 'areaD',
-            {'a': '6378144.0', 'b': '6356759.0', 'lat_0': '52.00',
-             'lat_ts': '52.00', 'lon_0': '5.00', 'proj': 'stere'}, 50, 10,
-            [-1370912.72, -909968.64000000001, 1029087.28,
-             1490031.3600000001])
-
-    def test_nearest_swath_1d_mask_to_grid_1n(self):
+    def test_nearest_swath_1d_mask_to_grid_1n(self, swath_def_1d_xarray_dask, data_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+        resampler = XArrayResamplerNN(swath_def_1d_xarray_dask, coord_def_2d_dask,
                                       radius_of_influence=100000,
                                       neighbours=1)
-        data = self.tdata_1d
+        data = data_1d_xarray_dask
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
         for val in ninfo[:3]:
             # vii, ia, voi
@@ -126,15 +154,12 @@ class TestNearestNeighborResampler:
         ])
         np.testing.assert_allclose(actual, expected)
 
-    def test_nearest_type_preserve(self):
+    def test_nearest_type_preserve(self, swath_def_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+        resampler = XArrayResamplerNN(swath_def_1d_xarray_dask, coord_def_2d_dask,
                                       radius_of_influence=100000,
                                       neighbours=1)
-        data = self.tdata_1d
         data = xr.DataArray(da.from_array(np.array([1, 2, 3]),
                                           chunks=5),
                             dims=('my_dim1',))
@@ -154,21 +179,18 @@ class TestNearestNeighborResampler:
         ])
         np.testing.assert_equal(actual, expected)
 
-    def test_nearest_swath_2d_mask_to_area_1n(self):
+    def test_nearest_swath_2d_mask_to_area_1n(self, swath_def_2d_xarray_dask, data_2d_xarray_dask,
+                                              area_def_stere_800x800_target):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        swath_def = self.swath_def_2d
-        data = self.data_2d
-        resampler = XArrayResamplerNN(swath_def, self.area_def,
+        resampler = XArrayResamplerNN(swath_def_2d_xarray_dask, area_def_stere_800x800_target,
                                       radius_of_influence=50000,
                                       neighbours=1)
-        ninfo = resampler.get_neighbour_info(mask=data.isnull())
+        ninfo = resampler.get_neighbour_info(mask=data_2d_xarray_dask.isnull())
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data)
+        res = resampler.get_sample_from_neighbour_info(data_2d_xarray_dask)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         res = res.values
@@ -176,14 +198,12 @@ class TestNearestNeighborResampler:
         expected = 15874591.0
         assert cross_sum == expected
 
-    def test_nearest_area_2d_to_area_1n(self):
+    def test_nearest_area_2d_to_area_1n(self, area_def_stere_50x10_source, data_2d_xarray_dask,
+                                        area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
         from pyresample.kd_tree import XArrayResamplerNN
         from pyresample.test.utils import assert_maximum_dask_computes
-        import xarray as xr
-        import dask.array as da
-        data = self.data_2d
-        resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
                                       radius_of_influence=50000,
                                       neighbours=1)
         with assert_maximum_dask_computes(0):
@@ -191,10 +211,10 @@ class TestNearestNeighborResampler:
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data)
+        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_2d_xarray_dask)
 
         # rename data dimensions to match the expected area dimensions
-        data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
+        data = data_2d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
         with assert_maximum_dask_computes(0):
             res = resampler.get_sample_from_neighbour_info(data)
         assert isinstance(res, xr.DataArray)
@@ -204,22 +224,20 @@ class TestNearestNeighborResampler:
         expected = 27706753.0
         assert cross_sum == expected
 
-    def test_nearest_area_2d_to_area_1n_no_roi(self):
+    def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_50x10_source, data_2d_xarray_dask,
+                                               area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        data = self.data_2d
-        resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
                                       neighbours=1)
         ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data)
+        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_2d_xarray_dask)
 
         # rename data dimensions to match the expected area dimensions
-        data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
+        data = data_2d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
         res = resampler.get_sample_from_neighbour_info(data)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
@@ -229,11 +247,11 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
 
         # pretend the resolutions can't be determined
-        with mock.patch.object(self.src_area_2d, 'geocentric_resolution') as sgr, \
-                mock.patch.object(self.area_def, 'geocentric_resolution') as dgr:
+        with mock.patch.object(area_def_stere_50x10_source, 'geocentric_resolution') as sgr, \
+                mock.patch.object(area_def_stere_800x800_target, 'geocentric_resolution') as dgr:
             sgr.side_effect = RuntimeError
             dgr.side_effect = RuntimeError
-            resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+            resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
                                           neighbours=1)
             resampler.get_neighbour_info()
             res = resampler.get_sample_from_neighbour_info(data)
@@ -244,23 +262,21 @@ class TestNearestNeighborResampler:
             expected = 1855928.0
             assert cross_sum == expected
 
-    def test_nearest_area_2d_to_area_1n_3d_data(self):
+    def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_50x10_source, data_3d_xarray_dask,
+                                                area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        data = self.data_3d
-        resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
+        resampler = XArrayResamplerNN(area_def_stere_50x10_source, area_def_stere_800x800_target,
                                       radius_of_influence=50000,
                                       neighbours=1)
         ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
             assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data)
+        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_3d_xarray_dask)
 
         # rename data dimensions to match the expected area dimensions
-        data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
+        data = data_3d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
         res = resampler.get_sample_from_neighbour_info(data)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
@@ -271,12 +287,10 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
 
     @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
-    def test_nearest_swath_1d_mask_to_grid_8n(self):
+    def test_nearest_swath_1d_mask_to_grid_8n(self, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 8 neighbors."""
         from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
-        import dask.array as da
-        resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
+        resampler = XArrayResamplerNN(self.tswath_1d, coord_def_2d_dask,
                                       radius_of_influence=100000,
                                       neighbours=8)
         data = self.tdata_1d
