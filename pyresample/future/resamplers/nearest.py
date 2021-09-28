@@ -29,6 +29,7 @@ import numpy as np
 
 from pykdtree.kdtree import KDTree
 from pyresample import CHUNK_SIZE, geometry
+from ..geometry import StaticGeometry
 
 logger = getLogger(__name__)
 
@@ -115,8 +116,8 @@ class NearestNeighborResampler(Resampler):
     """Resampler using the basic nearest neighbor algorithm."""
 
     def __init__(self,
-                 source_geo_def,
-                 target_geo_def,
+                 source_geo_def: StaticGeometry,
+                 target_geo_def: StaticGeometry,
                  radius_of_influence=None,
                  neighbours=1,
                  epsilon=0):
