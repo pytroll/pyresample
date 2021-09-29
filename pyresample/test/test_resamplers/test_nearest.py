@@ -134,14 +134,10 @@ class TestNearestNeighborResampler:
 
     def test_nearest_swath_1d_mask_to_grid_1n(self, swath_def_1d_xarray_dask, data_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        resampler = NearestNeighborResampler(
-            swath_def_1d_xarray_dask, coord_def_2d_dask,
-            radius_of_influence=100000, neighbours=1)
-        ninfo = resampler.get_neighbour_info(mask=data_1d_xarray_dask.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data_1d_xarray_dask)
+        resampler = NearestNeighborResampler(swath_def_1d_xarray_dask, coord_def_2d_dask)
+        res = resampler.resample(data_1d_xarray_dask,
+                                 mask_area=data_1d_xarray_dask.isnull(),
+                                 radius_of_influence=100000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         actual = res.values
@@ -155,17 +151,13 @@ class TestNearestNeighborResampler:
 
     def test_nearest_type_preserve(self, swath_def_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        resampler = NearestNeighborResampler(
-            swath_def_1d_xarray_dask, coord_def_2d_dask,
-            radius_of_influence=100000, neighbours=1)
         data = xr.DataArray(da.from_array(np.array([1, 2, 3]),
                                           chunks=5),
                             dims=('my_dim1',))
-        ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data, fill_value=255)
+
+        resampler = NearestNeighborResampler(swath_def_1d_xarray_dask, coord_def_2d_dask)
+        res = resampler.resample(data, fill_value=255,
+                                 radius_of_influence=100000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         actual = res.values
@@ -181,13 +173,8 @@ class TestNearestNeighborResampler:
                                               area_def_stere_800x800_target):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
         resampler = NearestNeighborResampler(
-            swath_def_2d_xarray_dask, area_def_stere_800x800_target,
-            radius_of_influence=50000, neighbours=1)
-        ninfo = resampler.get_neighbour_info(mask=data_2d_xarray_dask.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data_2d_xarray_dask)
+            swath_def_2d_xarray_dask, area_def_stere_800x800_target)
+        res = resampler.resample(data_2d_xarray_dask, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         res = res.values
@@ -200,19 +187,15 @@ class TestNearestNeighborResampler:
         """Test 2D area definition to 2D area definition; 1 neighbor."""
         from pyresample.test.utils import assert_maximum_dask_computes
         resampler = NearestNeighborResampler(
-            area_def_stere_50x10_source, area_def_stere_800x800_target,
-            radius_of_influence=50000, neighbours=1)
+            area_def_stere_50x10_source, area_def_stere_800x800_target)
         with assert_maximum_dask_computes(0):
-            ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_2d_xarray_dask)
+            resampler.precompute(radius_of_influence=50000)
+        pytest.raises(AssertionError, resampler.resample, data_2d_xarray_dask, radius_of_influence=50000)
 
         # rename data dimensions to match the expected area dimensions
         data = data_2d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
         with assert_maximum_dask_computes(0):
-            res = resampler.get_sample_from_neighbour_info(data)
+            res = resampler.resample(data, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         res = res.values
@@ -224,17 +207,13 @@ class TestNearestNeighborResampler:
                                                area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
         resampler = NearestNeighborResampler(
-            area_def_stere_50x10_source, area_def_stere_800x800_target,
-            neighbours=1)
-        ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_2d_xarray_dask)
+            area_def_stere_50x10_source, area_def_stere_800x800_target)
+        resampler.precompute()
+        pytest.raises(AssertionError, resampler.resample, data_2d_xarray_dask)
 
         # rename data dimensions to match the expected area dimensions
         data = data_2d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
-        res = resampler.get_sample_from_neighbour_info(data)
+        res = resampler.resample(data)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         res = res.values
@@ -248,9 +227,8 @@ class TestNearestNeighborResampler:
             sgr.side_effect = RuntimeError
             dgr.side_effect = RuntimeError
             resampler = NearestNeighborResampler(
-                area_def_stere_50x10_source, area_def_stere_800x800_target, neighbours=1)
-            resampler.get_neighbour_info()
-            res = resampler.get_sample_from_neighbour_info(data)
+                area_def_stere_50x10_source, area_def_stere_800x800_target)
+            res = resampler.resample(data)
             assert isinstance(res, xr.DataArray)
             assert isinstance(res.data, da.Array)
             res = res.values
@@ -262,17 +240,13 @@ class TestNearestNeighborResampler:
                                                 area_def_stere_800x800_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
         resampler = NearestNeighborResampler(
-            area_def_stere_50x10_source, area_def_stere_800x800_target,
-            radius_of_influence=50000, neighbours=1)
-        ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        pytest.raises(AssertionError, resampler.get_sample_from_neighbour_info, data_3d_xarray_dask)
+            area_def_stere_50x10_source, area_def_stere_800x800_target)
+        resampler.precompute(radius_of_influence=50000)
+        pytest.raises(AssertionError, resampler.resample, data_3d_xarray_dask, radius_of_influence=50000)
 
         # rename data dimensions to match the expected area dimensions
         data = data_3d_xarray_dask.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
-        res = resampler.get_sample_from_neighbour_info(data)
+        res = resampler.resample(data, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         assert list(res.coords['bands']) == ['r', 'g', 'b']
@@ -285,15 +259,12 @@ class TestNearestNeighborResampler:
     def test_nearest_swath_1d_mask_to_grid_8n(self, swath_def_1d_xarray_dask, data_1d_xarray_dask, coord_def_2d_dask):
         """Test 1D swath definition to 2D grid definition; 8 neighbors."""
         resampler = NearestNeighborResampler(
-            swath_def_1d_xarray_dask, coord_def_2d_dask,
-            radius_of_influence=100000, neighbours=8)
-        ninfo = resampler.get_neighbour_info(mask=data_1d_xarray_dask.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            assert isinstance(val, da.Array)
-        res = resampler.get_sample_from_neighbour_info(data_1d_xarray_dask)
+            swath_def_1d_xarray_dask, coord_def_2d_dask)
+        resampler.precompute(mask=data_1d_xarray_dask.isnull(),
+                             radius_of_influence=100000, neighbors=8)
+        res = resampler.resample(data_1d_xarray_dask)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         # actual = res.values
-        # expected = TODO
+        # expected =
         # np.testing.assert_allclose(actual, expected)

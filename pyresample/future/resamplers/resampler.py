@@ -18,13 +18,11 @@
 """Base resampler class made for subclassing."""
 from __future__ import annotations
 
+import abc
 import hashlib
 import json
 import logging
-import os
 from typing import Optional, Union
-
-import numpy as np
 
 try:
     import xarray as xr
@@ -217,7 +215,18 @@ class Resampler:
             raise NotImplementedError()
         self.cache = cache
 
-    def _get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs):
+    @property
+    @abc.abstractmethod
+    def version(self) -> str:
+        """Get version number string of the current resampler for hashing and caching.
+
+        In cases where a resampler has changed enough that past cached files
+        are not usable then this version number will be incremented to
+        distinguish between the cache entries.
+
+        """
+
+    def _get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs) -> str:
         """Get hash for the current resample with the given *kwargs*."""
         if source_geo_def is None:
             source_geo_def = self.source_geo_def
@@ -225,6 +234,11 @@ class Resampler:
             target_geo_def = self.target_geo_def
         the_hash = source_geo_def.update_hash()
         target_geo_def.update_hash(the_hash)
+
+        kwargs.update({
+            "resampler_version": self.version,
+            "resampler_name": self.__class__.__name__
+        })
         hash_dict(kwargs, the_hash)
         return the_hash.hexdigest()
 
@@ -238,86 +252,14 @@ class Resampler:
         """
         return None
 
-    def compute(self, data, **kwargs):
-        """Do the actual resampling.
-
-        This must be implemented by subclasses.
-
-        """
-        raise NotImplementedError
-
-    def resample(self, data, cache_dir=None, mask_area=None, mask=None, **kwargs):
-        """Resample `data` by calling `precompute` and `compute` methods.
-
-        Only certain resampling classes may use `cache_dir` and the `mask`
-        provided when `mask_area` is True. The return value of calling the
-        `precompute` method is passed as the `cache_id` keyword argument
-        of the `compute` method, but may not be used directly for caching. It
-        is up to the individual resampler subclasses to determine how this
-        is used.
+    def resample(self, data):
+        """Resample input ``data`` from the source geometry to the target geometry.
 
         Args:
             data (ArrayLike): Data to be resampled
-            cache_dir (str): directory to cache precomputed results
-                (default False, optional)
-            mask_area (bool): Mask geolocation data where data values are
-                invalid. This should be used when data values may affect what
-                neighbors are considered valid.
-            mask (ArrayLike): For complex masking behavior specify the exact
-                mask to use instead of the resampler computing it on the fly.
-                Useful for non-xarray DataArrays that don't have related
-                metadata like "_FillValue".
 
-        Returns (xarray.DataArray): Data resampled to the target area
+        Returns (ArrayLike): Data resampled to the target area
 
         """
-        # default is to mask areas for SwathDefinitions
-        if mask is not None or (mask_area is None and isinstance(self.source_geo_def, SwathDefinition)):
-            mask_area = True
-
-        if mask_area and mask is None:
-            self._add_area_mask(data, kwargs)
-        else:
-            kwargs["mask"] = mask
-
-        cache_id = self.precompute(cache_dir=cache_dir, **kwargs)
-        return self.compute(data, cache_id=cache_id, **kwargs)
-
-    def _add_area_mask(self, data, kwargs):
-        if not isinstance(self.source_geo_def, SwathDefinition):
-            return
-        if xr is not None and isinstance(data, xr.DataArray):
-            mask = self._get_mask_area_xarray(data)
-        else:
-            mask = self._get_mask_area_numpy(data)
-        if mask is not None:
-            kwargs["mask"] = mask
-
-    def _get_mask_area_xarray(self, data):
-        sgeo = self.source_geo_def
-        if isinstance(sgeo, SwathDefinition) and hasattr(sgeo.lons, "dims"):
-            geo_dims = sgeo.lons.dims
-        else:
-            geo_dims = ('y', 'x')
-        flat_dims = [dim for dim in data.dims if dim not in geo_dims]
-        if np.issubdtype(data.dtype, np.integer):
-            mask = data == data.attrs.get('_FillValue', np.iinfo(data.dtype.type).max)
-        else:
-            mask = data.isnull()
-        mask = mask.all(dim=flat_dims)
-        return mask
-
-    def _get_mask_area_numpy(self, data):
-        if data.ndim > 2:
-            raise ValueError("Can't mask area with numpy array data with more than two dimensions.")
-        if np.issubdtype(data.dtype, np.integer):
-            raise ValueError("Can't mask area with integer numpy array (pass 'mask' directly).")
-        return np.isnan(data)
-
-    def _create_cache_filename(self, cache_dir=None, prefix='',
-                               fmt='.zarr', **kwargs):
-        """Create filename for the cached resampling parameters."""
-        cache_dir = cache_dir or '.'
-        hash_str = self._get_hash(**kwargs)
-
-        return os.path.join(cache_dir, prefix + hash_str + fmt)
+        self.precompute()
+        raise NotImplementedError("This method must be implemented by a subclass.")

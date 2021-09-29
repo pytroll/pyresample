@@ -32,7 +32,7 @@ class FakeResampler(Resampler):
     def __init__(self, *args, cache_something=False, **kwargs):
         self.cache_something = cache_something
         self.precompute = mock.Mock(wraps=self.precompute)
-        self.compute = mock.Mock(wraps=self.compute)
+        self.resample = mock.Mock(wraps=self.resample)
         super().__init__(*args, **kwargs)
 
     @property
@@ -46,7 +46,9 @@ class FakeResampler(Resampler):
         # FIXME: Legacy resamplers returned a cache_id...is that what we want?
         return "my_result"
 
-    def compute(self, data, cache_id=None, **kwargs):
+    def resample(self, data, **kwargs):
+        # TODO: Replace with some hashing function
+        cache_id = self.precompute(**kwargs)
         if self.should_cache:
             assert self.cache.load(cache_id)
         return np.empty(self.target_geo_def.shape)
@@ -78,5 +80,4 @@ def test_resampler(src, dst, cache, cache_something):
     some_data = np.zeros(src.shape, dtype=np.float64)
     resample_results = rs.resample(some_data)
     rs.precompute.assert_called_once()
-    rs.compute.assert_called_once()
     assert resample_results.shape == dst.shape
