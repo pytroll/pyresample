@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2015  Esben S. Nielsen
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Helper for working with chunked data over multiple workers."""
 
 from __future__ import absolute_import
 
@@ -24,9 +26,10 @@ import numpy as np
 
 
 class Scheduler(object):
+    """Provide chunks of data to work on based on various 'schedule' algorithms."""
 
     def __init__(self, ndata, nprocs, chunk=None, schedule='guided'):
-        if not schedule in ['guided', 'dynamic', 'static']:
+        if schedule not in ['guided', 'dynamic', 'static']:
             raise ValueError('unknown scheduling strategy')
         self._ndata = mp.RawValue(ctypes.c_int, ndata)
         self._start = mp.RawValue(ctypes.c_int, 0)
@@ -47,6 +50,7 @@ class Scheduler(object):
             self._chunk = min_chunk
 
     def __iter__(self):
+        """Iterate over individual chunks of data."""
         while True:
             self._lock.acquire()
             ndata = self._ndata.value
@@ -75,6 +79,7 @@ class Scheduler(object):
 
 
 def shmem_as_ndarray(raw_array):
+    """Create numpy array from shared memory data."""
     _ctypes_to_numpy = {
         ctypes.c_char: np.int8,
         ctypes.c_wchar: np.int16,

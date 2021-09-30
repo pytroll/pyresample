@@ -28,16 +28,16 @@ from copy import deepcopy
 from logging import getLogger
 
 import numpy as np
-
 from pykdtree.kdtree import KDTree
+
 from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
 
 logger = getLogger(__name__)
 
 try:
-    from xarray import DataArray
-    import dask.array as da
     import dask
+    import dask.array as da
+    from xarray import DataArray
     if hasattr(dask, 'blockwise'):
         blockwise = da.blockwise
     else:

@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2013, 2015  Esben S. Nielsen, Martin Raspaud
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -14,42 +15,41 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Multiprocessing versions of KDTree and Proj classes."""
 
 from __future__ import absolute_import
 
 import ctypes
+import multiprocessing as mp
 
 import numpy as np
 import pyproj
-import multiprocessing as mp
-
 
 try:
     import numexpr as ne
 except ImportError:
     ne = None
 
-from ._multi_proc import shmem_as_ndarray, Scheduler
+from ._multi_proc import Scheduler, shmem_as_ndarray
 
 # Earth radius
 R = 6370997.0
 
 
 class cKDTree_MP(object):
-
     """Multiprocessing cKDTree subclass, shared memory."""
 
     def __init__(self, data, leafsize=10, nprocs=2, chunk=None,
                  schedule='guided'):
-        """Same as cKDTree.__init__ except that an internal copy of data to
-        shared memory is made.
+        """Prepare shared memory for KDTree operations.
+
+        Same as cKDTree.__init__ except that an internal copy of data to shared memory is made.
 
         Extra keyword arguments:
         chunk : Minimum chunk size for the load balancer.
         schedule: Strategy for balancing work load
         ('static', 'dynamic' or 'guided').
         """
-
         self.n, self.m = data.shape
         # Allocate shared memory for data
         self.shmem_data = mp.RawArray(ctypes.c_double, self.n * self.m)
@@ -58,7 +58,7 @@ class cKDTree_MP(object):
         # The RawArray objects have information about the dtype and
         # buffer size.
         _data = shmem_as_ndarray(self.shmem_data).reshape((self.n, self.m))
-        _data[:,:] = data
+        _data[:, :] = data
 
         # Initialize parent, we must do this last because
         # cKDTree stores a reference to the data array. We pass in
@@ -69,9 +69,7 @@ class cKDTree_MP(object):
         self._schedule = schedule
 
     def query(self, x, k=1, eps=0, p=2, distance_upper_bound=np.inf):
-        """Same as cKDTree.query except parallelized with multiple processes
-        and shared memory."""
-
+        """Query for points at index 'x' parallelized with multiple processes and shared memory."""
         # allocate shared memory for x and result
         nx = x.shape[0]
         shmem_x = mp.RawArray(ctypes.c_double, nx * self.m)
@@ -120,6 +118,7 @@ class Proj(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
+        """Transform coordinates to coordinate system except for geographic coordinate systems."""
         if self.crs.is_geographic:
             return data1, data2
         return super(Proj, self).__call__(data1, data2, inverse=inverse,
@@ -127,6 +126,7 @@ class Proj(BaseProj):
 
 
 class Proj_MP(BaseProj):
+    """Multi-processing version of the pyproj Proj class."""
 
     def __init__(self, *args, **kwargs):
         self._args = args
@@ -135,6 +135,7 @@ class Proj_MP(BaseProj):
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
+        """Transform coordinates to coordinates in the current coordinate system."""
         if self.crs.is_geographic:
             return data1, data2
 
@@ -170,6 +171,7 @@ class Proj_MP(BaseProj):
 
 
 class Cartesian(object):
+    """Cartesian coordinates."""
 
     def __init__(self, *args, **kwargs):
         pass
@@ -196,7 +198,6 @@ Cartesian_MP = Cartesian
 
 def _run_jobs(target, args, nprocs):
     """Run process pool."""
-
     # return status in shared memory
     # access to these values are serialized automatically
     ierr = mp.Value(ctypes.c_int, 0)
@@ -242,11 +243,11 @@ def _parallel_query(scheduler,  # scheduler for load balancing
         # from the load balancer.
         for s in scheduler:
             if k == 1:
-                _d[s], _i[s] = kdtree.query(_x[s,:], k=1, eps=eps, p=p,\
+                _d[s], _i[s] = kdtree.query(_x[s, :], k=1, eps=eps, p=p,
                                             distance_upper_bound=dub)
             else:
-                _d[s,:], _i[s,:] = kdtree.query(_x[s,:], k=k, eps=eps, p=p,\
-                                                distance_upper_bound=dub)
+                _d[s, :], _i[s, :] = kdtree.query(_x[s, :], k=k, eps=eps, p=p,
+                                                  distance_upper_bound=dub)
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
     except Exception as e:

@@ -1,15 +1,37 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test resampling swath definitions."""
+
 import os
 import sys
 import unittest
 import warnings
-warnings.simplefilter("always")
 
 import numpy as np
+
+from pyresample import geometry, kd_tree
 from pyresample.test.utils import catch_warnings
-from pyresample import kd_tree, geometry
+
+warnings.simplefilter("always")
 
 
 class Test(unittest.TestCase):
+    """Tests for swath definitions."""
 
     filename = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             'test_files', 'ssmis_swath.npz'))
@@ -66,12 +88,3 @@ class Test(unittest.TestCase):
                                msg='Failed self mapping swath multi for channel 2')
         self.assertAlmostEqual(res[:, 2].sum() / 100., truth_value, 1,
                                msg='Failed self mapping swath multi for channel 3')
-
-
-def suite():
-    """The test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

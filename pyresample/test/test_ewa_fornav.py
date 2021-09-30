@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test EWA fornav module."""
 import logging
-import numpy as np
 import unittest
+
+import numpy as np
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class TestFornav(unittest.TestCase):
         # The swath was all 1s so there shouldn't be any non-1 values in the
         # output except outside the swath
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
-                         msg="Unexpected interpolation values were returned")
+                        msg="Unexpected interpolation values were returned")
 
     def test_fornav_swath_smaller(self):
         """Test that a swath smaller than the output grid is entirely used."""

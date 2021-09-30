@@ -18,10 +18,11 @@
 """Test the quicklook plotting functions."""
 
 import os
-import numpy as np
 import sys
 import unittest
 from unittest import mock
+
+import numpy as np
 
 try:
     import matplotlib
@@ -35,13 +36,13 @@ except ImportError:
     Basemap = None
 
 
-MERIDIANS1 = np.array([-180, -170, -160, -150, -140, -130, -120, -110, -100,  -90,  -80,
-                       -70,  -60,  -50,  -40,  -30,  -20,  -10,    0,   10,   20,   30,
-                       40,   50,   60,   70,   80,   90,  100,  110,  120,  130,  140,
-                       150,  160,  170,  180], dtype=np.int64)
+MERIDIANS1 = np.array([-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80,
+                       -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30,
+                       40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140,
+                       150, 160, 170, 180], dtype=np.int64)
 
-PARALLELS1 = np.array([-90, -80, -70, -60, -50, -40, -30, -20, -10,   0,  10,  20,  30,
-                       40,  50,  60,  70,  80,  90], dtype=np.int64)
+PARALLELS1 = np.array([-90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30,
+                       40, 50, 60, 70, 80, 90], dtype=np.int64)
 
 
 class Test(unittest.TestCase):
@@ -77,8 +78,7 @@ class Test(unittest.TestCase):
     @unittest.skipIf(Basemap is None, "basemap is not available")
     def test_area_def2basemap(self):
         """Test the area to Basemap object conversion function."""
-        from pyresample import plot
-        from pyresample import parse_area_file
+        from pyresample import parse_area_file, plot
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'ease_sh')[0]
         bmap = plot.area_def2basemap(area_def)
         self.assertTrue(bmap.rmajor == bmap.rminor and bmap.rmajor == 6371228.0,
@@ -119,8 +119,10 @@ class Test(unittest.TestCase):
 
     def test_translate_coast_res(self):
         """Test the translation of coast resolution arguments from old basemap notation to cartopy."""
-        from pyresample.plot import _translate_coast_resolution_to_cartopy
-        from pyresample.plot import BASEMAP_NOT_CARTOPY
+        from pyresample.plot import (
+            BASEMAP_NOT_CARTOPY,
+            _translate_coast_resolution_to_cartopy,
+        )
 
         with self.assertRaises(KeyError) as raises:
             if sys.version_info > (3,):
@@ -155,8 +157,7 @@ class Test(unittest.TestCase):
 
     def test_plate_carreeplot(self):
         """Test the Plate Caree plotting functionality."""
-        from pyresample import plot, kd_tree, geometry
-        from pyresample import parse_area_file
+        from pyresample import geometry, kd_tree, parse_area_file, plot
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'pc_world')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
@@ -169,8 +170,7 @@ class Test(unittest.TestCase):
 
     def test_easeplot(self):
         """Test the plotting on the ease grid area."""
-        from pyresample import plot, kd_tree, geometry
-        from pyresample import parse_area_file
+        from pyresample import geometry, kd_tree, parse_area_file, plot
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml'), 'ease_sh')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,
@@ -180,8 +180,7 @@ class Test(unittest.TestCase):
 
     def test_orthoplot(self):
         """Test the ortho plotting."""
-        from pyresample import plot, kd_tree, geometry
-        from pyresample import parse_area_file
+        from pyresample import geometry, kd_tree, parse_area_file, plot
         area_def = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ortho')[0]
         swath_def = geometry.SwathDefinition(self.lons, self.lats)
         result = kd_tree.resample_nearest(swath_def, self.tb37v, area_def,

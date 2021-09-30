@@ -1,21 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014-2021 Pyresample Developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test grid interface."""
 import unittest
 
 import numpy as np
 
-from pyresample import grid, geometry, utils
-
-
-def mp(f):
-    f.mp = True
-    return f
-
-
-def tmp(f):
-    f.tmp = True
-    return f
+from pyresample import geometry, grid, utils
 
 
 class Test(unittest.TestCase):
+    """Test grid interface."""
 
     area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        {'a': '6378144.0',
@@ -82,41 +91,39 @@ class Test(unittest.TestCase):
         expected = np.array([[[25., 50., 75.],
                               [52., 104., 156.]],
                              [[81., 162., 243.],
-                              [112.,  224.,  336.]]])
+                              [112., 224., 336.]]])
         self.assertTrue(np.array_equal(res, expected), 'Linesample failed')
 
     def test_from_latlon(self):
         data = np.fromfunction(lambda y, x: y * x, (800, 800))
         lons = np.fromfunction(lambda y, x: x, (10, 10))
         lats = np.fromfunction(lambda y, x: 50 - (5.0 / 10) * y, (10, 10))
-        #source_def = grid.AreaDefinition.get_from_area_def(self.area_def)
         source_def = self.area_def
         res = grid.get_image_from_lonlats(lons, lats, source_def, data)
-        expected = np.array([[129276.,  141032.,  153370.,  165804.,  178334.,  190575.,
-                              202864.,  214768.,  226176.,  238080.],
-                             [133056.,  146016.,  158808.,  171696.,  184320.,  196992.,
-                              209712.,  222480.,  234840.,  247715.],
-                             [137026.,  150150.,  163370.,  177215.,  190629.,  203756.,
-                              217464.,  230256.,  243048.,  256373.],
-                             [140660.,  154496.,  168714.,  182484.,  196542.,  210650.,
-                              224257.,  238464.,  251712.,  265512.],
-                             [144480.,  158484.,  173148.,  187912.,  202776.,  217358.,
-                              231990.,  246240.,  259920.,  274170.],
-                             [147968.,  163261.,  178398.,  193635.,  208616.,  223647.,
-                              238728.,  253859.,  268584.,  283898.],
-                             [151638.,  167121.,  182704.,  198990.,  214775.,  230280.,
-                              246442.,  261617.,  276792.,  292574.],
-                             [154980.,  171186.,  187860.,  204016.,  220542.,  237120.,
-                              253125.,  269806.,  285456.,  301732.],
-                             [158500.,  175536.,  192038.,  209280.,  226626.,  243697.,
-                              260820.,  277564.,  293664.,  310408.],
-                             [161696.,  179470.,  197100.,  214834.,  232320.,  250236.,
-                              267448.,  285090.,  302328.,  320229.]])
+        expected = np.array([[129276., 141032., 153370., 165804., 178334., 190575.,
+                              202864., 214768., 226176., 238080.],
+                             [133056., 146016., 158808., 171696., 184320., 196992.,
+                              209712., 222480., 234840., 247715.],
+                             [137026., 150150., 163370., 177215., 190629., 203756.,
+                              217464., 230256., 243048., 256373.],
+                             [140660., 154496., 168714., 182484., 196542., 210650.,
+                              224257., 238464., 251712., 265512.],
+                             [144480., 158484., 173148., 187912., 202776., 217358.,
+                              231990., 246240., 259920., 274170.],
+                             [147968., 163261., 178398., 193635., 208616., 223647.,
+                              238728., 253859., 268584., 283898.],
+                             [151638., 167121., 182704., 198990., 214775., 230280.,
+                              246442., 261617., 276792., 292574.],
+                             [154980., 171186., 187860., 204016., 220542., 237120.,
+                              253125., 269806., 285456., 301732.],
+                             [158500., 175536., 192038., 209280., 226626., 243697.,
+                              260820., 277564., 293664., 310408.],
+                             [161696., 179470., 197100., 214834., 232320., 250236.,
+                              267448., 285090., 302328., 320229.]])
         self.assertTrue(
             np.array_equal(res, expected), 'Sampling from lat lon failed')
 
     def test_proj_coords(self):
-        #res = grid.get_proj_coords(self.area_def2)
         res = self.area_def2.get_proj_coords()
         cross_sum = res[0].sum() + res[1].sum()
         expected = 2977965.9999999963
@@ -124,16 +131,13 @@ class Test(unittest.TestCase):
             cross_sum, expected, msg='Calculation of proj coords failed')
 
     def test_latlons(self):
-        #res = grid.get_lonlats(self.area_def2)
         res = self.area_def2.get_lonlats()
         cross_sum = res[0].sum() + res[1].sum()
         expected = 1440.8280578215431
         self.assertAlmostEqual(
             cross_sum, expected, msg='Calculation of lat lons failed')
 
-    @mp
     def test_latlons_mp(self):
-        #res = grid.get_lonlats(self.area_def2, nprocs=2)
         res = self.area_def2.get_lonlats(nprocs=2)
         cross_sum = res[0].sum() + res[1].sum()
         expected = 1440.8280578215431
@@ -167,7 +171,6 @@ class Test(unittest.TestCase):
         self.assertGreater(res.mask.sum(), 0,
                            msg='Resampling did not preserve the mask')
 
-    @tmp
     def test_generate_linesample(self):
         data = np.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
         row_indices, col_indices = utils.generate_quick_linesample_arrays(self.msg_area,
@@ -180,7 +183,6 @@ class Test(unittest.TestCase):
         self.assertFalse(row_indices.dtype != np.uint16 or col_indices.dtype != np.uint16,
                          'Generate linesample failed. Downcast to uint16 expected')
 
-    @mp
     def test_resampled_image_mp(self):
         data = np.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
         target_def = self.area_def

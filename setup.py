@@ -37,7 +37,7 @@ if sys.version_info < (3, 10):
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr',
                  'pytest-lazy-fixtures']
 extras_require = {'numexpr': ['numexpr'],
-                  'quicklook': ['matplotlib', 'cartopy', 'pillow'],
+                  'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1'],
                   'cf': ['xarray'],
@@ -46,6 +46,7 @@ extras_require = {'numexpr': ['numexpr'],
                   'tests': test_requires}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []

@@ -21,20 +21,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from libc.math cimport fabs, isinf, isnan
+from libc.stdio cimport printf
+
 import numpy as np
+
 cimport numpy as np
+
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
 cimport cython
 
-from libc.math cimport fabs
-from libc.stdio cimport printf
-from libc.math cimport isnan
-from libc.math cimport isinf
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -54,7 +55,7 @@ cdef inline void nn(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, dou
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
     cdef int l_a, l_b, p_a, p_b
     cdef double w_l, w_p
     cdef size_t z_size = res.shape[0]
@@ -81,7 +82,8 @@ cdef inline void bil(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, do
                   w_l * (1 - w_p) * data[i, l_b, p_a] +
                   w_l * w_p * data[i, l_b, p_b])
 
-ctypedef void (*FN)(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil
+ctypedef void(*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -108,10 +110,9 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
     cdef size_t y_size = dst_y.shape[0]
     cdef size_t x_size = dst_x.shape[1]
 
-
     # output image array --> needs to be (lines, pixels) --> y,x
-    cdef np.ndarray[DTYPE_t, ndim = 3] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
-    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    cdef np.ndarray[DTYPE_t, ndim= 3] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
+    cdef np.ndarray[size_t, ndim= 1] elements = np.arange(x_size, dtype=np.uintp)
 
     one_step_gradient_search_no_gil(data,
                                     src_x, src_y,
@@ -123,22 +124,23 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
     # return the output image
     return image
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef void one_step_gradient_search_no_gil(const DTYPE_t [:, :, :] data,
-                                          const DTYPE_t [:, :] src_x,
-                                          const DTYPE_t [:, :] src_y,
-                                          const DTYPE_t [:, :] xl,
-                                          const DTYPE_t [:, :] xp,
-                                          const DTYPE_t [:, :] yl,
-                                          const DTYPE_t [:, :] yp,
-                                          const DTYPE_t [:, :] dst_x,
-                                          const DTYPE_t [:, :] dst_y,
+cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
+                                          const DTYPE_t[:, :] src_x,
+                                          const DTYPE_t[:, :] src_y,
+                                          const DTYPE_t[:, :] xl,
+                                          const DTYPE_t[:, :] xp,
+                                          const DTYPE_t[:, :] yl,
+                                          const DTYPE_t[:, :] yp,
+                                          const DTYPE_t[:, :] dst_x,
+                                          const DTYPE_t[:, :] dst_y,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
-                                          DTYPE_t [:, :, :] image,
-                                          size_t [:] elements) nogil:
+                                          DTYPE_t[:, :, :] image,
+                                          size_t[:] elements) nogil:
 
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = data.shape[2] - 1
@@ -233,26 +235,26 @@ cpdef fast_gradient_search_pg(np.ndarray[DTYPE_t, ndim=2] data,
     first_col = col
     #print(first_line, first_col)
     cdef size_t start_line = np.searchsorted(dst_y, src_y[first_line, first_col])
-    cdef DTYPE_t [:, :] data_view = data
-    cdef DTYPE_t [:, :] source_x_view = src_x
-    cdef DTYPE_t [:, :] source_y_view = src_y
-    cdef DTYPE_t [:, :] xl_view = xl
-    cdef DTYPE_t [:, :] xp_view = xp
-    cdef DTYPE_t [:, :] yl_view = yl
-    cdef DTYPE_t [:, :] yp_view = yp
+    cdef DTYPE_t[:, :] data_view = data
+    cdef DTYPE_t[:, :] source_x_view = src_x
+    cdef DTYPE_t[:, :] source_y_view = src_y
+    cdef DTYPE_t[:, :] xl_view = xl
+    cdef DTYPE_t[:, :] xp_view = xp
+    cdef DTYPE_t[:, :] yl_view = yl
+    cdef DTYPE_t[:, :] yp_view = yp
     # change the output size (x_size, y_size) to match area_def.shape:
     # (lines,pixels)
     cdef size_t y_size = len(dst_y)
     cdef size_t x_size = len(dst_x)
-    cdef DTYPE_t [:] dst_x_view = dst_x
-    cdef DTYPE_t [:] dst_y_view = dst_y
+    cdef DTYPE_t[:] dst_x_view = dst_x
+    cdef DTYPE_t[:] dst_y_view = dst_y
 
     # output image array --> needs to be (lines, pixels) --> y,x
-    cdef np.ndarray[DTYPE_t, ndim = 2] image = np.full([y_size, x_size], np.nan, dtype=DTYPE)
-    cdef DTYPE_t [:, :] image_view = image
+    cdef np.ndarray[DTYPE_t, ndim= 2] image = np.full([y_size, x_size], np.nan, dtype=DTYPE)
+    cdef DTYPE_t[:, :] image_view = image
     # this was a bit confusing -- "lines" was based on x_size; change this
     # variable to elements - make it a numpy array (long==numpy int dtype)
-    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
+    cdef size_t[:] elements = np.arange(x_size, dtype=np.uintp)
     # Make a view to allow running without gil
     fast_gradient_search_ng(data_view,
                             source_x_view, source_y_view,
@@ -265,21 +267,22 @@ cpdef fast_gradient_search_pg(np.ndarray[DTYPE_t, ndim=2] data,
     # return the output image
     return image
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef void fast_gradient_search_ng(DTYPE_t [:, :] data,
-                                  DTYPE_t [:, :] src_x,
-                                  DTYPE_t [:, :] src_y,
-                                  DTYPE_t [:, :] xl,
-                                  DTYPE_t [:, :] xp,
-                                  DTYPE_t [:, :] yl,
-                                  DTYPE_t [:, :] yp,
+cdef void fast_gradient_search_ng(DTYPE_t[:, :] data,
+                                  DTYPE_t[:, :] src_x,
+                                  DTYPE_t[:, :] src_y,
+                                  DTYPE_t[:, :] xl,
+                                  DTYPE_t[:, :] xp,
+                                  DTYPE_t[:, :] yl,
+                                  DTYPE_t[:, :] yp,
                                   size_t x_size, size_t y_size,
                                   FN fun,
-                                  DTYPE_t [:, :] image,
-                                  DTYPE_t [:] dst_x,
-                                  DTYPE_t [:] dst_y,
-                                  size_t [:] elements,
+                                  DTYPE_t[:, :] image,
+                                  DTYPE_t[:] dst_x,
+                                  DTYPE_t[:] dst_y,
+                                  size_t[:] elements,
                                   size_t first_line,
                                   size_t first_col,
                                   size_t start_line) nogil:
@@ -341,7 +344,7 @@ cdef void fast_gradient_search_ng(DTYPE_t [:, :] data,
                         #     p0 = last_p0
                         #     l0 = last_l0
                         #     break
-                            #continue
+                            # continue
                         dx = dst_x[j] - src_x[l0, p0]
                         dy = dst_y[i] - src_y[l0, p0]
 
@@ -366,8 +369,7 @@ cdef void fast_gradient_search_ng(DTYPE_t [:, :] data,
                         p0 = int(p0 + dp)
 
 
-
-############## old stuff
+# old stuff
 
 # @cython.boundscheck(False)
 # @cython.wraparound(False)

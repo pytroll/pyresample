@@ -35,8 +35,8 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
+from pyresample._spatial_mp import Proj
 
 
 class BilinearBase(object):
@@ -264,7 +264,7 @@ def _check_fill_value(fill_value, dtype):
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords()
-    return np.ravel(out_x),  np.ravel(out_y)
+    return np.ravel(out_x), np.ravel(out_y)
 
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
@@ -564,8 +564,8 @@ def _get_valid_input_index(source_geo_def,
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
     valid_input_index = np.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+        find_indices_outside_min_and_max(source_lons, -180., 180.) |
+        find_indices_outside_min_and_max(source_lats, -90., 90.))
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(
