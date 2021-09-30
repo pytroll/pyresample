@@ -58,10 +58,10 @@ class FakeResampler(Resampler):
 @pytest.mark.parametrize(
     "src",
     [
-        lazy_fixture("swath_def_numpy"),
-        lazy_fixture("swath_def_dask"),
-        lazy_fixture("swath_def_xarray_numpy"),
-        lazy_fixture("swath_def_xarray_dask"),
+        lazy_fixture("swath_def_2d_numpy"),
+        lazy_fixture("swath_def_2d_dask"),
+        lazy_fixture("swath_def_2d_xarray_numpy"),
+        lazy_fixture("swath_def_2d_xarray_dask"),
     ]
 )
 @pytest.mark.parametrize(

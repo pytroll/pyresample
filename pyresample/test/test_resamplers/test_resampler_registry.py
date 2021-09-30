@@ -24,6 +24,7 @@ from unittest import mock
 import pytest
 
 from pyresample.future import list_resamplers
+from pyresample.test.utils import assert_warnings_contain
 
 
 class TestResamplerRegistryManipulation:
@@ -48,7 +49,7 @@ class TestResamplerRegistryManipulation:
             avail_resamplers = list_resamplers()
             # the mocking should have made this empty
             assert len(avail_resamplers) == 0
-        _warn_message_in_warnings(w, "reinstall")
+        assert_warnings_contain(w, "reinstall")
 
     def test_manual_resampler_registration(self):
         from pyresample.future import Resampler, list_resamplers, unregister_resampler
@@ -67,7 +68,7 @@ class TestResamplerRegistryManipulation:
         with warnings.catch_warnings(record=True) as w:
             # same class
             _register_resampler_class(rname, Resampler, no_exist=False)
-        _warn_message_in_warnings(w, "already registered")
+        assert_warnings_contain(w, "already registered")
 
     def test_multiple_registration_warning_diff_class(self):
         import warnings
@@ -79,7 +80,7 @@ class TestResamplerRegistryManipulation:
         with warnings.catch_warnings(record=True) as w:
             # different class
             _register_resampler_class(rname, _custom_resampler_class(), no_exist=False)
-        _warn_message_in_warnings(w, "replacing")
+        assert_warnings_contain(w, "replacing")
 
     @pytest.mark.parametrize(
         "names",
@@ -123,12 +124,6 @@ def _custom_resampler_class():
             """Pretend to be a compute method."""
             return None
     return _MyResampler
-
-
-def _warn_message_in_warnings(warnings: list, message: str):
-    assert len(warnings) >= 1
-    msgs = [msg.message.args[0].lower() for msg in warnings]
-    assert any(message in msg for msg in msgs)
 
 
 def _register_resampler_class(rname, rcls, no_exist=True):

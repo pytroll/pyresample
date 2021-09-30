@@ -50,21 +50,21 @@ def _antimeridian_lonlats():
 
 
 @pytest.fixture(scope="session")
-def swath_def_numpy():
+def swath_def_2d_numpy():
     """Create a SwathDefinition with numpy arrays (200, 1500)."""
     lons, lats = _conus_lonlats()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
-def swath_def_dask():
+def swath_def_2d_dask():
     """Create a SwathDefinition with dask arrays (200, 1500)."""
     lons, lats = _conus_lonlats_dask()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
-def swath_def_xarray_numpy():
+def swath_def_2d_xarray_numpy():
     """Create a SwathDefinition with DataArrays(numpy) (200, 1500)."""
     lons, lats = _conus_lonlats()
     lons = xr.DataArray(lons, dims=("y", "x"))
@@ -73,7 +73,7 @@ def swath_def_xarray_numpy():
 
 
 @pytest.fixture(scope="session")
-def swath_def_xarray_dask():
+def swath_def_2d_xarray_dask():
     """Create a SwathDefinition with DataArrays(dask) (200, 1500)."""
     lons, lats = _conus_lonlats_dask()
     lons = xr.DataArray(lons, dims=("y", "x"))
@@ -82,7 +82,7 @@ def swath_def_xarray_dask():
 
 
 @pytest.fixture(scope="session")
-def swath_def_numpy_antimeridian():
+def swath_def_2d_numpy_antimeridian():
     """Create a SwathDefinition with numpy arrays (200, 1500) over the antimeridian.
 
     Longitude values go from positive values to negative values as they cross -180/180.
