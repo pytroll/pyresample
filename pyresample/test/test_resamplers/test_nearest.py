@@ -30,7 +30,7 @@ from pyresample.future.resamplers import NearestNeighborResampler
 
 @pytest.fixture(scope="session")
 def area_def_stere_800x800_target():
-    """Create an AreaDefinition with a polar-stereographic projection (800, 800)."""
+    """Create an AreaDefinition with a polar-stereographic projection (800, 850)."""
     return geometry.AreaDefinition(
         'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
         {
@@ -41,7 +41,7 @@ def area_def_stere_800x800_target():
             'lon_0': '8.00',
             'proj': 'stere'
         },
-        800, 800,
+        850, 800,
         [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
     )
 
@@ -186,7 +186,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 15874591.0
+        expected = 16873718.0
         assert cross_sum == expected
 
     def test_nearest_area_2d_to_area_1n(self, area_def_stere_50x10_source, data_2d_xarray_dask,
@@ -207,7 +207,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 27706753.0
+        expected = 29443418.0
         assert cross_sum == expected
 
     def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_50x10_source, data_2d_xarray_dask,
@@ -225,7 +225,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 87281406.0
+        expected = 92736361.0
         assert cross_sum == expected
 
         # pretend the resolutions can't be determined
@@ -240,7 +240,7 @@ class TestNearestNeighborResampler:
             assert isinstance(res.data, da.Array)
             res = res.values
             cross_sum = np.nansum(res)
-            expected = 1855928.0
+            expected = 1984428.0
             assert cross_sum == expected
 
     def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_50x10_source, data_3d_xarray_dask,
@@ -259,7 +259,7 @@ class TestNearestNeighborResampler:
         assert list(res.coords['bands']) == ['r', 'g', 'b']
         res = res.values
         cross_sum = np.nansum(res)
-        expected = 83120259.0
+        expected = 88330254.0
         assert cross_sum == expected
 
     @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
