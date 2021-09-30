@@ -18,55 +18,63 @@
 """Shared test configuration and fixtures."""
 
 import dask.array as da
+import numpy as np
 import pytest
 import xarray as xr
 from pyproj import CRS
 
-from pyresample import AreaDefinition, SwathDefinition
+from pyresample.future.geometry import (
+    AreaDefinition,
+    CoordinateDefinition,
+    SwathDefinition,
+)
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
-SWATH_SHAPE = (200, 1500)
-AREA_SHAPE = (1500, 2000)
+SRC_SWATH_2D_SHAPE = (50, 10)
+SRC_SWATH_1D_SHAPE = (3,)
+SRC_AREA_SHAPE = (50, 10)
+# TODO: Downsize to 80, 85
+DST_AREA_SHAPE = (800, 850)
 
 
-def _conus_lonlats():
-    lons = create_test_longitude(-105.0, -90.0, SWATH_SHAPE)
-    lats = create_test_latitude(25.0, 33.0, SWATH_SHAPE)
+def _euro_lonlats():
+    lons = create_test_longitude(3.0, 12.0, SRC_SWATH_2D_SHAPE)
+    lats = create_test_latitude(75.0, 26.0, SRC_SWATH_2D_SHAPE)
     return lons, lats
 
 
-def _conus_lonlats_dask():
-    lons, lats = _conus_lonlats()
+def _euro_lonlats_dask():
+    lons, lats = _euro_lonlats()
     lons = da.from_array(lons)
     lats = da.from_array(lats)
     return lons, lats
 
 
 def _antimeridian_lonlats():
-    lons = create_test_longitude(172.0, 190.0, SWATH_SHAPE)
+    lons = create_test_longitude(172.0, 190.0, SRC_SWATH_2D_SHAPE)
     lons[lons > 180.0] = lons - 360.0
-    lats = create_test_latitude(25.0, 33.0, SWATH_SHAPE)
+    lats = create_test_latitude(25.0, 33.0, SRC_SWATH_2D_SHAPE)
     return lons, lats
 
 
 @pytest.fixture(scope="session")
 def swath_def_2d_numpy():
     """Create a SwathDefinition with numpy arrays (200, 1500)."""
-    lons, lats = _conus_lonlats()
+    lons, lats = _euro_lonlats()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
 def swath_def_2d_dask():
     """Create a SwathDefinition with dask arrays (200, 1500)."""
-    lons, lats = _conus_lonlats_dask()
+    lons, lats = _euro_lonlats_dask()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
 def swath_def_2d_xarray_numpy():
     """Create a SwathDefinition with DataArrays(numpy) (200, 1500)."""
-    lons, lats = _conus_lonlats()
+    lons, lats = _euro_lonlats()
     lons = xr.DataArray(lons, dims=("y", "x"))
     lats = xr.DataArray(lats, dims=("y", "x"))
     return SwathDefinition(lons, lats)
@@ -75,7 +83,7 @@ def swath_def_2d_xarray_numpy():
 @pytest.fixture(scope="session")
 def swath_def_2d_xarray_dask():
     """Create a SwathDefinition with DataArrays(dask) (200, 1500)."""
-    lons, lats = _conus_lonlats_dask()
+    lons, lats = _euro_lonlats_dask()
     lons = xr.DataArray(lons, dims=("y", "x"))
     lats = xr.DataArray(lats, dims=("y", "x"))
     return SwathDefinition(lons, lats)
@@ -98,6 +106,107 @@ def area_def_lcc_conus_1km():
     proj_str = "+proj=lcc +lon_0=-95 +lat_1=35.0 +lat_2=35.0 +datum=WGS84 +no_defs"
     crs = CRS.from_string(proj_str)
     area_def = AreaDefinition("area_def_lcc_conus", "", "",
-                              crs, AREA_SHAPE[1], AREA_SHAPE[0],
+                              crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
                               (-750000, -750000, 750000, 750000))
     return area_def
+
+
+@pytest.fixture(scope="session")
+def area_def_stere_source():
+    """Create an AreaDefinition with a polar-stereographic projection (10, 50).
+
+    This area is the same shape as input swath definitions.
+
+    """
+    return AreaDefinition(
+        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '52.00',
+            'lat_ts': '52.00',
+            'lon_0': '5.00',
+            'proj': 'stere'
+        },
+        50, 10,
+        # SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+    )
+
+
+@pytest.fixture(scope="session")
+def area_def_stere_target():
+    """Create an AreaDefinition with a polar-stereographic projection (800, 850)."""
+    return AreaDefinition(
+        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '50.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        },
+        DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
+        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+    )
+
+
+@pytest.fixture(scope="session")
+def coord_def_2d_float32_dask():
+    """Create a 2D CoordinateDefinition of dask arrays (4, 3)."""
+    chunks = 5
+    lons = da.from_array(np.array([
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+        [11.5, 12.562036, 12.9],
+    ], dtype=np.float32), chunks=chunks)
+    lats = da.from_array(np.array([
+        [55.715613, 55.715613, 55.715613],
+        [55.715613, 55.715613, 55.715613],
+        [55.715613, np.nan, 55.715613],
+        [55.715613, 55.715613, 55.715613],
+    ], dtype=np.float32), chunks=chunks)
+    return CoordinateDefinition(lons=lons, lats=lats)
+
+
+@pytest.fixture(scope="session")
+def swath_def_1d_xarray_dask():
+    """Create a 1D SwathDefinition of DataArrays(dask) (3,)."""
+    chunks = 5
+    tlons_1d = xr.DataArray(
+        da.from_array(np.array([11.280789, 12.649354, 12.080402]), chunks=chunks),
+        dims=('my_dim1',))
+    tlats_1d = xr.DataArray(
+        da.from_array(np.array([56.011037, 55.629675, 55.641535]), chunks=chunks),
+        dims=('my_dim1',))
+    return SwathDefinition(lons=tlons_1d, lats=tlats_1d)
+
+
+# Input data arrays
+
+@pytest.fixture(scope="session")
+def data_1d_float32_xarray_dask():
+    """Create a sample 1D data DataArray(dask) (3,)."""
+    return xr.DataArray(
+        da.from_array(np.array([1., 2., 3.], dtype=np.float32), chunks=5), dims=('my_dim1',))
+
+
+@pytest.fixture(scope="session")
+def data_2d_float32_xarray_dask():
+    """Create a sample 2D data DataArray(dask) (50, 10)."""
+    return xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10), dtype=np.float32),
+                      chunks=5),
+        dims=('y', 'x'))
+
+
+@pytest.fixture(scope="session")
+def data_3d_float32_xarray_dask():
+    """Create a sample 3D data DataArray(dask) (50, 10, 3)."""
+    return xr.DataArray(
+        da.from_array(np.fromfunction(lambda y, x, b: y * x * b, (50, 10, 3), dtype=np.float32),
+                      chunks=5),
+        dims=('y', 'x', 'bands'),
+        coords={'bands': ['r', 'g', 'b']})
