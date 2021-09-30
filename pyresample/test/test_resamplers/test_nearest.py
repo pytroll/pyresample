@@ -23,7 +23,9 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
+from pytest_lazyfixture import lazy_fixture
 
+from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.resamplers import NearestNeighborResampler
 from pyresample.test.utils import assert_maximum_dask_computes
 
@@ -178,3 +180,76 @@ class TestNearestNeighborResampler:
         # actual = res.values
         # expected =
         # np.testing.assert_allclose(actual, expected)
+
+
+class TestInvalidUsageNearestNeighborResampler:
+    """Test the resampler being given input that should raise an error.
+
+    If a case here is removed because functionality is added to the resampler
+    then a working case should be added above.
+
+    """
+
+    # @pytest.mark.parametrize("src_geom", [
+    #     # lazy_fixture("swath_def_2d_numpy"),
+    #     lazy_fixture("swath_def_2d_dask"),
+    #     # lazy_fixture("swath_def_2d_xarray_numpy"),
+    #     lazy_fixture("swath_def_2d_xarray_dask"),
+    #     lazy_fixture("area_def_lcc_conus_1km"),
+    # ])
+    # @pytest.mark.parametrize("dst_geom", [
+    #     # lazy_fixture("swath_def_2d_numpy"),
+    #     lazy_fixture("swath_def_2d_dask"),
+    #     # lazy_fixture("swath_def_2d_xarray_numpy"),
+    #     lazy_fixture("swath_def_2d_xarray_dask"),
+    #     lazy_fixture("area_def_lcc_conus_1km"),
+    # ])
+    # @pytest.mark.parametrize("input_data_type", [
+    #     "numpy",
+    # ])
+    # def test_object_type_with_warnings(self, src_geom, dst_geom, input_data_type):
+    #     """Test that providing certain input data causes a warning."""
+    #     if input_data_type == "numpy":
+    #         input_data = np.array(src_geom.shape, dtype=np.float32)
+    #     else:
+    #         raise NotImplementedError(f"Test does not understand input data type {input_data_type} yet.")
+    #
+    #     resampler = NearestNeighborResampler(src_geom, dst_geom)
+    #     with warnings.catch_warnings(record=True) as w, assert_maximum_dask_computes(1):
+    #         res = resampler.resample(input_data)
+    #         assert type(res) is type(input_data)
+    #     assert_warnings_contain(w, "will be converted")
+
+    @pytest.mark.parametrize(
+        "src_geom",
+        [
+            lazy_fixture("area_def_stere_source"),
+            lazy_fixture("swath_def_2d_xarray_dask")
+        ]
+    )
+    @pytest.mark.parametrize(
+        ("match", "call_precompute"),
+        [
+            (".*data.*shape.*", False),
+            (".*'mask'.*shape.*", True),
+        ]
+    )
+    def test_inconsistent_input_shapes(self, src_geom, match, call_precompute,
+                                       area_def_stere_target, data_2d_float32_xarray_dask):
+        """Test that geometry and data of the same size but different size still error."""
+        # transpose the source geometries
+        if isinstance(src_geom, AreaDefinition):
+            src_geom = AreaDefinition(
+                src_geom.area_id, src_geom.description, src_geom.proj_id,
+                src_geom.crs, src_geom.height, src_geom.width, src_geom.area_extent,
+            )
+        else:
+            src_geom = SwathDefinition(
+                src_geom.lons.T, src_geom.lats.T,
+            )
+        resampler = NearestNeighborResampler(src_geom, area_def_stere_target)
+        with pytest.raises(ValueError, match=match):
+            if call_precompute:
+                resampler.precompute(mask=data_2d_float32_xarray_dask.notnull())
+            else:
+                resampler.resample(data_2d_float32_xarray_dask)

@@ -182,7 +182,7 @@ class NearestNeighborResampler(Resampler):
         input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
-        input_coords = input_coords.astype(np.float32)
+        input_coords = input_coords.astype(np.float64)
         delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
         return valid_input_idx, delayed_kdtree
 
@@ -410,6 +410,9 @@ class NearestNeighborResampler(Resampler):
                 reduces execution time
 
         """
+        if mask is not None and mask.shape != self.source_geo_def.shape:
+            raise ValueError("'mask' provided to 'precompute' is not the same "
+                             "shape as the source geometry.")
         if radius_of_influence is None:
             radius_of_influence = self._compute_radius_of_influence()
         return self._get_neighbour_info(mask, 1, radius_of_influence, epsilon)
@@ -446,6 +449,10 @@ class NearestNeighborResampler(Resampler):
             target geographic geometry.
 
         """
+        if data.shape != self.source_geo_def.shape:
+            raise ValueError("Input data shape is not equal to the shape of "
+                             "the source geometry.")
+
         mask = self._get_area_mask(mask_area, data)
         self.precompute(mask=mask, radius_of_influence=radius_of_influence, epsilon=epsilon)
         return self.get_sample_from_neighbour_info(data, fill_value=fill_value)
