@@ -33,8 +33,7 @@ from pyresample.test.utils import create_test_latitude, create_test_longitude
 SRC_SWATH_2D_SHAPE = (50, 10)
 SRC_SWATH_1D_SHAPE = (3,)
 SRC_AREA_SHAPE = (50, 10)
-# TODO: Downsize to 80, 85
-DST_AREA_SHAPE = (800, 850)
+DST_AREA_SHAPE = (80, 85)
 
 
 def _euro_lonlats():

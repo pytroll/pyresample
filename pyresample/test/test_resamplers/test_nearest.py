@@ -79,10 +79,10 @@ class TestNearestNeighborResampler:
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         res = res.values
-        cross_sum = np.nansum(res)
-        expected = 16873718.0
-        # expected = 167913.0
+        cross_sum = float(np.nansum(res))
+        expected = 167913.0
         assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
 
     def test_nearest_area_2d_to_area_1n(self, area_def_stere_source, data_2d_float32_xarray_dask,
                                         area_def_stere_target):
@@ -98,7 +98,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 30424850.0
+        expected = 303048.0
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
@@ -117,7 +117,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 95165232.0
+        expected = 952386.0
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
@@ -133,7 +133,7 @@ class TestNearestNeighborResampler:
             assert isinstance(res.data, da.Array)
             res = res.values
             cross_sum = np.nansum(res)
-            expected = 2060840.0
+            expected = 20666.0
             assert cross_sum == expected
             assert res.shape == resampler.target_geo_def.shape
 
@@ -153,7 +153,7 @@ class TestNearestNeighborResampler:
         assert list(res.coords['bands']) == ['r', 'g', 'b']
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 91274544.0
+        expected = 909144.0
         assert cross_sum == expected
         assert res.shape[:2] == resampler.target_geo_def.shape
 
