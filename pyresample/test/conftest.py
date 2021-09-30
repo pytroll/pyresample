@@ -128,8 +128,7 @@ def area_def_stere_source():
             'lon_0': '5.00',
             'proj': 'stere'
         },
-        50, 10,
-        # SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+        SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
         [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
     )
 

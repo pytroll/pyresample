@@ -98,8 +98,9 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 29443422.0
+        expected = 30424850.0
         assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
 
         data = data_2d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
         pytest.raises(AssertionError, resampler.resample, data, radius_of_influence=50000)
@@ -116,8 +117,9 @@ class TestNearestNeighborResampler:
         assert isinstance(res.data, da.Array)
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 92736352.0
+        expected = 95165232.0
         assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
 
         # pretend the resolutions can't be determined
         with mock.patch.object(area_def_stere_source, 'geocentric_resolution') as sgr, \
@@ -131,8 +133,9 @@ class TestNearestNeighborResampler:
             assert isinstance(res.data, da.Array)
             res = res.values
             cross_sum = np.nansum(res)
-            expected = 1984428.0
+            expected = 2060840.0
             assert cross_sum == expected
+            assert res.shape == resampler.target_geo_def.shape
 
         data = data_2d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
         pytest.raises(AssertionError, resampler.resample, data)
@@ -150,8 +153,9 @@ class TestNearestNeighborResampler:
         assert list(res.coords['bands']) == ['r', 'g', 'b']
         res = res.values
         cross_sum = float(np.nansum(res))
-        expected = 88330256.0
+        expected = 91274544.0
         assert cross_sum == expected
+        assert res.shape[:2] == resampler.target_geo_def.shape
 
         data = data_3d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
         pytest.raises(AssertionError, resampler.resample, data, radius_of_influence=50000)
