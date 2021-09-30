@@ -17,20 +17,20 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Tests for the 'nearest' resampler."""
 
+from unittest import mock
+
+import dask.array as da
 import numpy as np
+import pytest
+import xarray as xr
 
 from pyresample import geometry
 from pyresample.future.resamplers import NearestNeighborResampler
 
-from unittest import mock
-import pytest
-
-import xarray as xr
-import dask.array as da
-
 
 @pytest.fixture(scope="session")
 def area_def_stere_800x800_target():
+    """Create an AreaDefinition with a polar-stereographic projection (800, 800)."""
     return geometry.AreaDefinition(
         'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
         {
@@ -48,6 +48,7 @@ def area_def_stere_800x800_target():
 
 @pytest.fixture(scope="session")
 def coord_def_2d_dask():
+    """Create a 2D CoordinateDefinition of dask arrays (4, 3)."""
     chunks = 5
     lons = da.from_array(np.array([
         [11.5, 12.562036, 12.9],
@@ -66,6 +67,7 @@ def coord_def_2d_dask():
 
 @pytest.fixture(scope="session")
 def swath_def_1d_xarray_dask():
+    """Create a 1D SwathDefinition of DataArrays(dask) (3,)."""
     chunks = 5
     tlons_1d = xr.DataArray(
         da.from_array(np.array([11.280789, 12.649354, 12.080402]), chunks=chunks),
@@ -78,12 +80,14 @@ def swath_def_1d_xarray_dask():
 
 @pytest.fixture(scope="session")
 def data_1d_xarray_dask():
+    """Create a sample 1D data DataArray(dask) (3,)."""
     return xr.DataArray(
         da.from_array(np.array([1., 2., 3.]), chunks=5), dims=('my_dim1',))
 
 
 @pytest.fixture(scope="session")
 def data_2d_xarray_dask():
+    """Create a sample 2D data DataArray(dask) (50, 10)."""
     return xr.DataArray(
         da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10)),
                       chunks=5),
@@ -92,6 +96,7 @@ def data_2d_xarray_dask():
 
 @pytest.fixture(scope="session")
 def data_3d_xarray_dask():
+    """Create a sample 3D data DataArray(dask) (50, 10, 3)."""
     return xr.DataArray(
         da.from_array(np.fromfunction(lambda y, x, b: y * x * b, (50, 10, 3)),
                       chunks=5),
@@ -101,6 +106,7 @@ def data_3d_xarray_dask():
 
 @pytest.fixture(scope="session")
 def swath_def_2d_xarray_dask():
+    """Create a 2D SwathDefinition of DataArrays(dask) (50, 10)."""
     lons_2d = xr.DataArray(
         da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10)),
                       chunks=5),
@@ -114,6 +120,7 @@ def swath_def_2d_xarray_dask():
 
 @pytest.fixture(scope="session")
 def area_def_stere_50x10_source():
+    """Create an AreaDefinition with a polar-stereographic projection (10, 50)."""
     return geometry.AreaDefinition(
         'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
         {

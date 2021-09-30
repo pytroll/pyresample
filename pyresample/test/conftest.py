@@ -26,7 +26,7 @@ from pyresample import AreaDefinition, SwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
 SWATH_SHAPE = (200, 1500)
-AREA_SHAPE = (1500, 1500)
+AREA_SHAPE = (1500, 2000)
 
 
 def _conus_lonlats():
@@ -51,18 +51,21 @@ def _antimeridian_lonlats():
 
 @pytest.fixture(scope="session")
 def swath_def_numpy():
+    """Create a SwathDefinition with numpy arrays (200, 1500)."""
     lons, lats = _conus_lonlats()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
 def swath_def_dask():
+    """Create a SwathDefinition with dask arrays (200, 1500)."""
     lons, lats = _conus_lonlats_dask()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
 def swath_def_xarray_numpy():
+    """Create a SwathDefinition with DataArrays(numpy) (200, 1500)."""
     lons, lats = _conus_lonlats()
     lons = xr.DataArray(lons, dims=("y", "x"))
     lats = xr.DataArray(lats, dims=("y", "x"))
@@ -71,6 +74,7 @@ def swath_def_xarray_numpy():
 
 @pytest.fixture(scope="session")
 def swath_def_xarray_dask():
+    """Create a SwathDefinition with DataArrays(dask) (200, 1500)."""
     lons, lats = _conus_lonlats_dask()
     lons = xr.DataArray(lons, dims=("y", "x"))
     lats = xr.DataArray(lats, dims=("y", "x"))
@@ -79,12 +83,18 @@ def swath_def_xarray_dask():
 
 @pytest.fixture(scope="session")
 def swath_def_numpy_antimeridian():
+    """Create a SwathDefinition with numpy arrays (200, 1500) over the antimeridian.
+
+    Longitude values go from positive values to negative values as they cross -180/180.
+
+    """
     lons, lats = _antimeridian_lonlats()
     return SwathDefinition(lons, lats)
 
 
 @pytest.fixture(scope="session")
 def area_def_lcc_conus_1km():
+    """Create an AreaDefinition with an LCC projection over CONUS (1500, 2000)."""
     proj_str = "+proj=lcc +lon_0=-95 +lat_1=35.0 +lat_2=35.0 +datum=WGS84 +no_defs"
     crs = CRS.from_string(proj_str)
     area_def = AreaDefinition("area_def_lcc_conus", "", "",

@@ -28,6 +28,7 @@ from pyresample.future.resamplers.resampler import Resampler
 
 
 class FakeResampler(Resampler):
+    """Helper fake resampler for easier testing."""
 
     def __init__(self, *args, cache_something=False, **kwargs):
         self.cache_something = cache_something
@@ -76,6 +77,7 @@ class FakeResampler(Resampler):
     ]
 )
 def test_resampler(src, dst, cache, cache_something):
+    """Test basic operations of the base resampler with and without a caching."""
     rs = FakeResampler(src, dst, cache, cache_something=cache_something)
     some_data = np.zeros(src.shape, dtype=np.float64)
     resample_results = rs.resample(some_data)

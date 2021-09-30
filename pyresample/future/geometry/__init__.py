@@ -19,7 +19,7 @@
 
 from typing import Union
 
-from .swath import SwathDefinition, CoordinateDefinition  # noqa
 from .area import AreaDefinition, DynamicAreaDefinition  # noqa
+from .swath import CoordinateDefinition, SwathDefinition  # noqa
 
 StaticGeometry = Union[SwathDefinition, CoordinateDefinition, AreaDefinition]

@@ -19,4 +19,9 @@
 
 from .cache import ResampleCache  # noqa
 from .resamplers import Resampler  # noqa
-from .resamplers import register_resampler, unregister_resampler, list_resamplers, create_resampler  # noqa
+from .resamplers import (  # noqa
+    create_resampler,
+    list_resamplers,
+    register_resampler,
+    unregister_resampler,
+)

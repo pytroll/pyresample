@@ -19,4 +19,4 @@
 
 from __future__ import annotations
 
-from pyresample.geometry import SwathDefinition, CoordinateDefinition  # noqa
+from pyresample.geometry import CoordinateDefinition, SwathDefinition  # noqa

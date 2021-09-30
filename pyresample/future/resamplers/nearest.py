@@ -19,24 +19,24 @@
 
 from __future__ import annotations
 
-from .resampler import Resampler
-
 import warnings
 from copy import deepcopy
 from logging import getLogger
 
 import numpy as np
-
 from pykdtree.kdtree import KDTree
+
 from pyresample import CHUNK_SIZE, geometry
+
 from ..geometry import StaticGeometry, SwathDefinition
+from .resampler import Resampler
 
 logger = getLogger(__name__)
 
 try:
-    from xarray import DataArray
-    import dask.array as da
     import dask
+    import dask.array as da
+    from xarray import DataArray
 except ImportError:
     DataArray = None
     da = None
