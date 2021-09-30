@@ -91,7 +91,7 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
-          python_requires='>=3.4',
+          python_requires='>=3.7',
           setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,
