@@ -112,6 +112,10 @@ def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None,
     return res
 
 
+# TODO: Add decorator for geom<->geom support
+# TODO: Add decorator for object type support
+# Must be decorators so that we can both add class attributes with this information
+# and add decorators to __init__ and precompute/resample calls for validity checking
 class NearestNeighborResampler(Resampler):
     """Resampler using the basic nearest neighbor algorithm."""
 

@@ -64,6 +64,17 @@ def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampl
             class MyResamplerClass(Resampler):
                 ...
 
+        Register as a plugin from third-party package (in your setup.py)::
+
+            entry_points = {
+                "pyresample.resamplers": [
+                    "my_resampler = mypkg.mymodule:MyResamplerClass",
+                ],
+            }
+
+        Note that the plugin approach calls
+        :meth:`Resampler.register_resampler <pyresample.future.resamplers.resampler.Resampler.register_resample>`.
+
     """
     def _register_class(resampler_cls: Type[Resampler]):
         if resampler_name in RESAMPLER_REGISTRY and RESAMPLER_REGISTRY[resampler_name] is resampler_cls:
@@ -165,4 +176,4 @@ def _load_entry_point_resamplers():
         except ImportError:
             warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
         else:
-            register_resampler(entry_point.name, loaded_resampler)
+            loaded_resampler.register_resampler(entry_point.name)
