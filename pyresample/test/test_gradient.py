@@ -23,10 +23,12 @@
 
 import unittest
 from unittest import mock
-from pyresample.geometry import AreaDefinition, SwathDefinition
-import numpy as np
+
 import dask.array as da
+import numpy as np
 import xarray as xr
+
+from pyresample.geometry import AreaDefinition, SwathDefinition
 
 
 class TestGradientResampler(unittest.TestCase):
@@ -235,7 +237,6 @@ class TestGradientResampler(unittest.TestCase):
         assert res.shape == self.dst_area.shape
         assert not np.all(np.isnan(res))
 
-
     def test_resample_swath_to_area_3d(self):
         """Resample area to area, 3d."""
         data = xr.DataArray(da.ones((3, ) + self.src_swath.shape,
@@ -253,6 +254,7 @@ class TestGradientResampler(unittest.TestCase):
 def test_check_overlap():
     """Test overlap check returning correct results."""
     from shapely.geometry import Polygon
+
     from pyresample.gradient import check_overlap
 
     # If either of the polygons is False, True is returned

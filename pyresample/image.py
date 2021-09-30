@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2015  Esben S. Nielsen
+# Copyright (C) 2010-2021 Pyresample developer
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,21 +15,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Handles resampling of images with assigned geometry definitions."""
 
 from __future__ import absolute_import
+
 import warnings
 
 import numpy as np
 
-from pyresample import geometry, grid, kd_tree, bilinear
+from pyresample import bilinear, geometry, grid, kd_tree
 
 
 class ImageContainer(object):
-
-    """Holds image with geometry definition. Allows indexing with linesample
-    arrays.
+    """Holds image with geometry definition. Allows indexing with linesample arrays.
 
     Parameters
     ----------
@@ -89,19 +88,20 @@ class ImageContainer(object):
         self.nprocs = nprocs
 
     def __str__(self):
+        """Get simplified representation."""
         return 'Image:\n %s' % self.image_data.__str__()
 
     def __repr__(self):
+        """Get simplified representation."""
         return self.image_data.__repr__()
 
     def resample(self, target_geo_def):
-        """Base method for resampling."""
-
+        """Resample data to target definition."""
         raise NotImplementedError('Method "resample" is not implemented '
                                   'in class %s' % self.__class__.__name__)
 
     def get_array_from_linesample(self, row_indices, col_indices):
-        """Samples from image based on index arrays.
+        """Get array sampled from image based on index arrays.
 
         Parameters
         ----------
@@ -115,7 +115,6 @@ class ImageContainer(object):
         image_data : numpy_array
             Resampled image data
         """
-
         if self.geo_def.ndim != 2:
             raise TypeError('Resampling from linesamples only makes sense '
                             'on 2D data')
@@ -125,16 +124,14 @@ class ImageContainer(object):
                                               self.fill_value)
 
     def get_array_from_neighbour_info(self, *args, **kwargs):
-        """Base method for resampling from preprocessed data."""
-
+        """Resample from preprocessed data."""
         raise NotImplementedError('Method "get_array_from_neighbour_info" is '
                                   'not implemented in class %s' %
                                   self.__class__.__name__)
 
 
 class ImageContainerQuick(ImageContainer):
-
-    """Holds image with area definition. ' Allows quick resampling within area.
+    """Holds image with area definition and allows quick resampling within area.
 
     Parameters
     ----------
@@ -179,8 +176,7 @@ class ImageContainerQuick(ImageContainer):
         self.segments = segments
 
     def resample(self, target_area_def):
-        """Resamples image to area definition using nearest neighbour approach
-        in projection coordinates.
+        """Resample image to area definition using nearest neighbour approach in projection coordinates.
 
         Parameters
         ----------
@@ -192,7 +188,6 @@ class ImageContainerQuick(ImageContainer):
         image_container : object
             ImageContainerQuick object of resampled area
         """
-
         resampled_image = grid.get_resampled_image(target_area_def,
                                                    self.geo_def,
                                                    self.image_data,
@@ -206,9 +201,7 @@ class ImageContainerQuick(ImageContainer):
 
 
 class ImageContainerNearest(ImageContainer):
-
-    """Holds image with geometry definition. Allows nearest neighbour to new
-    geometry definition.
+    """Holds image with geometry definition. Allows nearest neighbour to new geometry definition.
 
     Parameters
     ----------
@@ -236,7 +229,6 @@ class ImageContainerNearest(ImageContainer):
 
     Attributes
     ----------
-
     image_data : numpy array
         Image data
     geo_def : object
@@ -266,7 +258,7 @@ class ImageContainerNearest(ImageContainer):
         self.segments = segments
 
     def resample(self, target_geo_def):
-        """Resamples image to area definition using nearest neighbour approach.
+        """Resample image to area definition using nearest neighbour approach.
 
         Parameters
         ----------
@@ -278,7 +270,6 @@ class ImageContainerNearest(ImageContainer):
         image_container : object
             ImageContainerNearest object of resampled geometry
         """
-
         if self.image_data.ndim > 2 and self.ndim > 1:
             image_data = self.image_data.reshape(self.image_data.shape[0] *
                                                  self.image_data.shape[1],
@@ -306,9 +297,7 @@ class ImageContainerNearest(ImageContainer):
 
 
 class ImageContainerBilinear(ImageContainer):
-
-    """Holds image with geometry definition. Allows bilinear to new geometry
-    definition.
+    """Holds image with geometry definition. Allows bilinear to new geometry definition.
 
     Parameters
     ----------
@@ -336,7 +325,6 @@ class ImageContainerBilinear(ImageContainer):
 
     Attributes
     ----------
-
     image_data : numpy array
         Image data
     geo_def : object

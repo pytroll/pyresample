@@ -25,17 +25,17 @@
 
 import logging
 
-import dask.array as da
 import dask
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
+from pyresample.geometry import get_geostationary_bounding_box
 from pyresample.gradient._gradient_search import one_step_gradient_search
 from pyresample.resampler import BaseResampler
-from pyresample.geometry import get_geostationary_bounding_box
 
 logger = logging.getLogger(__name__)
 
@@ -153,13 +153,13 @@ class GradientSearchResampler(BaseResampler):
                                               src_x_start, src_x_end)
 
                 dst_x_start = 0
-                for k, dst_x_step in enumerate(dst_x_chunks):
+                for x_chunk_idx, dst_x_step in enumerate(dst_x_chunks):
                     dst_x_end = dst_x_start + dst_x_step
                     dst_y_start = 0
-                    for l, dst_y_step in enumerate(dst_y_chunks):
+                    for y_chunk_idx, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        dst_poly = self._get_dst_poly((k, l),
+                        dst_poly = self._get_dst_poly((x_chunk_idx, y_chunk_idx),
                                                       dst_x_start, dst_x_end,
                                                       dst_y_start, dst_y_end)
 
@@ -170,7 +170,7 @@ class GradientSearchResampler(BaseResampler):
                                            src_x_start, src_x_end))
                         dst_slices.append((dst_y_start, dst_y_end,
                                            dst_x_start, dst_x_end))
-                        dst_mosaic_locations.append((k, l))
+                        dst_mosaic_locations.append((x_chunk_idx, y_chunk_idx))
 
                         dst_y_start = dst_y_end
                     dst_x_start = dst_x_end
@@ -303,9 +303,10 @@ def _gradient_resample_data(src_data, src_x, src_y,
     assert src_gradient_yp.ndim == 2
     assert dst_x.ndim == 2
     assert dst_y.ndim == 2
-    assert (src_data.shape[1:] == src_x.shape == src_y.shape ==
-            src_gradient_xl.shape == src_gradient_xp.shape ==
-            src_gradient_yl.shape == src_gradient_yp.shape)
+    all_shapes = (src_data.shape[1:], src_x.shape, src_y.shape,
+                  src_gradient_xl.shape, src_gradient_xp.shape,
+                  src_gradient_yl.shape, src_gradient_yp.shape)
+    assert all(all_shapes[0] == shape for shape in all_shapes[1:])
     assert dst_x.shape == dst_y.shape
 
     image = one_step_gradient_search(src_data, src_x, src_y,

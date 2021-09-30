@@ -23,9 +23,9 @@ import hashlib
 import math
 import warnings
 from collections import OrderedDict
+from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
-from functools import partial, wraps
 
 import numpy as np
 import yaml
@@ -33,12 +33,15 @@ from pyproj import Geod, transform
 
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
-from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import (proj4_dict_to_str,
-                              proj4_radius_parameters,
-                              get_geostationary_height,
-                              check_slice_orientation, load_cf_area)
 from pyresample.area_config import create_area_def
+from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
+from pyresample.utils import (
+    check_slice_orientation,
+    get_geostationary_height,
+    load_cf_area,
+    proj4_dict_to_str,
+    proj4_radius_parameters,
+)
 
 try:
     from xarray import DataArray
@@ -143,8 +146,11 @@ class BaseDefinition:
         except ImportError:
             from numpy import allclose
         try:
-            return (allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True) and
-                    allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True))
+            lons_close = allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True)
+            if not lons_close:
+                return False
+            lats_close = allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True)
+            return lats_close
         except (AttributeError, ValueError):
             return False
 
@@ -328,7 +334,7 @@ class BaseDefinition:
 
         This uses great circle arcs as area boundaries.
         """
-        from pyresample.spherical_geometry import point_inside, Coordinate
+        from pyresample.spherical_geometry import Coordinate, point_inside
         corners = self.corners
 
         if isinstance(point, tuple):
@@ -634,8 +640,8 @@ class SwathDefinition(CoordinateDefinition):
         For example, averaging over 2x2 windows:
         `sd.aggregate(x=2, y=2)`
         """
-        import pyproj
         import dask.array as da
+        import pyproj
 
         geocent = pyproj.Proj(proj='geocent')
         latlong = pyproj.Proj(proj='latlong')
@@ -848,10 +854,6 @@ class DynamicAreaDefinition(object):
             Corresponding array shape as (height, width)
         area_extent:
             The area extent of the area.
-        pixel_size_x:
-            Pixel width in projection units
-        pixel_size_y:
-            Pixel height in projection units
         resolution:
             Resolution of the resulting area as (pixel_size_x, pixel_size_y)
             or a scalar if pixel_size_x == pixel_size_y.
@@ -928,10 +930,8 @@ class DynamicAreaDefinition(object):
             if isinstance(resolution, (int, float)):
                 resolution = (resolution, resolution)
             x_resolution, y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0
-                                / x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0
-                                 / y_resolution + 1))
+            width = int(np.rint((corners[2] - corners[0]) * 1.0 / x_resolution + 1))
+            height = int(np.rint((corners[3] - corners[1]) * 1.0 / y_resolution + 1))
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,
@@ -1006,8 +1006,9 @@ class DynamicAreaDefinition(object):
         return xmin, ymin, xmax, ymax
 
     def _compute_bound_centers_dask(self, proj_dict, lons, lats):
-        from pyresample.utils.proj4 import DaskFriendlyTransformer
         import dask.array as da
+
+        from pyresample.utils.proj4 import DaskFriendlyTransformer
         crs = CRS(proj_dict)
         transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs,
                                                        always_xy=True)
@@ -1190,8 +1191,6 @@ class AreaDefinition(_ProjectionDefinition):
         rotation in degrees (negative is cw)
     size : int
         Number of points in grid
-    area_extent : tuple
-        Area extent as a tuple (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
     area_extent_ll : tuple
         Area extent in lons lats as a tuple (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat)
     pixel_size_x : float
@@ -1588,10 +1587,8 @@ class AreaDefinition(_ProjectionDefinition):
         """Return string representation of the AreaDefinition."""
         # We need a sorted dictionary for a unique hash of str(self)
         proj_dict = self.proj_dict
-        proj_str = ('{' +
-                    ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k]))
-                               for k in sorted(proj_dict.keys())]) +
-                    '}')
+        proj_param_str = ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
+        proj_str = '{' + proj_param_str + '}'
         if not self.proj_id:
             third_line = ""
         else:
@@ -1896,7 +1893,7 @@ class AreaDefinition(_ProjectionDefinition):
         p = Proj(self.proj_str)
         x = self.projection_x_coords
         y = self.projection_y_coords
-        return p(x[cols],  y[rows], inverse=True)
+        return p(x[cols], y[rows], inverse=True)
 
     def lonlat2colrow(self, lons, lats):
         """Return image columns and rows for the given lons and lats.
@@ -1977,7 +1974,7 @@ class AreaDefinition(_ProjectionDefinition):
         else:
             numpy = np
         rot_rad = numpy.radians(rot_deg)
-        rot_mat = numpy.array([[np.cos(rot_rad),  np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
+        rot_mat = numpy.array([[np.cos(rot_rad), np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
         x, y = numpy.meshgrid(xspan, yspan)
         return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
 
@@ -2212,16 +2209,16 @@ class AreaDefinition(_ProjectionDefinition):
 
         # we use `round` because we want the *exterior* of the pixels to contain the area_to_cover's area extent.
         if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
-            xstart = max(0,  round(x[1]))
+            xstart = max(0, round(x[1]))
             xstop = min(self.width, round(x[0]) + 1)
         else:
-            xstart = max(0,  round(x[0]))
+            xstart = max(0, round(x[0]))
             xstop = min(self.width, round(x[1]) + 1)
         if (self.area_extent[1] > self.area_extent[3]) ^ (lly > ury):
-            ystart = max(0,  round(y[0]))
+            ystart = max(0, round(y[0]))
             ystop = min(self.height, round(y[1]) + 1)
         else:
-            ystart = max(0,  round(y[1]))
+            ystart = max(0, round(y[1]))
             ystop = min(self.height, round(y[0]) + 1)
 
         return xstart, xstop, ystart, ystop
@@ -2452,8 +2449,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
 def combine_area_extents_vertical(area1, area2):
     """Combine the area extents of areas 1 and 2."""
-    if (area1.area_extent[0] == area2.area_extent[0]
-            and area1.area_extent[2] == area2.area_extent[2]):
+    if (area1.area_extent[0] == area2.area_extent[0] and area1.area_extent[2] == area2.area_extent[2]):
         current_extent = list(area1.area_extent)
         if np.isclose(area1.area_extent[1], area2.area_extent[3]):
             current_extent[1] = area2.area_extent[1]
@@ -2637,7 +2633,7 @@ def _get_slice(segments, shape):
             if len(shape) == 1:
                 yield slice(start_idx, end_idx)
             else:
-                yield (slice(start_idx, end_idx), slice(None))
+                yield slice(start_idx, end_idx), slice(None)
             start_idx = end_idx
             end_idx = min(start_idx + slice_length, size)
 
@@ -2646,14 +2642,12 @@ def _flatten_cartesian_coords(cartesian_coords):
     """Flatten array to (n, 3) shape."""
     shape = cartesian_coords.shape
     if len(shape) > 2:
-        cartesian_coords = cartesian_coords.reshape(shape[0] *
-                                                    shape[1], 3)
+        cartesian_coords = cartesian_coords.reshape(shape[0] * shape[1], 3)
     return cartesian_coords
 
 
 def _get_highest_level_class(obj1, obj2):
-    if (not issubclass(obj1.__class__, obj2.__class__) or
-            not issubclass(obj2.__class__, obj1.__class__)):
+    if not issubclass(obj1.__class__, obj2.__class__) or not issubclass(obj2.__class__, obj1.__class__):
         raise TypeError('No common superclass for %s and %s' %
                         (obj1.__class__, obj2.__class__))
 
@@ -2713,7 +2707,7 @@ def enclose_areas(*areas, area_id="joint-area"):
             largest_extent[3] = max(largest_extent[3], area.area_extent[3])
 
     return create_area_def(
-            area_id=area_id,
-            projection=first.crs,
-            area_extent=largest_extent,
-            resolution=first.resolution)
+        area_id=area_id,
+        projection=first.crs,
+        area_extent=largest_extent,
+        resolution=first.resolution)

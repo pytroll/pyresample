@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019 Pyresample developers
+# Copyright (C) 2019-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Utilities for working with projection parameters."""
 
 import math
 from collections import OrderedDict
 
 import numpy as np
-from pyproj import CRS, Transformer as PROJTransformer
+from pyproj import CRS
+from pyproj import Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):
@@ -89,6 +91,7 @@ def proj4_radius_parameters(proj4_dict):
 
 
 def get_geostationary_height(geos_area_crs):
+    """Get the height parameter from a geostationary CRS."""
     params = geos_area_crs.coordinate_operation.params
     h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
     return h_param.value

@@ -1,25 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#
 # Copyright (c) 2021 Pyresample developers
-
-# Author(s):
-
-#   Adam Dybbroe <Firstname.Lastname at smhi.se>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Functions to support the calculation of a coverage of an area by a set of spherical polygons.
 
 It can for instance be a set of satellite overpasses to be received of a given
@@ -45,9 +40,7 @@ class GetNonOverlapUnionsBaseClass():
         self._geoms = dict(enumerate(geom_objects))
 
     def merge(self):
-        """Merge all overlapping objects (sets or polygons).
-
-        """
+        """Merge all overlapping objects (sets or polygons)."""
         all_unions = self._merge_unions(self._geoms)
         check_keys_int_or_tuple(all_unions)
 
@@ -68,7 +61,7 @@ class GetNonOverlapUnionsBaseClass():
         return list(self._geoms.keys())
 
     def _overlaps(self, set1, set2):
-        """Do the two sets overlap each other (have anything in common)?"""
+        """Check if the two sets overlap each other (have anything in common)."""
         if set1 != set1.difference(set2):
             return True
 
@@ -85,7 +78,6 @@ class GetNonOverlapUnionsBaseClass():
         only requirement is that it has a union method with the same behaviour.
 
         """
-
         if len(geoms) == 1:
             return None
 
@@ -118,16 +110,14 @@ class GetNonOverlapUnionsBaseClass():
 
 
 class GetNonOverlapUnions(GetNonOverlapUnionsBaseClass):
-    """NonOverlapUnions class.
-
-    """
+    """NonOverlapUnions class."""
 
     def __init__(self, polygons):
         """Init the GetNonOverlapUnions."""
         super(GetNonOverlapUnions, self).__init__(polygons)
 
     def _overlaps(self, polygon1, polygon2):
-        """Do two polygons overlap each other (have anything in common)?
+        """Check if two polygons overlap each other (have anything in common).
 
         Return True if they do overlap, otherwise False.
 
@@ -142,7 +132,6 @@ class GetNonOverlapUnions(GetNonOverlapUnionsBaseClass):
 
 def merge_tuples(atuple):
     """Take a nested tuple of integers and concatenate it to a tuple of integers."""
-
     if not isinstance(atuple, tuple):
         raise TypeError("Function argument must be a tuple!")
 

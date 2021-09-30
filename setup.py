@@ -19,12 +19,13 @@
 # remove when python 2 support is dropped
 """The setup module."""
 import multiprocessing  # noqa: F401
-import versioneer
 import sys
-import numpy as np
 
-from setuptools import Extension, find_packages, setup
+import numpy as np
 from Cython.Build import cythonize
+from setuptools import Extension, find_packages, setup
+
+import versioneer
 
 requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
