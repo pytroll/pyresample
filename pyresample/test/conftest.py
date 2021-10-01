@@ -192,12 +192,27 @@ def data_1d_float32_xarray_dask():
 
 
 @pytest.fixture(scope="session")
-def data_2d_float32_xarray_dask():
+def data_2d_float32_numpy():
+    """Create a sample 2D data numpy array (50, 10)."""
+    return np.fromfunction(lambda y, x: y * x, SRC_SWATH_2D_SHAPE, dtype=np.float32)
+
+
+@pytest.fixture(scope="session")
+def data_2d_float32_dask(data_2d_float32_numpy):
+    """Create a sample 2D data numpy array (50, 10)."""
+    return da.from_array(data_2d_float32_numpy, chunks=5)
+
+
+@pytest.fixture(scope="session")
+def data_2d_float32_xarray_numpy(data_2d_float32_numpy):
+    """Create a sample 2D data DataArray(numpy) (50, 10)."""
+    return xr.DataArray(data_2d_float32_numpy, dims=('y', 'x'))
+
+
+@pytest.fixture(scope="session")
+def data_2d_float32_xarray_dask(data_2d_float32_dask):
     """Create a sample 2D data DataArray(dask) (50, 10)."""
-    return xr.DataArray(
-        da.from_array(np.fromfunction(lambda y, x: y * x, (50, 10), dtype=np.float32),
-                      chunks=5),
-        dims=('y', 'x'))
+    return xr.DataArray(data_2d_float32_dask, dims=('y', 'x'))
 
 
 @pytest.fixture(scope="session")

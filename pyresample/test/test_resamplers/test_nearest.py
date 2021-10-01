@@ -27,7 +27,12 @@ from pytest_lazyfixture import lazy_fixture
 
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.resamplers import NearestNeighborResampler
-from pyresample.test.utils import assert_maximum_dask_computes
+from pyresample.test.utils import (
+    assert_maximum_dask_computes,
+    assert_warnings_contain,
+    catch_warnings,
+)
+from pyresample.utils.errors import PerformanceWarning
 
 
 class TestNearestNeighborResampler:
@@ -141,6 +146,33 @@ class TestNearestNeighborResampler:
             assert cross_sum == expected
             assert res.shape == resampler.target_geo_def.shape
 
+    @pytest.mark.parametrize("input_data", [
+        lazy_fixture("data_2d_float32_numpy"),
+        lazy_fixture("data_2d_float32_dask"),
+        lazy_fixture("data_2d_float32_xarray_numpy"),
+    ])
+    def test_object_type_with_warnings(
+            self,
+            area_def_stere_source,
+            area_def_stere_target,
+            input_data):
+        """Test that providing certain input data causes a warning."""
+        resampler = NearestNeighborResampler(area_def_stere_source, area_def_stere_target)
+        with catch_warnings(PerformanceWarning) as w, assert_maximum_dask_computes(1):
+            res = resampler.resample(input_data)
+            assert type(res) is type(input_data)
+        is_data_arr_dask = isinstance(input_data, xr.DataArray) and isinstance(input_data.data, da.Array)
+        is_dask_based = isinstance(input_data, da.Array) or is_data_arr_dask
+        if is_dask_based:
+            assert len(w) == 0
+        else:
+            assert_warnings_contain(w, "will be converted")
+        res = np.array(res)
+        cross_sum = np.nansum(res)
+        expected = 952386.0  # same as 'test_nearest_area_2d_to_area_1n_no_roi'
+        assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
+
     def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_source, data_3d_float32_xarray_dask,
                                                 area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
@@ -213,36 +245,6 @@ class TestInvalidUsageNearestNeighborResampler:
         resampler = NearestNeighborResampler(new_swath_def, area_def_stere_target)
         with pytest.raises(ValueError, match='.*dimensions do not match.*'):
             resampler.resample(data_2d_float32_xarray_dask)
-
-    # @pytest.mark.parametrize("src_geom", [
-    #     # lazy_fixture("swath_def_2d_numpy"),
-    #     lazy_fixture("swath_def_2d_dask"),
-    #     # lazy_fixture("swath_def_2d_xarray_numpy"),
-    #     lazy_fixture("swath_def_2d_xarray_dask"),
-    #     lazy_fixture("area_def_lcc_conus_1km"),
-    # ])
-    # @pytest.mark.parametrize("dst_geom", [
-    #     # lazy_fixture("swath_def_2d_numpy"),
-    #     lazy_fixture("swath_def_2d_dask"),
-    #     # lazy_fixture("swath_def_2d_xarray_numpy"),
-    #     lazy_fixture("swath_def_2d_xarray_dask"),
-    #     lazy_fixture("area_def_lcc_conus_1km"),
-    # ])
-    # @pytest.mark.parametrize("input_data_type", [
-    #     "numpy",
-    # ])
-    # def test_object_type_with_warnings(self, src_geom, dst_geom, input_data_type):
-    #     """Test that providing certain input data causes a warning."""
-    #     if input_data_type == "numpy":
-    #         input_data = np.array(src_geom.shape, dtype=np.float32)
-    #     else:
-    #         raise NotImplementedError(f"Test does not understand input data type {input_data_type} yet.")
-    #
-    #     resampler = NearestNeighborResampler(src_geom, dst_geom)
-    #     with warnings.catch_warnings(record=True) as w, assert_maximum_dask_computes(1):
-    #         res = resampler.resample(input_data)
-    #         assert type(res) is type(input_data)
-    #     assert_warnings_contain(w, "will be converted")
 
     @pytest.mark.parametrize(
         "src_geom",

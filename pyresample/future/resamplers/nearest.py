@@ -27,6 +27,7 @@ import numpy as np
 from pykdtree.kdtree import KDTree
 
 from pyresample import CHUNK_SIZE, geometry
+from pyresample.utils.errors import PerformanceWarning
 
 from ..geometry import StaticGeometry, SwathDefinition
 from .resampler import Resampler
@@ -466,12 +467,44 @@ class NearestNeighborResampler(Resampler):
             target geographic geometry.
 
         """
+        new_data = self._verify_input_object_type(data)
         src_geo_dims = self._get_src_geo_dims()
-        self._verify_data_geo_dims(data, src_geo_dims)
+        self._verify_data_geo_dims(new_data, src_geo_dims)
 
-        mask = self._get_area_mask(mask_area, data)
+        mask = self._get_area_mask(mask_area, new_data)
         self.precompute(mask=mask, radius_of_influence=radius_of_influence, epsilon=epsilon)
-        return self.get_sample_from_neighbour_info(data, fill_value=fill_value)
+        result = self.get_sample_from_neighbour_info(new_data, fill_value=fill_value)
+        return self._verify_result_object_type(result, data)
+
+    def _verify_input_object_type(self, data):
+        if isinstance(data, DataArray) and isinstance(data.data, da.Array):
+            return data
+        if not isinstance(data, DataArray):
+            if data.ndim != 2:
+                raise ValueError(
+                    f"{self.__class__.__name__} requires DataArrays with a dask "
+                    "array. Input array is not 2D and can't be automatically "
+                    "converted.")
+            data = DataArray(data, dims=self._get_src_geo_dims())
+        if not isinstance(data.data, da.Array):
+            warnings.warn(
+                f"{self.__class__.__name__} uses a dask-based implementation, "
+                "but a pure numpy array was provided. Data will be converted "
+                "to dask arrays for computation and then converted back. To "
+                "avoid this warning convert your numpy array before providing "
+                "it to the resampler.", PerformanceWarning)
+            data = data.copy()
+            data.data = da.from_array(data.data, chunks="auto")
+        return data
+
+    def _verify_result_object_type(self, data, orig_data):
+        if isinstance(orig_data, DataArray) and isinstance(orig_data.data, da.Array):
+            return data
+        if not isinstance(orig_data, DataArray):
+            data = data.data
+        if isinstance(orig_data, da.Array):
+            return data
+        return data.compute()
 
     def _get_area_mask(self, mask_area, data):
         if isinstance(mask_area, (np.ndarray, da.Array, DataArray)):
