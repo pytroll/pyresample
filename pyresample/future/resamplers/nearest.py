@@ -295,26 +295,13 @@ class NearestNeighborResampler(Resampler):
         ia = self.index_array[:, :, 0]
         vii = self.valid_input_index
 
-        if isinstance(self.source_geo_def, geometry.SwathDefinition):
-            # could be 1D or 2D
-            src_geo_dims = self.source_geo_def.lons.dims
-        else:
-            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
-            src_geo_dims = ('y', 'x')
+        src_geo_dims = self._get_src_geo_dims()
         dst_geo_dims = ('y', 'x')
-        # verify that source dims are the same between geo and data
-        data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
-        assert (data_geo_dims == src_geo_dims), \
-            "Data dimensions do not match source area dimensions"
-        # verify that the dims are next to each other
-        first_dim_idx = data.dims.index(src_geo_dims[0])
-        num_dims = len(src_geo_dims)
-        assert (data.dims[first_dim_idx:first_dim_idx + num_dims] == data_geo_dims), \
-            "Data's geolocation dimensions are not consecutive."
+        self._verify_data_geo_dims(data, src_geo_dims)
 
-        # FIXME: Can't include coordinates whose dimensions depend on the geo
-        #        dims either
         def contain_coords(var, coord_list):
+            # FIXME: Can't include coordinates whose dimensions depend on the geo
+            #        dims either
             return bool(set(coord_list).intersection(set(var.dims)))
 
         coords = {c: c_var for c, c_var in data.coords.items()
@@ -389,6 +376,36 @@ class NearestNeighborResampler(Resampler):
 
         return res
 
+    def _verify_data_geo_dims(self, data, src_geo_dims):
+        # verify that source dims are the same between geo and data
+        data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
+        if data_geo_dims != src_geo_dims:
+            raise ValueError("Data dimensions do not match source area dimensions.")
+
+        # verify that the dims are next to each other
+        first_dim_idx = data.dims.index(src_geo_dims[0])
+        num_dims = len(src_geo_dims)
+        if data.dims[first_dim_idx:first_dim_idx + num_dims] != data_geo_dims:
+            raise ValueError("Data's geolocation dimensions are not consecutive.")
+
+        # verify that the dims are the same between src geom and data
+        for dim_offset, dim_name in enumerate(data_geo_dims):
+            geom_size = self.source_geo_def.shape[dim_offset]
+            data_size = data.shape[first_dim_idx + dim_offset]
+            if geom_size != data_size:
+                raise ValueError("Input data shape is not equal to the shape of "
+                                 "the source geometry: "
+                                 f"{dim_name}={data_size} versus {geom_size}")
+
+    def _get_src_geo_dims(self):
+        if isinstance(self.source_geo_def, geometry.SwathDefinition):
+            # could be 1D or 2D
+            src_geo_dims = self.source_geo_def.lons.dims
+        else:
+            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
+            src_geo_dims = ('y', 'x')
+        return src_geo_dims
+
     def precompute(self, mask=None, radius_of_influence=None, epsilon=0):
         """Generate neighbor indexes using geolocation information and optional data mask.
 
@@ -449,9 +466,8 @@ class NearestNeighborResampler(Resampler):
             target geographic geometry.
 
         """
-        if data.shape != self.source_geo_def.shape:
-            raise ValueError("Input data shape is not equal to the shape of "
-                             "the source geometry.")
+        src_geo_dims = self._get_src_geo_dims()
+        self._verify_data_geo_dims(data, src_geo_dims)
 
         mask = self._get_area_mask(mask_area, data)
         self.precompute(mask=mask, radius_of_influence=radius_of_influence, epsilon=epsilon)
@@ -476,16 +492,7 @@ class NearestNeighborResampler(Resampler):
         for special cases of wanting to call `precompute` manually.
 
         """
-        if DataArray is not None and isinstance(data, DataArray):
-            return self._get_mask_area_xarray(data)
-        return self._get_mask_area_numpy(data)
-
-    def _get_mask_area_xarray(self, data):
-        sgeo = self.source_geo_def
-        if isinstance(sgeo, SwathDefinition) and hasattr(sgeo.lons, "dims"):
-            geo_dims = sgeo.lons.dims
-        else:
-            geo_dims = ('y', 'x')
+        geo_dims = self._get_src_geo_dims()
         flat_dims = [dim for dim in data.dims if dim not in geo_dims]
         if np.issubdtype(data.dtype, np.integer):
             mask = data == data.attrs.get('_FillValue', np.iinfo(data.dtype.type).max)
@@ -493,13 +500,13 @@ class NearestNeighborResampler(Resampler):
             mask = data.isnull()
         mask = mask.all(dim=flat_dims)
         return mask
-
-    def _get_mask_area_numpy(self, data):
-        if data.ndim > 2:
-            raise ValueError("Can't mask area with numpy array data with more than two dimensions.")
-        if np.issubdtype(data.dtype, np.integer):
-            raise ValueError("Can't mask area with integer numpy array (pass 'mask' directly).")
-        return np.isnan(data)
+    #
+    # def _get_mask_area_numpy(self, data):
+    #     if data.ndim > 2:
+    #         raise ValueError("Can't mask area with numpy array data with more than two dimensions.")
+    #     if np.issubdtype(data.dtype, np.integer):
+    #         raise ValueError("Can't mask area with integer numpy array (pass 'mask' directly).")
+    #     return np.isnan(data)
 
 
 def _get_fill_mask_value(data_dtype):

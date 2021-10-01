@@ -104,9 +104,6 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
-        data = data_2d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
-        pytest.raises(AssertionError, resampler.resample, data, radius_of_influence=50000)
-
     def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_source, data_2d_float32_xarray_dask,
                                                area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
@@ -123,6 +120,11 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
+    def test_nearest_area_2d_to_area_1n_no_roi_no_geocentric(
+            self,
+            area_def_stere_source,
+            data_2d_float32_xarray_dask,
+            area_def_stere_target):
         # pretend the resolutions can't be determined
         with mock.patch.object(area_def_stere_source, 'geocentric_resolution') as sgr, \
                 mock.patch.object(area_def_stere_target, 'geocentric_resolution') as dgr:
@@ -138,9 +140,6 @@ class TestNearestNeighborResampler:
             expected = 20666.0
             assert cross_sum == expected
             assert res.shape == resampler.target_geo_def.shape
-
-        data = data_2d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
-        pytest.raises(AssertionError, resampler.resample, data)
 
     def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_source, data_3d_float32_xarray_dask,
                                                 area_def_stere_target):
@@ -158,28 +157,22 @@ class TestNearestNeighborResampler:
         expected = 909144.0
         assert cross_sum == expected
         assert res.shape[:2] == resampler.target_geo_def.shape
-
-        data = data_3d_float32_xarray_dask.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
-        pytest.raises(AssertionError, resampler.resample, data, radius_of_influence=50000)
-
-    @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
-    def test_nearest_swath_1d_mask_to_grid_8n(
-            self,
-            swath_def_1d_xarray_dask,
-            data_1d_float32_xarray_dask,
-            coord_def_2d_dask
-    ):
-        """Test 1D swath definition to 2D grid definition; 8 neighbors."""
-        resampler = NearestNeighborResampler(
-            swath_def_1d_xarray_dask, coord_def_2d_dask)
-        resampler.precompute(mask=data_1d_float32_xarray_dask.isnull(),
-                             radius_of_influence=100000, neighbors=8)
-        res = resampler.resample(data_1d_float32_xarray_dask)
-        assert isinstance(res, xr.DataArray)
-        assert isinstance(res.data, da.Array)
-        # actual = res.values
-        # expected =
-        # np.testing.assert_allclose(actual, expected)
+    #
+    # @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
+    # def test_nearest_swath_1d_mask_to_grid_8n(
+    #         self,
+    #         swath_def_1d_xarray_dask,
+    #         data_1d_float32_xarray_dask,
+    #         coord_def_2d_dask
+    # ):
+    #     """Test 1D swath definition to 2D grid definition; 8 neighbors."""
+    #     resampler = NearestNeighborResampler(
+    #         swath_def_1d_xarray_dask, coord_def_2d_dask)
+    #     resampler.precompute(mask=data_1d_float32_xarray_dask.isnull(),
+    #                          radius_of_influence=100000, neighbors=8)
+    #     res = resampler.resample(data_1d_float32_xarray_dask)
+    #     assert isinstance(res, xr.DataArray)
+    #     assert isinstance(res.data, da.Array)
 
 
 class TestInvalidUsageNearestNeighborResampler:
@@ -189,6 +182,37 @@ class TestInvalidUsageNearestNeighborResampler:
     then a working case should be added above.
 
     """
+
+    @pytest.mark.parametrize(
+        "input_data",
+        [
+            lazy_fixture("data_2d_float32_xarray_dask"),
+            lazy_fixture("data_3d_float32_xarray_dask"),
+        ]
+    )
+    def test_mismatch_geo_data_dims(
+            self,
+            area_def_stere_source,
+            area_def_stere_target,
+            input_data,
+    ):
+        resampler = NearestNeighborResampler(area_def_stere_source, area_def_stere_target)
+        data = input_data.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
+        with pytest.raises(ValueError, match='.*dimensions do not match.*'):
+            resampler.resample(data)
+
+    def test_mismatch_geo_data_dims_swath(
+            self,
+            swath_def_2d_xarray_dask,
+            area_def_stere_target,
+            data_2d_float32_xarray_dask):
+        new_swath_def = SwathDefinition(
+            swath_def_2d_xarray_dask.lons.rename({'y': 'my_dim_y', 'x': 'my_dim_x'}),
+            swath_def_2d_xarray_dask.lats.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
+        )
+        resampler = NearestNeighborResampler(new_swath_def, area_def_stere_target)
+        with pytest.raises(ValueError, match='.*dimensions do not match.*'):
+            resampler.resample(data_2d_float32_xarray_dask)
 
     # @pytest.mark.parametrize("src_geom", [
     #     # lazy_fixture("swath_def_2d_numpy"),
@@ -245,7 +269,8 @@ class TestInvalidUsageNearestNeighborResampler:
             )
         else:
             src_geom = SwathDefinition(
-                src_geom.lons.T, src_geom.lats.T,
+                src_geom.lons.T.rename({'y': 'x', 'x': 'y'}),
+                src_geom.lats.T.rename({'y': 'x', 'x': 'y'}),
             )
         resampler = NearestNeighborResampler(src_geom, area_def_stere_target)
         with pytest.raises(ValueError, match=match):
