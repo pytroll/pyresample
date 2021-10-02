@@ -1009,7 +1009,7 @@ class XArrayResamplerNN(object):
         input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
-        input_coords = input_coords.astype(np.float32)
+        input_coords = input_coords.astype(np.float64)
         delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
         return valid_input_idx, delayed_kdtree
 
