@@ -205,7 +205,7 @@ class NearestNeighborResampler(Resampler):
             neighbours=neighbors, epsilon=epsilon,
             radius=radius_of_influence, dtype=np.int,
             new_axes={'k': neighbors}, concatenate=True)
-        return res, None
+        return res
 
     def _get_neighbour_info(self, mask, neighbors, radius_of_influence, epsilon):
         """Return neighbour info.
@@ -238,25 +238,21 @@ class NearestNeighborResampler(Resampler):
             assert (mask.shape == self.source_geo_def.shape), \
                 "'mask' must be the same shape as the source geo definition"
             mask = mask.data
-        index_arr, distance_arr = self._query_resample_kdtree(
+        index_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_input_idx,
             valid_output_idx, mask,
             neighbors, radius_of_influence, epsilon)
 
         self._internal_cache[mask_hash] = {
             "valid_input_index": valid_input_idx,
-            "valid_output_index": valid_output_idx,
             "index_array": index_arr,
-            "distance_array": distance_arr,
         }
 
     def get_sample_from_neighbour_info(
             self,
             data,
             valid_input_index,
-            valid_output_index,
             index_array,
-            distance_array,
             neighbors=1,
             fill_value=np.nan):
         """Get the pixels matching the target area.
@@ -484,9 +480,7 @@ class NearestNeighborResampler(Resampler):
         result = self.get_sample_from_neighbour_info(
             new_data,
             precompute_dict["valid_input_index"],
-            precompute_dict["valid_output_index"],
             precompute_dict["index_array"],
-            precompute_dict["distance_array"],
             fill_value=fill_value)
         return self._verify_result_object_type(result, data)
 
