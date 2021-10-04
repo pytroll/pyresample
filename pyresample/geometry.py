@@ -113,6 +113,19 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
+    def update_hash(self, the_hash=None):
+        """Update the hash."""
+        if the_hash is None:
+            the_hash = hashlib.sha1()
+        the_hash.update(get_array_hashable(self.lons))
+        the_hash.update(get_array_hashable(self.lats))
+        try:
+            if self.lons.mask is not False:
+                the_hash.update(get_array_hashable(self.lons.mask))
+        except AttributeError:
+            pass
+        return the_hash
+
     def __eq__(self, other):
         """Test for approximate equality."""
         if self is other:
@@ -670,19 +683,6 @@ class SwathDefinition(CoordinateDefinition):
         if self.hash is None:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
-
-    def update_hash(self, the_hash=None):
-        """Update the hash."""
-        if the_hash is None:
-            the_hash = hashlib.sha1()
-        the_hash.update(get_array_hashable(self.lons))
-        the_hash.update(get_array_hashable(self.lats))
-        try:
-            if self.lons.mask is not False:
-                the_hash.update(get_array_hashable(self.lons.mask))
-        except AttributeError:
-            pass
-        return the_hash
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
