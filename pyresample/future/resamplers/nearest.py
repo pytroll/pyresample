@@ -216,12 +216,6 @@ class NearestNeighborResampler(Resampler):
         index_array, distance_array) : tuple of numpy arrays
             Neighbour resampling info
         """
-        # use dask task name
-        mask_hash = None if mask is None else mask.data.name
-        if mask_hash in self._internal_cache:
-            # already computed
-            return
-
         if self.source_geo_def.size < neighbors:
             warnings.warn('Searching for %s neighbors in %s data points' %
                           (neighbors, self.source_geo_def.size))
@@ -243,10 +237,7 @@ class NearestNeighborResampler(Resampler):
             valid_output_idx, mask,
             neighbors, radius_of_influence, epsilon)
 
-        self._internal_cache[mask_hash] = {
-            "valid_input_index": valid_input_idx,
-            "index_array": index_arr,
-        }
+        return valid_input_idx, index_arr
 
     def get_sample_from_neighbour_info(
             self,
@@ -428,12 +419,23 @@ class NearestNeighborResampler(Resampler):
                 reduces execution time
 
         """
+        neighbors = 1
         if mask is not None and mask.shape != self.source_geo_def.shape:
             raise ValueError("'mask' provided to 'precompute' is not the same "
                              "shape as the source geometry.")
         if radius_of_influence is None:
             radius_of_influence = self._compute_radius_of_influence()
-        self._get_neighbour_info(mask, 1, radius_of_influence, epsilon)
+
+        # use dask task name
+        mask_hash = None if mask is None else mask.data.name
+        cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
+        if cache_key not in self._internal_cache:
+            valid_input_index, index_arr = self._get_neighbour_info(
+                mask, neighbors, radius_of_influence, epsilon)
+            self._internal_cache[cache_key] = {
+                "valid_input_index": valid_input_index,
+                "index_array": index_arr,
+            }
 
     def resample(self, data, mask_area=None, fill_value=np.nan,
                  radius_of_influence=None, epsilon=0):
@@ -472,11 +474,14 @@ class NearestNeighborResampler(Resampler):
         self._verify_data_geo_dims(new_data, src_geo_dims)
 
         mask = self._get_area_mask(mask_area, new_data)
+        if radius_of_influence is None:
+            radius_of_influence = self._compute_radius_of_influence()
         self.precompute(mask=mask, radius_of_influence=radius_of_influence, epsilon=epsilon)
 
         # Get precomputed arrays - use dask array task name
         mask_hash = None if mask is None else mask.data.name
-        precompute_dict = self._internal_cache[mask_hash]
+        cache_key = (mask_hash, 1, radius_of_influence, epsilon)
+        precompute_dict = self._internal_cache[cache_key]
         result = self.get_sample_from_neighbour_info(
             new_data,
             precompute_dict["valid_input_index"],
