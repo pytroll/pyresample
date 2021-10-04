@@ -134,17 +134,10 @@ class NearestNeighborResampler(Resampler):
             Geometry definition of target
 
         """
-        super().__init__(source_geo_def, target_geo_def, cache=cache)
         if DataArray is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
-
-        self.valid_input_index = None
-        self.valid_output_index = None
-        self.index_array = None
-        self.distance_array = None
-        self.delayed_kdtree = None
-        self.source_geo_def = source_geo_def
-        self.target_geo_def = target_geo_def
+        super().__init__(source_geo_def, target_geo_def, cache=cache)
+        self._internal_cache = {}
         assert (self.target_geo_def.ndim == 2), \
             "Target area definition must be 2 dimensions"
 
@@ -191,7 +184,8 @@ class NearestNeighborResampler(Resampler):
                                resample_kdtree,
                                tlons,
                                tlats,
-                               valid_oi,
+                               valid_input_index,
+                               valid_output_index,
                                mask,
                                neighbors,
                                radius_of_influence,
@@ -202,12 +196,12 @@ class NearestNeighborResampler(Resampler):
         else:
             ndims = self.source_geo_def.ndim
             dims = 'mn'[:ndims]
-            args = (mask, dims, self.valid_input_index, dims)
+            args = (mask, dims, valid_input_index, dims)
         # res.shape = rows, cols, neighbors
         # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
         res = da.blockwise(
             query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
-            valid_oi, 'ji', *args, kdtree=resample_kdtree,
+            valid_output_index, 'ji', *args, kdtree=resample_kdtree,
             neighbours=neighbors, epsilon=epsilon,
             radius=radius_of_influence, dtype=np.int,
             new_axes={'k': neighbors}, concatenate=True)
@@ -222,6 +216,12 @@ class NearestNeighborResampler(Resampler):
         index_array, distance_array) : tuple of numpy arrays
             Neighbour resampling info
         """
+        # use dask task name
+        mask_hash = None if mask is None else mask.data.name
+        if mask_hash in self._internal_cache:
+            # already computed
+            return
+
         if self.source_geo_def.size < neighbors:
             warnings.warn('Searching for %s neighbors in %s data points' %
                           (neighbors, self.source_geo_def.size))
@@ -229,8 +229,6 @@ class NearestNeighborResampler(Resampler):
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE
         valid_input_idx, resample_kdtree = self._create_resample_kdtree(chunks=chunks)
-        self.valid_input_index = valid_input_idx
-        self.delayed_kdtree = resample_kdtree
 
         # TODO: Add 'chunks' keyword argument to this method and use it
         target_lons, target_lats = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
@@ -241,18 +239,26 @@ class NearestNeighborResampler(Resampler):
                 "'mask' must be the same shape as the source geo definition"
             mask = mask.data
         index_arr, distance_arr = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx, mask,
+            resample_kdtree, target_lons, target_lats, valid_input_idx,
+            valid_output_idx, mask,
             neighbors, radius_of_influence, epsilon)
 
-        self.valid_output_index, self.index_array = valid_output_idx, index_arr
-        self.distance_array = distance_arr
+        self._internal_cache[mask_hash] = {
+            "valid_input_index": valid_input_idx,
+            "valid_output_index": valid_output_idx,
+            "index_array": index_arr,
+            "distance_array": distance_arr,
+        }
 
-        return (self.valid_input_index,
-                self.valid_output_index,
-                self.index_array,
-                self.distance_array)
-
-    def get_sample_from_neighbour_info(self, data, neighbors=1, fill_value=np.nan):
+    def get_sample_from_neighbour_info(
+            self,
+            data,
+            valid_input_index,
+            valid_output_index,
+            index_array,
+            distance_array,
+            neighbors=1,
+            fill_value=np.nan):
         """Get the pixels matching the target area.
 
         This method should work for any dimensionality of the provided data
@@ -293,16 +299,14 @@ class NearestNeighborResampler(Resampler):
             raise NotImplementedError("Nearest neighbor resampling can not "
                                       "handle more than 1 neighbor yet.")
         # Convert from multiple neighbor shape to 1 neighbor
-        ia = self.index_array[:, :, 0]
-        vii = self.valid_input_index
+        ia = index_array[:, :, 0]
+        vii = valid_input_index
 
         src_geo_dims = self._get_src_geo_dims()
         dst_geo_dims = ('y', 'x')
         self._verify_data_geo_dims(data, src_geo_dims)
 
         def contain_coords(var, coord_list):
-            # FIXME: Can't include coordinates whose dimensions depend on the geo
-            #        dims either
             return bool(set(coord_list).intersection(set(var.dims)))
 
         coords = {c: c_var for c, c_var in data.coords.items()
@@ -433,7 +437,7 @@ class NearestNeighborResampler(Resampler):
                              "shape as the source geometry.")
         if radius_of_influence is None:
             radius_of_influence = self._compute_radius_of_influence()
-        return self._get_neighbour_info(mask, 1, radius_of_influence, epsilon)
+        self._get_neighbour_info(mask, 1, radius_of_influence, epsilon)
 
     def resample(self, data, mask_area=None, fill_value=np.nan,
                  radius_of_influence=None, epsilon=0):
@@ -473,7 +477,17 @@ class NearestNeighborResampler(Resampler):
 
         mask = self._get_area_mask(mask_area, new_data)
         self.precompute(mask=mask, radius_of_influence=radius_of_influence, epsilon=epsilon)
-        result = self.get_sample_from_neighbour_info(new_data, fill_value=fill_value)
+
+        # Get precomputed arrays - use dask array task name
+        mask_hash = None if mask is None else mask.data.name
+        precompute_dict = self._internal_cache[mask_hash]
+        result = self.get_sample_from_neighbour_info(
+            new_data,
+            precompute_dict["valid_input_index"],
+            precompute_dict["valid_output_index"],
+            precompute_dict["index_array"],
+            precompute_dict["distance_array"],
+            fill_value=fill_value)
         return self._verify_result_object_type(result, data)
 
     def _verify_input_object_type(self, data):
@@ -533,13 +547,6 @@ class NearestNeighborResampler(Resampler):
             mask = data.isnull()
         mask = mask.all(dim=flat_dims)
         return mask
-    #
-    # def _get_mask_area_numpy(self, data):
-    #     if data.ndim > 2:
-    #         raise ValueError("Can't mask area with numpy array data with more than two dimensions.")
-    #     if np.issubdtype(data.dtype, np.integer):
-    #         raise ValueError("Can't mask area with integer numpy array (pass 'mask' directly).")
-    #     return np.isnan(data)
 
 
 def _get_fill_mask_value(data_dtype):
@@ -552,19 +559,3 @@ def _get_fill_mask_value(data_dtype):
         raise TypeError('Type %s is unsupported for masked fill values' %
                         data_dtype.type)
     return fill_value
-
-
-def _remask_data(data, is_to_be_masked=True):
-    """Interprets half the array as mask for the other half."""
-    channels = data.shape[-1]
-    if is_to_be_masked:
-        mask = data[..., (channels // 2):]
-        # All pixels affected by masked pixels are masked out
-        mask = (mask != 0)
-        data = np.ma.array(data[..., :(channels // 2)], mask=mask)
-    else:
-        data = data[..., :(channels // 2)]
-
-    if data.shape[-1] == 1:
-        data = data.reshape(data.shape[:-1])
-    return data
