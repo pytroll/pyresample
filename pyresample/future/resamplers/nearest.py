@@ -428,14 +428,29 @@ class NearestNeighborResampler(Resampler):
 
         # use dask task name
         mask_hash = None if mask is None else mask.data.name
-        cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
-        if cache_key not in self._internal_cache:
-            valid_input_index, index_arr = self._get_neighbor_info(
-                mask, neighbors, radius_of_influence, epsilon)
-            self._internal_cache[cache_key] = {
-                "valid_input_index": valid_input_index,
-                "index_array": index_arr,
-            }
+        internal_cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
+        ext_cache_key = self._get_hash(neighbors=neighbors,
+                                       radius_of_influence=radius_of_influence,
+                                       epsilon=epsilon)
+        in_int_cache = internal_cache_key in self._internal_cache
+        in_ext_cache = ext_cache_key in self.cache if self.cache is not None and mask is None else False
+        if not in_int_cache:
+            if in_ext_cache:
+                item_to_cache = self.cache.load(ext_cache_key)
+            else:
+                valid_input_index, index_arr = self._get_neighbor_info(
+                    mask, neighbors, radius_of_influence, epsilon)
+                item_to_cache = {
+                    "valid_input_index": valid_input_index,
+                    "index_array": index_arr,
+                }
+            self._internal_cache[internal_cache_key] = item_to_cache
+
+        # can't use an external cache is mask is provided
+        if mask is None and self.cache is not None and not in_ext_cache:
+            # XXX: Store individual keys or store as one dict?
+            # XXX: Should there be a `store_multiple`?
+            self.cache.store(ext_cache_key, self._internal_cache[internal_cache_key])
 
     def resample(self, data, mask_area=None, fill_value=np.nan,
                  radius_of_influence=None, epsilon=0):

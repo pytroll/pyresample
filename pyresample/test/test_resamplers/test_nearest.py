@@ -233,6 +233,32 @@ class TestNearestCaching:
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
+    def test_external_cache(
+            self,
+            area_def_stere_source,
+            data_2d_float32_xarray_dask,
+            area_def_stere_target):
+        """Test passing and using a separate cache with the resampler."""
+        from pyresample.future.cache import InMemoryCache
+        cache = InMemoryCache()
+        resampler = NearestNeighborResampler(
+            area_def_stere_source, area_def_stere_target, cache=cache)
+        mock_meth = mock.Mock(wraps=resampler._get_neighbor_info)
+        with mock.patch.object(resampler, "_get_neighbor_info", mock_meth), assert_maximum_dask_computes(0):
+            resampler.precompute()
+            resampler.precompute()
+            res = resampler.resample(data_2d_float32_xarray_dask)
+
+        mock_meth.assert_called_once()
+        assert len(cache) == 1
+        assert isinstance(res, xr.DataArray)
+        assert isinstance(res.data, da.Array)
+        res = res.values
+        cross_sum = float(np.nansum(res))
+        expected = 952386.0
+        assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
+
 
 class TestInvalidUsageNearestNeighborResampler:
     """Test the resampler being given input that should raise an error.

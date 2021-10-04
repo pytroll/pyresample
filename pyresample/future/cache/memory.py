@@ -47,3 +47,7 @@ class InMemoryCache(ResampleCache):
     def __len__(self) -> int:
         """Get number of items in the cache."""
         return len(self._store)
+
+    def __contains__(self, key):
+        """Check if this cache contains the specified key."""
+        return key in self._store

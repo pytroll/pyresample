@@ -48,6 +48,15 @@ class ResampleCache(ABC):
     def __len__(self) -> int:
         """Get number of items in the cache."""
 
+    def __contains__(self, key):
+        """Check if this cache contains the specified key."""
+        try:
+            self.load(key)
+        except KeyError:
+            return False
+        else:
+            return True
+
     def __repr__(self):
         """Summarize the current state of the cache as a string.
 
