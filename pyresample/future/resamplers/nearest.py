@@ -207,7 +207,7 @@ class NearestNeighborResampler(Resampler):
             new_axes={'k': neighbors}, concatenate=True)
         return res
 
-    def _get_neighbour_info(self, mask, neighbors, radius_of_influence, epsilon):
+    def _get_neighbor_info(self, mask, neighbors, radius_of_influence, epsilon):
         """Return neighbour info.
 
         Returns
@@ -239,7 +239,7 @@ class NearestNeighborResampler(Resampler):
 
         return valid_input_idx, index_arr
 
-    def get_sample_from_neighbour_info(
+    def get_sample_from_neighbor_info(
             self,
             data,
             valid_input_index,
@@ -430,7 +430,7 @@ class NearestNeighborResampler(Resampler):
         mask_hash = None if mask is None else mask.data.name
         cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
         if cache_key not in self._internal_cache:
-            valid_input_index, index_arr = self._get_neighbour_info(
+            valid_input_index, index_arr = self._get_neighbor_info(
                 mask, neighbors, radius_of_influence, epsilon)
             self._internal_cache[cache_key] = {
                 "valid_input_index": valid_input_index,
@@ -482,7 +482,7 @@ class NearestNeighborResampler(Resampler):
         mask_hash = None if mask is None else mask.data.name
         cache_key = (mask_hash, 1, radius_of_influence, epsilon)
         precompute_dict = self._internal_cache[cache_key]
-        result = self.get_sample_from_neighbour_info(
+        result = self.get_sample_from_neighbor_info(
             new_data,
             precompute_dict["valid_input_index"],
             precompute_dict["index_array"],
