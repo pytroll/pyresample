@@ -433,7 +433,8 @@ class NearestNeighborResampler(Resampler):
                                        radius_of_influence=radius_of_influence,
                                        epsilon=epsilon)
         in_int_cache = internal_cache_key in self._internal_cache
-        in_ext_cache = ext_cache_key in self.cache if self.cache is not None and mask is None else False
+        can_ext_cache = self.cache is not None and mask is None
+        in_ext_cache = ext_cache_key in self.cache if can_ext_cache else False
         if not in_int_cache:
             if in_ext_cache:
                 item_to_cache = self.cache.load(ext_cache_key)
@@ -447,9 +448,7 @@ class NearestNeighborResampler(Resampler):
             self._internal_cache[internal_cache_key] = item_to_cache
 
         # can't use an external cache is mask is provided
-        if mask is None and self.cache is not None and not in_ext_cache:
-            # XXX: Store individual keys or store as one dict?
-            # XXX: Should there be a `store_multiple`?
+        if can_ext_cache and not in_ext_cache:
             self.cache.store(ext_cache_key, self._internal_cache[internal_cache_key])
 
     def resample(self, data, mask_area=None, fill_value=np.nan,
