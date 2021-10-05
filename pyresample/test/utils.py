@@ -242,10 +242,11 @@ def friendly_crs_equal(expected, actual, keys=None, use_obj=True, use_wkt=True):
             expected = expected.crs
         if hasattr(actual, 'crs'):
             actual = actual.crs
-        expected_crs = CRS(expected)
-        actual_crs = CRS(actual)
+        expected_crs = CRS.from_user_input(expected)
+        actual_crs = CRS.from_user_input(actual)
         if use_wkt:
             expected_crs = CRS(expected_crs.to_wkt())
             actual_crs = CRS(actual_crs.to_wkt())
-        return expected_crs == actual_crs
+        assert expected_crs == actual_crs
+        return
     raise NotImplementedError("""TODO""")

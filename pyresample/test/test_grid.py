@@ -204,8 +204,13 @@ class Test(unittest.TestCase):
     def test_proj4_string(self):
         """Test 'proj_str' property of AreaDefinition."""
         proj4_string = self.area_def.proj_str
-        expected_string = '+a=6378144 +k=1 +lat_0=50 +lon_0=8 ' \
-                          '+no_defs +proj=stere +rf=298.253168108487 ' \
-                          '+type=crs +units=m +x_0=0 +y_0=0'
-        self.assertEqual(
-            frozenset(proj4_string.split()), frozenset(expected_string.split()))
+        # different versions of PROJ/pyproj simplify parameters in
+        # different ways. Just check for the minimum expected.
+        param_strings = (
+            "+a=6378144",
+            "+lon_0=8",
+            "+lat_0=50",
+            "+proj=stere",
+        )
+        for param_str in param_strings:
+            assert param_str in proj4_string
