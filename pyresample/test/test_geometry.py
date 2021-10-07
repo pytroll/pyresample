@@ -1243,7 +1243,7 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        assert friendly_crs_equal(
+        friendly_crs_equal(
             '+a=6378144.0 +b=6356759.0 +lat_0=90.0 +lat_ts=50.0 '
             '+lon_0=8.0 +proj=stere',
             area
@@ -1257,9 +1257,9 @@ class Test(unittest.TestCase):
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
                                         1490031.36])
-        assert friendly_crs_equal(
-            '+a=6378144.0 +alpha=50.0 +b=6356759.0 +lat_0=50.0 '
-            '+lon_0=8.0 +no_rot +proj=omerc',
+        friendly_crs_equal(
+            '+proj=omerc +a=6378144.0 +b=6356759.0 +lat_0=50.0 '
+            '+lon_0=8.0 +alpha=50.0 +no_rot',
             area
         )
 
