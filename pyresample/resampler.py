@@ -203,9 +203,6 @@ class BaseResampler:
                 Geolocation definition for the data to be resampled
             target_geo_def:
                 Geolocation definition for the area to resample data to.
-            cache:
-                :class:`~pyresample.cache.ResampleCache` instance used by
-                the resampler to cache.
 
         """
         self.source_geo_def = source_geo_def
