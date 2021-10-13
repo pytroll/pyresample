@@ -44,7 +44,9 @@ from pyresample.ewa._fornav import (
     write_grid_image_single,
 )
 from pyresample.geometry import SwathDefinition
-from pyresample.resampler import BaseResampler, update_resampled_coords
+from pyresample.resampler import BaseResampler
+
+from ..future.resamplers.resampler import update_resampled_coords
 
 try:
     import xarray as xr

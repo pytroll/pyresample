@@ -32,6 +32,8 @@ from pykdtree.kdtree import KDTree
 
 from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
 
+from .future.resamplers.nearest import _my_index, lonlat2xyz, query_no_distance
+
 logger = getLogger(__name__)
 
 try:
@@ -861,75 +863,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         return result, stddev, count
     else:
         return result
-
-
-def lonlat2xyz(lons, lats):
-    """Convert lon/lat degrees to geocentric x/y/z coordinates."""
-    R = 6370997.0
-    x_coords = R * np.cos(np.deg2rad(lats)) * np.cos(np.deg2rad(lons))
-    y_coords = R * np.cos(np.deg2rad(lats)) * np.sin(np.deg2rad(lons))
-    z_coords = R * np.sin(np.deg2rad(lats))
-
-    stack = np.stack if isinstance(lons, np.ndarray) else da.stack
-    return stack(
-        (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
-
-
-def query_no_distance(target_lons, target_lats, valid_output_index,
-                      mask=None, valid_input_index=None,
-                      neighbours=None, epsilon=None, radius=None,
-                      kdtree=None):
-    """Query the kdtree. No distances are returned.
-
-    NOTE: Dask array arguments must always come before other keyword arguments
-          for `da.blockwise` arguments to work.
-    """
-    voi = valid_output_index
-    shape = voi.shape + (neighbours,)
-    voir = voi.ravel()
-    if mask is not None:
-        mask = mask.ravel()[valid_input_index.ravel()]
-    target_lons_valid = target_lons.ravel()[voir]
-    target_lats_valid = target_lats.ravel()[voir]
-
-    coords = lonlat2xyz(target_lons_valid, target_lats_valid)
-    distance_array, index_array = kdtree.query(
-        coords,
-        k=neighbours,
-        eps=epsilon,
-        distance_upper_bound=radius,
-        mask=mask)
-
-    if index_array.ndim == 1:
-        index_array = index_array[:, None]
-
-    # KDTree query returns out-of-bounds neighbors as `len(arr)`
-    # which is an invalid index, we mask those out so -1 represents
-    # invalid values
-    # voi is 2D (trows, tcols)
-    # index_array is 2D (valid output pixels, neighbors)
-    # there are as many Trues in voi as rows in index_array
-    good_pixels = index_array < kdtree.n
-    res_ia = np.empty(shape, dtype=int)
-    mask = np.zeros(shape, dtype=bool)
-    mask[voi, :] = good_pixels
-    res_ia[mask] = index_array[good_pixels]
-    res_ia[~mask] = -1
-    return res_ia
-
-
-def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None,
-              fill_value=np.nan):
-    """Wrap index logic for 'get_sample_from_neighbour_info' to be used inside dask map_blocks."""
-    vii_slices = tuple(
-        x if x is not None else vii.ravel() for x in vii_slices)
-    mask_slices = tuple(
-        x if x is not None else (index_arr == -1) for x in ia_slices)
-    ia_slices = tuple(
-        x if x is not None else index_arr for x in ia_slices)
-    res = data_arr[vii_slices][ia_slices]
-    res[mask_slices] = fill_value
-    return res
 
 
 class XArrayResamplerNN(object):
