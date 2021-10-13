@@ -22,14 +22,13 @@ import abc
 import hashlib
 import json
 import logging
-from typing import Optional, Union
+from typing import Union
 
 try:
     import xarray as xr
 except ImportError:
     xr = None
 
-from pyresample.future.cache import ResampleCache
 from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 
 logger = logging.getLogger(__name__)
@@ -194,7 +193,7 @@ class Resampler:
     def __init__(self,
                  source_geo_def: Union[SwathDefinition, AreaDefinition],
                  target_geo_def: Union[CoordinateDefinition, AreaDefinition],
-                 cache: Optional[Union[ResampleCache, str]] = None,
+                 cache=None,
                  ):
         """Initialize resampler with geolocation information.
 

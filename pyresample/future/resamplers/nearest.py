@@ -429,27 +429,15 @@ class NearestNeighborResampler(Resampler):
         # use dask task name
         mask_hash = None if mask is None else mask.data.name
         internal_cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
-        ext_cache_key = self._get_hash(neighbors=neighbors,
-                                       radius_of_influence=radius_of_influence,
-                                       epsilon=epsilon)
         in_int_cache = internal_cache_key in self._internal_cache
-        can_ext_cache = self.cache is not None and mask is None
-        in_ext_cache = ext_cache_key in self.cache if can_ext_cache else False
         if not in_int_cache:
-            if in_ext_cache:
-                item_to_cache = self.cache.load(ext_cache_key)
-            else:
-                valid_input_index, index_arr = self._get_neighbor_info(
-                    mask, neighbors, radius_of_influence, epsilon)
-                item_to_cache = {
-                    "valid_input_index": valid_input_index,
-                    "index_array": index_arr,
-                }
+            valid_input_index, index_arr = self._get_neighbor_info(
+                mask, neighbors, radius_of_influence, epsilon)
+            item_to_cache = {
+                "valid_input_index": valid_input_index,
+                "index_array": index_arr,
+            }
             self._internal_cache[internal_cache_key] = item_to_cache
-
-        # can't use an external cache is mask is provided
-        if can_ext_cache and not in_ext_cache:
-            self.cache.store(ext_cache_key, self._internal_cache[internal_cache_key])
 
     def resample(self, data, mask_area=None, fill_value=np.nan,
                  radius_of_influence=None, epsilon=0):

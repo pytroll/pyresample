@@ -17,7 +17,6 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Future features that are backwards incompatible with current functionality."""
 
-from .cache import ResampleCache  # noqa
 from .resamplers import Resampler  # noqa
 from .resamplers import (  # noqa
     create_resampler,

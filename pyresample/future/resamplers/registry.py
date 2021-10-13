@@ -23,7 +23,6 @@ import sys
 import warnings
 from typing import Optional, Type
 
-from pyresample.future.cache import ResampleCache
 from pyresample.future.resamplers.resampler import Resampler
 
 RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {}
@@ -109,7 +108,7 @@ def create_resampler(
         src_geom,
         dst_geom,
         resampler: str = None,
-        cache: Optional[ResampleCache] = None,
+        cache=None,
         **kwargs
 ) -> Resampler:
     """Create instance of a :class:`~pyresample.future.resampler.Resampler` with the provided arguments.
@@ -128,7 +127,7 @@ def create_resampler(
             class will be chosen based on the geometry types provided. This
             is currently always the 'nearest' (nearest neighbor) resampler.
         cache:
-            :class:`pyresample.future.cache.ResampleCache` instance used by
+            ResampleCache instance used by
             the resampler to cache intermediate results for improved resampling
             performance on multiple executions or future use of the resampler.
         kwargs:
