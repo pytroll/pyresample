@@ -164,7 +164,7 @@ class TestNearestNeighborResampler:
         is_data_arr_dask = isinstance(input_data, xr.DataArray) and isinstance(input_data.data, da.Array)
         is_dask_based = isinstance(input_data, da.Array) or is_data_arr_dask
         if is_dask_based:
-            assert len(w) == 0
+            assert not w
         else:
             assert_warnings_contain(w, "will be converted")
         res = np.array(res)

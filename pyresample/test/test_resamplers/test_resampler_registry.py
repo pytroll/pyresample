@@ -48,7 +48,7 @@ class TestResamplerRegistryManipulation:
         with warnings.catch_warnings(record=True) as w:
             avail_resamplers = list_resamplers()
             # the mocking should have made this empty
-            assert len(avail_resamplers) == 0
+            assert not avail_resamplers
         assert_warnings_contain(w, "reinstall")
 
     def test_manual_resampler_registration(self):
