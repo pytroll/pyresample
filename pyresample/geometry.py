@@ -24,6 +24,7 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import yaml
@@ -54,6 +55,7 @@ except ImportError:
 from pyproj import CRS
 
 logger = getLogger(__name__)
+HashType = hashlib._hashlib.HASH
 
 
 class DimensionError(ValueError):
@@ -113,18 +115,18 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def update_hash(self, the_hash=None):
+    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
         """Update the hash."""
-        if the_hash is None:
-            the_hash = hashlib.sha1()
-        the_hash.update(get_array_hashable(self.lons))
-        the_hash.update(get_array_hashable(self.lats))
+        if existing_hash is None:
+            existing_hash = hashlib.sha1()
+        existing_hash.update(get_array_hashable(self.lons))
+        existing_hash.update(get_array_hashable(self.lats))
         try:
             if self.lons.mask is not False:
-                the_hash.update(get_array_hashable(self.lons.mask))
+                existing_hash.update(get_array_hashable(self.lons.mask))
         except AttributeError:
             pass
-        return the_hash
+        return existing_hash
 
     def __eq__(self, other):
         """Test for approximate equality."""
@@ -1700,14 +1702,14 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for equality."""
         return not self.__eq__(other)
 
-    def update_hash(self, the_hash=None):
+    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
         """Update a hash, or return a new one if needed."""
-        if the_hash is None:
-            the_hash = hashlib.sha1()
-        the_hash.update(self.crs_wkt.encode('utf-8'))
-        the_hash.update(np.array(self.shape))
-        the_hash.update(np.array(self.area_extent))
-        return the_hash
+        if existing_hash is None:
+            existing_hash = hashlib.sha1()
+        existing_hash.update(self.crs_wkt.encode('utf-8'))
+        existing_hash.update(np.array(self.shape))
+        existing_hash.update(np.array(self.area_extent))
+        return existing_hash
 
     @daskify_2in_2out
     def get_array_coordinates_from_lonlat(self, lon, lat):
