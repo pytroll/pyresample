@@ -23,7 +23,7 @@ import sys
 import warnings
 from typing import Optional, Type
 
-from pyresample.future.resamplers.resampler import Resampler
+from .resampler import Resampler
 
 RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {}
 ENTRY_POINTS_LOADED: bool = False
