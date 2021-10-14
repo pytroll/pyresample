@@ -1077,7 +1077,7 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_lonlat2xyz(self):
         """Test conversion from geographic to cartesian 3D coordinates."""
         from pyresample import CHUNK_SIZE
-        from pyresample.bilinear._base import lonlat2xyz
+        from pyresample.future.resamplers._transform_utils import lonlat2xyz
 
         lons, lats = self.target_def.get_lonlats(chunks=CHUNK_SIZE)
         res = lonlat2xyz(lons, lats)

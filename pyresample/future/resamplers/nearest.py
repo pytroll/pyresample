@@ -30,6 +30,7 @@ from pyresample import CHUNK_SIZE, geometry
 from pyresample.utils.errors import PerformanceWarning
 
 from ..geometry import StaticGeometry, SwathDefinition
+from ._transform_utils import lonlat2xyz
 from .resampler import Resampler
 
 logger = getLogger(__name__)
@@ -42,20 +43,6 @@ except ImportError:
     DataArray = None
     da = None
     dask = None
-
-
-def lonlat2xyz(lons, lats):
-    """Convert lon/lat degrees to geocentric x/y/z coordinates."""
-    R = 6370997.0
-    lats = np.deg2rad(lats)
-    r_cos_lats = R * np.cos(lats)
-    lons = np.deg2rad(lons)
-    x_coords = r_cos_lats * np.cos(lons)
-    y_coords = r_cos_lats * np.sin(lons)
-    z_coords = R * np.sin(lats)
-
-    return np.stack(
-        (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
 def query_no_distance(target_lons, target_lats, valid_output_index,

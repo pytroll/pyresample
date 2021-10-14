@@ -32,7 +32,8 @@ from pykdtree.kdtree import KDTree
 
 from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
 
-from .future.resamplers.nearest import _my_index, lonlat2xyz, query_no_distance
+from .future.resamplers._transform_utils import lonlat2xyz
+from .future.resamplers.nearest import _my_index, query_no_distance
 
 logger = getLogger(__name__)
 

@@ -38,7 +38,7 @@ from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry
 from pyresample._spatial_mp import Proj
 
-from ..future.resamplers.nearest import lonlat2xyz
+from ..future.resamplers._transform_utils import lonlat2xyz
 
 
 class BilinearBase(object):
