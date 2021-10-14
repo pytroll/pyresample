@@ -136,14 +136,12 @@ def _load_entry_point_resamplers():
 
     """
     global ENTRY_POINTS_LOADED
+    if ENTRY_POINTS_LOADED:
+        return
     if sys.version_info < (3, 10):
         from importlib_metadata import entry_points
     else:
         from importlib.metadata import entry_points
-
-    if ENTRY_POINTS_LOADED:
-        return
-    ENTRY_POINTS_LOADED = True
 
     discovered_plugins = entry_points(group="pyresample.resamplers")
     for entry_point in discovered_plugins:
@@ -153,3 +151,4 @@ def _load_entry_point_resamplers():
             warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
         else:
             loaded_resampler.register_resampler(entry_point.name)
+    ENTRY_POINTS_LOADED = True
