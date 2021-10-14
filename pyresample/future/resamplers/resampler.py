@@ -29,7 +29,7 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
+from pyresample.geometry import AreaDefinition, CoordinateDefinition
 
 logger = logging.getLogger(__name__)
 HashType = hashlib._hashlib.HASH
@@ -149,7 +149,7 @@ def add_crs_xy_coords(data_arr, area):
     data_arr, crs = _find_and_assign_crs(data_arr, area)
 
     # Add x/y coordinates if possible
-    if isinstance(area, SwathDefinition):
+    if isinstance(area, CoordinateDefinition):
         _update_swath_lonlat_attrs(area)
     else:
         # Gridded data (AreaDefinition/StackedAreaDefinition)
