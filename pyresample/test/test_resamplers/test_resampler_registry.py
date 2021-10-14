@@ -82,33 +82,6 @@ class TestResamplerRegistryManipulation:
             _register_resampler_class(rname, _custom_resampler_class(), no_exist=False)
         assert_warnings_contain(w, "replacing")
 
-    @pytest.mark.parametrize(
-        "names",
-        [
-            ["my_decorated_resampler"],
-            ["my_decorated_resampler", "my_decorated_resampler2"]
-        ]
-    )
-    def test_decorator_registration(self, names):
-        from pyresample.future import (
-            create_resampler,
-            list_resamplers,
-            register_resampler,
-        )
-        for rname in names:
-            assert rname not in list_resamplers()
-
-        my_cls = _custom_resampler_class()
-        reg_cls = my_cls
-        for rname in names:
-            reg_cls = register_resampler(rname)(reg_cls)
-            assert reg_cls is my_cls
-
-        for rname in names:
-            assert rname in list_resamplers()
-            inst = create_resampler(None, None, resampler=rname)
-            assert isinstance(inst, my_cls)
-
 
 def _custom_resampler_class():
     from pyresample.future import Resampler

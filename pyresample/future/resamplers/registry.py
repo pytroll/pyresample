@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import sys
 import warnings
-from typing import Optional, Type
+from typing import Type
 
 from .resampler import Resampler
 
@@ -29,10 +29,8 @@ RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {}
 ENTRY_POINTS_LOADED: bool = False
 
 
-def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampler]] = None) -> None:
+def register_resampler(resampler_name: str, resampler_cls: Type[Resampler]) -> None:
     """Register :class:`~pyresample.future.resampler.Resampler` subclass for future use.
-
-    This function can also be used as a decorator (see examples below).
 
     Args:
         resampler_name:
@@ -42,26 +40,12 @@ def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampl
         resampler_cls:
             Subclass of
             :class:`~pyresample.future.resamplers.resampler.Resampler` that
-            will be added to the registry. This must be provided when not using
-            this function as a decorator.
+            will be added to the registry.
 
     Examples:
         Register a custom class::
 
             register_resampler("my_resampler", MyResamplerClass)
-
-        Register a custom class using a decorator::
-
-            @register_resampler("my_resampler")
-            class MyResamplerClass(Resampler):
-                ...
-
-        Register a custom class with multiple names using a decorator::
-
-            @register_resampler("my_resampler2")
-            @register_resampler("my_resampler")
-            class MyResamplerClass(Resampler):
-                ...
 
         Register as a plugin from third-party package (in your setup.py)::
 
@@ -75,21 +59,14 @@ def register_resampler(resampler_name: str, resampler_cls: Optional[Type[Resampl
         :meth:`Resampler.register_resampler <pyresample.future.resamplers.resampler.Resampler.register_resample>`.
 
     """
-    def _register_class(resampler_cls: Type[Resampler]):
-        if resampler_name in RESAMPLER_REGISTRY and RESAMPLER_REGISTRY[resampler_name] is resampler_cls:
-            warnings.warn(f"Resampler '{resampler_name} is already registered.", RuntimeWarning)
-        elif resampler_name in RESAMPLER_REGISTRY:
-            warnings.warn(f"Resampler with name '{resampler_name} is already "
-                          f"registered. Replacing with new resampler class.", RuntimeWarning)
+    if resampler_name in RESAMPLER_REGISTRY and RESAMPLER_REGISTRY[resampler_name] is resampler_cls:
+        warnings.warn(f"Resampler '{resampler_name} is already registered.", RuntimeWarning)
+    elif resampler_name in RESAMPLER_REGISTRY:
+        warnings.warn(f"Resampler with name '{resampler_name} is already "
+                      f"registered. Replacing with new resampler class.", RuntimeWarning)
 
-        RESAMPLER_REGISTRY[resampler_name] = resampler_cls
-        return resampler_cls
-
-    if resampler_cls is None:
-        # decorator
-        return _register_class
-
-    _register_class(resampler_cls)
+    RESAMPLER_REGISTRY[resampler_name] = resampler_cls
+    return resampler_cls
 
 
 def unregister_resampler(resampler_name: str) -> None:
