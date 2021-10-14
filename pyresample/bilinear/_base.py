@@ -38,6 +38,8 @@ from pykdtree.kdtree import KDTree
 from pyresample import data_reduce, geometry
 from pyresample._spatial_mp import Proj
 
+from ..future.resamplers.nearest import lonlat2xyz
+
 
 class BilinearBase(object):
     """Base class for bilinear interpolation."""
@@ -597,20 +599,6 @@ def get_valid_indices_from_lonlat_boundaries(
         lonlat_boundary[1],
         source_lons, source_lats,
         radius_of_influence)
-
-
-def lonlat2xyz(lons, lats):
-    """Convert geographic coordinates to cartesian 3D coordinates."""
-    R = 6370997.0
-    lats = np.deg2rad(lats)
-    r_cos_lats = R * np.cos(lats)
-    lons = np.deg2rad(lons)
-    x_coords = r_cos_lats * np.cos(lons)
-    y_coords = r_cos_lats * np.sin(lons)
-    z_coords = R * np.sin(lats)
-
-    return np.stack(
-        (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
 def get_slicer(data):

@@ -47,12 +47,14 @@ except ImportError:
 def lonlat2xyz(lons, lats):
     """Convert lon/lat degrees to geocentric x/y/z coordinates."""
     R = 6370997.0
-    x_coords = R * np.cos(np.deg2rad(lats)) * np.cos(np.deg2rad(lons))
-    y_coords = R * np.cos(np.deg2rad(lats)) * np.sin(np.deg2rad(lons))
-    z_coords = R * np.sin(np.deg2rad(lats))
+    lats = np.deg2rad(lats)
+    r_cos_lats = R * np.cos(lats)
+    lons = np.deg2rad(lons)
+    x_coords = r_cos_lats * np.cos(lons)
+    y_coords = r_cos_lats * np.sin(lons)
+    z_coords = R * np.sin(lats)
 
-    stack = np.stack if isinstance(lons, np.ndarray) else da.stack
-    return stack(
+    return np.stack(
         (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
