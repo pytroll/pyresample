@@ -192,7 +192,7 @@ class Resampler:
     """Base abstract resampler class."""
 
     def __init__(self,
-                 source_geo_def: Union[SwathDefinition, AreaDefinition],
+                 source_geo_def: Union[CoordinateDefinition, AreaDefinition],
                  target_geo_def: Union[CoordinateDefinition, AreaDefinition],
                  cache=None,
                  ):
