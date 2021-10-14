@@ -22,7 +22,7 @@ import abc
 import hashlib
 import json
 import logging
-from typing import Union
+from typing import Optional, Union
 
 try:
     import xarray as xr
@@ -32,14 +32,15 @@ except ImportError:
 from pyresample.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 
 logger = logging.getLogger(__name__)
+HashType = hashlib._hashlib.HASH
 
 
-def hash_dict(the_dict, the_hash=None):
-    """Calculate a hash for a dictionary."""
-    if the_hash is None:
-        the_hash = hashlib.sha1()
-    the_hash.update(json.dumps(the_dict, sort_keys=True).encode('utf-8'))
-    return the_hash
+def hash_dict(the_dict: dict, existing_hash: Optional[HashType] = None) -> HashType:
+    """Calculate a hash for a dictionary and optionally update an existing hash."""
+    if existing_hash is None:
+        existing_hash = hashlib.sha1()
+    existing_hash.update(json.dumps(the_dict, sort_keys=True).encode('utf-8'))
+    return existing_hash
 
 
 def _data_arr_needs_xy_coords(data_arr, area):
