@@ -221,18 +221,6 @@ class Resampler:
             raise NotImplementedError()
         self.cache = cache
 
-    @classmethod
-    def register_resampler(cls, resampler_name):
-        """Register resampler with pyresample.
-
-        This is a helper classmethod used to register subclasses while still
-        allowing them some control over how they are registered if anything
-        needs to be customized.
-
-        """
-        from .registry import register_resampler
-        register_resampler(resampler_name, cls)
-
     @property
     @abc.abstractmethod
     def version(self) -> str:

@@ -55,18 +55,12 @@ def register_resampler(resampler_name: str, resampler_cls: Type[Resampler]) -> N
                 ],
             }
 
-        Note that the plugin approach calls
-        :meth:`Resampler.register_resampler <pyresample.future.resamplers.resampler.Resampler.register_resample>`.
-
     """
-    if resampler_name in RESAMPLER_REGISTRY and RESAMPLER_REGISTRY[resampler_name] is resampler_cls:
-        warnings.warn(f"Resampler '{resampler_name} is already registered.", RuntimeWarning)
-    elif resampler_name in RESAMPLER_REGISTRY:
+    if resampler_name in RESAMPLER_REGISTRY:
         warnings.warn(f"Resampler with name '{resampler_name} is already "
                       f"registered. Replacing with new resampler class.", RuntimeWarning)
 
     RESAMPLER_REGISTRY[resampler_name] = resampler_cls
-    return resampler_cls
 
 
 def unregister_resampler(resampler_name: str) -> None:
@@ -117,8 +111,8 @@ def create_resampler(
     if resampler is None:
         resampler = "nearest"
     _load_and_validate_registry()
-    rcls = RESAMPLER_REGISTRY[resampler]
-    return rcls(src_geom, dst_geom, cache=cache, **kwargs)
+    resampler_cls = RESAMPLER_REGISTRY[resampler]
+    return resampler_cls(src_geom, dst_geom, cache=cache, **kwargs)
 
 
 def _load_and_validate_registry():
@@ -150,5 +144,5 @@ def _load_entry_point_resamplers():
         except ImportError:
             warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
         else:
-            loaded_resampler.register_resampler(entry_point.name)
+            register_resampler(entry_point.name, loaded_resampler)
     ENTRY_POINTS_LOADED = True
