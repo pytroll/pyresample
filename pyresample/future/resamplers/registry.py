@@ -19,9 +19,10 @@
 
 from __future__ import annotations
 
+import functools
 import sys
 import warnings
-from typing import Type
+from typing import Callable, Type
 
 from .resampler import Resampler
 
@@ -68,13 +69,56 @@ def unregister_resampler(resampler_name: str) -> None:
     del RESAMPLER_REGISTRY[resampler_name]
 
 
+def with_loaded_registry(callable: Callable) -> Callable:
+    """Load and verify registry plugins before calling the decorated object.
+
+    Note: This decorator is structured in a way that this plugin loading only
+    happens on the usage of the provided callable instead of on import time.
+
+    """
+    def _wrapper(*args, **kwargs) -> Callable:
+        _load_entry_point_resamplers()
+        if not RESAMPLER_REGISTRY:
+            warnings.warn("No builtin resamplers found. This probably means you "
+                          "installed pyresample in editable mode. Try reinstalling "
+                          "pyresample to ensure builtin resamplers are included.")
+        return callable(*args, **kwargs)
+    return functools.update_wrapper(_wrapper, callable)
+
+
+def _load_entry_point_resamplers():
+    """Load setuptools plugins via entry_points.
+
+    Based on https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata.
+
+    """
+    global ENTRY_POINTS_LOADED
+    if ENTRY_POINTS_LOADED:
+        return
+    if sys.version_info < (3, 10):
+        from importlib_metadata import entry_points
+    else:
+        from importlib.metadata import entry_points
+
+    discovered_plugins = entry_points(group="pyresample.resamplers")
+    for entry_point in discovered_plugins:
+        try:
+            loaded_resampler = entry_point.load()
+        except ImportError:
+            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
+        else:
+            register_resampler(entry_point.name, loaded_resampler)
+    ENTRY_POINTS_LOADED = True
+
+
+@with_loaded_registry
 def list_resamplers() -> list[str, ...]:
     """Get sorted list of registered resamplers."""
-    _load_and_validate_registry()
     resampler_names = sorted(RESAMPLER_REGISTRY.keys())
     return resampler_names
 
 
+@with_loaded_registry
 def create_resampler(
         src_geom,
         dst_geom,
@@ -110,39 +154,5 @@ def create_resampler(
     """
     if resampler is None:
         resampler = "nearest"
-    _load_and_validate_registry()
     resampler_cls = RESAMPLER_REGISTRY[resampler]
     return resampler_cls(src_geom, dst_geom, cache=cache, **kwargs)
-
-
-def _load_and_validate_registry():
-    _load_entry_point_resamplers()
-    if not RESAMPLER_REGISTRY:
-        warnings.warn("No builtin resamplers found. This probably means you "
-                      "pyresample installed in editable mode. Try reinstalling "
-                      "pyresample to ensure builtin resamplers are included.")
-
-
-def _load_entry_point_resamplers():
-    """Load setuptools plugins via entry_points.
-
-    Based on https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata.
-
-    """
-    global ENTRY_POINTS_LOADED
-    if ENTRY_POINTS_LOADED:
-        return
-    if sys.version_info < (3, 10):
-        from importlib_metadata import entry_points
-    else:
-        from importlib.metadata import entry_points
-
-    discovered_plugins = entry_points(group="pyresample.resamplers")
-    for entry_point in discovered_plugins:
-        try:
-            loaded_resampler = entry_point.load()
-        except ImportError:
-            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
-        else:
-            register_resampler(entry_point.name, loaded_resampler)
-    ENTRY_POINTS_LOADED = True

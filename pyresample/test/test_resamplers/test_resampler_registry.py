@@ -23,7 +23,12 @@ from unittest import mock
 
 import pytest
 
-from pyresample.future import list_resamplers
+from pyresample.future import (
+    Resampler,
+    list_resamplers,
+    register_resampler,
+    unregister_resampler,
+)
 from pyresample.test.utils import assert_warnings_contain
 
 
@@ -52,7 +57,6 @@ class TestResamplerRegistryManipulation:
         assert_warnings_contain(w, "reinstall")
 
     def test_manual_resampler_registration(self):
-        from pyresample.future import Resampler, list_resamplers, unregister_resampler
         rname = "my_resampler"
         _register_resampler_class(rname, Resampler)
         unregister_resampler(rname)
@@ -61,7 +65,6 @@ class TestResamplerRegistryManipulation:
     def test_multiple_registration_warning_same_class(self):
         import warnings
 
-        from pyresample.future import Resampler
         rname = "my_resampler"
         _register_resampler_class(rname, Resampler)
 
@@ -73,7 +76,6 @@ class TestResamplerRegistryManipulation:
     def test_multiple_registration_warning_diff_class(self):
         import warnings
 
-        from pyresample.future import Resampler
         rname = "my_resampler"
         _register_resampler_class(rname, Resampler)
 
@@ -84,8 +86,6 @@ class TestResamplerRegistryManipulation:
 
 
 def _custom_resampler_class():
-    from pyresample.future import Resampler
-
     class _MyResampler(Resampler):
         """Fake resampler class."""
 
@@ -100,7 +100,6 @@ def _custom_resampler_class():
 
 
 def _register_resampler_class(rname, rcls, no_exist=True):
-    from pyresample.future import list_resamplers, register_resampler
     if no_exist:
         assert rname not in list_resamplers()
     register_resampler(rname, rcls)
@@ -112,6 +111,5 @@ class TestBuiltinResamplerRegistry:
 
     @pytest.mark.parametrize("resampler", ["nearest"])
     def test_minimal_resamplers_exist(self, resampler):
-        from pyresample.future import list_resamplers
         avail_resampler = list_resamplers()
         assert resampler in avail_resampler
