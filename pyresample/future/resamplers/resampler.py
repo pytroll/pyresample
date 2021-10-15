@@ -43,6 +43,14 @@ def hash_dict(the_dict: dict, existing_hash: Optional[HashType] = None) -> HashT
     return existing_hash
 
 
+def hash_resampler_geometries(source_geo_def, target_geo_def, **kwargs) -> str:
+    """Get hash for the geometries used by a resampler with extra *kwargs*."""
+    resampler_hash = source_geo_def.update_hash()
+    resampler_hash = target_geo_def.update_hash(resampler_hash)
+    resampler_hash = hash_dict(kwargs, resampler_hash)
+    return resampler_hash.hexdigest()
+
+
 def _data_arr_needs_xy_coords(data_arr, area):
     coords_exist = 'x' in data_arr.coords and 'y' in data_arr.coords
     no_xy_dims = 'x' not in data_arr.dims or 'y' not in data_arr.dims
@@ -232,21 +240,13 @@ class Resampler:
 
         """
 
-    def _get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs) -> str:
+    def _get_hash(self, **kwargs) -> str:
         """Get hash for the current resampler with the given *kwargs*."""
-        if source_geo_def is None:
-            source_geo_def = self.source_geo_def
-        if target_geo_def is None:
-            target_geo_def = self.target_geo_def
-        resampler_hash = source_geo_def.update_hash()
-        resampler_hash = target_geo_def.update_hash(resampler_hash)
-
         kwargs.update({
             "resampler_version": self.version,
-            "resampler_name": self.__class__.__name__
+            "resampler_name": self.__class__.__name__,
         })
-        resampler_hash = hash_dict(kwargs, resampler_hash)
-        return resampler_hash.hexdigest()
+        return hash_resampler_geometries(self.source_geo_def, self.target_geo_def, **kwargs)
 
     def precompute(self, **kwargs):
         """Do the precomputation.
