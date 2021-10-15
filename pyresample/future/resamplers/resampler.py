@@ -120,6 +120,12 @@ def _update_swath_lonlat_attrs(area):
     # array).
     lons = area.lons
     lats = area.lats
+    if lons.ndim > 2:
+        return
+    if not isinstance(lons, xr.DataArray):
+        dims = ('y', 'x') if lons.ndim == 2 else ('y',)
+        lons = xr.DataArray(lons, dims=dims)
+        lats = xr.DataArray(lats, dims=dims)
     lons.attrs.setdefault('standard_name', 'longitude')
     lons.attrs.setdefault('long_name', 'longitude')
     lons.attrs.setdefault('units', 'degrees_east')

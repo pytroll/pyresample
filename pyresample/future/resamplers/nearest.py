@@ -31,7 +31,7 @@ from pyresample.utils.errors import PerformanceWarning
 
 from ..geometry import StaticGeometry, SwathDefinition
 from ._transform_utils import lonlat2xyz
-from .resampler import Resampler
+from .resampler import Resampler, update_resampled_coords
 
 logger = getLogger(__name__)
 
@@ -282,19 +282,6 @@ class NearestNeighborResampler(Resampler):
         dst_geo_dims = ('y', 'x')
         self._verify_data_geo_dims(data, src_geo_dims)
 
-        def contain_coords(var, coord_list):
-            return bool(set(coord_list).intersection(set(var.dims)))
-
-        coords = {c: c_var for c, c_var in data.coords.items()
-                  if not contain_coords(c_var, src_geo_dims + dst_geo_dims)}
-        try:
-            # get these as numpy arrays because xarray is going to compute them anyway
-            coord_x, coord_y = self.target_geo_def.get_proj_vectors()
-            coords['y'] = coord_y
-            coords['x'] = coord_x
-        except AttributeError:
-            logger.debug("No geo coordinates created")
-
         # shape of the source data after we flatten the geo dimensions
         flat_src_shape = []
         # slice objects to index in to the source data
@@ -352,9 +339,9 @@ class NearestNeighborResampler(Resampler):
             vii_slices=vii_slices, ia_slices=ia_slices,
             fill_value=fill_value,
             dtype=new_data.dtype, concatenate=True)
-        res = DataArray(res, dims=dst_dims, coords=coords,
+        res = DataArray(res, dims=dst_dims,
                         attrs=deepcopy(data.attrs))
-
+        res = update_resampled_coords(data, res, self.target_geo_def)
         return res
 
     def _verify_data_geo_dims(self, data, src_geo_dims):

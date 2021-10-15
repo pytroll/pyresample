@@ -17,6 +17,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Tests for the 'nearest' resampler."""
 
+from typing import Any
 from unittest import mock
 
 import dask.array as da
@@ -35,6 +36,20 @@ from pyresample.test.utils import (
 from pyresample.utils.errors import PerformanceWarning
 
 
+def _check_common_metadata(data_arr: Any, target_is_area: bool = False) -> None:
+    if not isinstance(data_arr, xr.DataArray):
+        return
+    if not target_is_area:
+        return
+
+    for coord_name in ("y", "x"):
+        assert coord_name in data_arr.coords
+        c_arr = data_arr.coords[coord_name]
+        assert c_arr.attrs.get("units") in ("meter", "degrees_north", "degrees_east")
+    assert "y" in data_arr.coords
+    assert "x" in data_arr.coords
+
+
 class TestNearestNeighborResampler:
     """Test the NearestNeighborResampler class."""
 
@@ -48,6 +63,7 @@ class TestNearestNeighborResampler:
                                  radius_of_influence=100000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(coord_def_2d_float32_dask, AreaDefinition))
         actual = res.values
         expected = np.array([
             [1., 2., 2.],
@@ -68,6 +84,7 @@ class TestNearestNeighborResampler:
                                  radius_of_influence=100000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(coord_def_2d_float32_dask, AreaDefinition))
         actual = res.values
         expected = np.array([
             [1, 2, 2],
@@ -85,6 +102,7 @@ class TestNearestNeighborResampler:
         res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
         res = res.values
         cross_sum = float(np.nansum(res))
         expected = 167913.0
@@ -103,6 +121,7 @@ class TestNearestNeighborResampler:
             res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
         res = res.values
         cross_sum = float(np.nansum(res))
         expected = 303048.0
@@ -119,6 +138,7 @@ class TestNearestNeighborResampler:
         res = resampler.resample(data_2d_float32_xarray_dask)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
         res = res.values
         cross_sum = float(np.nansum(res))
         expected = 952386.0
@@ -140,6 +160,7 @@ class TestNearestNeighborResampler:
             res = resampler.resample(data_2d_float32_xarray_dask)
             assert isinstance(res, xr.DataArray)
             assert isinstance(res.data, da.Array)
+            _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
             res = res.values
             cross_sum = np.nansum(res)
             expected = 20666.0
@@ -161,6 +182,7 @@ class TestNearestNeighborResampler:
         with catch_warnings(PerformanceWarning) as w, assert_maximum_dask_computes(1):
             res = resampler.resample(input_data)
             assert type(res) is type(input_data)
+        _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
         is_data_arr_dask = isinstance(input_data, xr.DataArray) and isinstance(input_data.data, da.Array)
         is_dask_based = isinstance(input_data, da.Array) or is_data_arr_dask
         if is_dask_based:
@@ -184,6 +206,7 @@ class TestNearestNeighborResampler:
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
         assert list(res.coords['bands']) == ['r', 'g', 'b']
+        _check_common_metadata(res, isinstance(area_def_stere_target, AreaDefinition))
         res = res.values
         cross_sum = float(np.nansum(res))
         expected = 909144.0
