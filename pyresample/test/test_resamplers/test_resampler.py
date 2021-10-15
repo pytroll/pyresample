@@ -30,28 +30,23 @@ from pyresample.future.resamplers.resampler import Resampler
 class FakeResampler(Resampler):
     """Helper fake resampler for easier testing."""
 
-    def __init__(self, *args, cache_something=False, **kwargs):
-        self.cache_something = cache_something
+    def __init__(self, *args, **kwargs):
         self.precompute = mock.Mock(wraps=self.precompute)
         self.resample = mock.Mock(wraps=self.resample)
+        self._internal_cache = {}
         super().__init__(*args, **kwargs)
 
-    @property
-    def should_cache(self):
-        return self.cache_something and self.cache is not None
-
     def precompute(self, **kwargs):
-        some_result = np.empty((2, 2))
-        if self.should_cache:
-            self.cache.store("my_result", some_result)
-        # FIXME: Legacy resamplers returned a cache_id...is that what we want?
-        return "my_result"
+        hash = self._get_hash(**kwargs)
+        if hash not in self._internal_cache:
+            some_result = np.empty((2, 2))
+            self._internal_cache[hash] = some_result
+        return self._internal_cache[hash]
 
     def resample(self, data, **kwargs):
-        # TODO: Replace with some hashing function
-        cache_id = self.precompute(**kwargs)
-        if self.should_cache:
-            assert self.cache.load(cache_id)
+        self.precompute(**kwargs)
+        hash = self._get_hash(**kwargs)
+        _ = self._internal_cache[hash]
         return np.empty(self.target_geo_def.shape)
 
 
@@ -70,15 +65,9 @@ class FakeResampler(Resampler):
         lazy_fixture("area_def_lcc_conus_1km"),
     ]
 )
-@pytest.mark.parametrize(
-    ("cache", "cache_something"),
-    [
-        (None, False),
-    ]
-)
-def test_resampler(src, dst, cache, cache_something):
+def test_resampler(src, dst):
     """Test basic operations of the base resampler with and without a caching."""
-    rs = FakeResampler(src, dst, cache, cache_something=cache_something)
+    rs = FakeResampler(src, dst)
     some_data = np.zeros(src.shape, dtype=np.float64)
     resample_results = rs.resample(some_data)
     rs.precompute.assert_called_once()
