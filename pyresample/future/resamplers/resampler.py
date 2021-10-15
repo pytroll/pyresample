@@ -233,20 +233,20 @@ class Resampler:
         """
 
     def _get_hash(self, source_geo_def=None, target_geo_def=None, **kwargs) -> str:
-        """Get hash for the current resample with the given *kwargs*."""
+        """Get hash for the current resampler with the given *kwargs*."""
         if source_geo_def is None:
             source_geo_def = self.source_geo_def
         if target_geo_def is None:
             target_geo_def = self.target_geo_def
-        the_hash = source_geo_def.update_hash()
-        target_geo_def.update_hash(the_hash)
+        resampler_hash = source_geo_def.update_hash()
+        resampler_hash = target_geo_def.update_hash(resampler_hash)
 
         kwargs.update({
             "resampler_version": self.version,
             "resampler_name": self.__class__.__name__
         })
-        hash_dict(kwargs, the_hash)
-        return the_hash.hexdigest()
+        resampler_hash = hash_dict(kwargs, resampler_hash)
+        return resampler_hash.hexdigest()
 
     def precompute(self, **kwargs):
         """Do the precomputation.
