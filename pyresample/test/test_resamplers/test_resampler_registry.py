@@ -37,14 +37,12 @@ class TestResamplerRegistryManipulation:
 
     def setup_method(self):
         """Mock the registry container so we don't effect the "real" registry."""
-        self.mock_ep = mock.patch("pyresample.future.resamplers.registry.ENTRY_POINTS_LOADED", True)
+        _ = list_resamplers()  # force registry to be filled so we can overwrite it...
         self.mock_reg = mock.patch("pyresample.future.resamplers.registry.RESAMPLER_REGISTRY", {})
-        self.mock_ep.start()
         self.mock_reg.start()
 
     def teardown_method(self):
         """Undo mock of registry."""
-        self.mock_ep.stop()
         self.mock_reg.stop()
 
     def test_no_builtins_warning(self):

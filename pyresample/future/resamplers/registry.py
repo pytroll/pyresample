@@ -20,14 +20,15 @@
 from __future__ import annotations
 
 import functools
-import sys
 import warnings
+from functools import lru_cache
 from typing import Callable, Type
+
+from pyresample._compat import entry_points
 
 from .resampler import Resampler
 
 RESAMPLER_REGISTRY: dict[str, Type[Resampler]] = {}
-ENTRY_POINTS_LOADED: bool = False
 
 
 def register_resampler(resampler_name: str, resampler_cls: Type[Resampler]) -> None:
@@ -86,20 +87,13 @@ def with_loaded_registry(callable: Callable) -> Callable:
     return functools.update_wrapper(_wrapper, callable)
 
 
+@lru_cache(1)
 def _load_entry_point_resamplers():
     """Load setuptools plugins via entry_points.
 
     Based on https://packaging.python.org/guides/creating-and-discovering-plugins/#using-package-metadata.
 
     """
-    global ENTRY_POINTS_LOADED
-    if ENTRY_POINTS_LOADED:
-        return
-    if sys.version_info < (3, 10):
-        from importlib_metadata import entry_points
-    else:
-        from importlib.metadata import entry_points
-
     discovered_plugins = entry_points(group="pyresample.resamplers")
     for entry_point in discovered_plugins:
         try:
@@ -108,7 +102,6 @@ def _load_entry_point_resamplers():
             warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
         else:
             register_resampler(entry_point.name, loaded_resampler)
-    ENTRY_POINTS_LOADED = True
 
 
 @with_loaded_registry
