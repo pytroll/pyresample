@@ -212,22 +212,6 @@ class TestNearestNeighborResampler:
         expected = 909144.0
         assert cross_sum == expected
         assert res.shape[:2] == resampler.target_geo_def.shape
-    #
-    # @pytest.mark.skipif(True, reason="Multiple neighbors not supported yet")
-    # def test_nearest_swath_1d_mask_to_grid_8n(
-    #         self,
-    #         swath_def_1d_xarray_dask,
-    #         data_1d_float32_xarray_dask,
-    #         coord_def_2d_dask
-    # ):
-    #     """Test 1D swath definition to 2D grid definition; 8 neighbors."""
-    #     resampler = NearestNeighborResampler(
-    #         swath_def_1d_xarray_dask, coord_def_2d_dask)
-    #     resampler.precompute(mask=data_1d_float32_xarray_dask.isnull(),
-    #                          radius_of_influence=100000, neighbors=8)
-    #     res = resampler.resample(data_1d_float32_xarray_dask)
-    #     assert isinstance(res, xr.DataArray)
-    #     assert isinstance(res.data, da.Array)
 
 
 class TestInvalidUsageNearestNeighborResampler:
