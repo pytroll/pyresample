@@ -2784,3 +2784,46 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
+
+
+class TestBboxLonlats:
+    """Test 'get_bbox_lonlats' for various geometry cases."""
+
+    @pytest.mark.parametrize(
+        ("lat_start", "lat_stop", "force_clockwise", "exp_clockwise"),
+        [
+            (75.0, 26.0, True, True),
+            (26.0, 75.0, True, True),
+            (26.0, 75.0, False, False),
+        ]
+    )
+    def test_swath_def_bbox(self, lat_start, lat_stop, force_clockwise, exp_clockwise):
+        # TODO: Replace with pytest fixtures
+        from pyresample.geometry import SwathDefinition
+
+        from .utils import create_test_latitude, create_test_longitude
+        SRC_SWATH_2D_SHAPE = (50, 10)
+        lons = create_test_longitude(3.0, 12.0, SRC_SWATH_2D_SHAPE)
+        lats = create_test_latitude(lat_start, lat_stop, SRC_SWATH_2D_SHAPE)
+        swath_def = SwathDefinition(lons, lats)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
+        assert len(bbox_lons) == len(bbox_lats)
+        assert len(bbox_lons) == 4
+        for side_lons, side_lats in zip(bbox_lons, bbox_lats):
+            assert isinstance(side_lons, np.ndarray)
+            assert isinstance(side_lats, np.ndarray)
+            assert side_lons.shape == side_lats.shape
+        is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
+        assert is_cw if exp_clockwise else not is_cw
+
+
+def _is_clockwise(lons, lats):
+    # https://stackoverflow.com/a/1165943/433202
+    prev_point = (lons[0], lats[0])
+    sum = 0
+    for point in zip(lons[1:], lats[1:]):
+        xdiff = point[0] - prev_point[0]
+        ysum = point[1] + prev_point[1]
+        sum += xdiff * ysum
+        prev_point = point
+    return sum > 0
