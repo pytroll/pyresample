@@ -304,6 +304,8 @@ class BaseDefinition:
                            (s2_lon.squeeze(), s2_lat.squeeze()),
                            (s3_lon.squeeze(), s3_lat.squeeze()),
                            (s4_lon.squeeze(), s4_lat.squeeze())])
+        if hasattr(lons[0], 'compute') and da is not None:
+            lons, lats = da.compute(lons, lats)
         if force_clockwise and lats[1][0] < lats[1][-1]:
             lats = [lat_arr[::-1] for lat_arr in lats[::-1]]
             lons = [lon_arr[::-1] for lon_arr in lons[::-1]]
