@@ -269,7 +269,7 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple[list, list]:
+    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple:
         """Return the bounding box lons and lats.
 
         Args:
