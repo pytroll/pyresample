@@ -2831,10 +2831,10 @@ class TestBboxLonlats:
 def _is_clockwise(lons, lats):
     # https://stackoverflow.com/a/1165943/433202
     prev_point = (lons[0], lats[0])
-    sum = 0
+    edge_sum = 0
     for point in zip(lons[1:], lats[1:]):
         xdiff = point[0] - prev_point[0]
         ysum = point[1] + prev_point[1]
-        sum += xdiff * ysum
+        edge_sum += xdiff * ysum
         prev_point = point
-    return sum > 0
+    return edge_sum > 0
