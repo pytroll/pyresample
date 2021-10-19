@@ -2802,13 +2802,12 @@ class TestBboxLonlats:
     @pytest.mark.parametrize("use_xarray", [False, True])
     def test_swath_def_bbox(self, lat_start, lat_stop, force_clockwise, exp_clockwise,
                             use_dask, use_xarray):
-        # TODO: Replace with pytest fixtures
         from pyresample.geometry import SwathDefinition
 
         from .utils import create_test_latitude, create_test_longitude
-        SRC_SWATH_2D_SHAPE = (50, 10)
-        lons = create_test_longitude(3.0, 12.0, SRC_SWATH_2D_SHAPE)
-        lats = create_test_latitude(lat_start, lat_stop, SRC_SWATH_2D_SHAPE)
+        swath_shape = (50, 10)
+        lons = create_test_longitude(3.0, 12.0, swath_shape)
+        lats = create_test_latitude(lat_start, lat_stop, swath_shape)
 
         if use_dask:
             lons = da.from_array(lons)
