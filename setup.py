@@ -73,7 +73,7 @@ cmdclass = versioneer.get_cmdclass()
 
 entry_points = {
     "pyresample.resamplers": [
-        "nearest = pyresample.future.resamplers.nearest:NearestNeighborResampler",
+        "nearest = pyresample.future.resamplers.nearest:KDTreeNearestXarrayResampler",
     ],
 }
 

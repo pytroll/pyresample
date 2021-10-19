@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from .nearest import NearestNeighborResampler  # noqa
+from .nearest import KDTreeNearestXarrayResampler  # noqa
 from .registry import (  # noqa
     create_resampler,
     list_resamplers,

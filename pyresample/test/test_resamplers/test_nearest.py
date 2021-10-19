@@ -27,7 +27,7 @@ import xarray as xr
 from pytest_lazyfixture import lazy_fixture
 
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
-from pyresample.future.resamplers import NearestNeighborResampler
+from pyresample.future.resamplers import KDTreeNearestXarrayResampler
 from pyresample.test.utils import (
     assert_maximum_dask_computes,
     assert_warnings_contain,
@@ -51,13 +51,13 @@ def _check_common_metadata(data_arr: Any, target_is_area: bool = False) -> None:
 
 
 class TestNearestNeighborResampler:
-    """Test the NearestNeighborResampler class."""
+    """Test the KDTreeNearestXarrayResampler class."""
 
     def test_nearest_swath_1d_mask_to_grid_1n(
             self,
             swath_def_1d_xarray_dask, data_1d_float32_xarray_dask, coord_def_2d_float32_dask):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        resampler = NearestNeighborResampler(swath_def_1d_xarray_dask, coord_def_2d_float32_dask)
+        resampler = KDTreeNearestXarrayResampler(swath_def_1d_xarray_dask, coord_def_2d_float32_dask)
         res = resampler.resample(data_1d_float32_xarray_dask,
                                  mask_area=data_1d_float32_xarray_dask.isnull(),
                                  radius_of_influence=100000)
@@ -79,7 +79,7 @@ class TestNearestNeighborResampler:
                                           chunks=5),
                             dims=('my_dim1',))
 
-        resampler = NearestNeighborResampler(swath_def_1d_xarray_dask, coord_def_2d_float32_dask)
+        resampler = KDTreeNearestXarrayResampler(swath_def_1d_xarray_dask, coord_def_2d_float32_dask)
         res = resampler.resample(data, fill_value=255,
                                  radius_of_influence=100000)
         assert isinstance(res, xr.DataArray)
@@ -97,7 +97,7 @@ class TestNearestNeighborResampler:
     def test_nearest_swath_2d_mask_to_area_1n(self, swath_def_2d_xarray_dask, data_2d_float32_xarray_dask,
                                               area_def_stere_target):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
-        resampler = NearestNeighborResampler(
+        resampler = KDTreeNearestXarrayResampler(
             swath_def_2d_xarray_dask, area_def_stere_target)
         res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
@@ -112,7 +112,7 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n(self, area_def_stere_source, data_2d_float32_xarray_dask,
                                         area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
-        resampler = NearestNeighborResampler(
+        resampler = KDTreeNearestXarrayResampler(
             area_def_stere_source, area_def_stere_target)
         with assert_maximum_dask_computes(0):
             resampler.precompute(radius_of_influence=50000)
@@ -131,7 +131,7 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_source, data_2d_float32_xarray_dask,
                                                area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
-        resampler = NearestNeighborResampler(
+        resampler = KDTreeNearestXarrayResampler(
             area_def_stere_source, area_def_stere_target)
         resampler.precompute()
 
@@ -155,7 +155,7 @@ class TestNearestNeighborResampler:
                 mock.patch.object(area_def_stere_target, 'geocentric_resolution') as dgr:
             sgr.side_effect = RuntimeError
             dgr.side_effect = RuntimeError
-            resampler = NearestNeighborResampler(
+            resampler = KDTreeNearestXarrayResampler(
                 area_def_stere_source, area_def_stere_target)
             res = resampler.resample(data_2d_float32_xarray_dask)
             assert isinstance(res, xr.DataArray)
@@ -178,7 +178,7 @@ class TestNearestNeighborResampler:
             area_def_stere_target,
             input_data):
         """Test that providing certain input data causes a warning."""
-        resampler = NearestNeighborResampler(area_def_stere_source, area_def_stere_target)
+        resampler = KDTreeNearestXarrayResampler(area_def_stere_source, area_def_stere_target)
         with catch_warnings(PerformanceWarning) as w, assert_maximum_dask_computes(1):
             res = resampler.resample(input_data)
             assert type(res) is type(input_data)
@@ -198,7 +198,7 @@ class TestNearestNeighborResampler:
     def test_nearest_area_2d_to_area_1n_3d_data(self, area_def_stere_source, data_3d_float32_xarray_dask,
                                                 area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
-        resampler = NearestNeighborResampler(
+        resampler = KDTreeNearestXarrayResampler(
             area_def_stere_source, area_def_stere_target)
         resampler.precompute(radius_of_influence=50000)
 
@@ -235,7 +235,7 @@ class TestInvalidUsageNearestNeighborResampler:
             area_def_stere_target,
             input_data,
     ):
-        resampler = NearestNeighborResampler(area_def_stere_source, area_def_stere_target)
+        resampler = KDTreeNearestXarrayResampler(area_def_stere_source, area_def_stere_target)
         data = input_data.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
         with pytest.raises(ValueError, match='.*dimensions do not match.*'):
             resampler.resample(data)
@@ -249,7 +249,7 @@ class TestInvalidUsageNearestNeighborResampler:
             swath_def_2d_xarray_dask.lons.rename({'y': 'my_dim_y', 'x': 'my_dim_x'}),
             swath_def_2d_xarray_dask.lats.rename({'y': 'my_dim_y', 'x': 'my_dim_x'})
         )
-        resampler = NearestNeighborResampler(new_swath_def, area_def_stere_target)
+        resampler = KDTreeNearestXarrayResampler(new_swath_def, area_def_stere_target)
         with pytest.raises(ValueError, match='.*dimensions do not match.*'):
             resampler.resample(data_2d_float32_xarray_dask)
 
@@ -281,7 +281,7 @@ class TestInvalidUsageNearestNeighborResampler:
                 src_geom.lons.T.rename({'y': 'x', 'x': 'y'}),
                 src_geom.lats.T.rename({'y': 'x', 'x': 'y'}),
             )
-        resampler = NearestNeighborResampler(src_geom, area_def_stere_target)
+        resampler = KDTreeNearestXarrayResampler(src_geom, area_def_stere_target)
         with pytest.raises(ValueError, match=match):
             if call_precompute:
                 resampler.precompute(mask=data_2d_float32_xarray_dask.notnull())
