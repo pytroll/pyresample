@@ -59,8 +59,9 @@ def register_resampler(resampler_name: str, resampler_cls: Type[Resampler]) -> N
 
     """
     if resampler_name in RESAMPLER_REGISTRY:
-        warnings.warn(f"Resampler with name '{resampler_name} is already "
-                      f"registered. Replacing with new resampler class.", RuntimeWarning)
+        raise ValueError(
+            f"Resampler with name '{resampler_name} is already registered. "
+            "Use 'unregister_resampler' to make the name available.")
 
     RESAMPLER_REGISTRY[resampler_name] = resampler_cls
 

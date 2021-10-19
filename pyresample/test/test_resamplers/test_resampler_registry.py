@@ -32,6 +32,20 @@ from pyresample.future import (
 from pyresample.test.utils import assert_warnings_contain
 
 
+def _custom_resampler_class():
+    class _MyResampler(Resampler):
+        """Fake resampler class."""
+
+        def precompute(self):
+            """Pretend to be a precompute method."""
+            return "PRECOMPUTE"
+
+        def compute(self):
+            """Pretend to be a compute method."""
+            return None
+    return _MyResampler
+
+
 class TestResamplerRegistryManipulation:
     """Test basic behavior of the resampler registry when it is modified."""
 
@@ -60,41 +74,16 @@ class TestResamplerRegistryManipulation:
         unregister_resampler(rname)
         assert rname not in list_resamplers()
 
-    def test_multiple_registration_warning_same_class(self):
-        import warnings
-
+    @pytest.mark.parametrize('new_resampler', [Resampler, _custom_resampler_class()])
+    def test_multiple_registration_warning_same_class(self, new_resampler):
         rname = "my_resampler"
         _register_resampler_class(rname, Resampler)
 
-        with warnings.catch_warnings(record=True) as w:
-            # same class
-            _register_resampler_class(rname, Resampler, no_exist=False)
-        assert_warnings_contain(w, "already registered")
+        with pytest.raises(ValueError):
+            _register_resampler_class(rname, new_resampler, no_exist=False)
 
-    def test_multiple_registration_warning_diff_class(self):
-        import warnings
-
-        rname = "my_resampler"
+        unregister_resampler(rname)
         _register_resampler_class(rname, Resampler)
-
-        with warnings.catch_warnings(record=True) as w:
-            # different class
-            _register_resampler_class(rname, _custom_resampler_class(), no_exist=False)
-        assert_warnings_contain(w, "replacing")
-
-
-def _custom_resampler_class():
-    class _MyResampler(Resampler):
-        """Fake resampler class."""
-
-        def precompute(self):
-            """Pretend to be a precompute method."""
-            return "PRECOMPUTE"
-
-        def compute(self):
-            """Pretend to be a compute method."""
-            return None
-    return _MyResampler
 
 
 def _register_resampler_class(rname, rcls, no_exist=True):
