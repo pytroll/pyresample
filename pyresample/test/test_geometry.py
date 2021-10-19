@@ -1400,6 +1400,18 @@ class Test(unittest.TestCase):
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(298.647232, geo_res)
 
+    def test_area_def_geocentric_resolution_latlong(self):
+        """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
+        from pyresample import get_area_def
+        area_extent = (-110.0, 45.0, -95.0, 55.0)
+        # metered projection
+        area_def = get_area_def('orig', 'Test area', 'test',
+                                {"EPSG": "4326"},
+                                3712, 3712,
+                                area_extent)
+        geo_res = area_def.geocentric_resolution()
+        np.testing.assert_allclose(299.411133, geo_res)
+
     def test_from_epsg(self):
         """Test the from_epsg class method."""
         from pyresample.geometry import AreaDefinition
