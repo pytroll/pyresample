@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# pyresample, Resampling of remote sensing image data in python
 #
 # Copyright (C) 2010-2020 Pyresample developers
 #
@@ -16,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Classes for geometry operations."""
 
 import hashlib
@@ -26,6 +24,7 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import yaml
@@ -56,6 +55,7 @@ except ImportError:
 from pyproj import CRS
 
 logger = getLogger(__name__)
+HashType = hashlib._hashlib.HASH
 
 
 class DimensionError(ValueError):
@@ -114,6 +114,19 @@ class BaseDefinition:
         if self.hash is None:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
+
+    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+        """Update the hash."""
+        if existing_hash is None:
+            existing_hash = hashlib.sha1()
+        existing_hash.update(get_array_hashable(self.lons))
+        existing_hash.update(get_array_hashable(self.lats))
+        try:
+            if self.lons.mask is not False:
+                existing_hash.update(get_array_hashable(self.lons.mask))
+        except AttributeError:
+            pass
+        return existing_hash
 
     def __eq__(self, other):
         """Test for approximate equality."""
@@ -672,19 +685,6 @@ class SwathDefinition(CoordinateDefinition):
         if self.hash is None:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
-
-    def update_hash(self, the_hash=None):
-        """Update the hash."""
-        if the_hash is None:
-            the_hash = hashlib.sha1()
-        the_hash.update(get_array_hashable(self.lons))
-        the_hash.update(get_array_hashable(self.lats))
-        try:
-            if self.lons.mask is not False:
-                the_hash.update(get_array_hashable(self.lons.mask))
-        except AttributeError:
-            pass
-        return the_hash
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
@@ -1702,14 +1702,14 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for equality."""
         return not self.__eq__(other)
 
-    def update_hash(self, the_hash=None):
+    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
         """Update a hash, or return a new one if needed."""
-        if the_hash is None:
-            the_hash = hashlib.sha1()
-        the_hash.update(self.crs_wkt.encode('utf-8'))
-        the_hash.update(np.array(self.shape))
-        the_hash.update(np.array(self.area_extent))
-        return the_hash
+        if existing_hash is None:
+            existing_hash = hashlib.sha1()
+        existing_hash.update(self.crs_wkt.encode('utf-8'))
+        existing_hash.update(np.array(self.shape))
+        existing_hash.update(np.array(self.area_extent))
+        return existing_hash
 
     @daskify_2in_2out
     def get_array_coordinates_from_lonlat(self, lon, lat):

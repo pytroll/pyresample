@@ -41,9 +41,9 @@ from pyresample.bilinear._base import (
     get_slicer,
     get_valid_indices_from_lonlat_boundaries,
     is_swath_to_grid_or_grid_to_grid,
-    lonlat2xyz,
     mask_coordinates,
 )
+from pyresample.future.resamplers._transform_utils import lonlat2xyz
 
 CACHE_INDICES = ['bilinear_s',
                  'bilinear_t',

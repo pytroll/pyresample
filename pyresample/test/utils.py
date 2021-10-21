@@ -18,7 +18,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utilities for testing.
 
-This mostly takes from astropy's method for checking warnings during
+This mostly takes from astropy's method for checking collected_warnings during
 tests.
 """
 import sys
@@ -250,3 +250,30 @@ def friendly_crs_equal(expected, actual, keys=None, use_obj=True, use_wkt=True):
         assert expected_crs == actual_crs
         return
     raise NotImplementedError("""TODO""")
+
+
+def assert_warnings_contain(collected_warnings: list, message: str, count: int = 1):
+    """Check that collected warnings with catch_warnings contain certain messages.
+
+    Args:
+        collected_warnings:
+            List of warnings collected using
+            ``warnings.catch_warnings(record=True)``.
+        message:
+            Lowercase string to check is in one or more of the warning
+            messages.
+        count:
+            Number of warnings that should contain the provided message
+            string.
+
+    Examples:
+        Use during test code with::
+
+            with warnings.catch_warnings(record=True) as w:
+                # test code
+            assert_warnings_contain(w, "invalid data", 1)
+
+    """
+    msgs = [msg.message.args[0].lower() for msg in collected_warnings]
+    msgs_with = [msg for msg in msgs if message in msg]
+    assert len(msgs_with) == count

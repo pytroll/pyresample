@@ -25,8 +25,9 @@ import numpy as np
 
 from pyresample import CHUNK_SIZE
 from pyresample.ewa import fornav, ll2cr
+from pyresample.future.resamplers.resampler import update_resampled_coords
 from pyresample.geometry import SwathDefinition
-from pyresample.resampler import BaseResampler, update_resampled_coords
+from pyresample.resampler import BaseResampler
 
 try:
     import xarray as xr
