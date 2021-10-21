@@ -1650,8 +1650,8 @@ class AreaDefinition(_ProjectionDefinition):
                           projection=OrderedDict(proj_dict),
                           shape=OrderedDict([('height', self.height), ('width', self.width)]))
         units = res['projection'].pop('units', None)
-        extent = OrderedDict([('lower_left_xy', list(self.area_extent[:2])),
-                              ('upper_right_xy', list(self.area_extent[2:]))])
+        extent = OrderedDict([('lower_left_xy', _numpy_values_to_native(self.area_extent[:2])),
+                              ('upper_right_xy', _numpy_values_to_native(self.area_extent[2:]))])
         if units is not None:
             extent['units'] = units
         res['area_extent'] = extent
@@ -2711,3 +2711,7 @@ def enclose_areas(*areas, area_id="joint-area"):
         projection=first.crs,
         area_extent=largest_extent,
         resolution=first.resolution)
+
+
+def _numpy_values_to_native(values):
+    return [n.item() if isinstance(n, np.number) else n for n in values]

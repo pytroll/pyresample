@@ -229,6 +229,36 @@ class Test(unittest.TestCase):
             mock_open.assert_called_once_with('area_file.yml', 'a')
             mock_open.return_value.__enter__().write.assert_called_once_with(yaml_string)
 
+    def test_dump_numpy_extents(self):
+        """Test exporting area defs when extents are Numpy floats."""
+        import yaml
+
+        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
+                                           'areaD',
+                                           {'a': '6378144.0',
+                                            'b': '6356759.0',
+                                            'lat_0': '90.00',
+                                            'lat_ts': '50.00',
+                                            'lon_0': '8.00',
+                                            'proj': 'stere'},
+                                           800,
+                                           800,
+                                           [np.float64(-1370912.72),
+                                            np.float64(-909968.64000000001),
+                                            np.float64(1029087.28),
+                                            np.float64(1490031.3600000001)])
+        res = yaml.safe_load(area_def.dump())
+        expected = yaml.safe_load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
+                                   '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
+                                   '    lat_0: 90.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
+                                   '    proj: stere\n  shape:\n    height: 800\n'
+                                   '    width: 800\n  area_extent:\n'
+                                   '    lower_left_xy: [-1370912.72, -909968.64]\n'
+                                   '    upper_right_xy: [1029087.28, 1490031.36]\n'))
+
+        self.assertEqual(res['areaD']['area_extent']['lower_left_xy'],
+                         expected['areaD']['area_extent']['lower_left_xy'])
+
     def test_parse_area_file(self):
         """Test parsing the are file."""
         expected = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
