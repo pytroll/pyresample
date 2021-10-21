@@ -2346,7 +2346,7 @@ class AreaDefinition(_ProjectionDefinition):
         # need some altitude, go with the surface (0)
         alt_x = np.zeros(x.size)
         alt_y = np.zeros(y.size)
-        transformer = Transformer.from_crs(src.crs, dst.crs)
+        transformer = Transformer.from_crs(src.crs, dst.crs, always_xy=True)
         # convert our midlines to (X, Y, Z) geocentric coordinates
         hor_xyz = np.stack(transformer.transform(x, mid_row_y, alt_x), axis=1)
         vert_xyz = np.stack(transformer.transform(mid_col_x, y, alt_y), axis=1)
