@@ -269,31 +269,23 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple:
+    def get_bbox_lonlats(self) -> tuple:
         """Return the bounding box lons and lats.
 
-        Args:
-            force_clockwise:
-                Perform minimal checks and reordering of coordinates to ensure
-                that the returned coordinates follow a clockwise direction.
-                This is important for compatibility with
-                :class:`pyresample.spherical.AreaBoundary`. This is required in
-                cases where data is not oriented in the traditional way where
-                the first row of data is the northern most row of data.
-                Default is True.
-
         Returns:
-            A 2 lists of 4 elements each. The first list is longitude
+            Two lists of four elements each. The first list is longitude
             coordinates, the second latitude. Each element is a numpy array
-            representing a specific side of the geometry. In the usual case
-            the sides are ordered so the top row is first, followed by the
-            right column, the bottom row, and the left column. Each array is
-            specified in a clockwise order. In cases where the north-south
-            orientation of the geometry is flipped, the returned sides are
-            also flipped so the left column is first, then the bottom row
-            of the data (the northern most side), then the right column, and
-            finally the top row (the southern most side). If
-            ``force_clockwise`` is False then this reordering is not done.
+            representing a specific side of the geometry. The order of the
+            arrays is first row (index 0), last column, last row, and first
+            column. The arrays are sliced (ordered) in a way to ensure that the
+            coordinates follow a clockwise path. In the usual case this results
+            in the coordinates starting in the north-west corner. In the case
+            where the data is oriented with the first pixel (row 0, column 0)
+            in the south-east corner, the coordinates will start in that
+            corner. Other orientations of data are not currently supported by
+            this method and will result in the coordinates not following a
+            clockwise path which may be incompatible with other parts of
+            pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
@@ -306,9 +298,6 @@ class BaseDefinition:
                            (s4_lon.squeeze(), s4_lat.squeeze())])
         if hasattr(lons[0], 'compute') and da is not None:
             lons, lats = da.compute(lons, lats)
-        if force_clockwise and lats[1][0] < lats[1][-1]:
-            lats = [lat_arr[::-1] for lat_arr in lats[::-1]]
-            lons = [lon_arr[::-1] for lon_arr in lons[::-1]]
         return lons, lats
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):

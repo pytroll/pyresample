@@ -2790,23 +2790,24 @@ class TestBboxLonlats:
     """Test 'get_bbox_lonlats' for various geometry cases."""
 
     @pytest.mark.parametrize(
-        ("lat_start", "lat_stop", "force_clockwise", "exp_clockwise"),
+        ("lon_start", "lon_stop", "lat_start", "lat_stop", "exp_clockwise"),
         [
-            (75.0, 26.0, True, True),
-            (75.0, 26.0, False, True),
-            (26.0, 75.0, True, True),
-            (26.0, 75.0, False, False),
+            (3.0, 12.0, 75.0, 26.0, True),
+            (12.0, 3.0, 75.0, 26.0, False),
+            (3.0, 12.0, 26.0, 75.0, False),
+            (12.0, 3.0, 26.0, 75.0, True),
         ]
     )
     @pytest.mark.parametrize("use_dask", [False, True])
     @pytest.mark.parametrize("use_xarray", [False, True])
-    def test_swath_def_bbox(self, lat_start, lat_stop, force_clockwise, exp_clockwise,
+    def test_swath_def_bbox(self, lon_start, lon_stop,
+                            lat_start, lat_stop, exp_clockwise,
                             use_dask, use_xarray):
         from pyresample.geometry import SwathDefinition
 
         from .utils import create_test_latitude, create_test_longitude
         swath_shape = (50, 10)
-        lons = create_test_longitude(3.0, 12.0, swath_shape)
+        lons = create_test_longitude(lon_start, lon_stop, swath_shape)
         lats = create_test_latitude(lat_start, lat_stop, swath_shape)
 
         if use_dask:
@@ -2817,7 +2818,7 @@ class TestBboxLonlats:
             lats = xr.DataArray(lats, dims=('y', 'x'))
 
         swath_def = SwathDefinition(lons, lats)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats()
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         for side_lons, side_lats in zip(bbox_lons, bbox_lats):
