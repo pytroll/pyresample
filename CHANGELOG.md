@@ -1,3 +1,32 @@
+## Version 1.22.0 (2021/10/25)
+
+### Issues Closed
+
+* [Issue 384](https://github.com/pytroll/pyresample/issues/384) - Inconsistent SphPolygon intersection behavior ([PR 385](https://github.com/pytroll/pyresample/pull/385) by [@djhoese](https://github.com/djhoese))
+* [Issue 353](https://github.com/pytroll/pyresample/issues/353) - cut'n'paste error for `codecov.yml`?
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 386](https://github.com/pytroll/pyresample/pull/386) - Fix geocentric_resolution method not working for lat/lon projections
+* [PR 385](https://github.com/pytroll/pyresample/pull/385) - Fix SphPolygon producing unexpected results for 32-bit float coordinates ([384](https://github.com/pytroll/pyresample/issues/384))
+* [PR 383](https://github.com/pytroll/pyresample/pull/383) - Fix AreaDefinition dumping when extents have Numpy values
+* [PR 378](https://github.com/pytroll/pyresample/pull/378) - Fix compatibility with cartopy 0.20.0+
+
+#### Features added
+
+* [PR 379](https://github.com/pytroll/pyresample/pull/379) - Define new Resampler base class, nearest neighbor class, and resampler registry
+
+#### Documentation changes
+
+* [PR 380](https://github.com/pytroll/pyresample/pull/380) - Add pre-commit running to PRs and add isort
+
+In this release 6 pull requests were closed.
+
+
 ## Version 1.21.1 (2021/09/17)
 
 ### Issues Closed
