@@ -373,7 +373,10 @@ class TestSphericalPolygon(unittest.TestCase):
         vertices = np.array([[1, 1, 20, 20],
                              [1, 20, 20, 1]]).T
 
-        polygon1 = SphPolygon(np.deg2rad(vertices))
+        rad_verts = np.deg2rad(vertices)
+        polygon1 = SphPolygon(rad_verts)
+        # make sure 64-bit floats don't get copied
+        assert polygon1.vertices is rad_verts
 
         vertices = np.array([[0, 0, 30, 30],
                              [0, 30, 30, 0]]).T
@@ -426,6 +429,44 @@ class TestSphericalPolygon(unittest.TestCase):
 
         self.assertFalse(polygon2._is_inside(polygon1))
         self.assertFalse(polygon1._is_inside(polygon2))
+
+    def test_is_inside_float32(self):
+        """Test that precision dependent calculations work.
+
+        Some of the precision math can fail with only 32-bit floats.
+
+        """
+        b_verts = np.array([[-1.3440281, 0.12873407],
+                            [-1.3714675, 0.17091802],
+                            [-1.5773474, 0.14104952],
+                            [-1.5913332, 0.09375837],
+                            [-1.598127, 0.12360403],
+                            [-1.7618076, 0.65335757],
+                            [-1.7746785, 0.6819248],
+                            [-1.7645605, 0.73133504],
+                            [-1.4870182, 0.77076954],
+                            [-1.4529741, 0.7284483],
+                            [-1.4474869, 0.69782615],
+                            [-1.3499607, 0.15860939]], dtype=np.float32)
+        t_verts = np.array([[-1.80760407, 0.82227004],
+                            [-1.65620456, 0.82549202],
+                            [-1.34904288, 0.81162246],
+                            [-1.2014294, 0.79483332],
+                            [-1.21090379, 0.75978692],
+                            [-1.26056844, 0.54041217],
+                            [-1.30037964, 0.31453188],
+                            [-1.33298796, 0.09364747],
+                            [-1.33784689, 0.05810091],
+                            [-1.44211119, 0.07002157],
+                            [-1.656768, 0.07992753],
+                            [-1.76233241, 0.07762154],
+                            [-1.7639324, 0.11370358],
+                            [-1.77469158, 0.33765409],
+                            [-1.78788255, 0.5660454],
+                            [-1.8044336, 0.78705058]], dtype=np.float32)
+        b_poly = SphPolygon(b_verts)
+        t_poly = SphPolygon(t_verts)
+        assert b_poly._is_inside(t_poly)
 
     def test_union_polygons_overlap_partially(self):
         """Test the union method."""

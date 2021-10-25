@@ -330,7 +330,7 @@ class SphPolygon(object):
     """
 
     def __init__(self, vertices, radius=1):
-        self.vertices = vertices
+        self.vertices = vertices.astype(np.float64, copy=False)
         self.lon = self.vertices[:, 0]
         self.lat = self.vertices[:, 1]
         self.radius = radius

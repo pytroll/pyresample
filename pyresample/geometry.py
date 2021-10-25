@@ -269,16 +269,36 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self):
-        """Return the bounding box lons and lats."""
+    def get_bbox_lonlats(self) -> tuple:
+        """Return the bounding box lons and lats.
+
+        Returns:
+            Two lists of four elements each. The first list is longitude
+            coordinates, the second latitude. Each element is a numpy array
+            representing a specific side of the geometry. The order of the
+            arrays is first row (index 0), last column, last row, and first
+            column. The arrays are sliced (ordered) in a way to ensure that the
+            coordinates follow a clockwise path. In the usual case this results
+            in the coordinates starting in the north-west corner. In the case
+            where the data is oriented with the first pixel (row 0, column 0)
+            in the south-east corner, the coordinates will start in that
+            corner. Other orientations of data are not currently supported by
+            this method and will result in the coordinates not following a
+            clockwise path which may be incompatible with other parts of
+            pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
+
+        """
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
         s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
         s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
         s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
-        return zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
-                     (s2_lon.squeeze(), s2_lat.squeeze()),
-                     (s3_lon.squeeze(), s3_lat.squeeze()),
-                     (s4_lon.squeeze(), s4_lat.squeeze())])
+        lons, lats = zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
+                           (s2_lon.squeeze(), s2_lat.squeeze()),
+                           (s3_lon.squeeze(), s3_lat.squeeze()),
+                           (s4_lon.squeeze(), s4_lat.squeeze())])
+        if hasattr(lons[0], 'compute') and da is not None:
+            lons, lats = da.compute(lons, lats)
+        return lons, lats
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
