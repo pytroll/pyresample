@@ -30,9 +30,9 @@ and optional arguments:
 * **description**: Human-readable description. If not provided, defaults to **area_id**
 * **proj_id**: ID of projection (deprecated)
 * **units**: Units that provided arguments should be interpreted as. This can be
-    one of 'deg', 'degrees', 'meters', 'metres', and any parameter supported by the
-    `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
-    command. Units are determined in the following priority:
+  one of 'deg', 'degrees', 'meters', 'metres', and any parameter supported by the
+  `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+  command. Units are determined in the following priority:
 
     1. units expressed with each variable through a DataArray's attrs attribute.
     2. units passed to ``units``
