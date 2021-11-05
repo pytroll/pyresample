@@ -327,7 +327,7 @@ class SphPolygon:
     Represents a polygon on a spherical geoid.  Initialise with
     an ndarray of shape ``[N, 2]`` where the first column contains longitudes
     and the second column contains latitudes.  The units should be in radians.
-    inside of the polygon is defined by the vertices being defined clockwise
+    The inside of the polygon is defined by the vertices being defined clockwise
     around it.
 
     The optional second argument ``radius`` indicates the radius of the
