@@ -269,8 +269,18 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self) -> tuple:
+    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple:
         """Return the bounding box lons and lats.
+
+        Args:
+            force_clockwise:
+                Perform minimal checks and reordering of coordinates to ensure
+                that the returned coordinates follow a clockwise direction.
+                This is important for compatibility with
+                :class:`pyresample.spherical.AreaBoundary`. This is required in
+                cases where data is not oriented in the traditional way where
+                the first element of data (row 0, col 0) is the north-west
+                corner of data. Default is True.
 
         Returns:
             Two lists of four elements each. The first list is longitude
@@ -282,9 +292,9 @@ class BaseDefinition:
             in the coordinates starting in the north-west corner. In the case
             where the data is oriented with the first pixel (row 0, column 0)
             in the south-east corner, the coordinates will start in that
-            corner. Other orientations of data are not currently supported by
-            this method and will result in the coordinates not following a
-            clockwise path which may be incompatible with other parts of
+            corner. Other orientations that are detected to follow a
+            counter-clockwise path will be reordered to provide a
+            clockwise path in order to be compatible with other parts of
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
@@ -298,6 +308,17 @@ class BaseDefinition:
                            (s4_lon.squeeze(), s4_lat.squeeze())])
         if hasattr(lons[0], 'compute') and da is not None:
             lons, lats = da.compute(lons, lats)
+        # compare the first two pixels in the right column
+        lat_is_increasing = lats[1][0] < lats[1][1]
+        # compare the first two pixels in the "top" column
+        lon_is_increasing = lons[0][0] < lons[0][1]
+        is_ccw = (lon_is_increasing and lat_is_increasing) or (not lon_is_increasing and not lat_is_increasing)
+        if force_clockwise and is_ccw:
+            # going counter-clockwise
+            # swap the side order and the order of the values in each side
+            # to make it clockwise
+            lons = [lon[::-1] for lon in lons[::-1]]
+            lats = [lat[::-1] for lat in lats[::-1]]
         return lons, lats
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
@@ -760,7 +781,7 @@ class SwathDefinition(CoordinateDefinition):
 
     def get_edge_lonlats(self):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats()
+        lons, lats = self.get_bbox_lonlats(force_clockwise=False)
         blons = np.ma.concatenate(lons)
         blats = np.ma.concatenate(lats)
         return blons, blats
@@ -957,6 +978,10 @@ class DynamicAreaDefinition(object):
                        corners[1] - y_resolution / 2,
                        corners[2] + x_resolution / 2,
                        corners[3] + y_resolution / 2)
+        # area_extent = (corners[0] - x_resolution,
+        #                corners[1] - y_resolution,
+        #                corners[2] + x_resolution,
+        #                corners[3] + y_resolution)
         return area_extent, width, height
 
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
@@ -1039,6 +1064,18 @@ class DynamicAreaDefinition(object):
         _xmax = np.nanmax(xarr)
         _ymin = np.nanmin(yarr)
         _ymax = np.nanmax(yarr)
+
+        # larger
+        # _xmin = np.nanmin(xarr) - 0.001
+        # _xmax = np.nanmax(xarr) + 0.001
+        # _ymin = np.nanmin(yarr) - 0.001
+        # _ymax = np.nanmax(yarr) + 0.001
+
+        # smaller
+        # _xmin = np.nanmin(xarr) + 0.01
+        # _xmax = np.nanmax(xarr) - 0.01
+        # _ymin = np.nanmin(yarr) + 0.01
+        # _ymax = np.nanmax(yarr) - 0.01
         xmin, xmax, ymin, ymax = da.compute(
             _xmin,
             _xmax,
