@@ -2362,8 +2362,8 @@ class TestDynamicAreaDefinition:
             # if we aren't at a pole then we adjust the coordinates
             # that takes a total of 2 computations
             num_computes = 1 if is_pole else 2
-            lons = da.from_array(lons)
-            lats = da.from_array(lats)
+            lons = da.from_array(lons, chunks=2)
+            lats = da.from_array(lats, chunks=2)
             with dask.config.set(scheduler=CustomScheduler(num_computes)):
                 result = area.freeze((lons, lats),
                                      resolution=0.0056)

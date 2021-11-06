@@ -1065,17 +1065,6 @@ class DynamicAreaDefinition(object):
         _ymin = np.nanmin(yarr)
         _ymax = np.nanmax(yarr)
 
-        # larger
-        # _xmin = np.nanmin(xarr) - 0.001
-        # _xmax = np.nanmax(xarr) + 0.001
-        # _ymin = np.nanmin(yarr) - 0.001
-        # _ymax = np.nanmax(yarr) + 0.001
-
-        # smaller
-        # _xmin = np.nanmin(xarr) + 0.01
-        # _xmax = np.nanmax(xarr) - 0.01
-        # _ymin = np.nanmin(yarr) + 0.01
-        # _ymax = np.nanmax(yarr) - 0.01
         xmin, xmax, ymin, ymax = da.compute(
             _xmin,
             _xmax,
@@ -1087,8 +1076,10 @@ class DynamicAreaDefinition(object):
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
-            xmin = np.nanmin(xarr[xarr >= 0])
-            xmax = np.nanmax(xarr[xarr < 0]) + 360
+            xarr_pos = da.where(xarr >= 0, xarr, np.nan)
+            xarr_neg = da.where(xarr < 0, xarr, np.nan)
+            xmin = np.nanmin(xarr_pos)
+            xmax = np.nanmax(xarr_neg) + 360
             xmin, xmax = da.compute(xmin, xmax)
         return xmin, ymin, xmax, ymax
 
