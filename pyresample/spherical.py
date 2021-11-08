@@ -340,7 +340,7 @@ class SphPolygon:
 
         Args:
             vertices (np.ndarray): ndarray of shape ``[N, 2]`` with ``N``
-                points describing a polygon counterclockwise.  First column
+                points describing a polygon clockwise.  First column
                 describes longitudes, second column describes latitudes.  Units
                 should be in radians.
             radius (optional, number): Radius of spherical planet.
