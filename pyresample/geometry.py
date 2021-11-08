@@ -978,10 +978,6 @@ class DynamicAreaDefinition(object):
                        corners[1] - y_resolution / 2,
                        corners[2] + x_resolution / 2,
                        corners[3] + y_resolution / 2)
-        # area_extent = (corners[0] - x_resolution,
-        #                corners[1] - y_resolution,
-        #                corners[2] + x_resolution,
-        #                corners[3] + y_resolution)
         return area_extent, width, height
 
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
@@ -1064,7 +1060,6 @@ class DynamicAreaDefinition(object):
         _xmax = np.nanmax(xarr)
         _ymin = np.nanmin(yarr)
         _ymax = np.nanmax(yarr)
-
         xmin, xmax, ymin, ymax = da.compute(
             _xmin,
             _xmax,
