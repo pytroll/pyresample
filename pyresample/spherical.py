@@ -321,15 +321,30 @@ class Arc(object):
         return None, None
 
 
-class SphPolygon(object):
+class SphPolygon:
     """Spherical polygon.
 
-    Vertices as a 2-column array of (col 1) lons and (col 2) lats is
-    given in radians. The inside of the polygon is defined by the
-    vertices being defined clockwise around it.
+    Represents a polygon on a spherical geoid.  Initialise with
+    an ndarray of shape ``[N, 2]`` where the first column contains longitudes
+    and the second column contains latitudes.  The units should be in radians.
+    The inside of the polygon is defined by the vertices being defined clockwise
+    around it.
+
+    The optional second argument ``radius`` indicates the radius of the
+    spherical geoid on which calculations occur.
+
     """
 
     def __init__(self, vertices, radius=1):
+        """Initialise SphPolygon object.
+
+        Args:
+            vertices (np.ndarray): ndarray of shape ``[N, 2]`` with ``N``
+                points describing a polygon clockwise.  First column
+                describes longitudes, second column describes latitudes.  Units
+                should be in radians.
+            radius (optional, number): Radius of spherical planet.
+        """
         self.vertices = vertices.astype(np.float64, copy=False)
         self.lon = self.vertices[:, 0]
         self.lat = self.vertices[:, 1]
@@ -381,6 +396,19 @@ class SphPolygon(object):
 
         Note: The article mixes up longitudes and latitudes in equation 3! Look
         at the fortran code appendix for the correct version.
+
+        The units are the square of the radius passed to the constructor.  For
+        example, to calculate the area in km² of a polygon near the equator of a
+        spherical planet with a radius of 6371 km (similar to Earth):
+
+        >>> pol = SphPolygon(np.deg2rad(np.array([[0., 0.], [0., 1.], [1., 1.], [1., 0.]])),
+                             radius=6371)
+        >>> print(pol.area())
+        12363.997753690213
+
+        If `SphPolygon` was constructed without passing any units, the result
+        has units of square radii (i.e., the polygon containing the entire
+        planet would have area 4π).
         """
         phi_a = self.lat
         phi_p = self.lat.take(np.arange(len(self.lat)) + 1, mode="wrap")
