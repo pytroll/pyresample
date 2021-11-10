@@ -277,10 +277,7 @@ class BaseDefinition:
                 Perform minimal checks and reordering of coordinates to ensure
                 that the returned coordinates follow a clockwise direction.
                 This is important for compatibility with
-                :class:`pyresample.spherical.AreaBoundary`. This is required in
-                cases where data is not oriented in the traditional way where
-                the first element of data (row 0, col 0) is the north-west
-                corner of data. Default is True.
+                :class:`pyresample.spherical.AreaBoundary`. Default is True.
 
         Returns:
             Two lists of four elements each. The first list is longitude
@@ -308,18 +305,28 @@ class BaseDefinition:
                            (s4_lon.squeeze(), s4_lat.squeeze())])
         if hasattr(lons[0], 'compute') and da is not None:
             lons, lats = da.compute(lons, lats)
-        # compare the first two pixels in the right column
-        lat_is_increasing = lats[1][0] < lats[1][1]
-        # compare the first two pixels in the "top" column
-        lon_is_increasing = lons[0][0] < lons[0][1]
-        is_ccw = (lon_is_increasing and lat_is_increasing) or (not lon_is_increasing and not lat_is_increasing)
-        if force_clockwise and is_ccw:
+        if force_clockwise and not self._corner_is_clockwise(
+                lons[0][-2], lats[0][-2], lons[0][-1], lats[0][-1], lons[1][1], lats[1][1]):
             # going counter-clockwise
             # swap the side order and the order of the values in each side
             # to make it clockwise
             lons = [lon[::-1] for lon in lons[::-1]]
             lats = [lat[::-1] for lat in lats[::-1]]
         return lons, lats
+
+    @staticmethod
+    def _corner_is_clockwise(lon1, lat1, corner_lon, corner_lat, lon2, lat2):
+        from pyresample.spherical import Arc, SCoordinate
+        point1 = SCoordinate(math.radians(lon1), math.radians(lat1))
+        point2 = SCoordinate(math.radians(corner_lon), math.radians(corner_lat))
+        point3 = SCoordinate(math.radians(lon2), math.radians(lat2))
+        arc1 = Arc(point1, point2)
+        arc2 = Arc(point2, point3)
+        # a straight line has an angle of 0
+        # if the second segment is clockwise the angle will go negative
+        # if the second segment is counter-clockwise the angle will go positive
+        angle = arc1.angle(arc2)
+        return -np.pi < angle < 0
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
