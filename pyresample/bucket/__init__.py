@@ -126,8 +126,8 @@ class BucketResampler(object):
         # Calculate array indices. Orient so that 0-meridian is pointing down.
         adef = self.target_area
         x_res, y_res = adef.resolution
-        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int)
-        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int)
+        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(int)
+        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(int)
 
         # Get valid index locations
         mask = (x_idxs >= 0) & (x_idxs < adef.width) & (y_idxs >= 0) & (y_idxs < adef.height)
