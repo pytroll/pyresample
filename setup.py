@@ -46,7 +46,8 @@ extras_require = {'numexpr': ['numexpr'],
                   'tests': test_requires}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixture']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
