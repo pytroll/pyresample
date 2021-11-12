@@ -192,7 +192,7 @@ class KDTreeNearestXarrayResampler(Resampler):
             query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
             valid_output_index, 'ji', *args, kdtree=resample_kdtree,
             neighbours=neighbors, epsilon=epsilon,
-            radius=radius_of_influence, dtype=int,
+            radius=radius_of_influence, dtype=np.int64,
             new_axes={'k': neighbors}, concatenate=True)
         return res
 

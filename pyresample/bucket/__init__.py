@@ -230,7 +230,7 @@ class BucketResampler(object):
         # fill missed index
         statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
 
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64)).ravel()
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
         statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
@@ -346,7 +346,7 @@ class BucketResampler(object):
             data = da.where(data == fill_value, np.nan, data)
 
         sums = self.get_sum(data, skipna=skipna)
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int))
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64))
 
         average = sums / da.where(counts == 0, np.nan, counts)
         average = da.where(np.isnan(average), fill_value, average)
