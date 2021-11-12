@@ -2362,8 +2362,8 @@ class TestDynamicAreaDefinition:
             # if we aren't at a pole then we adjust the coordinates
             # that takes a total of 2 computations
             num_computes = 1 if is_pole else 2
-            lons = da.from_array(lons)
-            lats = da.from_array(lats)
+            lons = da.from_array(lons, chunks=2)
+            lats = da.from_array(lats, chunks=2)
             with dask.config.set(scheduler=CustomScheduler(num_computes)):
                 result = area.freeze((lons, lats),
                                      resolution=0.0056)
@@ -2790,18 +2790,20 @@ class TestBboxLonlats:
     """Test 'get_bbox_lonlats' for various geometry cases."""
 
     @pytest.mark.parametrize(
-        ("lon_start", "lon_stop", "lat_start", "lat_stop", "exp_clockwise"),
+        ("lon_start", "lon_stop", "lat_start", "lat_stop", "exp_nonforced_clockwise"),
         [
-            (3.0, 12.0, 75.0, 26.0, True),
-            (12.0, 3.0, 75.0, 26.0, False),
-            (3.0, 12.0, 26.0, 75.0, False),
-            (12.0, 3.0, 26.0, 75.0, True),
+            (3.0, 12.0, 75.0, 26.0, True),  # [0, 0] at north-west corner
+            (12.0, 3.0, 75.0, 26.0, False),  # [0, 0] at north-east corner
+            (3.0, 12.0, 26.0, 75.0, False),  # [0, 0] at south-west corner
+            (12.0, 3.0, 26.0, 75.0, True),  # [0, 0] at south-east corner
         ]
     )
+    @pytest.mark.parametrize("force_clockwise", [False, True])
     @pytest.mark.parametrize("use_dask", [False, True])
     @pytest.mark.parametrize("use_xarray", [False, True])
     def test_swath_def_bbox(self, lon_start, lon_stop,
-                            lat_start, lat_stop, exp_clockwise,
+                            lat_start, lat_stop, exp_nonforced_clockwise,
+                            force_clockwise,
                             use_dask, use_xarray):
         from pyresample.geometry import SwathDefinition
 
@@ -2818,7 +2820,7 @@ class TestBboxLonlats:
             lats = xr.DataArray(lats, dims=('y', 'x'))
 
         swath_def = SwathDefinition(lons, lats)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats()
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         for side_lons, side_lats in zip(bbox_lons, bbox_lats):
@@ -2826,7 +2828,10 @@ class TestBboxLonlats:
             assert isinstance(side_lats, np.ndarray)
             assert side_lons.shape == side_lats.shape
         is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
-        assert is_cw if exp_clockwise else not is_cw
+        if exp_nonforced_clockwise or force_clockwise:
+            assert is_cw
+        else:
+            assert not is_cw
 
 
 def _is_clockwise(lons, lats):

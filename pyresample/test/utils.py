@@ -166,7 +166,8 @@ class catch_warnings(warnings.catch_warnings):
 
 def create_test_longitude(start, stop, shape, twist_factor=0.0, dtype=np.float32):
     """Get basic sample of longitude data."""
-    if start > stop:
+    if start > 0 > stop:
+        # cross anti-meridian
         stop += 360.0
 
     num_cols = 1 if len(shape) < 2 else shape[1]

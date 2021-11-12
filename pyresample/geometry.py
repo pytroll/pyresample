@@ -269,8 +269,18 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self) -> tuple:
+    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple:
         """Return the bounding box lons and lats.
+
+        Args:
+            force_clockwise:
+                Perform minimal checks and reordering of coordinates to ensure
+                that the returned coordinates follow a clockwise direction.
+                This is important for compatibility with
+                :class:`pyresample.spherical.SphPolygon` where operations depend
+                on knowing the inside versus the outside of a polygon. These
+                operations assume that coordinates are clockwise.
+                Default is True.
 
         Returns:
             Two lists of four elements each. The first list is longitude
@@ -282,9 +292,9 @@ class BaseDefinition:
             in the coordinates starting in the north-west corner. In the case
             where the data is oriented with the first pixel (row 0, column 0)
             in the south-east corner, the coordinates will start in that
-            corner. Other orientations of data are not currently supported by
-            this method and will result in the coordinates not following a
-            clockwise path which may be incompatible with other parts of
+            corner. Other orientations that are detected to follow a
+            counter-clockwise path will be reordered to provide a
+            clockwise path in order to be compatible with other parts of
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
@@ -298,7 +308,47 @@ class BaseDefinition:
                            (s4_lon.squeeze(), s4_lat.squeeze())])
         if hasattr(lons[0], 'compute') and da is not None:
             lons, lats = da.compute(lons, lats)
+        if force_clockwise and not self._corner_is_clockwise(
+                lons[0][-2], lats[0][-2], lons[0][-1], lats[0][-1], lons[1][1], lats[1][1]):
+            # going counter-clockwise
+            lons, lats = self._reverse_boundaries(lons, lats)
         return lons, lats
+
+    @staticmethod
+    def _reverse_boundaries(sides_lons: list, sides_lats: list) -> tuple:
+        """Reverse the order of the lists and the arrays in those lists.
+
+        Given lists of 4 numpy arrays, this will reverse the order of the
+        arrays in that list and the elements of each of those arrays. This
+        has the end result when the coordinates are counter-clockwise of
+        reversing the coordinates to make them clockwise.
+
+        """
+        lons = [lon[::-1] for lon in sides_lons[::-1]]
+        lats = [lat[::-1] for lat in sides_lats[::-1]]
+        return lons, lats
+
+    @staticmethod
+    def _corner_is_clockwise(lon1, lat1, corner_lon, corner_lat, lon2, lat2):
+        """Determine if coordinates follow a clockwise path.
+
+        This uses :class:`pyresample.spherical.Arc` to determine the angle
+        between the first line segment (Arc) from (lon1, lat1) to
+        (corner_lon, corner_lat) and the second line segment from
+        (corner_lon, corner_lat) to (lon2, lat2). A straight line would
+        produce an angle of 0, a clockwise path would have a negative angle,
+        and a counter-clockwise path would have a positive angle.
+
+        """
+        from pyresample.spherical import Arc, SCoordinate
+        point1 = SCoordinate(math.radians(lon1), math.radians(lat1))
+        point2 = SCoordinate(math.radians(corner_lon), math.radians(corner_lat))
+        point3 = SCoordinate(math.radians(lon2), math.radians(lat2))
+        arc1 = Arc(point1, point2)
+        arc2 = Arc(point2, point3)
+        angle = arc1.angle(arc2)
+        is_clockwise = -np.pi < angle < 0
+        return is_clockwise
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -760,7 +810,7 @@ class SwathDefinition(CoordinateDefinition):
 
     def get_edge_lonlats(self):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats()
+        lons, lats = self.get_bbox_lonlats(force_clockwise=False)
         blons = np.ma.concatenate(lons)
         blats = np.ma.concatenate(lats)
         return blons, blats
@@ -1050,8 +1100,10 @@ class DynamicAreaDefinition(object):
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
-            xmin = np.nanmin(xarr[xarr >= 0])
-            xmax = np.nanmax(xarr[xarr < 0]) + 360
+            xarr_pos = da.where(xarr >= 0, xarr, np.nan)
+            xarr_neg = da.where(xarr < 0, xarr, np.nan)
+            xmin = np.nanmin(xarr_pos)
+            xmax = np.nanmax(xarr_neg) + 360
             xmin, xmax = da.compute(xmin, xmax)
         return xmin, ymin, xmax, ymax
 

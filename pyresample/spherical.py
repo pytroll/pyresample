@@ -28,7 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 class SCoordinate(object):
-    """Spherical coordinates."""
+    """Spherical coordinates.
+
+    The ``lon`` and ``lat`` coordinates should be provided in radians.
+
+    """
 
     def __init__(self, lon, lat):
         self.lon = lon
@@ -200,7 +204,13 @@ class Arc(object):
         return str(self.start) + " -> " + str(self.end)
 
     def angle(self, other_arc):
-        """Oriented angle between two arcs."""
+        """Oriented angle between two arcs.
+
+        Returns:
+            Angle in radians. A straight line will be 0. A clockwise path
+            will be a negative angle and counter-clockwise will be positive.
+
+        """
         if self.start == other_arc.start:
             a__ = self.start
             b__ = self.end
