@@ -965,7 +965,7 @@ class XArrayResamplerNN(object):
         res = blockwise(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
                         valid_oi, 'ji', *args, kdtree=resample_kdtree,
                         neighbours=self.neighbours, epsilon=self.epsilon,
-                        radius=self.radius_of_influence, dtype=np.int,
+                        radius=self.radius_of_influence, dtype=np.int64,
                         new_axes={'k': self.neighbours}, concatenate=True)
         return res, None
 

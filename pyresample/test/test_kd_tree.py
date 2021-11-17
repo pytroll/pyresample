@@ -128,7 +128,7 @@ class Test(unittest.TestCase):
         data = np.fromfunction(lambda y, x: y * x, (50, 10))
         lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
-        mask = np.ones_like(lons, dtype=np.bool)
+        mask = np.ones_like(lons, dtype=np.bool_)
         mask[::2, ::2] = False
         swath_def = geometry.SwathDefinition(
             lons=np.ma.masked_array(lons, mask=mask),

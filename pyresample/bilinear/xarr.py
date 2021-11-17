@@ -171,7 +171,7 @@ class XArrayBilinearResampler(BilinearBase):
                                    self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
-        input_coords = input_coords[valid_input_index, :].astype(np.float)
+        input_coords = input_coords[valid_input_index, :].astype(np.float64)
 
         return da.compute(valid_input_index, input_coords)
 

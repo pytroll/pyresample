@@ -126,8 +126,8 @@ class BucketResampler(object):
         # Calculate array indices. Orient so that 0-meridian is pointing down.
         adef = self.target_area
         x_res, y_res = adef.resolution
-        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int)
-        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int)
+        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int64)
+        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int64)
 
         # Get valid index locations
         mask = (x_idxs >= 0) & (x_idxs < adef.width) & (y_idxs >= 0) & (y_idxs < adef.height)
@@ -230,7 +230,7 @@ class BucketResampler(object):
         # fill missed index
         statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
 
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int)).ravel()
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64)).ravel()
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
         statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
@@ -346,7 +346,7 @@ class BucketResampler(object):
             data = da.where(data == fill_value, np.nan, data)
 
         sums = self.get_sum(data, skipna=skipna)
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int))
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64))
 
         average = sums / da.where(counts == 0, np.nan, counts)
         average = da.where(np.isnan(average), fill_value, average)

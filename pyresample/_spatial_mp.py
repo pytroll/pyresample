@@ -179,7 +179,7 @@ class Cartesian(object):
     def transform_lonlats(self, lons, lats):
         """Transform longitudes and latitues to cartesian coordinates."""
         if np.issubdtype(lons.dtype, np.integer):
-            lons = lons.astype(np.float)
+            lons = lons.astype(np.float64)
         coords = np.zeros((lons.size, 3), dtype=lons.dtype)
         if ne:
             deg2rad = np.pi / 180  # noqa: F841
