@@ -351,8 +351,8 @@ class DaskEWAResampler(BaseResampler):
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
         ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
         fornav_task_name = "fornav-{}".format(data.name)
-        maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
-        weight_sum_min = kwargs.get('weight_sum_min', -1.0)
+        maximum_weight_mode = kwargs.setdefault('maximum_weight_mode', False)
+        weight_sum_min = kwargs.setdefault('weight_sum_min', -1.0)
         output_stack = self._generate_fornav_dask_tasks(out_chunks,
                                                         ll2cr_blocks,
                                                         fornav_task_name,
