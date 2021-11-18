@@ -1,3 +1,30 @@
+## Version 1.22.1 (2021/11/18)
+
+### Issues Closed
+
+* [Issue 390](https://github.com/pytroll/pyresample/issues/390) - What units does SphPolygon.area return?
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 398](https://github.com/pytroll/pyresample/pull/398) - Fix EWA resampling when input data is larger than the output area
+* [PR 389](https://github.com/pytroll/pyresample/pull/389) - Fix SwathDefinition get_bbox_lonlats returning counter-clockwise coordinates
+
+#### Features added
+
+* [PR 396](https://github.com/pytroll/pyresample/pull/396) - Add Python 3.9 to CI runs and use it for the experimental run
+* [PR 395](https://github.com/pytroll/pyresample/pull/395) - Replace depracated Numpy dtypes
+
+#### Documentation changes
+
+* [PR 388](https://github.com/pytroll/pyresample/pull/388) - Fix indentation on geometry utils page
+
+In this release 5 pull requests were closed.
+
+
 ## Version 1.22.0 (2021/10/25)
 
 ### Issues Closed
