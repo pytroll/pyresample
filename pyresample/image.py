@@ -23,7 +23,7 @@ import warnings
 
 import numpy as np
 
-from pyresample import bilinear, geometry, grid, kd_tree
+from pyresample import geometry, grid, kd_tree
 
 
 class ImageContainer(object):
@@ -368,6 +368,10 @@ class ImageContainerBilinear(ImageContainer):
         image_container : object
             ImageContainerBilinear object of resampled geometry
         """
+        # import here, instead of the top of the script, to avoid xarray/zarr warning msg
+        # while import the top level pyresample module
+        from pyresample import bilinear
+
         image_data = self.image_data
 
         try:
