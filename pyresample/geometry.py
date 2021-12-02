@@ -2081,7 +2081,7 @@ class AreaDefinition(_ProjectionDefinition):
         x_kwargs = {}
         y_kwargs = {}
 
-        y_chunks, x_chunks = self._chunks_to_xy_chunks(chunks)
+        y_chunks, x_chunks = self._chunks_to_yx_chunks(chunks)
         if x_chunks is not None or y_chunks is not None:
             # use dask functions instead of numpy
             from dask.array import arange
@@ -2154,15 +2154,19 @@ class AreaDefinition(_ProjectionDefinition):
         """
         if self.rotation != 0 and chunks is not None:
             raise ValueError("'rotation' is not supported with dask operations.")
+        y_slice, x_slice = self._get_yx_data_slice(data_slice)
         if chunks is not None:
-            return self._proj_coords_dask(chunks, dtype)
+            target_x, target_y = self._proj_coords_dask(chunks, dtype)
+            if y_slice is not None:
+                target_x = target_x[y_slice, x_slice]
+                target_y = target_y[y_slice, x_slice]
+            return target_x, target_y
 
         target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
-        if data_slice is not None and isinstance(data_slice, slice):
-            target_y = target_y[data_slice]
-        elif data_slice is not None:
-            target_y = target_y[data_slice[0]]
-            target_x = target_x[data_slice[1]]
+        if y_slice is not None:
+            target_y = target_y[y_slice]
+        if x_slice is not None:
+            target_x = target_x[x_slice]
 
         if self.rotation != 0:
             res = self._do_rotation(target_x, target_y, self.rotation)
@@ -2171,6 +2175,14 @@ class AreaDefinition(_ProjectionDefinition):
             target_x, target_y = np.meshgrid(target_x, target_y)
 
         return target_x, target_y
+
+    @staticmethod
+    def _get_yx_data_slice(data_slice):
+        if data_slice is not None and isinstance(data_slice, slice):
+            return data_slice, slice(None, None, None)
+        elif data_slice is not None:
+            return data_slice[0], data_slice[1]
+        return None, None
 
     def _proj_coords_dask(self, chunks, dtype):
         """Generate 2D x and y coordinate arrays.
@@ -2184,10 +2196,11 @@ class AreaDefinition(_ProjectionDefinition):
 
         """
         y_chunks, x_chunks = self._chunks_to_yx_chunks(chunks)
+        norm_y_chunks, norm_x_chunks = da.core.normalize_chunks((y_chunks, x_chunks), self.shape, dtype=dtype)
         res = da.map_blocks(_generate_2d_coords,
                             self.pixel_size_x, self.pixel_size_y,
                             self.pixel_upper_left[0], self.pixel_upper_left[1],
-                            chunks=(2,) + (y_chunks, x_chunks),
+                            chunks=(2, norm_y_chunks, norm_x_chunks),
                             meta=np.array((), dtype=dtype),
                             dtype=dtype,
                             )
@@ -2244,7 +2257,8 @@ class AreaDefinition(_ProjectionDefinition):
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
         cache : bool, optional
-            Store result the result. Requires data_slice to be None
+            Store the result internally for later reuse. Requires data_slice
+            to be None.
         dtype : numpy.dtype, optional
             Data type of the returned arrays
         chunks: int or tuple, optional
@@ -2288,8 +2302,6 @@ class AreaDefinition(_ProjectionDefinition):
                              dtype=target_x.dtype,
                              new_axis=[0], proj_dict=self.crs_wkt)
             lons, lats = res[0], res[1]
-            self.lons = lons
-            self.lats = lats
             return lons, lats
 
         if nprocs > 1:
