@@ -1,5 +1,5 @@
 name: Deploy sdist and wheels
- 
+
 on: [push, pull_request, release]
 
 jobs:
