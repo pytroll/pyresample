@@ -982,6 +982,11 @@ class Test(unittest.TestCase):
         area_def = get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
 
         xcoord, ycoord = area_def.get_proj_coords(chunks=4096)
+        # make sure different chunk size provides a different dask name
+        xcoord2, ycoord2 = area_def.get_proj_coords(chunks=2048)
+        assert xcoord2.name != xcoord.name
+        assert ycoord2.name != ycoord.name
+
         xcoord = xcoord.compute()
         ycoord = ycoord.compute()
         self.assertTrue(np.allclose(xcoord[0, :],
@@ -2048,18 +2053,20 @@ class TestStackedAreaDefinition:
         np.testing.assert_allclose(lats[464:, :], lats1)
 
         # check that get_lonlats with chunks definition doesn't cause errors and output arrays are equal
-        # too many chunks
-        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((200, 264, 464), (5570,)))
+        with pytest.raises(ValueError):
+            # too many chunks
+            _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((200, 264, 464), (5570,)))
+        # right amount of chunks, different shape
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 470), (5568,)))
+        # only one chunk value
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=464)
+
+        # only one set of chunks in a tuple
+        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=(464, 5568))
         # too few chunks
         _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464,), (5568,)))
         # right amount of chunks, same shape
         _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 464), (5568,)))
-        # right amount of chunks, different shape
-        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=((464, 470), (5568,)))
-        # only one set of chunks in a tuple
-        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=(464, 5568))
-        # only one chunk value
-        _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks=464)
 
     def test_combine_area_extents(self):
         """Test combination of area extents."""

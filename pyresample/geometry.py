@@ -1115,11 +1115,64 @@ class DynamicAreaDefinition(object):
         return lons, lats
 
 
-def invproj(data_x, data_y, proj_dict):
+def _invproj(data_x, data_y, proj_dict):
     """Perform inverse projection."""
     # XXX: does pyproj copy arrays? What can we do so it doesn't?
     target_proj = Proj(proj_dict)
-    return np.dstack(target_proj(data_x, data_y, inverse=True))
+    lon, lat = target_proj(data_x, data_y, inverse=True)
+    return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
+
+
+def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_upper_left_y,
+                        chunks, dtype, block_info=None):
+    start_y_idx = block_info[None]["array-location"][1][0]
+    end_y_idx = block_info[None]["array-location"][1][1]
+    start_x_idx = block_info[None]["array-location"][2][0]
+    end_x_idx = block_info[None]["array-location"][2][1]
+    dtype = block_info[None]["dtype"]
+    x, y = _generate_1d_proj_vectors((start_x_idx, end_x_idx),
+                                     (start_y_idx, end_y_idx),
+                                     (pixel_size_x, pixel_size_y),
+                                     (pixel_upper_left_x, pixel_upper_left_y),
+                                     dtype)
+    x_2d, y_2d = np.meshgrid(x, y)
+    res = np.stack([x_2d, y_2d])
+    return res
+
+
+def _generate_1d_proj_vectors(col_range, row_range,
+                              pixel_size_xy, offset_xy,
+                              dtype, chunks=None):
+    x_kwargs, y_kwargs, arange = _get_vector_arange_args(dtype, chunks)
+    x = arange(*col_range, **x_kwargs) * pixel_size_xy[0] + offset_xy[0]
+    y = arange(*row_range, **y_kwargs) * -pixel_size_xy[1] + offset_xy[1]
+    return x, y
+
+
+def _get_vector_arange_args(dtype, chunks):
+    x_kwargs = {}
+    y_kwargs = {}
+
+    y_chunks, x_chunks = _chunks_to_yx_chunks(chunks)
+    if x_chunks is not None or y_chunks is not None:
+        # use dask functions instead of numpy
+        from dask.array import arange
+        x_kwargs = {'chunks': x_chunks}
+        y_kwargs = {'chunks': y_chunks}
+    else:
+        arange = np.arange
+    x_kwargs['dtype'] = dtype
+    y_kwargs['dtype'] = dtype
+    return x_kwargs, y_kwargs, arange
+
+
+def _chunks_to_yx_chunks(chunks):
+    if chunks is not None and not isinstance(chunks, int):
+        y_chunks = chunks[0]
+        x_chunks = chunks[1]
+    else:
+        y_chunks = x_chunks = chunks
+    return y_chunks, x_chunks
 
 
 class _ProjectionDefinition(BaseDefinition):
@@ -2040,15 +2093,10 @@ class AreaDefinition(_ProjectionDefinition):
     @staticmethod
     def _do_rotation(xspan, yspan, rot_deg=0):
         """Apply a rotation factor to a matrix of points."""
-        if hasattr(xspan, 'chunks'):
-            # we were given dask arrays, use dask functions
-            import dask.array as numpy
-        else:
-            numpy = np
-        rot_rad = numpy.radians(rot_deg)
-        rot_mat = numpy.array([[np.cos(rot_rad), np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
-        x, y = numpy.meshgrid(xspan, yspan)
-        return numpy.einsum('ji, mni -> jmn', rot_mat, numpy.dstack([x, y]))
+        rot_rad = np.radians(rot_deg)
+        rot_mat = np.array([[np.cos(rot_rad), np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
+        x, y = np.meshgrid(xspan, yspan)
+        return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
 
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         """Get projection vectors."""
@@ -2060,32 +2108,16 @@ class AreaDefinition(_ProjectionDefinition):
 
     def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
         """Get 1D projection coordinates."""
-        x_kwargs = {}
-        y_kwargs = {}
-
-        if chunks is not None and not isinstance(chunks, int):
-            y_chunks = chunks[0]
-            x_chunks = chunks[1]
-        else:
-            y_chunks = x_chunks = chunks
-
-        if x_chunks is not None or y_chunks is not None:
-            # use dask functions instead of numpy
-            from dask.array import arange
-            x_kwargs = {'chunks': x_chunks}
-            y_kwargs = {'chunks': y_chunks}
-        else:
-            arange = np.arange
         if check_rotation and self.rotation != 0:
             warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
         if dtype is None:
             dtype = self.dtype
-        x_kwargs['dtype'] = dtype
-        y_kwargs['dtype'] = dtype
-
-        target_x = arange(self.width, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = arange(self.height, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
-        return target_x, target_y
+        x, y = _generate_1d_proj_vectors((0, self.width),
+                                         (0, self.height),
+                                         (self.pixel_size_x, self.pixel_size_y),
+                                         (self.pixel_upper_left[0], self.pixel_upper_left[1]),
+                                         dtype, chunks=chunks)
+        return x, y
 
     def get_proj_vectors(self, dtype=None, chunks=None):
         """Calculate 1D projection coordinates for the X and Y dimension.
@@ -2139,22 +2171,65 @@ class AreaDefinition(_ProjectionDefinition):
             Removed 'cache' keyword argument and add 'chunks' for creating
             dask arrays.
         """
+        if self.rotation != 0 and chunks is not None:
+            raise ValueError("'rotation' is not supported with dask operations.")
+        if dtype is None:
+            dtype = self.dtype
+        y_slice, x_slice = self._get_yx_data_slice(data_slice)
+        if chunks is not None:
+            target_x, target_y = self._proj_coords_dask(chunks, dtype)
+            if y_slice is not None:
+                target_x = target_x[y_slice, x_slice]
+                target_y = target_y[y_slice, x_slice]
+            return target_x, target_y
+
         target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
-        if data_slice is not None and isinstance(data_slice, slice):
-            target_y = target_y[data_slice]
-        elif data_slice is not None:
-            target_y = target_y[data_slice[0]]
-            target_x = target_x[data_slice[1]]
+        if y_slice is not None:
+            target_y = target_y[y_slice]
+        if x_slice is not None:
+            target_x = target_x[x_slice]
 
         if self.rotation != 0:
             res = self._do_rotation(target_x, target_y, self.rotation)
             target_x, target_y = res[0, :, :], res[1, :, :]
-        elif chunks is not None:
-            import dask.array as da
-            target_x, target_y = da.meshgrid(target_x, target_y)
         else:
             target_x, target_y = np.meshgrid(target_x, target_y)
 
+        return target_x, target_y
+
+    @staticmethod
+    def _get_yx_data_slice(data_slice):
+        if data_slice is not None and isinstance(data_slice, slice):
+            return data_slice, slice(None, None, None)
+        elif data_slice is not None:
+            return data_slice[0], data_slice[1]
+        return None, None
+
+    def _proj_coords_dask(self, chunks, dtype):
+        """Generate 2D x and y coordinate arrays.
+
+        This is a separate function because it allows dask to optimize and
+        separate the individual 2D chunks of coordinates. Using the basic
+        numpy form of these calculations produces an unnecessary
+        relationship between the "arange" 1D projection vectors and every
+        2D coordinate chunk. This makes it difficult for dask to schedule
+        2D chunks in an optimal way.
+
+        """
+        y_chunks, x_chunks = _chunks_to_yx_chunks(chunks)
+        norm_y_chunks, norm_x_chunks = da.core.normalize_chunks((y_chunks, x_chunks), self.shape, dtype=dtype)
+        # We must provide `chunks` and `dtype` as passed arguments to ensure
+        # the returned array has a unique dask name
+        # See: https://github.com/dask/dask/issues/8450
+        res = da.map_blocks(_generate_2d_coords,
+                            self.pixel_size_x, self.pixel_size_y,
+                            self.pixel_upper_left[0], self.pixel_upper_left[1],
+                            chunks, dtype,
+                            chunks=((2,), norm_y_chunks, norm_x_chunks),
+                            meta=np.array((), dtype=dtype),
+                            dtype=dtype,
+                            )
+        target_x, target_y = res[0], res[1]
         return target_x, target_y
 
     @property
@@ -2207,7 +2282,8 @@ class AreaDefinition(_ProjectionDefinition):
         data_slice : slice object, optional
             Calculate only coordinates for specified slice
         cache : bool, optional
-            Store result the result. Requires data_slice to be None
+            Store the result internally for later reuse. Requires data_slice
+            to be None.
         dtype : numpy.dtype, optional
             Data type of the returned arrays
         chunks: int or tuple, optional
@@ -2245,10 +2321,13 @@ class AreaDefinition(_ProjectionDefinition):
         if hasattr(target_x, 'chunks'):
             # we are using dask arrays, map blocks to th
             from dask.array import map_blocks
-            res = map_blocks(invproj, target_x, target_y,
-                             chunks=(target_x.chunks[0], target_x.chunks[1], 2),
-                             new_axis=[2], proj_dict=self.crs_wkt).astype(dtype)
-            return res[:, :, 0], res[:, :, 1]
+            res = map_blocks(_invproj, target_x, target_y,
+                             chunks=(2,) + target_x.chunks,
+                             meta=np.array((), dtype=target_x.dtype),
+                             dtype=target_x.dtype,
+                             new_axis=[0], proj_dict=self.crs_wkt)
+            lons, lats = res[0], res[1]
+            return lons, lats
 
         if nprocs > 1:
             target_proj = Proj_MP(self.crs)
