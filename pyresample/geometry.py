@@ -1130,11 +1130,51 @@ def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_up
     start_x_idx = block_info[None]["array-location"][2][0]
     end_x_idx = block_info[None]["array-location"][2][1]
     dtype = block_info[None]["dtype"]
-    x = np.arange(start_x_idx, end_x_idx, dtype=dtype) * pixel_size_x + pixel_upper_left_x
-    y = np.arange(start_y_idx, end_y_idx, dtype=dtype) * -pixel_size_y + pixel_upper_left_y
+    x, y = _generate_1d_proj_vectors(start_x_idx, end_x_idx,
+                                     start_y_idx, end_y_idx,
+                                     pixel_size_x, pixel_size_y,
+                                     pixel_upper_left_x, pixel_upper_left_y,
+                                     dtype)
     x_2d, y_2d = np.meshgrid(x, y)
     res = np.stack([x_2d, y_2d])
     return res
+
+
+def _generate_1d_proj_vectors(start_x, end_x,
+                              start_y, end_y,
+                              pixel_size_x, pixel_size_y,
+                              upper_left_x, upper_left_y,
+                              dtype, chunks=None):
+    x_kwargs, y_kwargs, arange = _get_vector_arange_args(dtype, chunks)
+    x = arange(start_x, end_x, **x_kwargs) * pixel_size_x + upper_left_x
+    y = arange(start_y, end_y, **y_kwargs) * -pixel_size_y + upper_left_y
+    return x, y
+
+
+def _get_vector_arange_args(dtype, chunks):
+    x_kwargs = {}
+    y_kwargs = {}
+
+    y_chunks, x_chunks = _chunks_to_yx_chunks(chunks)
+    if x_chunks is not None or y_chunks is not None:
+        # use dask functions instead of numpy
+        from dask.array import arange
+        x_kwargs = {'chunks': x_chunks}
+        y_kwargs = {'chunks': y_chunks}
+    else:
+        arange = np.arange
+    x_kwargs['dtype'] = dtype
+    y_kwargs['dtype'] = dtype
+    return x_kwargs, y_kwargs, arange
+
+
+def _chunks_to_yx_chunks(chunks):
+    if chunks is not None and not isinstance(chunks, int):
+        y_chunks = chunks[0]
+        x_chunks = chunks[1]
+    else:
+        y_chunks = x_chunks = chunks
+    return y_chunks, x_chunks
 
 
 class _ProjectionDefinition(BaseDefinition):
@@ -2068,38 +2108,18 @@ class AreaDefinition(_ProjectionDefinition):
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
 
-    @staticmethod
-    def _chunks_to_yx_chunks(chunks):
-        if chunks is not None and not isinstance(chunks, int):
-            y_chunks = chunks[0]
-            x_chunks = chunks[1]
-        else:
-            y_chunks = x_chunks = chunks
-        return y_chunks, x_chunks
-
     def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
         """Get 1D projection coordinates."""
-        x_kwargs = {}
-        y_kwargs = {}
-
-        y_chunks, x_chunks = self._chunks_to_yx_chunks(chunks)
-        if x_chunks is not None or y_chunks is not None:
-            # use dask functions instead of numpy
-            from dask.array import arange
-            x_kwargs = {'chunks': x_chunks}
-            y_kwargs = {'chunks': y_chunks}
-        else:
-            arange = np.arange
         if check_rotation and self.rotation != 0:
             warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
         if dtype is None:
             dtype = self.dtype
-        x_kwargs['dtype'] = dtype
-        y_kwargs['dtype'] = dtype
-
-        target_x = arange(self.width, **x_kwargs) * self.pixel_size_x + self.pixel_upper_left[0]
-        target_y = arange(self.height, **y_kwargs) * -self.pixel_size_y + self.pixel_upper_left[1]
-        return target_x, target_y
+        x, y = _generate_1d_proj_vectors(0, self.width,
+                                         0, self.height,
+                                         self.pixel_size_x, self.pixel_size_y,
+                                         self.pixel_upper_left[0], self.pixel_upper_left[1],
+                                         dtype, chunks=chunks)
+        return x, y
 
     def get_proj_vectors(self, dtype=None, chunks=None):
         """Calculate 1D projection coordinates for the X and Y dimension.
@@ -2198,7 +2218,7 @@ class AreaDefinition(_ProjectionDefinition):
         2D chunks in an optimal way.
 
         """
-        y_chunks, x_chunks = self._chunks_to_yx_chunks(chunks)
+        y_chunks, x_chunks = _chunks_to_yx_chunks(chunks)
         norm_y_chunks, norm_x_chunks = da.core.normalize_chunks((y_chunks, x_chunks), self.shape, dtype=dtype)
         # We must provide `chunks` and `dtype` as passed arguments to ensure
         # the returned array has a unique dask name
