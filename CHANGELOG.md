@@ -1,3 +1,14 @@
+## Version 1.22.2 (2021/12/03)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 401](https://github.com/pytroll/pyresample/pull/401) - Optimize AreaDefinition.get_proj_coords when requesting dask arrays ([1902](https://github.com/pytroll/satpy/issues/1902))
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.22.1 (2021/11/18)
 
 ### Issues Closed
