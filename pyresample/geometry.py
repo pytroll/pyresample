@@ -1130,24 +1130,22 @@ def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_up
     start_x_idx = block_info[None]["array-location"][2][0]
     end_x_idx = block_info[None]["array-location"][2][1]
     dtype = block_info[None]["dtype"]
-    x, y = _generate_1d_proj_vectors(start_x_idx, end_x_idx,
-                                     start_y_idx, end_y_idx,
-                                     pixel_size_x, pixel_size_y,
-                                     pixel_upper_left_x, pixel_upper_left_y,
+    x, y = _generate_1d_proj_vectors((start_x_idx, end_x_idx),
+                                     (start_y_idx, end_y_idx),
+                                     (pixel_size_x, pixel_size_y),
+                                     (pixel_upper_left_x, pixel_upper_left_y),
                                      dtype)
     x_2d, y_2d = np.meshgrid(x, y)
     res = np.stack([x_2d, y_2d])
     return res
 
 
-def _generate_1d_proj_vectors(start_x, end_x,
-                              start_y, end_y,
-                              pixel_size_x, pixel_size_y,
-                              upper_left_x, upper_left_y,
+def _generate_1d_proj_vectors(col_range, row_range,
+                              pixel_size_xy, offset_xy,
                               dtype, chunks=None):
     x_kwargs, y_kwargs, arange = _get_vector_arange_args(dtype, chunks)
-    x = arange(start_x, end_x, **x_kwargs) * pixel_size_x + upper_left_x
-    y = arange(start_y, end_y, **y_kwargs) * -pixel_size_y + upper_left_y
+    x = arange(*col_range, **x_kwargs) * pixel_size_xy[0] + offset_xy[0]
+    y = arange(*row_range, **y_kwargs) * -pixel_size_xy[1] + offset_xy[1]
     return x, y
 
 
@@ -2114,10 +2112,10 @@ class AreaDefinition(_ProjectionDefinition):
             warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
         if dtype is None:
             dtype = self.dtype
-        x, y = _generate_1d_proj_vectors(0, self.width,
-                                         0, self.height,
-                                         self.pixel_size_x, self.pixel_size_y,
-                                         self.pixel_upper_left[0], self.pixel_upper_left[1],
+        x, y = _generate_1d_proj_vectors((0, self.width),
+                                         (0, self.height),
+                                         (self.pixel_size_x, self.pixel_size_y),
+                                         (self.pixel_upper_left[0], self.pixel_upper_left[1]),
                                          dtype, chunks=chunks)
         return x, y
 
