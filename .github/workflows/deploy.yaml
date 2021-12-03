@@ -1,12 +1,6 @@
 name: Deploy sdist and wheels
-
-on:
-  push:
-    tags:
-      - v*
-  release:
-    types:
-      - published
+ 
+on: [push, pull_request, release]
 
 jobs:
   build_sdist:
@@ -94,6 +88,8 @@ jobs:
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
+    # upload to Test PyPI for every commit on main branch
+    if: github.event_name == 'push' && github.event.ref == 'refs/heads/main'
     steps:
       - name: Download sdist artifact
         uses: actions/download-artifact@v2
