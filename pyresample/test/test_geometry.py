@@ -982,6 +982,11 @@ class Test(unittest.TestCase):
         area_def = get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
 
         xcoord, ycoord = area_def.get_proj_coords(chunks=4096)
+        # make sure different chunk size provides a different dask name
+        xcoord2, ycoord2 = area_def.get_proj_coords(chunks=2048)
+        assert xcoord2.name != xcoord.name
+        assert ycoord2.name != ycoord.name
+
         xcoord = xcoord.compute()
         ycoord = ycoord.compute()
         self.assertTrue(np.allclose(xcoord[0, :],

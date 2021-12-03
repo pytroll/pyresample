@@ -1123,7 +1123,8 @@ def _invproj(data_x, data_y, proj_dict):
     return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
 
 
-def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_upper_left_y, block_info=None):
+def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_upper_left_y,
+                        chunks, dtype, block_info=None):
     start_y_idx = block_info[None]["array-location"][1][0]
     end_y_idx = block_info[None]["array-location"][1][1]
     start_x_idx = block_info[None]["array-location"][2][0]
@@ -2154,6 +2155,8 @@ class AreaDefinition(_ProjectionDefinition):
         """
         if self.rotation != 0 and chunks is not None:
             raise ValueError("'rotation' is not supported with dask operations.")
+        if dtype is None:
+            dtype = self.dtype
         y_slice, x_slice = self._get_yx_data_slice(data_slice)
         if chunks is not None:
             target_x, target_y = self._proj_coords_dask(chunks, dtype)
@@ -2197,10 +2200,14 @@ class AreaDefinition(_ProjectionDefinition):
         """
         y_chunks, x_chunks = self._chunks_to_yx_chunks(chunks)
         norm_y_chunks, norm_x_chunks = da.core.normalize_chunks((y_chunks, x_chunks), self.shape, dtype=dtype)
+        # We must provide `chunks` and `dtype` as passed arguments to ensure
+        # the returned array has a unique dask name
+        # See: https://github.com/dask/dask/issues/8450
         res = da.map_blocks(_generate_2d_coords,
                             self.pixel_size_x, self.pixel_size_y,
                             self.pixel_upper_left[0], self.pixel_upper_left[1],
-                            chunks=(2, norm_y_chunks, norm_x_chunks),
+                            chunks, dtype,
+                            chunks=((2,), norm_y_chunks, norm_x_chunks),
                             meta=np.array((), dtype=dtype),
                             dtype=dtype,
                             )
