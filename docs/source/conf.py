@@ -14,6 +14,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -69,7 +70,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyresample'
-copyright = u'2013, Esben S. Nielsen'
+copyright = "2013-{datetime.utcnow():%Y}, the Pytroll team"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
