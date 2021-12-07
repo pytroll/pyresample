@@ -98,8 +98,8 @@ jobs:
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
-    # upload to Test PyPI for every commit on main branch
-    if: github.event_name == 'push' && github.event.ref == 'refs/heads/main'
+    # upload to PyPI on every tag starting with 'v'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: Download sdist artifact
         uses: actions/download-artifact@v2
