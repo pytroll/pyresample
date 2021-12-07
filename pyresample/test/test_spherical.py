@@ -112,7 +112,7 @@ class TestSCoordinate(unittest.TestCase):
     def test_distance(self):
         """Test Vincenty formula."""
         d = SCoordinate(0, 0).distance(SCoordinate(1, 1))
-        self.assertEqual(d, 1.2745557823062943)
+        np.testing.assert_equal(d, 1.2745557823062943)
 
     def test_hdistance(self):
         """Test Haversine formula."""

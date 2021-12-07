@@ -18,7 +18,6 @@
 """Test resampling swath definitions."""
 
 import os
-import sys
 import unittest
 import warnings
 
@@ -57,12 +56,10 @@ class Test(unittest.TestCase):
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
-        if sys.platform == 'darwin':
-            # OSX seems to get slightly different results for `_spatial_mp.Cartesian`
-            truth_value = 668848.144817
-        else:
-            truth_value = 668848.082208
-        self.assertAlmostEqual(res.sum() / 100., truth_value, 1,
+        # only compare the whole number as different OSes and versions of numpy
+        # can produce slightly different results
+        truth_value = 668848.0
+        self.assertAlmostEqual(res.sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath for 1 channel')
 
     def test_self_map_multi(self):
@@ -77,14 +74,10 @@ class Test(unittest.TestCase):
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
-        if sys.platform == 'darwin':
-            # OSX seems to get slightly different results for `_spatial_mp.Cartesian`
-            truth_value = 668848.144817
-        else:
-            truth_value = 668848.082208
-        self.assertAlmostEqual(res[:, 0].sum() / 100., truth_value, 1,
+        truth_value = 668848.0
+        self.assertAlmostEqual(res[:, 0].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 1')
-        self.assertAlmostEqual(res[:, 1].sum() / 100., truth_value, 1,
+        self.assertAlmostEqual(res[:, 1].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 2')
-        self.assertAlmostEqual(res[:, 2].sum() / 100., truth_value, 1,
+        self.assertAlmostEqual(res[:, 2].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 3')
