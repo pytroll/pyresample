@@ -357,3 +357,20 @@ class TestDaskEWAResampler:
         exp_exc = ValueError if len(input_shape) != 4 else NotImplementedError
         with pytest.raises(exp_exc):
             resampler.resample(swath_data, rows_per_scan=10)
+
+    def test_multiple_targets(self):
+        """Test that multiple targets produce unique results."""
+        input_shape = (100, 50)
+        output_shape = (200, 100)
+        swath_data, source_swath, target_area1 = get_test_data(
+            input_shape=input_shape, output_shape=output_shape,
+        )
+        target_area2 = _get_test_target_area((250, 150))
+
+        resampler1 = DaskEWAResampler(source_swath, target_area1)
+        res1 = resampler1.resample(swath_data, rows_per_scan=10)
+        resampler2 = DaskEWAResampler(source_swath, target_area2)
+        res2 = resampler2.resample(swath_data, rows_per_scan=10)
+
+        assert res1.name != res2.name
+        assert res1.compute().shape != res2.compute().shape

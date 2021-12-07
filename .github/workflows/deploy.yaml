@@ -5,7 +5,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.type }}
   cancel-in-progress: true
 
-on: [push, pull_request, release]
+on:
+  push:
+  pull_request:
+  release:
+    types:
+      - published
 
 jobs:
   build_sdist:
