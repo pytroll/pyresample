@@ -70,7 +70,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyresample'
-copyright = "2013-{datetime.utcnow():%Y}, the Pytroll team"
+copyright = f"2013-{datetime.utcnow():%Y}, Pyresample developers"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
