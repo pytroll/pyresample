@@ -1,3 +1,28 @@
+## Version 1.22.3 (2021/12/07)
+
+### Issues Closed
+
+* [Issue 375](https://github.com/pytroll/pyresample/issues/375) - Importing pyresample without having Xarray and/or zarray raises UserWarning ([PR 400](https://github.com/pytroll/pyresample/pull/400) by [@yunjunz](https://github.com/yunjunz))
+* [Issue 318](https://github.com/pytroll/pyresample/issues/318) - Add fill_value keyword argument for AreaDefinition.get_lonlats
+* [Issue 231](https://github.com/pytroll/pyresample/issues/231) - Copyright notice out of date ([PR 403](https://github.com/pytroll/pyresample/pull/403) by [@gerritholl](https://github.com/gerritholl))
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 404](https://github.com/pytroll/pyresample/pull/404) - Fix dask EWA code not creating unique dask task names for different target areas
+* [PR 400](https://github.com/pytroll/pyresample/pull/400) - Move bilinear import to avoid unnecessary warning ([375](https://github.com/pytroll/pyresample/issues/375))
+* [PR 399](https://github.com/pytroll/pyresample/pull/399) - Fix deprecated numpy data type usage in bilinear resampling
+
+#### Documentation changes
+
+* [PR 403](https://github.com/pytroll/pyresample/pull/403) - Update copyright note in documentation ([231](https://github.com/pytroll/pyresample/issues/231))
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.22.2 (2021/12/03)
 
 ### Pull Requests Merged
