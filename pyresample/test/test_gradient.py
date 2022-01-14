@@ -428,3 +428,86 @@ def test_concatenate_chunks_stack_calls(dask_da):
     dask_da.nanmax.assert_called_once()
     assert 'axis=2' in str(dask_da.concatenate.mock_calls[-2])
     assert 'squeeze' in str(dask_da.concatenate.mock_calls[-1])
+
+
+class TestGradientCython():
+    """Test the core gradient features."""
+
+    def setup(self):
+        """Set up the test case."""
+        self.src_x, self.src_y = np.meshgrid(range(10), range(10))
+
+        self.xl, self.xp = np.gradient(self.src_x)
+        self.yl, self.yp = np.gradient(self.src_y)
+
+        self.dst_x = np.array([[1.5, 1.99999, 2.7],
+                               [1.6, 2.0, 2.8],
+                               [1.7, 2.3, 2.9]]) + 5
+
+        self.dst_y = np.array([[1.1, 1.3, 1.5],
+                               [2.1, 2.3, 2.5],
+                               [2.8, 2.9, 3.0]]) + 5
+
+    def test_index_search_works(self):
+        """Test that index search works."""
+        from pyresample.gradient._gradient_search import one_step_gradient_indices
+        res_x, res_y = one_step_gradient_indices(self.src_x.astype(float),
+                                                 self.src_y.astype(float),
+                                                 self.xl, self.xp, self.yl, self.yp,
+                                                 self.dst_x, self.dst_y)
+        np.testing.assert_allclose(res_x, self.dst_x)
+        np.testing.assert_allclose(res_y, self.dst_y)
+
+    def test_index_search_with_data_requested_outside_bottom_right_boundary(self):
+        """Test index search with data requested outside bottom right boundary."""
+        from pyresample.gradient._gradient_search import one_step_gradient_indices
+        self.dst_x += 2
+        self.dst_y += 2
+        expected_x = np.full([3, 3], np.nan)
+        expected_x[0, 0] = 8.5
+        expected_x[0, 1] = 8.99999
+        expected_y = np.full([3, 3], np.nan)
+        expected_y[0, 0] = 8.1
+        expected_y[0, 1] = 8.3
+        res_x, res_y = one_step_gradient_indices(self.src_x.astype(float),
+                                                 self.src_y.astype(float),
+                                                 self.xl, self.xp, self.yl, self.yp,
+                                                 self.dst_x, self.dst_y)
+        np.testing.assert_allclose(res_x, expected_x)
+        np.testing.assert_allclose(res_y, expected_y)
+
+    def test_index_search_with_data_requested_outside_top_left_boundary(self):
+        """Test index search with data requested outside top left boundary."""
+        from pyresample.gradient._gradient_search import one_step_gradient_indices
+        self.dst_x -= 7
+        self.dst_y -= 7
+        expected_x = np.copy(self.dst_x)
+        expected_x[:, 0] = np.nan
+        expected_x[0, :] = np.nan
+        expected_y = np.copy(self.dst_y)
+        expected_y[0, :] = np.nan
+        expected_y[:, 0] = np.nan
+        res_x, res_y = one_step_gradient_indices(self.src_x.astype(float),
+                                                 self.src_y.astype(float),
+                                                 self.xl, self.xp, self.yl, self.yp,
+                                                 self.dst_x, self.dst_y)
+        np.testing.assert_allclose(res_x, expected_x)
+        np.testing.assert_allclose(res_y, expected_y)
+
+    # def test_index_search_with_data_overflow(self):
+    #     self.src_x, self.src_y = np.meshgrid(range(4), range(4))
+    #     self.src_x[:, -1] -= 0.5
+    #
+    #
+    #     self.xl, self.xp = np.gradient(self.src_x)
+    #     self.yl, self.yp = np.gradient(self.src_y)
+    #
+    #     self.dst_x = np.array([[1.5, 2.1, 2.7],
+    #                            [1.6, 2.2, 2.8],
+    #                            [1.7, 2.3, 2.9]])
+    #
+    #     self.dst_y = np.array([[1.1, 1.3, 1.5],
+    #                            [2.1, 2.3, 2.5],
+    #                            [2.8, 2.9, 3.0]])
+    #
+    #     from pyresample.gradient._gradient_search import one_step_gradient_indices
