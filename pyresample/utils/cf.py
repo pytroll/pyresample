@@ -64,7 +64,8 @@ _valid_cf_coordinate_standardnames['geostationary']['y'] = (
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """Convert XY values from CF to PROJ convention. With CF =< 1.9 only affects geostrationary projection."""
     crs_dict = crs.to_dict()
-    if crs_dict['proj'] == 'geos':
+    axis_units = axis_info.get('unit') or 'radians'  # unit could be None
+    if crs_dict['proj'] == 'geos' and axis_units == 'radians':
         # for geostationary projection, the values stored as x/y in CF are not directly
         #  the x/y along the projection axes, but are rather the scanning angles from
         #  the satellite. We must multiply them by the height of the satellite.
@@ -72,7 +73,7 @@ def _convert_XY_CF_to_Proj(crs, axis_info):
         for k in ('first', 'last', 'spacing'):
             axis_info[k] *= satellite_height
         # the unit is now the default (meters)
-        axis_info['units'] = None
+        axis_info['units'] = 'm'
 
     return axis_info
 
@@ -121,8 +122,6 @@ def _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_ma
 
 def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_mapping):
     """Check if a variable is a valid CF coordinate variable."""
-    valid = False
-
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
@@ -132,7 +131,7 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
         raise KeyError("Variable '{}' does not exist in netCDF file".format(coord_varname))
 
     try:
-        coord_standard_name = getattr(coord_var, 'standard_name')
+        coord_standard_name = coord_var.standard_name
         valid = _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_mapping)
     except AttributeError:
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
@@ -155,7 +154,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
 
     # get the unit information
     try:
-        unit = getattr(nc_handle[coord_varname], 'units')
+        unit = nc_handle[coord_varname].units
     except AttributeError:
         unit = None
 
@@ -238,7 +237,7 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     for v in search_list:
         try:
             # this allows for both 'latitude' and 'rotated_latitude'...
-            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in getattr(nc_handle[v], 'standard_name'):
+            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in nc_handle[v].standard_name:
                 ret = v
                 break
         except AttributeError:
@@ -309,6 +308,7 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
 def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable):
     """Prepare the AreaDefinition object."""
     from pyresample import geometry
+
     # create shape
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
 
@@ -450,6 +450,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
 
     """
     import xarray as xr
+
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
         raise ValueError("You must specify either both or none of x= and y=")

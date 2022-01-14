@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test EWA fornav module."""
 import logging
-import numpy as np
 import unittest
+
+import numpy as np
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +52,29 @@ class TestFornav(unittest.TestCase):
         # The swath was all 1s so there shouldn't be any non-1 values in the
         # output except outside the swath
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
-                         msg="Unexpected interpolation values were returned")
+                        msg="Unexpected interpolation values were returned")
+
+    def test_fornav_swath_wide_input(self):
+        """Test that a swath with large input pixels on the left edge of the output."""
+        from pyresample.ewa import _fornav
+        swath_shape = (400, 800)
+        data_type = np.float32
+        # Create a fake row and cols array
+        rows = np.empty(swath_shape, dtype=np.float32)
+        rows[:] = np.linspace(-500, 500, 400)[:, None]
+        cols = np.empty(swath_shape, dtype=np.float32)
+        cols[:] = np.linspace(-500, 500, 800) + 0.5
+        rows_per_scan = 16
+        # Create a fake data swath
+        data = np.ones(swath_shape, dtype=data_type)
+        out = np.empty((800, 1000), dtype=data_type)
+
+        grid_points_covered = _fornav.fornav_wrapper(cols, rows, (data,), (out,),
+                                                     np.nan, np.nan, rows_per_scan)
+        one_grid_points_covered = grid_points_covered[0]
+        # the upper-left 500x500 square should be filled with 1s at least
+        assert 500 * 500 <= one_grid_points_covered <= 505 * 505
+        np.testing.assert_allclose(out[:500, :500], 1)
 
     def test_fornav_swath_smaller(self):
         """Test that a swath smaller than the output grid is entirely used."""

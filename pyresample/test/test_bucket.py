@@ -1,17 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2019-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test the bucket resampler."""
+
 import unittest
-import numpy as np
-import dask.array as da
-import dask
-import xarray as xr
 from unittest.mock import MagicMock, patch
 
-from pyresample import create_area_def
+import dask
+import dask.array as da
+import numpy as np
+import xarray as xr
+
+from pyresample import bucket, create_area_def
 from pyresample.geometry import AreaDefinition
-from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 
 class Test(unittest.TestCase):
+    """Test bucket resampler."""
+
     adef = AreaDefinition('eurol', 'description', '',
                           {'ellps': 'WGS84',
                            'lat_0': '90.0',
@@ -42,6 +63,8 @@ class Test(unittest.TestCase):
         self.assertTrue(hasattr(resampler, 'idxs'))
         self.assertTrue(hasattr(resampler, 'get_sum'))
         self.assertTrue(hasattr(resampler, 'get_count'))
+        self.assertTrue(hasattr(resampler, 'get_min'))
+        self.assertTrue(hasattr(resampler, 'get_max'))
         self.assertTrue(hasattr(resampler, 'get_average'))
         self.assertTrue(hasattr(resampler, 'get_fractions'))
         self.assertIsNone(resampler.counts)
@@ -133,7 +156,6 @@ class Test(unittest.TestCase):
 
     def test_get_sum_nan_data_skipna_false(self):
         """Test drop-in-a-bucket sum for data input with nan and skipna False."""
-
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 
@@ -145,7 +167,6 @@ class Test(unittest.TestCase):
 
     def test_get_sum_nan_data_skipna_true(self):
         """Test drop-in-a-bucket sum for data input with nan and skipna True."""
-
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 
@@ -165,6 +186,42 @@ class Test(unittest.TestCase):
         self.assertEqual(np.sum(result == 1), 2)
         self.assertEqual(np.sum(result == 2), 1)
         self.assertTrue(self.resampler.counts is not None)
+
+    def _get_min_result(self, data, **kwargs):
+        """Compute the bucket average with kwargs and check that no dask computation is performed."""
+        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
+            result = self.resampler.get_min(data, **kwargs)
+        return result.compute()
+
+    def test_get_min(self):
+        """Test min bucket resampling."""
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_min_result(data)
+        # test multiple entries average
+        self.assertEqual(np.count_nonzero(result == 2), 1)
+        # test single entry average
+        self.assertEqual(np.count_nonzero(result == 5), 1)
+        # test that minimum of bucket with only nan is nan, and empty buckets are nan
+        self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
+
+    def _get_max_result(self, data, **kwargs):
+        """Compute the bucket average with kwargs and check that no dask computation is performed."""
+        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
+            result = self.resampler.get_max(data, **kwargs)
+        return result.compute()
+
+    def test_get_max(self):
+        """Test max bucket resampling."""
+        data = da.from_array(np.array([[2, 11], [5, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_max_result(data)
+        # test multiple entries average
+        self.assertEqual(np.count_nonzero(result == 11), 1)
+        # test single entry average
+        self.assertEqual(np.count_nonzero(result == 5), 1)
+        # test that minimum of bucket with only nan is nan, and empty buckets are nan
+        self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
 
     def _get_average_result(self, data, **kwargs):
         """Compute the bucket average with kwargs and check that no dask computation is performed."""

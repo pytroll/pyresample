@@ -30,9 +30,9 @@ and optional arguments:
 * **description**: Human-readable description. If not provided, defaults to **area_id**
 * **proj_id**: ID of projection (deprecated)
 * **units**: Units that provided arguments should be interpreted as. This can be
-    one of 'deg', 'degrees', 'meters', 'metres', and any parameter supported by the
-    `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
-    command. Units are determined in the following priority:
+  one of 'deg', 'degrees', 'meters', 'metres', and any parameter supported by the
+  `cs2cs -lu <https://proj4.org/apps/cs2cs.html#cmdoption-cs2cs-lu>`_
+  command. Units are determined in the following priority:
 
     1. units expressed with each variable through a DataArray's attrs attribute.
     2. units passed to ``units``
@@ -92,7 +92,7 @@ the mercator projection with radius and resolution defined in degrees.
 
 .. doctest::
 
- >>> proj_dict = {'proj': 'merc', 'lat_0': 0, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> proj_dict = {'proj': 'merc', 'lon_0': 0, 'no_defs': None, 'proj': 'merc', 'R': 6371228, 'k': 1, 'units': 'm'}
  >>> area_def = create_area_def(area_id, proj_dict, center=(0, 0),
  ...                              radius=(47.90379019311, 43.1355420077),
  ...                              resolution=(0.22542960090875294, 0.22542901929487608),

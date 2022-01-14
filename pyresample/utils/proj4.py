@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019 Pyresample developers
+# Copyright (C) 2019-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,11 +15,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Utilities for working with projection parameters."""
 
 import math
 from collections import OrderedDict
 
+import numpy as np
 from pyproj import CRS
+from pyproj import Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):
@@ -88,6 +91,51 @@ def proj4_radius_parameters(proj4_dict):
 
 
 def get_geostationary_height(geos_area_crs):
+    """Get the height parameter from a geostationary CRS."""
     params = geos_area_crs.coordinate_operation.params
     h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
     return h_param.value
+
+
+def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs, transform_kwargs):
+    crs_from = CRS(crs_from)
+    crs_to = CRS(crs_to)
+    transformer = PROJTransformer.from_crs(crs_from, crs_to, **kwargs)
+    return np.stack(transformer.transform(x, y, **transform_kwargs), axis=-1)
+
+
+class DaskFriendlyTransformer:
+    """Wrapper around the pyproj Transformer class that uses dask."""
+
+    def __init__(self, src_crs, dst_crs, **kwargs):
+        """Initialize the transformer with CRS objects.
+
+        This method should not be used directly, just like pyproj.Transformer
+        should not be created directly.
+
+        """
+        self.src_crs = src_crs
+        self.dst_crs = dst_crs
+        self.kwargs = kwargs
+
+    @classmethod
+    def from_crs(cls, crs_from, crs_to, **kwargs):
+        """Create transformer object from two CRS objects."""
+        return cls(crs_from, crs_to, **kwargs)
+
+    def transform(self, x, y, **kwargs):
+        """Transform coordinates."""
+        import dask.array as da
+        crs_from = self.src_crs
+        crs_to = self.dst_crs
+        # CRS objects aren't thread-safe until pyproj 3.1+
+        # convert to WKT strings to be safe
+        result = da.map_blocks(_transform_dask_chunk, x, y,
+                               crs_from.to_wkt(), crs_to.to_wkt(),
+                               dtype=x.dtype, chunks=x.chunks + ((2,),),
+                               kwargs=self.kwargs,
+                               transform_kwargs=kwargs,
+                               new_axis=x.ndim)
+        x = result[..., 0]
+        y = result[..., 1]
+        return x, y

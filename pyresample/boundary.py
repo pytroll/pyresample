@@ -1,30 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2014, 2015, 2017 Martin Raspaud
-
-# Author(s):
-
-#   Martin Raspaud <martin.raspaud@smhi.se>
-
+#
+# Copyright (c) 2014-2021 Pyresample developers
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """The Boundary classes."""
 
-
 import logging
-import logging.handlers
 
 import numpy as np
 
@@ -34,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class Boundary(object):
-
     """Boundary objects."""
 
     def __init__(self, lons=None, lats=None, frequency=1):
@@ -45,6 +37,7 @@ class Boundary(object):
             self.lats = lats[::frequency]
 
     def contour(self):
+        """Get lon/lats of the contour."""
         return self.lons, self.lats
 
     @property
@@ -56,12 +49,11 @@ class Boundary(object):
         return self._contour_poly
 
     def draw(self, mapper, options, **more_options):
-        """Draw the current boundary on the *mapper*"""
+        """Draw the current boundary on the *mapper*."""
         self.contour_poly.draw(mapper, options, **more_options)
 
 
 class AreaBoundary(Boundary):
-
     """Area boundary objects."""
 
     def __init__(self, *sides):

@@ -1,7 +1,25 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Filters based on geolocation validity."""
+
 import numpy as np
 
-from . import _spatial_mp
-from . import geometry
+from . import _spatial_mp, geometry
 
 
 class GridFilter(object):
@@ -29,7 +47,7 @@ class GridFilter(object):
         self.nprocs = nprocs
 
     def get_valid_index(self, geometry_def):
-        """Calculates valid_index array  based on lons and lats.
+        """Calculate valid_index array based on lons and lats.
 
         Args:
             lons (numpy array): Longitude degrees array
@@ -38,7 +56,6 @@ class GridFilter(object):
         Returns:
             Boolean numpy array of same shape as lons and lats
         """
-
         lons = geometry_def.lons[:]
         lats = geometry_def.lats[:]
 
@@ -73,6 +90,7 @@ class GridFilter(object):
         return filter
 
     def filter(self, geometry_def, data):
+        """Get coordinate definition and data where invalid lon/lats are removed."""
         lons = geometry_def.lons[:]
         lats = geometry_def.lats[:]
         valid_index = self.get_valid_index(geometry_def)

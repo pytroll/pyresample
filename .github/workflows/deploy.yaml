@@ -1,9 +1,13 @@
 name: Deploy sdist and wheels
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency
+# https://docs.github.com/en/developers/webhooks-and-events/events/github-event-types#pullrequestevent
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.type }}
+  cancel-in-progress: true
 
 on:
   push:
-    tags:
-      - v*
+  pull_request:
   release:
     types:
       - published
@@ -34,17 +38,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ['3.7', '3.8', '3.9', '3.10']
         include:
           # Using pythons inside a docker image to provide all the Linux
           # python-versions permutations.
           - name: manylinux 64-bit
             os: ubuntu-latest
-            python-version: 3.8
+            python-version: '3.8'
             docker-image: manylinux1_x86_64
           - name: manylinux 32-bit
             os: ubuntu-latest
-            python-version: 3.8
+            python-version: '3.8'
             docker-image: manylinux1_i686
 
     steps:
@@ -55,7 +59,7 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '${{ matrix.python-version }}'
 
       - name: Install dependencies
         run: |
@@ -77,6 +81,14 @@ jobs:
             quay.io/pypa/${{ matrix.docker-image }} \
             /io/continuous_integration/build-manylinux-wheels.sh
 
+      - name: Check version number from inside wheel
+        if:  matrix.docker-image != 'manylinux1_i686'
+        run: |
+          mv pyresample unused_src_to_prevent_local_import
+          python -m pip install --find-links=./dist/ pyresample
+          python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
+          python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
+
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -86,6 +98,8 @@ jobs:
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
+    # upload to PyPI on every tag starting with 'v'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: Download sdist artifact
         uses: actions/download-artifact@v2
@@ -98,6 +112,7 @@ jobs:
           name: wheels
           path: dist
       - name: Publish package to PyPI
+        if: github.event.action != 'published'
         uses: pypa/gh-action-pypi-publish@v1.4.1
         with:
           user: __token__

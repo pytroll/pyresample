@@ -32,11 +32,14 @@ import numpy as np
 import pyproj
 import xarray as xr
 from pyproj import CRS
-from pyresample.gradient._gradient_search import one_step_gradient_search, one_step_gradient_indices
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
 from pyresample.geometry import get_geostationary_bounding_box
+from pyresample.gradient._gradient_search import (
+    one_step_gradient_indices,
+    one_step_gradient_search,
+)
 from pyresample.resampler import BaseResampler
 
 logger = logging.getLogger(__name__)
@@ -48,7 +51,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResamplerOriginal(BaseResampler):
+class GradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -447,7 +450,7 @@ def ensure_chunked_data_array(func):
     return wrapper
 
 
-class GradientSearchResampler(BaseResampler):
+class GradientSearchResamplerNew(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):

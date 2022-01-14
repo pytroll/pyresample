@@ -17,18 +17,19 @@
 
 """Code for resampling using bucket resampling."""
 
-import dask.array as da
-import xarray as xr
-import numpy as np
 import logging
+
+import dask.array as da
+import numpy as np
+import xarray as xr
+
 from pyresample._spatial_mp import Proj
 
 LOG = logging.getLogger(__name__)
 
 
 class BucketResampler(object):
-
-    """Class for bucket resampling.
+    """Bucket resampler.
 
     Bucket resampling is useful for calculating averages and hit-counts
     when aggregating data to coarser scale grids.
@@ -79,7 +80,6 @@ class BucketResampler(object):
     """
 
     def __init__(self, target_area, source_lons, source_lats):
-
         self.target_area = target_area
         self.source_lons = source_lons
         self.source_lats = source_lats
@@ -126,12 +126,11 @@ class BucketResampler(object):
         # Calculate array indices. Orient so that 0-meridian is pointing down.
         adef = self.target_area
         x_res, y_res = adef.resolution
-        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int)
-        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int)
+        x_idxs = da.floor((proj_x - adef.area_extent[0]) / x_res).astype(np.int64)
+        y_idxs = da.floor((adef.area_extent[3] - proj_y) / y_res).astype(np.int64)
 
         # Get valid index locations
-        mask = ((x_idxs >= 0) & (x_idxs < adef.width) &
-                (y_idxs >= 0) & (y_idxs < adef.height))
+        mask = (x_idxs >= 0) & (x_idxs < adef.width) & (y_idxs >= 0) & (y_idxs < adef.height)
         self.y_idxs = da.where(mask, y_idxs, -1)
         self.x_idxs = da.where(mask, x_idxs, -1)
 
@@ -145,12 +144,12 @@ class BucketResampler(object):
         Parameters
         ----------
         data : Numpy or Dask array
-            Data to be binned and averaged.
+            Data to be binned and summed.
         skipna : boolean (optional)
                 If True, skips NaN values for the sum calculation
-                    (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
+                (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
                 If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                    (similarly to Numpy's `sum`).
+                (similarly to Numpy's `sum`).
                 In both cases, empty buckets are set to 0.
                 Default: True
 
@@ -160,6 +159,7 @@ class BucketResampler(object):
             Bin-wise sums in the target grid
         """
         LOG.info("Get sum of values in each location")
+
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
@@ -177,21 +177,127 @@ class BucketResampler(object):
                                weights=weights, density=False)
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        sums = self._mask_sums_with_nan_if_not_skipna(skipna, data, out_size, sums)
+        sums = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, sums)
 
         return sums.reshape(self.target_area.shape)
 
-    def _mask_sums_with_nan_if_not_skipna(self, skipna, data, out_size, sums):
+    def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic):
         if not skipna:
             nans = np.isnan(data)
-            nan_sums, _ = da.histogram(self.idxs[nans], bins=out_size,
+            nan_bins, _ = da.histogram(self.idxs[nans], bins=out_size,
                                        range=(0, out_size))
-            sums = da.where(nan_sums > 0, np.nan, sums)
-        return sums
+            statistic = da.where(nan_bins > 0, np.nan, statistic)
+        return statistic
+
+    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+        """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
+        import dask.dataframe as dd
+        import pandas as pd
+
+        if isinstance(data, xr.DataArray):
+            data = data.data
+        data = data.ravel()
+
+        # Remove NaN values from the data when used as weights
+        weights = da.where(np.isnan(data), 0, data)
+
+        # Rechunk indices to match the data chunking
+        if weights.chunks != self.idxs.chunks:
+            self.idxs = da.rechunk(self.idxs, weights.chunks)
+
+        # Calculate the min of the data falling to each bin
+        out_size = self.target_area.size
+
+        # merge into one Dataframe
+        df = dd.concat([dd.from_dask_array(self.idxs), dd.from_dask_array(weights)],
+                       axis=1)
+        df.columns = ['x', 'values']
+
+        if scipy_method == 'min':
+            statistics = df.map_partitions(lambda part: part.groupby(
+                                           np.digitize(part.x,
+                                                       bins=np.linspace(0, out_size, out_size)
+                                                       )
+                                           )['values'].min())
+
+        elif scipy_method == 'max':
+            statistics = df.map_partitions(lambda part: part.groupby(
+                                           np.digitize(part.x,
+                                                       bins=np.linspace(0, out_size, out_size)
+                                                       )
+                                           )['values'].max())
+
+        # fill missed index
+        statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
+
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64)).ravel()
+
+        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
+        statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
+
+        # set bin without data to fill value
+        statistics = da.where(counts == 0, fill_value, statistics)
+
+        return statistics.reshape(self.target_area.shape)
+
+    def get_min(self, data, fill_value=np.nan, skipna=True):
+        """Calculate minimums for each bin with drop-in-a-bucket resampling.
+
+        .. warning::
+
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned.
+        skipna : boolean (optional)
+                If True, skips NaN values for the minimum calculation
+                (similarly to Numpy's `nanmin`). Buckets containing only NaN are set to zero.
+                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+                (similarly to Numpy's `min`).
+                In both cases, empty buckets are set to 0.
+                Default: True
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise minimums in the target grid
+        """
+        LOG.info("Get min of values in each location")
+        return self._call_pandas_groupby_statistics('min', data, fill_value, skipna)
+
+    def get_max(self, data, fill_value=np.nan, skipna=True):
+        """Calculate maximums for each bin with drop-in-a-bucket resampling.
+
+        .. warning::
+
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned.
+        skipna : boolean (optional)
+                If True, skips NaN values for the maximum calculation
+                (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
+                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+                (similarly to Numpy's `max`).
+                In both cases, empty buckets are set to 0.
+                Default: True
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise maximums in the target grid
+        """
+        LOG.info("Get max of values in each location")
+        return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
 
     def get_count(self):
-        """Count the number of occurrences for each bin using drop-in-a-bucket
-        resampling.
+        """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
 
         Returns
         -------
@@ -223,7 +329,7 @@ class BucketResampler(object):
             Default: np.nan
         skipna : bool
             If True, skips missing values (as marked by NaN or `fill_value`) for the average calculation
-             (similarly to Numpy's `nanmean`). Buckets containing only missing values are set to fill_value.
+            (similarly to Numpy's `nanmean`). Buckets containing only missing values are set to fill_value.
             If False, sets the bucket to fill_value if one or more missing values are present in the bucket
             (similarly to Numpy's `mean`).
             In both cases, empty buckets are set to NaN.
@@ -240,7 +346,7 @@ class BucketResampler(object):
             data = da.where(data == fill_value, np.nan, data)
 
         sums = self.get_sum(data, skipna=skipna)
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(int))
+        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64))
 
         average = sums / da.where(counts == 0, np.nan, counts)
         average = da.where(np.isnan(average), fill_value, average)
