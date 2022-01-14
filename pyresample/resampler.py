@@ -28,6 +28,7 @@ import os
 from abc import ABC, abstractmethod
 from functools import lru_cache, partial
 from uuid import uuid4
+from numbers import Number
 
 import numpy as np
 
@@ -298,18 +299,6 @@ class BaseResampler(object):
         return os.path.join(cache_dir, prefix + hash_str + fmt)
 
 
-def _enumerate_chunk_slices(chunks):
-    """Enumerate chunks with slices."""
-    for position in np.ndindex(tuple(map(len, (chunks)))):
-        slices = []
-        for pos, chunk in zip(position, chunks):
-            chunk_size = chunk[pos]
-            offset = sum(chunk[:pos])
-            slices.append(slice(offset, offset + chunk_size))
-
-        yield (position, slices)
-
-
 class DaskResampler:
     """Resampler that uses dask for processing the data chunkwise.
 
@@ -321,9 +310,11 @@ class DaskResampler:
     def __init__(self, source_geo_def, target_geo_def, resampler, **resampler_kwargs):
         """Initialize the class."""
         self.source_geo_def = source_geo_def
+        # TODO target_geo_def needs to have chunks that we can use here.
         self.target_geo_def = target_geo_def
         self.resampler = partial(resampler, **resampler_kwargs)
         self.resampler.__name__ = resampler.__name__
+        self.indices = None
 
     def resample(self, data: da.Array, chunks=None) -> da.Array:
         """Resample the provided dask array.
@@ -350,6 +341,8 @@ class DaskResampler:
             else:
                 deps.append(smaller_data)
                 if isinstance(source_geo_def, SwathDefinition):
+                    # TODO we need to add one for area defs too, if the lons and lats or proj coordinates are
+                    #  to be computed
                     deps.append(source_geo_def.lons.data)
                     deps.append(source_geo_def.lats.data)
                     source_geo_def = [(source_geo_def.lons.data.name, 0, 0), (source_geo_def.lats.data.name, 0, 0)]
@@ -364,17 +357,270 @@ class DaskResampler:
 
         return da.Array(dask_graph, name, chunks=dst_chunks, dtype=data.dtype, shape=output_shape)
 
-    def crop_data_around_area(self, data, target_geo_def):
-        """Crop the data around the provided area."""
+    def resample_via_indices(self, data: da.Array, chunks=None) -> da.Array:
+        """Resample the provided dask array.
+
+        The input array has to be at least two-dimensional and expects the last
+        two dimensions to be respectively y and x.
+        """
+        if self.indices is None:
+            name_indices = self.resampler.__name__ + '-indices-' + uuid4().hex
+        else:
+            name_indices = self.indices.name
+        name_final = self.resampler.__name__ + '-' + uuid4().hex
+
+        output_shape = data.shape[:-2] + self.target_geo_def.shape
+        dst_chunks = da.core.normalize_chunks(chunks or data.chunksize, output_shape)
+        dask_graph_indices = dict()
+        deps_indices = []
+        if self.indices is None:
+            for position, slices in _enumerate_chunk_slices(dst_chunks):
+                target_geo_def = self.target_geo_def[slices[-2:]]
+                try:
+                    smaller_data, source_geo_def = self.crop_data_around_area(data, target_geo_def)
+
+                except IncompatibleAreas:  # no relevant data matching
+                    chunk_shape = [chunk[pos] for pos, chunk in zip(position, dst_chunks)]
+                    dask_graph_indices[(name_indices, 0, *position)] = (
+                        np.full,
+                        (2, ) + tuple(chunk_shape),
+                        np.nan
+                    )
+                else:
+                    # deps_final.append(smaller_data)
+                    if isinstance(source_geo_def, SwathDefinition):
+                        # TODO we need to add one for area defs too, if the lons and lats or proj coordinates are to
+                        # be computed
+                        deps_indices.append(source_geo_def.lons.data)
+                        deps_indices.append(source_geo_def.lats.data)
+                        source_geo_def = [(source_geo_def.lons.data.name, 0, 0), (source_geo_def.lats.data.name, 0, 0)]
+                    dask_graph_indices[(name_indices, 0, *position)] = (
+                        self.resampler,
+                        source_geo_def,
+                        target_geo_def,
+                    )
+            dask_graph_indices = HighLevelGraph.from_collections(name_indices, dask_graph_indices,
+                                                                 dependencies=deps_indices)
+
+            darr_indices = da.Array(dask_graph_indices, name_indices, chunks=(2, ) + dst_chunks,
+                                    dtype=int, shape=(2, ) + output_shape)
+            print(darr_indices.name)
+            self.indices = darr_indices
+
+        dask_graph_final = dict()
+        deps_final = [data]
+
+        for position, slices in _enumerate_chunk_slices(dst_chunks):
+            target_geo_def = self.target_geo_def[slices[-2:]]
+            try:
+                smaller_data, source_geo_def = self.crop_data_around_area(data, target_geo_def)
+
+            except IncompatibleAreas:  # no relevant data matching
+                chunk_shape = [chunk[pos] for pos, chunk in zip(position, dst_chunks)]
+                dask_graph_final[(name_final, *position)] = (
+                    np.full,
+                    chunk_shape,
+                    np.nan
+                )
+            else:
+                deps_final.append(smaller_data)
+                dask_graph_final[(name_final, *position)] = (
+                    bil,
+                    (smaller_data.name, *position[:-2], 0, 0),
+                    (name_indices, 0, *position),
+                )
+
+        deps_final.append(self.indices)
+        dask_graph_final = HighLevelGraph.from_collections(name_final, dask_graph_final, dependencies=deps_final)
+        darr_final = da.Array(dask_graph_final, name_final, chunks=dst_chunks, dtype=data.dtype, shape=output_shape)
+        return darr_final
+
+    @lru_cache(None)
+    def _crop_source_area(self, target_geo_def):
         slicer = Slicer(self.source_geo_def, target_geo_def)
         x_slice, y_slice = slicer.get_slices()
-
         source_geo_def = self.source_geo_def[y_slice, x_slice]
         if isinstance(source_geo_def, SwathDefinition):
             source_geo_def.lons.data = source_geo_def.lons.data.rechunk((-1, -1))
             source_geo_def.lats.data = source_geo_def.lats.data.rechunk((-1, -1))
+        return source_geo_def, x_slice, y_slice
+
+    def crop_data_around_area(self, data, target_geo_def):
+        """Crop the data around the provided area."""
+        source_geo_def, x_slice, y_slice = self._crop_source_area(target_geo_def)
         smaller_data = data[..., y_slice, x_slice].rechunk(data.chunks[:-2] + (-1, -1))
         return smaller_data, source_geo_def
+
+
+def resample_blocks(src_area, dst_area, funk, *args, dst_arrays=(), chunks=None, dtype=None, name=None, **kwargs):
+    """Resample blockwise.
+
+    Args:
+        src_area: a source geo definition
+        dst_area:
+        funk: a function to use. If func has a block_info keyword argument, the chunk info is passed, as in map_blocks
+        args: data to use
+        dst_arrays: arrays to use that are already in dst_area space. If the array has more than 2 dimensions,
+            the last two are expected to be y, x.
+        chunks: Has to be provided
+        dtype: Has to be provided
+        kwargs:
+
+    """
+    if args:
+        data = args[0]
+    else:
+        data = None
+    if dst_area == src_area:
+        return data
+    from dask.utils import funcname
+    from dask.base import tokenize
+    from dask.utils import apply, has_keyword
+
+    name = f"{name or funcname(funk)}-{tokenize(funk, src_area, dst_area, dst_arrays, dtype, chunks, *args, **kwargs)}"
+    dask_graph = dict()
+    dependencies = []
+
+    for target_block_info, target_geo_def in _enumerate_dst_area_chunks(dst_area, chunks):
+        position = target_block_info["chunk-location"]
+        output_shape = target_block_info["shape"]
+        try:
+            smaller_data, source_geo_def, source_block_info = crop_data_around_area(src_area, data, target_geo_def)
+        except IncompatibleAreas:  # no relevant data matching
+            if np.issubdtype(dtype, np.integer):
+                fill_value = np.iinfo(dtype).min
+            else:
+                fill_value = np.nan
+            task = [np.full, target_block_info["chunk-shape"], fill_value]
+        else:
+            args = [source_geo_def, target_geo_def]
+            if data is not None:
+                args.append((smaller_data.name, 0, 0))
+                dependencies.append(smaller_data)
+
+            for dst_array in dst_arrays:
+                dst_position = [0] * (dst_array.ndim - 2) + list(position)
+                args.append((dst_array.name, *dst_position))
+                dependencies.append(dst_array)
+            funk_kwargs = kwargs.copy()
+            if has_keyword(funk, "block_info"):
+                funk_kwargs["block_info"] = {0: source_block_info,
+                                             None: target_block_info}
+            task = [apply, funk, args, funk_kwargs]
+
+        dask_graph[(name, *position)] = tuple(task)
+
+    dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=dependencies)
+    return da.Array(dask_graph, name, chunks=chunks, dtype=dtype, shape=output_shape)
+
+
+@lru_cache(None)
+def crop_source_area(source_geo_def, target_geo_def):
+    """Crop a source area around a provided a target area."""
+    slicer = Slicer(source_geo_def, target_geo_def)
+    x_slice, y_slice = slicer.get_slices()
+    small_source_geo_def = source_geo_def[y_slice, x_slice]
+    if isinstance(small_source_geo_def, SwathDefinition):
+        small_source_geo_def.lons.data = small_source_geo_def.lons.data.rechunk((-1, -1))
+        small_source_geo_def.lats.data = small_source_geo_def.lats.data.rechunk((-1, -1))
+    return small_source_geo_def, x_slice, y_slice
+
+
+def crop_data_around_area(source_geo_def, data, target_geo_def):
+    """Crop the data around the provided area."""
+    small_source_geo_def, x_slice, y_slice = crop_source_area(source_geo_def, target_geo_def)
+    if data is not None:
+        smaller_data = data[..., y_slice, x_slice].rechunk(data.chunks[:-2] + (-1, -1))
+    else:
+        smaller_data = None
+    block_info = {"shape": source_geo_def.shape, "array-location": (y_slice, x_slice)}
+    return smaller_data, small_source_geo_def, block_info
+
+
+def _enumerate_dst_area_chunks(dst_area, chunks):
+    """Enumerate the chunks in function of the dst_area."""
+    rest_shape = []
+    if not isinstance(chunks, Number) and len(chunks) > len(dst_area.shape):
+        rest_chunks = chunks[:-len(dst_area.shape)]
+        for elt in rest_chunks:
+            try:
+                rest_shape.append(sum(elt))
+            except TypeError:
+                rest_shape.append(elt)
+    output_shape = tuple(rest_shape) + dst_area.shape
+    dst_chunks = da.core.normalize_chunks(chunks, output_shape)
+
+    for position, slices in _enumerate_chunk_slices(dst_chunks):
+        chunk_shape = tuple(chunk[pos] for pos, chunk in zip(position, dst_chunks))
+        target_geo_def = dst_area[slices[-2:]]
+        block_info = {"shape": output_shape,
+                      "num-chunks": [len(chunks) for chunks in dst_chunks],
+                      "chunk-location": position,
+                      "array-location": slices,
+                      "chunk-shape": chunk_shape,
+                      }
+        yield block_info, target_geo_def
+
+
+def _enumerate_chunk_slices(chunks):
+    """Enumerate chunks with slices."""
+    for position in np.ndindex(tuple(map(len, (chunks)))):
+        slices = []
+        for pos, chunk in zip(position, chunks):
+            chunk_size = chunk[pos]
+            offset = sum(chunk[:pos])
+            slices.append(slice(offset, offset + chunk_size))
+
+        yield (position, slices)
+
+
+def bil(data, indices):
+    """Bilinear interpolation."""
+    x_indices, y_indices = indices
+    mask = np.isnan(y_indices)
+    x_indices, y_indices = np.nan_to_num(indices, 0)
+    w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
+    w_p, p_a = np.modf(x_indices.clip(0, data.shape[-1] - 1))
+
+    l_a = l_a.astype(int)
+    p_a = p_a.astype(int)
+    l_b = np.clip(l_a + 1, 1, data.shape[-2] - 1)
+    p_b = np.clip(p_a + 1, 1, data.shape[-1] - 1)
+
+    res = ((1 - w_l) * (1 - w_p) * data[..., l_a, p_a] +
+           (1 - w_l) * w_p * data[..., l_a, p_b] +
+           w_l * (1 - w_p) * data[..., l_b, p_a] +
+           w_l * w_p * data[..., l_b, p_b])
+    res = np.where(mask, np.nan, res)
+    return res
+
+
+def bil2(src_area, dst_area, data, indices_xy, block_info=None):
+    """Bilinear interpolation implementation for resample_blocks."""
+    del src_area, dst_area
+    x_indices, y_indices = indices_xy
+    if block_info:
+        y_slice, x_slice = block_info[0]["array-location"][-2:]
+        x_indices -= x_slice.start
+        y_indices -= y_slice.start
+    mask = np.isnan(y_indices)
+    x_indices = np.nan_to_num(x_indices, 0)
+    y_indices = np.nan_to_num(y_indices, 0)
+
+    w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
+    w_p, p_a = np.modf(x_indices.clip(0, data.shape[-1] - 1))
+
+    l_a = l_a.astype(int)
+    p_a = p_a.astype(int)
+    l_b = np.clip(l_a + 1, 1, data.shape[-2] - 1)
+    p_b = np.clip(p_a + 1, 1, data.shape[-1] - 1)
+
+    res = ((1 - w_l) * (1 - w_p) * data[..., l_a, p_a] +
+           (1 - w_l) * w_p * data[..., l_a, p_b] +
+           w_l * (1 - w_p) * data[..., l_b, p_a] +
+           w_l * w_p * data[..., l_b, p_b])
+    res = np.where(mask, np.nan, res)
+    return res
 
 
 class Slicer(ABC):
