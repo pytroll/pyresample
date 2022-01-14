@@ -25,107 +25,9 @@ import unittest
 import dask.array as da
 import xarray as xr
 import numpy as np
-from pyresample.resampler import DaskResampler, Slicer
+from pyresample.resampler import Slicer
 from pyresample.geometry import AreaDefinition, SwathDefinition, IncompatibleAreas, InvalidArea
 import pytest
-
-
-def dummy_resampler(data, source_area, destination_area):
-    """Resample by filling an array with the sum of the data."""
-    return np.full(destination_area.shape, data.sum())
-
-
-class TestDaskResampler(unittest.TestCase):
-    """Test case for the DaskResampler class."""
-
-    def setUp(self):
-        """Set up the test case."""
-        self.input_data = da.arange(100*100).reshape((100, 100)).rechunk(30).astype(float)
-        self.src_area = AreaDefinition('dst', 'dst area', None,
-                                       {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
-                                       100, 100,
-                                       (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        lons, lats = self.src_area.get_lonlats(chunks=self.input_data.chunks)
-        lons = xr.DataArray(lons)
-        lats = xr.DataArray(lats)
-        self.src_swath = SwathDefinition(lons, lats)
-        self.dst_area = AreaDefinition('euro40', 'euro40', None,
-                                       {'proj': 'stere', 'lon_0': 14.0,
-                                        'lat_0': 90.0, 'lat_ts': 60.0,
-                                        'ellps': 'bessel'},
-                                       102, 102,
-                                       (-2717181.7304994687, -5571048.14031214,
-                                        1378818.2695005313, -1475048.1403121399))
-        self.dr = DaskResampler(self.src_area, self.dst_area, dummy_resampler)
-
-    def test_resampling_generates_a_dask_array(self):
-        """Test that resampling generates a dask array."""
-        res = self.dr.resample(self.input_data)
-        self.assertIsInstance(res, da.Array)
-
-    def test_resampling_has_the_size_of_the_target_area(self):
-        """Test that resampling generates an array of the right size."""
-        res = self.dr.resample(self.input_data)
-        assert res.shape == self.dst_area.shape
-
-    def test_resampling_keeps_the_chunk_size(self):
-        """Test that resampling keeps the chunk size from the input."""
-        res = self.dr.resample(self.input_data)
-        assert res.chunksize == self.input_data.chunksize
-
-    def test_resampling_result_has_no_nans_when_fully_covered(self):
-        """Test that resampling does not produce nans with full coverage."""
-        res = self.dr.resample(self.input_data)
-        assert np.isfinite(res).all()
-
-    def test_resampling_result_name_is_unique(self):
-        """Test that resampling generates unique dask array names."""
-        res1 = self.dr.resample(self.input_data)
-        input_data = da.ones((100, 100))
-        res2 = self.dr.resample(input_data)
-        assert res1.name != res2.name
-        assert res1.name.startswith('dummy_resampler')
-
-    def test_resampling_reduces_input_data(self):
-        """Test that resampling reduces the input data."""
-        res = self.dr.resample(self.input_data)
-        assert res.max() < 49995000  # sum of all self.input_data
-
-    def test_gradient_resampler(self):
-        """Test the gradient resampler."""
-        from pyresample.gradient import gradient_resampler
-        dr = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
-        res = dr.resample(self.input_data)
-        assert np.nanmin(res - 8000) > 0
-
-    def test_gradient_resampler_3d(self):
-        """Test the gradient resampler with 3d data."""
-        from pyresample.gradient import gradient_resampler
-        dr = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
-        input_data = self.input_data[np.newaxis, :, :]
-        res = dr.resample(input_data)
-        assert res.ndim == 3
-        assert res.shape[0] == 1
-        assert np.nanmin(res - 8000) > 0
-
-    def test_gradient_resampler_3d_chunked(self):
-        """Test gradient resampler in 3d with chunked data."""
-        from pyresample.gradient import gradient_resampler
-        dr = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
-        input_data = self.input_data[np.newaxis, :, :].rechunk(20)
-        res = dr.resample(input_data)
-        assert res.ndim == 3
-        assert res.shape[0] == 1
-        assert np.nanmin(res - 8000) > 0
-
-    def test_gradient_resampler_2d_chunked(self):
-        """Test gradient resampler in 3d with chunked data."""
-        from pyresample.gradient import gradient_resampler
-        dr = DaskResampler(self.src_area, self.dst_area, gradient_resampler)
-        input_data = self.input_data.rechunk(20)
-        res = dr.resample(input_data)
-        assert res.ndim == 2
-        assert np.nanmin(res - 8000) > 0
 
 
 class TestAreaSlicer(unittest.TestCase):
@@ -175,22 +77,22 @@ class TestAreaSlicer(unittest.TestCase):
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
-    def test_dest_area_is_outside_source_area_domain(self):
-        """Test dest area is outside the source area domain (nan coordinates)."""
-        src_area = AreaDefinition('dst', 'dst area', None,
-                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
-                                  100, 100,
-                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        dst_area = AreaDefinition('merc', 'merc', None,
-                                  {'proj': 'merc', 'lon_0': 120.0,
-                                   'lat_0': 0,
-                                   'ellps': 'bessel'},
-                                  102, 102,
-                                  (-100000, -100000,
-                                   100000, 100000))
-        slicer = Slicer(src_area, dst_area)
-        with pytest.raises(IncompatibleAreas):
-            slicer.get_slices()
+    # def test_dest_area_is_outside_source_area_domain(self):
+    #     """Test dest area is outside the source area domain (nan coordinates)."""
+    #     src_area = AreaDefinition('dst', 'dst area', None,
+    #                               {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+    #                               100, 100,
+    #                               (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+    #     dst_area = AreaDefinition('merc', 'merc', None,
+    #                               {'proj': 'merc', 'lon_0': 120.0,
+    #                                'lat_0': 0,
+    #                                'ellps': 'bessel'},
+    #                               102, 102,
+    #                               (-100000, -100000,
+    #                                100000, 100000))
+    #     slicer = Slicer(src_area, dst_area)
+    #     with pytest.raises(IncompatibleAreas):
+    #         slicer.get_slices()
 
     def test_barely_touching_chunks_intersection(self):
         """Test that barely touching chunks generate slices on intersection."""
@@ -313,60 +215,6 @@ class TestSwathSlicer(unittest.TestCase):
         """Test that we cannot slice a string."""
         with pytest.raises(NotImplementedError):
             Slicer("my_funky_area", self.dst_area)
-
-
-class TestDaskResamplerFromSwath(unittest.TestCase):
-    """Test case for the DaskResampler class swath to area."""
-
-    def setUp(self):
-        """Set up the test case."""
-        chunks = 30
-        self.input_data = da.arange(100*50).reshape((100, 50)).rechunk(chunks).astype(float)
-        self.dst_area = AreaDefinition('euro40', 'euro40', None,
-                                       {'proj': 'stere', 'lon_0': 14.0,
-                                        'lat_0': 90.0, 'lat_ts': 60.0,
-                                        'ellps': 'bessel'},
-                                       102, 102,
-                                       (-2717181.7304994687, -5571048.14031214,
-                                        1378818.2695005313, -1475048.1403121399))
-        self.src_area = AreaDefinition(
-            'omerc_otf',
-            'On-the-fly omerc area',
-            None,
-            {'alpha': '8.99811271718795',
-             'ellps': 'sphere',
-             'gamma': '0',
-             'k': '1',
-             'lat_0': '0',
-             'lonc': '13.8096029486222',
-             'proj': 'omerc',
-             'units': 'm'},
-            50, 100,
-            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
-        )
-
-        lons, lats = self.src_area.get_lonlats(chunks=chunks)
-        lons = xr.DataArray(lons)
-        lats = xr.DataArray(lats)
-        self.src_swath = SwathDefinition(lons, lats)
-
-    def test_gradient_resampler_2d_chunked(self):
-        """Test gradient resampler in 2d with chunked data."""
-        from pyresample.gradient import gradient_resampler
-        dr_area = DaskResampler(self.src_area, self.dst_area, gradient_resampler, method='bilinear')
-        res_area = dr_area.resample(self.input_data)
-        dr_swath = DaskResampler(self.src_swath, self.dst_area, gradient_resampler, method='bilinear')
-        res_swath = dr_swath.resample(self.input_data)
-        np.testing.assert_allclose(res_area[:, 60:], res_swath[:, 60:], rtol=1e-1)
-
-    def test_gradient_resampler_2d_via_indices(self):
-        """Test gradient resample in 2d via indices."""
-        from pyresample.gradient import gradient_resampler, gradient_resampler_indices
-        dr_area = DaskResampler(self.src_area, self.dst_area, gradient_resampler, method='bilinear')
-        res_area = dr_area.resample(self.input_data)
-        dr_area2 = DaskResampler(self.src_area, self.dst_area, gradient_resampler_indices)
-        res_area2 = dr_area2.resample_via_indices(self.input_data)
-        np.testing.assert_allclose(res_area, res_area2)
 
 
 class TestResampleBlocksArea2Area:
