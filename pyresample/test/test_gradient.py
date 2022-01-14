@@ -609,21 +609,3 @@ class TestGradientCython():
                                                  self.dst_x, self.dst_y)
         np.testing.assert_allclose(res_x, expected_x)
         np.testing.assert_allclose(res_y, expected_y)
-
-    # def test_index_search_with_data_overflow(self):
-    #     self.src_x, self.src_y = np.meshgrid(range(4), range(4))
-    #     self.src_x[:, -1] -= 0.5
-    #
-    #
-    #     self.xl, self.xp = np.gradient(self.src_x)
-    #     self.yl, self.yp = np.gradient(self.src_y)
-    #
-    #     self.dst_x = np.array([[1.5, 2.1, 2.7],
-    #                            [1.6, 2.2, 2.8],
-    #                            [1.7, 2.3, 2.9]])
-    #
-    #     self.dst_y = np.array([[1.1, 1.3, 1.5],
-    #                            [2.1, 2.3, 2.5],
-    #                            [2.8, 2.9, 3.0]])
-    #
-    #     from pyresample.gradient._gradient_search import one_step_gradient_indices

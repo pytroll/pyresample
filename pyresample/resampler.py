@@ -273,27 +273,6 @@ def _enumerate_chunk_slices(chunks):
         yield (position, slices)
 
 
-def bil(data, indices):
-    """Bilinear interpolation."""
-    x_indices, y_indices = indices
-    mask = np.isnan(y_indices)
-    x_indices, y_indices = np.nan_to_num(indices, 0)
-    w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
-    w_p, p_a = np.modf(x_indices.clip(0, data.shape[-1] - 1))
-
-    l_a = l_a.astype(int)
-    p_a = p_a.astype(int)
-    l_b = np.clip(l_a + 1, 1, data.shape[-2] - 1)
-    p_b = np.clip(p_a + 1, 1, data.shape[-1] - 1)
-
-    res = ((1 - w_l) * (1 - w_p) * data[..., l_a, p_a] +
-           (1 - w_l) * w_p * data[..., l_a, p_b] +
-           w_l * (1 - w_p) * data[..., l_b, p_a] +
-           w_l * w_p * data[..., l_b, p_b])
-    res = np.where(mask, np.nan, res)
-    return res
-
-
 def bil2(src_area, dst_area, data, indices_xy, block_info=None):
     """Bilinear interpolation implementation for resample_blocks."""
     del src_area, dst_area
@@ -423,7 +402,7 @@ class AreaSlicer(Slicer):
     def get_polygon(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.get_bbox_coords(10)
+        x, y = self.area_to_contain.get_bbox_coords(frequency=10)
         # before_poly = Polygon(zip(x, y)).buffer(np.max(target_area.resolution))
         # x, y = zip(*before_poly.exterior.coords)
         if self.area_to_crop.is_geostationary:

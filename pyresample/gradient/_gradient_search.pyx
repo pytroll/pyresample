@@ -223,7 +223,7 @@ cpdef one_step_gradient_indices(np.ndarray[DTYPE_t, ndim=2] src_x,
                                 np.ndarray[DTYPE_t, ndim=2] dst_y):
     """Gradient search, simple case variant, returning float indices.
     
-    This is appropriate for monotonous gradients only, i.e. not modis or viirs.
+    This is appropriate for monotonous gradients only, i.e. not modis or viirs in satellite projection.
     """
 
     # change the output size (x_size, y_size) to match area_def.shape:
