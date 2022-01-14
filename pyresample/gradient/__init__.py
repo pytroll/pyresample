@@ -32,7 +32,7 @@ import numpy as np
 import pyproj
 import xarray as xr
 from pyproj import CRS
-from pyresample.gradient._gradient_search import one_step_gradient_search
+from pyresample.gradient._gradient_search import one_step_gradient_search, one_step_gradient_indices
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
@@ -155,13 +155,13 @@ class GradientSearchResamplerOriginal(BaseResampler):
                                               src_x_start, src_x_end)
 
                 dst_x_start = 0
-                for k, dst_x_step in enumerate(dst_x_chunks):
+                for x_step_number, dst_x_step in enumerate(dst_x_chunks):
                     dst_x_end = dst_x_start + dst_x_step
                     dst_y_start = 0
-                    for l, dst_y_step in enumerate(dst_y_chunks):
+                    for y_step_number, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        dst_poly = self._get_dst_poly((k, l),
+                        dst_poly = self._get_dst_poly((x_step_number, y_step_number),
                                                       dst_x_start, dst_x_end,
                                                       dst_y_start, dst_y_end)
 
@@ -172,7 +172,7 @@ class GradientSearchResamplerOriginal(BaseResampler):
                                            src_x_start, src_x_end))
                         dst_slices.append((dst_y_start, dst_y_end,
                                            dst_x_start, dst_x_end))
-                        dst_mosaic_locations.append((k, l))
+                        dst_mosaic_locations.append((x_step_number, y_step_number))
 
                         dst_y_start = dst_y_end
                     dst_x_start = dst_x_end
@@ -319,6 +319,31 @@ def _gradient_resample_data(src_data, src_x, src_y,
     return image
 
 
+def _gradient_resample_indices(src_x, src_y,
+                               src_gradient_xl, src_gradient_xp,
+                               src_gradient_yl, src_gradient_yp,
+                               dst_x, dst_y):
+    """Return indices computed using gradient search."""
+    assert src_x.ndim == 2
+    assert src_y.ndim == 2
+    assert src_gradient_xl.ndim == 2
+    assert src_gradient_xp.ndim == 2
+    assert src_gradient_yl.ndim == 2
+    assert src_gradient_yp.ndim == 2
+    assert dst_x.ndim == 2
+    assert dst_y.ndim == 2
+    assert (src_x.shape == src_y.shape ==
+            src_gradient_xl.shape == src_gradient_xp.shape ==
+            src_gradient_yl.shape == src_gradient_yp.shape)
+    assert dst_x.shape == dst_y.shape
+
+    indices_xy = one_step_gradient_indices(src_x, src_y,
+                                           src_gradient_xl, src_gradient_xp,
+                                           src_gradient_yl, src_gradient_yp,
+                                           dst_x, dst_y)
+    return indices_xy
+
+
 def get_border_lonlats(geo_def):
     """Get the border x- and y-coordinates."""
     if geo_def.proj_dict['proj'] == 'geos':
@@ -429,14 +454,15 @@ class GradientSearchResampler(BaseResampler):
         """Init GradientResampler."""
         from pyresample.resampler import DaskResampler
         super().__init__(source_geo_def, target_geo_def)
-        self.dr = DaskResampler(self.source_geo_def, self.target_geo_def, gradient_resampler)
+        logger.debug("Instantiating new dask resampler.")
+        self.dr = DaskResampler(self.source_geo_def, self.target_geo_def, gradient_resampler_indices)
 
     @ensure_chunked_data_array
     def compute(self, data, fill_value=None, **kwargs):
         """Perform the resampling."""
         if fill_value is not None:
             data = data.fillna(fill_value)
-        res = self.dr.resample(data.data.astype(float))
+        res = self.dr.resample_via_indices(data.data.astype(float))
         x_coord, y_coord = self.target_geo_def.get_proj_vectors()
         coords = []
         for key in data.dims:
@@ -466,6 +492,7 @@ def ensure_3d_data(func):
             resampled = resampled.squeeze(0)
         return resampled
 
+    wrapper.__doc__ += "\n\nThe input data can be 2d, or 3d with the two last axes being respectively `y` and `x`."
     return wrapper
 
 
@@ -479,7 +506,10 @@ def gradient_resampler(data, source_area, target_area, method='bilinear'):
         transformer = Transformer.from_crs(target_area.crs, source_area.crs)
     except AttributeError:
         src_x, src_y = source_area
+        # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
         transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
+
+    # TODO: this will crash when the target area is a swath def.
     dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
@@ -489,3 +519,32 @@ def gradient_resampler(data, source_area, target_area, method='bilinear'):
                                    src_gradient_yl, src_gradient_yp,
                                    dst_x, dst_y,
                                    method=method)
+
+
+def gradient_resampler_indices(source_area, target_area, method='bilinear', block_info=None):
+    """Do the gradient search resampling, returning the resulting indices."""
+    from pyproj.transformer import Transformer
+    try:
+        src_x, src_y = source_area.get_proj_coords()
+        transformer = Transformer.from_crs(target_area.crs, source_area.crs)
+    except AttributeError:
+        src_x, src_y = source_area
+        # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
+        transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
+
+    # TODO: this will crash when the target area is a swath def.
+    dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
+    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
+    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+
+    indices_xy = _gradient_resample_indices(src_x, src_y,
+                                            src_gradient_xl, src_gradient_xp,
+                                            src_gradient_yl, src_gradient_yp,
+                                            dst_x, dst_y)
+
+    if block_info:
+        y_slice, x_slice = block_info[0]["array-location"][-2:]
+        indices_xy[0, :, :] += x_slice.start
+        indices_xy[1, :, :] += y_slice.start
+
+    return indices_xy
