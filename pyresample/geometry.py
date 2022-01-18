@@ -937,7 +937,7 @@ class SwathDefinition(CoordinateDefinition):
 
     def extend(self, x=0, y=0):
         """Extend the swath definition along x (along-track) and y (across-track) dimensions.
-        
+
         By default, it does not extend on any direction.
         To extend of n pixel  on both sides of the across-track direction, call swath_def.extend(x=0, y=2).
         """
@@ -1169,7 +1169,7 @@ class SwathDefinition(CoordinateDefinition):
 def _convert_2D_array(arr, to, dims=None):
     """
     Convert a 2D array to a specific format.
-    
+  
     Useful to return swath lons, lats in the same original format after processing.
 
     Parameters
@@ -1262,10 +1262,9 @@ def _convert_2D_array(arr, to, dims=None):
     else:
         raise NotImplementedError
 
-
 def _get_extended_lonlats(lon_start, lat_start, lon_end, lat_end, npts, transpose=True):
     """Utils employed by SwathDefinition.extend.
-    
+ 
     It extrapolate npts following the forward azimuth with an interdistance
     equal to the distance between the starting point and the end point.
     """
