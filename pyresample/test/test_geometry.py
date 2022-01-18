@@ -2064,6 +2064,36 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertAlmostEqual(res_xr.lons.resolution, resolution)
         self.assertAlmostEqual(res_xr.lats.resolution, resolution)
 
+    def test_latslons_arr_conversion(self):
+        """Test conversion of 2D arrays between various formats."""
+        import dask.array as da
+        import numpy as np
+        import xarray as xr
+
+        from pyresample.geometry import _convert_2D_array
+
+        lons = np.arange(-179.5, -177.5, 0.5)
+        lats = np.arange(-89.5, -88.0, 0.5)
+        lons, lats = np.meshgrid(lons, lats)
+        lats_dask = da.from_array(lats, chunks=2)
+        lats_xr = xr.DataArray(lats, dims=['y', 'x'])
+        lats_xr_dask = xr.DataArray(lats_dask, dims=['y', 'x'])
+        valid_format = ['Numpy', 'Dask', 'DataArray_Numpy', 'DataArray_Dask']
+        dict_format = {'Numpy': lats,
+                       'Dask': lats_dask,
+                       'DataArray_Numpy': lats_xr,
+                       'DataArray_Dask': lats_xr_dask
+                       }
+        for in_format in valid_format:
+            for out_format in valid_format:
+                out_arr, src_format = _convert_2D_array(dict_format[in_format], to=out_format, dims=None)
+                assert isinstance(out_arr, type(dict_format[out_format]))
+                assert src_format.lower() == in_format.lower()
+                if out_format.lower() == "dataarray_numpy":
+                    assert isinstance(out_arr.data, type(dict_format['Numpy']))
+                if out_format.lower() == "dataarray_dask":
+                    assert isinstance(out_arr.data, type(dict_format['Dask']))
+
     def test_striding(self):
         """Test striding."""
         import dask.array as da
