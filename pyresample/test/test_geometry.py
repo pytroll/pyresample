@@ -1877,6 +1877,7 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import numpy as np
         import xarray as xr
+
         from pyresample.geometry import SwathDefinition
         window_size = 2
         resolution = 3
@@ -1921,6 +1922,7 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import numpy as np
         import xarray as xr
+
         from pyresample.geometry import SwathDefinition
         window_size = 2
         resolution = 4
@@ -1968,6 +1970,7 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import numpy as np
         import xarray as xr
+
         from pyresample.geometry import SwathDefinition
         x = 2
         y = 2
@@ -2017,6 +2020,7 @@ class TestSwathDefinition(unittest.TestCase):
         import dask.array as da
         import numpy as np
         import xarray as xr
+
         from pyresample.geometry import SwathDefinition
         x = 1
         y = 0

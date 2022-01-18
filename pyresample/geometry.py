@@ -738,9 +738,9 @@ class SwathDefinition(CoordinateDefinition):
         This can be changed by passing boundary="trim" or boundary="pad", but behaviour within pyresample is undefined.
         See https://xarray.pydata.org/en/stable/generated/xarray.DataArray.coarsen.html for further details.
         """
-        import xarray as xr
         import dask.array as da
         import pyproj
+        import xarray as xr
 
         # Check input validity
         x = int(x)
@@ -809,10 +809,11 @@ class SwathDefinition(CoordinateDefinition):
         # TODO: An alternative would be to use geotiepoints.geointerpolator.GeoInterpolator
         # But I have some problem using it, see code snippet in the PR description.
         import dask.array as da
-        import xarray as xr
         import numpy as np
         import pyproj
+        import xarray as xr
         from xarray.plot.utils import _infer_interval_breaks
+
         # https://github.com/pydata/xarray/blob/main/xarray/plot/utils.py#L784
 
         def _upsample_ranges_1D(x, factor=1):
@@ -942,6 +943,7 @@ class SwathDefinition(CoordinateDefinition):
         To extend of n pixel  on both sides of the across-track direction, call swath_def.extend(x=0, y=2).
         """
         import xarray as xr
+
         # Check input validity
         x = int(x)
         y = int(y)
@@ -1193,9 +1195,10 @@ def _convert_2D_array(arr, to, dims=None):
         The source format of the 2D array.
 
     """
-    import numpy as np
     import dask.array as da
+    import numpy as np
     import xarray as xr
+
     # Checks
     valid_format = ['Numpy', 'Dask', 'DataArray_Numpy', 'DataArray_Dask']
     if not isinstance(to, str):
