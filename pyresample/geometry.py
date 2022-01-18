@@ -715,16 +715,17 @@ class SwathDefinition(CoordinateDefinition):
     def _do_transform(src, dst, lons, lats, alt):
         """Run pyproj.transform and stack the results."""
         x, y, z = transform(src, dst, lons, lats, alt)
-        return np.dstack((x, y, z))   
-    
-    # TODO: this is more efficient than pyproj.transform.  
-    # With pyproj > 3.1 it became thread safe: https://pyproj4.github.io/pyproj/stable/advanced_examples.html#multithreading
+        return np.dstack((x, y, z))
+   
+    # TODO: this is more efficient than pyproj.transform.
+    # With pyproj > 3.1 it became thread safe:
+    # https://pyproj4.github.io/pyproj/stable/advanced_examples.html#multithreading
     # @staticmethod
     # def swath_do_transform(src, dst, lons, lats, alt):
     #     """Run pyproj Transformer and stack the results."""
     #     from pyproj import Transformer
     #     transformer = Transformer.from_crs(src.crs, dst.crs)
-    #     x, y, z = transformer.transform(lons, lats, alt, radians=False)  
+    #     x, y, z = transformer.transform(lons, lats, alt, radians=False)
     #     return np.dstack((x, y, z))
 
     def aggregate(self, x=1, y=1, **kwargs):
@@ -741,23 +742,23 @@ class SwathDefinition(CoordinateDefinition):
         import dask.array as da
         import pyproj
         
-        # Check input validity 
+        # Check input validity
         x = int(x)
         y = int(y)
         if x < 1 or y < 1: 
             raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
             
-        # Return SwathDefinition if nothing to aggregate 
+        # Return SwathDefinition if nothing to aggregate
         if x==1 and y==1: 
             return self 
         
-        # Define geodetic and geocentric projection 
+        # Define geodetic and geocentric projection
         geocent = pyproj.Proj(proj='geocent')
         latlong = pyproj.Proj(proj='latlong')
         
         # Get xr.DataArray with dask array
-        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['lats','lons'])
-        src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['lats','lons'])
+        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y','x'])
+        src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['y','x'])
     
         # Conversion to Geocentric Cartesian (x,y,z) CRS
         res = da.map_blocks(self._do_transform, latlong, geocent,
@@ -766,12 +767,12 @@ class SwathDefinition(CoordinateDefinition):
                             da.zeros_like(src_lons), # altitude
                             new_axis=[2],
                             chunks=(src_lons.chunks[0], src_lons.chunks[1], 3))
-        res = xr.DataArray(res, dims=['y', 'x', 'coord'], coords=src_lons.coords)
+        res = xr.DataArray(res, dims=['y', 'x', 'xyz'], coords=src_lons.coords)
         
-        # Aggregating 
+        # Aggregating
         res = res.coarsen(x=x, y=y, **kwargs).mean()
         
-        # Back-conversion to geographic CRS 
+        # Back-conversion to geographic CRS
         lonlatalt = da.map_blocks(self._do_transform, geocent, latlong,
                                   res[:, :, 0].data, # x
                                   res[:, :, 1].data, # y
@@ -780,14 +781,14 @@ class SwathDefinition(CoordinateDefinition):
                                   chunks=res.data.chunks)
         
         # Back-conversion array as input format
-        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['lats','lons'])
-        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['lats','lons'])
+        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['y','x'])
+        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['y','x'])
         
         # Add additional info if the source array is a DataArray
         if isinstance(self.lats, xr.DataArray) and isinstance(self.lons, xr.DataArray):
-            lats.coords = res.coords 
+            lats = lats.assign_coords(res.coords)
             lats.attrs = self.lats.attrs.copy()
-            lons.coords = res.coords 
+            lons = lons.assign_coords(res.coords)
             lons.attrs = self.lons.attrs.copy()
             try:
                 resolution = lons.attrs['resolution'] * ((x + y) / 2)  
@@ -882,8 +883,8 @@ class SwathDefinition(CoordinateDefinition):
         latlong = pyproj.Proj(proj='latlong')
         
         # Get xr.DataArray with dask array
-        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['lats','lons'])
-        src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['lats','lons'])
+        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y','x'])
+        src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['y','x'])
         
         # Conversion to Geocentric Cartesian (x,y,z) CRS
         res = da.map_blocks(self._do_transform, latlong, geocent,
@@ -917,17 +918,15 @@ class SwathDefinition(CoordinateDefinition):
                                   chunks=new_centroids.data.chunks)
         
         # Back-conversion array as input format
-        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['lats','lons'])
-        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['lats','lons'])
+        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['y','x'])
+        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['y','x'])
         
         # Add additional info if the source array is a DataArray
         if isinstance(self.lats, xr.DataArray) and isinstance(self.lons, xr.DataArray):
-            lats.coords = res.coords 
             lats.attrs = self.lats.attrs.copy()
-            lons.coords = res.coords 
             lons.attrs = self.lons.attrs.copy()
             try:
-                resolution = lons.attrs['resolution'] * ((x + y) / 2)  
+                resolution = lons.attrs['resolution'] / ((x + y) / 2)  
                 lons.attrs['resolution'] = resolution
                 lats.attrs['resolution'] = resolution
             except KeyError:
@@ -953,8 +952,8 @@ class SwathDefinition(CoordinateDefinition):
             return self 
         
         # Get lats/lons numpy arrays
-        src_lats, src_lats_format = _convert_2D_array(self.lats, to='numpy', dims=['lats','lons'])
-        src_lons, src_lons_format = _convert_2D_array(self.lons, to='numpy', dims=['lats','lons'])
+        src_lats, src_lats_format = _convert_2D_array(self.lats, to='numpy', dims=['y','x'])
+        src_lons, src_lons_format = _convert_2D_array(self.lons, to='numpy', dims=['y','x'])
         
         dst_lats = src_lats
         dst_lons = src_lons
@@ -982,8 +981,8 @@ class SwathDefinition(CoordinateDefinition):
            dst_lons = np.concatenate((extended_side3_lonlats[0][:, ::-1], dst_lons), axis=1)
       
         # Back-conversion array as input format
-        lons, _ = _convert_2D_array(dst_lons, to=src_lons_format, dims=['lats','lons'])
-        lats, _ = _convert_2D_array(dst_lats, to=src_lats_format, dims=['lats','lons'])
+        lons, _ = _convert_2D_array(dst_lons, to=src_lons_format, dims=['y','x'])
+        lats, _ = _convert_2D_array(dst_lats, to=src_lats_format, dims=['y','x'])
         
         # Add additional info if the source array is a DataArray
         if isinstance(self.lats, xr.DataArray) and isinstance(self.lons, xr.DataArray):
@@ -1162,6 +1161,124 @@ class SwathDefinition(CoordinateDefinition):
         lons, lats = self.get_edge_lonlats()
         return area.freeze((lons, lats), shape=(height, width))
 
+def _convert_2D_array(arr, to, dims=None): 
+    """
+    Convert a 2D array to a specific format. 
+    Useful to return swath lons, lats in the same original format after processing.
+
+    Parameters
+    ----------
+    arr : (np.ndarray, da.Array, xr.DataArray)
+        The 2D array to be converted to another array format.
+    to : TYPE
+        The desired array output format.
+        Accepted formats are: ['Numpy','Dask', 'DataArray_Numpy','DataArray_Dask']
+    dims : tuple, optional
+        Optional argument for the specification of DataArray dimension names 
+        if input array is Numpy or Dask.
+        Provide a tuple with (y_dimname, x_dimname).
+        The default is None --> (dim_0, dim_1)
+
+    Returns
+    -------
+    dst_arr : (np.ndarray, da.Array, xr.DataArray)
+        The converted 2D array.
+    src_format: str 
+        The source format of the 2D array.
+
+    """
+    import numpy as np
+    import dask.array as da
+    import xarray as xr
+    # Checks 
+    valid_format = ['Numpy','Dask', 'DataArray_Numpy','DataArray_Dask']
+    if not isinstance(to, str): 
+        raise TypeError("'to' must be a string indicating the conversion array format.")
+    if not np.isin(to.lower(), np.char.lower(valid_format)):
+        raise ValueError("Valid conversion array formats are {}".format(valid_format))
+    if not isinstance(arr, (np.ndarray, da.Array, xr.DataArray)):
+        raise TypeError("The provided array must be either a np.ndarray, a dask.Array or a xr.DataArray.")
+    # Numpy 
+    if isinstance(arr, np.ndarray): 
+        if to.lower() == 'numpy':
+            dst_arr = arr
+        elif to.lower() == 'dask':
+            dst_arr = da.from_array(arr)
+        elif to.lower() == 'dataarray_numpy':
+            dst_arr = xr.DataArray(arr, dims=dims) 
+        elif to.lower() == 'dataarray_dask':
+            dst_arr = xr.DataArray(da.from_array(arr), dims=dims) 
+        else:
+            raise NotImplementedError
+        return dst_arr, 'numpy'
+    # Dask 
+    elif isinstance(arr, da.Array): 
+        if to.lower() == 'numpy':
+            dst_arr = arr.compute() 
+        elif to.lower() == 'dask':
+            dst_arr = arr
+        elif to.lower() == 'dataarray_numpy':
+            dst_arr = xr.DataArray(arr.compute() , dims=dims) 
+        elif to.lower() == 'dataarray_dask':
+            dst_arr = xr.DataArray(arr, dims=dims) 
+        else:
+            raise NotImplementedError
+        return dst_arr, 'dask'    
+    
+    # DataArray_Numpy 
+    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, np.ndarray): 
+        if to.lower() == 'numpy':
+            dst_arr = arr.data
+        elif to.lower() == 'dask':
+            dst_arr = da.from_array(arr.data) 
+        elif to.lower() == 'dataarray_numpy':
+            dst_arr = arr
+        elif to.lower() == 'dataarray_dask':
+            dst_arr = xr.DataArray(da.from_array(arr.data), dims=dims) 
+        else:
+            raise NotImplementedError
+        return dst_arr, 'DataArray_Numpy'    
+    
+    # DataArray_Dask 
+    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, da.Array): 
+        if to.lower() == 'numpy':
+            dst_arr = arr.data.compute()
+        elif to.lower() == 'dask':
+            dst_arr = arr.data
+        elif to.lower() == 'dataarray_numpy':
+            dst_arr = arr.compute()
+        elif to.lower() == 'dataarray_dask':
+            dst_arr = arr
+        else:
+            raise NotImplementedError
+        return dst_arr, 'DataArray_Dask'    
+    
+    else: 
+        raise NotImplementedError
+
+def _get_extended_lonlats(lon_start, lat_start, lon_end, lat_end, npts, transpose=True):
+   """Utils employed by SwathDefinition.extend.
+   It extrapolate npts following the forward azimuth with an interdistance 
+   equal to the distance between the starting point and the end point. 
+   """
+   import pyproj
+   geod = pyproj.Geod(ellps='sphere') # TODO: sphere or WGS84?
+   #  geod = pyproj.Geod(ellps='WGS84') # sphere
+   az12_arr, _, dist_arr = geod.inv(lon_start, lat_start, lon_end, lat_end)
+   list_lat = []
+   list_lon = []
+   for lon, lat, az12, dist in zip(lon_end, lat_end, az12_arr, dist_arr):
+       points = geod.fwd_intermediate(lon, lat, az12, del_s=dist, npts=npts, 
+                                      out_lons=None, out_lats=None, radians=False)
+       list_lat.append(points.lats)
+       list_lon.append(points.lons)
+   
+   new_lats = np.stack(list_lat)
+   new_lons = np.stack(list_lon)
+   if transpose: 
+       new_lats = new_lats.T
+       new_lons = new_lons.T
+   return new_lons, new_lats
 
 class DynamicAreaDefinition(object):
     """An AreaDefintion containing just a subset of the needed parameters.
@@ -1698,13 +1815,13 @@ class AreaDefinition(_ProjectionDefinition):
         height = int(self.height / dims.get('y', 1))
         return self.copy(height=height, width=width)
     
-    def areadef_upsample(self, x=1, y=1):
+    def upsample(self, x=1, y=1):
         """Return an upsampled version of the area."""
         width = int(self.width * x)
         height = int(self.height * y)
         return self.copy(height=height, width=width)
     
-    def areadef_extend(self, x=0, y=0): 
+    def extend(self, x=0, y=0): 
         """Extend AreaDef by x/y pixels on each side."""
         if self.is_geostationary: 
             raise NotImplementedError("'extend' method is not implemented for GEO AreaDefinition.")
@@ -1739,7 +1856,7 @@ class AreaDefinition(_ProjectionDefinition):
             
         return area_def
   
-    def areadef_reduce(self, x=0, y=0):
+    def reduce(self, x=0, y=0):
         """Reduce AreaDef by x/y pixels on each side."""
         if self.is_geostationary: 
             raise NotImplementedError("'reduce' method is not implemented for GEO AreaDefinition.")
@@ -1758,8 +1875,8 @@ class AreaDefinition(_ProjectionDefinition):
             raise ValueError("You can at maximum reduce height (y) of AreaDef by {} pixels on each side.".format(max_y))
             
         # Retrieve pixel and area info 
-        new_width = self.width + 2*x
-        new_height = self.height + 2*y
+        new_width = self.width - 2*x
+        new_height = self.height - 2*y
         pixel_size_x = self.pixel_size_x
         pixel_size_y = self.pixel_size_y
         area_extent = self._area_extent
@@ -3124,125 +3241,6 @@ class StackedAreaDefinition(_ProjectionDefinition):
         for areadef in self.defs:
             the_hash = areadef.update_hash(the_hash)
         return the_hash
-
-def _convert_2D_array(arr, to, dims=None): 
-    """
-    Convert a 2D array to a specific format. 
-    Useful to return swath lons, lats in the same original format after processing.
-
-    Parameters
-    ----------
-    arr : (np.ndarray, da.Array, xr.DataArray)
-        The 2D array to be converted to another array format.
-    to : TYPE
-        The desired array output format.
-        Accepted formats are: ['Numpy','Dask', 'DataArray_Numpy','DataArray_Dask']
-    dims : tuple, optional
-        Optional argument for the specification of DataArray dimension names 
-        if input array is Numpy or Dask.
-        Provide a tuple with (y_dimname, x_dimname).
-        The default is None --> (dim_0, dim_1)
-
-    Returns
-    -------
-    dst_arr : (np.ndarray, da.Array, xr.DataArray)
-        The converted 2D array.
-    src_format: str 
-        The source format of the 2D array.
-
-    """
-    import numpy as np
-    import dask.array as da
-    import xarray as xr
-    # Checks 
-    valid_format = ['Numpy','Dask', 'DataArray_Numpy','DataArray_Dask']
-    if not isinstance(to, str): 
-        raise TypeError("'to' must be a string indicating the conversion array format.")
-    if not np.isin(to.lower(), np.char.lower(valid_format)):
-        raise ValueError("Valid conversion array formats are {}".format(valid_format))
-    if not isinstance(arr, (np.ndarray, da.Array, xr.DataArray)):
-        raise TypeError("The provided array must be either a np.ndarray, a dask.Array or a xr.DataArray.")
-    # Numpy 
-    if isinstance(arr, np.ndarray): 
-        if to.lower() == 'numpy':
-            dst_arr = arr
-        elif to.lower() == 'dask':
-            dst_arr = da.from_array(arr)
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = xr.DataArray(arr, dims=dims) 
-        elif to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(da.from_array(arr), dims=dims) 
-        else:
-            raise NotImplementedError
-        return dst_arr, 'numpy'
-    # Dask 
-    elif isinstance(arr, da.Array): 
-        if to.lower() == 'numpy':
-            dst_arr = arr.compute() 
-        elif to.lower() == 'dask':
-            dst_arr = arr
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = xr.DataArray(arr.compute() , dims=dims) 
-        elif to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(arr, dims=dims) 
-        else:
-            raise NotImplementedError
-        return dst_arr, 'dask'    
-    
-    # DataArray_Numpy 
-    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, np.ndarray): 
-        if to.lower() == 'numpy':
-            dst_arr = arr.data
-        elif to.lower() == 'dask':
-            dst_arr = da.from_array(arr.data) 
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = arr
-        elif to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(da.from_array(arr.data), dims=dims) 
-        else:
-            raise NotImplementedError
-        return dst_arr, 'DataArray_Numpy'    
-    
-    # DataArray_Dask 
-    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, da.Array): 
-        if to.lower() == 'numpy':
-            dst_arr = arr.data.compute()
-        elif to.lower() == 'dask':
-            dst_arr = arr.data
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = arr.compute()
-        elif to.lower() == 'dataarray_dask':
-            dst_arr = arr
-        else:
-            raise NotImplementedError
-        return dst_arr, 'DataArray_Dask'    
-    
-    else: 
-        raise NotImplementedError
-
-def _get_extended_lonlats(lon_start, lat_start, lon_end, lat_end, npts, transpose=True):
-   """Utils employed by SwathDefinition.extend.
-   It extrapolate npts following the forward azimuth with an interdistance 
-   equal to the distance between the starting point and the end point. 
-   """
-   import pyproj
-   geod = pyproj.Geod(ellps='sphere') # TODO: sphere or WGS84?
-   #  geod = pyproj.Geod(ellps='WGS84') # sphere
-   az12_arr, _, dist_arr = geod.inv(lon_start, lat_start, lon_end, lat_end)
-   list_lat = []
-   list_lon = []
-   for lon, lat, az12, dist in zip(lon_end, lat_end, az12_arr, dist_arr):
-       points = geod.fwd_intermediate(lon, lat, az12, del_s=dist, npts=npts, 
-                                      out_lons=None, out_lats=None, radians=False)
-       list_lat.append(points.lats)
-       list_lon.append(points.lons)
-   
-   new_lats = np.stack(list_lat)
-   new_lons = np.stack(list_lon)
-   if transpose: 
-       new_lats = new_lats.T
-       new_lons = new_lons.T
-   return new_lons, new_lats
 
 def _get_slice(segments, shape):
     """Segment a 1D or 2D array."""
