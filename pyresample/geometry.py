@@ -728,12 +728,12 @@ class SwathDefinition(CoordinateDefinition):
     #     x, y, z = transformer.transform(lons, lats, alt, radians=False)
     #     return np.dstack((x, y, z))
 
-    def aggregate(self, x=1, y=1, **kwargs):
+    def downsample(self, x=1, y=1, **kwargs):
         """Downsample the swath definition by averaging the coordinates along x and y dimension.
 
         Builds upon xarray.DataArray.coarsen function.
-        To downsample of a factor of 2, call swath_def.aggregate(x=2, y=2)
-        swath_def.aggregate(x=1, y=1) simply returns the current swath_def.
+        To downsample of a factor of 2, call swath_def.downsample(x=2, y=2)
+        swath_def.downsample(x=1, y=1) simply returns the current swath_def.
         By default, it raise a ValueError if the dimension size is not a multiple of the window size.
         This can be changed by passing boundary="trim" or boundary="pad", but behaviour within pyresample is undefined.
         See https://xarray.pydata.org/en/stable/generated/xarray.DataArray.coarsen.html for further details.
@@ -748,7 +748,7 @@ class SwathDefinition(CoordinateDefinition):
         if x < 1 or y < 1:
             raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
 
-        # Return SwathDefinition if nothing to aggregate
+        # Return SwathDefinition if nothing to downsample
         if x == 1 and y == 1:
             return self
 
@@ -815,6 +815,15 @@ class SwathDefinition(CoordinateDefinition):
         from xarray.plot.utils import _infer_interval_breaks
 
         # https://github.com/pydata/xarray/blob/main/xarray/plot/utils.py#L784
+        # Check input validity
+        x = int(x)
+        y = int(y)
+        if x < 1 or y < 1:
+            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+
+        # Return SwathDefinition if nothing to upsample
+        if x == 1 and y == 1:
+            return self
 
         def _upsample_ranges_1D(x, factor=1):
             ranges2D = np.linspace(x[:-1], x[1:], num=factor, endpoint=False, axis=1)
@@ -1215,10 +1224,8 @@ def _convert_2D_array(arr, to, dims=None):
             dst_arr = da.from_array(arr)
         elif to.lower() == 'dataarray_numpy':
             dst_arr = xr.DataArray(arr, dims=dims)
-        elif to.lower() == 'dataarray_dask':
+        else:  # to.lower() == 'dataarray_dask':
             dst_arr = xr.DataArray(da.from_array(arr), dims=dims)
-        else:
-            raise NotImplementedError
         return dst_arr, 'numpy'
     # Dask
     elif isinstance(arr, da.Array):
@@ -1228,10 +1235,8 @@ def _convert_2D_array(arr, to, dims=None):
             dst_arr = arr
         elif to.lower() == 'dataarray_numpy':
             dst_arr = xr.DataArray(arr.compute(), dims=dims)
-        elif to.lower() == 'dataarray_dask':
+        else:  # to.lower() == 'dataarray_dask':
             dst_arr = xr.DataArray(arr, dims=dims)
-        else:
-            raise NotImplementedError
         return dst_arr, 'dask'
 
     # DataArray_Numpy
@@ -1242,10 +1247,8 @@ def _convert_2D_array(arr, to, dims=None):
             dst_arr = da.from_array(arr.data)
         elif to.lower() == 'dataarray_numpy':
             dst_arr = arr
-        elif to.lower() == 'dataarray_dask':
+        else:  # to.lower() == 'dataarray_dask':
             dst_arr = xr.DataArray(da.from_array(arr.data), dims=dims)
-        else:
-            raise NotImplementedError
         return dst_arr, 'DataArray_Numpy'
 
     # DataArray_Dask
@@ -1256,10 +1259,8 @@ def _convert_2D_array(arr, to, dims=None):
             dst_arr = arr.data
         elif to.lower() == 'dataarray_numpy':
             dst_arr = arr.compute()
-        elif to.lower() == 'dataarray_dask':
+        else:  # to.lower() == 'dataarray_dask':
             dst_arr = arr
-        else:
-            raise NotImplementedError
         return dst_arr, 'DataArray_Dask'
 
     else:
@@ -1823,12 +1824,35 @@ class AreaDefinition(_ProjectionDefinition):
 
     def aggregate(self, **dims):
         """Return an aggregated version of the area."""
+        warnings.warn("'aggregate' is deprecated, use 'downsample' or 'upsample' instead.", PendingDeprecationWarning)
         width = int(self.width / dims.get('x', 1))
         height = int(self.height / dims.get('y', 1))
         return self.copy(height=height, width=width)
 
+    def downsample(self, x=1, y=1):
+        """Return a downsampled version of the area."""
+        # Check input validity
+        x = int(x)
+        y = int(y)
+        if x == 1 and y == 1:
+            return self
+        if x < 1 or y < 1:
+            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+        # Downsample
+        width = int(self.width / x)
+        height = int(self.height / y)
+        return self.copy(height=height, width=width)
+
     def upsample(self, x=1, y=1):
         """Return an upsampled version of the area."""
+        # Check input validity
+        x = int(x)
+        y = int(y)
+        if x == 1 and y == 1:
+            return self
+        if x < 1 or y < 1:
+            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+        # Upsample
         width = int(self.width * x)
         height = int(self.height * y)
         return self.copy(height=height, width=width)
@@ -1842,7 +1866,8 @@ class AreaDefinition(_ProjectionDefinition):
         y = int(y)
         if x < 0 or y < 0:
             raise ValueError('x and y arguments must be positive integers.')
-
+        if x == 0 and y == 0:
+            return self
         # Retrieve pixel and area info
         new_width = self.width + 2 * x
         new_height = self.height + 2 * y
@@ -1877,6 +1902,8 @@ class AreaDefinition(_ProjectionDefinition):
         height = self.height
         x = int(x)
         y = int(y)
+        if x == 0 and y == 0:
+            return self
         if x < 0 or y < 0:
             raise ValueError('x and y arguments must be positive integers.')
         if x >= np.floor(width / 2):
@@ -1885,7 +1912,6 @@ class AreaDefinition(_ProjectionDefinition):
         if y >= np.floor(height / 2):
             max_y = int(np.floor(height / 2)) - 1
             raise ValueError("You can at maximum reduce height (y) of AreaDef by {} pixels on each side.".format(max_y))
-
         # Retrieve pixel and area info
         new_width = self.width - 2 * x
         new_height = self.height - 2 * y
