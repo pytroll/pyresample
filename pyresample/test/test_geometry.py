@@ -2151,6 +2151,63 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertRaises(TypeError, _convert_2D_array, [dict_format['Numpy']], 'numpy')
         self.assertRaises(ValueError, _convert_2D_array, dict_format['Numpy'], 'unvalid_format')
 
+    def test_linspace1D_between_values(self):
+        """Test linspace1D_between_values."""
+        import dask.array as da
+        import numpy as np
+
+        from pyresample.geometry import _linspace1D_between_values
+        arr_np = np.array([5.0, 7.0, 9.0])
+        arr_dask = da.from_array(arr_np)
+
+        res_np = _linspace1D_between_values(arr_np, num=1)
+        res_dask = _linspace1D_between_values(arr_dask, num=1)
+
+        np.testing.assert_allclose(res_np, [5., 6., 7., 8., 9.])
+        np.testing.assert_allclose(res_dask, [5., 6., 7., 8., 9.])
+        assert isinstance(res_np, np.ndarray)
+        assert isinstance(res_dask, da.Array)
+
+        # Test for no interpolation inbetween values
+        res = _linspace1D_between_values(arr_np, num=0)
+        np.testing.assert_allclose(res, arr_np)
+
+        # Test for valid inputs
+        self.assertRaises(ValueError, _linspace1D_between_values, arr_np, -1)
+        self.assertRaises(ValueError, _linspace1D_between_values, np.zeros((2, 2)), 0)
+
+    def test_linspace2D_between_values(self):
+        """Test linspace2D_between_values."""
+        import dask.array as da
+        import numpy as np
+
+        from pyresample.geometry import _linspace2D_between_values
+        arr_np = np.array([[5.0, 7.0],
+                           [7.0, 9.0]])
+        arr_dask = da.from_array(arr_np)
+
+        res_np = _linspace2D_between_values(arr_np, num_x=1, num_y=3)
+        res_dask = _linspace2D_between_values(arr_dask, num_x=1, num_y=3)
+
+        output_expected = np.array([[5., 6., 7.],
+                                    [5.5, 6.5, 7.5],
+                                    [6., 7., 8.],
+                                    [6.5, 7.5, 8.5],
+                                    [7., 8., 9.]])
+        np.testing.assert_allclose(res_np, output_expected)
+        np.testing.assert_allclose(res_dask, output_expected)
+        assert isinstance(res_np, np.ndarray)
+        assert isinstance(res_dask, da.Array)
+
+        # Test for no interpolation inbetween values
+        res = _linspace2D_between_values(arr_np, num_x=0, num_y=0)
+        np.testing.assert_allclose(res, arr_np)
+
+        # Test for valid inputs
+        self.assertRaises(ValueError, _linspace2D_between_values, arr_np, -1, 0)
+        self.assertRaises(ValueError, _linspace2D_between_values, arr_np, 0, -1)
+        self.assertRaises(ValueError, _linspace2D_between_values, arr_np[0, :], 0, 0)
+
     def test_get_extended_lonlats(self):
         import numpy as np
 
