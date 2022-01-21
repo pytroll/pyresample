@@ -149,14 +149,16 @@ class BaseResampler:
         return os.path.join(cache_dir, prefix + hash_str + fmt)
 
 
-def resample_blocks(src_area, dst_area, funk, *args, dst_arrays=(), chunks=None, dtype=None, name=None, **kwargs):
+def resample_blocks(funk, src_area, src_arrays, dst_area,
+                    dst_arrays=(), chunks=None, dtype=None, name=None, fill_value=None, **kwargs):
     """Resample blockwise.
 
     Args:
         src_area: a source geo definition
         dst_area:
         funk: a function to use. If func has a block_info keyword argument, the chunk info is passed, as in map_blocks
-        args: data to use
+        src_arrays: data to use. When split into smaller bit to pass to funk, all the dimensions of the smaller arrays
+           will be using only one chunk!
         dst_arrays: arrays to use that are already in dst_area space. If the array has more than 2 dimensions,
             the last two are expected to be y, x.
         chunks: Has to be provided
@@ -164,34 +166,36 @@ def resample_blocks(src_area, dst_area, funk, *args, dst_arrays=(), chunks=None,
         kwargs:
 
     """
-    if args:
-        data = args[0]
-    else:
-        data = None
     if dst_area == src_area:
-        return data
+        raise ValueError("Source and destination areas are identical."
+                         " Should you be running `map_blocks` instead of `resample_blocks`?")
     from dask.base import tokenize
     from dask.utils import apply, funcname, has_keyword
 
-    name = f"{name or funcname(funk)}-{tokenize(funk, src_area, dst_area, dst_arrays, dtype, chunks, *args, **kwargs)}"
+    if name:
+        name = f"{name}"
+    else:
+        name = f"{funcname(funk)}-{tokenize(funk, src_area, src_arrays, dst_area, dst_arrays, dtype, chunks, **kwargs)}"
     dask_graph = dict()
     dependencies = []
 
-    for target_block_info, target_geo_def in _enumerate_dst_area_chunks(dst_area, chunks):
-        position = target_block_info["chunk-location"]
-        output_shape = target_block_info["shape"]
+    for dst_block_info, dst_area_chunk in _enumerate_dst_area_chunks(dst_area, chunks):
+        position = dst_block_info["chunk-location"]
+        output_shape = dst_block_info["shape"]
         try:
-            smaller_data, source_geo_def, source_block_info = crop_data_around_area(src_area, data, target_geo_def)
+            smaller_src_arrays, src_area_chunk, src_block_info = crop_data_around_area(src_area, src_arrays,
+                                                                                       dst_area_chunk)
         except IncompatibleAreas:  # no relevant data matching
-            if np.issubdtype(dtype, np.integer):
-                fill_value = np.iinfo(dtype).min
-            else:
-                fill_value = np.nan
-            task = [np.full, target_block_info["chunk-shape"], fill_value]
+            if fill_value is None:
+                if np.issubdtype(dtype, np.integer):
+                    fill_value = np.iinfo(dtype).min
+                else:
+                    fill_value = np.nan
+            task = [np.full, dst_block_info["chunk-shape"], fill_value]
         else:
-            args = [source_geo_def, target_geo_def]
-            if data is not None:
-                args.append((smaller_data.name, 0, 0))
+            args = [src_area_chunk, dst_area_chunk]
+            for smaller_data in smaller_src_arrays:
+                args.append((smaller_data.name, *([0] * smaller_data.ndim)))
                 dependencies.append(smaller_data)
 
             for dst_array in dst_arrays:
@@ -200,14 +204,25 @@ def resample_blocks(src_area, dst_area, funk, *args, dst_arrays=(), chunks=None,
                 dependencies.append(dst_array)
             funk_kwargs = kwargs.copy()
             if has_keyword(funk, "block_info"):
-                funk_kwargs["block_info"] = {0: source_block_info,
-                                             None: target_block_info}
+                funk_kwargs["block_info"] = {0: src_block_info,
+                                             None: dst_block_info}
             task = [apply, funk, args, funk_kwargs]
 
         dask_graph[(name, *position)] = tuple(task)
 
     dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=dependencies)
     return da.Array(dask_graph, name, chunks=chunks, dtype=dtype, shape=output_shape)
+
+
+def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
+    """Crop the data around the provided area."""
+    small_source_geo_def, x_slice, y_slice = crop_source_area(source_geo_def, target_geo_def)
+    smaller_src_arrays = []
+    for data in src_arrays:
+        smaller_src_arrays.append(data[..., y_slice, x_slice].rechunk([-1] * data.ndim))
+
+    block_info = {"shape": source_geo_def.shape, "array-location": (y_slice, x_slice)}
+    return smaller_src_arrays, small_source_geo_def, block_info
 
 
 @lru_cache(None)
@@ -220,17 +235,6 @@ def crop_source_area(source_geo_def, target_geo_def):
         small_source_geo_def.lons.data = small_source_geo_def.lons.data.rechunk((-1, -1))
         small_source_geo_def.lats.data = small_source_geo_def.lats.data.rechunk((-1, -1))
     return small_source_geo_def, x_slice, y_slice
-
-
-def crop_data_around_area(source_geo_def, data, target_geo_def):
-    """Crop the data around the provided area."""
-    small_source_geo_def, x_slice, y_slice = crop_source_area(source_geo_def, target_geo_def)
-    if data is not None:
-        smaller_data = data[..., y_slice, x_slice].rechunk(data.chunks[:-2] + (-1, -1))
-    else:
-        smaller_data = None
-    block_info = {"shape": source_geo_def.shape, "array-location": (y_slice, x_slice)}
-    return smaller_data, small_source_geo_def, block_info
 
 
 def _enumerate_dst_area_chunks(dst_area, chunks):

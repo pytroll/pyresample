@@ -23,6 +23,7 @@
 
 import dask.array as da
 import numpy as np
+import pytest
 
 from pyresample.geometry import AreaDefinition
 
@@ -56,16 +57,17 @@ class TestResampleBlocksArea2Area:
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-    def test_resample_blocks_returns_input_array_when_source_and_destination_areas_are_the_same(self):
-        """Test resample_blocks returns input data when the source and destination areas are the same."""
+    def test_resample_blocks_advises_on_using_mapblocks_when_source_and_destination_areas_are_the_same(self):
+        """Test resample_blocks advises on using map_blocks when the source and destination areas are the same."""
         from pyresample.resampler import resample_blocks
 
         def fun(src_area, dst_area, *data):
             return data[0]
 
         some_array = da.random.random(self.src_area.shape)
-        res = resample_blocks(self.src_area, self.src_area, fun, some_array)
-        assert res is some_array
+        with pytest.raises(ValueError) as excinfo:
+            resample_blocks(fun, self.src_area, [some_array], self.src_area)
+        assert "map_blocks" in str(excinfo.value)
 
     def test_resample_blocks_returns_array_with_destination_area_shape(self):
         """Test resample_blocks returns array with the shape of the destination area."""
@@ -75,7 +77,7 @@ class TestResampleBlocksArea2Area:
             return data[0]
 
         some_array = da.random.random(self.src_area.shape)
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=float)
         assert res.shape == self.dst_area.shape
 
     def test_resample_blocks_works_in_chunks(self):
@@ -87,7 +89,7 @@ class TestResampleBlocksArea2Area:
             self.cnt += 1
             return np.full(dst_area.shape, self.cnt)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, chunks=40, dtype=float)
         res = res.compute()
         assert np.nanmin(res) == 1
         assert np.nanmax(res) == 6
@@ -103,7 +105,7 @@ class TestResampleBlocksArea2Area:
             self.cnt += 1
             return np.full(dst_area.shape, self.cnt)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, chunks=40, dtype=float)
         res = res.compute()
         assert np.nanmin(res) == 1
         assert np.nanmax(res) == 6
@@ -119,7 +121,7 @@ class TestResampleBlocksArea2Area:
         some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
         some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=200)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=200, dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=200, dtype=float)
         np.testing.assert_allclose(res, 2742)
 
     def test_resample_blocks_returns_float_dtype(self):
@@ -132,7 +134,7 @@ class TestResampleBlocksArea2Area:
 
         some_array = da.arange(np.prod(self.src_area.shape)).reshape(self.src_area.shape).rechunk(chunks=40)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=float)
         assert res.compute().dtype == float
 
     def test_resample_blocks_returns_int_dtype(self):
@@ -145,7 +147,7 @@ class TestResampleBlocksArea2Area:
 
         some_array = da.arange(np.prod(self.src_area.shape)).reshape(self.src_area.shape).rechunk(chunks=40)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=40, dtype=int)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=int)
         assert res.compute().dtype == int
 
     def test_resample_blocks_uses_cropped_input(self):
@@ -159,7 +161,7 @@ class TestResampleBlocksArea2Area:
         some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
         some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=40)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=float)
         res = res.compute()
         assert not np.allclose(res[0, -1], res[-1, -1])
 
@@ -174,7 +176,7 @@ class TestResampleBlocksArea2Area:
         some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
         some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=40)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=float)
         res = res.compute()
         assert np.allclose(res[0, -1], 25)
         assert np.allclose(res[-1, -1], 17)
@@ -184,13 +186,14 @@ class TestResampleBlocksArea2Area:
         from pyresample.resampler import resample_blocks
 
         def fun(src_area, dst_area, data):
+            del src_area
             val = np.mean(data)
             return np.full((2, ) + dst_area.shape, val)
 
         some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
         some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=200)
 
-        res = resample_blocks(self.src_area, self.dst_area, fun, some_array, chunks=(2, 40, 40), dtype=float)
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=(2, 40, 40), dtype=float)
         assert res.shape == (2,) + self.dst_area.shape
         res = res.compute()
         np.testing.assert_allclose(res[:, :40, 40:80], 1609.5)
@@ -204,10 +207,7 @@ class TestResampleBlocksArea2Area:
 
         chunks = 40
 
-        some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
-        some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=chunks)
-
-        indices = resample_blocks(self.src_area, self.dst_area, gradient_resampler_indices,
+        indices = resample_blocks(gradient_resampler_indices, self.src_area, [], self.dst_area,
                                   chunks=(2, chunks, chunks), dtype=float)
         np.testing.assert_allclose(gradient_resampler_indices(self.src_area, self.dst_area), indices)
 
@@ -225,11 +225,11 @@ class TestResampleBlocksArea2Area:
         some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1]).astype(float)
         some_array = some_array.reshape(self.src_area.shape).rechunk(chunks=chunksize)
 
-        indices = resample_blocks(self.src_area, self.dst_area, gradient_resampler_indices,
+        indices = resample_blocks(gradient_resampler_indices, self.src_area, [], self.dst_area,
                                   chunks=(2, chunksize, chunksize), dtype=float)
         np.testing.assert_allclose(gradient_resampler_indices(self.src_area, self.dst_area), indices)
 
-        res = resample_blocks(self.src_area, self.dst_area, block_bilinear_interpolator, some_array,
+        res = resample_blocks(block_bilinear_interpolator, self.src_area, [some_array], self.dst_area,
                               dst_arrays=[indices], chunks=(chunksize, chunksize), dtype=some_array.dtype)
         np.testing.assert_allclose(gradient_resampler(some_array.compute(), self.src_area, self.dst_area), res)
 
@@ -241,7 +241,7 @@ class TestResampleBlocksArea2Area:
             return np.full(dst_area.shape, val)
 
         value = 12
-        res = resample_blocks(self.src_area, self.dst_area, fun, val=value, chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, val=value, chunks=40, dtype=float)
         res = res.compute()
         assert np.nanmin(res) == value
         assert np.nanmax(res) == value
@@ -256,7 +256,7 @@ class TestResampleBlocksArea2Area:
             return dst_array
 
         dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
-        res = resample_blocks(self.src_area, self.dst_area, fun, dst_arrays=[dst_array], chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunks=40, dtype=float)
         res = res.compute()
         np.testing.assert_allclose(res[:, 40:], dst_array[:, 40:])
 
@@ -277,7 +277,7 @@ class TestResampleBlocksArea2Area:
             return dst_array
 
         dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
-        res = resample_blocks(self.src_area, self.dst_area, fun, dst_arrays=[dst_array], chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunks=40, dtype=float)
         _ = res.compute()
 
     def test_resample_blocks_can_pass_block_info_about_target(self):
@@ -290,7 +290,6 @@ class TestResampleBlocksArea2Area:
             assert dst_array is not None
             assert dst_area.shape == dst_array.shape
             assert block_info is not None
-            print(block_info)
             assert block_info[None]["shape"] == (102, 102)
             assert block_info[None]["array-location"] is not None
             assert block_info[None] not in prev_block_info
@@ -298,7 +297,7 @@ class TestResampleBlocksArea2Area:
             return dst_array
 
         dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
-        res = resample_blocks(self.src_area, self.dst_area, fun, dst_arrays=[dst_array], chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunks=40, dtype=float)
         _ = res.compute()
 
     def test_resample_blocks_supports_3d_dst_arrays(self):
@@ -311,12 +310,68 @@ class TestResampleBlocksArea2Area:
             return dst_array[0, :, :]
 
         dst_array = da.arange(np.product(self.dst_area.shape)).reshape((1, *self.dst_area.shape)).rechunk(40)
-        res = resample_blocks(self.src_area, self.dst_area, fun, dst_arrays=[dst_array], chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunks=40, dtype=float)
         res = res.compute()
         np.testing.assert_allclose(res[:, 40:], dst_array[0, :, 40:])
 
-    # test_multiple_inputs
-    # test 3d resampling
-    # test chunks on non-xy dimensions
-    # test passing own fill value
-    # test "auto" chunk size
+    def test_resample_blocks_supports_multiple_input_arrays(self):
+        """Test that resample_blocks supports multiple inputs."""
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, data1, data2):
+            val = np.mean((data1 + data2) / 2)
+            return np.full(dst_area.shape, val)
+
+        some_array = da.arange(self.src_area.shape[0] * self.src_area.shape[1])
+        some_array1 = some_array.reshape(self.src_area.shape).rechunk(chunks=200)
+        some_array2 = some_array1.copy()
+
+        res = resample_blocks(fun, self.src_area, [some_array1, some_array2], self.dst_area, chunks=200, dtype=float)
+        np.testing.assert_allclose(res, 2742)
+
+    def test_resample_blocks_supports_3d_src_arrays(self):
+        """Test resample_blocks supports 3d src_arrays."""
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, src_array):
+            assert src_array.ndim == 3
+            assert src_area.shape == src_array.shape[-2:]
+            return np.full(src_array.shape[:-2] + dst_area.shape, 18)
+
+        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape)).rechunk(40)
+        res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunks=(3, 40, 40), dtype=float)
+        res = res.compute()
+        assert res.ndim == 3
+        assert np.nanmean(res) == 18
+
+    def test_resample_blocks_supports_3d_src_arrays_with_multiple_chunks_on_non_xy_dims(self):
+        """Test resample_blocks supports 3d src_arrays with multiple chunks on non xy dimensions."""
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, src_array):
+            assert src_array.ndim == 3
+            assert src_array.shape[-2:] == src_area.shape
+            assert src_array.shape[0] == 3
+            return np.full(src_array.shape[:-2] + dst_area.shape, 18)
+
+        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = src_array.rechunk((1, 40, 40))
+
+        res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunks=(3, 40, 40), dtype=float)
+        res = res.compute()
+        assert res.ndim == 3
+        assert np.nanmean(res) == 18
+
+    def test_resample_blocks_uses_custom_fill_value(self):
+        """Test that resample_blocks uses a provided custom fill_value."""
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, data):
+            val = int(np.mean(data))
+            return np.full(dst_area.shape, val)
+
+        some_array = da.arange(np.prod(self.src_area.shape)).reshape(self.src_area.shape).rechunk(chunks=40)
+        fill_value = -12
+        res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=int, fill_value=-12)
+        assert res.compute().dtype == int
+        assert res.compute()[0, 0] == fill_value
