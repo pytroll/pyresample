@@ -151,19 +151,49 @@ class BaseResampler:
 
 def resample_blocks(funk, src_area, src_arrays, dst_area,
                     dst_arrays=(), chunks=None, dtype=None, name=None, fill_value=None, **kwargs):
-    """Resample blockwise.
+    """Resample dask arrays blockwise.
+
+    Resample_blocks applies a function blockwise to transform data from a source
+    area domain to a destination area domain.
 
     Args:
-        src_area: a source geo definition
-        dst_area:
+        funk: A callable to apply on the input data. This function is passed a block of src_area, dst_area, src_arrays,
+            dst_array in that order, followed by the kwargs. If the function has a block_info keyword argument, block
+            information is passed to it that provides the position of source and destination blocks relative to
+            respectively src_area and dst_area.
+        src_area: a source geo definition.
+        dst_area: a destination geo definition. If the same as the source definition, a ValueError is raised.
         funk: a function to use. If func has a block_info keyword argument, the chunk info is passed, as in map_blocks
-        src_arrays: data to use. When split into smaller bit to pass to funk, all the dimensions of the smaller arrays
-           will be using only one chunk!
+        src_arrays: data to use. When split into smaller bit to pass to funk, they are split across the x and y
+            dimensions, but not across the other dimensions, so all the dimensions of the smaller arrays will be using
+            only one chunk!
         dst_arrays: arrays to use that are already in dst_area space. If the array has more than 2 dimensions,
             the last two are expected to be y, x.
-        chunks: Has to be provided
-        dtype: Has to be provided
-        kwargs:
+        chunks: the chunks size(s) to use in the dst_area space. This has to be provided since it is not guaranteed that
+            we can get this information from the other arguments. Moreover, this needs to be an iterable of k elements
+            if the resulting array of funk is to have a different number of dimensions than the input array.
+        dtype: the dtype the resulting array is going to have. Has to be provided.
+        kwargs: any other keyword arguments that will be passed on to funk.
+
+
+    Principle of operations:
+        Resample_blocks works by iterating over chunks on the dst_area domain. For each chunk, the corresponding slice
+        of the src_area domain is computed and the input src_arrays are cut accordingly to pass to funk. To know more
+        about how the slicing is performed, refer to the :class:Slicer class and subclasses.
+
+    Examples:
+        To generate indices from the gradient resampler, you can apply the corresponding function with no input. Note
+        how we provide the chunk sizes knowing that the result array with have 2 elements along a third dimension.
+
+        >>> indices_xy = resample_blocks(gradient_resampler_indices, source_geo_def, [], target_geo_def,
+        ...                              chunks=(2, "auto", "auto"), dtype=float)
+
+        From these indices, to resample an array using bilinear interpolation:
+
+        >>>  resampled = resample_blocks(block_bilinear_interpolator, source_geo_def, [src_array], target_geo_def,
+        ...                              dst_arrays=[indices_xy],
+        ...                              chunks=("auto", "auto"), dtype=src_array.dtype)
+
 
     """
     if dst_area == src_area:
