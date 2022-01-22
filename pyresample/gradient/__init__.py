@@ -22,6 +22,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Implementation of the gradient search algorithm as described by Trishchenko."""
+from __future__ import annotations
 
 import logging
 from functools import wraps
@@ -440,7 +441,8 @@ def ensure_chunked_data_array(func):
     def wrapper(self, data, *args, **kwargs):
         if not isinstance(data, xr.DataArray):
             if data.ndim != 2:
-                raise TypeError("Use a xarray.DataArray to label the dimension of array with other than 2 dimensions.")
+                raise TypeError("Use a xarray.DataArray to label the dimensions"
+                                " of arrays with other than two dimensions.")
             else:
                 data = xr.DataArray(data, dims=["y", "x"])
         else:
@@ -455,28 +457,49 @@ class GradientSearchResamplerNew(BaseResampler):
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
-        from pyresample.resampler import DaskResampler
         super().__init__(source_geo_def, target_geo_def)
-        logger.debug("Instantiating new dask resampler.")
-        self.dr = DaskResampler(self.source_geo_def, self.target_geo_def, gradient_resampler_indices)
+        logger.debug("/!\\ Instantiating an experimental GradientSearch resampler /!\\")
 
-    @ensure_chunked_data_array
-    def compute(self, data, fill_value=None, **kwargs):
+    def precompute(self, **kwargs):
+        """Precompute resampling parameters."""
+        from pyresample.resampler import resample_blocks
+
+        self.indices_xy = resample_blocks(gradient_resampler_indices, self.source_geo_def, [], self.target_geo_def,
+                                          chunks=(2, "auto", "auto"), dtype=float)
+
+    def compute(self, data, fill_value=None, method="bilinear", **kwargs):
         """Perform the resampling."""
-        if fill_value is not None:
-            data = data.fillna(fill_value)
-        res = self.dr.resample_via_indices(data.data.astype(float))
-        x_coord, y_coord = self.target_geo_def.get_proj_vectors()
-        coords = []
-        for key in data.dims:
-            if key == 'x':
-                coords.append(x_coord)
-            elif key == 'y':
-                coords.append(y_coord)
-            else:
-                coords.append(data.coords[key])
+        from pyresample.resampler import resample_blocks
 
-        return xr.DataArray(res, dims=data.dims, coords=coords)
+        if method == "bilinear":
+            fun = block_bilinear_interpolator
+        elif method in ["nearest_neighbour", "nn"]:
+            fun = block_nn_interpolator
+        else:
+            raise ValueError(f"Unrecognized interpolation method {method} for gradient resampling.")
+
+        res = resample_blocks(fun, self.source_geo_def, [data], self.target_geo_def,
+                              dst_arrays=[self.indices_xy],
+                              chunks=("auto", "auto"), dtype=data.dtype)
+        return res
+
+    # @ensure_chunked_data_array
+    # def compute(self, data, fill_value=None, **kwargs):
+    #     """Perform the resampling."""
+    #     if fill_value is not None:
+    #         data = data.fillna(fill_value)
+    #     res = self.dr.resample_via_indices(data.data.astype(float))
+    #     x_coord, y_coord = self.target_geo_def.get_proj_vectors()
+    #     coords = []
+    #     for key in data.dims:
+    #         if key == 'x':
+    #             coords.append(x_coord)
+    #         elif key == 'y':
+    #             coords.append(y_coord)
+    #         else:
+    #             coords.append(data.coords[key])
+    #
+    #     return xr.DataArray(res, dims=data.dims, coords=coords)
 
 
 def ensure_3d_data(func):
@@ -551,3 +574,49 @@ def gradient_resampler_indices(source_area, target_area, method='bilinear', bloc
         indices_xy[1, :, :] += y_slice.start
 
     return indices_xy
+
+
+def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, block_info=None):
+    """Bilinear interpolation implementation for resample_blocks."""
+    del src_area, dst_area
+    mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
+
+    w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
+    w_p, p_a = np.modf(x_indices.clip(0, data.shape[-1] - 1))
+
+    l_a = l_a.astype(int)
+    p_a = p_a.astype(int)
+    l_b = np.clip(l_a + 1, 1, data.shape[-2] - 1)
+    p_b = np.clip(p_a + 1, 1, data.shape[-1] - 1)
+
+    res = ((1 - w_l) * (1 - w_p) * data[..., l_a, p_a] +
+           (1 - w_l) * w_p * data[..., l_a, p_b] +
+           w_l * (1 - w_p) * data[..., l_b, p_a] +
+           w_l * w_p * data[..., l_b, p_b])
+    res = np.where(mask, np.nan, res)
+    return res
+
+
+def block_nn_interpolator(src_area, dst_area, data, indices_xy, block_info=None):
+    """Nearest neighbour 'interpolator' for resample_blocks."""
+    del src_area, dst_area
+    mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
+
+    x_indices = np.clip(np.round(x_indices), 0, data.shape[-1] - 1)
+    y_indices = np.clip(np.round(y_indices), 0, data.shape[-2] - 1)
+
+    res = data[..., y_indices, x_indices]
+    return np.where(mask, np.nan, res)
+
+
+def _get_mask_and_adjusted_indices(indices_xy, block_info):
+    """Get a mask for valid data and adjusted x and y indices."""
+    x_indices, y_indices = indices_xy
+    if block_info:
+        y_slice, x_slice = block_info[0]["array-location"][-2:]
+        x_indices -= x_slice.start
+        y_indices -= y_slice.start
+    mask = np.isnan(y_indices)
+    x_indices = np.nan_to_num(x_indices, 0)
+    y_indices = np.nan_to_num(y_indices, 0)
+    return mask, x_indices, y_indices

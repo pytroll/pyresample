@@ -26,7 +26,6 @@ from unittest import mock
 
 import dask.array as da
 import numpy as np
-import pytest
 import xarray as xr
 
 from pyresample.geometry import AreaDefinition, SwathDefinition
@@ -251,18 +250,18 @@ class TestGradientResampler(unittest.TestCase):
             arr = np.ravel(res[i, :, :])
             assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
-    def test_resampler_only_works_on_dataarrays_for_3d(self):
-        """Test that the resampler only works on dataarrays for the 3d case."""
-        data = da.ones(self.src_area.shape + (1,), dtype=np.float64, chunks=40)
-        with pytest.raises(TypeError):
-            self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
-
-    def test_resampler_works_on_2d_dask_arrays(self):
-        """Test that the resampler works on 2d dask arrays."""
-        data = da.ones(self.src_area.shape, dtype=np.float64, chunks=40)
-        res = self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
-        assert res.shape == self.dst_area.shape
-        assert not np.all(np.isnan(res))
+    # def test_resampler_only_works_on_dataarrays_for_3d(self):
+    #     """Test that the resampler only works on dataarrays for the 3d case."""
+    #     data = da.ones(self.src_area.shape + (1,), dtype=np.float64, chunks=40)
+    #     with pytest.raises(TypeError):
+    #         self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
+    #
+    # def test_resampler_works_on_2d_dask_arrays(self):
+    #     """Test that the resampler works on 2d dask arrays."""
+    #     data = da.ones(self.src_area.shape, dtype=np.float64, chunks=40)
+    #     res = self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
+    #     assert res.shape == self.dst_area.shape
+    #     assert not np.all(np.isnan(res))
 
     # def test_resample_area_to_swath_2d_with_chunks(self):
     #     """Resample area to swath, 2d."""
