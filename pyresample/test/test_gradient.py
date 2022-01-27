@@ -350,6 +350,8 @@ class TestRBGradientSearchResamplerArea2Area:
             data, method='bilinear').compute(scheduler='single-threaded')
 
         assert all(res.coords["bands"] == data.coords["bands"])
+        assert "x" in res.coords
+        assert "y" in res.coords
 
     def test_resampler_can_take_random_dim_order(self):
         data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),

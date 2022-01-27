@@ -278,22 +278,27 @@ class OGradientSearchResampler(BaseResampler):
                                        self.dst_slices,
                                        **kwargs)
 
-        # TODO: this will crash when the target geo definition is a swath def.
-        x_coord, y_coord = self.target_geo_def.get_proj_vectors()
-        coords = []
-        for key in data_dims:
-            if key == 'x':
-                coords.append(x_coord)
-            elif key == 'y':
-                coords.append(y_coord)
-            else:
-                coords.append(data_coords[key])
+        coords = _fill_in_coords(self.target_geo_def, data_coords, data_dims)
 
         if fill_value is not None:
             res = da.where(np.isnan(res), fill_value, res)
         res = xr.DataArray(res, dims=data_dims, coords=coords)
 
         return res
+
+
+def _fill_in_coords(target_geo_def, data_coords, data_dims):
+    # TODO: this will crash when the target geo definition is a swath def.
+    x_coord, y_coord = target_geo_def.get_proj_vectors()
+    coords = []
+    for key in data_dims:
+        if key == 'x':
+            coords.append(x_coord)
+        elif key == 'y':
+            coords.append(y_coord)
+        else:
+            coords.append(data_coords[key])
+    return coords
 
 
 def check_overlap(src_poly, dst_poly):
@@ -499,10 +504,7 @@ class RBGradientSearchResampler(BaseResampler):
                               dst_arrays=[self.indices_xy],
                               chunks=chunks, dtype=data.dtype, **kwargs)
 
-        coords = {}
-        for coord, val in data.coords.items():
-            if coord not in ["x", "y"]:
-                coords[coord] = val
+        coords = _fill_in_coords(self.target_geo_def, data.coords, data.dims)
 
         res = xr.DataArray(res, attrs=data.attrs.copy(), dims=data.dims, coords=coords)
         res.attrs["area"] = self.target_geo_def
