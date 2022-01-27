@@ -92,7 +92,7 @@ class SwathSlicer(Slicer):
     def get_slices_from_polygon(self, poly):
         """Get the slices based on the polygon."""
         intersecting_chunk_slices = []
-        for smaller_poly, slices in _get_chunk_polygons_for_area_to_crop(self.area_to_crop):
+        for smaller_poly, slices in _get_chunk_polygons_for_swath_to_crop(self.area_to_crop):
             if smaller_poly.intersects(poly):
                 intersecting_chunk_slices.append(slices)
         if not intersecting_chunk_slices:
@@ -110,7 +110,7 @@ class SwathSlicer(Slicer):
 
 
 @lru_cache(maxsize=10)
-def _get_chunk_polygons_for_area_to_crop(area_to_crop):
+def _get_chunk_polygons_for_swath_to_crop(area_to_crop):
     """Get the polygons for each chunk of the area_to_crop."""
     res = []
     from shapely.geometry import Polygon
