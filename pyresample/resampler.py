@@ -158,9 +158,9 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
 
     Args:
         funk: A callable to apply on the input data. This function is passed a block of src_area, dst_area, src_arrays,
-            dst_array in that order, followed by the kwargs. If the function has a block_info keyword argument, block
-            information is passed to it that provides the position of source and destination blocks relative to
-            respectively src_area and dst_area.
+            dst_array in that order, followed by the kwargs, which include the fill_value. If the function has a
+            block_info keyword argument, block information is passed to it that provides the position of source and
+            destination blocks relative to respectively src_area and dst_area.
         src_area: a source geo definition.
         dst_area: a destination geo definition. If the same as the source definition, a ValueError is raised.
         funk: a function to use. If func has a block_info keyword argument, the chunk info is passed, as in map_blocks
@@ -205,22 +205,26 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
     if name:
         name = f"{name}"
     else:
-        name = f"{funcname(funk)}-{tokenize(funk, src_area, src_arrays, dst_area, dst_arrays, dtype, chunks, **kwargs)}"
+        token = tokenize(funk, src_area, src_arrays, dst_area, dst_arrays, fill_value, dtype, chunks, **kwargs)
+        name = f"{funcname(funk)}-{token}"
     dask_graph = dict()
     dependencies = []
 
-    for dst_block_info, dst_area_chunk in _enumerate_dst_area_chunks(dst_area, chunks):
+    if fill_value is None:
+        if np.issubdtype(dtype, np.integer):
+            fill_value = np.iinfo(dtype).min
+        else:
+            fill_value = np.nan
+
+    dst_chunks, output_shape = _compute_dst_chunks(dst_area, chunks, dtype)
+
+    for dst_block_info, dst_area_chunk in _enumerate_dst_area_chunks(dst_area, dst_chunks):
         position = dst_block_info["chunk-location"]
-        output_shape = dst_block_info["shape"]
+        dst_block_info["shape"] = output_shape
         try:
             smaller_src_arrays, src_area_chunk, src_block_info = crop_data_around_area(src_area, src_arrays,
                                                                                        dst_area_chunk)
         except IncompatibleAreas:  # no relevant data matching
-            if fill_value is None:
-                if np.issubdtype(dtype, np.integer):
-                    fill_value = np.iinfo(dtype).min
-                else:
-                    fill_value = np.nan
             task = [np.full, dst_block_info["chunk-shape"], fill_value]
         else:
             args = [src_area_chunk, dst_area_chunk]
@@ -229,10 +233,11 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
                 dependencies.append(smaller_data)
 
             for dst_array in dst_arrays:
-                dst_position = [0] * (dst_array.ndim - 2) + list(position)
+                dst_position = [0] * (dst_array.ndim - 2) + list(position[-2:])
                 args.append((dst_array.name, *dst_position))
                 dependencies.append(dst_array)
             funk_kwargs = kwargs.copy()
+            funk_kwargs['fill_value'] = fill_value
             if has_keyword(funk, "block_info"):
                 funk_kwargs["block_info"] = {0: src_block_info,
                                              None: dst_block_info}
@@ -241,7 +246,7 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         dask_graph[(name, *position)] = tuple(task)
 
     dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=dependencies)
-    return da.Array(dask_graph, name, chunks=chunks, dtype=dtype, shape=output_shape)
+    return da.Array(dask_graph, name, chunks=dst_chunks, dtype=dtype, shape=output_shape)
 
 
 def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
@@ -267,8 +272,20 @@ def crop_source_area(source_geo_def, target_geo_def):
     return small_source_geo_def, x_slice, y_slice
 
 
-def _enumerate_dst_area_chunks(dst_area, chunks):
+def _enumerate_dst_area_chunks(dst_area, dst_chunks):
     """Enumerate the chunks in function of the dst_area."""
+    for position, slices in _enumerate_chunk_slices(dst_chunks):
+        chunk_shape = tuple(chunk[pos] for pos, chunk in zip(position, dst_chunks))
+        target_geo_def = dst_area[slices[-2:]]
+        block_info = {"num-chunks": [len(chunk) for chunk in dst_chunks],
+                      "chunk-location": position,
+                      "array-location": slices,
+                      "chunk-shape": chunk_shape,
+                      }
+        yield block_info, target_geo_def
+
+
+def _compute_dst_chunks(dst_area, chunks, dtype):
     rest_shape = []
     if not isinstance(chunks, Number) and len(chunks) > len(dst_area.shape):
         rest_chunks = chunks[:-len(dst_area.shape)]
@@ -278,15 +295,6 @@ def _enumerate_dst_area_chunks(dst_area, chunks):
             except TypeError:
                 rest_shape.append(elt)
     output_shape = tuple(rest_shape) + dst_area.shape
-    dst_chunks = da.core.normalize_chunks(chunks, output_shape)
 
-    for position, slices in _enumerate_chunk_slices(dst_chunks):
-        chunk_shape = tuple(chunk[pos] for pos, chunk in zip(position, dst_chunks))
-        target_geo_def = dst_area[slices[-2:]]
-        block_info = {"shape": output_shape,
-                      "num-chunks": [len(chunks) for chunks in dst_chunks],
-                      "chunk-location": position,
-                      "array-location": slices,
-                      "chunk-shape": chunk_shape,
-                      }
-        yield block_info, target_geo_def
+    dst_chunks = da.core.normalize_chunks(chunks, output_shape, dtype=dtype)
+    return dst_chunks, output_shape

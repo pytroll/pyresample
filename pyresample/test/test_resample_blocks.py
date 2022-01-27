@@ -73,7 +73,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks returns array with the shape of the destination area."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, *data):
+        def fun(src_area, dst_area, *data, **kwargs):
             return data[0]
 
         some_array = da.random.random(self.src_area.shape)
@@ -85,7 +85,7 @@ class TestResampleBlocksArea2Area:
         from pyresample.resampler import resample_blocks
         self.cnt = 0
 
-        def fun(src_area, dst_area, *data):
+        def fun(src_area, dst_area, *data, **kwargs):
             self.cnt += 1
             return np.full(dst_area.shape, self.cnt)
 
@@ -100,7 +100,7 @@ class TestResampleBlocksArea2Area:
         from pyresample.resampler import resample_blocks
         self.cnt = 0
 
-        def fun(src_area, dst_area, *data):
+        def fun(src_area, dst_area, *data, **kwargs):
             assert not data
             self.cnt += 1
             return np.full(dst_area.shape, self.cnt)
@@ -114,7 +114,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks makes use of input data."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             val = np.mean(data)
             return np.full(dst_area.shape, val)
 
@@ -128,7 +128,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks returns the expected dtype."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             val = np.mean(data)
             return np.full(dst_area.shape, val)
 
@@ -141,7 +141,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks returns the expected dtype."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             val = int(np.mean(data))
             return np.full(dst_area.shape, val)
 
@@ -154,7 +154,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks uses cropped input data."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             val = np.mean(data)
             return np.full(dst_area.shape, val)
 
@@ -169,7 +169,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks uses cropped source area."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             val = np.mean(src_area.shape)
             return np.full(dst_area.shape, val)
 
@@ -185,7 +185,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks can add a new axis."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, **kwargs):
             del src_area
             val = np.mean(data)
             return np.full((2, ) + dst_area.shape, val)
@@ -237,7 +237,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks passes kwargs."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, val=1):
+        def fun(src_area, dst_area, val=1, **kwargs):
             return np.full(dst_area.shape, val)
 
         value = 12
@@ -250,7 +250,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks chunks the dst_arrays."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, dst_array=None):
+        def fun(src_area, dst_area, dst_array=None, **kwargs):
             assert dst_array is not None
             assert dst_area.shape == dst_array.shape
             return dst_array
@@ -266,7 +266,7 @@ class TestResampleBlocksArea2Area:
 
         prev_block_info = []
 
-        def fun(src_area, dst_area, dst_array=None, block_info=None):
+        def fun(src_area, dst_area, dst_array=None, block_info=None, **kwargs):
             assert dst_array is not None
             assert dst_area.shape == dst_array.shape
             assert block_info is not None
@@ -286,7 +286,7 @@ class TestResampleBlocksArea2Area:
 
         prev_block_info = []
 
-        def fun(src_area, dst_area, dst_array=None, block_info=None):
+        def fun(src_area, dst_area, dst_array=None, block_info=None, **kwargs):
             assert dst_array is not None
             assert dst_area.shape == dst_array.shape
             assert block_info is not None
@@ -304,13 +304,14 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks supports 3d dst_arrays."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, dst_array=None):
+        def fun(src_area, dst_area, dst_array=None, **kwargs):
             assert dst_array is not None
             assert dst_area.shape == dst_array.shape[1:]
             return dst_array[0, :, :]
 
         dst_array = da.arange(np.product(self.dst_area.shape)).reshape((1, *self.dst_area.shape)).rechunk(40)
-        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunks=40, dtype=float)
+        res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array],
+                              chunks=(40, 40), dtype=float)
         res = res.compute()
         np.testing.assert_allclose(res[:, 40:], dst_array[0, :, 40:])
 
@@ -318,7 +319,7 @@ class TestResampleBlocksArea2Area:
         """Test that resample_blocks supports multiple inputs."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data1, data2):
+        def fun(src_area, dst_area, data1, data2, **kwargs):
             val = np.mean((data1 + data2) / 2)
             return np.full(dst_area.shape, val)
 
@@ -333,7 +334,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks supports 3d src_arrays."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, src_array):
+        def fun(src_area, dst_area, src_array, **kwargs):
             assert src_array.ndim == 3
             assert src_area.shape == src_array.shape[-2:]
             return np.full(src_array.shape[:-2] + dst_area.shape, 18)
@@ -348,7 +349,7 @@ class TestResampleBlocksArea2Area:
         """Test resample_blocks supports 3d src_arrays with multiple chunks on non xy dimensions."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, src_array):
+        def fun(src_area, dst_area, src_array, **kwargs):
             assert src_array.ndim == 3
             assert src_array.shape[-2:] == src_area.shape
             assert src_array.shape[0] == 3
@@ -366,8 +367,9 @@ class TestResampleBlocksArea2Area:
         """Test that resample_blocks uses a provided custom fill_value."""
         from pyresample.resampler import resample_blocks
 
-        def fun(src_area, dst_area, data):
+        def fun(src_area, dst_area, data, fill_value=np.nan):
             val = int(np.mean(data))
+            assert fill_value == -12
             return np.full(dst_area.shape, val)
 
         some_array = da.arange(np.prod(self.src_area.shape)).reshape(self.src_area.shape).rechunk(chunks=40)
@@ -375,3 +377,36 @@ class TestResampleBlocksArea2Area:
         res = resample_blocks(fun, self.src_area, [some_array], self.dst_area, chunks=40, dtype=int, fill_value=-12)
         assert res.compute().dtype == int
         assert res.compute()[0, 0] == fill_value
+
+    def test_resample_blocks_supports_auto_chunks(self):
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, src_array, **kwargs):
+            return np.full(src_array.shape[:-2] + dst_area.shape, 18)
+
+        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = src_array.rechunk((1, 40, 40))
+
+        res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunks=(3, "auto", "auto"), dtype=float)
+        res = res.compute()
+        assert res.ndim == 3
+        assert np.nanmean(res) == 18
+
+    def test_resample_blocks_supports_auto_chunks_and_dst_array(self):
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, src_array, dst_array, **kwargs):
+            assert dst_array.ndim == 3
+            return np.full(src_array.shape[:-2] + dst_area.shape, 18)
+
+        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = src_array.rechunk((1, 40, 40))
+
+        dst_array = da.arange(np.product(self.dst_area.shape) * 2).reshape((2, *self.dst_area.shape))
+        dst_array = src_array.rechunk((1, 40, 40))
+
+        res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, [dst_array],
+                              chunks=(3, "auto", "auto"), dtype=float)
+        res = res.compute()
+        assert res.ndim == 3
+        assert np.nanmean(res) == 18
