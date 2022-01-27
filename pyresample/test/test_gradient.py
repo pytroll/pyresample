@@ -32,12 +32,12 @@ import xarray as xr
 from pyresample.geometry import AreaDefinition, SwathDefinition
 
 
-class TestGradientResampler(unittest.TestCase):
+class TestOGradientResampler(unittest.TestCase):
     """Test case for the gradient resampling."""
 
     def setUp(self):
         """Set up the test case."""
-        from pyresample.gradient import GradientSearchResampler
+        from pyresample.gradient import OGradientSearchResampler
         self.src_area = AreaDefinition('dst', 'dst area', None,
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,
@@ -51,9 +51,9 @@ class TestGradientResampler(unittest.TestCase):
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-        self.resampler = GradientSearchResampler(self.src_area, self.dst_area)
-        self.swath_resampler = GradientSearchResampler(self.src_swath,
-                                                       self.dst_area)
+        self.resampler = OGradientSearchResampler(self.src_area, self.dst_area)
+        self.swath_resampler = OGradientSearchResampler(self.src_swath,
+                                                        self.dst_area)
 
     def test_get_projection_coordinates_area_to_area(self):
         """Check that the coordinates are initialized, for area -> area."""
@@ -486,6 +486,7 @@ class TestEnsureDataArray(unittest.TestCase):
 
         def fake_compute(arg1, data):
             assert isinstance(data, xr.DataArray)
+            return data
 
         decorated = ensure_data_array(fake_compute)
         decorated('bla', data)
@@ -497,10 +498,24 @@ class TestEnsureDataArray(unittest.TestCase):
 
         def fake_compute(arg1, data):
             assert isinstance(data, xr.DataArray)
+            return data
 
         decorated = ensure_data_array(fake_compute)
         with pytest.raises(TypeError):
             decorated('bla', data)
+
+    def test_decorator_transposes_input_array(self):
+        """Test that the decorator transposes dimensions to put y and x last."""
+        from pyresample.gradient import ensure_data_array
+        data = xr.DataArray(da.ones((10, 10, 10), dtype=np.float64, chunks=40),
+                            dims=["x", "bands", "y"])
+
+        def fake_compute(arg1, data):
+            assert data.dims == ("bands", "y", "x")
+            return data
+
+        decorated = ensure_data_array(fake_compute)
+        decorated('bla', data)
 
 
 def test_check_overlap():

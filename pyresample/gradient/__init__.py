@@ -459,9 +459,8 @@ def ensure_data_array(func):
                                 " of arrays with other than two dimensions.")
             else:
                 data = xr.DataArray(data, dims=["y", "x"])
-        else:
-            dims = data.dims
-            data = data.transpose(..., "y", "x")
+        dims = data.dims
+        data = data.transpose(..., "y", "x")
         return func(self, data, *args, **kwargs).transpose(*dims)
     return wrapper
 
