@@ -197,26 +197,26 @@ class TestSwathSlicer(unittest.TestCase):
             (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
         )
 
-        lons, lats = self.src_area.get_lonlats(chunks=chunks)
-        lons = xr.DataArray(lons.persist())
-        lats = xr.DataArray(lats.persist())
-        self.src_swath = SwathDefinition(lons, lats)
+        self.lons, self.lats = self.src_area.get_lonlats(chunks=chunks)
+        xrlons = xr.DataArray(self.lons.persist())
+        xrlats = xr.DataArray(self.lats.persist())
+        self.src_swath = SwathDefinition(xrlons, xrlats)
 
     def test_slicer_init(self):
         """Test slicer initialization."""
-        slicer = Slicer(self.src_area, self.dst_area)
+        slicer = Slicer(self.src_swath, self.dst_area)
         assert slicer.area_to_crop == self.src_area
         assert slicer.area_to_contain == self.dst_area
 
     def test_source_swath_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""
         slicer = Slicer(self.src_swath, self.dst_area)
+        y_max, x_max = self.src_swath.shape
+        y_max -= 1
+        x_max -= 1
         x_slice, y_slice = slicer.get_slices()
-        assert (x_slice, y_slice) == (slice(0, 36), slice(14, 91))
-        assert x_slice.start == 0
-        assert x_slice.stop == 36
-        assert y_slice.start == 14
-        assert y_slice.stop == 91
+        assert x_slice.start > 0 or x_slice.stop < x_max
+        assert y_slice.start > 0 or y_slice.stop < y_max
 
     def test_source_area_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""

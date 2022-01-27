@@ -114,8 +114,7 @@ def _get_chunk_polygons_for_area_to_crop(area_to_crop):
     """Get the polygons for each chunk of the area_to_crop."""
     res = []
     from shapely.geometry import Polygon
-    chunks = np.array(area_to_crop.lons.data.chunksize) // 2
-    src_chunks = da.core.normalize_chunks(chunks, area_to_crop.shape)
+    src_chunks = area_to_crop.lons.chunks
     for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
         line_slice = expand_slice(line_slice)
         col_slice = expand_slice(col_slice)
@@ -140,8 +139,6 @@ class AreaSlicer(Slicer):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
         x, y = self.area_to_contain.get_bbox_coords(frequency=10)
-        # before_poly = Polygon(zip(x, y)).buffer(np.max(target_area.resolution))
-        # x, y = zip(*before_poly.exterior.coords)
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
             x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction='INVERSE')
