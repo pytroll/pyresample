@@ -26,6 +26,7 @@ from unittest import mock
 
 import dask.array as da
 import numpy as np
+import pytest
 import xarray as xr
 
 from pyresample.geometry import AreaDefinition, SwathDefinition
@@ -250,27 +251,229 @@ class TestGradientResampler(unittest.TestCase):
             arr = np.ravel(res[i, :, :])
             assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
-    # def test_resampler_only_works_on_dataarrays_for_3d(self):
-    #     """Test that the resampler only works on dataarrays for the 3d case."""
-    #     data = da.ones(self.src_area.shape + (1,), dtype=np.float64, chunks=40)
-    #     with pytest.raises(TypeError):
-    #         self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
-    #
-    # def test_resampler_works_on_2d_dask_arrays(self):
-    #     """Test that the resampler works on 2d dask arrays."""
-    #     data = da.ones(self.src_area.shape, dtype=np.float64, chunks=40)
-    #     res = self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
-    #     assert res.shape == self.dst_area.shape
-    #     assert not np.all(np.isnan(res))
 
-    # def test_resample_area_to_swath_2d_with_chunks(self):
-    #     """Resample area to swath, 2d."""
-    #     data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64, chunks=40),
-    #                         dims=['y', 'x'])
-    #     res = self.area2swath_resampler.compute(
-    #         data, method='bilinear').compute(scheduler='single-threaded')
-    #     assert res.shape == self.dst_area.shape
-    #     np.testing.assert_allclose(res, 1)
+class TestRBGradientSearchResamplerArea2Area:
+    """Test RBGradientSearchResampler for the Area to Area case."""
+
+    def setup(self):
+        """Set up the test case."""
+        from pyresample.gradient import RBGradientSearchResampler
+        self.src_area = AreaDefinition('src', 'src area', None,
+                                       {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                       100, 100,
+                                       (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+
+        self.dst_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+
+        self.resampler = RBGradientSearchResampler(self.src_area, self.dst_area)
+
+    def test_precompute_generates_indices(self):
+        self.resampler.precompute()
+        assert self.resampler.indices_xy.shape == (2, ) + self.dst_area.shape
+
+    def test_resampler_accepts_only_dataarrays_if_not_2d(self):
+        data = da.ones(self.src_area.shape + (1,), dtype=np.float64, chunks=40)
+        self.resampler.precompute()
+        with pytest.raises(TypeError):
+            self.resampler.compute(data, method='bilinear').compute(scheduler='single-threaded')
+
+    def test_resampler_returns_the_right_shape(self):
+        data = xr.DataArray(da.ones((3, ) + self.src_area.shape,
+                                    dtype=np.float64) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
+                            dims=['bands', 'y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear')
+        assert res.shape == (3, ) + self.dst_area.shape
+
+    def test_resampler_returns_a_dataarray(self):
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
+                            dims=['y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert isinstance(res, xr.DataArray)
+
+    def test_resampler_returns_a_dataarray_with_correct_area_attribute(self):
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
+                            dims=['y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert res.attrs["area"] == self.dst_area
+
+    def test_resampler_returns_a_dataarray_with_input_attributes(self):
+        attrs = {"sky": "blue", "grass": "green"}
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
+                            dims=['y', 'x'], attrs=attrs)
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        new_attrs = res.attrs.copy()
+        new_attrs.pop("area")
+        assert new_attrs == attrs
+
+    def test_resampler_returns_a_dataarray_with_input_dims(self):
+        attrs = {"sky": "blue", "grass": "green"}
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
+                            dims=['y', 'x'], attrs=attrs)
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+
+        assert res.dims == data.dims
+
+    def test_resampler_returns_a_dataarray_with_input_coords(self):
+        attrs = {"sky": "blue", "grass": "green"}
+        data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
+                            dims=["bands", 'y', 'x'], attrs=attrs,
+                            coords={"bands": ["R", "G", "B"]})
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+
+        assert all(res.coords["bands"] == data.coords["bands"])
+
+    def test_resampler_returns_a_dataarray_with_correct_xy_coords(self):
+        data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
+                            dims=["bands", 'y', 'x'],
+                            coords={"bands": ["R", "G", "B"]})
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+
+        assert all(res.coords["bands"] == data.coords["bands"])
+
+    def test_resampler_can_take_random_dim_order(self):
+        data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
+                            dims=["bands", 'y', 'x'],
+                            coords={"bands": ["R", "G", "B"]}).transpose("x", "bands", "y")
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+
+        assert res.dims == data.dims
+
+    def test_resampler_accepts_only_bilinear_or_nn(self):
+        data = da.ones(self.src_area.shape, dtype=np.float64, chunks=40)
+        self.resampler.precompute()
+        with pytest.raises(ValueError):
+            self.resampler.compute(data, method='bilinear_neighbour').compute(scheduler='single-threaded')
+
+    def test_resample_area_to_area_2d(self):
+        """Resample area to area, 2d."""
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
+                            dims=['y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert res.shape == self.dst_area.shape
+        np.testing.assert_allclose(res, 1)
+
+    def test_resample_area_to_area_2d_fill_value(self):
+        """Resample area to area, 2d, use fill value."""
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64), dims=['y', 'x'])
+        dst_area = AreaDefinition('outside', 'outside', None,
+                                  {'proj': 'stere', 'lon_0': 180.0,
+                                   'lat_0': 90.0, 'lat_ts': 60.0,
+                                   'ellps': 'bessel'},
+                                  102, 102,
+                                  (-2717181.7304994687, -5571048.14031214,
+                                   1378818.2695005313, -1475048.1403121399))
+        self.resampler.target_geo_def = dst_area
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear',
+            fill_value=2.0).compute(scheduler='single-threaded')
+        assert res.shape == self.dst_area.shape
+        np.testing.assert_allclose(res, 2.0)
+
+    def test_resample_area_to_area_3d(self):
+        """Resample area to area, 3d."""
+        data = xr.DataArray(da.ones((3, ) + self.src_area.shape,
+                                    dtype=np.float64) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
+                            dims=['bands', 'y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert res.shape == (3, ) + self.dst_area.shape
+        assert np.allclose(res[0, :, :], 1.0)
+        assert np.allclose(res[1, :, :], 2.0)
+        assert np.allclose(res[2, :, :], 3.0)
+
+
+class TestRBGradientSearchResamplerSwath2Area:
+    """Test RBGradientSearchResampler for the Swath to Area case."""
+
+    def setup(self):
+        """Set up the test case."""
+        from pyresample.gradient import RBGradientSearchResampler
+
+        chunks = 20
+
+        self.dst_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+
+        self.src_area = AreaDefinition(
+            'omerc_otf',
+            'On-the-fly omerc area',
+            None,
+            {'alpha': '8.99811271718795',
+             'ellps': 'sphere',
+             'gamma': '0',
+             'k': '1',
+             'lat_0': '0',
+             'lonc': '13.8096029486222',
+             'proj': 'omerc',
+             'units': 'm'},
+            50, 100,
+            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
+        )
+
+        self.lons, self.lats = self.src_area.get_lonlats(chunks=chunks)
+        xrlons = xr.DataArray(self.lons.persist())
+        xrlats = xr.DataArray(self.lats.persist())
+        self.src_swath = SwathDefinition(xrlons, xrlats)
+
+        self.resampler = RBGradientSearchResampler(self.src_swath,
+                                                   self.dst_area)
+
+    def test_resample_swath_to_area_2d(self):
+        """Resample swath to area, 2d."""
+        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=np.float64),
+                            dims=['y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert res.shape == self.dst_area.shape
+        assert not np.all(np.isnan(res))
+
+    def test_resample_swath_to_area_3d(self):
+        """Resample area to area, 3d."""
+        data = xr.DataArray(da.ones((3,) + self.src_swath.shape,
+                                    dtype=np.float64) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
+                            dims=['bands', 'y', 'x'])
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear').compute(scheduler='single-threaded')
+        assert res.shape == (3,) + self.dst_area.shape
+        for i in range(res.shape[0]):
+            arr = np.ravel(res[i, :, :])
+            assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
 
 class TestEnsureDataArray(unittest.TestCase):
@@ -278,25 +481,26 @@ class TestEnsureDataArray(unittest.TestCase):
 
     def test_decorator_converts_2d_array_to_dataarrays_if_needed(self):
         """Test that the decorator converts numpy or dask 2d arrays to dataarrays."""
-        from pyresample.gradient import ensure_chunked_data_array
+        from pyresample.gradient import ensure_data_array
         data = da.ones((10, 10), dtype=np.float64, chunks=40)
 
         def fake_compute(arg1, data):
             assert isinstance(data, xr.DataArray)
 
-        decorated = ensure_chunked_data_array(fake_compute)
+        decorated = ensure_data_array(fake_compute)
         decorated('bla', data)
 
-    def test_decorator_rechunks_other_dimensions_to_one_chunk(self):
-        """Test that the decorator rechunks dimensions other than x and y to one chunk."""
-        from pyresample.gradient import ensure_chunked_data_array
-        data = xr.DataArray(da.ones((10, 10, 10), dtype=np.float64, chunks=2), dims=["band", "y", "x"])
+    def test_decorator_raises_exception_when_3d_array_is_passed(self):
+        """Test that the decorator raises and exception when a 3d array is passed."""
+        from pyresample.gradient import ensure_data_array
+        data = da.ones((10, 10, 10), dtype=np.float64, chunks=40)
 
         def fake_compute(arg1, data):
-            assert data.data.chunksize[0] == 10
+            assert isinstance(data, xr.DataArray)
 
-        decorated = ensure_chunked_data_array(fake_compute)
-        decorated('bla', data)
+        decorated = ensure_data_array(fake_compute)
+        with pytest.raises(TypeError):
+            decorated('bla', data)
 
 
 def test_check_overlap():

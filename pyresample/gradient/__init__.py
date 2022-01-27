@@ -36,7 +36,7 @@ from pyproj import CRS
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
-from pyresample.geometry import get_geostationary_bounding_box
+from pyresample.geometry import AreaDefinition, get_geostationary_bounding_box
 from pyresample.gradient._gradient_search import (
     one_step_gradient_indices,
     one_step_gradient_search,
@@ -46,13 +46,27 @@ from pyresample.resampler import BaseResampler
 logger = logging.getLogger(__name__)
 
 
+class GradientSearchResampler(BaseResampler):
+    """GradientSearch factory class."""
+
+    def __new__(cls, source_geo_def, target_geo_def):
+        """Create a GradientSearchResampler."""
+        if cls is GradientSearchResampler:
+            if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
+                return RBGradientSearchResampler(source_geo_def, target_geo_def)
+            else:
+                return OGradientSearchResampler(source_geo_def, target_geo_def)
+        else:
+            return super().__new__(cls)
+
+
 @da.as_gufunc(signature='(),()->(),()')
 def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     """Calculate projection coordinates."""
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class GradientSearchResampler(BaseResampler):
+class OGradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -435,8 +449,8 @@ def _concatenate_chunks(chunks):
     return res
 
 
-def ensure_chunked_data_array(func):
-    """Ensure the data is an instance of a an xarray.DataArray with correct chunking."""
+def ensure_data_array(func):
+    """Ensure the data is an instance of a an xarray.DataArray with correct dimensions."""
     @wraps(func)
     def wrapper(self, data, *args, **kwargs):
         if not isinstance(data, xr.DataArray):
@@ -446,19 +460,20 @@ def ensure_chunked_data_array(func):
             else:
                 data = xr.DataArray(data, dims=["y", "x"])
         else:
-            other_dims = {dim: -1 for dim in data.dims if dim not in ["x", "y"]}
-            data = data.chunk(other_dims)
-        return func(self, data, *args, **kwargs)
+            dims = data.dims
+            data = data.transpose(..., "y", "x")
+        return func(self, data, *args, **kwargs).transpose(*dims)
     return wrapper
 
 
-class GradientSearchResamplerNew(BaseResampler):
+class RBGradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
         super().__init__(source_geo_def, target_geo_def)
         logger.debug("/!\\ Instantiating an experimental GradientSearch resampler /!\\")
+        self.indices_xy = None
 
     def precompute(self, **kwargs):
         """Precompute resampling parameters."""
@@ -467,7 +482,8 @@ class GradientSearchResamplerNew(BaseResampler):
         self.indices_xy = resample_blocks(gradient_resampler_indices, self.source_geo_def, [], self.target_geo_def,
                                           chunks=(2, "auto", "auto"), dtype=float)
 
-    def compute(self, data, fill_value=None, method="bilinear", **kwargs):
+    @ensure_data_array
+    def compute(self, data, method="bilinear", **kwargs):
         """Perform the resampling."""
         from pyresample.resampler import resample_blocks
 
@@ -478,28 +494,20 @@ class GradientSearchResamplerNew(BaseResampler):
         else:
             raise ValueError(f"Unrecognized interpolation method {method} for gradient resampling.")
 
-        res = resample_blocks(fun, self.source_geo_def, [data], self.target_geo_def,
-                              dst_arrays=[self.indices_xy],
-                              chunks=("auto", "auto"), dtype=data.dtype)
-        return res
+        chunks = list(data.shape[:-2]) + ["auto", "auto"]
 
-    # @ensure_chunked_data_array
-    # def compute(self, data, fill_value=None, **kwargs):
-    #     """Perform the resampling."""
-    #     if fill_value is not None:
-    #         data = data.fillna(fill_value)
-    #     res = self.dr.resample_via_indices(data.data.astype(float))
-    #     x_coord, y_coord = self.target_geo_def.get_proj_vectors()
-    #     coords = []
-    #     for key in data.dims:
-    #         if key == 'x':
-    #             coords.append(x_coord)
-    #         elif key == 'y':
-    #             coords.append(y_coord)
-    #         else:
-    #             coords.append(data.coords[key])
-    #
-    #     return xr.DataArray(res, dims=data.dims, coords=coords)
+        res = resample_blocks(fun, self.source_geo_def, [data.data], self.target_geo_def,
+                              dst_arrays=[self.indices_xy],
+                              chunks=chunks, dtype=data.dtype, **kwargs)
+
+        coords = {}
+        for coord, val in data.coords.items():
+            if coord not in ["x", "y"]:
+                coords[coord] = val
+
+        res = xr.DataArray(res, attrs=data.attrs.copy(), dims=data.dims, coords=coords)
+        res.attrs["area"] = self.target_geo_def
+        return res
 
 
 def ensure_3d_data(func):
@@ -547,14 +555,14 @@ def gradient_resampler(data, source_area, target_area, method='bilinear'):
                                    method=method)
 
 
-def gradient_resampler_indices(source_area, target_area, method='bilinear', block_info=None):
+def gradient_resampler_indices(source_area, target_area, method='bilinear', block_info=None, **kwargs):
     """Do the gradient search resampling, returning the resulting indices."""
     from pyproj.transformer import Transformer
     try:
         src_x, src_y = source_area.get_proj_coords()
         transformer = Transformer.from_crs(target_area.crs, source_area.crs)
     except AttributeError:
-        src_x, src_y = source_area
+        src_x, src_y = np.asarray(source_area.lons), np.asarray(source_area.lats)
         # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
         transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
 
@@ -576,7 +584,7 @@ def gradient_resampler_indices(source_area, target_area, method='bilinear', bloc
     return indices_xy
 
 
-def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, block_info=None):
+def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
     """Bilinear interpolation implementation for resample_blocks."""
     del src_area, dst_area
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
@@ -593,11 +601,11 @@ def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, block_info
            (1 - w_l) * w_p * data[..., l_a, p_b] +
            w_l * (1 - w_p) * data[..., l_b, p_a] +
            w_l * w_p * data[..., l_b, p_b])
-    res = np.where(mask, np.nan, res)
+    res = np.where(mask, fill_value, res)
     return res
 
 
-def block_nn_interpolator(src_area, dst_area, data, indices_xy, block_info=None):
+def block_nn_interpolator(src_area, dst_area, data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
     """Nearest neighbour 'interpolator' for resample_blocks."""
     del src_area, dst_area
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
@@ -606,7 +614,7 @@ def block_nn_interpolator(src_area, dst_area, data, indices_xy, block_info=None)
     y_indices = np.clip(np.round(y_indices), 0, data.shape[-2] - 1)
 
     res = data[..., y_indices, x_indices]
-    return np.where(mask, np.nan, res)
+    return np.where(mask, fill_value, res)
 
 
 def _get_mask_and_adjusted_indices(indices_xy, block_info):
