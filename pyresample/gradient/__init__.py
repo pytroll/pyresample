@@ -477,12 +477,12 @@ class RBGradientSearchResampler(BaseResampler):
     def precompute(self, **kwargs):
         """Precompute resampling parameters."""
         from pyresample.resampler import resample_blocks
-
-        self.indices_xy = resample_blocks(gradient_resampler_indices, self.source_geo_def, [], self.target_geo_def,
-                                          chunks=(2, "auto", "auto"), dtype=float)
+        if self.indices_xy is None:
+            self.indices_xy = resample_blocks(gradient_resampler_indices, self.source_geo_def, [], self.target_geo_def,
+                                              chunks=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
 
     @ensure_data_array
-    def compute(self, data, method="bilinear", **kwargs):
+    def compute(self, data, method="bilinear", cache_id=None, **kwargs):
         """Perform the resampling."""
         from pyresample.resampler import resample_blocks
 
@@ -493,7 +493,7 @@ class RBGradientSearchResampler(BaseResampler):
         else:
             raise ValueError(f"Unrecognized interpolation method {method} for gradient resampling.")
 
-        chunks = list(data.shape[:-2]) + ["auto", "auto"]
+        chunks = list(data.shape[:-2]) + [CHUNK_SIZE, CHUNK_SIZE]
 
         res = resample_blocks(fun, self.source_geo_def, [data.data], self.target_geo_def,
                               dst_arrays=[self.indices_xy],
