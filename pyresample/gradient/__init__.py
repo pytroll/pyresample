@@ -36,7 +36,11 @@ from pyproj import CRS
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
-from pyresample.geometry import AreaDefinition, get_geostationary_bounding_box
+from pyresample.geometry import (
+    AreaDefinition,
+    SwathDefinition,
+    get_geostationary_bounding_box,
+)
 from pyresample.gradient._gradient_search import (
     one_step_gradient_indices,
     one_step_gradient_search,
@@ -54,8 +58,8 @@ class GradientSearchResampler(BaseResampler):
         if cls is GradientSearchResampler:
             if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
                 return RBGradientSearchResampler(source_geo_def, target_geo_def)
-            else:
-                return OGradientSearchResampler(source_geo_def, target_geo_def)
+            elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
+                return RBGradientSearchResampler(source_geo_def, target_geo_def)
         else:
             return super().__new__(cls)
 
@@ -287,20 +291,6 @@ class OGradientSearchResampler(BaseResampler):
         return res
 
 
-def _fill_in_coords(target_geo_def, data_coords, data_dims):
-    # TODO: this will crash when the target geo definition is a swath def.
-    x_coord, y_coord = target_geo_def.get_proj_vectors()
-    coords = []
-    for key in data_dims:
-        if key == 'x':
-            coords.append(x_coord)
-        elif key == 'y':
-            coords.append(y_coord)
-        else:
-            coords.append(data_coords[key])
-    return coords
-
-
 def check_overlap(src_poly, dst_poly):
     """Check if the two polygons overlap."""
     if dst_poly is False or src_poly is False:
@@ -452,6 +442,20 @@ def _concatenate_chunks(chunks):
     res = da.concatenate(res, axis=2).squeeze()
 
     return res
+
+
+def _fill_in_coords(target_geo_def, data_coords, data_dims):
+    # TODO: this will crash when the target geo definition is a swath def.
+    x_coord, y_coord = target_geo_def.get_proj_vectors()
+    coords = []
+    for key in data_dims:
+        if key == 'x':
+            coords.append(x_coord)
+        elif key == 'y':
+            coords.append(y_coord)
+        else:
+            coords.append(data_coords[key])
+    return coords
 
 
 def ensure_data_array(func):
@@ -611,8 +615,8 @@ def block_nn_interpolator(src_area, dst_area, data, indices_xy, fill_value=np.na
     del src_area, dst_area
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
 
-    x_indices = np.clip(np.round(x_indices), 0, data.shape[-1] - 1)
-    y_indices = np.clip(np.round(y_indices), 0, data.shape[-2] - 1)
+    x_indices = np.clip(np.rint(x_indices), 0, data.shape[-1] - 1).astype(int)
+    y_indices = np.clip(np.rint(y_indices), 0, data.shape[-2] - 1).astype(int)
 
     res = data[..., y_indices, x_indices]
     return np.where(mask, fill_value, res)
@@ -623,8 +627,8 @@ def _get_mask_and_adjusted_indices(indices_xy, block_info):
     x_indices, y_indices = indices_xy
     if block_info:
         y_slice, x_slice = block_info[0]["array-location"][-2:]
-        x_indices -= x_slice.start
-        y_indices -= y_slice.start
+        x_indices = x_indices - x_slice.start
+        y_indices = y_indices - y_slice.start
     mask = np.isnan(y_indices)
     x_indices = np.nan_to_num(x_indices, 0)
     y_indices = np.nan_to_num(y_indices, 0)

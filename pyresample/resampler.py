@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 import os
-from functools import lru_cache
+from functools import lru_cache, partial
 from numbers import Number
 from typing import Union
 
@@ -200,12 +200,13 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         raise ValueError("Source and destination areas are identical."
                          " Should you be running `map_blocks` instead of `resample_blocks`?")
     from dask.base import tokenize
-    from dask.utils import apply, funcname, has_keyword
+    from dask.utils import funcname, has_keyword
 
-    if name:
+    if name is not None:
         name = f"{name}"
     else:
-        token = tokenize(funk, src_area, src_arrays, dst_area, dst_arrays, fill_value, dtype, chunks, **kwargs)
+        token = tokenize(funk, hash(src_area), *src_arrays, hash(dst_area), *dst_arrays,
+                         fill_value, dtype, chunks, **kwargs)
         name = f"{funcname(funk)}-{token}"
     dask_graph = dict()
     dependencies = []
@@ -235,15 +236,19 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
             for dst_array in dst_arrays:
                 dst_position = [0] * (dst_array.ndim - 2) + list(position[-2:])
                 args.append((dst_array.name, *dst_position))
-                dependencies.append(dst_array)
+
             funk_kwargs = kwargs.copy()
             funk_kwargs['fill_value'] = fill_value
             if has_keyword(funk, "block_info"):
                 funk_kwargs["block_info"] = {0: src_block_info,
                                              None: dst_block_info}
-            task = [apply, funk, args, funk_kwargs]
+            pfunk = partial(funk, **funk_kwargs)
+            task = (pfunk, *args)
 
         dask_graph[(name, *position)] = tuple(task)
+
+    for dst_array in dst_arrays:
+        dependencies.append(dst_array)
 
     dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=dependencies)
     return da.Array(dask_graph, name, chunks=dst_chunks, dtype=dtype, shape=output_shape)
