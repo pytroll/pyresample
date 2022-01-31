@@ -29,6 +29,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition, SwathDefinition
 
 
@@ -394,7 +395,7 @@ class TestRBGradientSearchResamplerArea2Area:
         res = self.resampler.compute(
             data, method='bilinear',
             fill_value=2.0).compute(scheduler='single-threaded')
-        assert res.shape == self.dst_area.shape
+        assert res.shape == dst_area.shape
         np.testing.assert_allclose(res, 2.0)
 
     def test_resample_area_to_area_3d(self):
@@ -410,6 +411,23 @@ class TestRBGradientSearchResamplerArea2Area:
         assert np.allclose(res[0, :, :], 1.0)
         assert np.allclose(res[1, :, :], 2.0)
         assert np.allclose(res[2, :, :], 3.0)
+
+    def test_resample_area_to_area_does_not_flip_the_result(self):
+        """Resample area to area, check that x and y aren't flipped."""
+        data = xr.DataArray(da.arange(np.prod(self.src_area.shape), dtype=np.float64).reshape(self.src_area.shape),
+                            dims=['y', 'x'])
+        dst_area = create_area_def("epsg3035", "EPSG:3035", 10, 10,
+                                   (2426378.0132, 1528101.2618,
+                                    6293974.6215, 5446513.5222))
+
+        self.resampler.target_geo_def = dst_area
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear',
+            fill_value=2.0).compute(scheduler='single-threaded').values
+        expected_corners = (9660.560479802409, 9548.105823664819, 2.0, 8285.489720486787)
+        assert (res[0, 0], res[0, -1], res[-1, -1], res[-1, 0]) == expected_corners
+        assert res.shape == dst_area.shape
 
 
 class TestRBGradientSearchResamplerSwath2Area:

@@ -565,7 +565,7 @@ def gradient_resampler_indices(source_area, target_area, method='bilinear', bloc
     from pyproj.transformer import Transformer
     try:
         src_x, src_y = source_area.get_proj_coords()
-        transformer = Transformer.from_crs(target_area.crs, source_area.crs)
+        transformer = Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
     except AttributeError:
         src_x, src_y = np.asarray(source_area.lons), np.asarray(source_area.lats)
         # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
