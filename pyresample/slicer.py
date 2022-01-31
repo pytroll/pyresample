@@ -61,7 +61,7 @@ class Slicer(ABC):
         """Set up the Slicer."""
         self.area_to_crop = area_to_crop
         self.area_to_contain = area_to_contain
-        self._transformer = Transformer.from_crs(self.area_to_contain.crs, self.area_to_crop.crs)
+        self._transformer = Transformer.from_crs(self.area_to_contain.crs, self.area_to_crop.crs, always_xy=True)
 
     def get_slices(self):
         """Get the slices to crop *area_to_crop* enclosing *area_to_contain*."""
