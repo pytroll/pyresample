@@ -1997,8 +1997,10 @@ class TestSwathDefinition(unittest.TestCase):
         import xarray as xr
 
         from pyresample.geometry import SwathDefinition
-        x = 2
-        y = 2
+        top = 2
+        bottom = 2
+        left = 2
+        right = 2
         resolution = 4
 
         lons = np.arange(-179.5, -178.5, 0.5)
@@ -2019,9 +2021,9 @@ class TestSwathDefinition(unittest.TestCase):
         sd_xr = SwathDefinition(lons_xr, lats_xr)
         sd_xr_dask = SwathDefinition(lons_xr_dask, lats_xr_dask)
 
-        res_np = sd_np.extend(y=y, x=x)
-        res_xr = sd_xr.extend(y=y, x=x)
-        res_xr_dask = sd_xr_dask.extend(y=y, x=x)
+        res_np = sd_np.extend(left, right, bottom, top)
+        res_xr = sd_xr.extend(left, right, bottom, top)
+        res_xr_dask = sd_xr_dask.extend(left, right, bottom, top)
 
         assert isinstance(res_np.lons, np.ndarray)
         assert isinstance(res_xr.lats, xr.DataArray)
@@ -2041,26 +2043,28 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertAlmostEqual(res_xr.lats.resolution, resolution)
 
         # Test skip extension
-        np.testing.assert_allclose(sd_np.extend(y=0, x=0).lats, sd_np.lats)
-        np.testing.assert_allclose(sd_np.extend(y=0, x=0).lons, sd_np.lons)
+        np.testing.assert_allclose(sd_np.extend().lats, sd_np.lats)
+        np.testing.assert_allclose(sd_np.extend().lons, sd_np.lons)
         # Test invalid arguments
-        self.assertRaises(ValueError, sd_np.extend, -1, -1)
+        self.assertRaises(ValueError, sd_np.extend, -1, -1, 0, 0)
         # Test works with DataArray also without attrs
         lats_xr = xr.DataArray(lats, dims=['y', 'x'])
         lons_xr = xr.DataArray(lons, dims=['y', 'x'])
         sd_xr1 = SwathDefinition(lons_xr, lats_xr)
-        res_xr1 = sd_xr1.extend(y=y, x=x)
+        res_xr1 = sd_xr1.extend(left, right, bottom, top)
         np.testing.assert_allclose(res_xr1.lats.data, res_xr.lats.data)
 
-    def test_reduce(self):
-        """Test reduce on SwathDefinitions."""
+    def test_shrink(self):
+        """Test shrink on SwathDefinitions."""
         import dask.array as da
         import numpy as np
         import xarray as xr
 
         from pyresample.geometry import SwathDefinition
-        x = 1
-        y = 0
+        right = 1
+        left = 1
+        bottom = 0
+        top = 0
         resolution = 4
 
         lons = np.arange(-179.5, -177.5, 0.5)
@@ -2081,9 +2085,9 @@ class TestSwathDefinition(unittest.TestCase):
         sd_xr = SwathDefinition(lons_xr, lats_xr)
         sd_xr_dask = SwathDefinition(lons_xr_dask, lats_xr_dask)
 
-        res_np = sd_np.reduce(y=y, x=x)
-        res_xr = sd_xr.reduce(y=y, x=x)
-        res_xr_dask = sd_xr_dask.reduce(y=y, x=x)
+        res_np = sd_np.shrink(left, right, bottom, top)
+        res_xr = sd_xr.shrink(left, right, bottom, top)
+        res_xr_dask = sd_xr_dask.shrink(left, right, bottom, top)
 
         assert isinstance(res_np.lons, np.ndarray)
         assert isinstance(res_xr.lats, xr.DataArray)
@@ -2091,8 +2095,8 @@ class TestSwathDefinition(unittest.TestCase):
         assert isinstance(res_xr.lats.data, np.ndarray)
         assert isinstance(res_xr_dask.lats.data, da.Array)
 
-        np.testing.assert_allclose(res_np.lons[:, 0], lons[:, x])
-        np.testing.assert_allclose(res_np.lons[:, -1], lons[:, -x - 1])
+        np.testing.assert_allclose(res_np.lons[:, 0], lons[:, left])
+        np.testing.assert_allclose(res_np.lons[:, -1], lons[:, -right - 1])
         np.testing.assert_allclose(res_xr.lons.data, res_np.lons)
         np.testing.assert_allclose(res_xr.lats.data, res_np.lats)
         np.testing.assert_allclose(res_xr_dask.lons.values, res_np.lons)
@@ -2102,79 +2106,19 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertAlmostEqual(res_xr.lats.resolution, resolution)
 
         # Test skip reduction
-        np.testing.assert_allclose(sd_np.reduce(y=0, x=0).lats, sd_np.lats)
-        np.testing.assert_allclose(sd_np.reduce(y=0, x=0).lons, sd_np.lons)
+        np.testing.assert_allclose(sd_np.shrink().lats, sd_np.lats)
+        np.testing.assert_allclose(sd_np.shrink().lons, sd_np.lons)
         # Test invalid arguments
-        self.assertRaises(ValueError, sd_np.reduce, -1, -1)
+        self.assertRaises(ValueError, sd_np.shrink, -1, -1, 0, 0)
         # Test works with DataArray also without attrs
         lats_xr = xr.DataArray(lats, dims=['y', 'x'])
         lons_xr = xr.DataArray(lons, dims=['y', 'x'])
         sd_xr1 = SwathDefinition(lons_xr, lats_xr)
-        res_xr1 = sd_xr1.reduce(y=y, x=x)
+        res_xr1 = sd_xr1.shrink(left, right, bottom, top)
         np.testing.assert_allclose(res_xr1.lats.data, res_xr.lats.data)
         # Test it raise Error if x or y are too large and not ensure output to be 2x2 at least
-        self.assertRaises(ValueError, sd_np.reduce, lons.shape[1] / 2, 0)
-        self.assertRaises(ValueError, sd_np.reduce, 0, lons.shape[0] / 2)
-
-    def test_latslons_arr_conversion(self):
-        """Test conversion of 2D arrays between various formats."""
-        import dask.array as da
-        import numpy as np
-        import xarray as xr
-
-        from pyresample.geometry import _convert_2D_array
-
-        # Test all conversion works
-        lons = np.arange(-179.5, -177.5, 0.5)
-        lats = np.arange(-89.5, -88.0, 0.5)
-        lons, lats = np.meshgrid(lons, lats)
-        lats_dask = da.from_array(lats, chunks=2)
-        lats_xr = xr.DataArray(lats, dims=['y', 'x'])
-        lats_xr_dask = xr.DataArray(lats_dask, dims=['y', 'x'])
-        valid_format = ['Numpy', 'Dask', 'DataArray_Numpy', 'DataArray_Dask']
-        dict_format = {'Numpy': lats,
-                       'Dask': lats_dask,
-                       'DataArray_Numpy': lats_xr,
-                       'DataArray_Dask': lats_xr_dask
-                       }
-        for in_format in valid_format:
-            for out_format in valid_format:
-                out_arr, src_format = _convert_2D_array(dict_format[in_format], to=out_format, dims=None)
-                assert isinstance(out_arr, type(dict_format[out_format]))
-                assert src_format.lower() == in_format.lower()
-                if out_format.lower() == "dataarray_numpy":
-                    assert isinstance(out_arr.data, type(dict_format['Numpy']))
-                if out_format.lower() == "dataarray_dask":
-                    assert isinstance(out_arr.data, type(dict_format['Dask']))
-        # Test raise errors
-        self.assertRaises(TypeError, _convert_2D_array, dict_format['Numpy'], ['unvalid_type'])
-        self.assertRaises(TypeError, _convert_2D_array, [dict_format['Numpy']], 'numpy')
-        self.assertRaises(ValueError, _convert_2D_array, dict_format['Numpy'], 'unvalid_format')
-
-    def test_linspace1D_between_values(self):
-        """Test linspace1D_between_values."""
-        import dask.array as da
-        import numpy as np
-
-        from pyresample.geometry import _linspace1D_between_values
-        arr_np = np.array([5.0, 7.0, 9.0])
-        arr_dask = da.from_array(arr_np)
-
-        res_np = _linspace1D_between_values(arr_np, num=1)
-        res_dask = _linspace1D_between_values(arr_dask, num=1)
-
-        np.testing.assert_allclose(res_np, [5., 6., 7., 8., 9.])
-        np.testing.assert_allclose(res_dask, [5., 6., 7., 8., 9.])
-        assert isinstance(res_np, np.ndarray)
-        assert isinstance(res_dask, da.Array)
-
-        # Test for no interpolation inbetween values
-        res = _linspace1D_between_values(arr_np, num=0)
-        np.testing.assert_allclose(res, arr_np)
-
-        # Test for valid inputs
-        self.assertRaises(ValueError, _linspace1D_between_values, arr_np, -1)
-        self.assertRaises(ValueError, _linspace1D_between_values, np.zeros((2, 2)), 0)
+        self.assertRaises(ValueError, sd_np.shrink, lons.shape[1] / 2, lons.shape[1] / 2, 0, 0)
+        self.assertRaises(ValueError, sd_np.shrink, 0, 0, lons.shape[0] / 2, lons.shape[0] / 2)
 
     def test_linspace2D_between_values(self):
         """Test linspace2D_between_values."""
@@ -2898,6 +2842,10 @@ class TestCrop(unittest.TestCase):
         np.testing.assert_allclose(res.shape, area.shape)
         assert res == area
 
+        # Test raise error
+        self.assertRaises(ValueError, area.aggregate, x=0, y=0)
+        self.assertRaises(ValueError, area.aggregate, x=-1, y=-1)
+
     def test_downsample(self):
         """Test downsampling of AreaDefinitions."""
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
@@ -2926,23 +2874,9 @@ class TestCrop(unittest.TestCase):
 
         # Test invalid arguments
         self.assertRaises(ValueError, area.downsample, 0, 0)
-        self.assertRaises(ValueError, area.downsample, 0, 1)
-        self.assertRaises(ValueError, area.downsample, 1, 0)
         self.assertRaises(ValueError, area.downsample, -1, -1)
-
-        # Test raise NotImplementedError for GEO
-        # area_geo = geometry.AreaDefinition(area_id='seviri',
-        #                                    description='SEVIRI HRIT like (flipped, south up)',
-        #                                    proj_id='seviri',
-        #                                    projection={'proj': 'geos',
-        #                                                'lon_0': 0.0,
-        #                                                'a': 6378169.00,
-        #                                                'b': 6356583.80,
-        #                                                'h': 35785831.00,
-        #                                                'units': 'm'},
-        #                                    width=123, height=123,
-        #                                    area_extent=[5500000, 5500000, -5500000, -5500000])
-        # self.assertRaises(NotImplementedError, area_geo.downsample, 2, 2)
+        self.assertRaises(ValueError, area.downsample, 0.5, 1)
+        self.assertRaises(ValueError, area.downsample, 1, 0.5)
 
     def test_upsample(self):
         """Test upsampling of AreaDefinitions."""
@@ -2973,25 +2907,11 @@ class TestCrop(unittest.TestCase):
         # Test invalid arguments
         self.assertRaises(ValueError, area.upsample, 0, 0)
         self.assertRaises(ValueError, area.upsample, 0, 1)
-        self.assertRaises(ValueError, area.upsample, 1, 0)
-        self.assertRaises(ValueError, area.upsample, -1, -1)
+        self.assertRaises(ValueError, area.upsample, 0.5, 1)
+        self.assertRaises(ValueError, area.upsample, 1, 0.5)
 
-        # # Test raise NotImplementedError for GEO
-        # area_geo = geometry.AreaDefinition(area_id='seviri',
-        #                                    description='SEVIRI HRIT like (flipped, south up)',
-        #                                    proj_id='seviri',
-        #                                    projection={'proj': 'geos',
-        #                                                'lon_0': 0.0,
-        #                                                'a': 6378169.00,
-        #                                                'b': 6356583.80,
-        #                                                'h': 35785831.00,
-        #                                                'units': 'm'},
-        #                                    width=123, height=123,
-        #                                    area_extent=[5500000, 5500000, -5500000, -5500000])
-        # self.assertRaises(NotImplementedError, area_geo.upsample, 2, 2)
-
-    def test_reduce(self):
-        """Test reduction of AreaDefinitions."""
+    def test_shrink(self):
+        """Test shrinkage of AreaDefinitions."""
         from pyresample import geometry
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        {'a': '6378144.0',
@@ -3006,22 +2926,24 @@ class TestCrop(unittest.TestCase):
                                            -909968.64000000001,
                                            1029087.28,
                                            1490031.3600000001])
-        x = 8
-        y = 2
-        res = area.reduce(x=x, y=y)
+        left = 8
+        right = 8
+        bottom = 2
+        top = 2
+        res = area.shrink(left, right, bottom, top)
         self.assertDictEqual(res.proj_dict, area.proj_dict)
-        self.assertEqual(res.shape[0], area.shape[0] - y * 2)
-        self.assertEqual(res.shape[1], area.shape[1] - x * 2)
+        self.assertEqual(res.shape[0], area.shape[0] - bottom - top)
+        self.assertEqual(res.shape[1], area.shape[1] - left - right)
 
         # Test skip reduction
-        res = area.reduce(x=0, y=0)
+        res = area.shrink()
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         assert res == area
 
         # Test invalid arguments
-        self.assertRaises(ValueError, area.reduce, -1, -1)
-        self.assertRaises(ValueError, area.reduce, area.shape[0] / 2, 0)
-        self.assertRaises(ValueError, area.reduce, 0, area.shape[1] / 2)
+        self.assertRaises(ValueError, area.shrink, -1, -1, -1, -1)
+        self.assertRaises(ValueError, area.shrink, area.shape[0] / 2, area.shape[0] / 2, 0, 0)
+        self.assertRaises(ValueError, area.shrink, 0, 0, area.shape[1] / 2, area.shape[1] / 2)
 
         # Test raise NotImplementedError for GEO
         area_geo = geometry.AreaDefinition(area_id='seviri',
@@ -3035,7 +2957,7 @@ class TestCrop(unittest.TestCase):
                                                        'units': 'm'},
                                            width=123, height=123,
                                            area_extent=[5500000, 5500000, -5500000, -5500000])
-        self.assertRaises(NotImplementedError, area_geo.reduce, 1, 1)
+        self.assertRaises(NotImplementedError, area_geo.shrink, 1, 1, 0, 0)
 
     def test_extend(self):
         """Test extension of AreaDefinitions."""
@@ -3053,20 +2975,22 @@ class TestCrop(unittest.TestCase):
                                            -909968.64000000001,
                                            1029087.28,
                                            1490031.3600000001])
-        x = 8
-        y = 2
-        res = area.extend(x=x, y=y)
+        left = 8
+        right = 8
+        bottom = 2
+        top = 2
+        res = area.extend(left, right, bottom, top)
         self.assertDictEqual(res.proj_dict, area.proj_dict)
-        self.assertEqual(res.shape[0], area.shape[0] + y * 2)
-        self.assertEqual(res.shape[1], area.shape[1] + x * 2)
+        self.assertEqual(res.shape[0], area.shape[0] + top + bottom)
+        self.assertEqual(res.shape[1], area.shape[1] + left + right)
 
         # Test skip extension
-        res = area.extend(x=0, y=0)
+        res = area.extend()
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         assert res == area
 
         # Test invalid arguments
-        self.assertRaises(ValueError, area.extend, -1, -1)
+        self.assertRaises(ValueError, area.extend, -1, -1, -1, -1)
 
         # Test raise NotImplementedError for GEO
         area_geo = geometry.AreaDefinition(area_id='seviri',
@@ -3080,7 +3004,97 @@ class TestCrop(unittest.TestCase):
                                                        'units': 'm'},
                                            width=123, height=123,
                                            area_extent=[5500000, 5500000, -5500000, -5500000])
-        self.assertRaises(NotImplementedError, area_geo.extend, 1, 1)
+        self.assertRaises(NotImplementedError, area_geo.extend, 1, 1, 0, 0)
+
+
+class TestSwathDefinitionDownsampling(unittest.TestCase):
+    """Test Downsampling SwathDefinition."""
+
+    # TODO: Martin
+    @classmethod
+    def setUpClass(cls):
+        """Do some setup for the test class."""
+        import dask.array as da
+        import numpy as np
+        import xarray as xr
+
+        from pyresample.geometry import SwathDefinition
+        resolution = 3
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        lats_dask = da.from_array(lats, chunks=2)
+        lons_dask = da.from_array(lons, chunks=2)
+        lats_xr = xr.DataArray(lats, dims=['y', 'x'],
+                               attrs={'resolution': resolution})
+        lons_xr = xr.DataArray(lons, dims=['y', 'x'],
+                               attrs={'resolution': resolution})
+        lats_xr_dask = xr.DataArray(lats_dask, dims=['y', 'x'],
+                                    attrs={'resolution': resolution})
+        lons_xr_dask = xr.DataArray(lons_dask, dims=['y', 'x'],
+                                    attrs={'resolution': resolution})
+        sd_np = SwathDefinition(lons, lats)
+        sd_xr = SwathDefinition(lons_xr, lats_xr)
+        sd_xr_dask = SwathDefinition(lons_xr_dask, lats_xr_dask)
+
+        cls.lons = lons
+        cls.lats = lats
+        cls.lons_dask = lons_dask
+        cls.lats_dask = lats_dask
+        cls.lons_xr = lons_xr
+        cls.lats_xr = lons_xr
+        cls.lons_xr_dask = lons_xr_dask
+        cls.lats_xr_dask = lats_xr_dask
+        cls.sd_np = sd_np
+        cls.sd_xr = sd_xr
+        cls.sd_xr_dask = sd_xr_dask
+        cls.resolution = resolution
+
+    def test_downsampling_keeps_arrays(self):
+        """Test array format is kept."""
+        import dask.array as da
+        import numpy as np
+        import xarray as xr
+
+        window_size = 2
+        res_np = self.sd_np.downsample(y=window_size, x=window_size)
+        res_xr = self.sd_xr.downsample(y=window_size, x=window_size)
+        res_xr_dask = self.sd_xr_dask.downsample(y=window_size, x=window_size)
+
+        assert isinstance(res_np.lats, np.ndarray)
+        assert isinstance(res_xr.lats, xr.DataArray) and isinstance(res_xr.lats.data, np.ndarray)
+        assert isinstance(res_xr_dask.lats, xr.DataArray) and isinstance(res_xr_dask.lats.data, da.Array)
+
+    def test_downsampling_results_consistency(self):
+        """Test array format is kept."""
+        import numpy as np
+        window_size = 2
+        res_np = self.sd_np.downsample(y=window_size, x=window_size)
+        res_xr = self.sd_xr.downsample(y=window_size, x=window_size)
+        res_xr_dask = self.sd_xr_dask.downsample(y=window_size, x=window_size)
+
+        np.testing.assert_allclose(res_np.lons, [[179, -179]])
+        np.testing.assert_allclose(res_np.lats, [[0.5, 0.5]], atol=2e-5)
+        np.testing.assert_allclose(res_xr.lons.data, res_np.lons)
+        np.testing.assert_allclose(res_xr.lats.data, res_np.lats)
+        np.testing.assert_allclose(res_xr_dask.lons.values, res_np.lons)
+        np.testing.assert_allclose(res_xr_dask.lats.values, res_np.lats)
+
+    def test_downsampling_modify_resolution_attrs(self):
+        window_size = 2
+        res_xr = self.sd_xr.downsample(y=window_size, x=window_size)
+        self.assertAlmostEqual(res_xr.lons.resolution, self.resolution * window_size)
+        self.assertAlmostEqual(res_xr.lats.resolution, self.resolution * window_size)
+
+    def test_downsampling_default_skip(self):
+        import numpy as np
+        res_np = self.sd_np.downsample(y=1, x=1)
+        np.testing.assert_allclose(res_np.lats, self.sd_np.lats)
+        np.testing.assert_allclose(res_np.lons, self.sd_np.lons)
+
+    def test_downsampling_valid_args(self):
+        # Test invalid arguments
+        self.assertRaises(ValueError, self.sd_np.downsample, 0, 0)
+        self.assertRaises(ValueError, self.sd_np.downsample, -1, -1)
 
 
 def test_enclose_areas():

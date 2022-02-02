@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import pyproj
 import yaml
 from pyproj import Geod, transform
 
@@ -41,6 +42,7 @@ from pyresample.utils import (
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
+from pyresample.utils.array import _convert_2D_array
 
 try:
     from xarray import DataArray
@@ -713,25 +715,30 @@ class SwathDefinition(CoordinateDefinition):
 
     @staticmethod
     def _do_transform(src, dst, lons, lats, alt):
-        """Run pyproj.transform and stack the results."""
-        x, y, z = transform(src, dst, lons, lats, alt)
+        """Perform pyproj transformation and stack the results.
+
+        If using pyproj >= 3.1, it employs thread-safe pyproj.transformer.Transformer.
+        If using pyproj < 3.1, it employs pyproj.transform.
+
+        Docs: https://pyproj4.github.io/pyproj/stable/advanced_examples.html#multithreading
+        """
+        if float(pyproj.__version__[0:3]) >= 3.1:
+            from pyproj import Transformer
+            transformer = Transformer.from_crs(src.crs, dst.crs)
+            x, y, z = transformer.transform(lons, lats, alt, radians=False)
+        else:
+            x, y, z = transform(src, dst, lons, lats, alt)
         return np.dstack((x, y, z))
 
-    # TODO: this is more efficient than pyproj.transform.
-    # With pyproj > 3.1 it became thread safe:
-    # https://pyproj4.github.io/pyproj/stable/advanced_examples.html#multithreading
-    # @staticmethod
-    # def swath_do_transform(src, dst, lons, lats, alt):
-    #     """Run pyproj Transformer and stack the results."""
-    #     from pyproj import Transformer
-    #     transformer = Transformer.from_crs(src.crs, dst.crs)
-    #     x, y, z = transformer.transform(lons, lats, alt, radians=False)
-    #     return np.dstack((x, y, z))
+    def aggregate(self, **dims):
+        """Return an aggregated version of the area."""
+        warnings.warn("'aggregate' is deprecated, use 'downsample' instead.", PendingDeprecationWarning)
+        return self.downsample(x=dims.get('x', 1), y=dims.get('y', 1))
 
     def downsample(self, x=1, y=1, **kwargs):
-        """Downsample the swath definition by averaging the coordinates along x and y dimension.
+        """Downsample the SwathDefinition along x (columns) and y (lines) dimensions.
 
-        Builds upon xarray.DataArray.coarsen function.
+        Builds upon xarray.DataArray.coarsen averaging function.
         To downsample of a factor of 2, call swath_def.downsample(x=2, y=2)
         swath_def.downsample(x=1, y=1) simply returns the current swath_def.
         By default, it raise a ValueError if the dimension size is not a multiple of the window size.
@@ -739,14 +746,13 @@ class SwathDefinition(CoordinateDefinition):
         See https://xarray.pydata.org/en/stable/generated/xarray.DataArray.coarsen.html for further details.
         """
         import dask.array as da
-        import pyproj
         import xarray as xr
 
         # Check input validity
         x = int(x)
         y = int(y)
         if x < 1 or y < 1:
-            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+            raise ValueError('SwathDefinition.downsample expects (integer) aggregation factors >=1 .')
 
         # Return SwathDefinition if nothing to downsample
         if x == 1 and y == 1:
@@ -757,8 +763,9 @@ class SwathDefinition(CoordinateDefinition):
         latlong = pyproj.Proj(proj='latlong')
 
         # Get xr.DataArray with dask array
-        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y', 'x'])
+        # - If input lats/lons are xr.DataArray, the specified dims ['x','y'] are ignored
         src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['y', 'x'])
+        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y', 'x'])
 
         # Conversion to Geocentric Cartesian (x,y,z) CRS
         res = da.map_blocks(self._do_transform, latlong, geocent,
@@ -781,14 +788,14 @@ class SwathDefinition(CoordinateDefinition):
                                   chunks=res.data.chunks)
 
         # Back-conversion array as input format
-        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['y', 'x'])
-        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['y', 'x'])
+        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=src_lons.dims)
+        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=src_lats.dims)
 
         # Add additional info if the source array is a DataArray
         if isinstance(self.lats, xr.DataArray) and isinstance(self.lons, xr.DataArray):
             lats = lats.assign_coords(res.coords)
-            lats.attrs = self.lats.attrs.copy()
             lons = lons.assign_coords(res.coords)
+            lats.attrs = self.lats.attrs.copy()
             lons.attrs = self.lons.attrs.copy()
             try:
                 resolution = lons.attrs['resolution'] * ((x + y) / 2)
@@ -801,16 +808,17 @@ class SwathDefinition(CoordinateDefinition):
         return SwathDefinition(lons, lats)
 
     def upsample(self, x=1, y=1):
-        """Upsample the swath definition along x (along-track) and y (cross-track) dimensions.
+        """Upsample the SwathDefinition along x (columns) and y (lines) dimensions.
 
-        To upsample of a factor of 2 (each pixel splitted in 4 pixels), call swath_def.upsample(x=2, y=2).
+        To upsample of a factor of 2 (each pixel splitted in 2x2 pixels),
+        call swath_def.upsample(x=2, y=2).
         swath_def.upsample(x=1, y=1) simply returns the current swath_def.
         """
         # TODO: An alternative would be to use geotiepoints.geointerpolator.GeoInterpolator
         # But I have some problem using it, see code snippet in a comment of the PR.
+        # TODO: Should we upsample also possible coords of lons/lats input xr.DataArray?
         import dask.array as da
         import numpy as np
-        import pyproj
         import xarray as xr
         from xarray.plot.utils import _infer_interval_breaks
 
@@ -819,8 +827,7 @@ class SwathDefinition(CoordinateDefinition):
         x = int(x)
         y = int(y)
         if x < 1 or y < 1:
-            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
-
+            raise ValueError("SwathDefinition.upsample expects (integer) upscaling factors >=1 .")
         # Return SwathDefinition if nothing to upsample
         if x == 1 and y == 1:
             return self
@@ -834,6 +841,8 @@ class SwathDefinition(CoordinateDefinition):
             corners = _infer_interval_breaks(breaks_xx, axis=0)
             return corners
 
+        # TODO: choose one of the two function below
+        # - What is the best way to apply _upsample_centroid along each x-y plane with dask
         def _upsample_centroid(centroid, x=1, y=1):
             corners = _get_corners_from_centroids(centroid)
             # Retrieve corners of the the upsampled grid
@@ -854,8 +863,9 @@ class SwathDefinition(CoordinateDefinition):
         latlong = pyproj.Proj(proj='latlong')
 
         # Get xr.DataArray with dask array
-        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y', 'x'])
+        # - If input lats/lons are xr.DataArray, the specified dims ['x','y'] are ignored
         src_lons, src_lons_format = _convert_2D_array(self.lons, to='DataArray_Dask', dims=['y', 'x'])
+        src_lats, src_lats_format = _convert_2D_array(self.lats, to='DataArray_Dask', dims=['y', 'x'])
 
         # Conversion to Geocentric Cartesian (x,y,z) CRS
         res = da.map_blocks(self._do_transform, latlong, geocent,
@@ -888,8 +898,8 @@ class SwathDefinition(CoordinateDefinition):
                                   chunks=new_centroids.data.chunks)
 
         # Back-conversion array as input format
-        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=['y', 'x'])
-        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=['y', 'x'])
+        lons, _ = _convert_2D_array(lonlatalt[:, :, 0], to=src_lons_format, dims=src_lons.dims)
+        lats, _ = _convert_2D_array(lonlatalt[:, :, 1], to=src_lats_format, dims=src_lats.dims)
 
         # Add additional info if the source array is a DataArray
         if isinstance(self.lats, xr.DataArray) and isinstance(self.lons, xr.DataArray):
@@ -905,22 +915,23 @@ class SwathDefinition(CoordinateDefinition):
         # Return the downsampled swath definition
         return SwathDefinition(lons, lats)
 
-    def extend(self, x=0, y=0):
-        """Extend the swath definition along x (along-track) and y (across-track) dimensions.
+    def extend(self, left=0, right=0, bottom=0, top=0):
+        """Extend the SwathDefinition of n pixels on specific boundary sides.
 
-        By default, it does not extend on any direction.
-        To extend of n pixel  on both sides of the across-track direction, call swath_def.extend(x=0, y=2).
+        By default, it does not extend on any side.
         """
         import xarray as xr
 
         # Check input validity
-        x = int(x)
-        y = int(y)
-        if x < 0 or y < 0:
-            raise ValueError('x and y arguments must be positive integers.')
+        left = int(left)
+        right = int(right)
+        bottom = int(bottom)
+        top = int(top)
+        if left < 0 or right < 0 or bottom < 0 or top < 0:
+            raise ValueError('SwathDefinition.extend expects positive numbers of pixels.')
 
         # Return SwathDefinition if nothing to extend
-        if x == 0 and y == 0:
+        if left == 0 and right == 0 and bottom == 0 and top == 0:
             return self
 
         # Get lats/lons numpy arrays
@@ -930,26 +941,29 @@ class SwathDefinition(CoordinateDefinition):
         dst_lats = src_lats
         dst_lons = src_lons
 
-        # Extend on y direction (side0 and side2)
-        if y > 0:
-            list_side0 = (src_lons[1, :], src_lats[1, :], src_lons[0, :], src_lats[0, :])
-            list_side2 = (src_lons[-2, :], src_lats[-2, :], src_lons[-1, :], src_lats[-1, :])
-            extended_side0_lonlats = _get_extended_lonlats(*list_side0, npts=y)
-            extended_side2_lonlats = _get_extended_lonlats(*list_side2, npts=y)
+        # Extend swath sides
+        if top > 0:
+            list_side0 = (dst_lons[1, :], dst_lats[1, :], dst_lons[0, :], dst_lats[0, :])
+            extended_side0_lonlats = _get_extended_lonlats(*list_side0, npts=top)
             dst_lats = np.concatenate((extended_side0_lonlats[1][::-1, :], dst_lats), axis=0)
-            dst_lats = np.concatenate((dst_lats, extended_side2_lonlats[1]), axis=0)
             dst_lons = np.concatenate((extended_side0_lonlats[0][::-1, :], dst_lons), axis=0)
+
+        if bottom > 0:
+            list_side2 = (dst_lons[-2, :], dst_lats[-2, :], dst_lons[-1, :], dst_lats[-1, :])
+            extended_side2_lonlats = _get_extended_lonlats(*list_side2, npts=bottom)
+            dst_lats = np.concatenate((dst_lats, extended_side2_lonlats[1]), axis=0)
             dst_lons = np.concatenate((dst_lons, extended_side2_lonlats[0]), axis=0)
 
-        # Extend on x direction (side1 and side3)
-        if x > 0:
+        if right > 0:
             list_side1 = (dst_lons[:, -2], dst_lats[:, -2], dst_lons[:, -1], dst_lats[:, -1])
-            list_side3 = (dst_lons[:, 1], dst_lats[:, 1], dst_lons[:, 0], dst_lats[:, 0])
-            extended_side1_lonlats = _get_extended_lonlats(*list_side1, npts=x, transpose=False)
-            extended_side3_lonlats = _get_extended_lonlats(*list_side3, npts=x, transpose=False)
+            extended_side1_lonlats = _get_extended_lonlats(*list_side1, npts=right, transpose=False)
             dst_lats = np.concatenate((dst_lats, extended_side1_lonlats[1]), axis=1)
-            dst_lats = np.concatenate((extended_side3_lonlats[1][:, ::-1], dst_lats), axis=1)
             dst_lons = np.concatenate((dst_lons, extended_side1_lonlats[0]), axis=1)
+
+        if left > 0:
+            list_side3 = (dst_lons[:, 1], dst_lats[:, 1], dst_lons[:, 0], dst_lats[:, 0])
+            extended_side3_lonlats = _get_extended_lonlats(*list_side3, npts=left, transpose=False)
+            dst_lats = np.concatenate((extended_side3_lonlats[1][:, ::-1], dst_lats), axis=1)
             dst_lons = np.concatenate((extended_side3_lonlats[0][:, ::-1], dst_lons), axis=1)
 
         # Back-conversion array as input format
@@ -964,36 +978,37 @@ class SwathDefinition(CoordinateDefinition):
         # Return the extended SwathDefinition
         return SwathDefinition(lons, lats)
 
-    def reduce(self, x=0, y=0):
-        """Reduce the swath definition along x (along-track) and y (across-track) dimensions.
+    def shrink(self, left=0, right=0, bottom=0, top=0):
+        """Shrink the SwathDefinition of n pixels on specific boundary sides.
 
-        By default, it does not reduce on any direction.
-        To reduce of n pixel on both sides of the across-track direction, call swath_def.reduce(x=0, y=2).
+        By default, it does not shrink on any side.
         """
-        # Check input validity (ensure reduced area is at least 2x2)
-        height = self.lats.shape[0]
-        width = self.lats.shape[1]
-        x = int(x)
-        y = int(y)
-        if x < 0 or y < 0:
-            raise ValueError('x and y arguments must be positive integers.')
-        if x >= np.floor(width / 2):
-            max_x = int(np.floor(width / 2)) - 1
-            raise ValueError("""You can at maximum reduce the along-track direction (x)
-                             of SwathDef by {} pixels on each side.""".format(max_x))
-        if y >= np.floor(height / 2):
-            max_y = int(np.floor(height / 2)) - 1
-            raise ValueError("""You can at maximum reduce the across-track direction (y)
-                             of SwathDef by {} pixels on each side.""".format(max_y))
+        # Check input validity
+        left = int(left)
+        right = int(right)
+        bottom = int(bottom)
+        top = int(top)
+        if left < 0 or right < 0 or bottom < 0 or top < 0:
+            raise ValueError('SwathDefinition.shrink expects positive numbers of pixels.')
 
-        # Return SwathDefinition if nothing to reduce
-        if x == 0 and y == 0:
+        # Return SwathDefinition if nothing to shrink
+        if left == 0 and right == 0 and bottom == 0 and top == 0:
             return self
 
-        # Return the reduced SwathDefinition
-        lats = self.lats[slice(0 + y, height - y), slice(0 + x, width - x)]
-        lons = self.lons[slice(0 + y, height - y), slice(0 + x, width - x)]
-        return SwathDefinition(lons, lats)
+        # Ensure shrinked area is at least 2x2
+        height = self.lats.shape[0]
+        width = self.lats.shape[1]
+        x_max_shrink = width - 2
+        y_max_shrink = height - 2
+        if (left + right) > x_max_shrink:
+            raise ValueError("SwathDefinition.shrink can drop maximum {} pixels "
+                             "along the x direction.".format(x_max_shrink))
+        if (top + bottom) > y_max_shrink:
+            raise ValueError("SwathDefinition.shrink can drop maximum {} pixels "
+                             "along the y direction.".format(y_max_shrink))
+
+        # Return the shrinked SwathDefinition
+        return self[slice(top, height - bottom), slice(left, width - right)]
 
     def __hash__(self):
         """Compute the hash of this object."""
@@ -1137,149 +1152,6 @@ class SwathDefinition(CoordinateDefinition):
         return area.freeze((lons, lats), shape=(height, width))
 
 
-def _convert_2D_array(arr, to, dims=None):
-    """
-    Convert a 2D array to a specific format.
-
-    Useful to return swath lons, lats in the same original format after processing.
-
-    Parameters
-    ----------
-    arr : (np.ndarray, da.Array, xr.DataArray)
-        The 2D array to be converted to another array format.
-    to : TYPE
-        The desired array output format.
-        Accepted formats are: ['Numpy','Dask', 'DataArray_Numpy','DataArray_Dask']
-    dims : tuple, optional
-        Optional argument for the specification of DataArray dimension names
-        if input array is Numpy or Dask.
-        Provide a tuple with (y_dimname, x_dimname).
-        The default is None --> (dim_0, dim_1)
-
-    Returns
-    -------
-    dst_arr : (np.ndarray, da.Array, xr.DataArray)
-        The converted 2D array.
-    src_format: str
-        The source format of the 2D array.
-
-    """
-    import dask.array as da
-    import numpy as np
-    import xarray as xr
-
-    # Checks
-    valid_format = ['Numpy', 'Dask', 'DataArray_Numpy', 'DataArray_Dask']
-    if not isinstance(to, str):
-        raise TypeError("'to' must be a string indicating the conversion array format.")
-    if not np.isin(to.lower(), np.char.lower(valid_format)):
-        raise ValueError("Valid conversion array formats are {}".format(valid_format))
-    if not isinstance(arr, (np.ndarray, da.Array, xr.DataArray)):
-        raise TypeError("The provided array must be either a np.ndarray, a dask.Array or a xr.DataArray.")
-    # Numpy
-    if isinstance(arr, np.ndarray):
-        if to.lower() == 'numpy':
-            dst_arr = arr
-        elif to.lower() == 'dask':
-            dst_arr = da.from_array(arr)
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = xr.DataArray(arr, dims=dims)
-        else:  # to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(da.from_array(arr), dims=dims)
-        return dst_arr, 'numpy'
-    # Dask
-    elif isinstance(arr, da.Array):
-        if to.lower() == 'numpy':
-            dst_arr = arr.compute()
-        elif to.lower() == 'dask':
-            dst_arr = arr
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = xr.DataArray(arr.compute(), dims=dims)
-        else:  # to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(arr, dims=dims)
-        return dst_arr, 'dask'
-
-    # DataArray_Numpy
-    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, np.ndarray):
-        if to.lower() == 'numpy':
-            dst_arr = arr.data
-        elif to.lower() == 'dask':
-            dst_arr = da.from_array(arr.data)
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = arr
-        else:  # to.lower() == 'dataarray_dask':
-            dst_arr = xr.DataArray(da.from_array(arr.data), dims=dims)
-        return dst_arr, 'DataArray_Numpy'
-
-    # DataArray_Dask
-    elif isinstance(arr, xr.DataArray) and isinstance(arr.data, da.Array):
-        if to.lower() == 'numpy':
-            dst_arr = arr.data.compute()
-        elif to.lower() == 'dask':
-            dst_arr = arr.data
-        elif to.lower() == 'dataarray_numpy':
-            dst_arr = arr.compute()
-        else:  # to.lower() == 'dataarray_dask':
-            dst_arr = arr
-        return dst_arr, 'DataArray_Dask'
-
-    else:
-        raise NotImplementedError
-
-
-def _linspace1D_between_values(arr, num=0):
-    """Dask-friendly function linearly interpolating values between each 1D array values.
-
-    This function does not perform extrapolation.
-    It expects a 1D array as input!
-
-    Parameters
-    ----------
-    arr : (np.ndarray, dask.array.Array)
-        Numpy or Dask Array to be linearly interpolated between values.
-    num : int, optional
-        The number of linearly spaced values to infer between array values.
-        The default is 0.
-
-    Returns
-    -------
-    arr : (np.ndarray, dask.array.Array)
-        Numpy or Dask Array with in-between linearly interpolated values.
-
-    Example
-    -------
-
-    Function call: _linspace1D_between_values(arr, num=1)
-    Input array:
-        np.array([5.0, 7.0])
-
-    Output array:
-        np.array([5.0, 6.0, 7.0])
-    """
-    import xarray as xr
-
-    # Check input validity
-    if arr.ndim != 1:
-        raise ValueError("'_linspace1D_between_values' expects a 1D array.")
-    num = int(num)
-    if num < 0:
-        raise ValueError("'x' and 'y' must be an integer equal or larger than 0.")
-    if num == 0:
-        return arr
-    # Define src and dst ties
-    dst_N = (arr.size - 1) * (num + 1) + 1
-    src_ties = np.arange(dst_N, step=num + 1)
-    dst_ties = np.arange(dst_N)
-    # Interpolate
-    da = xr.DataArray(
-        data=arr,
-        dims=("x"),
-        coords={"x": src_ties}
-    )
-    da_interp = da.interp(x=dst_ties, method="linear")
-    return da_interp.data
-
-
 def _linspace2D_between_values(arr, num_x=0, num_y=0):
     """Dask-friendly function linearly interpolating values between each 2D array values.
 
@@ -1305,7 +1177,7 @@ def _linspace2D_between_values(arr, num_x=0, num_y=0):
     Example
     -------
 
-    Function call: _linspace1D_between_values(arr, num=1)
+    Function call: _linspace2D_between_values(arr, num_x=1, num_y=1)
     Input:
        np.array([[5.0, 7.0],
                  [7.0, 9.0]])
@@ -1344,14 +1216,15 @@ def _linspace2D_between_values(arr, num_x=0, num_y=0):
     return da_interp.data
 
 
-def _get_extended_lonlats(lon_start, lat_start, lon_end, lat_end, npts, transpose=True):
+def _get_extended_lonlats(lon_start, lat_start, lon_end, lat_end, npts,
+                          ellps="sphere",
+                          transpose=True):
     """Utils employed by SwathDefinition.extend.
 
     It extrapolate npts following the forward azimuth with an interdistance
     equal to the distance between the starting point and the end point.
     """
-    import pyproj
-    geod = pyproj.Geod(ellps='sphere')  # TODO: sphere or WGS84?
+    geod = pyproj.Geod(ellps=ellps)
     #  geod = pyproj.Geod(ellps='WGS84') # sphere
     az12_arr, _, dist_arr = geod.inv(lon_start, lat_start, lon_end, lat_end)
     list_lat = []
@@ -1900,63 +1773,74 @@ class AreaDefinition(_ProjectionDefinition):
         return AreaDefinition(**kwargs)
 
     def aggregate(self, **dims):
-        """Return an aggregated version of the area."""
-        warnings.warn("'aggregate' is deprecated, use 'downsample' or 'upsample' instead.", PendingDeprecationWarning)
-        width = int(self.width / dims.get('x', 1))
-        height = int(self.height / dims.get('y', 1))
+        """Return an aggregated version of the area.
+
+        Aggregate allows to mix between downsample and upsample in different directions.
+        Example: area_def.aggregate(x=2, y=0.5) <-> area_def.downsample(x=2).upsample(y=2).
+        """
+        x = dims.get('x', 1)
+        y = dims.get('y', 1)
+        if x <= 0 or y <= 0:
+            raise ValueError('AreaDefinition.aggregate x and y arguments must be > 0.')
+        if x == 1 and y == 1:
+            return self
+        width = int(self.width / x)
+        height = int(self.height / y)
         return self.copy(height=height, width=width)
 
     def downsample(self, x=1, y=1):
         """Return a downsampled version of the area."""
         # Check input validity
-        x = int(x)
-        y = int(y)
         if x == 1 and y == 1:
             return self
         if x < 1 or y < 1:
-            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+            raise ValueError('AreaDefinition.downsample x and y arguments must be >= 1.')
         # Downsample
-        width = int(self.width / x)
-        height = int(self.height / y)
-        return self.copy(height=height, width=width)
+        return self.aggregate(x=x, y=y)
 
     def upsample(self, x=1, y=1):
         """Return an upsampled version of the area."""
         # Check input validity
-        x = int(x)
-        y = int(y)
         if x == 1 and y == 1:
             return self
         if x < 1 or y < 1:
-            raise ValueError('x and y arguments must be positive integers larger or equal to 1.')
+            raise ValueError('AreaDefinition.upsample x and y arguments must be >= 1.')
         # Upsample
-        width = int(self.width * x)
-        height = int(self.height * y)
-        return self.copy(height=height, width=width)
+        return self.aggregate(x=1 / x, y=1 / y)
 
-    def extend(self, x=0, y=0):
-        """Extend AreaDef by x/y pixels on each side."""
+    def extend(self, left=0, right=0, bottom=0, top=0):
+        """Extend AreaDefinition by n pixels on specific boundary sides.
+
+        By default, it does not extend on any side.
+        """
         if self.is_geostationary:
-            raise NotImplementedError("'extend' method is not implemented for GEO AreaDefinition.")
+            raise NotImplementedError("AreaDefinition.extend method is not implemented for GEO AreaDefinition.")
         # Check input validity
-        x = int(x)
-        y = int(y)
-        if x < 0 or y < 0:
-            raise ValueError('x and y arguments must be positive integers.')
-        if x == 0 and y == 0:
+        left = int(left)
+        right = int(right)
+        bottom = int(bottom)
+        top = int(top)
+        if left < 0 or right < 0 or bottom < 0 or top < 0:
+            raise ValueError('AreaDefinition.extend expects positive numbers of pixels.')
+
+        # Return AreaDefinition if nothing to extend
+        if left == 0 and right == 0 and bottom == 0 and top == 0:
             return self
+
         # Retrieve pixel and area info
-        new_width = self.width + 2 * x
-        new_height = self.height + 2 * y
+        new_width = self.width + left + right
+        new_height = self.height + bottom + top
         pixel_size_x = self.pixel_size_x
         pixel_size_y = self.pixel_size_y
+
         # Extend area_extent (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
         area_extent = self._area_extent
         new_area_extent = list(area_extent)
-        new_area_extent[0] = new_area_extent[0] - pixel_size_x * x
-        new_area_extent[1] = new_area_extent[1] - pixel_size_y * y
-        new_area_extent[2] = new_area_extent[2] + pixel_size_x * x
-        new_area_extent[3] = new_area_extent[3] + pixel_size_y * y
+        new_area_extent[0] = new_area_extent[0] - pixel_size_x * left
+        new_area_extent[1] = new_area_extent[1] - pixel_size_y * bottom
+        new_area_extent[2] = new_area_extent[2] + pixel_size_x * right
+        new_area_extent[3] = new_area_extent[3] + pixel_size_y * top
+
         # Define new AreaDefinition
         projection = self.crs_wkt
         area_def = AreaDefinition(self.area_id, self.description, self.proj_id,
@@ -1970,49 +1854,38 @@ class AreaDefinition(_ProjectionDefinition):
 
         return area_def
 
-    def reduce(self, x=0, y=0):
-        """Reduce AreaDef by x/y pixels on each side."""
+    def shrink(self, left=0, right=0, bottom=0, top=0):
+        """Shrink AreaDefinition by n pixels on specific boundary sides.
+
+        By default, it does not shrink on any side.
+        """
         if self.is_geostationary:
-            raise NotImplementedError("'reduce' method is not implemented for GEO AreaDefinition.")
-        # Check input validity (ensure reduced area is at least 2x2)
+            raise NotImplementedError("AreaDefinition.shrink method is not implemented for GEO AreaDefinition.")
+        # Check input validity
+        left = int(left)
+        right = int(right)
+        bottom = int(bottom)
+        top = int(top)
+        if left < 0 or right < 0 or bottom < 0 or top < 0:
+            raise ValueError('AreaDefinition.shrink expects positive numbers of pixels.')
+
+        # Return AreaDefinition if nothing to extend
+        if left == 0 and right == 0 and bottom == 0 and top == 0:
+            return self
+
+        # Ensure shrinked area is at least 2x2
         width = self.width
         height = self.height
-        x = int(x)
-        y = int(y)
-        if x == 0 and y == 0:
-            return self
-        if x < 0 or y < 0:
-            raise ValueError('x and y arguments must be positive integers.')
-        if x >= np.floor(width / 2):
-            max_x = int(np.floor(width / 2)) - 1
-            raise ValueError("You can at maximum reduce width (x) of AreaDef by {} pixels on each side.".format(max_x))
-        if y >= np.floor(height / 2):
-            max_y = int(np.floor(height / 2)) - 1
-            raise ValueError("You can at maximum reduce height (y) of AreaDef by {} pixels on each side.".format(max_y))
-        # Retrieve pixel and area info
-        new_width = self.width - 2 * x
-        new_height = self.height - 2 * y
-        pixel_size_x = self.pixel_size_x
-        pixel_size_y = self.pixel_size_y
-        area_extent = self._area_extent
-        # Extend area_extent (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-        new_area_extent = list(area_extent)
-        new_area_extent[0] = new_area_extent[0] + pixel_size_x * x
-        new_area_extent[1] = new_area_extent[1] + pixel_size_y * y
-        new_area_extent[2] = new_area_extent[2] - pixel_size_x * x
-        new_area_extent[3] = new_area_extent[3] - pixel_size_y * y
-        # Define new AreaDefinition
-        projection = self.crs_wkt
-        area_def = AreaDefinition(self.area_id, self.description, self.proj_id,
-                                  projection=projection,
-                                  width=new_width,
-                                  height=new_height,
-                                  area_extent=new_area_extent,
-                                  rotation=self.rotation,
-                                  nprocs=self.nprocs,
-                                  dtype=self.dtype)
+        x_max_shrink = width - 2
+        y_max_shrink = height - 2
+        if (left + right) > x_max_shrink:
+            raise ValueError("AreaDefinition.shrink can drop maximum {} pixels "
+                             "along the x direction.".format(x_max_shrink))
+        if (top + bottom) > y_max_shrink:
+            raise ValueError("AreaDefinition.shrink can drop maximum {} pixels "
+                             "along the y direction.".format(y_max_shrink))
 
-        return area_def
+        return self[slice(top, height - bottom), slice(left, width - right)]
 
     @property
     def resolution(self):
