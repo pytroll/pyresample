@@ -492,8 +492,7 @@ class TestMisc(unittest.TestCase):
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        proj_dict = {'init': 'epsg:3857'}
-        area_def = utils.rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
+        area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
         self.assertEqual(area_def.crs, CRS(3857))
 
 
