@@ -226,6 +226,18 @@ class BucketResampler(object):
                                                        bins=np.linspace(0, out_size, out_size)
                                                        )
                                            )['values'].max())
+        elif scipy_method == "absmin":
+            def get_abs_min(part):
+                gb = part.groupby(np.digitize(part.x, bins=np.linspace(0, out_size, out_size)))
+                return gb.apply(lambda p: p.loc[abs(p["values"]).argmin()])
+            statistics = df.map_partitions(get_abs_min)
+        elif scipy_method == "absmax":
+            def get_abs_max(part):
+                gb = part.groupby(np.digitize(part.x, bins=np.linspace(0, out_size, out_size)))
+                return gb.apply(lambda p: p.loc[abs(p["values"]).argmax()])
+            statistics = df.map_partitions(get_abs_max)
+        else:
+            raise ValueError(f"Invalid method: {scipy_method:s}")
 
         # fill missed index
         statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
@@ -295,6 +307,64 @@ class BucketResampler(object):
         """
         LOG.info("Get max of values in each location")
         return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
+
+    def get_abs_max(self, data, fill_value=np.nan, skipna=True):
+        """Calculate absolute maximums for each bin with drop-in-a-bucket resampling.
+
+        .. warning::
+
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned.
+        skipna : boolean (optional)
+                If True, skips NaN values for the maximum calculation
+                (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
+                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+                (similarly to Numpy's `max`).
+                In both cases, empty buckets are set to 0.
+                Default: True
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise maximums in the target grid
+        """
+        LOG.debug("Get abs max of values in each location")
+        return self._call_pandas_groupby_statistics('absmax', data, fill_value, skipna)
+
+
+    def get_abs_min(self, data, fill_value=np.nan, skipna=True):
+        """Calculate absolute minimums for each bin with drop-in-a-bucket resampling.
+
+        .. warning::
+
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned.
+        skipna : boolean (optional)
+                If True, skips NaN values for the maximum calculation
+                (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
+                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+                (similarly to Numpy's `max`).
+                In both cases, empty buckets are set to 0.
+                Default: True
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise maximums in the target grid
+        """
+        LOG.debug("Get abs min of values in each location")
+        return self._call_pandas_groupby_statistics('absmin', data, fill_value, skipna)
+
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
