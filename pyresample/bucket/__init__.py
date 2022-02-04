@@ -226,8 +226,6 @@ class BucketResampler(object):
                                                        bins=np.linspace(0, out_size, out_size)
                                                        )
                                            )['values'].max())
-        else:
-            raise ValueError(f"Invalid method: {scipy_method:s}")
 
         # fill missed index
         statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
