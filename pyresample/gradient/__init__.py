@@ -271,6 +271,9 @@ class GradientSearchResampler(BaseResampler):
 
         if fill_value is not None:
             res = da.where(np.isnan(res), fill_value, res)
+        if res.ndim > len(data_dims):
+            res = res.squeeze()
+
         res = xr.DataArray(res, dims=data_dims, coords=coords)
 
         return res
@@ -400,6 +403,6 @@ def _concatenate_chunks(chunks):
         prev_y = y
     res.append(da.concatenate(col, axis=1))
 
-    res = da.concatenate(res, axis=2).squeeze()
+    res = da.concatenate(res, axis=2)
 
     return res
