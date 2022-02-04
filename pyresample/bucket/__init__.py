@@ -336,7 +336,6 @@ class BucketResampler(object):
         LOG.debug("Get abs max of values in each location")
         return self._call_pandas_groupby_statistics('absmax', data, fill_value, skipna)
 
-
     def get_abs_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate absolute minimums for each bin with drop-in-a-bucket resampling.
 
@@ -364,7 +363,6 @@ class BucketResampler(object):
         """
         LOG.debug("Get abs min of values in each location")
         return self._call_pandas_groupby_statistics('absmin', data, fill_value, skipna)
-
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
