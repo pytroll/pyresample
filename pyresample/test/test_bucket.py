@@ -224,6 +224,18 @@ class Test(unittest.TestCase):
         # test that minimum of bucket with only nan is nan, and empty buckets are nan
         self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
 
+    def test_get_abs_max(self):
+        """Test abs max bucket resampling."""
+        data = da.from_array(np.array([[2, -11], [5, np.nan]]),
+                             chunks=self.chunks)
+        result = self._get_abs_max_result(data)
+        # test multiple entries absolute maximum
+        self.assertEqual(np.count_nonzero(result == -11), 1)
+        # test single entry maximum
+        self.assertEqual(np.count_nonzero(result == 5), 1)
+        # test that minimum of bucket with only nan is nan, and empty buckets are nan
+        self.assertEqual(np.count_nonzero(~np.isnan(result)), 2)
+
     def _get_abs_max_result(self, data, **kwargs):
         """Compute the bucket abs max with kwargs and check that no dask computation is performed."""
         with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
