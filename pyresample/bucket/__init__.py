@@ -17,9 +17,9 @@
 
 """Code for resampling using bucket resampling."""
 
-import dask
 import logging
 
+import dask
 import dask.array as da
 import numpy as np
 import xarray as xr
