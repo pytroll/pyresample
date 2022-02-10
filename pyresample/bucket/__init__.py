@@ -211,7 +211,7 @@ class BucketResampler(object):
                                                   (idxs_sorted < bins.min()) | (idxs_sorted > bins.max()))
 
         # get the first index and value in each bin
-        unique_bin, unique_idx = np.unique(binned_values_masked,  return_index=True)
+        unique_bin, unique_idx = np.unique(binned_values_masked, return_index=True)
 
         # create the full index array
         weight_idx = np.zeros(len(bins), dtype='int')
@@ -244,7 +244,7 @@ class BucketResampler(object):
         idxs_sorted = self.idxs[order]
         weights_sorted = np.append(weights[order], np.nan)
 
-        bins = np.linspace(0, out_size-1, out_size).astype('int')
+        bins = np.linspace(0, out_size - 1, out_size).astype('int')
 
         statistics = da.from_delayed(self._get_bin_statistic(bins, idxs_sorted, weights_sorted),
                                      shape=(len(bins),),
