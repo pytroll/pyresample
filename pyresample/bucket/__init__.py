@@ -192,7 +192,7 @@ class BucketResampler(object):
 
     @dask.delayed
     def _sort_weights(self, statistic_method, weights):
-        '''sort idxs and weights based on weights'''
+        """Sort idxs and weights based on weights."""
         if statistic_method == 'min':
             order = np.argsort(weights)
         elif statistic_method == 'max':
@@ -202,7 +202,7 @@ class BucketResampler(object):
 
     @dask.delayed
     def _get_bin_statistic(self, bins, idxs_sorted, weights_sorted):
-        '''get the statistic of each bin'''
+        """Get the statistic of each bin."""
         # get where the `idxs_sorted` located in `bins`
         binned_values = np.digitize(idxs_sorted, bins, right=True)
 
