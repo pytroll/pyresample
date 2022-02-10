@@ -245,7 +245,7 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
+      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
         continue;
       }
 
@@ -352,7 +352,6 @@ int compute_ewa_single(int maximum_weight_mode,
   IMAGE_TYPE this_val;
   unsigned int swath_offset;
   unsigned int grid_offset;
-  size_t chan;
 
   got_point = 0;
   for (row = 0, swath_offset=0; row < swath_rows; row+=1) {
@@ -360,7 +359,7 @@ int compute_ewa_single(int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
+      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
         continue;
       }
 

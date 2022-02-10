@@ -1,17 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2019-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test the bucket resampler."""
+
 import unittest
-import numpy as np
-import dask.array as da
-import dask
-import xarray as xr
 from unittest.mock import MagicMock, patch
 
-from pyresample import create_area_def
+import dask
+import dask.array as da
+import numpy as np
+import xarray as xr
+
+from pyresample import bucket, create_area_def
 from pyresample.geometry import AreaDefinition
-from pyresample import bucket
 from pyresample.test.utils import CustomScheduler
 
 
 class Test(unittest.TestCase):
+    """Test bucket resampler."""
+
     adef = AreaDefinition('eurol', 'description', '',
                           {'ellps': 'WGS84',
                            'lat_0': '90.0',
@@ -135,7 +156,6 @@ class Test(unittest.TestCase):
 
     def test_get_sum_nan_data_skipna_false(self):
         """Test drop-in-a-bucket sum for data input with nan and skipna False."""
-
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 
@@ -147,7 +167,6 @@ class Test(unittest.TestCase):
 
     def test_get_sum_nan_data_skipna_true(self):
         """Test drop-in-a-bucket sum for data input with nan and skipna True."""
-
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 

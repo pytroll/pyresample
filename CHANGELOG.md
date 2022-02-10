@@ -1,3 +1,132 @@
+## Version 1.22.3 (2021/12/07)
+
+### Issues Closed
+
+* [Issue 375](https://github.com/pytroll/pyresample/issues/375) - Importing pyresample without having Xarray and/or zarray raises UserWarning ([PR 400](https://github.com/pytroll/pyresample/pull/400) by [@yunjunz](https://github.com/yunjunz))
+* [Issue 318](https://github.com/pytroll/pyresample/issues/318) - Add fill_value keyword argument for AreaDefinition.get_lonlats
+* [Issue 231](https://github.com/pytroll/pyresample/issues/231) - Copyright notice out of date ([PR 403](https://github.com/pytroll/pyresample/pull/403) by [@gerritholl](https://github.com/gerritholl))
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 404](https://github.com/pytroll/pyresample/pull/404) - Fix dask EWA code not creating unique dask task names for different target areas
+* [PR 400](https://github.com/pytroll/pyresample/pull/400) - Move bilinear import to avoid unnecessary warning ([375](https://github.com/pytroll/pyresample/issues/375))
+* [PR 399](https://github.com/pytroll/pyresample/pull/399) - Fix deprecated numpy data type usage in bilinear resampling
+
+#### Documentation changes
+
+* [PR 403](https://github.com/pytroll/pyresample/pull/403) - Update copyright note in documentation ([231](https://github.com/pytroll/pyresample/issues/231))
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.22.2 (2021/12/03)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 401](https://github.com/pytroll/pyresample/pull/401) - Optimize AreaDefinition.get_proj_coords when requesting dask arrays ([1902](https://github.com/pytroll/satpy/issues/1902))
+
+In this release 1 pull request was closed.
+
+
+## Version 1.22.1 (2021/11/18)
+
+### Issues Closed
+
+* [Issue 390](https://github.com/pytroll/pyresample/issues/390) - What units does SphPolygon.area return?
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 398](https://github.com/pytroll/pyresample/pull/398) - Fix EWA resampling when input data is larger than the output area
+* [PR 389](https://github.com/pytroll/pyresample/pull/389) - Fix SwathDefinition get_bbox_lonlats returning counter-clockwise coordinates
+
+#### Features added
+
+* [PR 396](https://github.com/pytroll/pyresample/pull/396) - Add Python 3.9 to CI runs and use it for the experimental run
+* [PR 395](https://github.com/pytroll/pyresample/pull/395) - Replace depracated Numpy dtypes
+
+#### Documentation changes
+
+* [PR 388](https://github.com/pytroll/pyresample/pull/388) - Fix indentation on geometry utils page
+
+In this release 5 pull requests were closed.
+
+
+## Version 1.22.0 (2021/10/25)
+
+### Issues Closed
+
+* [Issue 384](https://github.com/pytroll/pyresample/issues/384) - Inconsistent SphPolygon intersection behavior ([PR 385](https://github.com/pytroll/pyresample/pull/385) by [@djhoese](https://github.com/djhoese))
+* [Issue 353](https://github.com/pytroll/pyresample/issues/353) - cut'n'paste error for `codecov.yml`?
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 386](https://github.com/pytroll/pyresample/pull/386) - Fix geocentric_resolution method not working for lat/lon projections
+* [PR 385](https://github.com/pytroll/pyresample/pull/385) - Fix SphPolygon producing unexpected results for 32-bit float coordinates ([384](https://github.com/pytroll/pyresample/issues/384))
+* [PR 383](https://github.com/pytroll/pyresample/pull/383) - Fix AreaDefinition dumping when extents have Numpy values
+* [PR 378](https://github.com/pytroll/pyresample/pull/378) - Fix compatibility with cartopy 0.20.0+
+
+#### Features added
+
+* [PR 379](https://github.com/pytroll/pyresample/pull/379) - Define new Resampler base class, nearest neighbor class, and resampler registry
+
+#### Documentation changes
+
+* [PR 380](https://github.com/pytroll/pyresample/pull/380) - Add pre-commit running to PRs and add isort
+
+In this release 6 pull requests were closed.
+
+
+## Version 1.21.1 (2021/09/17)
+
+### Issues Closed
+
+* [Issue 374](https://github.com/pytroll/pyresample/issues/374) - Geographic EWA projection for swaths crossing the anti-meridian omits values for 90 ≤ longitude (degrees east) ≤ 180. ([PR 376](https://github.com/pytroll/pyresample/pull/376))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 377](https://github.com/pytroll/pyresample/pull/377) - Remove unnecessary dask computation in 'nearest' resampler
+* [PR 376](https://github.com/pytroll/pyresample/pull/376) - Update EWA ll2cr_static to handle swaths crossing the anti-meridian. ([374](https://github.com/pytroll/pyresample/issues/374))
+
+In this release 2 pull requests were closed.
+
+
+## Version 1.21.0 (2021/08/19)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 370](https://github.com/pytroll/pyresample/pull/370) - Fix dask ewa issues with newer versions of dask
+
+#### Features added
+
+* [PR 347](https://github.com/pytroll/pyresample/pull/347) - Add spherical geometry support for deriving total/common area coverage of several satellite overpasses
+
+#### Documentation changes
+
+* [PR 373](https://github.com/pytroll/pyresample/pull/373) - Add initial draft of a Roadmap page
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.20.0 (2021/06/04)
 
 ### Issues Closed

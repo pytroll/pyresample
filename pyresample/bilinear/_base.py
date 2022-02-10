@@ -35,8 +35,10 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
+from pyresample._spatial_mp import Proj
+
+from ..future.resamplers._transform_utils import lonlat2xyz
 
 
 class BilinearBase(object):
@@ -215,7 +217,7 @@ class BilinearBase(object):
                                    self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
-        input_coords = input_coords[valid_input_index, :].astype(np.float)
+        input_coords = input_coords[valid_input_index, :].astype(np.float64)
 
         return valid_input_index, input_coords
 
@@ -264,7 +266,7 @@ def _check_fill_value(fill_value, dtype):
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords()
-    return np.ravel(out_x),  np.ravel(out_y)
+    return np.ravel(out_x), np.ravel(out_y)
 
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
@@ -564,8 +566,8 @@ def _get_valid_input_index(source_geo_def,
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
     valid_input_index = np.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+        find_indices_outside_min_and_max(source_lons, -180., 180.) |
+        find_indices_outside_min_and_max(source_lats, -90., 90.))
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(
@@ -597,20 +599,6 @@ def get_valid_indices_from_lonlat_boundaries(
         lonlat_boundary[1],
         source_lons, source_lats,
         radius_of_influence)
-
-
-def lonlat2xyz(lons, lats):
-    """Convert geographic coordinates to cartesian 3D coordinates."""
-    R = 6370997.0
-    lats = np.deg2rad(lats)
-    r_cos_lats = R * np.cos(lats)
-    lons = np.deg2rad(lons)
-    x_coords = r_cos_lats * np.cos(lons)
-    y_coords = r_cos_lats * np.sin(lons)
-    z_coords = R * np.sin(lats)
-
-    return np.stack(
-        (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
 def get_slicer(data):

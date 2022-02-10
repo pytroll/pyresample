@@ -1,8 +1,44 @@
 name: CI
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency
+# https://docs.github.com/en/developers/webhooks-and-events/events/github-event-types#pullrequestevent
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.type }}
+  cancel-in-progress: true
 
 on: [push, pull_request]
 
 jobs:
+  website:
+    name: build website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: continuous_integration/environment.yaml
+          activate-environment: test-environment
+
+      - name: Install Satpy
+        shell: bash -l {0}
+        run: |
+          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc
+          pip install --no-deps -e .
+
+      - name: Run Sphinx Build
+        shell: bash -l {0}
+        run: |
+          cd docs
+          make html SPHINXOPTS="-W"
+
   test:
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
@@ -10,10 +46,10 @@ jobs:
       fail-fast: true
       matrix:
         os: ["windows-latest", "ubuntu-latest", "macos-latest"]
-        python-version: ["3.7", "3.8"]
+        python-version: ["3.8", "3.9", "3.10"]
         experimental: [false]
         include:
-          - python-version: "3.8"
+          - python-version: "3.9"
             os: "ubuntu-latest"
             experimental: true
 
@@ -30,10 +66,10 @@ jobs:
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniconda-version: "latest"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          channels: conda-forge,defaults
           environment-file: continuous_integration/environment.yaml
           activate-environment: test-environment
 

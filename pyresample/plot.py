@@ -23,6 +23,7 @@
 """Utility functions for quick and easy display."""
 
 from __future__ import absolute_import
+
 import numpy as np
 
 try:
@@ -222,11 +223,11 @@ def _add_gridlines(axes, nmeridians, nparallels):
 
     gl = axes.gridlines()
     if nmeridians:
-        gl.xlocator = mticker.FixedLocator(np.arange(-180, 180+nmeridians, nmeridians))
+        gl.xlocator = mticker.FixedLocator(np.arange(-180, 180 + nmeridians, nmeridians))
     else:
         gl.xlines = False
     if nparallels:
-        gl.ylocator = mticker.FixedLocator(np.arange(-90, 90+nparallels, nparallels))
+        gl.ylocator = mticker.FixedLocator(np.arange(-90, 90 + nparallels, nparallels))
     else:
         gl.ylines = False
 

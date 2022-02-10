@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019 Pyresample developers
+# Copyright (C) 2019-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,20 +15,22 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Area config handling and creation utilities."""
+
+import io
 import logging
 import math
 import os
-import io
-import warnings
 import pathlib
+import warnings
 from typing import Any, Union
 
 import numpy as np
 import yaml
-from pyresample.utils import proj4_str_to_dict
-from pyproj.crs import CRS, CRSError
 from pyproj import Proj, Transformer
+from pyproj.crs import CRS, CRSError
 
+from pyresample.utils import proj4_str_to_dict
 
 try:
     from xarray import DataArray
@@ -37,22 +39,25 @@ except ImportError:
         """Stand-in for DataArray for holding units information."""
 
         def __init__(self, data, attrs=None):
+            """Initialize 'attrs' and 'data' properties."""
             self.attrs = attrs or {}
             self.data = np.array(data)
 
         def __getitem__(self, item):
+            """Get a subset of the data contained in a DataArray."""
             return DataArray(self.data[item], attrs=self.attrs)
 
         def __getattr__(self, item):
+            """Get metadata property from 'attrs'."""
             return self.attrs[item]
 
         def __len__(self):
+            """Get size of the data."""
             return len(self.data)
 
 
 class AreaNotFound(KeyError):
     """Exception raised when specified are is no found in file."""
-    pass
 
 
 def load_area(area_file_name, *regions):
@@ -80,7 +85,6 @@ def load_area(area_file_name, *regions):
     AreaNotFound:
         If a specified area name is not found
     """
-
     area_list = parse_area_file(area_file_name, *regions)
     if len(area_list) == 1:
         return area_list[0]
@@ -133,7 +137,6 @@ def parse_area_file(area_file_name, *regions):
     AreaNotFound:
         If a specified area is not found
     """
-
     try:
         return _parse_yaml_area_file(area_file_name, *regions)
     except (yaml.scanner.ScannerError, yaml.parser.ParserError):
@@ -205,7 +208,7 @@ def _parse_yaml_area_file(area_file_name, *regions):
 
 
 def _capture_subarguments(params, arg_name, sub_arg_list):
-    """Captures :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
+    """Capture :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
 
     Example:
         resolution:
@@ -371,7 +374,6 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
     area_def : object
         AreaDefinition object
     """
-
     proj_dict = _get_proj4_args(proj4_args)
     return create_area_def(area_id, proj_dict, description=area_name, proj_id=proj_id,
                            shape=(height, width), area_extent=area_extent)
@@ -391,7 +393,7 @@ def _get_proj4_args(proj4_args):
 
 def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
                     center=None, resolution=None, radius=None, units=None, **kwargs):
-    """Takes data the user knows and tries to make an area definition from what can be found.
+    """Create AreaDefinition from whatever information is known.
 
     Parameters
     ----------
@@ -522,9 +524,9 @@ def _make_area(
         shape: tuple,
         area_extent: tuple,
         **kwargs):
-    """Handles the creation of an area definition for create_area_def."""
-    from pyresample.geometry import AreaDefinition
-    from pyresample.geometry import DynamicAreaDefinition
+    """Handle the creation of an area definition for create_area_def."""
+    from pyresample.geometry import AreaDefinition, DynamicAreaDefinition
+
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
     resolution = kwargs.pop('resolution', None)
@@ -637,7 +639,7 @@ def _convert_units(
         crs: CRS,
         inverse: bool = False,
         center=None):
-    """Converts units from lon/lat to projection coordinates (meters).
+    """Convert units from lon/lat to projection coordinates (meters).
 
     If `inverse` it True then the inverse calculation is done.
     """
@@ -718,20 +720,19 @@ def _round_shape(shape, radius=None, resolution=None):
 
 
 def _validate_variable(var, new_var, var_name, input_list):
-    """Makes sure data given by the user does not conflict with itself.
+    """Make sure data given by the user does not conflict with itself.
 
     If a variable that was given by the user contradicts other data provided, an exception is raised.
     Example: upper_left_extent is (-10, 10), but area_extent is (-20, -20, 20, 20).
     """
     if var is not None and not np.allclose(np.array(var, dtype=float), np.array(new_var, dtype=float), equal_nan=True):
         raise ValueError('CONFLICTING DATA: {0} given does not match {0} found from {1}'.format(
-            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var, var_name,
-                                                                                      input_list))
+            var_name, ', '.join(input_list)) + ':\ngiven: {0}\nvs\nfound: {1}'.format(var, new_var))
     return new_var
 
 
 def _extrapolate_information(area_extent, shape, center, radius, resolution, upper_left_extent, units, p, crs):
-    """Attempts to find shape and area_extent based on data provided.
+    """Attempt to find shape and area_extent based on data provided.
 
     Parameters are used in a specific order to determine area_extent and shape.
     The area_extent and shape are later used to create an `AreaDefinition`.
@@ -796,9 +797,10 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
 
 
 def _format_list(var, name):
-    """Used to let resolution and radius be single numbers if their elements are equal.
+    """Ensure that parameter is list-like of numbers.
 
-    Also makes sure that data is list-like and contains only numbers.
+    Used to let resolution and radius be single numbers if their elements are equal.
+
     """
     # Single-number format.
     if not isinstance(var, (list, tuple)) and name in ('resolution', 'radius'):
@@ -811,7 +813,7 @@ def _format_list(var, name):
 
 
 def _verify_list(name, var, length):
-    """Checks that list-like variables are list-like, shapes are accurate, and values are numbers."""
+    """Check that list-like variables are list-like, shapes are accurate, and values are numbers."""
     # Make list-like data into tuples (or leave as xarrays). If not list-like, throw a ValueError unless it is None.
     if var is None:
         return None
@@ -822,7 +824,7 @@ def _verify_list(name, var, length):
             var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
         elif isinstance(var, DataArray):
             if name == 'shape':
-                logging.warning("{0} is unitless, but was passed as a DataArray".format(name, var.attrs))
+                logging.warning("{0} is unitless, but was passed as a DataArray".format(name))
             else:
                 logging.warning("{0} is a DataArray but does not have the attribute 'units',"
                                 "but instead has attribute(s): {1}".format(name, var.attrs))

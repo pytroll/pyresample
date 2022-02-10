@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2015  Esben S. Nielsen
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -14,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Reduce data sets based on geographical information."""
 
 from __future__ import absolute_import
@@ -27,8 +27,7 @@ R = 6370997.0
 
 def swath_from_cartesian_grid(cart_grid, lons, lats, data,
                               radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with cartesian
-    grid.
+    """Make coarse data reduction of swath data by comparison with cartesian grid.
 
     Parameters
     ----------
@@ -48,7 +47,6 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set
     """
-
     valid_index = get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
                                                       radius_of_influence)
 
@@ -61,8 +59,7 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
 
 def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
                                         radius_of_influence):
-    """Calculates relevant data indices using coarse data reduction of swath
-    data by comparison with cartesian grid.
+    """Calculate relevant data indices using coarse data reduction of swath data by comparison with cartesian grid.
 
     Parameters
     ----------
@@ -82,7 +79,6 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
     valid_index : numpy array
         Boolean array of same size as lons and lats indicating relevant indices
     """
-
     def _get_lons(x, y):
         return np.rad2deg(np.arccos(x / np.sqrt(x ** 2 + y ** 2))) * np.sign(y)
 
@@ -109,8 +105,7 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
 
 def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
                            radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with lon lat
-    grid.
+    """Make coarse data reduction of swath data by comparison with lon lat grid.
 
     Parameters
     ----------
@@ -132,7 +127,6 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set
     """
-
     valid_index = get_valid_index_from_lonlat_grid(
         grid_lons, grid_lats, lons, lats, radius_of_influence)
 
@@ -145,8 +139,7 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
 
 def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
                                  radius_of_influence):
-    """Makes coarse data reduction of swath data by comparison with lon lat
-    boundary.
+    """Make coarse data reduction of swath data by comparison with lon lat boundary.
 
     Parameters
     ----------
@@ -168,7 +161,6 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
     (lons, lats, data) : list of numpy arrays
         Reduced swath data and coordinate set
     """
-
     valid_index = get_valid_index_from_lonlat_boundaries(boundary_lons,
                                                          boundary_lats, lons, lats, radius_of_influence)
 
@@ -180,8 +172,7 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
 
 
 def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of_influence):
-    """Calculates relevant data indices using coarse data reduction of swath
-    data by comparison with lon lat grid.
+    """Calculate relevant data indices using coarse data reduction of swath data by comparison with lon lat grid.
 
     Parameters
     ----------
@@ -201,7 +192,6 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
     valid_index : numpy array
         Boolean array of same size as lon and lat indicating relevant indices
     """
-
     # Get sides of target grid
     lons_side1 = grid_lons[0, :]
     lons_side2 = grid_lons[:, -1]
@@ -221,9 +211,7 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
 
 
 def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, radius_of_influence):
-    """Find relevant indices from grid boundaries using the winding number
-    theorem."""
-
+    """Find relevant indices from grid boundaries using the winding number theorem."""
     valid_index = _get_valid_index(boundary_lons.side1, boundary_lons.side2,
                                    boundary_lons.side3, boundary_lons.side4,
                                    boundary_lats.side1, boundary_lats.side2,
@@ -236,9 +224,7 @@ def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, l
 def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                      lats_side1, lats_side2, lats_side3, lats_side4,
                      lons, lats, radius_of_influence):
-    """Find relevant indices from grid boundaries using the winding number
-    theorem."""
-
+    """Find relevant indices from grid boundaries using the winding number theorem."""
     # Coarse reduction of data based on extrema analysis of the boundary
     # lon lat values of the target grid
     illegal_lons = (((lons_side1 < -180) | (lons_side1 > 180)).any() or

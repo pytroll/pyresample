@@ -24,8 +24,9 @@
 
 """Test bilinear interpolation."""
 import unittest
-import numpy as np
 from unittest import mock
+
+import numpy as np
 
 
 class TestNumpyBilinear(unittest.TestCase):
@@ -150,7 +151,9 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
+        from pyresample.bilinear._base import (
+            _get_fractional_distances_uprights_parallel,
+        )
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -196,7 +199,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
-        from pyresample.bilinear._base import (_solve_quadratic, _calc_abc)
+        from pyresample.bilinear._base import _calc_abc, _solve_quadratic
 
         res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res, 0.0)
@@ -219,8 +222,8 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample.bilinear._base import _get_input_xy
         from pyresample._spatial_mp import Proj
+        from pyresample.bilinear._base import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy(self.source_def, proj,
@@ -230,10 +233,12 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear._base import (_get_output_xy,
-                                               _get_input_xy,
-                                               _get_four_closest_corners)
         from pyresample._spatial_mp import Proj
+        from pyresample.bilinear._base import (
+            _get_four_closest_corners,
+            _get_input_xy,
+            _get_output_xy,
+        )
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = _get_output_xy(self.target_def)
@@ -414,6 +419,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Do some setup for common things."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample import geometry, kd_tree
 
         self.pts_irregular = (da.array([[-1., 1.], ]),
@@ -565,7 +571,7 @@ class TestXarrayBilinear(unittest.TestCase):
             [-1070912.72, -470912.72, 129087.28, 729087.28]))
         self.assertTrue(np.allclose(
             resampler.out_coords_y,
-            [1190031.36,  590031.36,   -9968.64, -609968.64]))
+            [1190031.36, 590031.36, -9968.64, -609968.64]))
 
         # Data reduction disabled
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
@@ -592,6 +598,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test bilinear interpolation as a whole."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
@@ -639,6 +646,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test coordinate updating."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
@@ -668,6 +676,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test slicing the data."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
@@ -771,8 +780,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
-        from pyresample.bilinear.xarr import _get_input_xy
         from pyresample._spatial_mp import Proj
+        from pyresample.bilinear.xarr import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy(self.source_def, proj,
@@ -787,10 +796,11 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_get_four_closest_corners(self):
         """Test finding surrounding bounding corners."""
         import dask.array as da
-        from pyresample.bilinear.xarr import _get_input_xy
-        from pyresample.bilinear._base import _get_four_closest_corners
-        from pyresample._spatial_mp import Proj
+
         from pyresample import CHUNK_SIZE
+        from pyresample._spatial_mp import Proj
+        from pyresample.bilinear._base import _get_four_closest_corners
+        from pyresample.bilinear.xarr import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = self.target_def.get_proj_coords(chunks=CHUNK_SIZE)
@@ -817,9 +827,10 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_get_corner(self):
         """Test finding the closest corners."""
         import dask.array as da
-        from pyresample.bilinear._base import _get_corner, _get_input_xy
+
         from pyresample import CHUNK_SIZE
         from pyresample._spatial_mp import Proj
+        from pyresample.bilinear._base import _get_corner, _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
         in_x, in_y = _get_input_xy(self.source_def, proj,
@@ -854,8 +865,9 @@ class TestXarrayBilinear(unittest.TestCase):
     @mock.patch('pyresample.bilinear._base._get_fractional_distances_irregular')
     def test_get_fractional_distances(self, irregular, uprights, parallellogram):
         """Test that the three separate functions are called."""
-        from pyresample.bilinear._base import _get_fractional_distances
         import dask.array as da
+
+        from pyresample.bilinear._base import _get_fractional_distances
 
         # All valid values
         t_irr = da.array([0.1, 0.2, 0.3])
@@ -954,7 +966,9 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
+        from pyresample.bilinear._base import (
+            _get_fractional_distances_uprights_parallel,
+        )
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -988,8 +1002,8 @@ class TestXarrayBilinear(unittest.TestCase):
     def test_solve_quadratic(self):
         """Test solving quadratic equation."""
         import dask.array as da
-        from pyresample.bilinear._base import (_solve_quadratic,
-                                               _calc_abc)
+
+        from pyresample.bilinear._base import _calc_abc, _solve_quadratic
 
         res = _solve_quadratic(1, 0, 0)
         self.assertEqual(res, 0.0)
@@ -1062,8 +1076,8 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_lonlat2xyz(self):
         """Test conversion from geographic to cartesian 3D coordinates."""
-        from pyresample.bilinear._base import lonlat2xyz
         from pyresample import CHUNK_SIZE
+        from pyresample.future.resamplers._transform_utils import lonlat2xyz
 
         lons, lats = self.target_def.get_lonlats(chunks=CHUNK_SIZE)
         res = lonlat2xyz(lons, lats)
@@ -1100,7 +1114,8 @@ class TestXarrayBilinear(unittest.TestCase):
         import os
         import shutil
         from tempfile import mkdtemp
-        from pyresample.bilinear import XArrayBilinearResampler, CACHE_INDICES
+
+        from pyresample.bilinear import CACHE_INDICES, XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius)

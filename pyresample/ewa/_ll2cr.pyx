@@ -22,8 +22,9 @@
 """Map longitude/latitude points to column/rows of a grid."""
 __docformat__ = "restructuredtext en"
 
-from pyproj import Proj
 import numpy
+from pyproj import Proj
+
 cimport cython
 cimport numpy
 
@@ -99,8 +100,8 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
-    cdef cr_dtype [:, ::1] rows_out = projected_tuple[1]
-    cdef cr_dtype [:, ::1] cols_out = projected_tuple[0]
+    cdef cr_dtype[:, ::1] rows_out = projected_tuple[1]
+    cdef cr_dtype[:, ::1] cols_out = projected_tuple[0]
     cdef double proj_circum = projection_circumference(p)
     cdef unsigned int w
     cdef unsigned int h
@@ -200,10 +201,10 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
 @cython.wraparound(False)
 @cython.cdivision(True)
 def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype, ndim=2] lat_arr,
-                      cr_dtype fill_in, str proj4_definition,
-                      double cell_width, double cell_height,
-                      unsigned int width, unsigned int height,
-                      double origin_x, double origin_y):
+                 cr_dtype fill_in, str proj4_definition,
+                 double cell_width, double cell_height,
+                 unsigned int width, unsigned int height,
+                 double origin_x, double origin_y):
     """Project longitude and latitude points to column rows in the specified grid in place.
 
     :param lon_arr: Numpy array of longitude floats
@@ -230,9 +231,8 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
-    cdef cr_dtype [:, ::1] rows_out = projected_tuple[1]
-    cdef cr_dtype [:, ::1] cols_out = projected_tuple[0]
-    cdef double proj_circum = projection_circumference(p)
+    cdef cr_dtype[:, ::1] rows_out = projected_tuple[1]
+    cdef cr_dtype[:, ::1] cols_out = projected_tuple[0]
 
     # indexes
     cdef unsigned int row
@@ -252,9 +252,6 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
                 lon_arr[row, col] = fill_in
                 lat_arr[row, col] = fill_in
                 continue
-            elif proj_circum != 0 and abs(x_tmp - origin_x) >= (0.75 * proj_circum):
-                # if x is more than 75% around the projection space, it is probably crossing the anti-meridian
-                x_tmp += proj_circum
 
             x_tmp = (x_tmp - origin_x) / cell_width
             y_tmp = (y_tmp - origin_y) / cell_height

@@ -18,15 +18,16 @@
 """EWA algorithms operating on numpy arrays."""
 
 import logging
-import numpy as np
-
-from pyresample.ewa import ll2cr, fornav
-from pyresample.resampler import BaseResampler, update_resampled_coords
-from pyresample.geometry import SwathDefinition
-from pyresample import CHUNK_SIZE
 
 import dask
 import dask.array as da
+import numpy as np
+
+from pyresample import CHUNK_SIZE
+from pyresample.ewa import fornav, ll2cr
+from pyresample.future.resamplers.resampler import update_resampled_coords
+from pyresample.geometry import SwathDefinition
+from pyresample.resampler import BaseResampler
 
 try:
     import xarray as xr

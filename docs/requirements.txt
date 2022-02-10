@@ -4,3 +4,7 @@ toolz
 dask
 zarr
 numpy
+cython>=0.29
+pyproj
+cartopy>=0.18
+shapely

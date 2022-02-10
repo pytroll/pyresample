@@ -1,11 +1,12 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2014, 2015  Esben S. Nielsen
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
 # Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -14,25 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-"""Resample image from one projection to another using nearest neighbour method
-in cartesian projection coordinate systems."""
+"""Resample image from one projection to another using nearest neighbour method."""
 
 from __future__ import absolute_import
 
 import numpy as np
 
-from pyresample import geometry, _spatial_mp
-
-try:
-    range = xrange
-except NameError:
-    pass
+from pyresample import _spatial_mp, geometry
 
 
 def get_image_from_linesample(row_indices, col_indices, source_image,
                               fill_value=0):
-    """Samples from image based on index arrays.
+    """Sample from image based on index arrays.
 
     Parameters
     ----------
@@ -52,7 +46,6 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     image_data : numpy array
         Resampled image
     """
-
     # mask out non valid row and col indices
     row_mask = (row_indices >= 0) * (row_indices < source_image.shape[0])
     col_mask = (col_indices >= 0) * (col_indices < source_image.shape[1])
@@ -60,25 +53,25 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
     valid_cols = col_indices * col_mask
 
     # free memory
-    del(row_indices)
-    del(col_indices)
+    del row_indices
+    del col_indices
 
     # get valid part of image
     target_image = source_image[valid_rows, valid_cols]
 
     # free memory
-    del(valid_rows)
-    del(valid_cols)
+    del valid_rows
+    del valid_cols
 
     # create mask for valid data points
     valid_data = row_mask * col_mask
     if valid_data.ndim != target_image.ndim:
-        for i in range(target_image.ndim - valid_data.ndim):
+        for _ in range(target_image.ndim - valid_data.ndim):
             valid_data = np.expand_dims(valid_data, axis=valid_data.ndim)
 
     # free memory
-    del(row_mask)
-    del(col_mask)
+    del row_mask
+    del col_mask
 
     # fill the non valid part of the image
     if fill_value is not None:
@@ -95,7 +88,7 @@ def get_image_from_linesample(row_indices, col_indices, source_image,
 
 
 def get_linesample(lons, lats, source_area_def, nprocs=1):
-    """Returns index row and col arrays for resampling.
+    """Return index row and col arrays for resampling.
 
     Parameters
     ----------
@@ -113,7 +106,6 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
     (row_indices, col_indices) : tuple of numpy arrays
         Arrays for resampling area by array indexing
     """
-
     # Proj.4 definition of source area projection
     if nprocs > 1:
         source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
@@ -159,7 +151,6 @@ def get_image_from_lonlats(lons, lats, source_area_def, source_image_data,
     image_data : numpy array
         Resampled image data
     """
-
     source_pixel_y, source_pixel_x = get_linesample(lons, lats,
                                                     source_area_def,
                                                     nprocs=nprocs)
@@ -196,7 +187,6 @@ def get_resampled_image(target_area_def, source_area_def, source_image_data,
     image_data : numpy array
         Resampled image data
     """
-
     if not isinstance(target_area_def, geometry.AreaDefinition):
         raise TypeError('target_area_def must be of type AreaDefinition')
     if not isinstance(source_area_def, geometry.AreaDefinition):

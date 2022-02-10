@@ -1,0 +1,15 @@
+name: readthedocs
+dependencies:
+  - python
+  - xarray
+  - zarr
+  - dask
+  - toolz
+  - numpy
+  - cython
+  - cartopy
+  - pytest
+  - proj4
+  - pyproj
+  - shapely
+  - pykdtree
