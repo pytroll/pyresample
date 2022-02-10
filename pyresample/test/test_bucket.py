@@ -238,7 +238,7 @@ class Test(unittest.TestCase):
 
     def _get_abs_max_result(self, data, **kwargs):
         """Compute the bucket abs max with kwargs and check that no dask computation is performed."""
-        with dask.config.set(scheduler=CustomScheduler(max_computes=1)):
+        with dask.config.set(scheduler=CustomScheduler(max_computes=3)):
             result = self.resampler.get_abs_max(data, **kwargs)
         return result.compute()
 
