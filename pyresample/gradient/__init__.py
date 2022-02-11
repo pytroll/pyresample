@@ -457,7 +457,7 @@ def _fill_in_coords(target_geo_def, data_coords, data_dims):
 
 
 def ensure_data_array(func):
-    """Ensure the data is an instance of a an xarray.DataArray with correct dimensions."""
+    """Ensure the data is an instance of an xarray.DataArray with correct dimensions."""
     @wraps(func)
     def wrapper(self, data, *args, **kwargs):
         if not isinstance(data, xr.DataArray):
