@@ -224,19 +224,19 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         position = dst_block_info["chunk-location"]
         dst_block_info["shape"] = output_shape
         try:
-            smaller_src_arrays, src_area_chunk, src_block_info = crop_data_around_area(src_area, src_arrays,
-                                                                                       dst_area_chunk)
-            res_chunks, _ = _compute_chunks_from_area(src_area_chunk, dask.config.get('array.chunk-size', '128MiB'),
+            smaller_src_arrays, src_area_crop, src_block_info = crop_data_around_area(src_area, src_arrays,
+                                                                                      dst_area_chunk)
+            res_chunks, _ = _compute_chunks_from_area(src_area_crop, dask.config.get('array.chunk-size', '128MiB'),
                                                       dtype)
             if len(res_chunks[0]) * len(res_chunks[1]) > 4:
                 logger.warning("The input area chunks are large. "
                                "This usually means that the input area is of much higher resolution than the output "
-                               "area. You can reduce the chunks passed, and ponder whether you are using the right"
+                               "area. You can reduce the chunks passed, and ponder whether you are using the right "
                                "resampler for the job.")
         except IncompatibleAreas:  # no relevant data matching
             task = [np.full, dst_block_info["chunk-shape"], fill_value]
         else:
-            args = [src_area_chunk, dst_area_chunk]
+            args = [src_area_crop, dst_area_chunk]
             for smaller_data in smaller_src_arrays:
                 args.append((smaller_data.name, *([0] * smaller_data.ndim)))
                 dependencies.append(smaller_data)
