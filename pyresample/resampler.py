@@ -29,6 +29,7 @@ import numpy as np
 from .slicer import Slicer, _enumerate_chunk_slices
 
 try:
+    import dask
     import dask.array as da
     from dask.highlevelgraph import HighLevelGraph
 except ImportError:
@@ -217,7 +218,7 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         else:
             fill_value = np.nan
 
-    dst_chunks, output_shape = _compute_dst_chunks(dst_area, chunks, dtype)
+    dst_chunks, output_shape = _compute_chunks_from_area(dst_area, chunks, dtype)
 
     for dst_block_info, dst_area_chunk in _enumerate_dst_area_chunks(dst_area, dst_chunks):
         position = dst_block_info["chunk-location"]
@@ -225,6 +226,13 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         try:
             smaller_src_arrays, src_area_chunk, src_block_info = crop_data_around_area(src_area, src_arrays,
                                                                                        dst_area_chunk)
+            res_chunks, _ = _compute_chunks_from_area(src_area_chunk, dask.config.get('array.chunk-size', '128MiB'),
+                                                      dtype)
+            if len(res_chunks[0]) * len(res_chunks[1]) > 4:
+                logger.warning("The input area chunks are large. "
+                               "This usually means that the input area is of much higher resolution than the output "
+                               "area. You can reduce the chunks passed, and ponder whether you are using the right"
+                               "resampler for the job.")
         except IncompatibleAreas:  # no relevant data matching
             task = [np.full, dst_block_info["chunk-shape"], fill_value]
         else:
@@ -290,16 +298,16 @@ def _enumerate_dst_area_chunks(dst_area, dst_chunks):
         yield block_info, target_geo_def
 
 
-def _compute_dst_chunks(dst_area, chunks, dtype):
+def _compute_chunks_from_area(area, chunks, dtype):
     rest_shape = []
-    if not isinstance(chunks, Number) and len(chunks) > len(dst_area.shape):
-        rest_chunks = chunks[:-len(dst_area.shape)]
+    if not isinstance(chunks, (Number, str)) and len(chunks) > len(area.shape):
+        rest_chunks = chunks[:-len(area.shape)]
         for elt in rest_chunks:
             try:
                 rest_shape.append(sum(elt))
             except TypeError:
                 rest_shape.append(elt)
-    output_shape = tuple(rest_shape) + dst_area.shape
+    output_shape = tuple(rest_shape) + area.shape
 
     dst_chunks = da.core.normalize_chunks(chunks, output_shape, dtype=dtype)
     return dst_chunks, output_shape

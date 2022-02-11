@@ -65,11 +65,11 @@ class Slicer(ABC):
 
     def get_slices(self):
         """Get the slices to crop *area_to_crop* enclosing *area_to_contain*."""
-        poly = self.get_polygon()
+        poly = self.get_polygon_to_contain()
         return self.get_slices_from_polygon(poly)
 
     @abstractmethod
-    def get_polygon(self):
+    def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain*."""
         raise NotImplementedError
 
@@ -82,7 +82,7 @@ class Slicer(ABC):
 class SwathSlicer(Slicer):
     """A Slicer for cropping SwathDefinitions."""
 
-    def get_polygon(self):
+    def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
         x, y = self.area_to_contain.get_bbox_coords(10)
@@ -135,7 +135,7 @@ def expand_slice(small_slice):
 class AreaSlicer(Slicer):
     """A Slicer for cropping AreaDefinitions."""
 
-    def get_polygon(self):
+    def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
         x, y = self.area_to_contain.get_bbox_coords(frequency=10)
@@ -153,11 +153,15 @@ class AreaSlicer(Slicer):
 
     def get_slices_from_polygon(self, poly_to_contain):
         """Get the slices based on the polygon."""
-        # We take a little margin around the polygon to ensure all needed pixels will be included.
         if not poly_to_contain.is_valid:
             raise IncompatibleAreas("Area outside of domain.")
         try:
-            buffered_poly = poly_to_contain.buffer(np.max(self.area_to_contain.resolution))
+            # We take a little margin around the polygon to ensure all needed pixels will be included.
+            if self.area_to_crop.crs.axis_info[0].unit_name == self.area_to_contain.crs.axis_info[0].unit_name:
+                buffer_size = np.max(self.area_to_contain.resolution)
+            else:
+                buffer_size = 0
+            buffered_poly = poly_to_contain.buffer(buffer_size)
             bounds = buffered_poly.bounds
         except ValueError as err:
             raise InvalidArea(str(err))

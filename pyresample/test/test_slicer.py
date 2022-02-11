@@ -23,6 +23,7 @@ import pytest
 import xarray as xr
 
 from pyresample import AreaDefinition, SwathDefinition
+from pyresample.area_config import create_area_def
 from pyresample.geometry import IncompatibleAreas
 from pyresample.slicer import Slicer
 
@@ -167,6 +168,31 @@ class TestAreaSlicer(unittest.TestCase):
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
+    def test_slicing_works_with_extents_of_different_units(self):
+        """Test a problematic case."""
+        src_area = create_area_def("epsg4326", "EPSG:4326", 200, 200,
+                                   (20., 60., 30., 70.))
+
+        area_id = 'Suomi_3067'
+        description = 'Suomi_kansallinen, EPSG 3067'
+        proj_id = 'Suomi_3067'
+        projection = 'EPSG:3067'
+        width = 116
+        height = 182
+        from pyproj import Proj
+        pp = Proj(proj='utm', zone=35, ellps='GRS80')
+        xx1, yy1 = pp(15.82308183, 55.93417040)  # LL_lon, LL_lat
+        xx2, yy2 = pp(43.12029189, 72.19756918)  # UR_lon, UR_lat
+        area_extent = (xx1, yy1, xx2, yy2)
+        dst_area = AreaDefinition(area_id, description, proj_id,
+                                  projection, width, height,
+                                  area_extent)
+
+        slicer = Slicer(src_area, dst_area[:50, :50])
+        slice_x, slice_y = slicer.get_slices()
+        assert 60 <= slice_x.stop < 65
+        assert 50 <= slice_y.stop < 55
+
 
 class TestSwathSlicer(unittest.TestCase):
     """Test the get_slice function when input is a swath."""
@@ -231,14 +257,14 @@ class TestSwathSlicer(unittest.TestCase):
         """Test getting a polygon returns a polygon."""
         from shapely.geometry import Polygon
         slicer = Slicer(self.src_area, self.dst_area)
-        poly = slicer.get_polygon()
+        poly = slicer.get_polygon_to_contain()
         assert isinstance(poly, Polygon)
 
     def test_swath_get_polygon_returns_a_polygon(self):
         """Test getting a polygon returns a polygon."""
         from shapely.geometry import Polygon
         slicer = Slicer(self.src_swath, self.dst_area)
-        poly = slicer.get_polygon()
+        poly = slicer.get_polygon_to_contain()
         assert isinstance(poly, Polygon)
 
     def test_cannot_slice_a_string(self):

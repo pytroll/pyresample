@@ -50,18 +50,13 @@ from pyresample.resampler import BaseResampler
 logger = logging.getLogger(__name__)
 
 
-class GradientSearchResampler(BaseResampler):
-    """GradientSearch factory class."""
-
-    def __new__(cls, source_geo_def, target_geo_def):
-        """Create a GradientSearchResampler."""
-        if cls is GradientSearchResampler:
-            if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
-                return RBGradientSearchResampler(source_geo_def, target_geo_def)
-            elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
-                return RBGradientSearchResampler(source_geo_def, target_geo_def)
-        else:
-            return super().__new__(cls)
+def GradientSearchResampler(source_geo_def, target_geo_def):
+    """Create a GradientSearchResampler."""
+    if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
+        return RBGradientSearchResampler(source_geo_def, target_geo_def)
+    elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
+        return OGradientSearchResampler(source_geo_def, target_geo_def)
+    raise NotImplementedError
 
 
 @da.as_gufunc(signature='(),()->(),()')

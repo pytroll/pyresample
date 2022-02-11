@@ -25,6 +25,7 @@ import dask.array as da
 import numpy as np
 import pytest
 
+from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition
 
 
@@ -391,6 +392,33 @@ class TestResampleBlocksArea2Area:
         res = res.compute()
         assert res.ndim == 3
         assert np.nanmean(res) == 18
+
+    def test_resample_blocks_supports_warns_when_chunk_size_is_too_big(self, caplog):
+        from pyresample.resampler import resample_blocks
+
+        def fun(src_area, dst_area, src_array, **kwargs):
+            return np.full(src_array.shape[:-2] + dst_area.shape, 18)
+
+        src_area = create_area_def("epsg4326", "EPSG:4326", 20000, 20000,
+                                   (20., 60., 30., 70.))
+
+        area_id = 'Suomi_3067'
+        description = 'Suomi_kansallinen, EPSG 3067'
+        proj_id = 'Suomi_3067'
+        projection = 'EPSG:3067'
+        width = 1160
+        height = 1820
+        from pyproj import Proj
+        pp = Proj(proj='utm', zone=35, ellps='GRS80')
+        xx1, yy1 = pp(15.82308183, 55.93417040)  # LL_lon, LL_lat
+        xx2, yy2 = pp(43.12029189, 72.19756918)  # UR_lon, UR_lat
+        area_extent = (xx1, yy1, xx2, yy2)
+        dst_area = AreaDefinition(area_id, description, proj_id,
+                                  projection, width, height,
+                                  area_extent)
+
+        _ = resample_blocks(fun, src_area, [], dst_area, chunks=(3, 2048, 2048), dtype=float)
+        assert "The input area chunks are large." in caplog.text
 
     def test_resample_blocks_supports_auto_chunks_and_dst_array(self):
         from pyresample.resampler import resample_blocks
