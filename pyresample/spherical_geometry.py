@@ -19,6 +19,7 @@
 
 from __future__ import absolute_import
 
+import copy
 import math
 import warnings
 
@@ -237,12 +238,16 @@ class Arc(object):
     def intersections(self, other_arc):
         """Get the two intersections of the greats circles defined by the current arc and *other_arc*."""
         if self.end.lon - self.start.lon > math.pi:
+            self = copy.deepcopy(self)
             self.end.lon -= 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon > math.pi:
+            other_arc = copy.deepcopy(other_arc)
             other_arc.end.lon -= 2 * math.pi
-        if self.end.lon - self.start.lon < -math.pi:
+        if self.end.lon - self.start.lon < -np.pi:
+            self = copy.deepcopy(self)
             self.end.lon += 2 * math.pi
         if other_arc.end.lon - other_arc.start.lon < -math.pi:
+            other_arc = copy.deepcopy(other_arc)
             other_arc.end.lon += 2 * math.pi
 
         ea_ = self.start.cross2cart(self.end).normalize()

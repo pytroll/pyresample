@@ -20,6 +20,7 @@
 base type is a numpy array of size (n, 2) (2 for lon and lats)
 """
 
+import copy
 import logging
 
 import numpy as np
@@ -253,12 +254,16 @@ class Arc(object):
         From http://williams.best.vwh.net/intersect.htm
         """
         if self.end.lon - self.start.lon > np.pi:
+            self = copy.deepcopy(self)
             self.end.lon -= 2 * np.pi
         if other_arc.end.lon - other_arc.start.lon > np.pi:
+            other_arc = copy.deepcopy(other_arc)
             other_arc.end.lon -= 2 * np.pi
         if self.end.lon - self.start.lon < -np.pi:
+            self = copy.deepcopy(self)
             self.end.lon += 2 * np.pi
         if other_arc.end.lon - other_arc.start.lon < -np.pi:
+            other_arc = copy.deepcopy(other_arc)
             other_arc.end.lon += 2 * np.pi
 
         ea_ = self.start.cross2cart(self.end).normalize()
