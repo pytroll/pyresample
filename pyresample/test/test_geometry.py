@@ -1871,6 +1871,25 @@ class TestSwathDefinition(unittest.TestCase):
         assert_np_dict_allclose(res.proj_dict, proj_dict)
         self.assertEqual(res.shape, (6, 3))
 
+    def test_compute_optimal_bb_with_resolution(self):
+        """Test computing the bb area while passing in the resolution."""
+        import xarray as xr
+        nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                           [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                           [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+        lats = xr.DataArray(nplats)
+        nplons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                           [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                           [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+        lons = xr.DataArray(nplons)
+
+        area = geometry.SwathDefinition(lons, lats)
+
+        res1000 = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'}, resolution=1000)
+        res10000 = area.compute_optimal_bb_area({'proj': 'omerc', 'ellps': 'WGS84'}, resolution=10000)
+        assert res1000.shape[0] // 10 == res10000.shape[0]
+        assert res1000.shape[1] // 10 == res10000.shape[1]
+
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
         import dask.array as da
@@ -2342,6 +2361,49 @@ class TestDynamicAreaDefinition:
         assert result.proj_dict.get('lat_0', 0) == 0
         assert result.width == 395
         assert result.height == 539
+
+    def test_freeze_when_area_is_optimized_and_has_a_resolution(self):
+        """Test freezing an optimized area with a resolution."""
+        import xarray as xr
+        nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                           [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                           [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+        lats = xr.DataArray(nplats)
+        nplons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                           [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                           [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+        lons = xr.DataArray(nplons)
+
+        swath = geometry.SwathDefinition(lons, lats)
+
+        area10km = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                                  {'ellps': 'WGS84', 'proj': 'omerc'},
+                                                  resolution=10000,
+                                                  optimize_projection=True)
+
+        result10km = area10km.freeze(swath)
+        assert result10km.shape == (679, 330)
+
+    def test_freeze_when_area_is_optimized_and_a_resolution_is_provided(self):
+        """Test freezing an optimized area when provided a resolution."""
+        import xarray as xr
+        nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
+                           [80.84000396728516, 60.74200439453125, 34.08500289916992],
+                           [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
+        lats = xr.DataArray(nplats)
+        nplons = np.array([[-90.67900085449219, -21.565000534057617, -21.525001525878906],
+                           [79.11000061035156, 7.284000396728516, -5.107000350952148],
+                           [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
+        lons = xr.DataArray(nplons)
+
+        swath = geometry.SwathDefinition(lons, lats)
+
+        area10km = geometry.DynamicAreaDefinition('test_area', 'A test area',
+                                                  {'ellps': 'WGS84', 'proj': 'omerc'},
+                                                  optimize_projection=True)
+
+        result10km = area10km.freeze(swath, 10000)
+        assert result10km.shape == (679, 330)
 
     @pytest.mark.parametrize(
         ('lats',),
