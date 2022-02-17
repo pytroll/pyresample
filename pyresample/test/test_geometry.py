@@ -2461,7 +2461,7 @@ class TestDynamicAreaDefinition:
                 [50, 51, 52, 53]]
         import xarray as xr
         sdef = geometry.SwathDefinition(xr.DataArray(lons), xr.DataArray(lats))
-        result = area.freeze(sdef, resolution=1000)
+        result = area.freeze(sdef)
         np.testing.assert_allclose(result.area_extent,
                                    [-335439.956533, 5502125.451125,
                                     191991.313351, 7737532.343683])

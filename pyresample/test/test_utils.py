@@ -196,7 +196,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         from pyresample import parse_area_file
         test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
         test_area = parse_area_file(test_area_file, 'omerc_bb_1000')[0]
-        assert test_area.resolution == 1000
+        assert test_area.resolution == (1000, 1000)
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
