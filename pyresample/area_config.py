@@ -477,7 +477,8 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
         p = Proj(crs, preserve_units=True)
     except (RuntimeError, CRSError):
         # Assume that an invalid projection will be "fixed" by a dynamic area definition later
-        return _make_area(area_id, description, proj_id, projection, shape, area_extent, **kwargs)
+        return _make_area(area_id, description, proj_id, projection, shape, area_extent,
+                          resolution=resolution, **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
