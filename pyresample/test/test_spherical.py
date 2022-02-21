@@ -543,7 +543,7 @@ class TestSphericalPolygon(unittest.TestCase):
                         [-112.5, 89.23460094],
                         [-135., 89.],
                         [-157.5, 89.23460094],
-                        [180., 89.]])
+                        [-180., 89.]])
 
         poly_union = poly1.union(poly2)
         assert np.allclose(poly_union.vertices, np.deg2rad(uni))

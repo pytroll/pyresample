@@ -48,7 +48,7 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        self.lon = lon
+        self.lon = float(unwrap_radians(lon))
         self.lat = lat
 
     def cross2cart(self, point):
@@ -101,8 +101,7 @@ class SCoordinate(object):
 
     def __eq__(self, other):
         """Check equality."""
-        return np.allclose(unwrap_radians((self.lon, self.lat)),
-                           unwrap_radians((other.lon, other.lat)))
+        return np.allclose((self.lon, self.lat), (other.lon, other.lat))
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
@@ -368,7 +367,7 @@ class SphPolygon:
             radius (optional, number): Radius of spherical planet.
         """
         self.vertices = vertices.astype(np.float64, copy=False)
-        self.lon = self.vertices[:, 0]
+        self.lon = unwrap_radians(self.vertices[:, 0])
         self.lat = self.vertices[:, 1]
         self.radius = radius
         self.cvertices = np.array([np.cos(self.lat) * np.cos(self.lon),
