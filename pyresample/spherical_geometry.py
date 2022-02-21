@@ -240,17 +240,23 @@ class Arc(object):
 
     def intersections(self, other_arc):
         """Get the two intersections of the greats circles defined by the current arc and *other_arc*."""
-        if self.end.lon - self.start.lon > math.pi:
-            self.end.lon -= 2 * math.pi
-        if other_arc.end.lon - other_arc.start.lon > math.pi:
-            other_arc.end.lon -= 2 * math.pi
-        if self.end.lon - self.start.lon < -math.pi:
-            self.end.lon += 2 * math.pi
-        if other_arc.end.lon - other_arc.start.lon < -math.pi:
-            other_arc.end.lon += 2 * math.pi
+        end_lon = self.end.lon
+        other_end_lon = other_arc.end.lon
 
-        ea_ = self.start.cross2cart(self.end).normalize()
-        eb_ = other_arc.start.cross2cart(other_arc.end).normalize()
+        if self.end.lon - self.start.lon > math.pi:
+            end_lon -= 2 * math.pi
+        if other_arc.end.lon - other_arc.start.lon > math.pi:
+            other_end_lon -= 2 * math.pi
+        if self.end.lon - self.start.lon < -math.pi:
+            end_lon += 2 * math.pi
+        if other_arc.end.lon - other_arc.start.lon < -math.pi:
+            other_end_lon += 2 * math.pi
+
+        end_point = Coordinate(math.degrees(modpi(end_lon)), math.degrees(self.end.lat))
+        other_end_point = Coordinate(math.degrees(modpi(other_end_lon)), math.degrees(other_arc.end.lat))
+
+        ea_ = self.start.cross2cart(end_point).normalize()
+        eb_ = other_arc.start.cross2cart(other_end_point).normalize()
 
         cross = ea_.cross(eb_)
         lat = math.atan2(cross.z__, math.sqrt(cross.x__ ** 2 + cross.y__ ** 2))
