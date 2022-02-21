@@ -106,6 +106,17 @@ VERTICES_TEST_IS_INSIDE2 = np.array([[49.94506701, 46.52610743],
                                      [49.94506701, 45.78080831]], dtype='float64')
 
 
+class TestRadiansFunctions(unittest.TestCase):
+    """Test utils functions processing radians arrays."""
+
+    def test_radian_unwrapping(self):
+        from pyresample.spherical import modpi, unwrap_radians
+
+        # Test points at np.pi are converted to -np.pi
+        assert np.allclose(modpi((-np.pi, np.pi)), (-np.pi, -np.pi))
+        assert np.allclose(unwrap_radians((-np.pi, np.pi)), (-np.pi, -np.pi))
+
+
 class TestSCoordinate(unittest.TestCase):
     """Test SCoordinates."""
 
@@ -128,6 +139,12 @@ class TestSCoordinate(unittest.TestCase):
         """Check the representation."""
         d = SCoordinate(0, 0)
         self.assertEqual(repr(d), "(0.0, 0.0)")
+
+    def test_equality_at_antimeridian(self):
+        """Test equality of points at the antimeridian."""
+        point_start = SCoordinate(-np.pi, 0)
+        point_end = SCoordinate(np.pi, 0)
+        assert point_start == point_end
 
 
 class TestCCoordinate(unittest.TestCase):
@@ -308,6 +325,41 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(2, 0), SCoordinate(3, 0))
         self.assertRaises(ValueError, arc1.angle, arc2)
 
+    def test_arc_crossing_antimeridian(self):
+        import copy
+
+        # Tests disjoint arcs
+        arc1 = Arc(SCoordinate(*np.deg2rad((143.76, 0))),
+                   SCoordinate(*np.deg2rad((143.95, 7.33)))
+                   )
+        arc2 = Arc(SCoordinate(*np.deg2rad((170.34, 71.36))),
+                   SCoordinate(*np.deg2rad((-171.03, 76.75)))
+                   )
+        arc1_orig = copy.deepcopy(arc1)
+        arc2_orig = copy.deepcopy(arc2)
+        point = arc1.intersection(arc2)
+        # Assert original arcs are unaffected
+        assert arc1_orig.end.lon == arc1.end.lon
+        assert arc2_orig.end.lon == arc2.end.lon
+        # Assert disjoint arcs returns None
+        assert isinstance(point, type(None))
+
+        # Test intersecting arcs across the antimeridian
+        arc1 = Arc(SCoordinate(*np.deg2rad((-180.0, -90.0))),
+                   SCoordinate(*np.deg2rad((-180.0, 90.0)))
+                   )
+        arc2 = Arc(SCoordinate(*np.deg2rad((-171.03, -76.75))),
+                   SCoordinate(*np.deg2rad((170.34, -71.36)))
+                   )
+        arc1_orig = copy.deepcopy(arc1)
+        arc2_orig = copy.deepcopy(arc2)
+        point = arc1.intersection(arc2)
+        # Assert original arcs are unaffected
+        assert arc1_orig.end.lon == arc1.end.lon
+        assert arc2_orig.end.lon == arc2.end.lon
+        # Assert intersection result
+        assert point == SCoordinate(*np.deg2rad((-180.0, -74.7884716)))
+
 
 class TestSphericalPolygon(unittest.TestCase):
     """Test the spherical polygon."""
@@ -478,7 +530,7 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(vertices))
 
         uni = np.array([[157.5, 89.23460094],
-                        [-225., 89.],
+                        [135., 89.],
                         [112.5, 89.23460094],
                         [90., 89.],
                         [67.5, 89.23460094],
@@ -492,11 +544,10 @@ class TestSphericalPolygon(unittest.TestCase):
                         [-112.5, 89.23460094],
                         [-135., 89.],
                         [-157.5, 89.23460094],
-                        [-180., 89.]])
+                        [180., 89.]])
 
         poly_union = poly1.union(poly2)
-
-        self.assertTrue(np.allclose(poly_union.vertices, np.deg2rad(uni)))
+        assert np.allclose(poly_union.vertices, np.deg2rad(uni))
 
     def test_union_polygons_overlaps_completely(self):
         """Test the union method when one polygon is entirely inside the other."""
@@ -604,6 +655,74 @@ class TestSphericalPolygon(unittest.TestCase):
         poly_inter = poly2.intersection(poly1)
         self.assertTrue(np.allclose(poly_inter.vertices,
                                     np.deg2rad(res)))
+
+        # Test when intersection occurs across the antimeridian
+        vertices_epsg_4326 = np.deg2rad(np.array([[-180, -90],
+                                                  [-180, 90],
+                                                  [0, 90],
+                                                  [180, 90],
+                                                  [180, -90]]))
+        vertices_goes_west = np.array([[2.50919361e+00, 1.19782309e-16],
+                                       [2.51252770e+00, 1.27991660e-01],
+                                       [2.52196832e+00, 2.55764457e-01],
+                                       [2.53655194e+00, 3.83188464e-01],
+                                       [2.55587603e+00, 5.10205702e-01],
+                                       [2.58046323e+00, 6.36765874e-01],
+                                       [2.61203442e+00, 7.62755364e-01],
+                                       [2.65422072e+00, 8.87894754e-01],
+                                       [2.71437860e+00, 1.01152912e+00],
+                                       [2.80828143e+00, 1.13209416e+00],
+                                       [2.97300443e+00, 1.24550237e+00],
+                                       [-2.98515478e+00, 1.33966326e+00],
+                                       [-2.39110108e+00, 1.38140961e+00],
+                                       [-1.79704737e+00, 1.33966326e+00],
+                                       [-1.47202127e+00, 1.24550237e+00],
+                                       [-1.30729827e+00, 1.13209416e+00],
+                                       [-1.21339544e+00, 1.01152912e+00],
+                                       [-1.15323756e+00, 8.87894754e-01],
+                                       [-1.11105126e+00, 7.62755364e-01],
+                                       [-1.07948007e+00, 6.36765874e-01],
+                                       [-1.05489287e+00, 5.10205702e-01],
+                                       [-1.03556878e+00, 3.83188464e-01],
+                                       [-1.02098516e+00, 2.55764457e-01],
+                                       [-1.01154455e+00, 1.27991660e-01],
+                                       [-1.00821045e+00, -0.00000000e+00],
+                                       [-1.01154455e+00, -1.27991660e-01],
+                                       [-1.02098516e+00, -2.55764457e-01],
+                                       [-1.03556878e+00, -3.83188464e-01],
+                                       [-1.05489287e+00, -5.10205702e-01],
+                                       [-1.07948007e+00, -6.36765874e-01],
+                                       [-1.11105126e+00, -7.62755364e-01],
+                                       [-1.15323756e+00, -8.87894754e-01],
+                                       [-1.21339544e+00, -1.01152912e+00],
+                                       [-1.30729827e+00, -1.13209416e+00],
+                                       [-1.47202127e+00, -1.24550237e+00],
+                                       [-1.79704737e+00, -1.33966326e+00],
+                                       [-2.39110108e+00, -1.38140961e+00],
+                                       [-2.98515478e+00, -1.33966326e+00],
+                                       [2.97300443e+00, -1.24550237e+00],
+                                       [2.80828143e+00, -1.13209416e+00],
+                                       [2.71437860e+00, -1.01152912e+00],
+                                       [2.65422072e+00, -8.87894754e-01],
+                                       [2.61203442e+00, -7.62755364e-01],
+                                       [2.58046323e+00, -6.36765874e-01],
+                                       [2.55587603e+00, -5.10205702e-01],
+                                       [2.53655194e+00, -3.83188464e-01],
+                                       [2.52196832e+00, -2.55764457e-01],
+                                       [2.51252770e+00, -1.27991660e-01]])
+
+        goes_west_poly = SphPolygon(vertices_goes_west)
+        epsg_4326_poly = SphPolygon(vertices_epsg_4326)
+
+        intersection_poly = epsg_4326_poly.intersection(goes_west_poly)
+
+        # Assert found the correct intersection point
+        assert np.allclose(intersection_poly.vertices[2, :],
+                           np.array([-2.98515478, 1.33966326]))
+
+        # Check bounded between -180 and 180
+        assert np.all(intersection_poly.vertices >= -np.pi)
+        assert np.all(intersection_poly.vertices <= np.pi)
 
     def test_consistent_radius(self):
         poly1 = np.array([(-50, 69), (-36, 69), (-36, 64), (-50, 64)])

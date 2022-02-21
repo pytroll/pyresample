@@ -26,6 +26,19 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+EPSILON = 0.0000001
+
+
+def unwrap_radians(val, mod=np.pi):
+    """Put *val* between -*mod* and *mod*."""
+    val = np.asarray(val)
+    return (val + mod) % (2 * mod) - mod
+
+
+def modpi(val, mod=np.pi):
+    """Put *val* between -*mod* and *mod*."""
+    return unwrap_radians(val, mod=mod)
+
 
 class SCoordinate(object):
     """Spherical coordinates.
@@ -88,7 +101,8 @@ class SCoordinate(object):
 
     def __eq__(self, other):
         """Check equality."""
-        return np.allclose((self.lon, self.lat), (other.lon, other.lat))
+        return np.allclose(unwrap_radians((self.lon, self.lat)),
+                           unwrap_radians((other.lon, other.lat)))
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
@@ -169,14 +183,6 @@ class CCoordinate(object):
         """Convert to Spherical coordinate object."""
         return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
                            np.arcsin(self.cart[2]))
-
-
-EPSILON = 0.0000001
-
-
-def modpi(val, mod=np.pi):
-    """Put *val* between -*mod* and *mod*."""
-    return (val + mod) % (2 * mod) - mod
 
 
 class Arc(object):
