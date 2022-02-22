@@ -192,7 +192,7 @@ class TestCCoordinate(unittest.TestCase):
         """Test equality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        assert not (c == d)
+        assert not (c.__eq__(d))
 
     def test_add(self):
         """Test adding cartesian vectors."""
@@ -231,8 +231,7 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
                    SCoordinate(np.deg2rad(10), 0))
 
-        assert not (arc1 == arc2)
-
+        assert not (arc1.__eq__(arc2))
         assert (arc1 == arc1)
 
     def test_ne(self):
@@ -242,8 +241,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(10), 0))
 
         assert (arc1 != arc2)
-
-        assert not (arc1 != arc1)
+        assert not (arc1.__ne__(arc1))
 
     def test_str(self):
         arc1 = Arc(SCoordinate(0, 0),
