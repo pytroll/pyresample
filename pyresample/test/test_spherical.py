@@ -128,7 +128,7 @@ class TestSCoordinate(unittest.TestCase):
     def test_hdistance(self):
         """Test Haversine formula."""
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
-        assert (np.allclose(d, 1.2745557823062943))
+        np.testing.assert_allclose(d, 1.2745557823062943)
 
     def test_str(self):
         """Check the string representation."""
@@ -168,13 +168,13 @@ class TestCCoordinate(unittest.TestCase):
     def test_normalize(self):
         """Normalize a cartesian vector."""
         d = CCoordinate((2., 0., 0.))
-        assert (np.allclose(d.normalize().cart, [1, 0, 0]))
+        np.testing.assert_allclose(d.normalize().cart, [1, 0, 0])
 
     def test_cross(self):
         """Test cross product in cartesian coordinates."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        assert (np.allclose(d.cross(c).cart, [0., 0., 1.]))
+        np.testing.assert_allclose(d.cross(c).cart, [0., 0., 1.])
 
     def test_dot(self):
         """Test the dot product of two cartesian vectors."""
@@ -199,21 +199,18 @@ class TestCCoordinate(unittest.TestCase):
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((1., 1., 0.))
-        assert (np.allclose((d + c).cart, b.cart))
-
-        assert (np.allclose((d + (0, 1, 0)).cart, b.cart))
-
-        assert (np.allclose(((0, 1, 0) + d).cart, b.cart))
+        np.testing.assert_allclose((d + c).cart, b.cart)
+        np.testing.assert_allclose((d + (0, 1, 0)).cart, b.cart)
+        np.testing.assert_allclose(((0, 1, 0) + d).cart, b.cart)
 
     def test_mul(self):
         """Test multiplying (element-wise) cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((0., 0., 0.))
-        assert (np.allclose((d * c).cart, b.cart))
-        assert (np.allclose((d * (0, 1, 0)).cart, b.cart))
-
-        assert (np.allclose(((0, 1, 0) * d).cart, b.cart))
+        np.testing.assert_allclose((d * c).cart, b.cart)
+        np.testing.assert_allclose((d * (0, 1, 0)).cart, b.cart)
+        np.testing.assert_allclose(((0, 1, 0) * d).cart, b.cart)
 
     def test_to_spherical(self):
         """Test converting to spherical coordinates."""
@@ -256,7 +253,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(10), 0))
         lon, lat = arc1.intersection(arc2)
 
-        assert (np.allclose(np.rad2deg(lon), 5))
+        np.testing.assert_allclose(np.rad2deg(lon), 5)
         self.assertEqual(np.rad2deg(lat).round(7), round(5.0575148968282093, 7))
 
         arc1 = Arc(SCoordinate(0, 0),
@@ -563,9 +560,8 @@ class TestSphericalPolygon(unittest.TestCase):
         expected = np.deg2rad(np.array([[0, 0, 30, 30],
                                         [0, 30, 30, 0]]).T)
 
-        assert (np.allclose(poly_union1.vertices, expected))
-
-        assert (np.allclose(poly_union2.vertices, expected))
+        np.testing.assert_allclose(poly_union1.vertices, expected)
+        np.testing.assert_allclose(poly_union2.vertices, expected)
 
     def test_intersection(self):
         """Test the intersection function."""
@@ -586,7 +582,7 @@ class TestSphericalPolygon(unittest.TestCase):
                           [-157.5, 89.23460094]])
         poly_inter = poly1.intersection(poly2)
 
-        assert (np.allclose(poly_inter.vertices, np.deg2rad(inter)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(inter))
 
         # Test 2 polygons sharing 2 contiguous edges.
 
@@ -614,7 +610,7 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(vertices2))
         poly_inter = poly1.intersection(poly2)
 
-        assert (np.allclose(poly_inter.vertices, np.deg2rad(vertices3)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(vertices3))
 
         # Test when last node of the intersection is the last vertice of the
         # second polygon.
@@ -644,10 +640,10 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(area_vertices))
 
         poly_inter = poly1.intersection(poly2)
-        assert (np.allclose(poly_inter.vertices, np.deg2rad(res)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(res))
 
         poly_inter = poly2.intersection(poly1)
-        assert (np.allclose(poly_inter.vertices, np.deg2rad(res)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(res))
 
         # Test when intersection occurs across the antimeridian
         vertices_epsg_4326 = np.deg2rad(np.array([[-180, -90],
