@@ -85,8 +85,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        assert (area1.overlaps(area2))
-        assert (area2.overlaps(area1))
+        assert area1.overlaps(area2)
+        assert area2.overlaps(area1)
 
         lons1 = np.array([[0, 45], [135, 90]])
         lats1 = np.array([[89, 89], [89, 89]])
@@ -96,8 +96,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        assert not (area1.overlaps(area2))
-        assert not (area2.overlaps(area1))
+        assert not area1.overlaps(area2)
+        assert not area2.overlaps(area1)
 
         lons1 = np.array([[-1, 1], [-1, 1]])
         lats1 = np.array([[1, 1], [-1, -1]])
@@ -107,8 +107,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[0, 0], [2, 2]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        assert (area1.overlaps(area2))
-        assert (area2.overlaps(area1))
+        assert area1.overlaps(area2)
+        assert area2.overlaps(area1)
 
         lons1 = np.array([[-1, 0], [-1, 0]])
         lats1 = np.array([[1, 2], [-1, 0]])
@@ -118,8 +118,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[1, 2], [-1, 0]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        assert not (area1.overlaps(area2))
-        assert not (area2.overlaps(area1))
+        assert not area1.overlaps(area2)
+        assert not area2.overlaps(area1)
 
     def test_overlap_rate(self):
         """Test how much two areas overlap."""
@@ -333,17 +333,17 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        assert (arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        assert not (arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        assert (arc35.intersects(arc24))
+        assert arc35.intersects(arc24)
 
         p0_ = Coordinate(180, 0)
         p1_ = Coordinate(180, 1)
@@ -367,17 +367,17 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        assert (arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        assert not (arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        assert (arc35.intersects(arc24))
+        assert arc35.intersects(arc24)
 
         # case of the north pole
 
@@ -403,14 +403,14 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        assert (arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        assert not (arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        assert not (arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        assert (arc35.intersects(arc24))
+        assert arc35.intersects(arc24)

@@ -186,13 +186,13 @@ class TestCCoordinate(unittest.TestCase):
         """Test inequality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        assert (c != d)
+        assert c != d
 
     def test_eq(self):
         """Test equality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        assert not (c.__eq__(d))
+        assert not c.__eq__(d)
 
     def test_add(self):
         """Test adding cartesian vectors."""
@@ -228,8 +228,8 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
                    SCoordinate(np.deg2rad(10), 0))
 
-        assert not (arc1.__eq__(arc2))
-        assert (arc1 == arc1)
+        assert not arc1.__eq__(arc2)
+        assert arc1 == arc1
 
     def test_ne(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -237,8 +237,8 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
                    SCoordinate(np.deg2rad(10), 0))
 
-        assert (arc1 != arc2)
-        assert not (arc1.__ne__(arc1))
+        assert arc1 != arc2
+        assert not arc1.__ne__(arc1)
 
     def test_str(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -429,41 +429,41 @@ class TestSphericalPolygon(unittest.TestCase):
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        assert (polygon1._is_inside(polygon2))
+        assert polygon1._is_inside(polygon2)
 
-        assert not (polygon2._is_inside(polygon1))
+        assert not polygon2._is_inside(polygon1)
 
         # Why checking the areas here!? It has nothing to do with the is_inside function!
-        assert (polygon2.area() > polygon1.area())
+        assert polygon2.area() > polygon1.area()
 
         polygon2.invert()
-        assert not (polygon1._is_inside(polygon2))
-        assert not (polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = np.array([[0, 0, 30, 30],
                              [21, 30, 30, 21]]).T
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
-        assert not (polygon1._is_inside(polygon2))
-        assert not (polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         polygon2.invert()
 
-        assert (polygon1._is_inside(polygon2))
-        assert not (polygon2._is_inside(polygon1))
+        assert polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = np.array([[100, 100, 130, 130],
                              [41, 50, 50, 41]]).T
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        assert not (polygon1._is_inside(polygon2))
-        assert not (polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         polygon2.invert()
 
-        assert (polygon1._is_inside(polygon2))
-        assert not (polygon2._is_inside(polygon1))
+        assert polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = VERTICES_TEST_IS_INSIDE1
 
@@ -473,8 +473,8 @@ class TestSphericalPolygon(unittest.TestCase):
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        assert not (polygon2._is_inside(polygon1))
-        assert not (polygon1._is_inside(polygon2))
+        assert not polygon2._is_inside(polygon1)
+        assert not polygon1._is_inside(polygon2)
 
     def test_is_inside_float32(self):
         """Test that precision dependent calculations work.
