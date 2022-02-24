@@ -29,15 +29,14 @@ logger = logging.getLogger(__name__)
 EPSILON = 0.0000001
 
 
-def unwrap_radians(val, mod=np.pi):
+def _unwrap_radians(val, mod=np.pi):
     """Put *val* between -*mod* and *mod*."""
-    val = np.asarray(val)
     return (val + mod) % (2 * mod) - mod
 
 
 def modpi(val, mod=np.pi):
     """Put *val* between -*mod* and *mod*."""
-    return unwrap_radians(val, mod=mod)
+    return _unwrap_radians(val, mod=mod)
 
 
 class SCoordinate(object):
@@ -48,7 +47,7 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        self.lon = float(unwrap_radians(lon))
+        self.lon = float(_unwrap_radians(lon))
         self.lat = lat
 
     def cross2cart(self, point):
@@ -367,7 +366,7 @@ class SphPolygon:
             radius (optional, number): Radius of spherical planet.
         """
         self.vertices = vertices.astype(np.float64, copy=False)
-        self.lon = unwrap_radians(self.vertices[:, 0])
+        self.lon = _unwrap_radians(self.vertices[:, 0])
         self.lat = self.vertices[:, 1]
         self.radius = radius
         self.cvertices = np.array([np.cos(self.lat) * np.cos(self.lon),

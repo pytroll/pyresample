@@ -110,11 +110,13 @@ class TestRadiansFunctions(unittest.TestCase):
     """Test utils functions processing radians arrays."""
 
     def test_radian_unwrapping(self):
-        from pyresample.spherical import modpi, unwrap_radians
+        from pyresample.spherical import _unwrap_radians, modpi
 
         # Test points at np.pi are converted to -np.pi
-        assert np.allclose(modpi((-np.pi, np.pi)), (-np.pi, -np.pi))
-        assert np.allclose(unwrap_radians((-np.pi, np.pi)), (-np.pi, -np.pi))
+        assert np.allclose(modpi(-np.pi), -np.pi)
+        assert np.allclose(modpi(np.pi), -np.pi)
+        assert np.allclose(_unwrap_radians(-np.pi), -np.pi)
+        assert np.allclose(_unwrap_radians(np.pi), -np.pi)
 
 
 class TestSCoordinate(unittest.TestCase):
