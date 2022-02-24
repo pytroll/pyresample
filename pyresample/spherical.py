@@ -34,11 +34,6 @@ def _unwrap_radians(val, mod=np.pi):
     return (val + mod) % (2 * mod) - mod
 
 
-def modpi(val, mod=np.pi):
-    """Put *val* between -*mod* and *mod*."""
-    return _unwrap_radians(val, mod=mod)
-
-
 class SCoordinate(object):
     """Spherical coordinates.
 
@@ -280,7 +275,7 @@ class Arc(object):
         lon = np.arctan2(cross.cart[1], cross.cart[0])
 
         return (SCoordinate(lon, lat),
-                SCoordinate(modpi(lon + np.pi), -lat))
+                SCoordinate(_unwrap_radians(lon + np.pi), -lat))
 
     def intersects(self, other_arc):
         """Check if the current arc and the *other_arc* intersect.
