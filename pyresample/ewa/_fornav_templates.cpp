@@ -292,13 +292,9 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
               for (chan = 0; chan < chan_count; chan+=1) {
                 this_val = ((images[chan])[swath_offset]);
                 if (maximum_weight_mode) {
-                  if (weight > grid_weights[chan][grid_offset]) {
+                  if (weight > grid_weights[chan][grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
                     ((grid_weights[chan])[grid_offset]) = weight;
-                    if ((this_val == img_fill) || (__isnan(this_val))) {
-                      ((grid_accums[chan])[grid_offset]) = (accum_type)NPY_NANF;
-                    } else {
-                      ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
-                    }
+                    ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
                   }
                 } else {
                   if ((this_val != img_fill) && !(__isnan(this_val))) {
@@ -405,13 +401,9 @@ int compute_ewa_single(int maximum_weight_mode,
 
               this_val = (image[swath_offset]);
               if (maximum_weight_mode) {
-                if (weight > grid_weight[grid_offset]) {
+                if (weight > grid_weight[grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
                   grid_weight[grid_offset] = weight;
-                  if ((this_val == img_fill) || (__isnan(this_val))) {
-                    grid_accum[grid_offset] = (accum_type)NPY_NANF;
-                  } else {
-                    grid_accum[grid_offset] = (accum_type)this_val;
-                  }
+                  grid_accum[grid_offset] = (accum_type)this_val;
                 }
               } else {
                 if ((this_val != img_fill) && !(__isnan(this_val))) {
