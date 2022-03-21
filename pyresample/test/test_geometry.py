@@ -1286,7 +1286,7 @@ class Test(unittest.TestCase):
         proj_dict['proj'] = 'omerc'
         proj_dict['lat_0'] = 50.0
         proj_dict['alpha'] = proj_dict.pop('lat_ts')
-        proj_dict['no_rot'] = ''
+        proj_dict['no_rot'] = True
         area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                        proj_dict, 10, 10,
                                        [-1370912.72, -909968.64, 1029087.28,
