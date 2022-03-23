@@ -53,9 +53,9 @@ logger = logging.getLogger(__name__)
 def GradientSearchResampler(source_geo_def, target_geo_def):
     """Create a GradientSearchResampler."""
     if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
-        return RBGradientSearchResampler(source_geo_def, target_geo_def)
+        return ResampleBlocksGradientSearchResampler(source_geo_def, target_geo_def)
     elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
-        return OGradientSearchResampler(source_geo_def, target_geo_def)
+        return StackingGradientSearchResampler(source_geo_def, target_geo_def)
     raise NotImplementedError
 
 
@@ -65,7 +65,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
 
 
-class OGradientSearchResampler(BaseResampler):
+class StackingGradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -472,7 +472,7 @@ def ensure_data_array(func):
     return wrapper
 
 
-class RBGradientSearchResampler(BaseResampler):
+class ResampleBlocksGradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation."""
 
     def __init__(self, source_geo_def, target_geo_def):
@@ -558,7 +558,14 @@ def gradient_resampler(data, source_area, target_area, method='bilinear'):
                                    method=method)
 
 
-def gradient_resampler_indices(source_area, target_area, method='bilinear', block_info=None, **kwargs):
+def gradient_resampler_indices_block(block_info=None, **kwargs):
+    """Do the gradient search resampling using block_info for areas, returning the resulting indices."""
+    source_area = block_info[0]["area"]
+    target_area = block_info[None]["area"]
+    return gradient_resampler_indices(source_area, target_area, block_info, **kwargs)
+
+
+def gradient_resampler_indices(source_area, target_area, block_info=None, **kwargs):
     """Do the gradient search resampling, returning the resulting indices."""
     from pyproj.transformer import Transformer
     try:
@@ -587,9 +594,8 @@ def gradient_resampler_indices(source_area, target_area, method='bilinear', bloc
     return indices_xy
 
 
-def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
+def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
     """Bilinear interpolation implementation for resample_blocks."""
-    del src_area, dst_area
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
 
     w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
@@ -608,9 +614,8 @@ def block_bilinear_interpolator(src_area, dst_area, data, indices_xy, fill_value
     return res
 
 
-def block_nn_interpolator(src_area, dst_area, data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
+def block_nn_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
     """Nearest neighbour 'interpolator' for resample_blocks."""
-    del src_area, dst_area
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
 
     x_indices = np.clip(np.rint(x_indices), 0, data.shape[-1] - 1).astype(int)

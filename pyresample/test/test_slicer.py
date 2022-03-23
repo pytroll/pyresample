@@ -139,8 +139,8 @@ class TestAreaSlicer(unittest.TestCase):
                                       'units': 'm'
                                   },
                                   102, 102,
-                                  (-18040095.6961, 4369712.0686,
-                                   18040095.6961, 9020047.8481))
+                                  (-1040095.6961, 4369712.0686,
+                                   1040095.6961, 9020047.8481))
         slicer = Slicer(src_area, dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100

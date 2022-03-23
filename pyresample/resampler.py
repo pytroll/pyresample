@@ -158,10 +158,10 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
     area domain to a destination area domain.
 
     Args:
-        funk: A callable to apply on the input data. This function is passed a block of src_area, dst_area, src_arrays,
+        funk: A callable to apply on the input data. This function is passed a block of src_arrays,
             dst_array in that order, followed by the kwargs, which include the fill_value. If the function has a
-            block_info keyword argument, block information is passed to it that provides the position of source and
-            destination blocks relative to respectively src_area and dst_area.
+            block_info keyword argument, block information is passed to it that provides the source area, destination
+            area, position of source and destination blocks relative to respectively src_area and dst_area.
         src_area: a source geo definition.
         dst_area: a destination geo definition. If the same as the source definition, a ValueError is raised.
         funk: a function to use. If func has a block_info keyword argument, the chunk info is passed, as in map_blocks
@@ -228,15 +228,15 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
                                                                                       dst_area_chunk)
             res_chunks, _ = _compute_chunks_from_area(src_area_crop, dask.config.get('array.chunk-size', '128MiB'),
                                                       dtype)
-            if len(res_chunks[0]) * len(res_chunks[1]) > 4:
+            if len(res_chunks[0]) * len(res_chunks[1]) >= 4:
                 logger.warning("The input area chunks are large. "
                                "This usually means that the input area is of much higher resolution than the output "
                                "area. You can reduce the chunks passed, and ponder whether you are using the right "
                                "resampler for the job.")
         except IncompatibleAreas:  # no relevant data matching
-            task = [np.full, dst_block_info["chunk-shape"], fill_value]
+            task = (np.full, dst_block_info["chunk-shape"], fill_value)
         else:
-            args = [src_area_crop, dst_area_chunk]
+            args = []
             for smaller_data in smaller_src_arrays:
                 args.append((smaller_data.name, *([0] * smaller_data.ndim)))
                 dependencies.append(smaller_data)
@@ -251,9 +251,10 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
                 funk_kwargs["block_info"] = {0: src_block_info,
                                              None: dst_block_info}
             pfunk = partial(funk, **funk_kwargs)
+
             task = (pfunk, *args)
 
-        dask_graph[(name, *position)] = tuple(task)
+        dask_graph[(name, *position)] = task
 
     for dst_array in dst_arrays:
         dependencies.append(dst_array)
@@ -269,7 +270,9 @@ def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
     for data in src_arrays:
         smaller_src_arrays.append(data[..., y_slice, x_slice].rechunk([-1] * data.ndim))
 
-    block_info = {"shape": source_geo_def.shape, "array-location": (y_slice, x_slice)}
+    block_info = {"shape": source_geo_def.shape,
+                  "array-location": (y_slice, x_slice),
+                  "area": small_source_geo_def}
     return smaller_src_arrays, small_source_geo_def, block_info
 
 
@@ -294,6 +297,7 @@ def _enumerate_dst_area_chunks(dst_area, dst_chunks):
                       "chunk-location": position,
                       "array-location": slices,
                       "chunk-shape": chunk_shape,
+                      "area": target_geo_def,
                       }
         yield block_info, target_geo_def
 

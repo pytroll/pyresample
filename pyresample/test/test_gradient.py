@@ -38,7 +38,7 @@ class TestOGradientResampler(unittest.TestCase):
 
     def setUp(self):
         """Set up the test case."""
-        from pyresample.gradient import OGradientSearchResampler
+        from pyresample.gradient import StackingGradientSearchResampler
         self.src_area = AreaDefinition('dst', 'dst area', None,
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,
@@ -52,9 +52,9 @@ class TestOGradientResampler(unittest.TestCase):
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-        self.resampler = OGradientSearchResampler(self.src_area, self.dst_area)
-        self.swath_resampler = OGradientSearchResampler(self.src_swath,
-                                                        self.dst_area)
+        self.resampler = StackingGradientSearchResampler(self.src_area, self.dst_area)
+        self.swath_resampler = StackingGradientSearchResampler(self.src_swath,
+                                                               self.dst_area)
 
     def test_get_projection_coordinates_area_to_area(self):
         """Check that the coordinates are initialized, for area -> area."""
@@ -268,7 +268,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
     def setup(self):
         """Set up the test case."""
-        from pyresample.gradient import RBGradientSearchResampler
+        from pyresample.gradient import ResampleBlocksGradientSearchResampler
         self.src_area = AreaDefinition('src', 'src area', None,
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,
@@ -282,7 +282,7 @@ class TestRBGradientSearchResamplerArea2Area:
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-        self.resampler = RBGradientSearchResampler(self.src_area, self.dst_area)
+        self.resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.dst_area)
 
     def test_precompute_generates_indices(self):
         self.resampler.precompute()
@@ -446,7 +446,7 @@ class TestRBGradientSearchResamplerSwath2Area:
 
     def setup(self):
         """Set up the test case."""
-        from pyresample.gradient import RBGradientSearchResampler
+        from pyresample.gradient import ResampleBlocksGradientSearchResampler
 
         chunks = 20
 
@@ -479,8 +479,8 @@ class TestRBGradientSearchResamplerSwath2Area:
         xrlats = xr.DataArray(self.lats.persist())
         self.src_swath = SwathDefinition(xrlons, xrlats)
 
-        self.resampler = RBGradientSearchResampler(self.src_swath,
-                                                   self.dst_area)
+        self.resampler = ResampleBlocksGradientSearchResampler(self.src_swath,
+                                                               self.dst_area)
 
     def test_resample_swath_to_area_2d(self):
         """Resample swath to area, 2d."""
