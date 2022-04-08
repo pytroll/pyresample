@@ -97,6 +97,9 @@ def load_area_from_string(area_strs, *regions):
     Like :func:`~pyresample.area_config.load_area`, but load from string
     directly.
 
+    For the opposite (i.e. to create a YAML string from an area), use
+    :meth:`~pyresample.geometry.AreaDefinition.dump`.
+
     Parameters
     ----------
     area_strs : str or List[str]

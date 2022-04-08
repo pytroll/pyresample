@@ -1754,7 +1754,10 @@ class AreaDefinition(_ProjectionDefinition):
         return self.crs.to_proj4()
 
     def create_areas_def(self):
-        """Generate YAML formatted representation of this area."""
+        """Generate YAML formatted representation of this area.
+
+        Deprecated.  Use :meth:`dump` instead.
+        """
         warnings.warn("'create_areas_def' is deprecated. Please use `dump` instead, which also "
                       "supports writing directly to a file.", DeprecationWarning)
 
@@ -1762,6 +1765,9 @@ class AreaDefinition(_ProjectionDefinition):
 
     def dump(self, filename=None):
         """Generate YAML formatted representation of this area.
+
+        For the opposite (i.e. to get an AreaDefinition from a YAML-formatted
+        representation), see :func:`~pyresample.area_config.load_area_from_string`.
 
         Args:
             filename (str or pathlib.Path or file-like object): Yaml file location to dump the area to.
