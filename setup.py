@@ -103,6 +103,7 @@ if __name__ == "__main__":
               'Development Status :: 5 - Production/Stable',
               'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
               'Programming Language :: Python',
+              'Programming Language :: Cython',
               'Operating System :: OS Independent',
               'Intended Audience :: Science/Research',
               'Topic :: Scientific/Engineering'
