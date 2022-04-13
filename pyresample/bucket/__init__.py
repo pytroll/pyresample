@@ -299,6 +299,9 @@ class BucketResampler(object):
     def get_abs_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate absolute maximums for each bin with drop-in-a-bucket resampling.
 
+        Returns for each bin the original signed value which has the largest
+        absolute value.
+
         .. warning::
 
             The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
