@@ -324,9 +324,9 @@ class BucketResampler(object):
         data : Numpy or Dask array
             Bin-wise maximums in the target grid
         """
-        max = self.get_max(data, fill_value=fill_value, skipna=skipna)
-        min = self.get_min(data, fill_value=fill_value, skipna=skipna)
-        return da.where(-min > max, min, max)
+        max_ = self.get_max(data, fill_value=fill_value, skipna=skipna)
+        min_ = self.get_min(data, fill_value=fill_value, skipna=skipna)
+        return da.where(-min_ > max_, min_, max_)
 
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
