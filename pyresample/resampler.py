@@ -26,7 +26,7 @@ from typing import Union
 
 import numpy as np
 
-from .slicer import Slicer, _enumerate_chunk_slices
+from .slicer import _enumerate_chunk_slices, create_slicer
 
 try:
     import dask
@@ -279,7 +279,7 @@ def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
 @lru_cache(None)
 def crop_source_area(source_geo_def, target_geo_def):
     """Crop a source area around a provided a target area."""
-    slicer = Slicer(source_geo_def, target_geo_def)
+    slicer = create_slicer(source_geo_def, target_geo_def)
     x_slice, y_slice = slicer.get_slices()
     small_source_geo_def = source_geo_def[y_slice, x_slice]
     if isinstance(small_source_geo_def, SwathDefinition):

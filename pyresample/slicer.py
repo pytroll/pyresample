@@ -38,24 +38,25 @@ except ImportError:
     da = None
 
 
+def create_slicer(area_to_crop, area_to_contain):
+    """Create a slicer for cropping *area_to_crop* based on *area_to_contain*.
+
+    Return a AreaSlicer or a SwathSlicer based on the first area type.
+    """
+    if isinstance(area_to_crop, SwathDefinition):
+        return SwathSlicer(area_to_crop, area_to_contain)
+    elif isinstance(area_to_crop, AreaDefinition):
+        return AreaSlicer(area_to_crop, area_to_contain)
+    else:
+        raise NotImplementedError("Don't know how to slice a " + str(type(area_to_crop)))
+
+
 class Slicer(ABC):
-    """Abstract Slicer and Slicer factory class, returning a AreaSlicer or a SwathSlicer based on the first area type.
+    """Abstract Slicer.
 
     Provided an Area-to-crop and an Area-to-contain, a Slicer provides methods
-    to find slices that enclose Area-to-contain inside Area-to-crop.
+    to find slices that enclose `area-to-contain` inside `area-to-crop`.
     """
-
-    def __new__(cls, area_to_crop, area_to_contain):
-        """Create a Slicer for cropping *area_to_crop* based on *area_to_contain*."""
-        if cls is Slicer:
-            if isinstance(area_to_crop, SwathDefinition):
-                return SwathSlicer(area_to_crop, area_to_contain)
-            elif isinstance(area_to_crop, AreaDefinition):
-                return AreaSlicer(area_to_crop, area_to_contain)
-            else:
-                raise NotImplementedError("Don't know how to slice a " + str(type(area_to_crop)))
-        else:
-            return super().__new__(cls)
 
     def __init__(self, area_to_crop, area_to_contain):
         """Set up the Slicer."""

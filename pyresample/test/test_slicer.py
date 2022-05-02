@@ -25,7 +25,7 @@ import xarray as xr
 from pyresample import AreaDefinition, SwathDefinition
 from pyresample.area_config import create_area_def
 from pyresample.geometry import IncompatibleAreas
-from pyresample.slicer import Slicer
+from pyresample.slicer import create_slicer
 
 
 class TestAreaSlicer(unittest.TestCase):
@@ -47,7 +47,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                   100, 100,
                                   (5550000.0, 5550000.0, -5550000.0, -5550000.0))
-        slicer = Slicer(src_area, self.dst_area)
+        slicer = create_slicer(src_area, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop <= 100
         assert y_slice.start > 0 and y_slice.stop <= 100
@@ -59,7 +59,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   100, 100,
                                   (5550000.0, 4440000.0, -5550000.0, -6660000.0))
 
-        slicer = Slicer(src_area, self.dst_area)
+        slicer = create_slicer(src_area, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
@@ -71,7 +71,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   80, 100,
                                   (5550000.0, 3330000.0, -5550000.0, -5550000.0))
 
-        slicer = Slicer(src_area, self.dst_area)
+        slicer = create_slicer(src_area, self.dst_area)
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
@@ -88,7 +88,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   102, 102,
                                   (-100000, -100000,
                                    100000, 100000))
-        slicer = Slicer(src_area, dst_area)
+        slicer = create_slicer(src_area, dst_area)
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
@@ -105,7 +105,7 @@ class TestAreaSlicer(unittest.TestCase):
                                          102, 102,
                                          (-100000, -100000,
                                           100000, 100000))
-        slicer = Slicer(area_to_crop, area_to_contain)
+        slicer = create_slicer(area_to_crop, area_to_contain)
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
@@ -122,7 +122,7 @@ class TestAreaSlicer(unittest.TestCase):
                                           'ellps': 'WGS84'},
                                          102, 102,
                                          (-1600000.0, 1600000.0, 1600000.0, 4800000.0))
-        slicer = Slicer(area_to_crop, area_to_contain)
+        slicer = create_slicer(area_to_crop, area_to_contain)
         assert slicer.get_slices() == (slice(1, 24, None), slice(63, 89, None))
 
     def test_barely_touching_chunks_intersection(self):
@@ -141,7 +141,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   102, 102,
                                   (-1040095.6961, 4369712.0686,
                                    1040095.6961, 9020047.8481))
-        slicer = Slicer(src_area, dst_area)
+        slicer = create_slicer(src_area, dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
@@ -164,7 +164,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   (-100000.0, -4369712.0686,
                                    18040096.0, 9020047.8481))
 
-        slicer = Slicer(src_area, dst_area)
+        slicer = create_slicer(src_area, dst_area)
         with pytest.raises(IncompatibleAreas):
             slicer.get_slices()
 
@@ -188,7 +188,7 @@ class TestAreaSlicer(unittest.TestCase):
                                   projection, width, height,
                                   area_extent)
 
-        slicer = Slicer(src_area, dst_area[:50, :50])
+        slicer = create_slicer(src_area, dst_area[:50, :50])
         slice_x, slice_y = slicer.get_slices()
         assert 60 <= slice_x.stop < 65
         assert 50 <= slice_y.stop < 55
@@ -230,13 +230,13 @@ class TestSwathSlicer(unittest.TestCase):
 
     def test_slicer_init(self):
         """Test slicer initialization."""
-        slicer = Slicer(self.src_swath, self.dst_area)
+        slicer = create_slicer(self.src_swath, self.dst_area)
         assert slicer.area_to_crop == self.src_area
         assert slicer.area_to_contain == self.dst_area
 
     def test_source_swath_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""
-        slicer = Slicer(self.src_swath, self.dst_area)
+        slicer = create_slicer(self.src_swath, self.dst_area)
         y_max, x_max = self.src_swath.shape
         y_max -= 1
         x_max -= 1
@@ -246,7 +246,7 @@ class TestSwathSlicer(unittest.TestCase):
 
     def test_source_area_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""
-        slicer = Slicer(self.src_area, self.dst_area)
+        slicer = create_slicer(self.src_area, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start == 0
         assert x_slice.stop == 35
@@ -256,18 +256,18 @@ class TestSwathSlicer(unittest.TestCase):
     def test_area_get_polygon_returns_a_polygon(self):
         """Test getting a polygon returns a polygon."""
         from shapely.geometry import Polygon
-        slicer = Slicer(self.src_area, self.dst_area)
+        slicer = create_slicer(self.src_area, self.dst_area)
         poly = slicer.get_polygon_to_contain()
         assert isinstance(poly, Polygon)
 
     def test_swath_get_polygon_returns_a_polygon(self):
         """Test getting a polygon returns a polygon."""
         from shapely.geometry import Polygon
-        slicer = Slicer(self.src_swath, self.dst_area)
+        slicer = create_slicer(self.src_swath, self.dst_area)
         poly = slicer.get_polygon_to_contain()
         assert isinstance(poly, Polygon)
 
     def test_cannot_slice_a_string(self):
         """Test that we cannot slice a string."""
         with pytest.raises(NotImplementedError):
-            Slicer("my_funky_area", self.dst_area)
+            create_slicer("my_funky_area", self.dst_area)
