@@ -46,7 +46,7 @@ from pyresample.gradient._gradient_search import (
     one_step_gradient_indices,
     one_step_gradient_search,
 )
-from pyresample.resampler import BaseResampler
+from pyresample.resampler import BaseResampler, resample_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -316,19 +316,9 @@ def _gradient_resample_data(src_data, src_x, src_y,
                             dst_x, dst_y,
                             method='bilinear'):
     """Resample using gradient search."""
-    assert src_data.ndim == 3
-    assert src_x.ndim == 2
-    assert src_y.ndim == 2
-    assert src_gradient_xl.ndim == 2
-    assert src_gradient_xp.ndim == 2
-    assert src_gradient_yl.ndim == 2
-    assert src_gradient_yp.ndim == 2
-    assert dst_x.ndim == 2
-    assert dst_y.ndim == 2
-    assert (src_data.shape[1:] == src_x.shape == src_y.shape ==
-            src_gradient_xl.shape == src_gradient_xp.shape ==
-            src_gradient_yl.shape == src_gradient_yp.shape)
-    assert dst_x.shape == dst_y.shape
+    _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y)
+    if src_data.ndim != 3 or src_data.shape[1:] != src_x.shape:
+        raise ValueError("Malformed input data.")
 
     image = one_step_gradient_search(src_data, src_x, src_y,
                                      src_gradient_xl, src_gradient_xp,
@@ -344,24 +334,34 @@ def _gradient_resample_indices(src_x, src_y,
                                src_gradient_yl, src_gradient_yp,
                                dst_x, dst_y):
     """Return indices computed using gradient search."""
-    assert src_x.ndim == 2
-    assert src_y.ndim == 2
-    assert src_gradient_xl.ndim == 2
-    assert src_gradient_xp.ndim == 2
-    assert src_gradient_yl.ndim == 2
-    assert src_gradient_yp.ndim == 2
-    assert dst_x.ndim == 2
-    assert dst_y.ndim == 2
-    assert (src_x.shape == src_y.shape ==
-            src_gradient_xl.shape == src_gradient_xp.shape ==
-            src_gradient_yl.shape == src_gradient_yp.shape)
-    assert dst_x.shape == dst_y.shape
+    _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y)
 
     indices_xy = one_step_gradient_indices(src_x, src_y,
                                            src_gradient_xl, src_gradient_xp,
                                            src_gradient_yl, src_gradient_yp,
                                            dst_x, dst_y)
     return indices_xy
+
+
+def _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y):
+    if (src_x.ndim != 2 or
+            src_y.ndim != 2 or
+            src_gradient_xl.ndim != 2 or
+            src_gradient_xp.ndim != 2 or
+            src_gradient_yl.ndim != 2 or
+            src_gradient_yp.ndim != 2 or
+            dst_x.ndim != 2 or
+            dst_y.ndim != 2):
+        raise ValueError("Wrong number of dimensions.")
+    source_shapes_equal = (src_x.shape == src_y.shape ==
+                           src_gradient_xl.shape == src_gradient_xp.shape ==
+                           src_gradient_yl.shape == src_gradient_yp.shape)
+    if not source_shapes_equal:
+        raise ValueError("Source arrays should all have the same shape")
+
+    target_shapes_equal = (dst_x.shape == dst_y.shape)
+    if not target_shapes_equal:
+        raise ValueError("Target arrays should all have the same shape")
 
 
 def get_border_lonlats(geo_def):
@@ -492,7 +492,6 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
 
     def precompute(self, **kwargs):
         """Precompute resampling parameters."""
-        from pyresample.resampler import resample_blocks
         if self.indices_xy is None:
             self.indices_xy = resample_blocks(gradient_resampler_indices_block,
                                               self.source_geo_def, [], self.target_geo_def,
@@ -501,8 +500,6 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
         """Perform the resampling."""
-        from pyresample.resampler import resample_blocks
-
         if method == "bilinear":
             fun = block_bilinear_interpolator
         elif method in ["nearest_neighbour", "nn"]:
