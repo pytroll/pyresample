@@ -712,6 +712,8 @@ class SwathDefinition(CoordinateDefinition):
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
+    ellps: str,
+       The ellipsoid to use for the CRS. WGS84 by default.
 
     Attributes
     ----------
@@ -729,7 +731,7 @@ class SwathDefinition(CoordinateDefinition):
         Swath cartesian coordinates
     """
 
-    def __init__(self, lons, lats, nprocs=1):
+    def __init__(self, lons, lats, nprocs=1, ellps="WGS84"):
         """Initialize SwathDefinition."""
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
@@ -739,7 +741,7 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
-        self.crs = CRS(proj='longlat')
+        self.crs = CRS(proj="longlat", ellps=ellps)
 
     def copy(self):
         """Copy the current swath."""
