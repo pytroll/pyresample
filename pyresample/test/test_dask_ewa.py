@@ -53,6 +53,9 @@ def _get_test_array(input_shape, input_dtype, chunk_size):
                                  chunks=chunk_size, dtype=input_dtype)
     else:
         data = da.random.random(input_shape, chunks=chunk_size).astype(input_dtype)
+    fill_value = 127 if np.issubdtype(input_dtype, np.integer) else np.nan
+    if data.ndim in (2, 3):
+        data[..., int(data.shape[-2]) * 0.7, :] = fill_value
     return data
 
 
@@ -204,6 +207,7 @@ class TestDaskEWAResampler:
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
             resampler = resampler_class(source_swath, target_area)
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
+                                          weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test', 'test')
@@ -215,6 +219,7 @@ class TestDaskEWAResampler:
             # resample a different dataset and make sure cache is used
             swath_data2 = _create_second_test_data(swath_data)
             new_data = resampler.resample(swath_data2, rows_per_scan=rows_per_scan,
+                                          weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')
@@ -230,7 +235,11 @@ class TestDaskEWAResampler:
             # check how many valid pixels we have
             band_mult = 3 if 'bands' in result.dims else 1
             fill_mask = _fill_mask(result.values)
-            assert np.count_nonzero(~fill_mask) == 468 * band_mult
+            # without NaNs:
+            # exp_valid = 13939 if rows_per_scan == 10 else 14029
+            # with NaNs but no fix:
+            exp_valid = 13817 if rows_per_scan == 10 else 13913
+            assert np.count_nonzero(~fill_mask) == exp_valid * band_mult
 
     @pytest.mark.parametrize(
         ('input_chunks', 'input_shape', 'input_dims'),
@@ -293,6 +302,7 @@ class TestDaskEWAResampler:
 
         resampler = DaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                      weight_delta_max=40,
                                       maximum_weight_mode=maximum_weight_mode)
         assert new_data.shape == output_shape
         assert new_data.dtype == np.float32
@@ -300,7 +310,7 @@ class TestDaskEWAResampler:
 
         # check how many valid pixels we have
         band_mult = 3 if len(output_shape) == 3 else 1
-        assert np.count_nonzero(~np.isnan(new_data)) == 468 * band_mult
+        assert np.count_nonzero(~np.isnan(new_data)) == 13817 * band_mult
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'maximum_weight_mode'),

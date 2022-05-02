@@ -1,3 +1,35 @@
+## Version 1.23.0 (2022/03/21)
+
+### Issues Closed
+
+* [Issue 425](https://github.com/pytroll/pyresample/issues/425) - Pyresample/geometry.py resampling error related to dask.
+* [Issue 422](https://github.com/pytroll/pyresample/issues/422) - Cannot resample with `bilinear` from lat/lon grid onto MSG full disk ([PR 423](https://github.com/pytroll/pyresample/pull/423) by [@pnuu](https://github.com/pnuu))
+* [Issue 416](https://github.com/pytroll/pyresample/issues/416) -  Unexpected results resampling Lambert Conformal to PlateCarree: pyresample or cartopy problem?
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 426](https://github.com/pytroll/pyresample/pull/426) - Fix EWA resampling not ignoring fill values with maximum_weight_mode
+* [PR 424](https://github.com/pytroll/pyresample/pull/424) - Fix DynamicAreaDefinition resolution handling for incomplete projection definitions
+* [PR 423](https://github.com/pytroll/pyresample/pull/423) - Fix bilinear resampling to areas with invalid coordinates ([422](https://github.com/pytroll/pyresample/issues/422))
+* [PR 421](https://github.com/pytroll/pyresample/pull/421) - Fix inplace modification occuring in Arc.intersections
+* [PR 414](https://github.com/pytroll/pyresample/pull/414) - Fix gradient search for single band data
+
+#### Features added
+
+* [PR 415](https://github.com/pytroll/pyresample/pull/415) - Update AreaDefinition equality to use pyproj CRS
+* [PR 406](https://github.com/pytroll/pyresample/pull/406) - Change tested Python versions to 3.8, 3.9 and 3.10
+
+#### Backward incompatible changes
+
+* [PR 415](https://github.com/pytroll/pyresample/pull/415) - Update AreaDefinition equality to use pyproj CRS
+
+In this release 8 pull requests were closed.
+
+
 ## Version 1.22.3 (2021/12/07)
 
 ### Issues Closed

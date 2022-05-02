@@ -219,6 +219,14 @@ test_latlong:
     lower_left_xy: [-0.08115781021773638, 0.4038691889114878]
     upper_right_xy: [0.08115781021773638, 0.5427973973702365]
 
+omerc_bb_1000:
+  description: Oblique Mercator Bounding Box for Polar Overpasses
+  projection:
+    ellps: sphere
+    proj: omerc
+  optimize_projection: True
+  resolution: 1000
+
 test_dynamic_resolution:
   description: Dynamic with resolution specified in meters
   projection:

@@ -1032,7 +1032,8 @@ class TestXarrayBilinear(unittest.TestCase):
         kdtree = mock.MagicMock()
         kdtree.query.return_value = (1, 2)
         lons, lats = self.target_def.get_lonlats()
-        voi = (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90)
+        voi = np.ravel(
+            (lons >= -180) & (lons <= 180) & (lats <= 90) & (lats >= -90))
         res = _query_no_distance(lons, lats, voi, kdtree, self._neighbours,
                                  0., self.radius)
         # Only the second value from the query is returned
@@ -1159,3 +1160,47 @@ def test_check_fill_value():
 
     # float fill value + float dtype -> no change
     assert _check_fill_value(3.3, np.float32)
+
+
+def test_target_has_invalid_coordinates():
+    """Test bilinear resampling to area that has invalid coordinates.
+
+    The area used here is in geos projection that has space pixels in the corners.
+    """
+    import dask.array as da
+    import xarray as xr
+
+    from pyresample.bilinear import XArrayBilinearResampler
+
+    # NumpyBilinearResampler
+    from pyresample.geometry import AreaDefinition, GridDefinition
+
+    geos_def = AreaDefinition('geos',
+                              'GEO area with space in corners',
+                              'geos',
+                              {'proj': 'geos',
+                               'lon_0': '0.0',
+                               'a': '6378169.0',
+                               'b': '6356583.8',
+                               'h': '35785831.0'},
+                              640, 640,
+                              [-5432229.931711678,
+                               -5429229.528545862,
+                               5429229.528545862,
+                               5432229.931711678])
+    lats = np.linspace(-89, 89, 179)
+    lons = np.linspace(-179, 179, 359)
+    lats = np.repeat(lats[:, None], 359, axis=1)
+    lons = np.repeat(lons[None, :], 179, axis=0)
+    grid_def = GridDefinition(lons=lons, lats=lats)
+
+    data_xr = xr.DataArray(da.random.uniform(0, 1, lons.shape), dims=["y", "x"])
+
+    resampler = XArrayBilinearResampler(grid_def,
+                                        geos_def,
+                                        500e3,
+                                        reduce_data=False)
+    res = resampler.resample(data_xr)
+    res = res.compute()
+    assert not np.all(np.isnan(res))
+    assert np.any(np.isnan(res))

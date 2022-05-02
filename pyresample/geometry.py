@@ -868,7 +868,7 @@ class SwathDefinition(CoordinateDefinition):
             new_proj.update(proj_dict)
             return new_proj
 
-    def _compute_uniform_shape(self):
+    def _compute_uniform_shape(self, resolution=None):
         """Compute the height and width of a domain to have uniform resolution across dimensions."""
         g = Geod(ellps='WGS84')
 
@@ -902,14 +902,17 @@ class SwathDefinition(CoordinateDefinition):
         az1, az2, width2 = g.inv(leftlons[-1], leftlats[-1], rightlons[-1], rightlats[-1])
         az1, az2, height = g.inv(middlelons[0], middlelats[0], middlelons[-1], middlelats[-1])
         width = min(width1, width2)
-        vresolution = height * 1.0 / self.lons.shape[0]
-        hresolution = width * 1.0 / self.lons.shape[1]
-        resolution = min(vresolution, hresolution)
+        if resolution is None:
+            vresolution = height * 1.0 / self.lons.shape[0]
+            hresolution = width * 1.0 / self.lons.shape[1]
+            resolution = (vresolution, hresolution)
+        if isinstance(resolution, (tuple, list)):
+            resolution = min(*resolution)
         width = int(width * 1.1 / resolution)
         height = int(height * 1.1 / resolution)
         return height, width
 
-    def compute_optimal_bb_area(self, proj_dict=None):
+    def compute_optimal_bb_area(self, proj_dict=None, resolution=None):
         """Compute the "best" bounding box area for this swath with `proj_dict`.
 
         By default, the projection is Oblique Mercator (`omerc` in proj.4), in
@@ -925,7 +928,7 @@ class SwathDefinition(CoordinateDefinition):
         projection = proj_dict.setdefault('proj', 'omerc')
         area_id = projection + '_otf'
         description = 'On-the-fly ' + projection + ' area'
-        height, width = self._compute_uniform_shape()
+        height, width = self._compute_uniform_shape(resolution)
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
@@ -1069,7 +1072,7 @@ class DynamicAreaDefinition(object):
         proj_info:
           complementing parameters to the projection info.
 
-        Resolution and shape parameters are ignored if the instance is created
+        Shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
         """
         proj_dict = self._get_proj_dict()
@@ -1080,7 +1083,7 @@ class DynamicAreaDefinition(object):
             projection = proj_dict
 
         if self.optimize_projection:
-            return lonslats.compute_optimal_bb_area(proj_dict)
+            return lonslats.compute_optimal_bb_area(proj_dict, resolution=resolution or self.resolution)
         if resolution is None:
             resolution = self.resolution
         if shape is None:

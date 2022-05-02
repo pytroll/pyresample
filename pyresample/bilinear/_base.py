@@ -143,13 +143,15 @@ class BilinearBase(object):
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_output_indices(self):
-        return ((self._target_lons >= -180) & (self._target_lons <= 180) &
-                (self._target_lats <= 90) & (self._target_lats >= -90))
+        self._valid_output_indices = np.ravel(
+            (self._target_lons >= -180) & (self._target_lons <= 180) &
+            (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
+        self._get_valid_output_indices()
         index_array = _query_no_distance(
             self._target_lons, self._target_lats,
-            self._get_valid_output_indices(), self._resample_kdtree,
+            self._valid_output_indices, self._resample_kdtree,
             self._neighbours, self._epsilon,
             self._radius_of_influence)
         self._index_array = self._reduce_index_array(index_array)
@@ -170,7 +172,10 @@ class BilinearBase(object):
             corner_points, out_x, out_y)
 
     def _get_output_xy(self):
-        return _get_output_xy(self._target_geo_def)
+        out_x, out_y = _get_output_xy(self._target_geo_def)
+        out_x = out_x[self._valid_output_indices]
+        out_y = out_y[self._valid_output_indices]
+        return out_x, out_y
 
     def _get_input_xy(self):
         return _get_input_xy(self._source_geo_def,
@@ -637,9 +642,8 @@ def _resample(corner_points, fractional_distances):
 def _query_no_distance(target_lons, target_lats,
                        valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
-    voir = np.ravel(valid_output_index)
-    target_lons_valid = np.ravel(target_lons)[voir]
-    target_lats_valid = np.ravel(target_lats)[voir]
+    target_lons_valid = np.ravel(target_lons)[valid_output_index]
+    target_lats_valid = np.ravel(target_lats)[valid_output_index]
 
     _, index_array = kdtree.query(
         lonlat2xyz(target_lons_valid, target_lats_valid),

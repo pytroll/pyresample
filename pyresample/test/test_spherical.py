@@ -106,6 +106,17 @@ VERTICES_TEST_IS_INSIDE2 = np.array([[49.94506701, 46.52610743],
                                      [49.94506701, 45.78080831]], dtype='float64')
 
 
+class TestRadiansFunctions(unittest.TestCase):
+    """Test utils functions processing radians arrays."""
+
+    def test_radian_unwrapping(self):
+        from pyresample.spherical import _unwrap_radians
+
+        # Test points at np.pi are converted to -np.pi
+        assert np.allclose(_unwrap_radians(-np.pi), -np.pi)
+        assert np.allclose(_unwrap_radians(np.pi), -np.pi)
+
+
 class TestSCoordinate(unittest.TestCase):
     """Test SCoordinates."""
 
@@ -117,7 +128,7 @@ class TestSCoordinate(unittest.TestCase):
     def test_hdistance(self):
         """Test Haversine formula."""
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
-        self.assertTrue(np.allclose(d, 1.2745557823062943))
+        np.testing.assert_allclose(d, 1.2745557823062943)
 
     def test_str(self):
         """Check the string representation."""
@@ -128,6 +139,12 @@ class TestSCoordinate(unittest.TestCase):
         """Check the representation."""
         d = SCoordinate(0, 0)
         self.assertEqual(repr(d), "(0.0, 0.0)")
+
+    def test_equality_at_antimeridian(self):
+        """Test equality of points at the antimeridian."""
+        point_start = SCoordinate(-np.pi, 0)
+        point_end = SCoordinate(np.pi, 0)
+        assert point_start == point_end
 
 
 class TestCCoordinate(unittest.TestCase):
@@ -151,13 +168,13 @@ class TestCCoordinate(unittest.TestCase):
     def test_normalize(self):
         """Normalize a cartesian vector."""
         d = CCoordinate((2., 0., 0.))
-        self.assertTrue(np.allclose(d.normalize().cart, [1, 0, 0]))
+        np.testing.assert_allclose(d.normalize().cart, [1, 0, 0])
 
     def test_cross(self):
         """Test cross product in cartesian coordinates."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        self.assertTrue(np.allclose(d.cross(c).cart, [0., 0., 1.]))
+        np.testing.assert_allclose(d.cross(c).cart, [0., 0., 1.])
 
     def test_dot(self):
         """Test the dot product of two cartesian vectors."""
@@ -169,34 +186,31 @@ class TestCCoordinate(unittest.TestCase):
         """Test inequality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        self.assertTrue(c != d)
+        assert c != d
 
     def test_eq(self):
         """Test equality of two cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
-        self.assertFalse(c == d)
+        assert not c.__eq__(d)
 
     def test_add(self):
         """Test adding cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((1., 1., 0.))
-        self.assertTrue(np.allclose((d + c).cart, b.cart))
-
-        self.assertTrue(np.allclose((d + (0, 1, 0)).cart, b.cart))
-
-        self.assertTrue(np.allclose(((0, 1, 0) + d).cart, b.cart))
+        np.testing.assert_allclose((d + c).cart, b.cart)
+        np.testing.assert_allclose((d + (0, 1, 0)).cart, b.cart)
+        np.testing.assert_allclose(((0, 1, 0) + d).cart, b.cart)
 
     def test_mul(self):
         """Test multiplying (element-wise) cartesian vectors."""
         d = CCoordinate((1., 0., 0.))
         c = CCoordinate((0., 1., 0.))
         b = CCoordinate((0., 0., 0.))
-        self.assertTrue(np.allclose((d * c).cart, b.cart))
-        self.assertTrue(np.allclose((d * (0, 1, 0)).cart, b.cart))
-
-        self.assertTrue(np.allclose(((0, 1, 0) * d).cart, b.cart))
+        np.testing.assert_allclose((d * c).cart, b.cart)
+        np.testing.assert_allclose((d * (0, 1, 0)).cart, b.cart)
+        np.testing.assert_allclose(((0, 1, 0) * d).cart, b.cart)
 
     def test_to_spherical(self):
         """Test converting to spherical coordinates."""
@@ -214,9 +228,8 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
                    SCoordinate(np.deg2rad(10), 0))
 
-        self.assertFalse(arc1 == arc2)
-
-        self.assertTrue(arc1 == arc1)
+        assert not arc1.__eq__(arc2)
+        assert arc1 == arc1
 
     def test_ne(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -224,9 +237,8 @@ class TestArc(unittest.TestCase):
         arc2 = Arc(SCoordinate(0, np.deg2rad(10)),
                    SCoordinate(np.deg2rad(10), 0))
 
-        self.assertTrue(arc1 != arc2)
-
-        self.assertFalse(arc1 != arc1)
+        assert arc1 != arc2
+        assert not arc1.__ne__(arc1)
 
     def test_str(self):
         arc1 = Arc(SCoordinate(0, 0),
@@ -241,13 +253,13 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(10), 0))
         lon, lat = arc1.intersection(arc2)
 
-        self.assertTrue(np.allclose(np.rad2deg(lon), 5))
+        np.testing.assert_allclose(np.rad2deg(lon), 5)
         self.assertEqual(np.rad2deg(lat).round(7), round(5.0575148968282093, 7))
 
         arc1 = Arc(SCoordinate(0, 0),
                    SCoordinate(np.deg2rad(10), np.deg2rad(10)))
 
-        self.assertTrue(arc1.intersection(arc1) is None)
+        assert (arc1.intersection(arc1) is None)
 
         arc1 = Arc(SCoordinate(np.deg2rad(24.341215776575297),
                                np.deg2rad(44.987819588259327)),
@@ -270,7 +282,7 @@ class TestArc(unittest.TestCase):
                    SCoordinate(np.deg2rad(-5.893976312685715),
                                np.deg2rad(48.445795283217116)))
 
-        self.assertTrue(arc1.intersection(arc2) is None)
+        assert (arc1.intersection(arc2) is None)
 
     def test_angle(self):
         arc1 = Arc(SCoordinate(np.deg2rad(157.5),
@@ -307,6 +319,40 @@ class TestArc(unittest.TestCase):
 
         arc2 = Arc(SCoordinate(2, 0), SCoordinate(3, 0))
         self.assertRaises(ValueError, arc1.angle, arc2)
+
+    def test_disjoint_arcs_crossing_antimeridian(self):
+        import copy
+        arc1 = Arc(SCoordinate(*np.deg2rad((143.76, 0))),
+                   SCoordinate(*np.deg2rad((143.95, 7.33)))
+                   )
+        arc2 = Arc(SCoordinate(*np.deg2rad((170.34, 71.36))),
+                   SCoordinate(*np.deg2rad((-171.03, 76.75)))
+                   )
+        arc1_orig = copy.deepcopy(arc1)
+        arc2_orig = copy.deepcopy(arc2)
+        point = arc1.intersection(arc2)
+        # Assert original arcs are unaffected
+        assert arc1_orig.end.lon == arc1.end.lon
+        assert arc2_orig.end.lon == arc2.end.lon
+        # Assert disjoint arcs returns None
+        assert isinstance(point, type(None))
+
+    def test_intersecting_arcs_crossing_antimeridian(self):
+        import copy
+        arc1 = Arc(SCoordinate(*np.deg2rad((-180.0, -90.0))),
+                   SCoordinate(*np.deg2rad((-180.0, 90.0)))
+                   )
+        arc2 = Arc(SCoordinate(*np.deg2rad((-171.03, -76.75))),
+                   SCoordinate(*np.deg2rad((170.34, -71.36)))
+                   )
+        arc1_orig = copy.deepcopy(arc1)
+        arc2_orig = copy.deepcopy(arc2)
+        point = arc1.intersection(arc2)
+        # Assert original arcs are unaffected
+        assert arc1_orig.end.lon == arc1.end.lon
+        assert arc2_orig.end.lon == arc2.end.lon
+        # Assert intersection result
+        assert point == SCoordinate(*np.deg2rad((-180.0, -74.7884716)))
 
 
 class TestSphericalPolygon(unittest.TestCase):
@@ -383,41 +429,41 @@ class TestSphericalPolygon(unittest.TestCase):
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        self.assertTrue(polygon1._is_inside(polygon2))
+        assert polygon1._is_inside(polygon2)
 
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert not polygon2._is_inside(polygon1)
 
         # Why checking the areas here!? It has nothing to do with the is_inside function!
-        self.assertTrue(polygon2.area() > polygon1.area())
+        assert polygon2.area() > polygon1.area()
 
         polygon2.invert()
-        self.assertFalse(polygon1._is_inside(polygon2))
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = np.array([[0, 0, 30, 30],
                              [21, 30, 30, 21]]).T
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
-        self.assertFalse(polygon1._is_inside(polygon2))
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         polygon2.invert()
 
-        self.assertTrue(polygon1._is_inside(polygon2))
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = np.array([[100, 100, 130, 130],
                              [41, 50, 50, 41]]).T
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        self.assertFalse(polygon1._is_inside(polygon2))
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert not polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         polygon2.invert()
 
-        self.assertTrue(polygon1._is_inside(polygon2))
-        self.assertFalse(polygon2._is_inside(polygon1))
+        assert polygon1._is_inside(polygon2)
+        assert not polygon2._is_inside(polygon1)
 
         vertices = VERTICES_TEST_IS_INSIDE1
 
@@ -427,8 +473,8 @@ class TestSphericalPolygon(unittest.TestCase):
 
         polygon2 = SphPolygon(np.deg2rad(vertices))
 
-        self.assertFalse(polygon2._is_inside(polygon1))
-        self.assertFalse(polygon1._is_inside(polygon2))
+        assert not polygon2._is_inside(polygon1)
+        assert not polygon1._is_inside(polygon2)
 
     def test_is_inside_float32(self):
         """Test that precision dependent calculations work.
@@ -478,7 +524,7 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(vertices))
 
         uni = np.array([[157.5, 89.23460094],
-                        [-225., 89.],
+                        [135., 89.],
                         [112.5, 89.23460094],
                         [90., 89.],
                         [67.5, 89.23460094],
@@ -495,8 +541,7 @@ class TestSphericalPolygon(unittest.TestCase):
                         [-180., 89.]])
 
         poly_union = poly1.union(poly2)
-
-        self.assertTrue(np.allclose(poly_union.vertices, np.deg2rad(uni)))
+        assert np.allclose(poly_union.vertices, np.deg2rad(uni))
 
     def test_union_polygons_overlaps_completely(self):
         """Test the union method when one polygon is entirely inside the other."""
@@ -515,9 +560,8 @@ class TestSphericalPolygon(unittest.TestCase):
         expected = np.deg2rad(np.array([[0, 0, 30, 30],
                                         [0, 30, 30, 0]]).T)
 
-        self.assertTrue(np.allclose(poly_union1.vertices, expected))
-
-        self.assertTrue(np.allclose(poly_union2.vertices, expected))
+        np.testing.assert_allclose(poly_union1.vertices, expected)
+        np.testing.assert_allclose(poly_union2.vertices, expected)
 
     def test_intersection(self):
         """Test the intersection function."""
@@ -538,8 +582,7 @@ class TestSphericalPolygon(unittest.TestCase):
                           [-157.5, 89.23460094]])
         poly_inter = poly1.intersection(poly2)
 
-        self.assertTrue(np.allclose(poly_inter.vertices,
-                                    np.deg2rad(inter)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(inter))
 
         # Test 2 polygons sharing 2 contiguous edges.
 
@@ -567,8 +610,7 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(vertices2))
         poly_inter = poly1.intersection(poly2)
 
-        self.assertTrue(np.allclose(poly_inter.vertices,
-                                    np.deg2rad(vertices3)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(vertices3))
 
         # Test when last node of the intersection is the last vertice of the
         # second polygon.
@@ -598,12 +640,38 @@ class TestSphericalPolygon(unittest.TestCase):
         poly2 = SphPolygon(np.deg2rad(area_vertices))
 
         poly_inter = poly1.intersection(poly2)
-        self.assertTrue(np.allclose(poly_inter.vertices,
-                                    np.deg2rad(res)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(res))
 
         poly_inter = poly2.intersection(poly1)
-        self.assertTrue(np.allclose(poly_inter.vertices,
-                                    np.deg2rad(res)))
+        np.testing.assert_allclose(poly_inter.vertices, np.deg2rad(res))
+
+        # Test when intersection occurs across the antimeridian
+        vertices_epsg_4326 = np.deg2rad(np.array([[-180, -90],
+                                                  [-180, 90],
+                                                  [0, 90],
+                                                  [180, 90],
+                                                  [180, -90]]))
+        vertices_goes_west = np.array([[2.50919361e+00, 1.19782309e-16],
+                                       [2.51252770e+00, 1.27991660e-01],
+                                       [2.97300443e+00, 1.24550237e+00],
+                                       [-2.98515478e+00, 1.33966326e+00],
+                                       [-1.00821045e+00, -0.00000000e+00],
+                                       [-2.98515478e+00, -1.33966326e+00],
+                                       [2.97300443e+00, -1.24550237e+00],
+                                       [2.51252770e+00, -1.27991660e-01]])
+
+        goes_west_poly = SphPolygon(vertices_goes_west)
+        epsg_4326_poly = SphPolygon(vertices_epsg_4326)
+
+        intersection_poly = epsg_4326_poly.intersection(goes_west_poly)
+
+        # Assert found the correct intersection point
+        assert np.allclose(intersection_poly.vertices[2, :],
+                           np.array([-2.98515478, 1.33966326]))
+
+        # Check bounded between -180 and 180
+        assert np.all(intersection_poly.vertices >= -np.pi)
+        assert np.all(intersection_poly.vertices <= np.pi)
 
     def test_consistent_radius(self):
         poly1 = np.array([(-50, 69), (-36, 69), (-36, 64), (-50, 64)])
