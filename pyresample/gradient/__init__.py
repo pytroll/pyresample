@@ -33,7 +33,6 @@ import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
-from pyproj import CRS
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
@@ -543,20 +542,10 @@ def ensure_3d_data(func):
 @ensure_3d_data
 def gradient_resampler(data, source_area, target_area, method='bilinear'):
     """Do the gradient search resampling."""
-    from pyproj.transformer import Transformer
-
-    try:
-        src_x, src_y = source_area.get_proj_coords()
-        transformer = Transformer.from_crs(target_area.crs, source_area.crs)
-    except AttributeError:
-        src_x, src_y = source_area
-        # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
-        transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
-
-    # TODO: this will crash when the target area is a swath def.
-    dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
-    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
-    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
+    dst_x, dst_y = dst_coords
+    src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = src_gradients
+    src_x, src_y = src_coords
 
     return _gradient_resample_data(data, src_x, src_y,
                                    src_gradient_xl, src_gradient_xp,
@@ -574,19 +563,10 @@ def gradient_resampler_indices_block(block_info=None, **kwargs):
 
 def gradient_resampler_indices(source_area, target_area, block_info=None, **kwargs):
     """Do the gradient search resampling, returning the resulting indices."""
-    from pyproj.transformer import Transformer
-    try:
-        src_x, src_y = source_area.get_proj_coords()
-        transformer = Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
-    except AttributeError:
-        src_x, src_y = np.asarray(source_area.lons), np.asarray(source_area.lats)
-        # TODO: this is bad. We don't want to perform gradient search in lat/lon space (poles, dateshift line)
-        transformer = Transformer.from_crs(target_area.crs, CRS(proj='longlat'))
-
-    # TODO: this will crash when the target area is a swath def.
-    dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
-    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
-    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
+    dst_x, dst_y = dst_coords
+    src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = src_gradients
+    src_x, src_y = src_coords
 
     indices_xy = _gradient_resample_indices(src_x, src_y,
                                             src_gradient_xl, src_gradient_xp,
@@ -599,6 +579,23 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
         indices_xy[1, :, :] += y_slice.start
 
     return indices_xy
+
+
+def _get_coordinates_in_same_projection(source_area, target_area):
+    from pyproj.transformer import Transformer
+    try:
+        src_x, src_y = source_area.get_proj_coords()
+        transformer = Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
+    except AttributeError:
+        raise NotImplementedError("Cannot resample from Swath for now.")
+
+    try:
+        dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
+    except AttributeError:
+        raise NotImplementedError("Cannot resample to Swath for now.")
+    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
+    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+    return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)
 
 
 def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):

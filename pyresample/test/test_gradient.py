@@ -482,30 +482,6 @@ class TestRBGradientSearchResamplerSwath2Area:
         self.resampler = ResampleBlocksGradientSearchResampler(self.src_swath,
                                                                self.dst_area)
 
-    def test_resample_swath_to_area_2d(self):
-        """Resample swath to area, 2d."""
-        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=np.float64),
-                            dims=['y', 'x'])
-        self.resampler.precompute()
-        res = self.resampler.compute(
-            data, method='bilinear').compute(scheduler='single-threaded')
-        assert res.shape == self.dst_area.shape
-        assert not np.all(np.isnan(res))
-
-    def test_resample_swath_to_area_3d(self):
-        """Resample area to area, 3d."""
-        data = xr.DataArray(da.ones((3,) + self.src_swath.shape,
-                                    dtype=np.float64) *
-                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
-                            dims=['bands', 'y', 'x'])
-        self.resampler.precompute()
-        res = self.resampler.compute(
-            data, method='bilinear').compute(scheduler='single-threaded')
-        assert res.shape == (3,) + self.dst_area.shape
-        for i in range(res.shape[0]):
-            arr = np.ravel(res[i, :, :])
-            assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
-
 
 class TestEnsureDataArray(unittest.TestCase):
     """Test the ensure_data_array decorator."""
@@ -649,30 +625,24 @@ def test_gradient_resample_data(one_step_gradient_search):
     ndim_2b = np.zeros((8, 10))
 
     # One of the source arrays has wrong shape
-    try:
+    with pytest.raises(ValueError):
         _ = _gradient_resample_data(ndim_3, ndim_2a, ndim_2b, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2b)
-        raise IndexError
-    except AssertionError:
-        pass
+
     one_step_gradient_search.assert_not_called()
 
     # Data array has wrong shape
-    try:
+    with pytest.raises(ValueError):
         _ = _gradient_resample_data(ndim_2a, ndim_2a, ndim_2a, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2b)
-        raise IndexError
-    except AssertionError:
-        pass
+
     one_step_gradient_search.assert_not_called()
 
     # The destination x and y arrays have different shapes
-    try:
+    with pytest.raises(ValueError):
         _ = _gradient_resample_data(ndim_3, ndim_2a, ndim_2a, ndim_2a, ndim_2a,
                                     ndim_2a, ndim_2a, ndim_2b, ndim_2a)
-        raise IndexError
-    except AssertionError:
-        pass
+
     one_step_gradient_search.assert_not_called()
 
     # Correct shapes are given
