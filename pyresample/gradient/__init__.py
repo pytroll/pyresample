@@ -485,7 +485,8 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         """Precompute resampling parameters."""
         from pyresample.resampler import resample_blocks
         if self.indices_xy is None:
-            self.indices_xy = resample_blocks(gradient_resampler_indices, self.source_geo_def, [], self.target_geo_def,
+            self.indices_xy = resample_blocks(gradient_resampler_indices_block,
+                                              self.source_geo_def, [], self.target_geo_def,
                                               chunks=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
 
     @ensure_data_array
