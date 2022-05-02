@@ -110,15 +110,15 @@ class SwathSlicer(Slicer):
 
 
 @lru_cache(maxsize=10)
-def _get_chunk_polygons_for_swath_to_crop(area_to_crop):
+def _get_chunk_polygons_for_swath_to_crop(swath_to_crop):
     """Get the polygons for each chunk of the area_to_crop."""
     res = []
     from shapely.geometry import Polygon
-    src_chunks = area_to_crop.lons.chunks
+    src_chunks = swath_to_crop.lons.chunks
     for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
         line_slice = expand_slice(line_slice)
         col_slice = expand_slice(col_slice)
-        smaller_swath = area_to_crop[line_slice, col_slice]
+        smaller_swath = swath_to_crop[line_slice, col_slice]
         lons, lats = smaller_swath.get_edge_lonlats(10)
         lons = np.hstack(lons)
         lats = np.hstack(lats)
