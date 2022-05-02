@@ -2448,10 +2448,10 @@ class AreaDefinition(_ProjectionDefinition):
                                       "source/target projections are not "
                                       "equal.")
 
-        data_boundary = Boundary(*get_geostationary_bounding_box(self))
+        data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
         if area_to_cover.is_geostationary:
             area_boundary = Boundary(
-                *get_geostationary_bounding_box(area_to_cover))
+                *get_geostationary_bounding_box_in_lonlats(area_to_cover))
         else:
             area_boundary = AreaDefBoundary(area_to_cover, 100)
 
@@ -2644,6 +2644,15 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
     return x, y
+
+
+def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    return get_geostationary_bounding_box(geos_area, nb_points)
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
