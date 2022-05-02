@@ -151,7 +151,7 @@ class BaseResampler:
 
 
 def resample_blocks(funk, src_area, src_arrays, dst_area,
-                    dst_arrays=(), chunks=None, dtype=None, name=None, fill_value=None, **kwargs):
+                    dst_arrays=(), chunk_size=None, dtype=None, name=None, fill_value=None, **kwargs):
     """Resample dask arrays blockwise.
 
     Resample_blocks applies a function blockwise to transform data from a source
@@ -170,9 +170,9 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
             only one chunk!
         dst_arrays: arrays to use that are already in dst_area space. If the array has more than 2 dimensions,
             the last two are expected to be y, x.
-        chunks: the chunks size(s) to use in the dst_area space. This has to be provided since it is not guaranteed that
-            we can get this information from the other arguments. Moreover, this needs to be an iterable of k elements
-            if the resulting array of funk is to have a different number of dimensions than the input array.
+        chunk_size: the chunks size(s) to use in the dst_area space. This has to be provided since it is not guaranteed
+            that we can get this information from the other arguments. Moreover, this needs to be an iterable of k
+            elements if the resulting array of funk is to have a different number of dimensions than the input array.
         dtype: the dtype the resulting array is going to have. Has to be provided.
         kwargs: any other keyword arguments that will be passed on to funk.
 
@@ -187,38 +187,30 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         how we provide the chunk sizes knowing that the result array with have 2 elements along a third dimension.
 
         >>> indices_xy = resample_blocks(gradient_resampler_indices, source_geo_def, [], target_geo_def,
-        ...                              chunks=(2, "auto", "auto"), dtype=float)
+        ...                              chunk_size=(2, "auto", "auto"), dtype=float)
 
         From these indices, to resample an array using bilinear interpolation:
 
         >>>  resampled = resample_blocks(block_bilinear_interpolator, source_geo_def, [src_array], target_geo_def,
         ...                              dst_arrays=[indices_xy],
-        ...                              chunks=("auto", "auto"), dtype=src_array.dtype)
+        ...                              chunk_size=("auto", "auto"), dtype=src_array.dtype)
 
 
     """
     if dst_area == src_area:
         raise ValueError("Source and destination areas are identical."
                          " Should you be running `map_blocks` instead of `resample_blocks`?")
-    from dask.base import tokenize
-    from dask.utils import funcname, has_keyword
 
-    if name is not None:
-        name = f"{name}"
-    else:
-        token = tokenize(funk, hash(src_area), *src_arrays, hash(dst_area), *dst_arrays,
-                         fill_value, dtype, chunks, **kwargs)
-        name = f"{funcname(funk)}-{token}"
+    name = _create_dask_name(name, funk,
+                             src_area, src_arrays,
+                             dst_area, dst_arrays,
+                             fill_value, dtype, chunk_size, kwargs)
     dask_graph = dict()
     dependencies = []
 
-    if fill_value is None:
-        if np.issubdtype(dtype, np.integer):
-            fill_value = np.iinfo(dtype).min
-        else:
-            fill_value = np.nan
+    fill_value = _make_fill_value(fill_value, dtype)
 
-    dst_chunks, output_shape = _compute_chunks_from_area(dst_area, chunks, dtype)
+    dst_chunks, output_shape = _normalize_chunks_for_area(dst_area, chunk_size, dtype)
 
     for dst_block_info, dst_area_chunk in _enumerate_dst_area_chunks(dst_area, dst_chunks):
         position = dst_block_info["chunk-location"]
@@ -226,33 +218,12 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
         try:
             smaller_src_arrays, src_area_crop, src_block_info = crop_data_around_area(src_area, src_arrays,
                                                                                       dst_area_chunk)
-            res_chunks, _ = _compute_chunks_from_area(src_area_crop, dask.config.get('array.chunk-size', '128MiB'),
-                                                      dtype)
-            if len(res_chunks[0]) * len(res_chunks[1]) >= 4:
-                logger.warning("The input area chunks are large. "
-                               "This usually means that the input area is of much higher resolution than the output "
-                               "area. You can reduce the chunks passed, and ponder whether you are using the right "
-                               "resampler for the job.")
+            _check_resolution_mismatch(src_area_crop, dtype)
         except IncompatibleAreas:  # no relevant data matching
             task = (np.full, dst_block_info["chunk-shape"], fill_value)
         else:
-            args = []
-            for smaller_data in smaller_src_arrays:
-                args.append((smaller_data.name, *([0] * smaller_data.ndim)))
-                dependencies.append(smaller_data)
-
-            for dst_array in dst_arrays:
-                dst_position = [0] * (dst_array.ndim - 2) + list(position[-2:])
-                args.append((dst_array.name, *dst_position))
-
-            funk_kwargs = kwargs.copy()
-            funk_kwargs['fill_value'] = fill_value
-            if has_keyword(funk, "block_info"):
-                funk_kwargs["block_info"] = {0: src_block_info,
-                                             None: dst_block_info}
-            pfunk = partial(funk, **funk_kwargs)
-
-            task = (pfunk, *args)
+            task = _create_task(funk, smaller_src_arrays, src_block_info, dst_arrays, dst_block_info, position,
+                                fill_value, dependencies, kwargs)
 
         dask_graph[(name, *position)] = task
 
@@ -261,6 +232,58 @@ def resample_blocks(funk, src_area, src_arrays, dst_area,
 
     dask_graph = HighLevelGraph.from_collections(name, dask_graph, dependencies=dependencies)
     return da.Array(dask_graph, name, chunks=dst_chunks, dtype=dtype, shape=output_shape)
+
+
+def _create_dask_name(name, funk, src_area, src_arrays, dst_area, dst_arrays, fill_value, dtype, chunks, kwargs):
+    if name is not None:
+        name = f"{name}"
+    else:
+        from dask.base import tokenize
+        from dask.utils import funcname
+        token = tokenize(funk, hash(src_area), *src_arrays, hash(dst_area), *dst_arrays,
+                         fill_value, dtype, chunks, **kwargs)
+        name = f"{funcname(funk)}-{token}"
+    return name
+
+
+def _make_fill_value(fill_value, dtype):
+    if fill_value is None:
+        if np.issubdtype(dtype, np.integer):
+            fill_value = np.iinfo(dtype).min
+        else:
+            fill_value = np.nan
+    return fill_value
+
+
+def _check_resolution_mismatch(src_area_crop, dtype):
+    res_chunks, _ = _normalize_chunks_for_area(src_area_crop, dask.config.get('array.chunk-size', '128MiB'),
+                                               dtype)
+    if len(res_chunks[0]) * len(res_chunks[1]) >= 4:
+        logger.warning("The input area chunks are large. "
+                       "This usually means that the input area is of much higher resolution than the output "
+                       "area. You can reduce the chunks passed, and ponder whether you are using the right "
+                       "resampler for the job.")
+
+
+def _create_task(funk, smaller_src_arrays, src_block_info, dst_arrays, dst_block_info, position, fill_value,
+                 dependencies, kwargs):
+    """Create a task for resample_blocks."""
+    from dask.utils import has_keyword
+    args = []
+    for smaller_data in smaller_src_arrays:
+        args.append((smaller_data.name, *([0] * smaller_data.ndim)))
+        dependencies.append(smaller_data)
+    for dst_array in dst_arrays:
+        dst_position = [0] * (dst_array.ndim - 2) + list(position[-2:])
+        args.append((dst_array.name, *dst_position))
+    funk_kwargs = kwargs.copy()
+    funk_kwargs['fill_value'] = fill_value
+    if has_keyword(funk, "block_info"):
+        funk_kwargs["block_info"] = {0: src_block_info,
+                                     None: dst_block_info}
+    pfunk = partial(funk, **funk_kwargs)
+    task = (pfunk, *args)
+    return task
 
 
 def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
@@ -302,10 +325,10 @@ def _enumerate_dst_area_chunks(dst_area, dst_chunks):
         yield block_info, target_geo_def
 
 
-def _compute_chunks_from_area(area, chunks, dtype):
+def _normalize_chunks_for_area(area, chunk_size, dtype):
     rest_shape = []
-    if not isinstance(chunks, (Number, str)) and len(chunks) > len(area.shape):
-        rest_chunks = chunks[:-len(area.shape)]
+    if not isinstance(chunk_size, (Number, str)) and len(chunk_size) > len(area.shape):
+        rest_chunks = chunk_size[:-len(area.shape)]
         for elt in rest_chunks:
             try:
                 rest_shape.append(sum(elt))
@@ -313,5 +336,5 @@ def _compute_chunks_from_area(area, chunks, dtype):
                 rest_shape.append(elt)
     output_shape = tuple(rest_shape) + area.shape
 
-    dst_chunks = da.core.normalize_chunks(chunks, output_shape, dtype=dtype)
+    dst_chunks = da.core.normalize_chunks(chunk_size, output_shape, dtype=dtype)
     return dst_chunks, output_shape

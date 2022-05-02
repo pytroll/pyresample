@@ -494,7 +494,7 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         if self.indices_xy is None:
             self.indices_xy = resample_blocks(gradient_resampler_indices_block,
                                               self.source_geo_def, [], self.target_geo_def,
-                                              chunks=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
+                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
 
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
@@ -510,7 +510,7 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
 
         res = resample_blocks(fun, self.source_geo_def, [data.data], self.target_geo_def,
                               dst_arrays=[self.indices_xy],
-                              chunks=chunks, dtype=data.dtype, **kwargs)
+                              chunk_size=chunks, dtype=data.dtype, **kwargs)
 
         coords = _fill_in_coords(self.target_geo_def, data.coords, data.dims)
 
