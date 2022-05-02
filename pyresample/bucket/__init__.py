@@ -54,12 +54,12 @@ def _get_bin_statistic(bins, idxs_sorted, weights_sorted):
     unique_bin, unique_idx = np.unique(binned_values_masked, return_index=True)
 
     # create the full index array
-    weight_idx = np.zeros(len(bins), dtype='int')
+    weight_idx = np.full(len(bins), -1, dtype='int32')
 
     # assign the valid index to array
     weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
 
-    return weights_sorted[weight_idx]
+    return weights_sorted[weight_idx]  # last value of weigths_sorted always nan
 
 
 class BucketResampler(object):
@@ -229,36 +229,25 @@ class BucketResampler(object):
             data = data.data
         data = data.ravel()
 
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
-
         # Rechunk indices to match the data chunking
-        if weights.chunks != self.idxs.chunks:
-            self.idxs = da.rechunk(self.idxs, weights.chunks)
+        if data.chunks != self.idxs.chunks:
+            self.idxs = da.rechunk(self.idxs, data.chunks)
 
         # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
 
-        # sort idxs and weights
-        order = da.from_delayed(_sort_weights(statistic_method, weights),
-                                shape=(len(weights), ),
+        # sort idxs and data
+        order = da.from_delayed(_sort_weights(statistic_method, data),
+                                shape=(len(data), ),
                                 dtype='int')
         idxs_sorted = self.idxs[order]
-        weights_sorted = np.append(weights[order], np.nan)
+        data_sorted = np.append(data[order], np.nan)
 
         bins = np.linspace(0, out_size - 1, out_size).astype('int')
 
-        statistics = da.from_delayed(_get_bin_statistic(bins, idxs_sorted, weights_sorted),
+        statistics = da.from_delayed(_get_bin_statistic(bins, idxs_sorted, data_sorted),
                                      shape=(len(bins),),
                                      dtype=np.float64)
-
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64)).ravel()
-
-        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
-
-        # set bin without data to fill value
-        statistics = da.where(counts == 0, fill_value, statistics)
 
         return statistics.reshape(self.target_area.shape)
 
