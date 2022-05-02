@@ -436,7 +436,7 @@ class TestRBGradientSearchResamplerArea2Area:
             data, method='bilinear',
             fill_value=2.0).compute(scheduler='single-threaded').values
         corners = (res[0, 0], res[0, -1], res[-1, -1], res[-1, 0])
-        expected_corners = (9660.560479802409, 9548.105823664819, 2.0, 8285.489720486787)
+        expected_corners = (9660.560479802409, 9548.105823664819, 8183.903753, 8285.489720486787)
         np.testing.assert_allclose(corners, expected_corners)
         assert res.shape == dst_area.shape
 
