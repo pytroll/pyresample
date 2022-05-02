@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from functools import wraps
 
 import dask
@@ -51,7 +52,15 @@ logger = logging.getLogger(__name__)
 
 
 def GradientSearchResampler(source_geo_def, target_geo_def):
-    """Create a GradientSearchResampler."""
+    """Create a gradient search resampler."""
+    warnings.warn("`GradientSearchResampler` is deprecated, please use "
+                  "`create_gradient_search_resampler` instead.",
+                  DeprecationWarning)
+    return create_gradient_search_resampler(source_geo_def, target_geo_def)
+
+
+def create_gradient_search_resampler(source_geo_def, target_geo_def):
+    """Create a gradient search resampler."""
     if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
         return ResampleBlocksGradientSearchResampler(source_geo_def, target_geo_def)
     elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
