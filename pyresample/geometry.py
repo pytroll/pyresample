@@ -279,6 +279,9 @@ class BaseDefinition:
         """Return the bounding box lons and lats.
 
         Args:
+            frequency:
+                The number of points to provide for each side. By default (None)
+                the full width and height will be provided.
             force_clockwise:
                 Perform minimal checks and reordering of coordinates to ensure
                 that the returned coordinates follow a clockwise direction.
@@ -304,17 +307,11 @@ class BaseDefinition:
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
-        height, width = self.shape
-        if frequency is None:
-            line_step = 1
-            col_step = 1
-        else:
-            line_step = max(height // frequency, 1)
-            col_step = max(width // frequency, 1)
-        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(0, width, col_step)))
-        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(0, height, line_step), -1))
-        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(width - 1, None, -col_step)))
-        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(height - 1, None, -line_step), 0))
+        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
+        s1_lon, s1_lat = self.get_lonlats(data_slice=s1_slice)
+        s2_lon, s2_lat = self.get_lonlats(data_slice=s2_slice)
+        s3_lon, s3_lat = self.get_lonlats(data_slice=s3_slice)
+        s4_lon, s4_lat = self.get_lonlats(data_slice=s4_slice)
         lons, lats = zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
                            (s2_lon.squeeze(), s2_lat.squeeze()),
                            (s3_lon.squeeze(), s3_lat.squeeze()),
@@ -326,6 +323,20 @@ class BaseDefinition:
             # going counter-clockwise
             lons, lats = self._reverse_boundaries(lons, lats)
         return lons, lats
+
+    def _get_bbox_slices(self, frequency):
+        height, width = self.shape
+        if frequency is None:
+            line_num = height
+            col_num = width
+        else:
+            line_num = frequency
+            col_num = frequency
+        s1_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
+        s2_slice = (np.linspace(0, height - 1, line_num, dtype=int), -1)
+        s3_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
+        s4_slice = (np.linspace(height - 1, 0, line_num, dtype=int), 0)
+        return s1_slice, s2_slice, s3_slice, s4_slice
 
     @staticmethod
     def _reverse_boundaries(sides_lons: list, sides_lats: list) -> tuple:
@@ -365,18 +376,12 @@ class BaseDefinition:
 
     def get_bbox_coords(self, frequency=None):
         """Return the bounding box in projection coordinates."""
-        height, width = self.shape
-        if frequency is None:
-            line_step = 1
-            col_step = 1
-        else:
-            line_step = max(height // frequency, 1)
-            col_step = max(width // frequency, 1)
+        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
 
-        s1_x, s1_y = self.get_proj_coords(data_slice=(0, slice(0, width, col_step)))
-        s2_x, s2_y = self.get_proj_coords(data_slice=(slice(0, height, line_step), -1))
-        s3_x, s3_y = self.get_proj_coords(data_slice=(-1, slice(width - 1, None, -col_step)))
-        s4_x, s4_y = self.get_proj_coords(data_slice=(slice(height - 1, None, -line_step), 0))
+        s1_x, s1_y = self.get_proj_coords(data_slice=s1_slice)
+        s2_x, s2_y = self.get_proj_coords(data_slice=s2_slice)
+        s3_x, s3_y = self.get_proj_coords(data_slice=s3_slice)
+        s4_x, s4_y = self.get_proj_coords(data_slice=s4_slice)
 
         x = np.hstack((s1_x, s2_x.T, s3_x, s4_x.T)).squeeze()
         y = np.hstack((s1_y, s2_y.T, s3_y, s4_y.T)).squeeze()
