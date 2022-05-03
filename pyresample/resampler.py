@@ -301,7 +301,7 @@ def crop_data_around_area(source_geo_def, src_arrays, target_geo_def):
 
 @lru_cache
 def crop_source_area(source_geo_def, target_geo_def):
-    """Crop a source area around a provided a target area."""
+    """Crop a source area around the provided target area."""
     slicer = create_slicer(source_geo_def, target_geo_def)
     x_slice, y_slice = slicer.get_slices()
     small_source_geo_def = source_geo_def[y_slice, x_slice]
