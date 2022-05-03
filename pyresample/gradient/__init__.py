@@ -74,7 +74,7 @@ def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
 
 
 class StackingGradientSearchResampler(BaseResampler):
-    """Resample using gradient search based bilinear interpolation."""
+    """Resample using gradient search based bilinear interpolation, using stacking for dask processing."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
@@ -481,7 +481,7 @@ def ensure_data_array(func):
 
 
 class ResampleBlocksGradientSearchResampler(BaseResampler):
-    """Resample using gradient search based bilinear interpolation."""
+    """Resample using gradient search based bilinear interpolation, using `resample_blocks` for lazy processing."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
