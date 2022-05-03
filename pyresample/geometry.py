@@ -968,9 +968,9 @@ class DynamicAreaDefinition(object):
             Corresponding array shape as (height, width)
         area_extent:
             The area extent of the area.
-        pixel_size_x:
+        pixel_size_x_:
             Pixel width in projection units
-        pixel_size_y:
+        pixel_size_y_:
             Pixel height in projection units
         resolution:
             Resolution of the resulting area as (pixel_size_x, pixel_size_y)
@@ -1015,14 +1015,14 @@ class DynamicAreaDefinition(object):
 
     @property
     def pixel_size_x(self):
-        """Return pixel size in X direction."""
+        """Pixel width in projection units."""
         if self.resolution is None:
             return None
         return self.resolution[0]
 
     @property
     def pixel_size_y(self):
-        """Return pixel size in Y direction."""
+        """Return pixel size in Y direction in projection units."""
         if self.resolution is None:
             return None
         return self.resolution[1]
