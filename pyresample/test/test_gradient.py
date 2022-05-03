@@ -440,6 +440,51 @@ class TestRBGradientSearchResamplerArea2Area:
         np.testing.assert_allclose(corners, expected_corners)
         assert res.shape == dst_area.shape
 
+    def test_resample_area_to_area_bilinear(self):
+        """Resample area to area and check result values for bilinear."""
+        data = xr.DataArray(da.arange(np.prod(self.src_area.shape), dtype=np.float64).reshape(self.src_area.shape),
+                            dims=['y', 'x'])
+        dst_area = create_area_def("epsg3035", "EPSG:3035", 5, 5,
+                                   (2426378.0132, 1528101.2618,
+                                    6293974.6215, 5446513.5222))
+
+        expected_resampled_data = [[9657.73659888, 9736.06994061, 9744.63765978, 9684.31222874, 9556.53097857],
+                                   [9473.47091892, 9551.45304151, 9559.75772548, 9499.27398623, 9371.5132557],
+                                   [9207.81468378, 9285.56859415, 9293.95955182, 9233.88183094, 9106.9076482],
+                                   [8861.02653887, 8938.6220088, 8947.46145892, 8888.42994376, 8763.14315424],
+                                   [8434.30749791, 8511.74525856, 8521.39324998, 8464.10968423, 8341.53220395]]
+
+        self.resampler.target_geo_def = dst_area
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='bilinear',
+            fill_value=2.0).compute(scheduler='single-threaded').values
+        np.testing.assert_allclose(res, expected_resampled_data)
+        assert res.shape == dst_area.shape
+
+    def test_resample_area_to_area_nn(self):
+        """Resample area to area and check result values for nn."""
+        data = xr.DataArray(da.arange(np.prod(self.src_area.shape), dtype=np.float64).reshape(self.src_area.shape),
+                            dims=['y', 'x'])
+        dst_area = create_area_def("epsg3035", "EPSG:3035", 5, 5,
+                                   (2426378.0132, 1528101.2618,
+                                    6293974.6215, 5446513.5222))
+
+        expected_resampled_data = [[9658., 9752., 9746., 9640., 9534.],
+                                   [9457., 9551., 9545., 9539., 9333.],
+                                   [9257., 9250., 9344., 9238., 9132.],
+                                   [8856., 8949., 8943., 8936., 8730.],
+                                   [8455., 8548., 8542., 8435., 8329.]]
+
+        self.resampler.target_geo_def = dst_area
+        self.resampler.precompute()
+        res = self.resampler.compute(
+            data, method='nn',
+            fill_value=2.0).compute(scheduler='single-threaded').values
+        print(res)
+        np.testing.assert_allclose(res, expected_resampled_data)
+        assert res.shape == dst_area.shape
+
 
 class TestRBGradientSearchResamplerSwath2Area:
     """Test RBGradientSearchResampler for the Swath to Area case."""
