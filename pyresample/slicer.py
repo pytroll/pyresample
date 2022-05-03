@@ -41,7 +41,7 @@ except ImportError:
 def create_slicer(area_to_crop, area_to_contain):
     """Create a slicer for cropping *area_to_crop* based on *area_to_contain*.
 
-    Return a AreaSlicer or a SwathSlicer based on the first area type.
+    Return an AreaSlicer or a SwathSlicer based on the first area type.
     """
     if isinstance(area_to_crop, SwathDefinition):
         return SwathSlicer(area_to_crop, area_to_contain)
