@@ -275,7 +275,7 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self, frequency=None, force_clockwise: bool = True) -> tuple:
+    def get_bbox_lonlats(self, frequency: Optional[int] = None, force_clockwise: bool = True) -> tuple:
         """Return the bounding box lons and lats.
 
         Args:
@@ -374,7 +374,7 @@ class BaseDefinition:
         is_clockwise = -np.pi < angle < 0
         return is_clockwise
 
-    def get_bbox_coords(self, frequency=None):
+    def get_bbox_coords(self, frequency: Optional[int] = None):
         """Return the bounding box in projection coordinates."""
         s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
 
