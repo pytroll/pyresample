@@ -254,11 +254,6 @@ class BucketResampler(object):
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
 
-        .. note::
-
-            The :meth:`numpy.ufunc.reduceat` method is used here,
-            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
-
         Parameters
         ----------
         data : Numpy or Dask array
@@ -281,11 +276,6 @@ class BucketResampler(object):
 
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
-
-        .. note::
-
-            The :meth:`numpy.ufunc.reduceat`  method is temporarily used here,
-            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
         ----------
