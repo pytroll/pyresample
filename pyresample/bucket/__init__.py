@@ -311,13 +311,16 @@ class BucketResampler(object):
         ----------
         data : Numpy or Dask array
             Data to be binned.
+        fill_value : number (optional)
+            Value to use for empty buckets or all-NaN buckets.
         skipna : boolean (optional)
-                If True, skips NaN values for the maximum calculation
-                (similarly to Numpy's `nanmax`). Buckets containing only NaN are set to zero.
-                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                (similarly to Numpy's `max`).
-                In both cases, empty buckets are set to 0.
-                Default: True
+            If True, skips NaN values for the maximum calculation
+            (similarly to Numpy's `nanmax`). Buckets containing only NaN are
+            set to fill value.
+            If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+            (similarly to Numpy's `max`).
+            In both cases, empty buckets are set to fill value.
+            Default: True
 
         Returns
         -------
