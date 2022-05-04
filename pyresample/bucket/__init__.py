@@ -329,6 +329,11 @@ class BucketResampler(object):
         """
         max_ = self.get_max(data, fill_value=fill_value, skipna=skipna)
         min_ = self.get_min(data, fill_value=fill_value, skipna=skipna)
+        return self._get_abs_max_from_min_max(min_, max_)
+
+    @staticmethod
+    def _get_abs_max_from_min_max(min_, max_):
+        """From array of min and array of max, get array of abs max."""
         return da.where(-min_ > max_, min_, max_)
 
     def get_count(self):
