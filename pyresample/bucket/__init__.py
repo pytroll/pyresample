@@ -31,12 +31,13 @@ LOG = logging.getLogger(__name__)
 
 @dask.delayed(pure=True)
 def _sort_weights(statistic_method, weights):
-    """Sort idxs and weights based on weights."""
-    if statistic_method == 'min':
-        order = np.argsort(weights)
-    elif statistic_method == 'max':
-        order = np.argsort(weights)[::-1]
-
+    """Sort idxs and weights based on weights.
+    
+    By default the method for sorting is `'min'`.
+    """
+    order = np.argsort(weights)
+    if statistic_method == 'max':
+        return order[::-1]
     return order
 
 
