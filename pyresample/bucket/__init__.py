@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 @dask.delayed(pure=True)
 def _sort_weights(statistic_method, weights):
     """Sort idxs and weights based on weights.
-    
+
     By default the method for sorting is `'min'`.
     """
     order = np.argsort(weights)
@@ -44,6 +44,13 @@ def _sort_weights(statistic_method, weights):
 @dask.delayed(pure=True)
 def _get_bin_statistic(bins, idxs_sorted, weights_sorted):
     """Get the statistic of each bin."""
+    (unique_bin, unique_idx) = _find_unique_bins_and_indices(bins, idxs_sorted)
+
+    return _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted)
+
+
+def _find_unique_bins_and_indices(bins, idxs_sorted):
+    """Get unique bins and corresponding indices."""
     # get where the `idxs_sorted` located in `bins`
     binned_values = np.digitize(idxs_sorted, bins, right=True)
 
@@ -52,8 +59,11 @@ def _get_bin_statistic(bins, idxs_sorted, weights_sorted):
                                               (idxs_sorted < bins.min()) | (idxs_sorted > bins.max()))
 
     # get the first index and value in each bin
-    unique_bin, unique_idx = np.unique(binned_values_masked, return_index=True)
+    return np.unique(binned_values_masked, return_index=True)
 
+
+def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
+    """Expand bin statistics to cover all bins."""
     # create the full index array
     weight_idx = np.full(len(bins), -1, dtype='int32')
 
@@ -234,15 +244,9 @@ class BucketResampler(object):
         if data.chunks != self.idxs.chunks:
             self.idxs = da.rechunk(self.idxs, data.chunks)
 
-        # Calculate the min of the data falling to each bin
         out_size = self.target_area.size
 
-        # sort idxs and data
-        order = da.from_delayed(_sort_weights(statistic_method, data),
-                                shape=(len(data), ),
-                                dtype='int')
-        idxs_sorted = self.idxs[order]
-        data_sorted = np.append(data[order], np.nan)
+        (idxs_sorted, data_sorted) = self._get_sorted_indices_and_data(statistic_method, data)
 
         bins = np.linspace(0, out_size - 1, out_size).astype('int')
 
@@ -251,6 +255,15 @@ class BucketResampler(object):
                                      dtype=np.float64)
 
         return statistics.reshape(self.target_area.shape)
+
+    def _get_sorted_indices_and_data(self, statistic_method, data):
+        # sort idxs and data
+        order = da.from_delayed(_sort_weights(statistic_method, data),
+                                shape=(len(data), ),
+                                dtype='int')
+        idxs_sorted = self.idxs[order]
+        data_sorted = np.append(data[order], np.nan)
+        return (idxs_sorted, data_sorted)
 
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
