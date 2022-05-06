@@ -191,6 +191,13 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         self.assertTrue(hasattr(test_area, 'resolution'))
         np.testing.assert_allclose(test_area.resolution, (1.0, 1.0))
 
+    def test_dynamic_area_parser_passes_resolution(self):
+        """Test that the resolution from the file is passed to a dynamic area."""
+        from pyresample import parse_area_file
+        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'omerc_bb_1000')[0]
+        assert test_area.resolution == (1000, 1000)
+
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
         from pyresample.area_config import load_area_from_string

@@ -26,6 +26,13 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+EPSILON = 0.0000001
+
+
+def _unwrap_radians(val, mod=np.pi):
+    """Put *val* between -*mod* and *mod*."""
+    return (val + mod) % (2 * mod) - mod
+
 
 class SCoordinate(object):
     """Spherical coordinates.
@@ -35,7 +42,7 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        self.lon = lon
+        self.lon = float(_unwrap_radians(lon))
         self.lat = lat
 
     def cross2cart(self, point):
@@ -171,14 +178,6 @@ class CCoordinate(object):
                            np.arcsin(self.cart[2]))
 
 
-EPSILON = 0.0000001
-
-
-def modpi(val, mod=np.pi):
-    """Put *val* between -*mod* and *mod*."""
-    return (val + mod) % (2 * mod) - mod
-
-
 class Arc(object):
     """An arc of the great circle between two points."""
 
@@ -252,17 +251,23 @@ class Arc(object):
 
         From http://williams.best.vwh.net/intersect.htm
         """
-        if self.end.lon - self.start.lon > np.pi:
-            self.end.lon -= 2 * np.pi
-        if other_arc.end.lon - other_arc.start.lon > np.pi:
-            other_arc.end.lon -= 2 * np.pi
-        if self.end.lon - self.start.lon < -np.pi:
-            self.end.lon += 2 * np.pi
-        if other_arc.end.lon - other_arc.start.lon < -np.pi:
-            other_arc.end.lon += 2 * np.pi
+        end_lon = self.end.lon
+        other_end_lon = other_arc.end.lon
 
-        ea_ = self.start.cross2cart(self.end).normalize()
-        eb_ = other_arc.start.cross2cart(other_arc.end).normalize()
+        if self.end.lon - self.start.lon > np.pi:
+            end_lon -= 2 * np.pi
+        if other_arc.end.lon - other_arc.start.lon > np.pi:
+            other_end_lon -= 2 * np.pi
+        if self.end.lon - self.start.lon < -np.pi:
+            end_lon += 2 * np.pi
+        if other_arc.end.lon - other_arc.start.lon < -np.pi:
+            other_end_lon += 2 * np.pi
+
+        end_point = SCoordinate(end_lon, self.end.lat)
+        other_end_point = SCoordinate(other_end_lon, other_arc.end.lat)
+
+        ea_ = self.start.cross2cart(end_point).normalize()
+        eb_ = other_arc.start.cross2cart(other_end_point).normalize()
 
         cross = ea_.cross(eb_)
         lat = np.arctan2(cross.cart[2],
@@ -270,7 +275,7 @@ class Arc(object):
         lon = np.arctan2(cross.cart[1], cross.cart[0])
 
         return (SCoordinate(lon, lat),
-                SCoordinate(modpi(lon + np.pi), -lat))
+                SCoordinate(_unwrap_radians(lon + np.pi), -lat))
 
     def intersects(self, other_arc):
         """Check if the current arc and the *other_arc* intersect.
@@ -356,7 +361,7 @@ class SphPolygon:
             radius (optional, number): Radius of spherical planet.
         """
         self.vertices = vertices.astype(np.float64, copy=False)
-        self.lon = self.vertices[:, 0]
+        self.lon = _unwrap_radians(self.vertices[:, 0])
         self.lat = self.vertices[:, 1]
         self.radius = radius
         self.cvertices = np.array([np.cos(self.lat) * np.cos(self.lon),

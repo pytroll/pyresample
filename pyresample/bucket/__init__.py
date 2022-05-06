@@ -18,7 +18,9 @@
 """Code for resampling using bucket resampling."""
 
 import logging
+import math
 
+import dask
 import dask.array as da
 import numpy as np
 import xarray as xr
@@ -26,6 +28,67 @@ import xarray as xr
 from pyresample._spatial_mp import Proj
 
 LOG = logging.getLogger(__name__)
+
+
+def _sort_weights(statistic_method, weights):
+    """Sort idxs and weights based on weights.
+
+    By default the method for sorting is `'min'`.
+    """
+    order = np.argsort(weights)
+    if statistic_method == 'max':
+        return order[::-1]
+    return order
+
+
+def _get_bin_statistic(bins, idxs_sorted, weights_sorted):
+    """Get the statistic of each bin."""
+    (unique_bin, unique_idx) = _find_unique_bins_and_indices(bins, idxs_sorted)
+
+    return _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted)
+
+
+def _find_unique_bins_and_indices(bins, idxs_sorted):
+    """Get unique bins and corresponding indices."""
+    # get where the `idxs_sorted` located in `bins`
+    binned_values = np.digitize(idxs_sorted, bins, right=True)
+
+    # mask value outside of bin
+    binned_values_masked = np.ma.masked_array(binned_values,
+                                              (idxs_sorted < bins.min()) | (idxs_sorted > bins.max()))
+
+    # get the first index and value in each bin
+    return np.unique(binned_values_masked, return_index=True)
+
+
+def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
+    """Expand bin statistics to cover all bins."""
+    # create the full index array
+    weight_idx = np.full(len(bins), -1, dtype=np.int32)
+
+    # assign the valid index to array
+    weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
+
+    return weights_sorted[weight_idx]  # last value of weigths_sorted always nan
+
+
+@dask.delayed(pure=True)
+def _get_statistics(statistic_method, data, idxs, out_shape):
+    """Help method to get bin max/min in a dask delayed manner."""
+    (idxs_sorted, data_sorted) = _get_sorted_indices_and_data(statistic_method, data, idxs)
+    out_size = math.prod(out_shape)
+
+    bins = np.linspace(0, out_size - 1, out_size, dtype=np.int64)
+
+    return _get_bin_statistic(bins, idxs_sorted, data_sorted).reshape(out_shape)
+
+
+def _get_sorted_indices_and_data(statistic_method, data, idxs):
+    # sort idxs and data
+    order = _sort_weights(statistic_method, data)
+    idxs_sorted = idxs[order]
+    data_sorted = np.append(data[order], np.nan)
+    return (idxs_sorted, data_sorted)
 
 
 class BucketResampler(object):
@@ -189,64 +252,27 @@ class BucketResampler(object):
             statistic = da.where(nan_bins > 0, np.nan, statistic)
         return statistic
 
-    def _call_pandas_groupby_statistics(self, scipy_method, data, fill_value=None, skipna=None):
+    def _call_bin_statistic(self, statistic_method, data, fill_value=None, skipna=None):
         """Calculate statistics (min/max) for each bin with drop-in-a-bucket resampling."""
-        import dask.dataframe as dd
-        import pandas as pd
-
         if isinstance(data, xr.DataArray):
             data = data.data
         data = data.ravel()
 
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
-
         # Rechunk indices to match the data chunking
-        if weights.chunks != self.idxs.chunks:
-            self.idxs = da.rechunk(self.idxs, weights.chunks)
+        if data.chunks != self.idxs.chunks:
+            self.idxs = da.rechunk(self.idxs, data.chunks)
 
-        # Calculate the min of the data falling to each bin
-        out_size = self.target_area.size
+        out_shape = self.target_area.shape
 
-        # merge into one Dataframe
-        df = dd.concat([dd.from_dask_array(self.idxs), dd.from_dask_array(weights)],
-                       axis=1)
-        df.columns = ['x', 'values']
+        statistics = da.from_delayed(
+            _get_statistics(statistic_method, data, self.idxs, out_shape),
+            shape=out_shape,
+            dtype=np.float64)
 
-        if scipy_method == 'min':
-            statistics = df.map_partitions(lambda part: part.groupby(
-                                           np.digitize(part.x,
-                                                       bins=np.linspace(0, out_size, out_size)
-                                                       )
-                                           )['values'].min())
-
-        elif scipy_method == 'max':
-            statistics = df.map_partitions(lambda part: part.groupby(
-                                           np.digitize(part.x,
-                                                       bins=np.linspace(0, out_size, out_size)
-                                                       )
-                                           )['values'].max())
-
-        # fill missed index
-        statistics = (statistics + pd.Series(np.zeros(out_size))).fillna(0)
-
-        counts = self.get_sum(np.logical_not(np.isnan(data)).astype(np.int64)).ravel()
-
-        # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        statistics = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, statistics)
-
-        # set bin without data to fill value
-        statistics = da.where(counts == 0, fill_value, statistics)
-
-        return statistics.reshape(self.target_area.shape)
+        return statistics
 
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
-
-        .. warning::
-
-            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
-            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
         ----------
@@ -266,15 +292,10 @@ class BucketResampler(object):
             Bin-wise minimums in the target grid
         """
         LOG.info("Get min of values in each location")
-        return self._call_pandas_groupby_statistics('min', data, fill_value, skipna)
+        return self._call_bin_statistic('min', data, fill_value, skipna)
 
     def get_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate maximums for each bin with drop-in-a-bucket resampling.
-
-        .. warning::
-
-            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
-            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
 
         Parameters
         ----------
@@ -294,7 +315,7 @@ class BucketResampler(object):
             Bin-wise maximums in the target grid
         """
         LOG.info("Get max of values in each location")
-        return self._call_pandas_groupby_statistics('max', data, fill_value, skipna)
+        return self._call_bin_statistic('max', data, fill_value, skipna)
 
     def get_abs_max(self, data, fill_value=np.nan, skipna=True):
         """Calculate absolute maximums for each bin with drop-in-a-bucket resampling.

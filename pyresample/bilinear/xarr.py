@@ -88,7 +88,10 @@ class XArrayBilinearResampler(BilinearBase):
                              self._valid_input_index, self._index_array)
 
     def _get_output_xy(self):
-        return _get_output_xy(self._target_geo_def)
+        out_x, out_y = _get_output_xy(self._target_geo_def)
+        out_x = out_x[self._valid_output_indices]
+        out_y = out_y[self._valid_output_indices]
+        return out_x, out_y
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
@@ -102,6 +105,19 @@ class XArrayBilinearResampler(BilinearBase):
         return da.where(np.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
+        if ndim == 3:
+            dim_multiplier = res.shape[0]
+        else:
+            dim_multiplier = 1
+            res = da.reshape(res, (1, res.size))
+        if res.size != dim_multiplier * self._target_geo_def.size:
+            out = []
+            for i in range(dim_multiplier):
+                tmp = da.full(self._target_geo_def.size, np.nan)
+                tmp[self._valid_output_indices] = res[i, :]
+                out.append(tmp)
+            res = da.stack(out)
+
         shp = self._target_geo_def.shape
         if ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
