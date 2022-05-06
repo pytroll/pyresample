@@ -317,6 +317,46 @@ class BucketResampler(object):
         LOG.info("Get max of values in each location")
         return self._call_bin_statistic('max', data, fill_value, skipna)
 
+    def get_abs_max(self, data, fill_value=np.nan, skipna=True):
+        """Calculate absolute maximums for each bin with drop-in-a-bucket resampling.
+
+        Returns for each bin the original signed value which has the largest
+        absolute value.
+
+        .. warning::
+
+            The slow :meth:`pandas.DataFrame.groupby` method is temporarily used here,
+            as the `dask_groupby <https://github.com/dcherian/dask_groupby>`_ is still under development.
+
+        Parameters
+        ----------
+        data : Numpy or Dask array
+            Data to be binned.
+        fill_value : number (optional)
+            Value to use for empty buckets or all-NaN buckets.
+        skipna : boolean (optional)
+            If True, skips NaN values for the maximum calculation
+            (similarly to Numpy's `nanmax`). Buckets containing only NaN are
+            set to fill value.
+            If False, sets the bucket to NaN if one or more NaN values are present in the bucket
+            (similarly to Numpy's `max`).
+            In both cases, empty buckets are set to fill value.
+            Default: True
+
+        Returns
+        -------
+        data : Numpy or Dask array
+            Bin-wise maximums in the target grid
+        """
+        max_ = self.get_max(data, fill_value=fill_value, skipna=skipna)
+        min_ = self.get_min(data, fill_value=fill_value, skipna=skipna)
+        return self._get_abs_max_from_min_max(min_, max_)
+
+    @staticmethod
+    def _get_abs_max_from_min_max(min_, max_):
+        """From array of min and array of max, get array of abs max."""
+        return da.where(-min_ > max_, min_, max_)
+
     def get_count(self):
         """Count the number of occurrences for each bin using drop-in-a-bucket resampling.
 
