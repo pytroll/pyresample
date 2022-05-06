@@ -2145,6 +2145,10 @@ class TestStackedAreaDefinition:
         adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
                                      area1.crs, area1.width, y_size, area_extent)
 
+
+class TestCreateAreaDef:
+    """Test the 'create_area_def' utility function."""
+
     @staticmethod
     def _compare_area_defs(actual, expected, use_proj4=False):
         if use_proj4:
