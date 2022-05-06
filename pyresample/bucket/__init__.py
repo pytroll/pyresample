@@ -248,7 +248,7 @@ class BucketResampler(object):
 
         (idxs_sorted, data_sorted) = self._get_sorted_indices_and_data(statistic_method, data)
 
-        bins = np.linspace(0, out_size - 1, out_size).astype('int')
+        bins = np.linspace(0, out_size - 1, out_size, dtype=np.int64)
 
         statistics = da.from_delayed(_get_bin_statistic(bins, idxs_sorted, data_sorted),
                                      shape=(len(bins),),
