@@ -1012,7 +1012,8 @@ class DynamicAreaDefinition(object):
                        corners[3] + y_resolution / 2)
         return area_extent, width, height
 
-    def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None):
+    def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None,
+               antimeridian_mode=None):
         """Create an AreaDefinition from this area with help of some extra info.
 
         Parameters
@@ -1047,20 +1048,19 @@ class DynamicAreaDefinition(object):
         shape = None if None in shape else shape
         area_extent = self.area_extent
         if not area_extent or not width or not height:
-            corners = self._compute_bound_centers(proj_dict, lonslats)
+            projection, corners = self._compute_bound_centers(proj_dict, lonslats, antimeridian_mode=antimeridian_mode)
             area_extent, width, height = self.compute_domain(corners, resolution, shape)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
                               area_extent, self.rotation)
 
-    def _compute_bound_centers(self, proj_dict, lonslats):
+    def _compute_bound_centers(self, proj_dict, lonslats, antimeridian_mode):
         lons, lats = self._extract_lons_lats(lonslats)
         if hasattr(lons, 'compute'):
-            return self._compute_bound_centers_dask(proj_dict, lons, lats)
-        return self._compute_bound_centers_numpy(proj_dict, lons, lats)
+            return self._compute_bound_centers_dask(proj_dict, lons, lats, antimeridian_mode)
+        return self._compute_bound_centers_numpy(proj_dict, lons, lats, antimeridian_mode)
 
-    def _compute_bound_centers_numpy(self, proj_dict, lons, lats):
-        # TODO: Do more dask-friendly things here
+    def _compute_bound_centers_numpy(self, proj_dict, lons, lats, antimeridian_mode):
         proj4 = Proj(proj_dict)
         xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
         xarr[xarr > 9e29] = np.nan
@@ -1076,9 +1076,9 @@ class DynamicAreaDefinition(object):
             # cross anti-meridian of projection
             xmin = np.nanmin(xarr[xarr >= 0])
             xmax = np.nanmax(xarr[xarr < 0]) + 360
-        return xmin, ymin, xmax, ymax
+        return proj_dict, (xmin, ymin, xmax, ymax)
 
-    def _compute_bound_centers_dask(self, proj_dict, lons, lats):
+    def _compute_bound_centers_dask(self, proj_dict, lons, lats, antimeridian_mode):
         import dask.array as da
 
         from pyresample.utils.proj4 import DaskFriendlyTransformer
@@ -1105,10 +1105,16 @@ class DynamicAreaDefinition(object):
             # cross anti-meridian of projection
             xarr_pos = da.where(xarr >= 0, xarr, np.nan)
             xarr_neg = da.where(xarr < 0, xarr, np.nan)
-            xmin = np.nanmin(xarr_pos)
-            xmax = np.nanmax(xarr_neg) + 360
-            xmin, xmax = da.compute(xmin, xmax)
-        return xmin, ymin, xmax, ymax
+            new_xmin = np.nanmin(xarr_pos)
+            new_xmax = np.nanmax(xarr_neg) + 360
+            if antimeridian_mode == "global_extents":
+                new_xmin, new_xmax = (-180.0, 180.0)
+            else:
+                new_xmin, new_xmax = da.compute(new_xmin, new_xmax)
+            if antimeridian_mode == "modify_projection":
+                proj_dict.update({"pm": 180.0})
+            xmin, xmax = new_xmin, new_xmax
+        return proj_dict, (xmin, ymin, xmax, ymax)
 
     def _extract_lons_lats(self, lonslats):
         try:

@@ -2501,6 +2501,54 @@ class TestDynamicAreaDefinition:
         assert x_size == 5
         assert y_size == 5
 
+    @pytest.mark.parametrize(
+        (
+            "antimeridian_mode",
+            "expected_shape",
+            "expected_extents",
+            "include_proj_components",
+            "exclude_proj_components"
+        ),
+        [
+            (None, (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
+            ("modify_extents", (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
+            ("modify_projection", (21, 59), (164.75, 24.75, 194.25, 35.25), ("+pm=180",), tuple()),
+            ("global_extents", (21, 721), (-180.0, 24.75, 180.0, 35.25), tuple(), ("+pm=180",)),
+        ],
+    )
+    @pytest.mark.parametrize("use_dask", [False, True])
+    def test_antimeridian_mode(self,
+                               use_dask,
+                               antimeridian_mode,
+                               expected_shape,
+                               expected_extents,
+                               include_proj_components,
+                               exclude_proj_components):
+        """Test that antimeridian_mode affects the result."""
+        dyn_area = geometry.DynamicAreaDefinition('test_area', '', {'proj': 'longlat'})
+        lons, lats = _get_fake_antimeridian_lonlats(use_dask)
+        area = dyn_area.freeze(lonslats=(lons, lats), resolution=0.5, antimeridian_mode=antimeridian_mode)
+        proj_str = area.crs.to_proj4()
+
+        assert area.shape == expected_shape
+        np.testing.assert_allclose(area.area_extent, expected_extents)
+        for include_comp in include_proj_components:
+            assert include_comp in proj_str
+        for exclude_comp in exclude_proj_components:
+            assert exclude_comp not in proj_str
+
+
+def _get_fake_antimeridian_lonlats(use_dask: bool) -> tuple:
+    lon_min = 165
+    lon_max = 195
+    lons = np.arange(lon_min, lon_max, dtype=np.float64)
+    lons[lons >= 180] -= 360.0
+    lats = np.linspace(25.0, 35.0, lons.size, dtype=np.float64)
+    if use_dask:
+        lons = da.from_array(lons, chunks=lons.size // 3)
+        lats = da.from_array(lats, chunks=lons.size // 3)
+    return lons, lats
+
 
 class TestCrop(unittest.TestCase):
     """Test the area helpers."""
