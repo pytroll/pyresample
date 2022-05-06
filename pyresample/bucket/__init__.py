@@ -271,15 +271,6 @@ class BucketResampler(object):
 
         return statistics
 
-    def _get_sorted_indices_and_data(self, statistic_method, data):
-        # sort idxs and data
-        order = da.from_delayed(_sort_weights(statistic_method, data),
-                                shape=(len(data), ),
-                                dtype=np.int32)
-        idxs_sorted = self.idxs[order]
-        data_sorted = np.append(data[order], np.nan)
-        return (idxs_sorted, data_sorted)
-
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.
 
