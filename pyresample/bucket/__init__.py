@@ -21,6 +21,7 @@ import logging
 
 import dask
 import dask.array as da
+import math
 import numpy as np
 import xarray as xr
 
@@ -72,13 +73,15 @@ def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
 
 
 @dask.delayed(pure=True)
-def _get_statistics(statistic_method, data, idxs, out_size):
+def _get_statistics(statistic_method, data, idxs, out_shape):
     """Help method to get bin max/min in a dask delayed manner."""
     (idxs_sorted, data_sorted) = _get_sorted_indices_and_data(statistic_method, data, idxs)
+    out_size = math.prod(out_shape)
+
 
     bins = np.linspace(0, out_size - 1, out_size, dtype=np.int64)
 
-    return _get_bin_statistic(bins, idxs_sorted, data_sorted)
+    return _get_bin_statistic(bins, idxs_sorted, data_sorted).reshape(out_shape)
 
 
 def _get_sorted_indices_and_data(statistic_method, data, idxs):
@@ -260,13 +263,14 @@ class BucketResampler(object):
         if data.chunks != self.idxs.chunks:
             self.idxs = da.rechunk(self.idxs, data.chunks)
 
-        out_size = self.target_area.size
+        out_shape = self.target_area.shape
 
         statistics = da.from_delayed(
-            _get_statistics(statistic_method, data, self.idxs, out_size),
-            shape=(out_size,),
+            _get_statistics(statistic_method, data, self.idxs, out_shape),
+            shape=out_shape,
             dtype=np.float64)
 
+        breakpoint()
         return statistics.reshape(self.target_area.shape)
 
     def _get_sorted_indices_and_data(self, statistic_method, data):
