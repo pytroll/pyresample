@@ -70,6 +70,7 @@ def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
 
     return weights_sorted[weight_idx]  # last value of weigths_sorted always nan
 
+
 @dask.delayed(pure=True)
 def _get_statistics(statistic_method, data, idxs, out_size):
     """Help method to get bin max/min in a dask delayed manner."""
@@ -262,9 +263,9 @@ class BucketResampler(object):
         out_size = self.target_area.size
 
         statistics = da.from_delayed(
-                _get_statistics(statistic_method, data, self.idxs, out_size),
-                shape=(out_size,),
-                dtype=np.float64)
+            _get_statistics(statistic_method, data, self.idxs, out_size),
+            shape=(out_size,),
+            dtype=np.float64)
 
         return statistics.reshape(self.target_area.shape)
 
