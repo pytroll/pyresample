@@ -29,7 +29,6 @@ from pyresample._spatial_mp import Proj
 LOG = logging.getLogger(__name__)
 
 
-@dask.delayed(pure=True)
 def _sort_weights(statistic_method, weights):
     """Sort idxs and weights based on weights.
 
@@ -41,7 +40,6 @@ def _sort_weights(statistic_method, weights):
     return order
 
 
-@dask.delayed(pure=True)
 def _get_bin_statistic(bins, idxs_sorted, weights_sorted):
     """Get the statistic of each bin."""
     (unique_bin, unique_idx) = _find_unique_bins_and_indices(bins, idxs_sorted)
@@ -71,6 +69,23 @@ def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
     weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
 
     return weights_sorted[weight_idx]  # last value of weigths_sorted always nan
+
+@dask.delayed(pure=True)
+def _get_statistics(statistic_method, data, idxs, out_size):
+    """Help method to get bin max/min in a dask delayed manner."""
+    (idxs_sorted, data_sorted) = _get_sorted_indices_and_data(statistic_method, data, idxs)
+
+    bins = np.linspace(0, out_size - 1, out_size, dtype=np.int64)
+
+    return _get_bin_statistic(bins, idxs_sorted, data_sorted)
+
+
+def _get_sorted_indices_and_data(statistic_method, data, idxs):
+    # sort idxs and data
+    order = _sort_weights(statistic_method, data)
+    idxs_sorted = idxs[order]
+    data_sorted = np.append(data[order], np.nan)
+    return (idxs_sorted, data_sorted)
 
 
 class BucketResampler(object):
@@ -246,13 +261,10 @@ class BucketResampler(object):
 
         out_size = self.target_area.size
 
-        (idxs_sorted, data_sorted) = self._get_sorted_indices_and_data(statistic_method, data)
-
-        bins = np.linspace(0, out_size - 1, out_size, dtype=np.int64)
-
-        statistics = da.from_delayed(_get_bin_statistic(bins, idxs_sorted, data_sorted),
-                                     shape=(len(bins),),
-                                     dtype=np.float64)
+        statistics = da.from_delayed(
+                _get_statistics(statistic_method, data, self.idxs, out_size),
+                shape=(out_size,),
+                dtype=np.float64)
 
         return statistics.reshape(self.target_area.shape)
 
