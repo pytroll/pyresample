@@ -18,10 +18,10 @@
 """Code for resampling using bucket resampling."""
 
 import logging
+import math
 
 import dask
 import dask.array as da
-import math
 import numpy as np
 import xarray as xr
 
