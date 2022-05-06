@@ -65,7 +65,7 @@ def _find_unique_bins_and_indices(bins, idxs_sorted):
 def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
     """Expand bin statistics to cover all bins."""
     # create the full index array
-    weight_idx = np.full(len(bins), -1, dtype='int32')
+    weight_idx = np.full(len(bins), -1, dtype=np.int32)
 
     # assign the valid index to array
     weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
@@ -260,7 +260,7 @@ class BucketResampler(object):
         # sort idxs and data
         order = da.from_delayed(_sort_weights(statistic_method, data),
                                 shape=(len(data), ),
-                                dtype='int')
+                                dtype=np.int32)
         idxs_sorted = self.idxs[order]
         data_sorted = np.append(data[order], np.nan)
         return (idxs_sorted, data_sorted)
