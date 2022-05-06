@@ -269,8 +269,7 @@ class BucketResampler(object):
             shape=out_shape,
             dtype=np.float64)
 
-        breakpoint()
-        return statistics.reshape(self.target_area.shape)
+        return statistics
 
     def _get_sorted_indices_and_data(self, statistic_method, data):
         # sort idxs and data
