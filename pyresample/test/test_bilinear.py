@@ -732,6 +732,20 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(p_1 == 1.0) and np.all(p_2 == 1.0) and
                         np.all(p_3 == 1.0) and np.all(p_4 == 1.0))
 
+    def test_get_sample_from_bil_info_1d(self):
+        """Test resampling using resampling indices for 1D data."""
+        import dask.array as da
+        from xarray import DataArray
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        # Sample from 1D data
+        data = DataArray(da.ones(self.source_def_1d.shape), dims=('y'))
+        res = resampler.get_sample_from_bil_info(data)  # noqa
+
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
         """Test slice array creation."""
