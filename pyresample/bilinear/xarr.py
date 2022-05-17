@@ -116,8 +116,8 @@ class XArrayBilinearResampler(BilinearBase):
         res = self._reshape_to_target_area(res, data.ndim)
 
         self._add_missing_coordinates(data)
-
-        return DataArray(res, dims=data.dims, coords=self._out_coords)
+        dims = self._get_output_dims(data, res)
+        return DataArray(res, dims=dims, coords=self._out_coords)
 
     def _add_missing_coordinates(self, data):
         self._add_x_and_y_coordinates()
@@ -138,6 +138,11 @@ class XArrayBilinearResampler(BilinearBase):
             self._out_coords['bands'] = data_coords['bands']
         elif 'bands' in self._out_coords:
             del self._out_coords['bands']
+
+    def _get_output_dims(self, data, res):
+        if data.ndim == res.ndim:
+            return data.dims
+        return list(self._out_coords.keys())
 
     def _slice_data(self, data, fill_value):
         def from_delayed(delayeds, shp):
