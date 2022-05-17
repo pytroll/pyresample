@@ -718,6 +718,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test slicing 1D data."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
@@ -736,6 +737,7 @@ class TestXarrayBilinear(unittest.TestCase):
         """Test resampling using resampling indices for 1D data."""
         import dask.array as da
         from xarray import DataArray
+
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
