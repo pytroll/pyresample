@@ -739,7 +739,7 @@ class TestXarrayBilinear(unittest.TestCase):
         from pyresample.bilinear import XArrayBilinearResampler
 
         resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
-                                            self.radius)
+                                            50e5)
         resampler.get_bil_info()
 
         # Sample from 1D data
@@ -747,6 +747,9 @@ class TestXarrayBilinear(unittest.TestCase):
         res = resampler.get_sample_from_bil_info(data)  # noqa
         assert 'x' in res.dims
         assert 'y' in res.dims
+
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum().compute(), 4)
 
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
