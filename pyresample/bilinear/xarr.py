@@ -117,6 +117,7 @@ class XArrayBilinearResampler(BilinearBase):
 
         self._add_missing_coordinates(data)
         dims = self._get_output_dims(data, res)
+
         return DataArray(res, dims=dims, coords=self._out_coords)
 
     def _add_missing_coordinates(self, data):

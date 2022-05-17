@@ -745,6 +745,8 @@ class TestXarrayBilinear(unittest.TestCase):
         # Sample from 1D data
         data = DataArray(da.ones(self.source_def_1d.shape), dims=('y'))
         res = resampler.get_sample_from_bil_info(data)  # noqa
+        assert 'x' in res.dims
+        assert 'y' in res.dims
 
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
