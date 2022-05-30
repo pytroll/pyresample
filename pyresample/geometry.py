@@ -61,19 +61,13 @@ HashType = hashlib._hashlib.HASH
 class DimensionError(ValueError):
     """Wrap ValueError."""
 
-    pass
-
 
 class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
 
-    pass
-
 
 class InvalidArea(ValueError):
     """Error to be raised when an area is invalid for a given purpose."""
-
-    pass
 
 
 class BaseDefinition:
