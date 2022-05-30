@@ -321,15 +321,15 @@ class BaseDefinition:
     def _get_bbox_slices(self, frequency):
         height, width = self.shape
         if frequency is None:
-            line_num = height
+            row_num = height
             col_num = width
         else:
-            line_num = frequency
+            row_num = frequency
             col_num = frequency
         s1_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
-        s2_slice = (np.linspace(0, height - 1, line_num, dtype=int), -1)
+        s2_slice = (np.linspace(0, height - 1, row_num, dtype=int), -1)
         s3_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
-        s4_slice = (np.linspace(height - 1, 0, line_num, dtype=int), 0)
+        s4_slice = (np.linspace(height - 1, 0, row_num, dtype=int), 0)
         return s1_slice, s2_slice, s3_slice, s4_slice
 
     @staticmethod
