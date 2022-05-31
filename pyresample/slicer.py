@@ -86,7 +86,7 @@ class SwathSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.get_bbox_coords(10)
+        x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(10)
         poly = Polygon(zip(*self._transformer.transform(x, y)))
         return poly
 
@@ -139,7 +139,7 @@ class AreaSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.get_bbox_coords(frequency=10)
+        x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
             x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction='INVERSE')
@@ -167,7 +167,7 @@ class AreaSlicer(Slicer):
         except ValueError as err:
             raise InvalidArea(str(err))
         from shapely.geometry import Polygon
-        poly_to_crop = Polygon(zip(*self.area_to_crop.get_bbox_coords(frequency=10)))
+        poly_to_crop = Polygon(zip(*self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10)))
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
         bounds = self._sanitize_polygon_bounds(bounds)

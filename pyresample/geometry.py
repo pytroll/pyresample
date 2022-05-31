@@ -301,22 +301,26 @@ class BaseDefinition:
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
-        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
-        s1_lon, s1_lat = self.get_lonlats(data_slice=s1_slice)
-        s2_lon, s2_lat = self.get_lonlats(data_slice=s2_slice)
-        s3_lon, s3_lat = self.get_lonlats(data_slice=s3_slice)
-        s4_lon, s4_lat = self.get_lonlats(data_slice=s4_slice)
-        lons, lats = zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
-                           (s2_lon.squeeze(), s2_lat.squeeze()),
-                           (s3_lon.squeeze(), s3_lat.squeeze()),
-                           (s4_lon.squeeze(), s4_lat.squeeze())])
-        if hasattr(lons[0], 'compute') and da is not None:
-            lons, lats = da.compute(lons, lats)
+        lons, lats = self._get_bbox_elements(self.get_lonlats, frequency)
         if force_clockwise and not self._corner_is_clockwise(
                 lons[0][-2], lats[0][-2], lons[0][-1], lats[0][-1], lons[1][1], lats[1][1]):
             # going counter-clockwise
             lons, lats = self._reverse_boundaries(lons, lats)
         return lons, lats
+
+    def _get_bbox_elements(self, coord_fun, frequency: Optional[int] = None) -> tuple:
+        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
+        s1_dim1, s1_dim2 = coord_fun(data_slice=s1_slice)
+        s2_dim1, s2_dim2 = coord_fun(data_slice=s2_slice)
+        s3_dim1, s3_dim2 = coord_fun(data_slice=s3_slice)
+        s4_dim1, s4_dim2 = coord_fun(data_slice=s4_slice)
+        dim1, dim2 = zip(*[(s1_dim1.squeeze(), s1_dim2.squeeze()),
+                           (s2_dim1.squeeze(), s2_dim2.squeeze()),
+                           (s3_dim1.squeeze(), s3_dim2.squeeze()),
+                           (s4_dim1.squeeze(), s4_dim2.squeeze())])
+        if hasattr(dim1[0], 'compute') and da is not None:
+            dim1, dim2 = da.compute(dim1, dim2)
+        return dim1, dim2
 
     def _get_bbox_slices(self, frequency):
         height, width = self.shape
@@ -368,19 +372,10 @@ class BaseDefinition:
         is_clockwise = -np.pi < angle < 0
         return is_clockwise
 
-    def get_bbox_coords(self, frequency: Optional[int] = None):
+    def get_edge_bbox_in_projection_coordinates(self, frequency: Optional[int] = None):
         """Return the bounding box in projection coordinates."""
-        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
-
-        s1_x, s1_y = self.get_proj_coords(data_slice=s1_slice)
-        s2_x, s2_y = self.get_proj_coords(data_slice=s2_slice)
-        s3_x, s3_y = self.get_proj_coords(data_slice=s3_slice)
-        s4_x, s4_y = self.get_proj_coords(data_slice=s4_slice)
-
-        x = np.hstack((s1_x, s2_x.T, s3_x, s4_x.T)).squeeze()
-        y = np.hstack((s1_y, s2_y.T, s3_y, s4_y.T)).squeeze()
-
-        return x, y
+        x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
+        return np.hstack(x), np.hstack(y)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
