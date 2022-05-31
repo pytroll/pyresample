@@ -1963,6 +1963,32 @@ class TestSwathDefinition(unittest.TestCase):
         sd = SwathDefinition(xlons, xlats)
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
 
+    def test_crs_is_stored(self):
+        """Check that the CRS attribute is stored when passed."""
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+
+        from pyproj import CRS
+
+        expected_crs = CRS(proj="longlat", ellps="bessel")
+
+        sd = SwathDefinition(lons, lats, crs=expected_crs)
+        assert sd.crs == expected_crs
+
+    def test_crs_is_created_by_default(self):
+        """Check that the CRS attribute is set to a default."""
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+
+        from pyproj import CRS
+
+        expected_crs = CRS(proj="longlat", ellps="WGS84")
+
+        sd = SwathDefinition(lons, lats)
+        assert sd.crs == expected_crs
+
 
 class TestStackedAreaDefinition:
     """Test the StackedAreaDefition."""
