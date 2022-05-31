@@ -372,6 +372,13 @@ class BaseDefinition:
         is_clockwise = -np.pi < angle < 0
         return is_clockwise
 
+    def get_edge_lonlats(self, frequency=None):
+        """Get the concatenated boundary of the current swath."""
+        lons, lats = self.get_bbox_lonlats(frequency=frequency, force_clockwise=False)
+        blons = np.ma.concatenate(lons)
+        blats = np.ma.concatenate(lats)
+        return blons, blats
+
     def get_edge_bbox_in_projection_coordinates(self, frequency: Optional[int] = None):
         """Return the bounding box in projection coordinates."""
         x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
@@ -837,13 +844,6 @@ class SwathDefinition(CoordinateDefinition):
         lon_0 = self.lons[int(lines / 2), int(cols / 2)]
         return {'proj': projection, 'ellps': ellipsoid,
                 'lat_0': lat_0, 'lon_0': lon_0}
-
-    def get_edge_lonlats(self, frequency=None):
-        """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats(frequency=frequency, force_clockwise=False)
-        blons = np.ma.concatenate(lons)
-        blats = np.ma.concatenate(lats)
-        return blons, blats
 
     def compute_bb_proj_params(self, proj_dict):
         """Compute BB projection parameters."""
