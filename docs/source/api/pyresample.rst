@@ -129,14 +129,6 @@ pyresample.spherical\_utils module
    :undoc-members:
    :show-inheritance:
 
-pyresample.test\_resampler module
----------------------------------
-
-.. automodule:: pyresample.test_resampler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pyresample.version module
 -------------------------
 
