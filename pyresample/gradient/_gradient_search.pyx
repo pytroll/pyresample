@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2013-2019
+# Copyright (c) 2013-2022
 
 # Author(s):
 
@@ -33,7 +33,7 @@ from libc.math cimport fabs, isinf
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -53,7 +53,7 @@ cdef inline void nn(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, dou
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
     cdef int l_a, l_b, p_a, p_b
     cdef double w_l, w_p
     cdef size_t z_size = res.shape[0]
@@ -83,14 +83,14 @@ cdef inline void bil(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, do
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void indices_xy(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil:
+cdef inline void indices_xy(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
     res[1] = dl + l0
     res[0] = dp + p0
 
-ctypedef void (*FN)(const DTYPE_t [:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t [:] res) nogil
+ctypedef void (*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -134,20 +134,20 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef void one_step_gradient_search_no_gil(const DTYPE_t [:, :, :] data,
-                                          const DTYPE_t [:, :] src_x,
-                                          const DTYPE_t [:, :] src_y,
-                                          const DTYPE_t [:, :] xl,
-                                          const DTYPE_t [:, :] xp,
-                                          const DTYPE_t [:, :] yl,
-                                          const DTYPE_t [:, :] yp,
-                                          const DTYPE_t [:, :] dst_x,
-                                          const DTYPE_t [:, :] dst_y,
+cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
+                                          const DTYPE_t[:, :] src_x,
+                                          const DTYPE_t[:, :] src_y,
+                                          const DTYPE_t[:, :] xl,
+                                          const DTYPE_t[:, :] xp,
+                                          const DTYPE_t[:, :] yl,
+                                          const DTYPE_t[:, :] yp,
+                                          const DTYPE_t[:, :] dst_x,
+                                          const DTYPE_t[:, :] dst_y,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
-                                          DTYPE_t [:, :, :] result_array,
-                                          size_t [:] elements) nogil:
+                                          DTYPE_t[:, :, :] result_array,
+                                          size_t[:] elements) nogil:
 
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = src_x.shape[1] - 1
