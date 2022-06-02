@@ -602,18 +602,18 @@ def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=
     """Bilinear interpolation implementation for resample_blocks."""
     mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
 
-    w_l, l_a = np.modf(y_indices.clip(0, data.shape[-2] - 1))
-    w_p, p_a = np.modf(x_indices.clip(0, data.shape[-1] - 1))
+    weight_l, l_start = np.modf(y_indices.clip(0, data.shape[-2] - 1))
+    weight_p, p_start = np.modf(x_indices.clip(0, data.shape[-1] - 1))
 
-    l_a = l_a.astype(int)
-    p_a = p_a.astype(int)
-    l_b = np.clip(l_a + 1, 1, data.shape[-2] - 1)
-    p_b = np.clip(p_a + 1, 1, data.shape[-1] - 1)
+    l_start = l_start.astype(int)
+    p_start = p_start.astype(int)
+    l_end = np.clip(l_start + 1, 1, data.shape[-2] - 1)
+    p_end = np.clip(p_start + 1, 1, data.shape[-1] - 1)
 
-    res = ((1 - w_l) * (1 - w_p) * data[..., l_a, p_a] +
-           (1 - w_l) * w_p * data[..., l_a, p_b] +
-           w_l * (1 - w_p) * data[..., l_b, p_a] +
-           w_l * w_p * data[..., l_b, p_b])
+    res = ((1 - weight_l) * (1 - weight_p) * data[..., l_start, p_start] +
+           (1 - weight_l) * weight_p * data[..., l_start, p_end] +
+           weight_l * (1 - weight_p) * data[..., l_end, p_start] +
+           weight_l * weight_p * data[..., l_end, p_end])
     res = np.where(mask, fill_value, res)
     return res
 
