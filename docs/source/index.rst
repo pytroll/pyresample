@@ -26,16 +26,14 @@ XArray objects (including dask array support) are provided in separate
 Resampler class interfaces and are in active development.
 Utility functions are available to easily plot data using Cartopy.
 
-.. versionchanged:: 1.15
-
-    Dropped Python 2 and Python <3.4 support.
-
 Documentation
 -------------
 .. toctree::
    :maxdepth: 2
 
-   installation
+   concepts/index
+   tutorials/index
+   howtos/index
    geo_def
    geometry_utils
    geo_filter
@@ -48,5 +46,6 @@ Documentation
    data_reduce
    roadmap
    API <api/pyresample>
+   dev_guide/index
 
 
