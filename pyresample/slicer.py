@@ -56,6 +56,18 @@ class Slicer(ABC):
 
     Provided an Area-to-crop and an Area-to-contain, a Slicer provides methods
     to find slices that enclose `area-to-contain` inside `area-to-crop`.
+
+    Example:
+        For slicing a full-disk MSG area using a polar-stereographic area over Germany:
+
+        >>> from pyresample import slicer
+        >>> from satpy.resample import get_area_def
+        >>> msg_area = get_area_def("msg_seviri_fes_3km")
+        >>> germ_area = get_area_def("germ")
+        >>> slc = slicer.create_slicer(msg_area, germ_area)
+        >>> slc.get_slices()
+        (slice(1900, 2242, None), slice(233, 423, None))
+
     """
 
     def __init__(self, area_to_crop, area_to_contain):
