@@ -1,6 +1,9 @@
 name: readthedocs
+channels:
+  - conda-forge
 dependencies:
-  - python
+  - python=3.10
+  - pip
   - xarray
   - zarr
   - dask
@@ -9,7 +12,6 @@ dependencies:
   - cython
   - cartopy
   - pytest
-  - proj4
   - pyproj
   - shapely
   - pykdtree

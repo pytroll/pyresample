@@ -1963,6 +1963,32 @@ class TestSwathDefinition(unittest.TestCase):
         sd = SwathDefinition(xlons, xlats)
         self.assertRaises(RuntimeError, sd.geocentric_resolution)
 
+    def test_crs_is_stored(self):
+        """Check that the CRS attribute is stored when passed."""
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+
+        from pyproj import CRS
+
+        expected_crs = CRS(proj="longlat", ellps="bessel")
+
+        sd = SwathDefinition(lons, lats, crs=expected_crs)
+        assert sd.crs == expected_crs
+
+    def test_crs_is_created_by_default(self):
+        """Check that the CRS attribute is set to a default."""
+        from pyresample.geometry import SwathDefinition
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+
+        from pyproj import CRS
+
+        expected_crs = CRS(proj="longlat", ellps="WGS84")
+
+        sd = SwathDefinition(lons, lats)
+        assert sd.crs == expected_crs
+
 
 class TestStackedAreaDefinition:
     """Test the StackedAreaDefition."""
@@ -2899,6 +2925,33 @@ class TestBboxLonlats:
             assert is_cw
         else:
             assert not is_cw
+
+    def test_swath_def_bbox_decimated(self):
+        from pyresample.geometry import SwathDefinition
+
+        from .utils import create_test_latitude, create_test_longitude
+        swath_shape = (50, 10)
+        lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
+        lons = create_test_longitude(lon_start, lon_stop, swath_shape)
+        lats = create_test_latitude(lat_start, lat_stop, swath_shape)
+
+        swath_def = SwathDefinition(lons, lats)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=None)
+        assert len(bbox_lons) == len(bbox_lats)
+        assert len(bbox_lons) == 4
+        assert len(bbox_lons[0]) == 10
+        assert len(bbox_lons[1]) == 50
+        assert len(bbox_lons[2]) == 10
+        assert len(bbox_lons[3]) == 50
+
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=5)
+        assert len(bbox_lons) == len(bbox_lats)
+        assert len(bbox_lons) == 4
+        assert len(bbox_lons[0]) == 5
+        assert len(bbox_lons[1]) == 5
+        assert len(bbox_lons[2]) == 5
+        assert len(bbox_lons[3]) == 5
+        assert bbox_lons[0][-1] == bbox_lons[1][0]
 
 
 def _is_clockwise(lons, lats):

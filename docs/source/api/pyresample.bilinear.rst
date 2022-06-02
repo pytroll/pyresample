@@ -12,7 +12,6 @@ pyresample.bilinear.xarr module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

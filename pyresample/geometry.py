@@ -61,13 +61,13 @@ HashType = hashlib._hashlib.HASH
 class DimensionError(ValueError):
     """Wrap ValueError."""
 
-    pass
-
 
 class IncompatibleAreas(ValueError):
     """Error when the areas to combine are not compatible."""
 
-    pass
+
+class InvalidArea(ValueError):
+    """Error to be raised when an area is invalid for a given purpose."""
 
 
 class BaseDefinition:
@@ -269,10 +269,13 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self, force_clockwise: bool = True) -> tuple:
+    def get_bbox_lonlats(self, frequency: Optional[int] = None, force_clockwise: bool = True) -> tuple:
         """Return the bounding box lons and lats.
 
         Args:
+            frequency:
+                The number of points to provide for each side. By default (None)
+                the full width and height will be provided.
             force_clockwise:
                 Perform minimal checks and reordering of coordinates to ensure
                 that the returned coordinates follow a clockwise direction.
@@ -298,21 +301,40 @@ class BaseDefinition:
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
-        s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
-        s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
-        s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
-        s4_lon, s4_lat = self.get_lonlats(data_slice=(slice(None, None, -1), 0))
-        lons, lats = zip(*[(s1_lon.squeeze(), s1_lat.squeeze()),
-                           (s2_lon.squeeze(), s2_lat.squeeze()),
-                           (s3_lon.squeeze(), s3_lat.squeeze()),
-                           (s4_lon.squeeze(), s4_lat.squeeze())])
-        if hasattr(lons[0], 'compute') and da is not None:
-            lons, lats = da.compute(lons, lats)
+        lons, lats = self._get_bbox_elements(self.get_lonlats, frequency)
         if force_clockwise and not self._corner_is_clockwise(
                 lons[0][-2], lats[0][-2], lons[0][-1], lats[0][-1], lons[1][1], lats[1][1]):
             # going counter-clockwise
             lons, lats = self._reverse_boundaries(lons, lats)
         return lons, lats
+
+    def _get_bbox_elements(self, coord_fun, frequency: Optional[int] = None) -> tuple:
+        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
+        s1_dim1, s1_dim2 = coord_fun(data_slice=s1_slice)
+        s2_dim1, s2_dim2 = coord_fun(data_slice=s2_slice)
+        s3_dim1, s3_dim2 = coord_fun(data_slice=s3_slice)
+        s4_dim1, s4_dim2 = coord_fun(data_slice=s4_slice)
+        dim1, dim2 = zip(*[(s1_dim1.squeeze(), s1_dim2.squeeze()),
+                           (s2_dim1.squeeze(), s2_dim2.squeeze()),
+                           (s3_dim1.squeeze(), s3_dim2.squeeze()),
+                           (s4_dim1.squeeze(), s4_dim2.squeeze())])
+        if hasattr(dim1[0], 'compute') and da is not None:
+            dim1, dim2 = da.compute(dim1, dim2)
+        return dim1, dim2
+
+    def _get_bbox_slices(self, frequency):
+        height, width = self.shape
+        if frequency is None:
+            row_num = height
+            col_num = width
+        else:
+            row_num = frequency
+            col_num = frequency
+        s1_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
+        s2_slice = (np.linspace(0, height - 1, row_num, dtype=int), -1)
+        s3_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
+        s4_slice = (np.linspace(height - 1, 0, row_num, dtype=int), 0)
+        return s1_slice, s2_slice, s3_slice, s4_slice
 
     @staticmethod
     def _reverse_boundaries(sides_lons: list, sides_lats: list) -> tuple:
@@ -349,6 +371,18 @@ class BaseDefinition:
         angle = arc1.angle(arc2)
         is_clockwise = -np.pi < angle < 0
         return is_clockwise
+
+    def get_edge_lonlats(self, frequency=None):
+        """Get the concatenated boundary of the current swath."""
+        lons, lats = self.get_bbox_lonlats(frequency=frequency, force_clockwise=False)
+        blons = np.ma.concatenate(lons)
+        blats = np.ma.concatenate(lats)
+        return blons, blats
+
+    def get_edge_bbox_in_projection_coordinates(self, frequency: Optional[int] = None):
+        """Return the bounding box in projection coordinates."""
+        x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
+        return np.hstack(x), np.hstack(y)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -679,6 +713,8 @@ class SwathDefinition(CoordinateDefinition):
     lats : numpy array
     nprocs : int, optional
         Number of processor cores to be used for calculations.
+    crs: pyproj.CRS,
+       The CRS to use. longlat on WGS84 by default.
 
     Attributes
     ----------
@@ -696,7 +732,7 @@ class SwathDefinition(CoordinateDefinition):
         Swath cartesian coordinates
     """
 
-    def __init__(self, lons, lats, nprocs=1):
+    def __init__(self, lons, lats, nprocs=1, crs=None):
         """Initialize SwathDefinition."""
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
@@ -706,6 +742,7 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
+        self.crs = crs or CRS(proj="longlat", ellps="WGS84")
 
     def copy(self):
         """Copy the current swath."""
@@ -807,13 +844,6 @@ class SwathDefinition(CoordinateDefinition):
         lon_0 = self.lons[int(lines / 2), int(cols / 2)]
         return {'proj': projection, 'ellps': ellipsoid,
                 'lat_0': lat_0, 'lon_0': lon_0}
-
-    def get_edge_lonlats(self):
-        """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats(force_clockwise=False)
-        blons = np.ma.concatenate(lons)
-        blats = np.ma.concatenate(lats)
-        return blons, blats
 
     def compute_bb_proj_params(self, proj_dict):
         """Compute BB projection parameters."""
@@ -970,14 +1000,14 @@ class DynamicAreaDefinition(object):
 
     @property
     def pixel_size_x(self):
-        """Return pixel size in X direction."""
+        """Pixel width in projection units."""
         if self.resolution is None:
             return None
         return self.resolution[0]
 
     @property
     def pixel_size_y(self):
-        """Return pixel size in Y direction."""
+        """Pixel height in projection units."""
         if self.resolution is None:
             return None
         return self.resolution[1]
@@ -1820,9 +1850,9 @@ class AreaDefinition(_ProjectionDefinition):
     def __eq__(self, other):
         """Test for equality."""
         try:
-            return ((self.crs == other.crs) and
-                    (self.shape == other.shape) and
-                    (np.allclose(self.area_extent, other.area_extent)))
+            return ((np.allclose(self.area_extent, other.area_extent)) and
+                    (self.crs == other.crs) and
+                    (self.shape == other.shape))
         except AttributeError:
             return super(AreaDefinition, self).__eq__(other)
 
@@ -2403,10 +2433,10 @@ class AreaDefinition(_ProjectionDefinition):
                                       "source/target projections are not "
                                       "equal.")
 
-        data_boundary = Boundary(*get_geostationary_bounding_box(self))
+        data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
         if area_to_cover.is_geostationary:
             area_boundary = Boundary(
-                *get_geostationary_bounding_box(area_to_cover))
+                *get_geostationary_bounding_box_in_lonlats(area_to_cover))
         else:
             area_boundary = AreaDefBoundary(area_to_cover, 100)
 
@@ -2576,8 +2606,8 @@ def get_geostationary_angle_extent(geos_area):
     return xmax, ymax
 
 
-def get_geostationary_bounding_box(geos_area, nb_points=50):
-    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
+    """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
     Args:
       nb_points: Number of points on the polygon
@@ -2597,6 +2627,26 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
+
+    return x, y
+
+
+def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    return get_geostationary_bounding_box(geos_area, nb_points)
+
+
+def get_geostationary_bounding_box(geos_area, nb_points=50):
+    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
 
     return Proj(geos_area.crs)(x, y, inverse=True)
 
