@@ -12,7 +12,6 @@ dependencies:
   - cython
   - cartopy
   - pytest
-  - proj4
   - pyproj
   - shapely
   - pykdtree
