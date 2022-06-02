@@ -315,7 +315,10 @@ def _gradient_resample_data(src_data, src_x, src_y,
                             dst_x, dst_y,
                             method='bilinear'):
     """Resample using gradient search."""
-    _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y)
+    _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y)
     if src_data.ndim != 3 or src_data.shape[1:] != src_x.shape:
         raise ValueError("Malformed input data.")
 
@@ -333,7 +336,10 @@ def _gradient_resample_indices(src_x, src_y,
                                src_gradient_yl, src_gradient_yp,
                                dst_x, dst_y):
     """Return indices computed using gradient search."""
-    _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y)
+    _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y)
 
     indices_xy = one_step_gradient_indices(src_x, src_y,
                                            src_gradient_xl, src_gradient_xp,
@@ -342,7 +348,10 @@ def _gradient_resample_indices(src_x, src_y,
     return indices_xy
 
 
-def _check_input(dst_x, dst_y, src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp, src_x, src_y):
+def _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y):
     if (src_x.ndim != 2 or
             src_y.ndim != 2 or
             src_gradient_xl.ndim != 2 or
