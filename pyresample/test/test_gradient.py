@@ -528,6 +528,51 @@ class TestRBGradientSearchResamplerSwath2Area:
                                                                self.dst_area)
 
 
+class TestRBGradientSearchResamplerArea2Swath:
+    """Test RBGradientSearchResampler for the Swath to Area case."""
+
+    def setup(self):
+        """Set up the test case."""
+        chunks = 20
+
+        self.src_area = AreaDefinition('euro40', 'euro40', None,
+                                       {'proj': 'stere', 'lon_0': 14.0,
+                                        'lat_0': 90.0, 'lat_ts': 60.0,
+                                        'ellps': 'bessel'},
+                                       102, 102,
+                                       (-2717181.7304994687, -5571048.14031214,
+                                        1378818.2695005313, -1475048.1403121399))
+
+        self.dst_area = AreaDefinition(
+            'omerc_otf',
+            'On-the-fly omerc area',
+            None,
+            {'alpha': '8.99811271718795',
+             'ellps': 'sphere',
+             'gamma': '0',
+             'k': '1',
+             'lat_0': '0',
+             'lonc': '13.8096029486222',
+             'proj': 'omerc',
+             'units': 'm'},
+            50, 100,
+            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
+        )
+
+        self.lons, self.lats = self.dst_area.get_lonlats(chunks=chunks)
+        xrlons = xr.DataArray(self.lons.persist())
+        xrlats = xr.DataArray(self.lats.persist())
+        self.dst_swath = SwathDefinition(xrlons, xrlats)
+
+    def test_resampling_to_swath_is_not_implemented(self):
+        """Test that resampling to swath is not working yet."""
+        from pyresample.gradient import ResampleBlocksGradientSearchResampler
+
+        with pytest.raises(NotImplementedError):
+            ResampleBlocksGradientSearchResampler(self.src_area,
+                                                  self.dst_swath)
+
+
 class TestEnsureDataArray(unittest.TestCase):
     """Test the ensure_data_array decorator."""
 

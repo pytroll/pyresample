@@ -451,7 +451,6 @@ def _concatenate_chunks(chunks):
 
 
 def _fill_in_coords(target_geo_def, data_coords, data_dims):
-    # TODO: this will crash when the target geo definition is a swath def.
     x_coord, y_coord = target_geo_def.get_proj_vectors()
     coords = []
     for key in data_dims:
@@ -485,6 +484,8 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
+        if isinstance(target_geo_def, SwathDefinition):
+            raise NotImplementedError("Cannot resample to a SwathDefinition.")
         super().__init__(source_geo_def, target_geo_def)
         logger.debug("/!\\ Instantiating an experimental GradientSearch resampler /!\\")
         self.indices_xy = None
