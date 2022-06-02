@@ -10,6 +10,7 @@ Subpackages
    pyresample.bilinear
    pyresample.bucket
    pyresample.ewa
+   pyresample.future
    pyresample.gradient
    pyresample.utils
 
@@ -96,6 +97,14 @@ pyresample.resampler module
    :undoc-members:
    :show-inheritance:
 
+pyresample.slicer module
+------------------------
+
+.. automodule:: pyresample.slicer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyresample.spherical module
 ---------------------------
 
@@ -112,6 +121,22 @@ pyresample.spherical\_geometry module
    :undoc-members:
    :show-inheritance:
 
+pyresample.spherical\_utils module
+----------------------------------
+
+.. automodule:: pyresample.spherical_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyresample.test\_resampler module
+---------------------------------
+
+.. automodule:: pyresample.test_resampler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyresample.version module
 -------------------------
 
@@ -119,7 +144,6 @@ pyresample.version module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------
