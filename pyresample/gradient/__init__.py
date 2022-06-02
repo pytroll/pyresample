@@ -583,10 +583,9 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
 
 
 def _get_coordinates_in_same_projection(source_area, target_area):
-    from pyproj.transformer import Transformer
     try:
         src_x, src_y = source_area.get_proj_coords()
-        transformer = Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
+        transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
     except AttributeError:
         raise NotImplementedError("Cannot resample from Swath for now.")
 
