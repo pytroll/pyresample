@@ -305,16 +305,14 @@ class TestRBGradientSearchResamplerArea2Area:
         assert res.shape == (3, ) + self.dst_area.shape
 
     def test_resampler_returns_a_dataarray(self):
-        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
-                            dims=['y', 'x'])
+        data = self.create_2d_src_data()
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
         assert isinstance(res, xr.DataArray)
 
     def test_resampler_returns_a_dataarray_with_correct_area_attribute(self):
-        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
-                            dims=['y', 'x'])
+        data = self.create_2d_src_data()
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -322,8 +320,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
     def test_resampler_returns_a_dataarray_with_input_attributes(self):
         attrs = {"sky": "blue", "grass": "green"}
-        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
-                            dims=['y', 'x'], attrs=attrs)
+        data = self.create_2d_src_data(attrs)
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -331,10 +328,14 @@ class TestRBGradientSearchResamplerArea2Area:
         new_attrs.pop("area")
         assert new_attrs == attrs
 
-    def test_resampler_returns_a_dataarray_with_input_dims(self):
-        attrs = {"sky": "blue", "grass": "green"}
+    def create_2d_src_data(self, attrs=None):
         data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
                             dims=['y', 'x'], attrs=attrs)
+        return data
+
+    def test_resampler_returns_a_dataarray_with_input_dims(self):
+        attrs = {"sky": "blue", "grass": "green"}
+        data = self.create_2d_src_data(attrs)
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -343,19 +344,21 @@ class TestRBGradientSearchResamplerArea2Area:
 
     def test_resampler_returns_a_dataarray_with_input_coords(self):
         attrs = {"sky": "blue", "grass": "green"}
-        data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
-                            dims=["bands", 'y', 'x'], attrs=attrs,
-                            coords={"bands": ["R", "G", "B"]})
+        data = self.create_3d_rgb_src_data(attrs)
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
 
         assert all(res.coords["bands"] == data.coords["bands"])
 
-    def test_resampler_returns_a_dataarray_with_correct_xy_coords(self):
+    def create_3d_rgb_src_data(self, attrs=None):
         data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
-                            dims=["bands", 'y', 'x'],
+                            dims=["bands", 'y', 'x'], attrs=attrs,
                             coords={"bands": ["R", "G", "B"]})
+        return data
+
+    def test_resampler_returns_a_dataarray_with_correct_xy_coords(self):
+        data = self.create_3d_rgb_src_data()
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -365,9 +368,7 @@ class TestRBGradientSearchResamplerArea2Area:
         assert "y" in res.coords
 
     def test_resampler_can_take_random_dim_order(self):
-        data = xr.DataArray(da.ones((3,) + self.src_area.shape, dtype=np.float64),
-                            dims=["bands", 'y', 'x'],
-                            coords={"bands": ["R", "G", "B"]}).transpose("x", "bands", "y")
+        data = self.create_3d_rgb_src_data().transpose("x", "bands", "y")
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -382,8 +383,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
     def test_resample_area_to_area_2d(self):
         """Resample area to area, 2d."""
-        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64),
-                            dims=['y', 'x'])
+        data = self.create_2d_src_data()
         self.resampler.precompute()
         res = self.resampler.compute(
             data, method='bilinear').compute(scheduler='single-threaded')
@@ -392,7 +392,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
     def test_resample_area_to_area_2d_fill_value(self):
         """Resample area to area, 2d, use fill value."""
-        data = xr.DataArray(da.ones(self.src_area.shape, dtype=np.float64), dims=['y', 'x'])
+        data = self.create_2d_src_data()
         dst_area = AreaDefinition('outside', 'outside', None,
                                   {'proj': 'stere', 'lon_0': 180.0,
                                    'lat_0': 90.0, 'lat_ts': 60.0,
