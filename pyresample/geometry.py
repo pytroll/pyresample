@@ -154,15 +154,20 @@ class BaseDefinition:
         if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
             other_lons = other_lons.data
             other_lats = other_lats.data
+
+        arrs_to_comp = (self_lons, self_lats, other_lons, other_lats)
+        all_dask_arrays = da is not None and all(isinstance(x, da.Array) for x in arrs_to_comp)
+        if all_dask_arrays:
+            # Optimization: We assume that if two dask arrays have the same task name
+            # they are equivalent. This allows for using geometry objects in dict keys
+            # without computing the dask arrays underneath.
+            return self_lons.name == other_lons.name and self_lats.name == other_lats.name
+
         try:
-            from dask.array import allclose
-        except ImportError:
-            from numpy import allclose
-        try:
-            lons_close = allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True)
+            lons_close = np.allclose(self_lons, other_lons, atol=1e-6, rtol=5e-9, equal_nan=True)
             if not lons_close:
                 return False
-            lats_close = allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True)
+            lats_close = np.allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True)
             return lats_close
         except (AttributeError, ValueError):
             return False
