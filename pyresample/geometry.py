@@ -146,14 +146,14 @@ class BaseDefinition:
             self_lons = self.lons
             self_lats = self.lats
 
-        if self_lons is other_lons and self_lats is other_lats:
-            return True
         if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
             self_lons = self_lons.data
             self_lats = self_lats.data
         if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
             other_lons = other_lons.data
             other_lats = other_lats.data
+        if self_lons is other_lons and self_lats is other_lats:
+            return True
 
         arrs_to_comp = (self_lons, self_lats, other_lons, other_lats)
         all_dask_arrays = da is not None and all(isinstance(x, da.Array) for x in arrs_to_comp)
@@ -169,7 +169,7 @@ class BaseDefinition:
                 return False
             lats_close = np.allclose(self_lats, other_lats, atol=1e-6, rtol=5e-9, equal_nan=True)
             return lats_close
-        except (AttributeError, ValueError):
+        except ValueError:
             return False
 
     def __ne__(self, other):
