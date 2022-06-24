@@ -226,6 +226,7 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     Note longitude and latitude arrays are limited to 64-bit floats because
     of limitations in pyproj.
     """
+    # TODO: Rewrite so it is no GIL
     # pure python stuff for now
     p = Proj(proj4_definition)
 
@@ -233,32 +234,34 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     cdef tuple projected_tuple = p(lon_arr, lat_arr)
     cdef cr_dtype[:, ::1] rows_out = projected_tuple[1]
     cdef cr_dtype[:, ::1] cols_out = projected_tuple[0]
+    cdef cr_dtype[:, ::1] lons_view = lon_arr
+    cdef cr_dtype[:, ::1] lats_view = lat_arr
 
     # indexes
     cdef unsigned int row
     cdef unsigned int col
     # index bounds
-    cdef unsigned int num_rows = lon_arr.shape[0]
-    cdef unsigned int num_cols = lon_arr.shape[1]
+    cdef unsigned int num_rows = lons_view.shape[0]
+    cdef unsigned int num_cols = lons_view.shape[1]
     cdef cr_dtype x_tmp
     cdef cr_dtype y_tmp
     cdef unsigned int points_in_grid = 0
 
-    for row in range(num_rows):
-        for col in range(num_cols):
-            x_tmp = cols_out[row, col]
-            y_tmp = rows_out[row, col]
-            if x_tmp >= 1e30:
-                lon_arr[row, col] = fill_in
-                lat_arr[row, col] = fill_in
-                continue
+    with nogil:
+        for row in range(num_rows):
+            for col in range(num_cols):
+                x_tmp = cols_out[row, col]
+                y_tmp = rows_out[row, col]
+                if x_tmp >= 1e30:
+                    lons_view[row, col] = fill_in
+                    lats_view[row, col] = fill_in
+                    continue
 
-            x_tmp = (x_tmp - origin_x) / cell_width
-            y_tmp = (y_tmp - origin_y) / cell_height
-            if x_tmp >= -1 and x_tmp <= width + 1 and y_tmp >= -1 and y_tmp <= height + 1:
-                points_in_grid += 1
-            lon_arr[row, col] = x_tmp
-            lat_arr[row, col] = y_tmp
+                x_tmp = (x_tmp - origin_x) / cell_width
+                y_tmp = (y_tmp - origin_y) / cell_height
+                if x_tmp >= -1 and x_tmp <= width + 1 and y_tmp >= -1 and y_tmp <= height + 1:
+                    points_in_grid += 1
+                lons_view[row, col] = x_tmp
+                lats_view[row, col] = y_tmp
 
-    # return points_in_grid, x_arr, y_arr
     return points_in_grid
