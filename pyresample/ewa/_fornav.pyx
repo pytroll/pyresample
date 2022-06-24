@@ -275,10 +275,10 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
     if not all(output_array.dtype == out_type for output_array in output_arrays):
         raise ValueError("Input arrays must all be of the same data type")
 
-    cdef cr_dtype** input_pointer = <cr_dtype ** >malloc(num_items * sizeof(void * ))
+    cdef void** input_pointer = <void ** >malloc(num_items * sizeof(void * ))
     if not input_pointer:
         raise MemoryError()
-    cdef cr_dtype ** output_pointer = <cr_dtype ** >malloc(num_items * sizeof(void * ))
+    cdef void** output_pointer = <void ** >malloc(num_items * sizeof(void * ))
     if not output_pointer:
         raise MemoryError()
     cdef unsigned int * valid_arr = <unsigned int * >malloc(num_items * sizeof(unsigned int))
@@ -287,22 +287,64 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
     cdef cr_dtype * rows_pointer = &rows_array[0, 0]
     cdef bint mwm = maximum_weight_mode
     cdef int func_result
-    cdef cr_dtype cast_input_fill = input_fill
-    cdef cr_dtype cast_output_fill = output_fill
+    cdef numpy.float32_t input_fill_f32
+    cdef numpy.float64_t input_fill_f64
+    cdef numpy.int8_t input_fill_i8
+    cdef numpy.float32_t output_fill_f32
+    cdef numpy.float64_t output_fill_f64
+    cdef numpy.int8_t output_fill_i8
+    cdef numpy.ndarray[numpy.float32_t, ndim= 2] tmp_arr_f32
+    cdef numpy.ndarray[numpy.float64_t, ndim= 2] tmp_arr_f64
+    cdef numpy.ndarray[numpy.int8_t, ndim= 2] tmp_arr_i8
     cdef cr_dtype[:, ::1] tmp_arr
 
-    for i in range(num_items):
-        tmp_arr = input_arrays[i]
-        input_pointer[i] = &tmp_arr[0, 0]
-        tmp_arr = output_arrays[i]
-        output_pointer[i] = &tmp_arr[0, 0]
-    with nogil:
-        func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
-                             cols_pointer, rows_pointer,
-                             input_pointer, output_pointer,
-                             cast_input_fill, cast_output_fill, rows_per_scan,
-                             weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                             mwm)
+    if in_type == numpy.float32:
+        input_fill_f32 = <numpy.float32_t>input_fill
+        output_fill_f32 = <numpy.float32_t>output_fill
+        for i in range(num_items):
+            tmp_arr_f32 = input_arrays[i]
+            input_pointer[i] = &tmp_arr_f32[0, 0]
+            tmp_arr_f32 = output_arrays[i]
+            output_pointer[i] = &tmp_arr_f32[0, 0]
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.float32_t ** >input_pointer, < numpy.float32_t ** >output_pointer,
+                                 output_fill_f32, output_fill_f32, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
+    elif in_type == numpy.float64:
+        input_fill_f64 = <numpy.float64_t>input_fill
+        output_fill_f64 = <numpy.float64_t>output_fill
+        for i in range(num_items):
+            tmp_arr_f64 = input_arrays[i]
+            input_pointer[i] = &tmp_arr_f64[0, 0]
+            tmp_arr_f64 = output_arrays[i]
+            output_pointer[i] = &tmp_arr_f64[0, 0]
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.float64_t ** >input_pointer, < numpy.float64_t ** >output_pointer,
+                                 input_fill_f64, output_fill_f64, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
+    elif in_type == numpy.int8:
+        input_fill_i8 = <numpy.int8_t>input_fill
+        output_fill_i8 = <numpy.int8_t>output_fill
+        for i in range(num_items):
+            tmp_arr_i8 = input_arrays[i]
+            input_pointer[i] = &tmp_arr_i8[0, 0]
+            tmp_arr_i8 = output_arrays[i]
+            output_pointer[i] = &tmp_arr_i8[0, 0]
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.int8_t ** >input_pointer, < numpy.int8_t ** >output_pointer,
+                                 input_fill_i8, output_fill_i8, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
+    else:
+        raise ValueError("Unknown input and output data type")
 
     for i in range(num_items):
         valid_list.append(valid_arr[i])
