@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Classes for geometry operations."""
+from __future__ import annotations
 
 import hashlib
 import math
