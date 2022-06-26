@@ -24,11 +24,12 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import yaml
 from pyproj import Geod, transform
+from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
@@ -982,26 +983,56 @@ class DynamicAreaDefinition(object):
             return None
         return self.resolution[1]
 
-    def compute_domain(self, corners, resolution=None, shape=None):
+    def compute_domain(
+            self,
+            corners: Sequence,
+            resolution: Optional[Union[float, tuple[float, float]]] = None,
+            shape: Optional[tuple[int, int]] = None,
+            projection: Optional[Union[CRS, dict, str]] = None
+    ):
         """Compute shape and area_extent from corners and [shape or resolution] info.
 
-        Corners represents the center of pixels, while area_extent represents the edge of pixels.
+        Args:
+            corners:
+                4-element sequence representing the outer corners of the
+                region. Note that corners represents the center of pixels,
+                while area_extent represents the edge of pixels. The four
+                values are (xmin_corner, ymin_corner, xmax_corner, ymax_corner).
+                If the x corners are ``None`` then the full extent (area of use)
+                of the projection will be used if defined. A RuntimeError will
+                be raised if the PROJ library does not know the area of use for
+                the projection and it is not a geographic lon/lat projection.
+            resolution:
+                Spatial resolution in projection units (typically meters or
+                degrees). If not specified then shape must be provided.
+                If a scalar then it is treated as the x and y resolution. If
+                a tuple then x resolution is the first element, y is the
+                second.
+            shape:
+                Number of pixels in the area as a 2-element tuple. The first
+                is number of rows, the second number of columns.
+            projection:
+                PROJ.4 definition string, dictionary, or pyproj CRS object
 
         Note that ``shape`` is (rows, columns) and ``resolution`` is
         (x_size, y_size); the dimensions are flipped.
+
         """
         if resolution is not None and shape is not None:
             raise ValueError("Both resolution and shape can't be provided.")
         elif resolution is None and shape is None:
             raise ValueError("Either resolution or shape must be provided.")
+        if resolution is not None and isinstance(resolution, (int, float)):
+            resolution = (resolution, resolution)
+        if projection is None:
+            projection = self._projection
 
+        corners = self._update_corners_for_full_extent(corners, shape, resolution, projection)
         if shape:
             height, width = shape
             x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
             y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
         else:
-            if isinstance(resolution, (int, float)):
-                resolution = (resolution, resolution)
             x_resolution, y_resolution = resolution
             width = int(np.rint((corners[2] - corners[0]) * 1.0 / x_resolution + 1))
             height = int(np.rint((corners[3] - corners[1]) * 1.0 / y_resolution + 1))
@@ -1011,6 +1042,31 @@ class DynamicAreaDefinition(object):
                        corners[2] + x_resolution / 2,
                        corners[3] + y_resolution / 2)
         return area_extent, width, height
+
+    def _update_corners_for_full_extent(self, corners, shape, resolution, projection):
+        corners = list(corners)
+        if corners[0] is not None:
+            return corners
+        aou = self._get_crs_area_of_use(projection)
+        if shape is not None:
+            width = shape[1]
+            x_resolution = (aou.east - aou.west) / width
+            corners[0] = aou.west + x_resolution / 2.0
+            corners[2] = aou.east - x_resolution / 2.0
+        else:
+            x_resolution = resolution[0]
+            corners[0] = aou.west + x_resolution / 2.0
+            corners[2] = aou.east - x_resolution / 2.0
+        return corners
+
+    def _get_crs_area_of_use(self, projection):
+        crs = CRS(projection)
+        aou = crs.area_of_use
+        if aou is None:
+            if crs.is_geographic:
+                return AreaOfUse(west=-180.0, south=-90.0, east=180.0, north=90.0)
+            raise RuntimeError("Projection has no defined area of use")
+        return aou
 
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None,
                antimeridian_mode=None):
@@ -1049,7 +1105,7 @@ class DynamicAreaDefinition(object):
         area_extent = self.area_extent
         if not area_extent or not width or not height:
             projection, corners = self._compute_bound_centers(proj_dict, lonslats, antimeridian_mode=antimeridian_mode)
-            area_extent, width, height = self.compute_domain(corners, resolution, shape)
+            area_extent, width, height = self.compute_domain(corners, resolution, shape, projection)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
                               area_extent, self.rotation)
@@ -1074,8 +1130,13 @@ class DynamicAreaDefinition(object):
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if proj4.crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
-            xmin = np.nanmin(xarr[xarr >= 0])
-            xmax = np.nanmax(xarr[xarr < 0]) + 360
+            if antimeridian_mode == "global_extents":
+                xmin, xmax = (None, None)
+            else:
+                xmin = np.nanmin(xarr[xarr >= 0])
+                xmax = np.nanmax(xarr[xarr < 0]) + 360
+            if antimeridian_mode == "modify_projection":
+                proj_dict.update({"pm": 180.0})
         return proj_dict, (xmin, ymin, xmax, ymax)
 
     def _compute_bound_centers_dask(self, proj_dict, lons, lats, antimeridian_mode):
@@ -1108,7 +1169,7 @@ class DynamicAreaDefinition(object):
             new_xmin = np.nanmin(xarr_pos)
             new_xmax = np.nanmax(xarr_neg) + 360
             if antimeridian_mode == "global_extents":
-                new_xmin, new_xmax = (-180.0, 180.0)
+                new_xmin, new_xmax = (None, None)
             else:
                 new_xmin, new_xmax = da.compute(new_xmin, new_xmax)
             if antimeridian_mode == "modify_projection":

@@ -2513,7 +2513,7 @@ class TestDynamicAreaDefinition:
             (None, (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
             ("modify_extents", (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
             ("modify_projection", (21, 59), (164.75, 24.75, 194.25, 35.25), ("+pm=180",), tuple()),
-            ("global_extents", (21, 721), (-180.0, 24.75, 180.0, 35.25), tuple(), ("+pm=180",)),
+            ("global_extents", (21, 720), (-180.0, 24.75, 180.0, 35.25), tuple(), ("+pm=180",)),
         ],
     )
     @pytest.mark.parametrize("use_dask", [False, True])
