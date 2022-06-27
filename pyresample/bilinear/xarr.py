@@ -131,8 +131,9 @@ class XArrayBilinearResampler(BilinearBase):
         res = self._reshape_to_target_area(res, data.ndim)
 
         self._add_missing_coordinates(data)
+        dims = self._get_output_dims(data, res)
 
-        return DataArray(res, dims=data.dims, coords=self._out_coords)
+        return DataArray(res, dims=dims, coords=self._out_coords)
 
     def _add_missing_coordinates(self, data):
         self._add_x_and_y_coordinates()
@@ -154,10 +155,16 @@ class XArrayBilinearResampler(BilinearBase):
         elif 'bands' in self._out_coords:
             del self._out_coords['bands']
 
+    def _get_output_dims(self, data, res):
+        if data.ndim == res.ndim:
+            return data.dims
+        return list(self._out_coords.keys())
+
     def _slice_data(self, data, fill_value):
         def from_delayed(delayeds, shp):
             return [da.from_delayed(d, shp, np.float32) for d in delayeds]
 
+        data = _check_data_shape(data, self._valid_input_index)
         if data.ndim == 2:
             shp = self.bilinear_s.shape
         else:
@@ -255,6 +262,20 @@ def _get_valid_input_index(source_geo_def,
             target_geo_def, source_lons, source_lats, radius_of_influence)
 
     return valid_input_index, source_lons, source_lats
+
+
+def _check_data_shape(data, input_idxs):
+    """Check data shape and adjust if necessary."""
+    # Handle multiple datasets
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
+        # Move the "channel" dimension first
+        data = da.moveaxis(data, -1, 0)
+
+    # Ensure two dimensions
+    if data.ndim == 1:
+        data = DataArray(da.map_blocks(np.expand_dims, data.data, 0, new_axis=[0]))
+
+    return data
 
 
 class XArrayResamplerBilinear(XArrayBilinearResampler):
