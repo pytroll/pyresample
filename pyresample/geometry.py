@@ -989,7 +989,7 @@ class DynamicAreaDefinition(object):
             corners: Sequence,
             resolution: Optional[Union[float, tuple[float, float]]] = None,
             shape: Optional[tuple[int, int]] = None,
-            projection: Optional[Union[CRS, dict, str]] = None
+            projection: Optional[Union[CRS, dict, str, int]] = None
     ):
         """Compute shape and area_extent from corners and [shape or resolution] info.
 
@@ -1000,9 +1000,11 @@ class DynamicAreaDefinition(object):
                 while area_extent represents the edge of pixels. The four
                 values are (xmin_corner, ymin_corner, xmax_corner, ymax_corner).
                 If the x corners are ``None`` then the full extent (area of use)
-                of the projection will be used if defined. A RuntimeError will
-                be raised if the PROJ library does not know the area of use for
-                the projection and it is not a geographic lon/lat projection.
+                of the projection will be used. When needed, area of use is taken
+                from the PROJ library or in the case of a geographic lon/lat
+                projection -180/180 is used. A RuntimeError is raised if the
+                area of use is needed (when x corners are ``None``) and area
+                of use can't be determined.
             resolution:
                 Spatial resolution in projection units (typically meters or
                 degrees). If not specified then shape must be provided.
@@ -1013,7 +1015,8 @@ class DynamicAreaDefinition(object):
                 Number of pixels in the area as a 2-element tuple. The first
                 is number of rows, the second number of columns.
             projection:
-                PROJ.4 definition string, dictionary, or pyproj CRS object
+                PROJ.4 definition string, dictionary, integer EPSG code, or
+                pyproj CRS object.
 
         Note that ``shape`` is (rows, columns) and ``resolution`` is
         (x_size, y_size); the dimensions are flipped.
@@ -1084,6 +1087,31 @@ class DynamicAreaDefinition(object):
           the shape of the resulting area.
         proj_info:
           complementing parameters to the projection info.
+        antimeridian_mode:
+            How to handle lon/lat data crossing the anti-meridian of the
+            projection. This currently only effects lon/lat geographic
+            projections and data cases not covering the north or south pole.
+            The possible options are:
+
+            * modify_extents: Set the X bounds to the edges of the data, but
+                add 360 to the right-most bound. This has the effect of making
+                the area coordinates continuous from the left side to the
+                right side. However, this means that some coordinates will be
+                outside the coordinate space of the projection. Although most
+                PROJ and pyresample functionality can handle this there may be
+                some edge cases.
+            * modify_projection: Change the prime meridian of the projection
+                from 0 degrees longitude to 180 degrees longitude. This has
+                the effect of putting the data on a continuous coordinate
+                system. However, this means that comparing data resampled to
+                this resulting area and an area not over the anti-meridian
+                would be more difficult.
+            * global_extents: Ignore the bounds of the data and use -180/180
+                degrees as the west and east bounds of the data. This will
+                generate a large output area, but with the benefit of keeping
+                the data on the original projection. Note that some resampling
+                methods may produce artifacts when resampling on the edge of
+                the area (the anti-meridian).
 
         Shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
