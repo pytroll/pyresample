@@ -82,7 +82,7 @@ jobs:
             /io/continuous_integration/build-manylinux-wheels.sh
 
       - name: Check version number from inside wheel
-        if:  matrix.docker-image != 'manylinux1_i686'
+        if:  matrix.docker-image != 'manylinux2014_i686'
         run: |
           mv pyresample unused_src_to_prevent_local_import
           python -m pip install pyresample
