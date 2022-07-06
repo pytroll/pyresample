@@ -1,3 +1,34 @@
+## Version 1.24.0 (2022/07/06)
+
+### Issues Closed
+
+* [Issue 417](https://github.com/pytroll/pyresample/issues/417) - Add get_abs_max (and get_abs_min) to BucketResampler ([PR 418](https://github.com/pytroll/pyresample/pull/418) by [@gerritholl](https://github.com/gerritholl))
+* [Issue 316](https://github.com/pytroll/pyresample/issues/316) - Upgrade to pyresample 1.17.0 causes IndexError with one-dimensional data ([PR 324](https://github.com/pytroll/pyresample/pull/324) by [@pnuu](https://github.com/pnuu))
+* [Issue 171](https://github.com/pytroll/pyresample/issues/171) - Update AreaDefinition to accept pyproj CRS objects and WKT
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 324](https://github.com/pytroll/pyresample/pull/324) - Fix bilinear resampler for 1D data ([316](https://github.com/pytroll/pyresample/issues/316))
+
+#### Features added
+
+* [PR 435](https://github.com/pytroll/pyresample/pull/435) - Fix SwathDefinition causing unnecessary dask computes when used as a dict key
+* [PR 418](https://github.com/pytroll/pyresample/pull/418) - Implement get_abs_max on BucketResampler ([417](https://github.com/pytroll/pyresample/issues/417))
+* [PR 368](https://github.com/pytroll/pyresample/pull/368) - Speed up Bucket `get_min` and `get_max`
+* [PR 341](https://github.com/pytroll/pyresample/pull/341) - Dask resampler and gradient search overhaul
+
+#### Documentation changes
+
+* [PR 429](https://github.com/pytroll/pyresample/pull/429) - Improve docs for dump and load_area_from_string
+* [PR 427](https://github.com/pytroll/pyresample/pull/427) - Add Cython classifier to package metadata
+
+In this release 7 pull requests were closed.
+
+
 ## Version 1.23.0 (2022/03/21)
 
 ### Issues Closed
