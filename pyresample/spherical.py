@@ -42,7 +42,10 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        self.lon = float(_unwrap_radians(lon))
+        if np.isfinite(lon):
+            self.lon = float(_unwrap_radians(lon))
+        else:
+            self.lon = float(lon)
         self.lat = lat
 
     def cross2cart(self, point):

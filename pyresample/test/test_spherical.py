@@ -146,6 +146,12 @@ class TestSCoordinate(unittest.TestCase):
         point_end = SCoordinate(np.pi, 0)
         assert point_start == point_end
 
+    def test_equality_of_infinites(self):
+        """Test that infinite coordinates are equal."""
+        coord1 = SCoordinate(np.inf, np.inf)
+        coord2 = SCoordinate(np.inf, np.inf)
+        assert coord1 == coord2
+
 
 class TestCCoordinate(unittest.TestCase):
     """Test SCoordinates."""
