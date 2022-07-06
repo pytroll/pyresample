@@ -45,11 +45,11 @@ jobs:
           - name: manylinux 64-bit
             os: ubuntu-latest
             python-version: '3.8'
-            docker-image: manylinux1_x86_64
+            docker-image: manylinux2014_x86_64
           - name: manylinux 32-bit
             os: ubuntu-latest
             python-version: '3.8'
-            docker-image: manylinux1_i686
+            docker-image: manylinux2014_i686
 
     steps:
       - uses: actions/checkout@v2
