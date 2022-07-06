@@ -31,6 +31,7 @@ from pyproj import CRS
 from pyresample import geo_filter, geometry, parse_area_file
 from pyresample.geometry import (
     IncompatibleAreas,
+    SwathDefinition,
     combine_area_extents_vertical,
     concatenate_area_defs,
 )
@@ -2929,12 +2930,7 @@ class TestBboxLonlats:
     def test_swath_def_bbox_decimated(self):
         from pyresample.geometry import SwathDefinition
 
-        from .utils import create_test_latitude, create_test_longitude
-        swath_shape = (50, 10)
-        lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
-        lons = create_test_longitude(lon_start, lon_stop, swath_shape)
-        lats = create_test_latitude(lat_start, lat_stop, swath_shape)
-
+        lons, lats = _gen_swath_lons_lats()
         swath_def = SwathDefinition(lons, lats)
         bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=None)
         assert len(bbox_lons) == len(bbox_lats)
@@ -2964,3 +2960,69 @@ def _is_clockwise(lons, lats):
         edge_sum += xdiff * ysum
         prev_point = point
     return edge_sum > 0
+
+
+def _gen_swath_def_xarray_dask():
+    lons, lats = _gen_swath_lons_lats()
+    lons_dask = da.from_array(lons)
+    lats_dask = da.from_array(lats)
+    lons_xr = xr.DataArray(lons_dask, dims=('y', 'x'))
+    lats_xr = xr.DataArray(lats_dask, dims=('y', 'x'))
+    return SwathDefinition(lons_xr, lats_xr)
+
+
+def _gen_swath_def_xarray_numpy():
+    lons, lats = _gen_swath_lons_lats()
+    lons_xr = xr.DataArray(lons, dims=('y', 'x'))
+    lats_xr = xr.DataArray(lats, dims=('y', 'x'))
+    return SwathDefinition(lons_xr, lats_xr)
+
+
+def _gen_swath_def_dask():
+    lons, lats = _gen_swath_lons_lats()
+    lons_dask = da.from_array(lons)
+    lats_dask = da.from_array(lats)
+    return SwathDefinition(lons_dask, lats_dask)
+
+
+def _gen_swath_def_numpy():
+    lons, lats = _gen_swath_lons_lats()
+    return SwathDefinition(lons, lats)
+
+
+def _gen_swath_lons_lats():
+    from .utils import create_test_latitude, create_test_longitude
+    swath_shape = (50, 10)
+    lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
+    lons = create_test_longitude(lon_start, lon_stop, swath_shape)
+    lats = create_test_latitude(lat_start, lat_stop, swath_shape)
+    return lons, lats
+
+
+class TestGeometryHashability:
+    """Test geometry objects being hashable and other related uses."""
+
+    @pytest.mark.parametrize(
+        "swath_def_func1",
+        [
+            _gen_swath_def_numpy,
+            _gen_swath_def_dask,
+            _gen_swath_def_xarray_numpy,
+            _gen_swath_def_xarray_dask,
+        ])
+    def test_swath_as_dict_keys(self, swath_def_func1):
+        from .utils import assert_maximum_dask_computes
+        swath_def1 = swath_def_func1()
+        swath_def2 = swath_def_func1()
+
+        with assert_maximum_dask_computes(0):
+            assert hash(swath_def1) == hash(swath_def2)
+
+            test_dict = {}
+            test_dict[swath_def1] = 5
+            assert test_dict[swath_def1] == 5
+            assert test_dict[swath_def2] == 5
+            assert test_dict.get(swath_def2) == 5
+            test_dict[swath_def2] = 6
+            assert test_dict[swath_def1] == 6
+            assert test_dict[swath_def2] == 6
