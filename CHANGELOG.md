@@ -1,3 +1,22 @@
+## Version 1.24.1 (2022/07/06)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 441](https://github.com/pytroll/pyresample/pull/441) - Fix infinite coordinates failing to be equal
+
+#### Features added
+
+* [PR 443](https://github.com/pytroll/pyresample/pull/443) - Remove Python 3.7 support
+
+#### Backward incompatible changes
+
+* [PR 443](https://github.com/pytroll/pyresample/pull/443) - Remove Python 3.7 support
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.24.0 (2022/07/06)
 
 ### Issues Closed
