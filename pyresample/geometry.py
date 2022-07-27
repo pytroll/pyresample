@@ -1100,7 +1100,7 @@ class DynamicAreaDefinition(object):
                 outside the coordinate space of the projection. Although most
                 PROJ and pyresample functionality can handle this there may be
                 some edge cases.
-            * "modify_projection": Change the prime meridian of the projection
+            * "modify_crs": Change the prime meridian of the projection
                 from 0 degrees longitude to 180 degrees longitude. This has
                 the effect of putting the data on a continuous coordinate
                 system. However, this means that comparing data resampled to
@@ -1160,7 +1160,7 @@ class DynamicAreaDefinition(object):
         if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
             xmin, xmax = self._compute_new_x_corners_for_antimeridian(xarr, antimeridian_mode)
-            if antimeridian_mode == "modify_projection":
+            if antimeridian_mode == "modify_crs":
                 proj_dict.update({"pm": 180.0})
         return proj_dict, (xmin, ymin, xmax, ymax)
 
