@@ -1140,78 +1140,60 @@ class DynamicAreaDefinition(object):
                               area_extent, self.rotation)
 
     def _compute_bound_centers(self, proj_dict, lonslats, antimeridian_mode):
-        lons, lats = self._extract_lons_lats(lonslats)
-        if hasattr(lons, 'compute'):
-            return self._compute_bound_centers_dask(proj_dict, lons, lats, antimeridian_mode)
-        return self._compute_bound_centers_numpy(proj_dict, lons, lats, antimeridian_mode)
+        from pyresample.utils.proj4 import DaskFriendlyTransformer
 
-    def _compute_bound_centers_numpy(self, proj_dict, lons, lats, antimeridian_mode):
-        proj4 = Proj(proj_dict)
-        xarr, yarr = proj4(np.asarray(lons), np.asarray(lats))
+        lons, lats = self._extract_lons_lats(lonslats)
+        crs = CRS(proj_dict)
+        transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs, always_xy=True)
+        xarr, yarr = transformer.transform(lons, lats)
         xarr[xarr > 9e29] = np.nan
         yarr[yarr > 9e29] = np.nan
         xmin = np.nanmin(xarr)
         xmax = np.nanmax(xarr)
         ymin = np.nanmin(yarr)
         ymax = np.nanmax(yarr)
-        x_passes_antimeridian = (xmax - xmin) > 355
-        epsilon = 0.1
-        y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
-        if proj4.crs.is_geographic and x_passes_antimeridian and not y_is_pole:
-            # cross anti-meridian of projection
-            if antimeridian_mode == "global_extents":
-                xmin, xmax = (None, None)
-            else:
-                xmin = np.nanmin(xarr[xarr >= 0])
-                xmax = np.nanmax(xarr[xarr < 0]) + 360
-            if antimeridian_mode == "modify_projection":
-                proj_dict.update({"pm": 180.0})
-        return proj_dict, (xmin, ymin, xmax, ymax)
-
-    def _compute_bound_centers_dask(self, proj_dict, lons, lats, antimeridian_mode):
-        import dask.array as da
-
-        from pyresample.utils.proj4 import DaskFriendlyTransformer
-        crs = CRS(proj_dict)
-        transformer = DaskFriendlyTransformer.from_crs(CRS(4326), crs,
-                                                       always_xy=True)
-        xarr, yarr = transformer.transform(lons, lats)
-        xarr = da.where(xarr > 9e29, np.nan, xarr)
-        yarr = da.where(yarr > 9e29, np.nan, yarr)
-        _xmin = np.nanmin(xarr)
-        _xmax = np.nanmax(xarr)
-        _ymin = np.nanmin(yarr)
-        _ymax = np.nanmax(yarr)
-        xmin, xmax, ymin, ymax = da.compute(
-            _xmin,
-            _xmax,
-            _ymin,
-            _ymax)
-
+        if hasattr(lons, "compute"):
+            xmin, xmax, ymin, ymax = da.compute(xmin, xmax, ymin, ymax)
         x_passes_antimeridian = (xmax - xmin) > 355
         epsilon = 0.1
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
-            if antimeridian_mode == "global_extents":
-                new_xmin, new_xmax = (None, None)
-            else:
-                xarr_pos = da.where(xarr >= 0, xarr, np.nan)
-                xarr_neg = da.where(xarr < 0, xarr, np.nan)
-                new_xmin = np.nanmin(xarr_pos)
-                new_xmax = np.nanmax(xarr_neg) + 360
-                new_xmin, new_xmax = da.compute(new_xmin, new_xmax)
+            xmin, xmax = self._compute_new_x_corners_for_antimeridian(xarr, antimeridian_mode)
             if antimeridian_mode == "modify_projection":
                 proj_dict.update({"pm": 180.0})
-            xmin, xmax = new_xmin, new_xmax
         return proj_dict, (xmin, ymin, xmax, ymax)
 
-    def _extract_lons_lats(self, lonslats):
+    @staticmethod
+    def _extract_lons_lats(lonslats):
         try:
             lons, lats = lonslats
         except (TypeError, ValueError):
             lons, lats = lonslats.get_lonlats()
         return lons, lats
+
+    def _compute_new_x_corners_for_antimeridian(self, xarr, antimeridian_mode):
+        if antimeridian_mode == "global_extents":
+            xmin, xmax = (None, None)
+        else:
+            if hasattr(xarr, "compute"):
+                xmin, xmax = self._wrap_x_corners_dask(xarr)
+            else:
+                xmin, xmax = self._wrap_x_corners_numpy(xarr)
+        return xmin, xmax
+
+    def _wrap_x_corners_numpy(self, xarr):
+        xmin = np.nanmin(xarr[xarr >= 0])
+        xmax = np.nanmax(xarr[xarr < 0]) + 360
+        return xmin, xmax
+
+    def _wrap_x_corners_dask(self, xarr):
+        xarr_pos = da.where(xarr >= 0, xarr, np.nan)
+        xarr_neg = da.where(xarr < 0, xarr, np.nan)
+        new_xmin = np.nanmin(xarr_pos)
+        new_xmax = np.nanmax(xarr_neg) + 360
+        xmin, xmax = da.compute(new_xmin, new_xmax)
+        return xmin, xmax
 
 
 def _invproj(data_x, data_y, proj_dict):
