@@ -1089,24 +1089,24 @@ class DynamicAreaDefinition(object):
           complementing parameters to the projection info.
         antimeridian_mode:
             How to handle lon/lat data crossing the anti-meridian of the
-            projection. This currently only effects lon/lat geographic
+            projection. This currently only affects lon/lat geographic
             projections and data cases not covering the north or south pole.
             The possible options are:
 
-            * modify_extents: Set the X bounds to the edges of the data, but
+            * "modify_extents": Set the X bounds to the edges of the data, but
                 add 360 to the right-most bound. This has the effect of making
                 the area coordinates continuous from the left side to the
                 right side. However, this means that some coordinates will be
                 outside the coordinate space of the projection. Although most
                 PROJ and pyresample functionality can handle this there may be
                 some edge cases.
-            * modify_projection: Change the prime meridian of the projection
+            * "modify_projection": Change the prime meridian of the projection
                 from 0 degrees longitude to 180 degrees longitude. This has
                 the effect of putting the data on a continuous coordinate
                 system. However, this means that comparing data resampled to
                 this resulting area and an area not over the anti-meridian
                 would be more difficult.
-            * global_extents: Ignore the bounds of the data and use -180/180
+            * "global_extents": Ignore the bounds of the data and use -180/180
                 degrees as the west and east bounds of the data. This will
                 generate a large output area, but with the benefit of keeping
                 the data on the original projection. Note that some resampling
@@ -1193,13 +1193,13 @@ class DynamicAreaDefinition(object):
         y_is_pole = (ymax >= 90 - epsilon) or (ymin <= -90 + epsilon)
         if crs.is_geographic and x_passes_antimeridian and not y_is_pole:
             # cross anti-meridian of projection
-            xarr_pos = da.where(xarr >= 0, xarr, np.nan)
-            xarr_neg = da.where(xarr < 0, xarr, np.nan)
-            new_xmin = np.nanmin(xarr_pos)
-            new_xmax = np.nanmax(xarr_neg) + 360
             if antimeridian_mode == "global_extents":
                 new_xmin, new_xmax = (None, None)
             else:
+                xarr_pos = da.where(xarr >= 0, xarr, np.nan)
+                xarr_neg = da.where(xarr < 0, xarr, np.nan)
+                new_xmin = np.nanmin(xarr_pos)
+                new_xmax = np.nanmax(xarr_neg) + 360
                 new_xmin, new_xmax = da.compute(new_xmin, new_xmax)
             if antimeridian_mode == "modify_projection":
                 proj_dict.update({"pm": 180.0})
