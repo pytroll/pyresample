@@ -30,6 +30,7 @@ import numpy as np
 import yaml
 from pyproj import Geod, transform
 
+from . import formatting_html
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
 from pyresample.area_config import create_area_def
@@ -1763,6 +1764,9 @@ class AreaDefinition(_ProjectionDefinition):
                                            tuple(round(x, 4) for x in self.area_extent))
 
     __repr__ = __str__
+
+    def _repr_html_(self):
+        return formatting_html.area_repr(self)
 
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""
