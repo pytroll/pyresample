@@ -1176,23 +1176,11 @@ class DynamicAreaDefinition(object):
         if antimeridian_mode == "global_extents":
             xmin, xmax = (None, None)
         else:
-            if hasattr(xarr, "compute"):
-                xmin, xmax = self._wrap_x_corners_dask(xarr)
-            else:
-                xmin, xmax = self._wrap_x_corners_numpy(xarr)
-        return xmin, xmax
-
-    def _wrap_x_corners_numpy(self, xarr):
-        xmin = np.nanmin(xarr[xarr >= 0])
-        xmax = np.nanmax(xarr[xarr < 0]) + 360
-        return xmin, xmax
-
-    def _wrap_x_corners_dask(self, xarr):
-        xarr_pos = da.where(xarr >= 0, xarr, np.nan)
-        xarr_neg = da.where(xarr < 0, xarr, np.nan)
-        new_xmin = np.nanmin(xarr_pos)
-        new_xmax = np.nanmax(xarr_neg) + 360
-        xmin, xmax = da.compute(new_xmin, new_xmax)
+            wrapped_array = xarr % 360
+            xmin = np.nanmin(wrapped_array)
+            xmax = np.nanmax(wrapped_array)
+            if hasattr(wrapped_array, "compute"):
+                xmin, xmax = da.compute(xmin, xmax)
         return xmin, xmax
 
 
