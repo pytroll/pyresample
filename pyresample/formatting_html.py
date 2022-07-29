@@ -60,7 +60,8 @@ def plot_area_def(area_def, feature_res="110m", file=None):
 
     crs = area_def.to_cartopy_crs()
     fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
-    #coastlines = ax.coastlines(resolution="50m")
+
+    # coastlines = ax.coastlines(resolution="50m", color='black', linewidth=1)
     #high_res_borders = cartopy.feature.NaturalEarthFeature(category="cultural",
                                                    #name="admin_0_boundary_lines_land", # noqa E114
                                                    #scale=feature_res, edgecolor="black", facecolor="never") # noqa E1>
@@ -71,12 +72,12 @@ def plot_area_def(area_def, feature_res="110m", file=None):
     #ax.annotate(area.area_extent[0:2], xy=area.area_extent[0:2], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="right", va="top")
     #ax.annotate(area.area_extent[2:4], xy=area.area_extent[2:4], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="left", va="bottom")
     #ax.annotate(area.area_extent[2:4], xy=[1885700, 5000000], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="left", va="bottom")
+    # add bounding box coordinates to edges of plot
     # ax.annotate(np.round(area_def.area_extent[2:4]), xy=[1885700, 5000000], xycoords=ccrs.Geostationary()._as_mpl_transform(ax), xytext=[1, 1], color="red", textcoords="axes fraction", ha="center", va="bottom")
     
-    ax.set_global()
+    # ax.set_global()
     plt.tight_layout(pad=0)
-    #img = plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper')
-    #cbar = plt.colorbar()
+
     if file is not None:
         plt.savefig(file)
     elif fmt=="svg":
@@ -103,7 +104,10 @@ def area_repr(areadefinition):
              )
 
     resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
-    area_units = areadefinition.proj_dict["units"]
+    try:
+        area_units = areadefinition.proj_dict["units"]
+    except:
+        area_units = ""
     area_attrs = ("<dl>"
            f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
            f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
