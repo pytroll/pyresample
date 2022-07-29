@@ -1,3 +1,24 @@
+## Version 1.25.0 (2022/07/29)
+
+### Issues Closed
+
+* [Issue 428](https://github.com/pytroll/pyresample/issues/428) - Add more flexible antimeridian handling to DynamicAreaDefinition ([PR 431](https://github.com/pytroll/pyresample/pull/431) by [@djhoese](https://github.com/djhoese))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 446](https://github.com/pytroll/pyresample/pull/446) - Fix incorrect extents for DynamicAreaDefinition with 'modify_crs' antimeridian mode
+
+#### Features added
+
+* [PR 431](https://github.com/pytroll/pyresample/pull/431) - Add 'antimeridian_mode' to DynamicAreaDefinition ([428](https://github.com/pytroll/pyresample/issues/428))
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.24.1 (2022/07/06)
 
 ### Pull Requests Merged
