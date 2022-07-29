@@ -51,9 +51,15 @@ def plot_area_def(area_def, feature_res="110m", file=None):
     from cartopy.feature import COASTLINE
     import cartopy.crs as ccrs
     import numpy as np
+    from io import StringIO, BytesIO
+    import base64
+
+    plt.ioff()
+    
+    fmt = "svg"
 
     crs = area_def.to_cartopy_crs()
-    fig, ax = plt.subplots(subplot_kw=dict(projection=crs))#, figsize=(10,10))
+    fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
     #coastlines = ax.coastlines(resolution="50m")
     #high_res_borders = cartopy.feature.NaturalEarthFeature(category="cultural",
                                                    #name="admin_0_boundary_lines_land", # noqa E114
@@ -65,17 +71,24 @@ def plot_area_def(area_def, feature_res="110m", file=None):
     #ax.annotate(area.area_extent[0:2], xy=area.area_extent[0:2], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="right", va="top")
     #ax.annotate(area.area_extent[2:4], xy=area.area_extent[2:4], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="left", va="bottom")
     #ax.annotate(area.area_extent[2:4], xy=[1885700, 5000000], color="red", xycoords=ccrs.Geostationary()._as_mpl_transform(ax), ha="left", va="bottom")
-    ax.annotate(np.round(area_def.area_extent[2:4]), xy=[1885700, 5000000], xycoords=ccrs.Geostationary()._as_mpl_transform(ax), xytext=[1, 1], color="red", textcoords="axes fraction", ha="center", va="bottom")
+    # ax.annotate(np.round(area_def.area_extent[2:4]), xy=[1885700, 5000000], xycoords=ccrs.Geostationary()._as_mpl_transform(ax), xytext=[1, 1], color="red", textcoords="axes fraction", ha="center", va="bottom")
     
     ax.set_global()
-    plt.tight_layout()
+    plt.tight_layout(pad=0)
     #img = plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper')
     #cbar = plt.colorbar()
     if file is not None:
         plt.savefig(file)
-    else:
-        plt._repr_html_()
+    elif fmt=="svg":
+        svg_str = StringIO()
+        plt.savefig(svg_str, format="svg", bbox_inches="tight")
+        return svg_str.getvalue()
+    elif fmt=="png":
+        png_str = BytesIO()
+        plt.savefig(png_str, format="png", bbox_inches="tight")
+        img_str = f"<img src='data:image/png;base64, {base64.encodestring(png_str.getvalue()).decode('utf-8')}'/>"
 
+        return img_str
 
 def area_repr(areadefinition):
     """Return html repr of an AreaDefinition."""
@@ -99,8 +112,6 @@ def area_repr(areadefinition):
            f"<dt>Extent</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
            "</dl>"
            ) 
-
-    # area_plot = plot_area_def(areadefinition)
 
     html = ("<div>"
            f"{icons_svg}<style>{css_style}</style>"
