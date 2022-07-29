@@ -1216,6 +1216,9 @@ class DynamicAreaDefinition(object):
             xmax = np.nanmax(wrapped_array)
             if hasattr(wrapped_array, "compute"):
                 xmin, xmax = da.compute(xmin, xmax)
+            if antimeridian_mode == "modify_crs":
+                xmin -= 180
+                xmax -= 180
         return xmin, xmax
 
 
