@@ -91,8 +91,20 @@ def plot_area_def(area_def, feature_res="110m", file=None):
 
         return img_str
 
-def area_repr(areadefinition):
-    """Return html repr of an AreaDefinition."""
+def area_repr(areadefinition, include_header=True):
+    """Return html repr of an AreaDefinition.
+    
+    Args:
+        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        include_header (boolean): If true a header with object type will be included in
+            the html. This is mainly intented for display in Jupyter Notebooks. For the
+            display in the overview of area definitions for the Satpy documentation this
+            should be set to false.
+    
+    Returns:
+        str: String of html.
+    
+    """
     icons_svg, css_style = _load_static_files()
 
     obj_type = f"pyresample.{type(areadefinition).__name__}"
@@ -108,6 +120,7 @@ def area_repr(areadefinition):
         area_units = areadefinition.proj_dict["units"]
     except:
         area_units = ""
+
     area_attrs = ("<dl>"
            f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
            f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
@@ -121,11 +134,15 @@ def area_repr(areadefinition):
            f"{icons_svg}<style>{css_style}</style>"
            f"<pre class='pyresample-text-repr-fallback'>{escape(repr(areadefinition))}</pre>"
             "<div class='pyresample-wrap' style='display:none'>"
-           f"{header}"
-           f"<div class='pyresample-area'>"
-           f"<div class='pyresample-area-attrs'>{area_attrs}</div>"
-           f"<div class='pyresample-area-plot'>{plot_area_def(areadefinition)}</div>"
-           "</div>"
            )
+
+    if include_header:
+        html += f"{header}"
+
+    html += (f"<div class='pyresample-area'>"
+            f"<div class='pyresample-area-attrs'>{area_attrs}</div>"
+            f"<div class='pyresample-area-plot'>{plot_area_def(areadefinition)}</div>"
+            "</div>"
+            )
 
     return html
