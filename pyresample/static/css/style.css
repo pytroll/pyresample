@@ -61,32 +61,70 @@ body.vscode-dark {
   color: var(--pyresample-font-color2);
 }
 
-.pyresample-area > dt {
+.pyresample-area-section-item {
+  display: contents;
+}
+
+.pyresample-area-section-item input {
+  display: none;
+}
+
+.pyresample-area-section-item input:enabled + label {
+  cursor: pointer;
+}
+
+.pyresample-area-section-item-grid {
+  display: grid;
+  grid-template-columns: 20px, auto;
+}
+
+.pyresample-area-section-item-grid > label {
+  grid-column: 1;
+}
+
+/* attribute list formatting */
+.pyresample-area-section-details > dt {
   float: left;
   font-weight: bold;
   margin-right: 0.5em;
 }
 
 /* und noch der Doppelpunkt */
-.pyresample-area dt:after { 
+.pyresample-area-section-details dt:after { 
   content: ": "; 
 }
 
 /* ein Clearfix für Folge-dd-Elemente */
-.pyresample-area dd:after {
+.pyresample-area-section-details dd:after {
   clear: left;
   content: " ";
   display: block;
 }
+/* end attribute list formatting */
 
-.pyresample-area {
+.pyresample-area-sections {
   display: grid;
-  grid-template-columns: 700px auto;
+  grid-template-columns: auto;
 }
 
-.pyresample-area-attrs {
-  margin-right: 1em;
+.pyresample-area-section-details,
+.pyresample-area-section-in:checked ~ .pyresample-area-section-preview {
+  display: none;
 }
 
-.pyresample-area-plot {
+.pyresample-area-section-in:checked ~ .pyresample-area-section-details,
+.pyresample-area-section-preview {
+  display: inline-block;
+}
+
+.pyresample-icon-globe2,
+.pyresample-icon-database,
+.pyresample-icon-file-text2 {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
 }

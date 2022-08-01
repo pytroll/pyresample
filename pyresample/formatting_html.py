@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import uuid
 from functools import lru_cache, partial
 from html import escape
 from importlib.resources import read_binary
@@ -91,6 +92,87 @@ def plot_area_def(area_def, feature_res="110m", file=None):
 
         return img_str
 
+def collapsible_section(name, inline_details="", details="", enabled=True, collapsed=False, icon=None):
+    """Creates a collapsible section.
+
+    Args:
+      name (str):
+      inline_details (str):
+      details (str):
+      n_items (??):
+      enables (boolean):
+      collapsed (boolean):
+
+    Returns:
+      str:
+
+    """
+    # "unique" id to expand/collapse the section
+    data_id = "section-" + str(uuid.uuid4())
+
+    enabled = "" if enabled else "disabled"
+    collapsed = "" if collapsed else "checked"
+    tip = " title='Expand/collapse section'" if enabled else ""
+    
+    if icon is None:
+        icon = _icon("icon-database")
+
+    return (
+        f"<input id='{data_id}' class='pyresample-area-section-in' "
+        f"type='checkbox' {enabled} {collapsed}>"
+        f"<label for='{data_id}' {tip}>{icon} {name}</label>"
+        f"<div class='pyresample-area-section-preview'>{inline_details}</div>"
+        f"<div class='pyresample-area-section-details'>{details}</div>"
+    )
+
+
+def map_section(areadefinition):
+    """Creates html for map section."""
+    map_icon = _icon("icon-globe2")
+
+    coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
+
+    html = ("<div class='pyresample-area-section-item'>"
+            "<div class='pyresample-area-section-item-grid'>"
+            f"{coll}"
+            "</div>"
+            "</div>"
+           )
+
+    return html
+
+
+def attrs_section(areadefinition):
+    """Creates html for attribute section."""
+    resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
+    try:
+        area_units = areadefinition.proj_dict["units"]
+    except:
+        area_units = ""
+
+    attrs_icon = _icon("icon-file-text2")
+
+    area_attrs = ("<dl>"
+           f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
+           f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
+           f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
+           f"<dt>Resolution x/y</dt><dd>{resolution_str} {area_units}</dd>"
+           f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
+           "</dl>"
+           ) 
+
+    coll = collapsible_section("Attributes", details=area_attrs, icon=attrs_icon)
+
+    html = ("<div class='pyresample-area-section-item'>"
+            "<div class='pyresample-area-section-item-grid'>"
+            f"{coll}"
+            "</div>"
+            "</div>"
+           )
+
+    return html
+
+
 def area_repr(areadefinition, include_header=True):
     """Return html repr of an AreaDefinition.
     
@@ -115,20 +197,6 @@ def area_repr(areadefinition, include_header=True):
               "</div>"
              )
 
-    resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
-    try:
-        area_units = areadefinition.proj_dict["units"]
-    except:
-        area_units = ""
-
-    area_attrs = ("<dl>"
-           f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
-           f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
-           f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
-           f"<dt>Resolution x/y</dt><dd>{resolution_str} {area_units}</dd>"
-           f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
-           "</dl>"
-           ) 
 
     html = ("<div>"
            f"{icons_svg}<style>{css_style}</style>"
@@ -139,10 +207,10 @@ def area_repr(areadefinition, include_header=True):
     if include_header:
         html += f"{header}"
 
-    html += (f"<div class='pyresample-area'>"
-            f"<div class='pyresample-area-attrs'>{area_attrs}</div>"
-            f"<div class='pyresample-area-plot'>{plot_area_def(areadefinition)}</div>"
-            "</div>"
-            )
+    html += attrs_section(areadefinition)
+
+    html += map_section(areadefinition)
+
+    html += "</div>"
 
     return html
