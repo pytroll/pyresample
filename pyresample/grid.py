@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 
 import numpy as np
+from pyproj import Proj
 
 from pyresample import _spatial_mp, geometry
 
@@ -107,13 +108,15 @@ def get_linesample(lons, lats, source_area_def, nprocs=1):
         Arrays for resampling area by array indexing
     """
     # Proj.4 definition of source area projection
+    proj_kwargs = {}
     if nprocs > 1:
         source_proj = _spatial_mp.Proj_MP(**source_area_def.proj_dict)
+        proj_kwargs["nprocs"] = nprocs
     else:
-        source_proj = _spatial_mp.Proj(**source_area_def.proj_dict)
+        source_proj = Proj(**source_area_def.proj_dict)
 
     # get cartesian projection values from longitude and latitude
-    source_x, source_y = source_proj(lons, lats, nprocs=nprocs)
+    source_x, source_y = source_proj(lons, lats, **proj_kwargs)
 
     # Find corresponding pixels (element by element conversion of ndarrays)
     source_pixel_x = (source_area_def.pixel_offset_x +

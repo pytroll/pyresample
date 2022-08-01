@@ -24,8 +24,7 @@ import dask
 import dask.array as da
 import numpy as np
 import xarray as xr
-
-from pyresample._spatial_mp import Proj
+from pyproj import Proj
 
 LOG = logging.getLogger(__name__)
 
