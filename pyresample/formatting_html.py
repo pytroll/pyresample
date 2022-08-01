@@ -126,7 +126,7 @@ def area_repr(areadefinition, include_header=True):
            f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
            f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
            f"<dt>Resolution x/y</dt><dd>{resolution_str} {area_units}</dd>"
-           f"<dt>Extent</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
+           f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
            "</dl>"
            ) 
 
