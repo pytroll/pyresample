@@ -119,8 +119,6 @@ class Proj(BaseProj):
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=1):
         """Transform coordinates to coordinate system except for geographic coordinate systems."""
-        if self.crs.is_geographic:
-            return data1, data2
         return super(Proj, self).__call__(data1, data2, inverse=inverse,
                                           radians=radians, errcheck=errcheck)
 
@@ -136,9 +134,6 @@ class Proj_MP(BaseProj):
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
         """Transform coordinates to coordinates in the current coordinate system."""
-        if self.crs.is_geographic:
-            return data1, data2
-
         grid_shape = data1.shape
         n = data1.size
 

@@ -51,7 +51,7 @@ def _euro_lonlats_dask():
 
 def _antimeridian_lonlats():
     lons = create_test_longitude(172.0, 190.0, SRC_SWATH_2D_SHAPE)
-    lons[lons > 180.0] = lons - 360.0
+    lons[lons > 180.0] -= 360.0
     lats = create_test_latitude(25.0, 33.0, SRC_SWATH_2D_SHAPE)
     return lons, lats
 
@@ -96,6 +96,19 @@ def swath_def_2d_numpy_antimeridian():
 
     """
     lons, lats = _antimeridian_lonlats()
+    return SwathDefinition(lons, lats)
+
+
+@pytest.fixture(scope="session")
+def swath_def_2d_xarray_dask_antimeridian():
+    """Create a SwathDefinition with DataArrays(dask) arrays (200, 1500) over the antimeridian.
+
+    Longitude values go from positive values to negative values as they cross -180/180.
+
+    """
+    lons, lats = _antimeridian_lonlats()
+    lons = xr.DataArray(lons, dims=("y", "x"))
+    lats = xr.DataArray(lats, dims=("y", "x"))
     return SwathDefinition(lons, lats)
 
 
@@ -147,6 +160,22 @@ def area_def_stere_target():
         },
         DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
         [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+    )
+
+
+@pytest.fixture(scope="session")
+def area_def_lonlat_pm180_target():
+    """Create an AreaDefinition with a geographic lon/lat projection with prime meridian at 180 (800, 850)."""
+    return AreaDefinition(
+        'lonlat_pm180', '', '',
+        {
+            'proj': 'longlat',
+            'pm': '180.0',
+            'datum': 'WGS84',
+            'no_defs': None,
+        },
+        DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
+        [-20.0, 20.0, 20.0, 35.0]
     )
 
 
