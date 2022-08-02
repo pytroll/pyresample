@@ -84,6 +84,7 @@ body.vscode-dark {
 
 /* attribute list formatting */
 .pyresample-area-section-details dt {
+  width: 190px;
   float: left;
   font-weight: bold;
   margin-right: 0.5em;
