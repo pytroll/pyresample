@@ -129,7 +129,7 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
 
 def map_section(areadefinition):
     """Creates html for map section."""
-    map_icon = _icon("icon-database")
+    map_icon = _icon("icon-globe")
 
     coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
 
