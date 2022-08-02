@@ -29,11 +29,11 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 import yaml
-from pyproj import Geod, transform
+from pyproj import Geod, Proj, transform
 from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
-from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj, Proj_MP
+from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import (
@@ -2442,13 +2442,15 @@ class AreaDefinition(_ProjectionDefinition):
             lons, lats = res[0], res[1]
             return lons, lats
 
+        proj_kwargs = {}
         if nprocs > 1:
             target_proj = Proj_MP(self.crs)
+            proj_kwargs["nprocs"] = nprocs
         else:
             target_proj = Proj(self.crs)
 
         # Get corresponding longitude and latitude values
-        lons, lats = target_proj(target_x, target_y, inverse=True, nprocs=nprocs)
+        lons, lats = target_proj(target_x, target_y, inverse=True, **proj_kwargs)
         lons = np.asanyarray(lons, dtype=dtype)
         lats = np.asanyarray(lats, dtype=dtype)
 

@@ -26,7 +26,7 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-from pyproj import CRS
+from pyproj import CRS, Proj
 
 from pyresample import geo_filter, geometry, parse_area_file
 from pyresample.geometry import (
@@ -1134,7 +1134,6 @@ class Test(unittest.TestCase):
                                       proj_dict,
                                       x_size, y_size,
                                       area_extent)
-        from pyresample._spatial_mp import Proj
         p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)

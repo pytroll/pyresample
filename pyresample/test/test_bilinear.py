@@ -27,6 +27,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
+from pyproj import Proj
 
 
 class TestNumpyBilinear(unittest.TestCase):
@@ -226,7 +227,6 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
@@ -237,7 +237,6 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import (
             _get_four_closest_corners,
             _get_input_xy,
@@ -842,7 +841,6 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear.xarr import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
@@ -860,7 +858,6 @@ class TestXarrayBilinear(unittest.TestCase):
         import dask.array as da
 
         from pyresample import CHUNK_SIZE
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_four_closest_corners
         from pyresample.bilinear.xarr import _get_input_xy
 
@@ -891,7 +888,6 @@ class TestXarrayBilinear(unittest.TestCase):
         import dask.array as da
 
         from pyresample import CHUNK_SIZE
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_corner, _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
