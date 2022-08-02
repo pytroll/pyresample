@@ -96,15 +96,14 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
     """Creates a collapsible section.
 
     Args:
-      name (str):
-      inline_details (str):
-      details (str):
-      n_items (??):
-      enables (boolean):
-      collapsed (boolean):
+      name (str): Name of the section
+      inline_details (str): Information to show when section is collapsed. Default nothing.
+      details (str): Details to show when section is expanded.
+      enabled (boolean): Is collapsing enabled. Default True.
+      collapsed (boolean): Is the section collapsed on first show. Default False.
 
     Returns:
-      str:
+      str: Html div structure for collapsible section.
 
     """
     # "unique" id to expand/collapse the section
@@ -128,7 +127,19 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
 
 
 def map_section(areadefinition):
-    """Creates html for map section."""
+    """Creates html for map section.
+
+    Args:
+        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        include_header (boolean): If true a header with object type will be included in
+            the html. This is mainly intented for display in Jupyter Notebooks. For the
+            display in the overview of area definitions for the Satpy documentation this
+            should be set to false.
+    
+    Returns:
+        str: String of html.
+
+    """
     map_icon = _icon("icon-globe")
 
     coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
@@ -137,7 +148,19 @@ def map_section(areadefinition):
 
 
 def attrs_section(areadefinition):
-    """Creates html for attribute section."""
+    """Creates html for attribute section.
+
+    Args:
+        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        include_header (boolean): If true a header with object type will be included in
+            the html. This is mainly intented for display in Jupyter Notebooks. For the
+            display in the overview of area definitions for the Satpy documentation this
+            should be set to false.
+    
+    Returns:
+        str: String of html.
+
+    """
     resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
     proj_dict = areadefinition.proj_dict
     proj_str = "{{{}}}".format(", ".join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())]))
