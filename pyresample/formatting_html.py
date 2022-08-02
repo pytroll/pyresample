@@ -117,36 +117,32 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
     if icon is None:
         icon = _icon("icon-database")
 
-    return (
-        f"<input id='{data_id}' class='pyresample-area-section-in' "
-        f"type='checkbox' {enabled} {collapsed}>"
-        f"<label for='{data_id}' {tip}>{icon} {name}</label>"
-        f"<div class='pyresample-area-section-preview'>{inline_details}</div>"
-        f"<div class='pyresample-area-section-details'>{details}</div>"
+    return ("<div class='pyresample-area-section-item'>"
+           f"<input id='{data_id}' class='pyresample-area-section-in' "
+           f"type='checkbox' {enabled} {collapsed}>"
+           f"<label for='{data_id}' {tip}>{icon} {name}</label>"
+           f"<div class='pyresample-area-section-preview'>{inline_details}</div>"
+           f"<div class='pyresample-area-section-details'>{details}</div>"
+            "</div>"
     )
 
 
 def map_section(areadefinition):
     """Creates html for map section."""
-    map_icon = _icon("icon-globe2")
+    map_icon = _icon("icon-database")
 
     coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
 
-    html = ("<div class='pyresample-area-section-item'>"
-            "<div class='pyresample-area-section-item-grid'>"
-            f"{coll}"
-            "</div>"
-            "</div>"
-           )
-
-    return html
+    return f"{coll}"
 
 
 def attrs_section(areadefinition):
     """Creates html for attribute section."""
     resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
+    proj_dict = areadefinition.proj_dict
+    proj_str = "{{{}}}".format(", ".join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())]))
     try:
-        area_units = areadefinition.proj_dict["units"]
+        area_units = proj_dict["units"]
     except:
         area_units = ""
 
@@ -155,22 +151,16 @@ def attrs_section(areadefinition):
     area_attrs = ("<dl>"
            f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
            f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
+           f"<dt>Projection</dt><dd>{proj_str}</dd>"
            f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
            f"<dt>Resolution x/y</dt><dd>{resolution_str} {area_units}</dd>"
            f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt><dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
            "</dl>"
            ) 
 
-    coll = collapsible_section("Attributes", details=area_attrs, icon=attrs_icon)
+    coll = collapsible_section("Properties", details=area_attrs, icon=attrs_icon)
 
-    html = ("<div class='pyresample-area-section-item'>"
-            "<div class='pyresample-area-section-item-grid'>"
-            f"{coll}"
-            "</div>"
-            "</div>"
-           )
-
-    return html
+    return f"{coll}"
 
 
 def area_repr(areadefinition, include_header=True):
@@ -198,7 +188,7 @@ def area_repr(areadefinition, include_header=True):
              )
 
 
-    html = ("<div>"
+    html = (#"<div>"
            f"{icons_svg}<style>{css_style}</style>"
            f"<pre class='pyresample-text-repr-fallback'>{escape(repr(areadefinition))}</pre>"
             "<div class='pyresample-wrap' style='display:none'>"
@@ -207,10 +197,11 @@ def area_repr(areadefinition, include_header=True):
     if include_header:
         html += f"{header}"
 
+    html += "<div class='pyresample-area-sections'>"
     html += attrs_section(areadefinition)
 
     html += map_section(areadefinition)
 
-    html += "</div>"
+    html += "</div>" #"</div>"
 
     return html

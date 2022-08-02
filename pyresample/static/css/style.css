@@ -75,7 +75,7 @@ body.vscode-dark {
 
 .pyresample-area-section-item-grid {
   display: grid;
-  grid-template-columns: 20px, auto;
+  grid-template-columns: 20px auto;
 }
 
 .pyresample-area-section-item-grid > label {
@@ -83,7 +83,7 @@ body.vscode-dark {
 }
 
 /* attribute list formatting */
-.pyresample-area-section-details > dt {
+.pyresample-area-section-details dt {
   float: left;
   font-weight: bold;
   margin-right: 0.5em;
@@ -105,6 +105,10 @@ body.vscode-dark {
 .pyresample-area-sections {
   display: grid;
   grid-template-columns: auto;
+}
+
+.pyresample-area-section-details {
+   padding: 0 25px;
 }
 
 .pyresample-area-section-details,
