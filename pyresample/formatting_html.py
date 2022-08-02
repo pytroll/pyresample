@@ -84,11 +84,13 @@ def plot_area_def(area_def, feature_res="110m", file=None):
     elif fmt=="svg":
         svg_str = StringIO()
         plt.savefig(svg_str, format="svg", bbox_inches="tight")
+        plt.close()
         return svg_str.getvalue()
     elif fmt=="png":
         png_str = BytesIO()
         plt.savefig(png_str, format="png", bbox_inches="tight")
         img_str = f"<img src='data:image/png;base64, {base64.encodestring(png_str.getvalue()).decode('utf-8')}'/>"
+        plt.close()
 
         return img_str
 
