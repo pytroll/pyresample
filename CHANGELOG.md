@@ -1,3 +1,14 @@
+## Version 1.25.1 (2022/08/02)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 447](https://github.com/pytroll/pyresample/pull/447) - Fix handling of lon/lat coordinates on CRS with prime meridian != 0
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.25.0 (2022/07/29)
 
 ### Issues Closed
