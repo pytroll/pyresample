@@ -105,7 +105,12 @@ def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs, transform_kwargs):
 
 
 class DaskFriendlyTransformer:
-    """Wrapper around the pyproj Transformer class that uses dask."""
+    """Wrapper around the pyproj Transformer class that uses dask.
+
+    If the provided arrays are not dask arrays, they are converted to numpy
+    arrays and pyproj will be called directly (dask is not used).
+
+    """
 
     def __init__(self, src_crs, dst_crs, **kwargs):
         """Initialize the transformer with CRS objects.
@@ -128,6 +133,12 @@ class DaskFriendlyTransformer:
         import dask.array as da
         crs_from = self.src_crs
         crs_to = self.dst_crs
+
+        if not hasattr(x, "compute"):
+            x = np.asarray(x)
+            y = np.asarray(y)
+            return self._transform_numpy(x, y, **kwargs)
+
         # CRS objects aren't thread-safe until pyproj 3.1+
         # convert to WKT strings to be safe
         result = da.map_blocks(_transform_dask_chunk, x, y,
@@ -139,3 +150,7 @@ class DaskFriendlyTransformer:
         x = result[..., 0]
         y = result[..., 1]
         return x, y
+
+    def _transform_numpy(self, x, y, **kwargs):
+        transformer = PROJTransformer.from_crs(self.src_crs, self.dst_crs, **self.kwargs)
+        return transformer.transform(x, y, **kwargs)

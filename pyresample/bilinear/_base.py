@@ -34,9 +34,9 @@ import warnings
 
 import numpy as np
 from pykdtree.kdtree import KDTree
+from pyproj import Proj
 
 from pyresample import data_reduce, geometry
-from pyresample._spatial_mp import Proj
 
 from ..future.resamplers._transform_utils import lonlat2xyz
 

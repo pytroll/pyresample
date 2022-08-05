@@ -30,10 +30,10 @@ import dask.array as da
 import numpy as np
 import zarr
 from dask import delayed
+from pyproj import Proj
 from xarray import DataArray, Dataset
 
 from pyresample import CHUNK_SIZE
-from pyresample._spatial_mp import Proj
 from pyresample.bilinear._base import (
     BilinearBase,
     array_slice_for_multiple_arrays,

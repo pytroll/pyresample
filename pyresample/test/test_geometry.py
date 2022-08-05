@@ -26,7 +26,7 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-from pyproj import CRS
+from pyproj import CRS, Proj
 
 from pyresample import geo_filter, geometry, parse_area_file
 from pyresample.geometry import (
@@ -1134,7 +1134,6 @@ class Test(unittest.TestCase):
                                       proj_dict,
                                       x_size, y_size,
                                       area_extent)
-        from pyresample._spatial_mp import Proj
         p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
@@ -2172,6 +2171,10 @@ class TestStackedAreaDefinition:
         adef.assert_called_once_with(area1.area_id, area1.description, area1.proj_id,
                                      area1.crs, area1.width, y_size, area_extent)
 
+
+class TestCreateAreaDef:
+    """Test the 'create_area_def' utility function."""
+
     @staticmethod
     def _compare_area_defs(actual, expected, use_proj4=False):
         if use_proj4:
@@ -2523,6 +2526,54 @@ class TestDynamicAreaDefinition:
         assert area_extent == (0, 0, 10, 10)
         assert x_size == 5
         assert y_size == 5
+
+    @pytest.mark.parametrize(
+        (
+            "antimeridian_mode",
+            "expected_shape",
+            "expected_extents",
+            "include_proj_components",
+            "exclude_proj_components"
+        ),
+        [
+            (None, (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
+            ("modify_extents", (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
+            ("modify_crs", (21, 59), (164.75 - 180.0, 24.75, 194.25 - 180.0, 35.25), ("+pm=180",), tuple()),
+            ("global_extents", (21, 720), (-180.0, 24.75, 180.0, 35.25), tuple(), ("+pm=180",)),
+        ],
+    )
+    @pytest.mark.parametrize("use_dask", [False, True])
+    def test_antimeridian_mode(self,
+                               use_dask,
+                               antimeridian_mode,
+                               expected_shape,
+                               expected_extents,
+                               include_proj_components,
+                               exclude_proj_components):
+        """Test that antimeridian_mode affects the result."""
+        dyn_area = geometry.DynamicAreaDefinition('test_area', '', {'proj': 'longlat'})
+        lons, lats = _get_fake_antimeridian_lonlats(use_dask)
+        area = dyn_area.freeze(lonslats=(lons, lats), resolution=0.5, antimeridian_mode=antimeridian_mode)
+        proj_str = area.crs.to_proj4()
+
+        assert area.shape == expected_shape
+        np.testing.assert_allclose(area.area_extent, expected_extents)
+        for include_comp in include_proj_components:
+            assert include_comp in proj_str
+        for exclude_comp in exclude_proj_components:
+            assert exclude_comp not in proj_str
+
+
+def _get_fake_antimeridian_lonlats(use_dask: bool) -> tuple:
+    lon_min = 165
+    lon_max = 195
+    lons = np.arange(lon_min, lon_max, dtype=np.float64)
+    lons[lons >= 180] -= 360.0
+    lats = np.linspace(25.0, 35.0, lons.size, dtype=np.float64)
+    if use_dask:
+        lons = da.from_array(lons, chunks=lons.size // 3)
+        lats = da.from_array(lats, chunks=lons.size // 3)
+    return lons, lats
 
 
 class TestCrop(unittest.TestCase):

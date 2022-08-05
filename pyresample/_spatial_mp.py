@@ -102,43 +102,16 @@ class cKDTree_MP(object):
         return _d.copy(), _i.copy()
 
 
-class BaseProj(pyproj.Proj):
-    """Helper class for easier backwards compatibility."""
-
-    def __init__(self, projparams=None, preserve_units=True, **kwargs):
-        # have to have this because pyproj uses __new__
-        # subclasses would fail when calling __init__ otherwise
-        super(BaseProj, self).__init__(projparams=projparams,
-                                       preserve_units=preserve_units,
-                                       **kwargs)
-
-
-class Proj(BaseProj):
-    """Helper class to skip transforming lon/lat projection coordinates."""
-
-    def __call__(self, data1, data2, inverse=False, radians=False,
-                 errcheck=False, nprocs=1):
-        """Transform coordinates to coordinate system except for geographic coordinate systems."""
-        if self.crs.is_geographic:
-            return data1, data2
-        return super(Proj, self).__call__(data1, data2, inverse=inverse,
-                                          radians=radians, errcheck=errcheck)
-
-
-class Proj_MP(BaseProj):
+class Proj_MP:
     """Multi-processing version of the pyproj Proj class."""
 
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
-        super(Proj_MP, self).__init__(*args, **kwargs)
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
         """Transform coordinates to coordinates in the current coordinate system."""
-        if self.crs.is_geographic:
-            return data1, data2
-
         grid_shape = data1.shape
         n = data1.size
 
