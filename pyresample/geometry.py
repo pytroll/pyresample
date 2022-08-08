@@ -32,7 +32,6 @@ import yaml
 from pyproj import Geod, Proj, transform
 from pyproj.aoi import AreaOfUse
 
-from . import formatting_html
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
@@ -44,6 +43,8 @@ from pyresample.utils import (
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
+
+from . import _formatting_html
 
 try:
     from xarray import DataArray
@@ -1835,7 +1836,7 @@ class AreaDefinition(_ProjectionDefinition):
     __repr__ = __str__
 
     def _repr_html_(self):
-        return formatting_html.area_repr(self)
+        return _formatting_html.area_repr(self)
 
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""
