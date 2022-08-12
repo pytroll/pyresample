@@ -23,49 +23,6 @@ import pathlib
 import unittest
 
 import numpy as np
-import pytest
-
-from pyresample.area_config import create_area_def_from_yaml
-
-area_string1 = """isleofman:
-  description: UK+Ireland around Isle of Man
-  projection:
-    proj: stere
-    ellps: WGS84
-    lat_0: 54.228
-    lon_0: -4.532
-  shape:
-    height: 2048
-    width:  2048
-  area_extent:
-    lower_left_xy: [-600000.0, -600000.0]
-    upper_right_xy: [600000.0, 600000.0]
-"""
-
-area_string2 = """australia:
-  description: australia
-  projection:
-    ellps: WGS84
-    lon_0: 132.5
-    proj: merc
-    lat_0: -27.5
-  shape:
-    height: 895
-    width: 1001
-  area_extent:
-    lower_left_xy: [-2504688.5428486555, -5591295.9185533915]
-    upper_right_xy: [2504688.5428486555, -1111475.102852225]
-    units: m
-"""
-
-
-def test_create_area_def_from_yaml():
-    """Test reading an area from a yaml string."""
-    area = create_area_def_from_yaml(area_string1)
-    assert area.name == "UK+Ireland around Isle of Man"
-
-    with pytest.raises(ValueError):
-        create_area_def_from_yaml(area_string1 + area_string2)
 
 
 class TestLegacyAreaParser(unittest.TestCase):
