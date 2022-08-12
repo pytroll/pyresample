@@ -195,19 +195,35 @@ def _parse_yaml_area_file(area_file_name, *regions):
         params = area_dict.get(area_name)
         if params is None:
             raise AreaNotFound('Area "{0}" not found in file "{1}"'.format(area_name, area_file_name))
-        params.setdefault('area_id', area_name)
-        # Optional arguments.
-        params['shape'] = _capture_subarguments(params, 'shape', ['height', 'width'])
-        params['upper_left_extent'] = _capture_subarguments(params, 'upper_left_extent', ['upper_left_extent', 'x', 'y',
-                                                                                          'units'])
-        params['center'] = _capture_subarguments(params, 'center', ['center', 'x', 'y', 'units'])
-        params['area_extent'] = _capture_subarguments(params, 'area_extent', ['area_extent', 'lower_left_xy',
-                                                                              'upper_right_xy', 'units'])
-        params['resolution'] = _capture_subarguments(params, 'resolution', ['resolution', 'dx', 'dy', 'units'])
-        params['radius'] = _capture_subarguments(params, 'radius', ['radius', 'dx', 'dy', 'units'])
-        params['rotation'] = _capture_subarguments(params, 'rotation', ['rotation', 'units'])
-        res.append(create_area_def(**params))
+        area_def = create_area_def_from_dict(area_name, params)
+        res.append(area_def)
     return res
+
+
+def create_area_def_from_dict(area_name, params):
+    """Create an area definition from a string of parameters."""
+    params.setdefault('area_id', area_name)
+    # Optional arguments.
+    params['shape'] = _capture_subarguments(params, 'shape', ['height', 'width'])
+    params['upper_left_extent'] = _capture_subarguments(params, 'upper_left_extent', ['upper_left_extent', 'x', 'y',
+                                                                                      'units'])
+    params['center'] = _capture_subarguments(params, 'center', ['center', 'x', 'y', 'units'])
+    params['area_extent'] = _capture_subarguments(params, 'area_extent', ['area_extent', 'lower_left_xy',
+                                                                          'upper_right_xy', 'units'])
+    params['resolution'] = _capture_subarguments(params, 'resolution', ['resolution', 'dx', 'dy', 'units'])
+    params['radius'] = _capture_subarguments(params, 'radius', ['radius', 'dx', 'dy', 'units'])
+    params['rotation'] = _capture_subarguments(params, 'rotation', ['rotation', 'units'])
+    area_def = create_area_def(**params)
+    return area_def
+
+
+def create_area_def_from_yaml(yaml_string):
+    """Create an area defintion from a yaml string."""
+    area_dict = yaml.safe_load(yaml_string)
+    if len(area_dict.keys()) != 1:
+        raise ValueError("There needs to be one and only one area definition in the yaml string.")
+    for area_name, params in area_dict.items():
+        return create_area_def_from_dict(area_name, params)
 
 
 def _capture_subarguments(params, arg_name, sub_arg_list):
