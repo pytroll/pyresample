@@ -174,8 +174,8 @@ def map_section(areadefinition):
     return f"{coll}"
 
 
-def attrs_section(areadefinition):
-    """Create html for attribute section.
+def proj_area_attrs_section(areadefinition):
+    """Create html for attribute section based on AreaDefinition.
 
     Args:
         areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
@@ -201,9 +201,42 @@ def attrs_section(areadefinition):
                   f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
                   f"<dt>Projection</dt><dd>{proj_str}</dd>"
                   f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
-                  f"<dt>Resolution x/y</dt><dd>{resolution_str} {area_units}</dd>"
+                  f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt>"
                   f"<dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
+                  "</dl>"
+                  )
+
+    coll = collapsible_section("Properties", details=area_attrs, icon=attrs_icon)
+
+    return f"{coll}"
+
+
+def swath_area_attrs_section(areadefinition):
+    """Create html for attribute section based on SwathDefinition.
+
+    Args:
+        areadefinition (:class:`~pyresample.geometry.SwathDefinition`): Swath definition.
+
+    Returns:
+        str: String of html.
+
+    """
+    lon_attrs = areadefinition.lons.attrs
+    lat_attrs = areadefinition.lats.attrs
+
+    area_name = f"{lon_attrs.get('sensor')} swath"
+    height, width = areadefinition.lons.shape
+    resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
+    area_units = "m"
+
+    attrs_icon = _icon("icon-file-text2")
+
+    area_attrs = ("<dl>"
+                  # f"<dt>Area name</dt><dd>{area_name}</dd>"
+                  f"<dt>Description</dt><dd>{area_name}</dd>"
+                  f"<dt>Width/Height</dt><dd>{width}/{height} Pixel</dd>"
+                  f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   "</dl>"
                   )
 
@@ -245,7 +278,10 @@ def area_repr(areadefinition, include_header=True):
         html += f"{header}"
 
     html += "<div class='pyresample-area-sections'>"
-    html += attrs_section(areadefinition)
+    if isinstance(areadefinition, geom.AreaDefinition):
+        html += proj_area_attrs_section(areadefinition)
+    elif isinstance(areadefinition, geom.SwathDefinition):
+        html += swath_area_attrs_section(areadefinition)
 
     html += map_section(areadefinition)
 

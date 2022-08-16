@@ -802,6 +802,10 @@ class SwathDefinition(CoordinateDefinition):
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
+    def _repr_html_(self):
+        """Html representation."""
+        return _formatting_html.area_repr(self)
+
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
         lines, cols = self.lons.shape
