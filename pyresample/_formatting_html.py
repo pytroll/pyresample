@@ -82,14 +82,34 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
         crs = bb_area.to_cartopy_crs()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        data = np.ones_like(area_def.lons)
-        data = resample_nearest(area_def, data, bb_area, radius_of_influence=20000, fill_value=None)
+        polygon = False
+        if polygon:
+            from pygeos import polygons
+            import geopandas as gpd
+            import pandas as pd
 
-        cmap = colors.ListedColormap(["white", "grey"])
-        bounds = [0, 0.5, 1]
-        norm = colors.BoundaryNorm(bounds, cmap.N)
+            lx, ly = area_def.get_edge_lonlats()
+            poly = polygons(list(zip(lx, ly)))
 
-        ax.imshow(data, transform=crs, extent=crs.bounds, origin="upper", cmap=cmap, norm=norm, alpha=0.35)
+            df = pd.DataFrame({"area": ["modis_swath"], "geom": [poly]})
+            gdf = gpd.GeoDataFrame(df, crs=area_def.crs)
+            gdf = gdf.set_geometry("geom")
+            gdf = gdf.to_crs(crs.proj4_init)
+            # gdf.plot(ax=ax)
+            ax.add_geometries(gdf["geom"], crs=crs)
+        else:
+	    # bb_area = area_def.compute_optimal_bb_area()
+	    # crs = bb_area.to_cartopy_crs()
+	    # fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
+
+            data = np.ones_like(area_def.lons)
+            data = resample_nearest(area_def, data, bb_area, radius_of_influence=20000, fill_value=None)
+
+            cmap = colors.ListedColormap(["white", "grey"])
+            bounds = [0, 0.5, 1]
+            norm = colors.BoundaryNorm(bounds, cmap.N)
+
+            ax.imshow(data, transform=crs, extent=crs.bounds, origin="upper", cmap=cmap, norm=norm, alpha=0.35)
 
     coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
                                                      name="coastline",
