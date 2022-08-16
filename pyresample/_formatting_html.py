@@ -21,6 +21,9 @@ import uuid
 from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
+import pyresample.geometry as geom
+from cartopy.crs import CRS
+import numpy as np
 
 STATIC_FILES = (
     ("pyresample.static.html", "icons_svg_inline.html"),
@@ -66,9 +69,25 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
 
     import cartopy
     import matplotlib.pyplot as plt
+    from matplotlib import colors
+    from pyresample.kd_tree import resample_nearest
 
-    crs = area_def.to_cartopy_crs()
-    fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
+    if isinstance(area_def, geom.AreaDefinition):
+        crs = area_def.to_cartopy_crs()
+        fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
+    elif isinstance(area_def, geom.SwathDefinition):
+        bb_area = area_def.compute_optimal_bb_area()
+        crs = bb_area.to_cartopy_crs()
+        fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
+
+        data = np.ones_like(area_def.lons)
+        data = resample_nearest(area_def, data, bb_area, radius_of_influence=20000, fill_value=None)
+
+        cmap = colors.ListedColormap(["white", "grey"])
+        bounds = [0, 0.5, 1]
+        norm = colors.BoundaryNorm(bounds, cmap.N)
+
+        ax.imshow(data, transform=crs, extent=crs.bounds, origin="upper", cmap=cmap, norm=norm, alpha=0.35)
 
     coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
                                                      name="coastline",
