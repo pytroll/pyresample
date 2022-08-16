@@ -24,6 +24,8 @@ from importlib.resources import read_binary
 import pyresample.geometry as geom
 from cartopy.crs import CRS
 import numpy as np
+import xarray as xr
+from xarray.core.formatting_html import _obj_repr, datavar_section
 
 STATIC_FILES = (
     ("pyresample.static.html", "icons_svg_inline.html"),
@@ -239,6 +241,11 @@ def swath_area_attrs_section(areadefinition):
                   f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   "</dl>"
                   )
+
+    ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [areadefinition.lons, areadefinition.lats]}
+    dss = xr.merge(ds_dict.values())
+
+    area_attrs += _obj_repr(dss, header_components=[""], sections=[datavar_section(dss.data_vars)])
 
     coll = collapsible_section("Properties", details=area_attrs, icon=attrs_icon)
 
