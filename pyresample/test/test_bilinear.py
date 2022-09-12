@@ -482,6 +482,22 @@ class TestXarrayBilinear(unittest.TestCase):
                                                           [-5326849.0625, -5326849.0625,
                                                            5326849.0625, 5326849.0625])
 
+        # Area that partially overlaps the source data
+        self.target_def_partial = geometry.AreaDefinition('area_partial_overlap',
+                                                          'Europe (3km, HRV, VTC)',
+                                                          'areaD',
+                                                          {'a': '6378144.0',
+                                                           'b': '6356759.0',
+                                                           'lat_0': '50.00',
+                                                           'lat_ts': '50.00',
+                                                           'lon_0': '8.00',
+                                                           'proj': 'stere'},
+                                                          4, 4,
+                                                          [59559.320999999996,
+                                                           -909968.64000000001,
+                                                           2920503.401,
+                                                           1490031.3600000001])
+
         # Input data around the target pixel at 0.63388324, 55.08234642,
         in_shape = (100, 100)
         self.data1 = DataArray(da.ones((in_shape[0], in_shape[1])), dims=('y', 'x'))
@@ -1200,6 +1216,33 @@ class TestXarrayBilinear(unittest.TestCase):
                 orig = getattr(resampler, attr)
                 reloaded = getattr(new_resampler, attr).compute()
                 np.testing.assert_array_equal(orig, reloaded)
+        finally:
+            shutil.rmtree(tempdir, ignore_errors=True)
+
+    def test_get_sample_from_cached_bil_info(self):
+        """Test getting data using pre-calculated resampling info."""
+        import os
+        import shutil
+        from tempfile import mkdtemp
+
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def_partial,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        try:
+            tempdir = mkdtemp()
+            filename = os.path.join(tempdir, "test.zarr")
+
+            resampler.save_resampling_info(filename)
+
+            assert os.path.exists(filename)
+
+            new_resampler = XArrayBilinearResampler(self.source_def, self.target_def_partial,
+                                                    self.radius)
+            new_resampler.load_resampling_info(filename)
+            _ = new_resampler.get_sample_from_bil_info(self.data1)
         finally:
             shutil.rmtree(tempdir, ignore_errors=True)
 
