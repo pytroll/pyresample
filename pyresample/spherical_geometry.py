@@ -50,7 +50,7 @@ class Coordinate(object):
                  x__=None, y__=None, z__=None, R__=1):
         self.R__ = R__
         if lat is not None and lon is not None:
-            if not(-180 <= lon <= 180 and -90 <= lat <= 90):
+            if not (-180 <= lon <= 180 and -90 <= lat <= 90):
                 raise ValueError('Illegal (lon, lat) coordinates: (%s, %s)'
                                  % (lon, lat))
             self.lat = math.radians(lat)
@@ -75,8 +75,8 @@ class Coordinate(object):
 
     def __ne__(self, other):
         """Check inequality."""
-        if(abs(self.lat - other.lat) < EPSILON and
-           abs(self.lon - other.lon) < EPSILON):
+        if (abs(self.lat - other.lat) < EPSILON and
+                abs(self.lon - other.lon) < EPSILON):
             return 0
         else:
             return 1
@@ -286,8 +286,8 @@ class Arc(object):
             ab_ = a__.distance(b__)
             cd_ = c__.distance(d__)
 
-            if(abs(a__.distance(i) + b__.distance(i) - ab_) < EPSILON and
-               abs(c__.distance(i) + d__.distance(i) - cd_) < EPSILON):
+            if (abs(a__.distance(i) + b__.distance(i) - ab_) < EPSILON and
+                    abs(c__.distance(i) + d__.distance(i) - cd_) < EPSILON):
                 return i
         return None
 
