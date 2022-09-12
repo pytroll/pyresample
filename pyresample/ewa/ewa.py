@@ -149,7 +149,7 @@ def fornav(cols, rows, area_def, data_in,
     """
     if isinstance(data_in, (tuple, list)):
         # we can only support one data type per call at this time
-        assert(in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
+        assert (in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
     else:
         # assume they gave us a single numpy array-like object
         data_in = [data_in]

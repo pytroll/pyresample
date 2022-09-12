@@ -302,10 +302,10 @@ class Arc(object):
             ab_ = a__.hdistance(b__)
             cd_ = c__.hdistance(d__)
 
-            if(((i in (a__, b__)) or
+            if (((i in (a__, b__)) or
                 (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
-               ((i in (c__, d__)) or
-                    (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
+                ((i in (c__, d__)) or
+                 (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
                 return i
         return None
 

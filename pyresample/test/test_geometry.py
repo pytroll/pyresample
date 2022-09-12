@@ -1596,7 +1596,7 @@ def assert_np_dict_allclose(dict1, dict2):
         try:
             np.testing.assert_allclose(val, dict2[key])
         except TypeError:
-            assert(val == dict2[key])
+            assert val == dict2[key]
 
 
 class TestSwathDefinition(unittest.TestCase):
