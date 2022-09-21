@@ -485,6 +485,57 @@ class TestRBGradientSearchResamplerArea2Area:
         np.testing.assert_allclose(res, expected_resampled_data)
         assert res.shape == dst_area.shape
 
+    def test_regression_449(self):
+        from datetime import datetime
+
+        import dask.array as da
+        import numpy as np
+        import xarray as xr
+        from satpy import Scene
+
+        from pyresample import create_area_def
+
+        # from pyresample.gradient import ResampleBlocksGradientSearchResampler
+
+        dater = datetime.utcnow()
+
+        lon = np.arange(-180, 180, 0.25)
+        lat = np.arange(-90, 90 + 0.25, 0.25)
+
+        inv = np.random.uniform(low=0., high=1., size=(lat.shape[0], lon.shape[0]))
+
+        area_ext = (np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat))
+        targ_area = create_area_def("source_area",
+                                    "EPSG:4326",
+                                    area_extent=area_ext,
+                                    width=inv.shape[1],
+                                    height=inv.shape[0])
+
+        # dest_area = create_area_def("msg_3km_disk",
+        #                             {'a': '6378169', 'h': '35785831', 'lon_0': '0', 'no_defs': 'None', 'proj': 'geos',
+        #                              'rf': '295.488065897001', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+        #                             area_extent=(-5570248.6867, -5567248.2834, 5567248.2834, 5570248.6867),
+        #                             width=3712,
+        #                             height=3712,
+        #                             )
+
+        # resampler = ResampleBlocksGradientSearchResampler(targ_area, targ_area)
+        ecm_scn = Scene()
+
+        ecm_scn['test'] = xr.DataArray(da.from_array(inv),
+                                       coords={'y': lat, 'x': lon},
+                                       attrs={'start_time': dater})
+
+        ecm_scn['test'].attrs['area'] = targ_area
+
+        ecm_snm_res = ecm_scn.resample('msg_seviri_fes_3km', resampler='gradient_search')
+        minval, meanval, maxval = (np.nanmin(ecm_snm_res['test']),
+                                   np.nanmean(ecm_snm_res['test']),
+                                   np.nanmax(ecm_snm_res['test']))
+        assert np.isfinite(minval)
+        assert np.isfinite(meanval)
+        assert np.isfinite(maxval)
+
 
 class TestRBGradientSearchResamplerArea2Swath:
     """Test RBGradientSearchResampler for the Swath to Area case."""
@@ -812,7 +863,7 @@ def test_concatenate_chunks_stack_calls(dask_da):
     assert 'axis=2' in str(dask_da.concatenate.mock_calls[-1])
 
 
-class TestGradientCython():
+class TestGradientCython:
     """Test the core gradient features."""
 
     def setup(self):
