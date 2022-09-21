@@ -94,15 +94,15 @@ ctypedef void (*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, doub
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
-                               np.ndarray[DTYPE_t, ndim=2] src_x,
-                               np.ndarray[DTYPE_t, ndim=2] src_y,
-                               np.ndarray[DTYPE_t, ndim=2] xl,
-                               np.ndarray[DTYPE_t, ndim=2] xp,
-                               np.ndarray[DTYPE_t, ndim=2] yl,
-                               np.ndarray[DTYPE_t, ndim=2] yp,
-                               np.ndarray[DTYPE_t, ndim=2] dst_x,
-                               np.ndarray[DTYPE_t, ndim=2] dst_y,
+cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
+                               DTYPE_t [:, :] src_x,
+                               DTYPE_t [:, :] src_y,
+                               DTYPE_t [:, :] xl,
+                               DTYPE_t [:, :] xp,
+                               DTYPE_t [:, :] yl,
+                               DTYPE_t [:, :] yp,
+                               DTYPE_t [:, :] dst_x,
+                               DTYPE_t [:, :] dst_y,
                                method='bilinear'):
     """Gradient search, simple case variant."""
     cdef FN fun
@@ -119,16 +119,16 @@ cpdef one_step_gradient_search(np.ndarray[DTYPE_t, ndim=3] data,
 
 
     # output image array --> needs to be (lines, pixels) --> y,x
-    cdef np.ndarray[DTYPE_t, ndim = 3] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
-    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
-
-    one_step_gradient_search_no_gil(data,
-                                    src_x, src_y,
-                                    xl, xp, yl, yp,
-                                    dst_x, dst_y,
-                                    x_size, y_size,
-                                    fun, image,
-                                    elements)
+    cdef DTYPE_t [:, :, :] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
+    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
+    with nogil:
+        one_step_gradient_search_no_gil(data,
+                                        src_x, src_y,
+                                        xl, xp, yl, yp,
+                                        dst_x, dst_y,
+                                        x_size, y_size,
+                                        fun, image,
+                                        elements)
     # return the output image
     return image
 
@@ -213,14 +213,14 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef one_step_gradient_indices(np.ndarray[DTYPE_t, ndim=2] src_x,
-                                np.ndarray[DTYPE_t, ndim=2] src_y,
-                                np.ndarray[DTYPE_t, ndim=2] xl,
-                                np.ndarray[DTYPE_t, ndim=2] xp,
-                                np.ndarray[DTYPE_t, ndim=2] yl,
-                                np.ndarray[DTYPE_t, ndim=2] yp,
-                                np.ndarray[DTYPE_t, ndim=2] dst_x,
-                                np.ndarray[DTYPE_t, ndim=2] dst_y):
+cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
+                                DTYPE_t [:, :] src_y,
+                                DTYPE_t [:, :] xl,
+                                DTYPE_t [:, :] xp,
+                                DTYPE_t [:, :] yl,
+                                DTYPE_t [:, :] yp,
+                                DTYPE_t [:, :] dst_x,
+                                DTYPE_t [:, :] dst_y):
     """Gradient search, simple case variant, returning float indices.
     
     This is appropriate for monotonous gradients only, i.e. not modis or viirs in satellite projection.
@@ -232,17 +232,19 @@ cpdef one_step_gradient_indices(np.ndarray[DTYPE_t, ndim=2] src_x,
     cdef size_t x_size = dst_x.shape[1]
 
     # output indices arrays --> needs to be (lines, pixels) --> y,x
-    cdef np.ndarray[DTYPE_t, ndim = 3] indices = np.full([2, y_size, x_size], np.nan, dtype=DTYPE)
-    cdef np.ndarray[size_t, ndim = 1] elements = np.arange(x_size, dtype=np.uintp)
+    indices = np.full([2, y_size, x_size], np.nan, dtype=DTYPE)
+    cdef DTYPE_t [:, :, :] indices_view = indices
+    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
 
     # fake_data is not going to be used anyway as we just fill in the indices
-    cdef np.ndarray[DTYPE_t, ndim = 3] fake_data = np.full([1, 1, 1], np.nan, dtype=DTYPE)
+    cdef DTYPE_t [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=DTYPE)
 
-    one_step_gradient_search_no_gil(fake_data,
-                                    src_x, src_y,
-                                    xl, xp, yl, yp,
-                                    dst_x, dst_y,
-                                    x_size, y_size,
-                                    indices_xy, indices,
-                                    elements)
+    with nogil:
+        one_step_gradient_search_no_gil(fake_data,
+                                        src_x, src_y,
+                                        xl, xp, yl, yp,
+                                        dst_x, dst_y,
+                                        x_size, y_size,
+                                        indices_xy, indices_view,
+                                        elements)
     return indices
