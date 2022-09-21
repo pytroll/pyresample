@@ -119,7 +119,8 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
 
 
     # output image array --> needs to be (lines, pixels) --> y,x
-    cdef DTYPE_t [:, :, :] image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
+    image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
+    cdef DTYPE_t [:, :, :] image_view = image
     cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
     with nogil:
         one_step_gradient_search_no_gil(data,
@@ -127,7 +128,7 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
                                         xl, xp, yl, yp,
                                         dst_x, dst_y,
                                         x_size, y_size,
-                                        fun, image,
+                                        fun, image_view,
                                         elements)
     # return the output image
     return image
