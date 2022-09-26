@@ -481,7 +481,6 @@ class TestRBGradientSearchResamplerArea2Area:
         res = self.resampler.compute(
             data, method='nn',
             fill_value=2.0).compute(scheduler='single-threaded').values
-        print(res)
         np.testing.assert_allclose(res, expected_resampled_data)
         assert res.shape == dst_area.shape
 
@@ -491,11 +490,9 @@ class TestRBGradientSearchResamplerArea2Area:
         import dask.array as da
         import numpy as np
         import xarray as xr
-        from satpy import Scene
 
         from pyresample import create_area_def
-
-        # from pyresample.gradient import ResampleBlocksGradientSearchResampler
+        from pyresample.gradient import ResampleBlocksGradientSearchResampler
 
         dater = datetime.utcnow()
 
@@ -511,27 +508,27 @@ class TestRBGradientSearchResamplerArea2Area:
                                     width=inv.shape[1],
                                     height=inv.shape[0])
 
-        # dest_area = create_area_def("msg_3km_disk",
-        #                             {'a': '6378169', 'h': '35785831', 'lon_0': '0', 'no_defs': 'None', 'proj': 'geos',
-        #                              'rf': '295.488065897001', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
-        #                             area_extent=(-5570248.6867, -5567248.2834, 5567248.2834, 5570248.6867),
-        #                             width=3712,
-        #                             height=3712,
-        #                             )
+        dest_area = create_area_def("msg_3km_disk",
+                                    {'a': '6378169', 'h': '35785831', 'lon_0': '0', 'no_defs': 'None', 'proj': 'geos',
+                                     'rf': '295.488065897001', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+                                    area_extent=(-5570248.6867, -5567248.2834, 5567248.2834, 5570248.6867),
+                                    width=3712,
+                                    height=3712,
+                                    )
 
-        # resampler = ResampleBlocksGradientSearchResampler(targ_area, targ_area)
-        ecm_scn = Scene()
+        data = xr.DataArray(da.from_array(inv),
+                            coords={'y': lat, 'x': lon},
+                            attrs={'start_time': dater})
 
-        ecm_scn['test'] = xr.DataArray(da.from_array(inv),
-                                       coords={'y': lat, 'x': lon},
-                                       attrs={'start_time': dater})
+        resampler = ResampleBlocksGradientSearchResampler(targ_area, dest_area)
+        resampler.precompute()
+        res = resampler.compute(
+            data, method='nn',
+            fill_value=np.nan).compute(scheduler='single-threaded').values
 
-        ecm_scn['test'].attrs['area'] = targ_area
-
-        ecm_snm_res = ecm_scn.resample('msg_seviri_fes_3km', resampler='gradient_search')
-        minval, meanval, maxval = (np.nanmin(ecm_snm_res['test']),
-                                   np.nanmean(ecm_snm_res['test']),
-                                   np.nanmax(ecm_snm_res['test']))
+        minval, meanval, maxval = (np.nanmin(res),
+                                   np.nanmean(res),
+                                   np.nanmax(res))
         assert np.isfinite(minval)
         assert np.isfinite(meanval)
         assert np.isfinite(maxval)
