@@ -92,7 +92,9 @@ def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
             raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
     except AttributeError:
         # no :grid_mapping_name thus it cannot be a valid grid_mapping variable
-        raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
+        # but let's try to get everything from the CRS if we can
+        if "crs_wkt" not in v.attrs:
+            raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
 
     # use pyproj to load the CRS
     return pyproj.CRS.from_cf(v.attrs)
@@ -334,15 +336,8 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     crs, grid_mapping_variable, variable_is_itself_gridmapping = _load_cf_area_one_variable_crs(nc_handle, variable)
 
     # the type of grid_mapping (its grid_mapping_name) impacts several aspects of the CF reader
-    if grid_mapping_variable == 'latlon_default':
-        type_of_grid_mapping = 'latitude_longitude'
-    else:
-        try:
-            type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
-        except AttributeError:
-            raise ValueError(
-                ("Not a valid CF grid_mapping variable ({}):"
-                 "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
+    type_of_grid_mapping = _get_type_of_grid_mapping(
+        nc_handle, grid_mapping_variable)
 
     cf_info['grid_mapping_variable'] = grid_mapping_variable
     cf_info['type_of_grid_mapping'] = type_of_grid_mapping
@@ -378,6 +373,18 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     area_def = _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable)
 
     return area_def, cf_info
+
+
+def _get_type_of_grid_mapping(nc_handle, grid_mapping_variable):
+    """Get the type of grid mapping."""
+    if grid_mapping_variable == 'latlon_default':
+        return 'latitude_longitude'
+    try:
+        return nc_handle[grid_mapping_variable].grid_mapping_name
+    except AttributeError:
+        raise ValueError(
+            ("Not a valid CF grid_mapping variable ({}):"
+             "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
 
 
 def _load_cf_area_several_variables(nc_handle):
