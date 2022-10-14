@@ -471,6 +471,16 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(xrlons, xrlats)
         self.assertIsInstance(hash(swath_def), int)
 
+    def test_non_contiguous_swath_hash(self):
+        """Test swath hash."""
+        lons = np.array([[1.2, 1.3, 1.4, 1.5],
+                         [1.2, 1.3, 1.4, 1.5]])
+        lats = np.array([[65.9, 65.86, 65.82, 65.78],
+                         [65.9, 65.86, 65.82, 65.78]])
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def_subset = swath_def[:, slice(0, 2)]
+        self.assertIsInstance(hash(swath_def_subset), int)
+
     def test_area_equal(self):
         """Test areas equality."""
         area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
