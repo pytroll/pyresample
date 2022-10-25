@@ -380,7 +380,7 @@ class DaskEWAResampler(BaseResampler):
 
     def compute(self, data, cache_id=None, rows_per_scan=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                weight_delta_max=1.0, weight_sum_min=-1.0,
+                weight_delta_max=10.0, weight_sum_min=-1.0,
                 maximum_weight_mode=None, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
         # not used in this step
@@ -454,7 +454,7 @@ class DaskEWAResampler(BaseResampler):
     def resample(self, data, cache_dir=None, mask_area=None,
                  rows_per_scan=None, persist=False, chunks=None, fill_value=None,
                  weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                 weight_delta_max=1.0, weight_sum_min=-1.0,
+                 weight_delta_max=10.0, weight_sum_min=-1.0,
                  maximum_weight_mode=None):
         """Resample using an elliptical weighted averaging algorithm.
 
