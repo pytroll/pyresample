@@ -376,7 +376,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
         Number of pixel in y dimension
     rotation: float
         Rotation in degrees (negative is cw)
-    area_extent : list
+    area_extent : list | tuple
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 
     Returns

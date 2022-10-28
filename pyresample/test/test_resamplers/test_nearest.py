@@ -288,8 +288,11 @@ class TestInvalidUsageNearestNeighborResampler:
         # transpose the source geometries
         if isinstance(src_geom, AreaDefinition):
             src_geom = AreaDefinition(
-                src_geom.area_id, src_geom.description, src_geom.proj_id,
-                src_geom.crs, src_geom.height, src_geom.width, src_geom.area_extent,
+                src_geom.area_id,
+                src_geom.crs,
+                src_geom.height,
+                src_geom.width,
+                src_geom.area_extent,
             )
         else:
             src_geom = SwathDefinition(

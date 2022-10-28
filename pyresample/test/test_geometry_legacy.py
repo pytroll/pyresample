@@ -2339,23 +2339,26 @@ class TestCreateAreaDef:
         np.testing.assert_allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761))
         assert area_def.shape == (101, 90)
 
-    def test_create_area_def_dynamic_areas(self):
-        """Test certain parameter combinations produce a DynamicAreaDefinition."""
-        from pyresample import create_area_def as cad
-        from pyresample.geometry import DynamicAreaDefinition
-        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
-        shape = (425, 850)
-        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-
-        assert isinstance(cad('ease_sh', projection, shape=shape), DynamicAreaDefinition)
-        assert isinstance(cad('ease_sh', projection, area_extent=area_extent), DynamicAreaDefinition)
-
-    def test_create_area_def_dynamic_omerc(self):
-        """Test 'omerc' projections work in 'create_area_def'."""
-        from pyresample import create_area_def as cad
-        from pyresample.geometry import DynamicAreaDefinition
-        area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
-        assert isinstance(area_def, DynamicAreaDefinition)
+    def test_aggregate(self):
+        """Test aggregation of AreaDefinitions."""
+        area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
+                                       {'a': '6378144.0',
+                                        'b': '6356759.0',
+                                        'lat_0': '50.00',
+                                        'lat_ts': '50.00',
+                                        'lon_0': '8.00',
+                                        'proj': 'stere'},
+                                       800,
+                                       800,
+                                       [-1370912.72,
+                                        -909968.64000000001,
+                                        1029087.28,
+                                        1490031.3600000001])
+        res = area.aggregate(x=4, y=2)
+        assert res.proj_dict == area.proj_dict
+        np.testing.assert_allclose(res.area_extent, area.area_extent)
+        assert res.shape[0] == area.shape[0] / 2
+        assert res.shape[1] == area.shape[1] / 4
 
 
 def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
@@ -2573,6 +2576,24 @@ class TestDynamicAreaDefinition:
         for exclude_comp in exclude_proj_components:
             assert exclude_comp not in proj_str
 
+    def test_create_area_def_dynamic_areas(self):
+        """Test certain parameter combinations produce a DynamicAreaDefinition."""
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import DynamicAreaDefinition
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        shape = (425, 850)
+        area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
+
+        assert isinstance(cad('ease_sh', projection, shape=shape), DynamicAreaDefinition)
+        assert isinstance(cad('ease_sh', projection, area_extent=area_extent), DynamicAreaDefinition)
+
+    def test_create_area_def_dynamic_omerc(self):
+        """Test 'omerc' projections work in 'create_area_def'."""
+        from pyresample import create_area_def as cad
+        from pyresample.geometry import DynamicAreaDefinition
+        area_def = cad('omerc_bb', {'ellps': 'WGS84', 'proj': 'omerc'})
+        assert isinstance(area_def, DynamicAreaDefinition)
+
 
 def _get_fake_antimeridian_lonlats(use_dask: bool) -> tuple:
     lon_min = 165
@@ -2688,27 +2709,6 @@ class TestCrop(unittest.TestCase):
                                     129087.28000000003, 1430031.36),
                                    res.area_extent)
         self.assertEqual(res.shape, (700, 400))
-
-    def test_aggregate(self):
-        """Test aggregation of AreaDefinitions."""
-        area = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                       {'a': '6378144.0',
-                                        'b': '6356759.0',
-                                        'lat_0': '50.00',
-                                        'lat_ts': '50.00',
-                                        'lon_0': '8.00',
-                                        'proj': 'stere'},
-                                       800,
-                                       800,
-                                       [-1370912.72,
-                                           -909968.64000000001,
-                                           1029087.28,
-                                           1490031.3600000001])
-        res = area.aggregate(x=4, y=2)
-        self.assertDictEqual(res.proj_dict, area.proj_dict)
-        np.testing.assert_allclose(res.area_extent, area.area_extent)
-        self.assertEqual(res.shape[0], area.shape[0] / 2)
-        self.assertEqual(res.shape[1], area.shape[1] / 4)
 
 
 def test_enclose_areas():
