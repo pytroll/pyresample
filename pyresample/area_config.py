@@ -76,7 +76,7 @@ def load_area(area_file_name, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
 
@@ -109,7 +109,7 @@ def load_area_from_string(area_strs, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
     """
