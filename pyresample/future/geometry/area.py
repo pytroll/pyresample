@@ -37,47 +37,46 @@ class AreaDefinition(LegacyAreaDefinition):
     Args:
         area_id
             Identifier for the area
-        projection: dict or str or pyproj.crs.CRS
+        projection:
             Dictionary of PROJ parameters or string of PROJ or WKT parameters.
             Can also be a :class:`pyproj.crs.CRS` object.
-        width : int
+        width:
             x dimension in number of pixels, aka number of grid columns
-        height : int
+        height:
             y dimension in number of pixels, aka number of grid rows
-        area_extent : list
+        area_extent:
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
 
-    Attributes
-    ----------
-    area_id : str
-        Identifier for the area
-    width : int
-        x dimension in number of pixels, aka number of grid columns
-    height : int
-        y dimension in number of pixels, aka number of grid rows
-    size : int
-        Number of points in grid
-    area_extent_ll : tuple
-        Area extent in lons lats as a tuple (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat)
-    pixel_size_x : float
-        Pixel width in projection units
-    pixel_size_y : float
-        Pixel height in projection units
-    upper_left_extent : tuple
-        Coordinates (x, y) of upper left corner of upper left pixel in projection units
-    pixel_upper_left : tuple
-        Coordinates (x, y) of center of upper left pixel in projection units
-    pixel_offset_x : float
-        x offset between projection center and upper left corner of upper
-        left pixel in units of pixels.
-    pixel_offset_y : float
-        y offset between projection center and upper left corner of upper
-        left pixel in units of pixels..
-    crs : pyproj.crs.CRS
-        Coordinate reference system object similar to the PROJ parameters in
-        `proj_dict` and `proj_str`. This is the preferred attribute to use
-        when working with the `pyproj` library. Note, however, that this
-        object is not thread-safe and should not be passed between threads.
+    Attributes:
+        area_id (str):
+            Identifier for the area
+        width (int):
+            x dimension in number of pixels, aka number of grid columns
+        height (int):
+            y dimension in number of pixels, aka number of grid rows
+        size (int):
+            Number of points in grid
+        area_extent_ll (tuple):
+            Area extent in lons lats as a tuple (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat)
+        pixel_size_x (float):
+            Pixel width in projection units
+        pixel_size_y (float):
+            Pixel height in projection units
+        upper_left_extent (tuple):
+            Coordinates (x, y) of upper left corner of upper left pixel in projection units
+        pixel_upper_left (tuple):
+            Coordinates (x, y) of center of upper left pixel in projection units
+        pixel_offset_x (float):
+            x offset between projection center and upper left corner of upper
+            left pixel in units of pixels.
+        pixel_offset_y (float):
+            y offset between projection center and upper left corner of upper
+            left pixel in units of pixels.
+        crs (CRS):
+            Coordinate reference system object similar to the PROJ parameters in
+            `proj_dict` and `proj_str`. This is the preferred attribute to use
+            when working with the `pyproj` library. Note, however, that this
+            object is not thread-safe and should not be passed between threads.
 
     """
 

@@ -458,7 +458,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     Returns
     -------
-    AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+    area : pyresample.geometry.AreaDefinition or pyresample.geometry.DynamicAreaDefinition
         If shape and area_extent are found, an AreaDefinition object is returned.
         If only shape or area_extent can be found, a DynamicAreaDefinition object is returned
 
