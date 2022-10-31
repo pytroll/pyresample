@@ -1440,6 +1440,57 @@ class Test(unittest.TestCase):
             area_def.area_extent = (-1000000, -900000, 1000000, 1500000)
 
 
+class TestAreaDefinitionMetadata:
+    """Test behavior of metadata in an AreaDefinition."""
+
+    def test_area_def_creation_metadata(self):
+        """Test passing metadata to AreaDefinition."""
+        my_meta = {
+            "a": 1,
+        }
+        area_def = AreaDefinition(
+            "myarea",
+            4326,
+            200,
+            100,
+            (-1000, -500, 1500, 2000),
+            attrs=my_meta,
+        )
+        assert area_def.attrs == my_meta
+
+    def test_area_def_creation_no_metadata(self):
+        """Test not passing metadata to AreaDefinition still results in a usable mapping."""
+        area_def = AreaDefinition(
+            "myarea",
+            4326,
+            200,
+            100,
+            (-1000, -500, 1500, 2000),
+        )
+        assert area_def.attrs == {}
+
+    def test_area_def_metadata_equality(self):
+        """Test that metadata differences don't contribute to inequality."""
+        area_def1 = AreaDefinition(
+            "myarea",
+            4326,
+            200,
+            100,
+            (-1000, -500, 1500, 2000),
+            attrs={"a": 1},
+        )
+        area_def2 = AreaDefinition(
+            "myarea",
+            4326,
+            200,
+            100,
+            (-1000, -500, 1500, 2000),
+            attrs={"a": 2},
+        )
+        assert area_def1.attrs != area_def2.attrs
+        assert area_def1 == area_def2
+
+
 class TestMakeSliceDivisible(unittest.TestCase):
     """Test the _make_slice_divisible."""
 

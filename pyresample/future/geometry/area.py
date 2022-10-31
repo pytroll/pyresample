@@ -19,7 +19,7 @@
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Optional, Union
 
 from pyproj import CRS
 
@@ -37,7 +37,7 @@ class AreaDefinition(LegacyAreaDefinition):
     Args:
         area_id
             Identifier for the area
-        projection:
+        crs:
             Dictionary of PROJ parameters or string of PROJ or WKT parameters.
             Can also be a :class:`pyproj.crs.CRS` object.
         width:
@@ -46,6 +46,8 @@ class AreaDefinition(LegacyAreaDefinition):
             y dimension in number of pixels, aka number of grid rows
         area_extent:
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
+        attrs:
+            Arbitrary metadata related to the area.
 
     Attributes:
         area_id (str):
@@ -77,6 +79,8 @@ class AreaDefinition(LegacyAreaDefinition):
             `proj_dict` and `proj_str`. This is the preferred attribute to use
             when working with the `pyproj` library. Note, however, that this
             object is not thread-safe and should not be passed between threads.
+        attrs (dict):
+            Arbitrary metadata related to the area.
 
     """
 
@@ -87,6 +91,7 @@ class AreaDefinition(LegacyAreaDefinition):
             width: int,
             height: int,
             area_extent: tuple[float, float, float, float],
+            attrs: Optional[dict] = None
     ):
         super().__init__(
             area_id,
@@ -97,3 +102,4 @@ class AreaDefinition(LegacyAreaDefinition):
             height,
             area_extent,
         )
+        self.attrs = attrs or {}
