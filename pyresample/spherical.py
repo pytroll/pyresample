@@ -34,6 +34,62 @@ def _unwrap_radians(val, mod=np.pi):
     return (val + mod) % (2 * mod) - mod
 
 
+def _xyz_to_vertices(x, y, z):
+    if x.ndim == 0:
+        vertices = np.array([x, y, z])
+    else:
+        vertices = np.vstack([x, y, z]).T
+    return vertices
+
+
+def _ensure_is_array(arr):
+    """Ensure that a possible np.value input is converted to np.array."""
+    if arr.ndim == 0:
+        arr = np.array([arr])
+    return arr
+
+
+def _vincenty_matrix(lon, lat, lon_ref, lat_ref):
+    """Compute a distance matrix using Vincenty formula.
+
+    The result must be multiplied by Earth radius to obtain distance in m or km.
+    The returned distance matrix has shape (n x n_ref).
+    """
+    lon = _ensure_is_array(lon)
+    lat = _ensure_is_array(lat)
+    lon_ref = _ensure_is_array(lon_ref)
+    lat_ref = _ensure_is_array(lat_ref)
+    lon = lon[:, np.newaxis]
+    lat = lat[:, np.newaxis]
+    diff_lon = lon - lon_ref
+    num = ((np.cos(lat_ref) * np.sin(diff_lon)) ** 2 +
+           (np.cos(lat) * np.sin(lat_ref) -
+            np.sin(lat) * np.cos(lat_ref) * np.cos(diff_lon)) ** 2)
+    den = (np.sin(lat) * np.sin(lat_ref) +
+           np.cos(lat) * np.cos(lat_ref) * np.cos(diff_lon))
+    dist = np.arctan2(num ** .5, den)
+    return dist
+
+
+def _haversine_matrix(lon, lat, lon_ref, lat_ref):
+    """Compute a distance matrix using haversine formula.
+
+    The result must be multiplied by Earth radius to obtain distance in m or km.
+    The returned distance matrix has shape (n x n_ref).
+    """
+    lon = _ensure_is_array(lon)
+    lat = _ensure_is_array(lat)
+    lon_ref = _ensure_is_array(lon_ref)
+    lat_ref = _ensure_is_array(lat_ref)
+    lon = lon[:, np.newaxis]
+    lat = lat[:, np.newaxis]
+    diff_lon = lon - lon_ref  # n x n_ref matrix
+    diff_lat = lat - lat_ref  # n x n_ref matrix
+    a = np.sin(diff_lat / 2.0) ** 2.0 + np.cos(lat) * np.cos(lat_ref) * np.sin(diff_lon / 2.0) ** 2.0
+    dist = 2.0 * np.arcsin(a ** .5)  # equivalent of; 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+    return dist
+
+
 class SCoordinate(object):
     """Spherical coordinates.
 
@@ -42,14 +98,16 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        if np.isfinite(lon):
-            self.lon = float(_unwrap_radians(lon))
-        else:
-            self.lon = float(lon)
+        lon = np.asarray(lon, dtype=np.float64)
+        lat = np.asarray(lat, dtype=np.float64)
+        self.lon = _unwrap_radians(lon)
         self.lat = lat
 
     def cross2cart(self, point):
-        """Compute the cross product, and convert to cartesian coordinates."""
+        """Compute the cross product, and convert to cartesian coordinates.
+
+        Note: the cross product of the same point gives a zero vector.
+        """
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -62,35 +120,48 @@ class SCoordinate(object):
         g = np.cos(lat1)
         h = np.cos(lat2)
         i = np.sin(lon2 - lon1)
-        res = CCoordinate(np.array([-ad * c + be * f,
-                                    ad * f + be * c,
-                                    g * h * i]))
-
+        x = -ad * c + be * f
+        y = ad * f + be * c
+        z = g * h * i
+        vertices = _xyz_to_vertices(x, y, z)
+        res = CCoordinate(vertices)
         return res
 
     def to_cart(self):
         """Convert to cartesian."""
-        return CCoordinate(np.array([np.cos(self.lat) * np.cos(self.lon),
-                                     np.cos(self.lat) * np.sin(self.lon),
-                                     np.sin(self.lat)]))
+        x = np.cos(self.lat) * np.cos(self.lon)
+        y = np.cos(self.lat) * np.sin(self.lon)
+        z = np.sin(self.lat)
+        vertices = _xyz_to_vertices(x, y, z)
+        return CCoordinate(vertices)
 
     def distance(self, point):
-        """Get distance using Vincenty formula."""
-        dlambda = self.lon - point.lon
-        num = ((np.cos(point.lat) * np.sin(dlambda)) ** 2 +
-               (np.cos(self.lat) * np.sin(point.lat) -
-                np.sin(self.lat) * np.cos(point.lat) *
-                np.cos(dlambda)) ** 2)
-        den = (np.sin(self.lat) * np.sin(point.lat) +
-               np.cos(self.lat) * np.cos(point.lat) * np.cos(dlambda))
+        """Get distance using Vincenty formula.
 
-        return np.arctan2(num ** .5, den)
+        The result must be multiplied by Earth radius to obtain distance in m or km.
+        """
+        lat = self.lat
+        lon = self.lon
+        lon_ref = point.lon
+        lat_ref = point.lat
+        dist = _vincenty_matrix(lon, lat, lon_ref, lat_ref)
+        if dist.size == 1:  # single point case
+            dist = dist.item()
+        return dist
 
     def hdistance(self, point):
-        """Get distance using Haversine formula."""
-        return 2 * np.arcsin((np.sin((point.lat - self.lat) / 2.0) ** 2.0 +
-                              np.cos(point.lat) * np.cos(self.lat) *
-                              np.sin((point.lon - self.lon) / 2.0) ** 2.0) ** .5)
+        """Get distance using Haversine formula.
+
+        The result must be multiplied by Earth radius to obtain distance in m or km.
+        """
+        lat = self.lat
+        lon = self.lon
+        lon_ref = point.lon
+        lat_ref = point.lat
+        dist = _haversine_matrix(lon, lat, lon_ref, lat_ref)
+        if dist.size == 1:  # single point case
+            dist = dist.item()
+        return dist
 
     def __ne__(self, other):
         """Check inequality."""
@@ -125,12 +196,18 @@ class CCoordinate(object):
 
     def normalize(self):
         """Normalize the vector."""
-        self.cart /= np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
-
-        return self
+        # Note: if self.cart == [0,0,0], norm=0 and cart becomes [nan, nan, nan]
+        norm = self.norm()
+        cart = self.cart / norm[..., np.newaxis]  # enable vectorization
+        # mask_norm_0 = norm == 0
+        # cart[mask_norm_0, ...] = 0 # This remove nan propagation
+        return CCoordinate(cart)
 
     def cross(self, point):
-        """Get cross product with another vector."""
+        """Get cross product with another vector.
+
+        The cross product of the same vector gives a zero vector.
+        """
         return CCoordinate(np.cross(self.cart, point.cart))
 
     def dot(self, point):
@@ -176,9 +253,16 @@ class CCoordinate(object):
         return self.__mul__(other)
 
     def to_spherical(self):
-        """Convert to Spherical coordinate object."""
-        return SCoordinate(np.arctan2(self.cart[1], self.cart[0]),
-                           np.arcsin(self.cart[2]))
+        """Convert to SCoordinate object."""
+        if self.cart.ndim == 1:
+            lon = np.arctan2(self.cart[1], self.cart[0])
+            lat = np.arcsin(self.cart[2])
+        else:
+            lon = np.arctan2(self.cart[:, 1], self.cart[:, 0])
+            lat = np.arcsin(self.cart[:, 2])
+        # TODO: in future this should point to SPoint or SMultiPoint
+        # - This is not used within the file.
+        return SCoordinate(lon, lat)
 
 
 class Arc(object):
@@ -236,6 +320,7 @@ class Arc(object):
         ub_ = a__.cross2cart(c__)
 
         val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
+
         if abs(val - 1) < EPSILON:
             angle = 0
         elif abs(val + 1) < EPSILON:
