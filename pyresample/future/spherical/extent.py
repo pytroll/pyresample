@@ -53,7 +53,7 @@ def _get_list_extents_from_args(args):
     if len(list_extents) == 4 and isinstance(list_extents[0], numbers.Number):
         list_extents = [list_extents]
     # Ensure that here after is a list of extents
-    if not isinstance(list_extents[0], (tuple, list)):
+    if not isinstance(list_extents[0], (tuple, list, np.ndarray)):
         raise ValueError("SExtent expects a single extent or a list of extents.")
     return list_extents
 
@@ -70,6 +70,7 @@ def _check_extent_values(extent, use_radians=False):
     """Check extent value validity."""
     lat_valid_range = [-90.0, 90.0]
     lon_valid_range = [-180.0, 180.0]
+    extent = np.array(extent)
     if use_radians:
         lat_valid_range = np.deg2rad(lat_valid_range)
         lon_valid_range = np.deg2rad(lon_valid_range)
@@ -79,11 +80,20 @@ def _check_extent_values(extent, use_radians=False):
         raise ValueError(f'extent latitude values must be within {lat_valid_range}.')
 
 
+def _check_is_not_point_extent(extent):
+    """Check the extent does not represent a point."""
+    if extent[0] == extent[1] and extent[2] == extent[3]:
+        raise ValueError("An extent can not be defined by a point.")
+
+
+def _check_is_not_line_extent(extent):
+    """Check the extent does not represent a line."""
+    if extent[0] == extent[1] or extent[2] == extent[3]:
+        raise ValueError("An extent can not be defined by a line.")
+
+
 def _check_valid_extent(extent, use_radians=False):
     """Check lat/lon extent validity."""
-    # Check extent dtype
-    if not isinstance(extent, (tuple, list, np.ndarray)):
-        raise TypeError("'extent' must be a list, tuple or np.array. [lon_min, lon_max, lat_min, lat_max].")
     # Check extent length
     if len(extent) != 4:
         raise ValueError("'extent' must have length 4: [lon_min, lon_max, lat_min, lat_max].")
@@ -92,38 +102,67 @@ def _check_valid_extent(extent, use_radians=False):
     # Check order and values
     _check_extent_order(extent)
     _check_extent_values(extent, use_radians=use_radians)
+    # Check is not point or line
+    _check_is_not_point_extent(extent)
+    _check_is_not_line_extent(extent)
     # Ensure is a list
     extent = extent.tolist()
     return extent
 
 
-def _check_topology_validity(polygons):
-    """Check that the extents polygons do not overlap."""
-    from shapely.topology import TopologicalError
-    try:
-        # TODO: improve to raise error also when duplicate geometries or within on another
-        # TopologicalError: The operation 'GEOSIntersects_r' could not be performed.
-        # Likely cause is invalidity of the geometry
-        polygons.intersects(polygons)
-    except TopologicalError:
-        raise ValueError("The extent list is not valid. The composing extents must not overlap each other.")
+def _check_non_overlapping_extents(polygons):
+    """Check that the extents polygons are non-overlapping.
+
+    Note: Touching extents are considered valids.
+    """
+    for poly in polygons:
+        # Intersects includes within/contain/equals/touches !
+        n_intersects = np.sum([p.intersects(poly) and not p.touches(poly) for p in polygons])
+        if n_intersects >= 2:
+            raise ValueError("The extents composing SExtent can not be duplicates or overlapping.")
+
+
+def _is_global_extent(polygons):
+    """Check if a list of extents composes a global extent."""
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+
+    # Try union the polygons
+    unioned_polygon = unary_union(polygons)
+    # If still a MultiPolygon, not a global extent
+    if not isinstance(unioned_polygon, Polygon):
+        return False
+    # Define global polygon
+    global_polygon = Polygon.from_bounds(-180, -90, 180, 90)
+    # Assess if global
+    is_global = global_polygon.equals(unioned_polygon)
+    return is_global
 
 
 class SExtent(object):
     """Spherical Extent.
 
     SExtent longitudes are defined between -180 and 180 degree.
+    Geometrical operations are performed on a planar coordinate system.
+
     A spherical geometry crossing the anti-meridian will have an SExtent
      composed of [lon_start, 180, ...,...] and [-180, lon_end, ..., ...]
 
-    The extents composing an SExtent:
-    - can not intersect/overlap each other
-    - can touch each other
+    Important notes:
+    - SExtents touching at the anti-meridian are considered to not touching !
+    - SExtents.intersects predicate includes also contains/within cases.
+    - In comparison to shapely polygon behaviour, SExtent.intersects is
+      False if SExtents are just touching.
 
-    There is not an upper limit on the number of extents composing SExtent.
-    The only conditions is that the extents do not intersect/overlap.
+    There is not an upper limit on the number of extents composing SExtent !!!
+    The only conditions is that the extents do not intersect/overlap each other.
 
-    Examples of valid SExtent inputs
+    More specifically, extents composing an SExtent:
+    - must represent a polygon (not a point or a line),
+    - can touch each other,
+    - but can not intersect/contain/overlap each other.
+
+    Examples of valid SExtent definitions:
       extent = [x_min, x_max, y_min, ymax]
       sext = SExtent(extent)
       sext = SExtent([extent, extent])
@@ -139,8 +178,8 @@ class SExtent(object):
         # Pre-compute shapely polygon
         list_polygons = [Polygon.from_bounds(*bounds_from_extent(ext)) for ext in self.list]
         self.polygons = MultiPolygon(list_polygons)
-        # Check topological validitiy of extent polygons
-        _check_topology_validity(self.polygons)
+        # Check topological validity of extents polygons
+        _check_non_overlapping_extents(self.polygons)
 
     def to_shapely(self):
         """Return the shapely extent rectangle(s) polygon(s)."""
@@ -158,23 +197,37 @@ class SExtent(object):
         """Get extents iterator."""
         return self.list.__iter__()
 
+    def _repr_svg_(self):
+        """Display the SExtent in the Ipython terminal."""
+        return self.to_shapely()._repr_svg_()
+
     @property
     def is_global(self):
         """Check if the extent is global."""
-        if len(self.list) != 1:
+        from shapely.geometry import Polygon
+        from shapely.ops import unary_union
+
+        # Try union the polygons
+        unioned_polygon = unary_union(self.polygons)
+        # If still a MultiPolygon, not a global extent
+        if not isinstance(unioned_polygon, Polygon):
             return False
-        if self.list[0] == [-180, 180, -90, 90]:
-            return True
-        else:
-            return False
+        # Define global polygon
+        global_polygon = Polygon.from_bounds(-180.0, -90.0, 180.0, 90.0)
+        # Assess if global
+        is_global = global_polygon.equals(unioned_polygon)
+        return is_global
 
     def intersects(self, other):
         """Check if SExtent is intersecting the other SExtent.
 
-        Touching extent are considered to not intersect !
+        Touching SExtent are considered to not intersect !
+        SExtents intersection also includes contains/within occurence.
         """
         if not isinstance(other, SExtent):
             raise TypeError("SExtent.intersects() expects a SExtent class instance.")
+        # Important caveat in comparison to shapely !
+        # In shapely, intersects includes touching geometries !
         bl = (self.to_shapely().intersects(other.to_shapely()) and
               not self.to_shapely().touches(other.to_shapely()))
         return bl
@@ -182,7 +235,7 @@ class SExtent(object):
     def disjoint(self, other):
         """Check if SExtent does not intersect (and do not touch) the other SExtent."""
         if not isinstance(other, SExtent):
-            raise TypeError("SExtent.intersects() expects a SExtent class instance.")
+            raise TypeError("SExtent.disjoint() expects a SExtent class instance.")
         return self.to_shapely().disjoint(other.to_shapely())
 
     def within(self, other):
@@ -198,7 +251,14 @@ class SExtent(object):
         return self.to_shapely().contains(other.to_shapely())
 
     def touches(self, other):
-        """Check if SExtent external touches another SExtent."""
+        """Check if SExtent external touches another SExtent.
+
+        Important notes:
+        - Touching SExtents are not disjoint !
+        - Touching SExtents are considered to not intersect !
+        - SExtents which are contained/within each other AND are "touching in the interior"
+          are not considered touching !
+        """
         if not isinstance(other, SExtent):
             raise TypeError("SExtent.touches() expects a SExtent class instance.")
         return self.to_shapely().touches(other.to_shapely())

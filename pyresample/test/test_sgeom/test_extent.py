@@ -50,12 +50,12 @@ class TestSExtent(unittest.TestCase):
             SExtent(extent)
 
         # lat_min < -90
-        extent = [-180, 181, -91, 40]
+        extent = [50, 60, -91, 40]
         with pytest.raises(ValueError):
             SExtent(extent)
 
         # lat_max > 90
-        extent = [-180, 181, -40, 91]
+        extent = [50, 60, -40, 91]
         with pytest.raises(ValueError):
             SExtent(extent)
 
@@ -92,59 +92,87 @@ class TestSExtent(unittest.TestCase):
         with pytest.raises(ValueError):
             SExtent(list_extent)
 
-    def test_sextent_with_correct_values(self):
-        """Test it creates the SExtent when providing correct values."""
-        # - Classic
+    def test_sextent_with_correct_format(self):
+        """Test SExtent when providing correct extent(s) format and values."""
+        # Accept list
         extent = [-180, -175, -40, 40]
         assert list(SExtent(extent))[0] == extent
-        # - Same lon
-        extent = [0, 0, -40, 40]
-        assert list(SExtent(extent))[0] == extent
-        # - Same lat
-        extent = [-10, 0, 40, 40]
-        assert list(SExtent(extent))[0] == extent
-        # - Same lat, lon (--> point extent)
-        extent = [0, 0, 40, 40]
-        assert list(SExtent(extent))[0] == extent
-        # Accept numpy array
-        extent = np.array([-180, -175, -40, 40])
-        assert list(SExtent(extent))[0] == extent.tolist()
         # Accept tuple
         extent = (-180, -175, -40, 40)
         assert list(SExtent(extent))[0] == list(extent)
-        # Accept list of extents
-        extent1 = [50, 60, -40, 40]
-        extent2 = [175, 180, -40, 40]
-        list_extent = [extent1, extent2]
-        assert np.allclose(list(SExtent(list_extent)), list_extent)
-        # Accept multiple extents
-        extent1 = [50, 60, -40, 40]
-        extent2 = [175, 180, -40, 40]
-        list_extent = [extent1, extent2]
-        assert np.allclose(list(SExtent(list_extent)), list_extent)
+        # Accept numpy array
+        extent = np.array([-180, -175, -40, 40])
+        assert list(SExtent(extent))[0] == extent.tolist()
 
-    def test_sextent_bad_topology(self):
-        """Test that capture error when the extents composing SExtent overlaps."""
-        # Touching does not raise errors
+        # Accept list of extents (list)
+        extent1 = [50, 60, -40, 40]
+        extent2 = [175, 180, -40, 40]
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(list_extent)), list_extent)
+        # Accept list of extents (tuple)
+        extent1 = (50, 60, -40, 40)
+        extent2 = (175, 180, -40, 40)
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(list_extent)), list_extent)
+        # Accept list of extents (np.array)
+        extent1 = np.array([0, 60, -40, 40])
+        extent2 = np.array([175, 180, -40, 40])
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(list_extent)), list_extent)
+        # Accept multiple extents (list)
+        extent1 = [50, 60, -40, 40]
+        extent2 = [175, 180, -40, 40]
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(extent1, extent2)), list_extent)
+        # Accept multiple extents (tuple)
+        extent1 = (50, 60, -40, 40)
+        extent2 = (175, 180, -40, 40)
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(extent1, extent2)), list_extent)
+        # Accept multiple extents (np.array)
+        extent1 = np.array([0, 60, -40, 40])
+        extent2 = np.array([175, 180, -40, 40])
+        list_extent = [extent1, extent2]
+        assert np.allclose(list(SExtent(extent1, extent2)), list_extent)
+
+    def test_single_sextent_bad_topology(self):
+        """Test that raise error when the extents is a point or a line."""
+        # - Point extent
+        extent = [0, 0, 40, 40]
+        with pytest.raises(ValueError):
+            SExtent(extent)
+        # - Line extent
+        extent = [0, 10, 40, 40]
+        with pytest.raises(ValueError):
+            SExtent(extent)
+        extent = [0, 0, -40, 50]
+        with pytest.raises(ValueError):
+            SExtent(extent)
+
+    def test_multple_touching_extents(self):
+        """Test that touching extents composing SExtent do not raise error."""
         extent1 = [0, 40, 0, 40]
         extent2 = [0, 40, -40, 0]
         _ = SExtent(extent1, extent2)
 
+    def test_multple_overlapping_extents(self):
+        """Test that raise error when the extents composing SExtent overlaps."""
         # Intersecting raise error
         extent1 = [0, 40, 0, 40]
         extent2 = [20, 60, 20, 60]
         with pytest.raises(ValueError):
             SExtent(extent1, extent2)
 
-        # TODO: Duplicate extent do not raise errors
+        # Duplicate extent raise errors
         extent1 = [0, 40, 0, 40]
-        extent2 = extent1
-        SExtent(extent1, extent2)
+        with pytest.raises(ValueError):
+            SExtent(extent1, extent1)
 
-        # TODO: Within extent do not raise errors
+        # Within extent raise errors
         extent1 = [0, 40, 0, 40]
         extent2 = [10, 20, 10, 20]
-        SExtent(extent1, extent2)
+        with pytest.raises(ValueError):
+            SExtent(extent1, extent2)
 
     def test_to_shapely(self):
         """Test shapely conversion."""
@@ -174,16 +202,22 @@ class TestSExtent(unittest.TestCase):
         sext = SExtent(extent)
         assert sext.is_global
 
-        # Is not global
+        # Is clearly not global
         extent = [-175, 180, -90, 90]
         sext = SExtent(extent)
         assert not sext.is_global
 
         # Is global, but with multiple extents
-        extent = [-180, 0, -90, 90]
-        extent1 = [0, 180, -90, 90]
-        sext = SExtent(extent, extent1)
-        assert not sext.is_global  # TODO IMPROVE !!!
+        extent1 = [-180, 0, -90, 90]
+        extent2 = [0, 180, -90, 90]
+        sext = SExtent(extent1, extent2)
+        assert sext.is_global
+
+        # Is not global, but polgon bounds ...
+        extent1 = [-180, 0, -90, 90]
+        extent2 = [0, 180, 0, 90]
+        sext = SExtent(extent1, extent2)
+        assert not sext.is_global
 
     def test_SExtent_single_not_intersect(self):
         """Check disjoint extents."""
@@ -496,3 +530,25 @@ class TestSExtent(unittest.TestCase):
         # Equal extents do not touches !
         assert not sext1.touches(sext2)
         assert not sext2.touches(sext1)
+
+    def test_SExtent_binary_predicates_bad_input(self):
+        extent = [160, 180, -40, 40]
+        sext = SExtent(extent)
+        # Disjoint
+        with pytest.raises(TypeError):
+            sext.disjoint("bad_dtype")
+        # Intersects
+        with pytest.raises(TypeError):
+            sext.intersects("bad_dtype")
+        # Within
+        with pytest.raises(TypeError):
+            sext.within("bad_dtype")
+        # Contains
+        with pytest.raises(TypeError):
+            sext.contains("bad_dtype")
+        # Touches
+        with pytest.raises(TypeError):
+            sext.touches("bad_dtype")
+        # Equals
+        with pytest.raises(TypeError):
+            sext.equals("bad_dtype")
