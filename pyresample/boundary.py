@@ -18,6 +18,7 @@
 """The Boundary classes."""
 
 import logging
+import warnings
 
 import numpy as np
 
@@ -54,13 +55,56 @@ class Boundary(object):
 
 
 class AreaBoundary(Boundary):
-    """Area boundary objects."""
+    """Area boundary objects.
+
+    It expects a (lon_coords, lat_coords) tuple for each of the 4 sides.
+    """
+
+    # TODO: In future the Boundary inheritance should be dropped
+    # --> self.lons and lats are always None (see init here below)
+    # --> contour method is redefined
+    # --> contour_poly and draw methods should be replaced by future spherical interface
 
     def __init__(self, *sides):
         Boundary.__init__(self)
+        # Check 4 sides are provided
+        if len(sides) != 4:
+            raise ValueError("AreaBoundary expects 4 sides.")
+        # Retrieve sides
         self.sides_lons, self.sides_lats = zip(*sides)
         self.sides_lons = list(self.sides_lons)
         self.sides_lats = list(self.sides_lats)
+
+    @classmethod
+    def from_sides(cls, lon_sides, lat_sides):
+        """Define AreaBoundary from list of lon_sides and lat_sides.
+
+        For an area of shape (m, n), the sides must adhere the format:
+            sides = [np.array([v00, v01, ..., v0n]),
+                     np.array([v0n, v1n, ..., vmn]),
+                     np.array([vmn, ..., vm1, vm0]),
+                     np.array([vm0, ... ,v10, v00]),
+                    ]
+        """
+        boundary = cls(*zip(lon_sides, lat_sides))
+        return boundary
+
+    def contour(self):
+        """Get the (lons, lats) tuple of the boundary object.
+
+        It excludes the last element of each side because it's included in the next side.
+        """
+        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
+        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
+        return lons, lats
+
+    @property
+    def vertices(self):
+        """Return boundary polygon vertices."""
+        lons, lats = self.contour()
+        vertices = np.vstack((lons, lats)).T
+        vertices = vertices.astype(np.float64, copy=False)  # Important for spherical ops.
+        return vertices
 
     def decimate(self, ratio):
         """Remove some points in the boundaries, but never the corners."""
@@ -76,19 +120,15 @@ class AreaBoundary(Boundary):
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
 
-    def contour(self):
-        """Get the (lons, lats) tuple of the boundary object."""
-        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
-        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
-
-        return lons, lats
-
 
 class AreaDefBoundary(AreaBoundary):
     """Boundaries for area definitions (pyresample)."""
 
     def __init__(self, area, frequency=1):
         lons, lats = area.get_bbox_lonlats()
+        warnings.warn("'AreaDefBoundary' will be removed in the future. " +
+                      "Use the Swath/AreaDefinition 'boundary' method instead!.",
+                      PendingDeprecationWarning)
         AreaBoundary.__init__(self,
                               *zip(lons, lats))
 
