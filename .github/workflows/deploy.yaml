@@ -26,7 +26,7 @@ jobs:
           python -m build -s
 
       - name: Upload sdist to build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -92,7 +92,7 @@ jobs:
           python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
 
       - name: Upload wheel(s) as build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist/*.whl
