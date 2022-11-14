@@ -195,6 +195,22 @@ class TestSExtent(unittest.TestCase):
         sext = SExtent(extent)
         self.assertEqual(repr(sext), '[[0, 20, 10, 30]]')
 
+    def test_repr_svg(self):
+        """Check the sketch Ipython representation."""
+        extent = [-180, 180, -90, 90]
+        sext = SExtent(extent)
+        repr_svg = '<svg xmlns="http://www.w3.org/2000/svg" ' + \
+                   'xmlns:xlink="http://www.w3.org/1999/xlink" ' + \
+                   'width="300" height="208.8" ' + \
+                   'viewBox="-194.4 -104.4 388.8 208.8" ' + \
+                   'preserveAspectRatio="xMinYMin meet">' + \
+                   '<g transform="matrix(1,0,0,-1,0,0.0)"><g>' + \
+                   '<path fill-rule="evenodd" fill="#66cc99" stroke="#555555" ' + \
+                   'stroke-width="2.592" opacity="0.6" ' + \
+                   'd="M -180.0,-90.0 L -180.0,90.0 L 180.0,90.0 L 180.0,-90.0 L -180.0,-90.0 z" ' + \
+                   '/></g></g></svg>'
+        self.assertEqual(sext._repr_svg_(), repr_svg)
+
     def test_is_global(self):
         """Check is_global property."""
         # Is global
@@ -202,9 +218,15 @@ class TestSExtent(unittest.TestCase):
         sext = SExtent(extent)
         assert sext.is_global
 
-        # Is clearly not global
+        # Is clearly not global (single extent)
         extent = [-175, 180, -90, 90]
         sext = SExtent(extent)
+        assert not sext.is_global
+
+        # Is clearly not global (multiple extent)
+        extent1 = [-170, -160, -90, 90]
+        extent2 = [0, 10, -90, 90]
+        sext = SExtent(extent1, extent2)
         assert not sext.is_global
 
         # Is global, but with multiple extents

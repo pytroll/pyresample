@@ -20,6 +20,7 @@ import numbers
 
 import numpy as np
 from shapely.geometry import MultiPolygon, Polygon
+from shapely.ops import unary_union
 
 
 def bounds_from_extent(extent):
@@ -204,9 +205,6 @@ class SExtent(object):
     @property
     def is_global(self):
         """Check if the extent is global."""
-        from shapely.geometry import Polygon
-        from shapely.ops import unary_union
-
         # Try union the polygons
         unioned_polygon = unary_union(self.polygons)
         # If still a MultiPolygon, not a global extent
