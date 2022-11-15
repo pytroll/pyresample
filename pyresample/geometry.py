@@ -411,7 +411,7 @@ class BaseDefinition:
         from pyresample.boundary import AreaBoundary
         lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
                                                      force_clockwise=force_clockwise)
-        return AreaBoundary(*zip(lon_sides, lat_sides))
+        return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1582,7 +1582,7 @@ class AreaDefinition(_ProjectionDefinition):
         else:
             lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
                                                          force_clockwise=force_clockwise)
-        boundary = AreaBoundary(*zip(lon_sides, lat_sides))
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
         return boundary
 
     @property

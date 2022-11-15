@@ -60,11 +60,6 @@ class AreaBoundary(Boundary):
     It expects a (lon_coords, lat_coords) tuple for each of the 4 sides.
     """
 
-    # TODO: In future the Boundary inheritance should be dropped
-    # --> self.lons and lats are always None (see init here below)
-    # --> contour method is redefined
-    # --> contour_poly and draw methods should be replaced by future spherical interface
-
     def __init__(self, *sides):
         Boundary.__init__(self)
         # Check 4 sides are provided
@@ -76,7 +71,7 @@ class AreaBoundary(Boundary):
         self.sides_lats = list(self.sides_lats)
 
     @classmethod
-    def from_sides(cls, lon_sides, lat_sides):
+    def from_lonlat_sides(cls, lon_sides, lat_sides):
         """Define AreaBoundary from list of lon_sides and lat_sides.
 
         For an area of shape (m, n), the sides must adhere the format:

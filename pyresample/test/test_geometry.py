@@ -3098,10 +3098,22 @@ class TestBoundary(unittest.TestCase):
         # Define AreaDefintion and retrieve AreaBoundary
         areadef = geometry.AreaDefinition(**proj_dict_geostationary)
 
-        # Check default  boundary shape
+        # Check default boundary shape
         default_n_vertices = 50
         boundary = areadef.boundary(frequency=None)
         assert boundary.vertices.shape == (default_n_vertices, 2)
+
+        # Check minimum boundary vertices
+        n_vertices = 3
+        minimum_n_vertices = 4
+        boundary = areadef.boundary(frequency=n_vertices)
+        assert boundary.vertices.shape == (minimum_n_vertices, 2)
+
+        # Check odd frequency number
+        # - Rounded to the sequent even number (to construct the sides)
+        n_odd_vertices = 5
+        boundary = areadef.boundary(frequency=n_odd_vertices)
+        assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
 
         # Check boundary vertices
         n_vertices = 10

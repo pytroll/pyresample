@@ -28,7 +28,7 @@ from pyresample.boundary import AreaBoundary
 class TestAreaBoundary(unittest.TestCase):
     """Test 'AreaBoundary' class."""
 
-    def test_creation_from_sides(self):
+    def test_creation_from_lonlat_sides(self):
         """Test AreaBoundary creation from sides."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
@@ -39,7 +39,7 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
         # Define AreaBoundary
-        boundary = AreaBoundary.from_sides(lon_sides, lat_sides)
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
         # Assert sides coincides
         for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
@@ -87,7 +87,7 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
         # Define AreaBoundary
-        boundary = AreaBoundary.from_sides(lon_sides, lat_sides)
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
         # Assert vertices
         expected_vertices = np.array([[1., 6.],
