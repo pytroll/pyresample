@@ -30,6 +30,7 @@ import yaml
 from pyproj import Proj, Transformer
 from pyproj.crs import CRS, CRSError
 
+from pyresample._formatting_html import area_repr
 from pyresample.utils import proj4_str_to_dict
 
 try:
@@ -862,3 +863,32 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
     with open(yaml_area_file, 'w') as yaml_file:
         for area in areas:
             yaml_file.write(area.create_areas_def())
+
+
+def generate_area_def_rst_list(area_file):
+    """Create rst list of available area definitions with overview plot.
+
+    Args:
+        area_file (str): Path to area yaml file.
+
+    Returns:
+        str: rst list formatted string.
+    """
+    area_list = []
+
+    template = ("{area_name}\n"
+                "{n:->{header_title_length}}\n\n"
+                ".. raw:: html\n\n"
+                "{content}\n\n"
+                "     <hr>\n\n")
+
+    for aname, params in _read_yaml_area_file_content(area_file).items():
+        area = _create_area_def_from_dict(aname, params)
+        if hasattr(area, "_repr_html_"):
+            content = "\n".join([x.rjust(len(x) + 5) for x in area_repr(area, include_header=False).split("\n")])
+            area_list.append(template.format(area_name=aname, n="", header_title_length=len(aname),
+                                             content=content))
+        else:
+            pass
+
+    return "".join(area_list)
