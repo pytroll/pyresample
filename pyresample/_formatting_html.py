@@ -21,11 +21,24 @@ import uuid
 from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
-import pyresample.geometry as geom
-from cartopy.crs import CRS
+
 import numpy as np
-import xarray as xr
-from xarray.core.formatting_html import _obj_repr, datavar_section
+
+import pyresample.geometry as geom
+
+try:
+    import cartopy
+    cart = True
+except ModuleNotFoundError:
+    cart = False
+
+try:
+    import xarray as xr
+    from xarray.core.formatting_html import _obj_repr, datavar_section
+    xarray = True
+except ModuleNotFoundError:
+    xarray = False
+
 
 STATIC_FILES = (
     ("pyresample.static.html", "icons_svg_inline.html"),
@@ -69,26 +82,49 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
     import base64
     from io import BytesIO, StringIO
 
-    import cartopy
     import matplotlib.pyplot as plt
     from matplotlib import colors
+
     from pyresample.kd_tree import resample_nearest
 
     if isinstance(area_def, geom.AreaDefinition):
         crs = area_def.to_cartopy_crs()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
     elif isinstance(area_def, geom.SwathDefinition):
-        bb_area = area_def.compute_optimal_bb_area()
-        crs = bb_area.to_cartopy_crs()
+
+        crs_wkt = """PROJCRS["unknown",BASEGEOGCRS["unknown",DATUM["Unknown based on Normal Sphere
+        (r=6370997) ellipsoid",ELLIPSOID["Normal Sphere
+        (r=6370997)",6370997,0,LENGTHUNIT["metre",1,ID["EPSG",9001]]]],
+        PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8901]]],CONVERSION["unknown",METHOD["Hotine
+        Oblique Mercator (variant B)",ID["EPSG",9815]],PARAMETER["Latitude of projection
+        centre",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8811]],PARAMETER["Longitude of projection
+        centre",5.06691991743878,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8812]],PARAMETER["Azimuth
+        of initial
+        line",9.63110427857409,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8813]],PARAMETER["Angle from
+        Rectified to Skew Grid",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8814]],PARAMETER["Scale
+        factor on initial line",1,SCALEUNIT["unity",1],ID["EPSG",8815]],PARAMETER["Easting at projection
+        centre",0,LENGTHUNIT["metre",1],ID["EPSG",8816]],PARAMETER["Northing at projection
+        centre",0,LENGTHUNIT["metre",1],ID["EPSG",8817]]],CS[Cartesian,2],AXIS["(E)",east,
+        ORDER[1],LENGTHUNIT["metre",1,ID["EPSG",9001]]],AXIS["(N)",north,ORDER[2],
+        LENGTHUNIT["metre",1,ID["EPSG",9001]]]]"""
+
+        lx, ly = area_def.get_edge_lonlats()
+
+        from pyproj import CRS
+
+        from pyresample.utils.cartopy import Projection
+        crs = CRS.from_wkt(crs_wkt)
+        bounds = (np.min(lx), np.max(lx), np.min(ly), np.max(ly))
+        crs = Projection(crs, bounds=bounds, transform_bounds=True)
+
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        polygon = False
+        polygon = True
         if polygon:
-            from pygeos import polygons
             import geopandas as gpd
             import pandas as pd
+            from pygeos import polygons
 
-            lx, ly = area_def.get_edge_lonlats()
             poly = polygons(list(zip(lx, ly)))
 
             df = pd.DataFrame({"area": ["modis_swath"], "geom": [poly]})
@@ -98,10 +134,7 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
             # gdf.plot(ax=ax)
             ax.add_geometries(gdf["geom"], crs=crs)
         else:
-	    # bb_area = area_def.compute_optimal_bb_area()
-	    # crs = bb_area.to_cartopy_crs()
-	    # fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
-
+            bb_area = area_def.compute_optimal_bb_area()
             data = np.ones_like(area_def.lons)
             data = resample_nearest(area_def, data, bb_area, radius_of_influence=20000, fill_value=None)
 
@@ -191,7 +224,12 @@ def map_section(areadefinition):
     """
     map_icon = _icon("icon-globe")
 
-    coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
+    if cart:
+        coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
+    else:
+        coll = collapsible_section("Map",
+                                   details="Note: If cartopy is installed a display of the area can be seen here",
+                                   collapsed=True, icon=map_icon)
 
     return f"{coll}"
 
@@ -262,10 +300,13 @@ def swath_area_attrs_section(areadefinition):
                   "</dl>"
                   )
 
-    ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [areadefinition.lons, areadefinition.lats]}
-    dss = xr.merge(ds_dict.values())
+    if xarray:
+        ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [areadefinition.lons, areadefinition.lats]}
+        dss = xr.merge(ds_dict.values())
 
-    area_attrs += _obj_repr(dss, header_components=[""], sections=[datavar_section(dss.data_vars)])
+        area_attrs += _obj_repr(dss, header_components=[""], sections=[datavar_section(dss.data_vars)])
+    else:
+        area_attrs += "Note: if xarray is installed lat/lon arrays are displayed here."
 
     coll = collapsible_section("Properties", details=area_attrs, icon=attrs_icon)
 

@@ -802,6 +802,12 @@ class SwathDefinition(CoordinateDefinition):
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
+    def __str__(self):
+        """Return string representation."""
+        return "SwathArea"
+
+    __repr__ = __str__
+
     def _repr_html_(self):
         """Html representation."""
         return _formatting_html.area_repr(self)
