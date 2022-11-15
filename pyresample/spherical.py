@@ -282,9 +282,8 @@ class CCoordinate(object):
         if inplace:
             self.cart /= norm
             return None
-        else:
-            cart = self.cart / norm
-            return CCoordinate(cart)
+        cart = self.cart / norm
+        return CCoordinate(cart)
 
     def cross(self, point):
         """Get cross product with another vector.
