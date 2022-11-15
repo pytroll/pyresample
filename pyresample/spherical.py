@@ -274,9 +274,9 @@ class CCoordinate(object):
         Notes:
         - If self.cart == [0,0,0], norm=0, and cart becomes [nan, nan, nan]:
         - self.cart == [0,0,0] can occurs when computing:
-            - the cross product of the same point.
-            - the cross product between points lying at the equator.
-            - the cross product between points lying at the poles.
+            * the cross product of the same point.
+            * the cross product between points lying at the equator.
+            * the cross product between points lying at the poles.
         """
         norm = self.norm()
         norm = norm[..., np.newaxis]  # enable vectorization
