@@ -58,6 +58,7 @@ class AreaBoundary(Boundary):
     """Area boundary objects.
 
     It expects a (lon_coords, lat_coords) tuple for each of the 4 sides.
+
     """
 
     def __init__(self, *sides):

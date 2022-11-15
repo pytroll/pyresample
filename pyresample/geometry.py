@@ -1541,9 +1541,6 @@ class AreaDefinition(_ProjectionDefinition):
         if (frequency % 2) != 0:
             frequency = frequency + 1
         lons, lats = get_geostationary_bounding_box(self, nb_points=frequency)
-        # TODO Remove duplicated value in last row
-        # lons = lons[:-1]
-        # lats = lats[:-1]
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
         side02_step = int(frequency / 2) - 1
         lon_sides = [lons[slice(0, side02_step + 1)],
