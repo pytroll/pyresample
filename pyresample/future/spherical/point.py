@@ -136,7 +136,7 @@ class SMultiPoint(SCoordinate):
 
     def __repr__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
-        vertices = np.rad2deg(np.vstack((self.lon, self.lat)).T)
+        vertices = np.rad2deg(self.vertices)
         return str(vertices)
 
     def plot(self, ax=None, **plot_kwargs):
