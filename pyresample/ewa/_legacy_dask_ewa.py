@@ -223,7 +223,7 @@ class LegacyDaskEWAResampler(BaseResampler):
 
     def compute(self, data, cache_id=None, fill_value=0, weight_count=10000,
                 weight_min=0.01, weight_distance_max=1.0,
-                weight_delta_max=1.0, weight_sum_min=-1.0,
+                weight_delta_max=10.0, weight_sum_min=-1.0,
                 maximum_weight_mode=False, grid_coverage=0, chunks=None,
                 **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""

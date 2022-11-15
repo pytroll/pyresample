@@ -164,7 +164,7 @@ class XArrayBilinearResampler(BilinearBase):
         def from_delayed(delayeds, shp):
             return [da.from_delayed(d, shp, np.float32) for d in delayeds]
 
-        data = _check_data_shape(data, self._valid_input_index)
+        data = _check_data_shape(data, self._source_geo_def.shape)
         if data.ndim == 2:
             shp = self.bilinear_s.shape
         else:
@@ -264,10 +264,10 @@ def _get_valid_input_index(source_geo_def,
     return valid_input_index, source_lons, source_lats
 
 
-def _check_data_shape(data, input_idxs):
+def _check_data_shape(data, input_xy_shape):
     """Check data shape and adjust if necessary."""
     # Handle multiple datasets
-    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_idxs.shape[0]:
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_xy_shape[0]:
         # Move the "channel" dimension first
         data = da.moveaxis(data, -1, 0)
 

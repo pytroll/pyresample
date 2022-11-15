@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Create sdist
         shell: bash -l {0}
@@ -26,7 +26,7 @@ jobs:
           python -m build -s
 
       - name: Upload sdist to build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -52,12 +52,12 @@ jobs:
             docker-image: manylinux2014_i686
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: |
           git fetch --prune --unshallow
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: '${{ matrix.python-version }}'
 
@@ -92,7 +92,7 @@ jobs:
           python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
 
       - name: Upload wheel(s) as build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist/*.whl
@@ -104,18 +104,18 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: Download sdist artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: sdist
           path: dist
       - name: Download wheels artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: wheels
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.4.1
+        uses: pypa/gh-action-pypi-publish@v1.5.1
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -126,18 +126,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download sdist artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: sdist
           path: dist
       - name: Download wheels artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: wheels
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.4.1
+        uses: pypa/gh-action-pypi-publish@v1.5.1
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
