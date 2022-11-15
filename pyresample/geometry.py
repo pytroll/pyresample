@@ -2693,12 +2693,11 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
 
     Notes:
     - The first and last element of the output vectors are equals.
-      This is required to enable direct creation of area sides.
     - If nb_points is even, it will returns x and y vectors of length nb_points + 1.
 
     Parameters
     ----------
-    nb_points : Number of points on the polygon
+    nb_points : Number of points on the polygon.
 
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
