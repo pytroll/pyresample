@@ -64,6 +64,17 @@ class TestSPoint(unittest.TestCase):
 class TestSMultiPoint(unittest.TestCase):
     """Test SMultiPoint."""
 
+    def test_single_point(self):
+        """Test behaviour when providing single lon,lat values."""
+        # Single values must raise error
+        with pytest.raises(ValueError):
+            SMultiPoint(2, 1)
+        # Array values must not raise error
+        p = SMultiPoint([2], [1])
+        assert p.lon.shape == (1,)
+        assert p.lat.shape == (1,)
+        assert p.vertices.shape == (1, 2)
+
     def test_vertices(self):
         """Test vertices property."""
         lons = np.array([0, np.pi])
@@ -89,8 +100,8 @@ class TestSMultiPoint(unittest.TestCase):
                         [3.14159265, 1.57079633, 0.]])
         self.assertTrue(np.allclose(d12, res))
         # Special case with 1 point
-        p1 = SMultiPoint(lons[0], lats[0])
-        p2 = SMultiPoint(lons[0], lats[0])
+        p1 = SMultiPoint(lons[[0]], lats[[0]])
+        p2 = SMultiPoint(lons[[0]], lats[[0]])
         d12 = p1.distance(p2)
         assert isinstance(d12, float)
 

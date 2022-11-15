@@ -35,6 +35,11 @@ def _unwrap_radians(val, mod=np.pi):
 
 
 def _xyz_to_vertices(x, y, z):
+    """Create vertices array from x,y,z values or vectors.
+
+    If x, y, z are np.values, it create a 1x3 np.array.
+    If x, y, z are np.array with shape nx1, it creates a nx3 np.array.
+    """
     if x.ndim == 0:
         vertices = np.array([x, y, z])
     else:
@@ -90,23 +95,59 @@ def _haversine_matrix(lon, lat, lon_ref, lat_ref):
     return dist
 
 
+def check_lon_validity(lon):
+    """Check longitude validity."""
+    if np.any(np.isinf(lon)):
+        raise ValueError("Longitude values can not contain inf values.")
+
+
+def check_lat_validity(lat):
+    """Check latitude validity."""
+    if np.any(np.isinf(lat)):
+        raise ValueError("Latitude values can not contain inf values.")
+    if np.any(np.logical_or(lat > np.pi / 2, lat < -np.pi / 2)):
+        raise ValueError("Latitude values must range between [-pi/2, pi/2].")
+
+
+def check_lon_lat(lon, lat):
+    """Check and format lon/lat values/arrays."""
+    lon = np.asarray(lon, dtype=np.float64)
+    lat = np.asarray(lat, dtype=np.float64)
+    check_lon_validity(lon)
+    check_lat_validity(lat)
+    return lon, lat
+
+
 class SCoordinate(object):
     """Spherical coordinates.
 
-    The ``lon`` and ``lat`` coordinates should be provided in radians.
+    The ``lon`` and ``lat`` coordinates must be provided in radians.
 
     """
 
     def __init__(self, lon, lat):
-        lon = np.asarray(lon, dtype=np.float64)
-        lat = np.asarray(lat, dtype=np.float64)
+        lon, lat = check_lon_lat(lon, lat)
         self.lon = _unwrap_radians(lon)
         self.lat = lat
+
+    @property
+    def vertices(self):
+        """Return point(s) vertices in a ndarray of shape [n,2]."""
+        # Single values
+        if self.lon.ndim == 0:
+            vertices = np.array([self.lon, self.lat])[None, :]
+        # Array values
+        else:
+            vertices = np.vstack((self.lon, self.lat)).T
+        return vertices
 
     def cross2cart(self, point):
         """Compute the cross product, and convert to cartesian coordinates.
 
-        Note: the cross product of the same point gives a zero vector.
+        Note:
+        - the cross product of the same point gives a zero vector.
+        - the cross product between points lying at the equator gives a zero vector.
+        - the cross product between points lying at the poles.
         """
         lat1 = self.lat
         lon1 = self.lon
@@ -183,6 +224,39 @@ class SCoordinate(object):
         """Get iterator over lon/lat pairs."""
         return zip([self.lon, self.lat]).__iter__()
 
+    def plot(self, ax=None, **plot_kwargs):
+        """Plot the point(s) using Cartopy.
+
+        Assume vertices to be in radians.
+        """
+        import matplotlib.pyplot as plt
+        try:
+            import cartopy.crs as ccrs
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Install cartopy to plot spherical geometries.")
+
+        # Create figure if ax not provided
+        ax_not_provided = False
+        if ax is None:
+            ax_not_provided = True
+            proj_crs = ccrs.PlateCarree()
+            fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
+
+        # Plot Points
+        ax.scatter(x=np.rad2deg(self.vertices[:, 0]),
+                   y=np.rad2deg(self.vertices[:, 1]),
+                   **plot_kwargs)
+
+        # Beautify plot by default
+        if ax_not_provided:
+            ax.stock_img()
+            ax.coastlines()
+            gl = ax.gridlines(draw_labels=True, linestyle='--')
+            gl.xlabels_top = False
+            gl.ylabels_right = False
+
+        return ax
+
 
 class CCoordinate(object):
     """Cartesian coordinates."""
@@ -194,14 +268,24 @@ class CCoordinate(object):
         """Get Euclidean norm of the vector."""
         return np.sqrt(np.einsum('...i, ...i', self.cart, self.cart))
 
-    def normalize(self):
-        """Normalize the vector."""
-        # Note: if self.cart == [0,0,0], norm=0 and cart becomes [nan, nan, nan]
+    def normalize(self, inplace=False):
+        """Normalize the vector.
+
+        Notes:
+        - If self.cart == [0,0,0], norm=0, and cart becomes [nan, nan, nan]:
+        - self.cart == [0,0,0] can occurs when computing:
+          - the cross product of the same point.
+          - the cross product between points lying at the equator.
+          - the cross product between points lying at the poles.
+        """
         norm = self.norm()
-        cart = self.cart / norm[..., np.newaxis]  # enable vectorization
-        # mask_norm_0 = norm == 0
-        # cart[mask_norm_0, ...] = 0 # This remove nan propagation
-        return CCoordinate(cart)
+        norm = norm[..., np.newaxis]  # enable vectorization
+        if inplace:
+            self.cart /= norm
+            return None
+        else:
+            cart = self.cart / norm
+            return CCoordinate(cart)
 
     def cross(self, point):
         """Get cross product with another vector.
@@ -253,15 +337,10 @@ class CCoordinate(object):
         return self.__mul__(other)
 
     def to_spherical(self):
-        """Convert to SCoordinate object."""
-        if self.cart.ndim == 1:
-            lon = np.arctan2(self.cart[1], self.cart[0])
-            lat = np.arcsin(self.cart[2])
-        else:
-            lon = np.arctan2(self.cart[:, 1], self.cart[:, 0])
-            lat = np.arcsin(self.cart[:, 2])
-        # TODO: in future this should point to SPoint or SMultiPoint
-        # - This is not used within the file.
+        """Convert to SPoint/SMultiPoint object."""
+        # TODO: this in future should point to SPoint or SMultiPoint
+        lon = np.arctan2(self.cart[..., 1], self.cart[..., 0])
+        lat = np.arcsin(self.cart[..., 2])
         return SCoordinate(lon, lat)
 
 

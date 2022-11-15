@@ -21,54 +21,6 @@ import numpy as np
 from pyresample.spherical import SCoordinate
 
 
-def _plot(vertices, ax=None, **plot_kwargs):
-    """Plot the SPoint/SMultiPoint using Cartopy.
-
-    Assume vertices to in radians.
-    """
-    import matplotlib.pyplot as plt
-    try:
-        import cartopy.crs as ccrs
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("Install cartopy to plot spherical geometries.")
-
-    # Create figure if ax not provided
-    ax_not_provided = False
-    if ax is None:
-        ax_not_provided = True
-        proj_crs = ccrs.PlateCarree()
-        fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-
-    # Plot Points
-    ax.scatter(x=np.rad2deg(vertices[:, 0]),
-               y=np.rad2deg(vertices[:, 1]),
-               **plot_kwargs)
-
-    # Beautify plot by default
-    if ax_not_provided:
-        ax.stock_img()
-        ax.coastlines()
-        gl = ax.gridlines(draw_labels=True, linestyle='--')
-        gl.xlabels_top = False
-        gl.ylabels_right = False
-
-    return ax
-
-
-def check_lon_validity(lon):
-    """Check longitude validity."""
-    if np.any(np.isinf(lon)):
-        raise ValueError("Longitude values can not contain inf values.")
-
-
-def check_lat_validity(lat):
-    """Check latitude validity."""
-    if np.any(np.isinf(lat)):
-        raise ValueError("Latitude values can not contain inf values.")
-    if np.any(np.logical_or(lat > np.pi / 2, lat < -np.pi / 2)):
-        raise ValueError("Latitude values must range between [-pi/2, pi/2].")
-
-
 class SPoint(SCoordinate):
     """Spherical Point.
 
@@ -80,20 +32,7 @@ class SPoint(SCoordinate):
         lat = np.asarray(lat)
         if lon.size > 1 or lat.size > 1:
             raise ValueError("Use SMultiPoint to define multiple points.")
-        check_lon_validity(lon)
-        check_lat_validity(lat)
-
         super().__init__(lon, lat)
-
-    @property
-    def vertices(self):
-        """Return SPoint vertices in a ndarray of shape [1,2]."""
-        return np.array([self.lon, self.lat])[None, :]
-
-    def plot(self, ax=None, **plot_kwargs):
-        """Plot the SPoint using Cartopy."""
-        ax = _plot(self.vertices, ax=ax, **plot_kwargs)
-        return ax
 
     def to_shapely(self):
         """Convert the SPoint to a shapely Point (in lon/lat degrees)."""
@@ -103,27 +42,14 @@ class SPoint(SCoordinate):
 
 
 class SMultiPoint(SCoordinate):
-    """Create SPoint or SMultiPoint object."""
-
-    def __new__(cls, lon, lat):
-        """Create SPoint or SMultiPoint object."""
-        lon = np.asarray(lon)
-        lat = np.asarray(lat)
-
-        # If a single point, define SPoint
-        if lon.ndim == 0:
-            return SPoint(lon, lat)  # TODO: TO BE DEFINED
-        # Otherwise a SMultiPoint
-        else:
-            return super().__new__(cls)
+    """Create a SMultiPoint object."""
 
     def __init__(self, lon, lat):
+        lon = np.asarray(lon)
+        lat = np.asarray(lat)
+        if lon.ndim == 0 or lat.ndim == 0:
+            raise ValueError("Use SPoint to define single points.")
         super().__init__(lon, lat)
-
-    @property
-    def vertices(self):
-        """Return SMultiPoint vertices in a ndarray of shape [n,2]."""
-        return np.vstack((self.lon, self.lat)).T
 
     def __eq__(self, other):
         """Check equality."""
@@ -138,11 +64,6 @@ class SMultiPoint(SCoordinate):
         """Get simplified representation of lon/lat arrays in degrees."""
         vertices = np.rad2deg(self.vertices)
         return str(vertices)
-
-    def plot(self, ax=None, **plot_kwargs):
-        """Plot the SMultiPoint using Cartopy."""
-        ax = _plot(self.vertices, ax=ax, **plot_kwargs)
-        return ax
 
     def to_shapely(self):
         """Convert the SMultiPoint to a shapely MultiPoint (in lon/lat degrees)."""
