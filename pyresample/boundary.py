@@ -57,8 +57,7 @@ class Boundary(object):
 class AreaBoundary(Boundary):
     """Area boundary objects.
 
-    It expects a (lon_coords, lat_coords) tuple for each of the 4 sides.
-
+    The inputs must be a (lon_coords, lat_coords) tuple for each of the 4 sides.
     """
 
     def __init__(self, *sides):
@@ -76,11 +75,11 @@ class AreaBoundary(Boundary):
         """Define AreaBoundary from list of lon_sides and lat_sides.
 
         For an area of shape (m, n), the sides must adhere the format:
-            sides = [np.array([v00, v01, ..., v0n]),
-                     np.array([v0n, v1n, ..., vmn]),
-                     np.array([vmn, ..., vm1, vm0]),
-                     np.array([vm0, ... ,v10, v00]),
-                    ]
+
+        sides = [np.array([v00, v01, ..., v0n]),
+                 np.array([v0n, v1n, ..., vmn]),
+                 np.array([vmn, ..., vm1, vm0]),
+                 np.array([vm0, ... ,v10, v00])]
         """
         boundary = cls(*zip(lon_sides, lat_sides))
         return boundary
