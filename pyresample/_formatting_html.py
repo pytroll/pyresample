@@ -65,32 +65,32 @@ def _icon(icon_name):
     )
 
 
-def plot_area_def(area_def, feature_res="110m", fmt="svg"):
-    """Plot area definition.
+def plot_area_def(area, feature_res="110m", fmt="svg"):
+    """Plot area.
 
     CURRENTLY feature_res is not used instead cartopy auto scaled features are added.
 
     Args:
-        area_def : pyresample.AreaDefinition
-        feature_res : str
+        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`])
+        feature_res (str):
             Resolution of the features added to the map. Argument is handed over
             to `scale` parameter in cartopy.feature.
         fmt (str): Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg (default) or png.
             If other plot is just shown.
+
+    Returns:
+        str: svg or png image as string.
     """
     import base64
     from io import BytesIO, StringIO
 
     import matplotlib.pyplot as plt
-    from matplotlib import colors
 
-    from pyresample.kd_tree import resample_nearest
-
-    if isinstance(area_def, geom.AreaDefinition):
-        crs = area_def.to_cartopy_crs()
+    if isinstance(area, geom.AreaDefinition):
+        crs = area.to_cartopy_crs()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
-    elif isinstance(area_def, geom.SwathDefinition):
+    elif isinstance(area, geom.SwathDefinition):
 
         crs_wkt = """PROJCRS["unknown",BASEGEOGCRS["unknown",DATUM["Unknown based on Normal Sphere
         (r=6370997) ellipsoid",ELLIPSOID["Normal Sphere
@@ -108,7 +108,7 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
         ORDER[1],LENGTHUNIT["metre",1,ID["EPSG",9001]]],AXIS["(N)",north,ORDER[2],
         LENGTHUNIT["metre",1,ID["EPSG",9001]]]]"""
 
-        lx, ly = area_def.get_edge_lonlats()
+        lx, ly = area.get_edge_lonlats()
 
         from pyproj import CRS
 
@@ -119,30 +119,18 @@ def plot_area_def(area_def, feature_res="110m", fmt="svg"):
 
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        polygon = True
-        if polygon:
-            import geopandas as gpd
-            import pandas as pd
-            from pygeos import polygons
+        import geopandas as gpd
+        import pandas as pd
+        from pygeos import polygons
 
-            poly = polygons(list(zip(lx, ly)))
+        poly = polygons(list(zip(lx, ly)))
 
-            df = pd.DataFrame({"area": ["modis_swath"], "geom": [poly]})
-            gdf = gpd.GeoDataFrame(df, crs=area_def.crs)
-            gdf = gdf.set_geometry("geom")
-            gdf = gdf.to_crs(crs.proj4_init)
-            # gdf.plot(ax=ax)
-            ax.add_geometries(gdf["geom"], crs=crs)
-        else:
-            bb_area = area_def.compute_optimal_bb_area()
-            data = np.ones_like(area_def.lons)
-            data = resample_nearest(area_def, data, bb_area, radius_of_influence=20000, fill_value=None)
-
-            cmap = colors.ListedColormap(["white", "grey"])
-            bounds = [0, 0.5, 1]
-            norm = colors.BoundaryNorm(bounds, cmap.N)
-
-            ax.imshow(data, transform=crs, extent=crs.bounds, origin="upper", cmap=cmap, norm=norm, alpha=0.35)
+        df = pd.DataFrame({"area": ["modis_swath"], "geom": [poly]})
+        gdf = gpd.GeoDataFrame(df, crs=area.crs)
+        gdf = gdf.set_geometry("geom")
+        gdf = gdf.to_crs(crs.proj4_init)
+        # gdf.plot(ax=ax)
+        ax.add_geometries(gdf["geom"], crs=crs)
 
     coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
                                                      name="coastline",
@@ -208,11 +196,12 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
             )
 
 
-def map_section(areadefinition):
+def map_section(area):
     """Create html for map section.
 
     Args:
-        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        area(Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`]):
+            Area definition or Swath definition.
         include_header (boolean): If true a header with object type will be included in
             the html. This is mainly intented for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
@@ -225,7 +214,7 @@ def map_section(areadefinition):
     map_icon = _icon("icon-globe")
 
     if cart:
-        coll = collapsible_section("Map", details=plot_area_def(areadefinition), collapsed=True, icon=map_icon)
+        coll = collapsible_section("Map", details=plot_area_def(area), collapsed=True, icon=map_icon)
     else:
         coll = collapsible_section("Map",
                                    details="Note: If cartopy is installed a display of the area can be seen here",
@@ -234,11 +223,12 @@ def map_section(areadefinition):
     return f"{coll}"
 
 
-def proj_area_attrs_section(areadefinition):
-    """Create html for attribute section based on AreaDefinition.
+def proj_area_attrs_section(area):
+    """Create html for attribute section based on an area Area.
 
     Args:
-        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`]):
+            Area definition.
         include_header (boolean): If true a header with object type will be included in
             the html. This is mainly intented for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
@@ -248,8 +238,8 @@ def proj_area_attrs_section(areadefinition):
         str: String of html.
 
     """
-    resolution_str = "/".join([str(round(x, 1)) for x in areadefinition.resolution])
-    proj_dict = areadefinition.proj_dict
+    resolution_str = "/".join([str(round(x, 1)) for x in area.resolution])
+    proj_dict = area.proj_dict
     proj_str = "{{{}}}".format(", ".join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in
                                           sorted(proj_dict.keys())]))
     area_units = proj_dict.get("units", "")
@@ -257,13 +247,13 @@ def proj_area_attrs_section(areadefinition):
     attrs_icon = _icon("icon-file-text2")
 
     area_attrs = ("<dl>"
-                  f"<dt>Area name</dt><dd>{areadefinition.area_id}</dd>"
-                  f"<dt>Description</dt><dd>{areadefinition.description}</dd>"
+                  f"<dt>Area name</dt><dd>{area.area_id}</dd>"
+                  f"<dt>Description</dt><dd>{area.description}</dd>"
                   f"<dt>Projection</dt><dd>{proj_str}</dd>"
-                  f"<dt>Width/Height</dt><dd>{areadefinition.width}/{areadefinition.height} Pixel</dd>"
+                  f"<dt>Width/Height</dt><dd>{area.width}/{area.height} Pixel</dd>"
                   f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt>"
-                  f"<dd>{tuple(round(x, 4) for x in areadefinition.area_extent)}</dd>"
+                  f"<dd>{tuple(round(x, 4) for x in area.area_extent)}</dd>"
                   "</dl>"
                   )
 
@@ -272,21 +262,21 @@ def proj_area_attrs_section(areadefinition):
     return f"{coll}"
 
 
-def swath_area_attrs_section(areadefinition):
+def swath_area_attrs_section(area):
     """Create html for attribute section based on SwathDefinition.
 
     Args:
-        areadefinition (:class:`~pyresample.geometry.SwathDefinition`): Swath definition.
+        area (:class:`~pyresample.geometry.SwathDefinition`): Swath definition.
 
     Returns:
         str: String of html.
 
     """
-    lon_attrs = areadefinition.lons.attrs
-    lat_attrs = areadefinition.lats.attrs
+    lon_attrs = area.lons.attrs
+    lat_attrs = area.lats.attrs
 
     area_name = f"{lon_attrs.get('sensor')} swath"
-    height, width = areadefinition.lons.shape
+    height, width = area.lons.shape
     resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
     area_units = "m"
 
@@ -301,7 +291,7 @@ def swath_area_attrs_section(areadefinition):
                   )
 
     if xarray:
-        ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [areadefinition.lons, areadefinition.lats]}
+        ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [area.lons, area.lats]}
         dss = xr.merge(ds_dict.values())
 
         area_attrs += _obj_repr(dss, header_components=[""], sections=[datavar_section(dss.data_vars)])
@@ -313,11 +303,12 @@ def swath_area_attrs_section(areadefinition):
     return f"{coll}"
 
 
-def area_repr(areadefinition, include_header=True):
+def area_repr(area, include_header=True):
     """Return html repr of an AreaDefinition.
 
     Args:
-        areadefinition (:class:`~pyresample.geometry.AreaDefinition`): Area definition.
+        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.AreaDefinition`]):
+            Area definition.
         include_header (boolean): If true a header with object type will be included in
             the html. This is mainly intented for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
@@ -329,7 +320,7 @@ def area_repr(areadefinition, include_header=True):
     """
     icons_svg, css_style = _load_static_files()
 
-    obj_type = f"pyresample.{type(areadefinition).__name__}"
+    obj_type = f"pyresample.{type(area).__name__}"
     header = ("<div class='pyresample-header'>"
               "<div class='pyresample-obj-type'>"
               f"{escape(obj_type)}"
@@ -338,7 +329,7 @@ def area_repr(areadefinition, include_header=True):
               )
 
     html = (f"{icons_svg}<style>{css_style}</style>"
-            f"<pre class='pyresample-text-repr-fallback'>{escape(repr(areadefinition))}</pre>"
+            f"<pre class='pyresample-text-repr-fallback'>{escape(repr(area))}</pre>"
             "<div class='pyresample-wrap' style='display:none'>"
             )
 
@@ -346,12 +337,12 @@ def area_repr(areadefinition, include_header=True):
         html += f"{header}"
 
     html += "<div class='pyresample-area-sections'>"
-    if isinstance(areadefinition, geom.AreaDefinition):
-        html += proj_area_attrs_section(areadefinition)
-    elif isinstance(areadefinition, geom.SwathDefinition):
-        html += swath_area_attrs_section(areadefinition)
+    if isinstance(area, geom.AreaDefinition):
+        html += proj_area_attrs_section(area)
+    elif isinstance(area, geom.SwathDefinition):
+        html += swath_area_attrs_section(area)
 
-    html += map_section(areadefinition)
+    html += map_section(area)
 
     html += "</div>"
 
