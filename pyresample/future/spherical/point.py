@@ -22,7 +22,7 @@ from pyresample.spherical import SCoordinate
 
 
 class SPoint(SCoordinate):
-    """Spherical Point.
+    """Define a point on the sphere.
 
     The ``lon`` and ``lat`` coordinates must be provided in radians.
     """
