@@ -68,7 +68,7 @@ class SMultiPoint(SCoordinate):
         return str(self.vertices)
 
     def __repr__(self):
-        """Get simplified representation of lon/lat arrays in degrees."""
+        """Get simplified representation of lon/lat arrays in radians."""
         return str(self.vertices)
 
     def to_shapely(self):
