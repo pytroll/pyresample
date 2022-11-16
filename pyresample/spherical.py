@@ -233,7 +233,7 @@ class SCoordinate(object):
         try:
             import cartopy.crs as ccrs
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("Install cartopy to plot spherical geometries.")
+            raise ModuleNotFoundError("Install cartopy to plot spherical geometries. For example, 'pip install cartopy'.")
 
         # Create figure if ax not provided
         ax_not_provided = False
