@@ -47,6 +47,14 @@ class TestSPoint(unittest.TestCase):
         with pytest.raises(ValueError):
             SPoint(lon, lat)
 
+    def test_creation_from_degrees(self):
+        """Check SPoint creation from lat/lon in degrees."""
+        lon = 0
+        lat = 20
+        p1 = SPoint.from_degrees(lon, lat)
+        p2 = SPoint(np.deg2rad(lon), np.deg2rad(lat))
+        assert p1 == p2
+
     def test_vertices(self):
         """Test vertices property."""
         lons = 0
@@ -103,6 +111,14 @@ class TestSMultiPoint(unittest.TestCase):
         assert p.lon.shape == (1,)
         assert p.lat.shape == (1,)
         assert p.vertices.shape == (1, 2)
+
+    def test_creation_from_degrees(self):
+        """Check SMultiPoint creation from lat/lon in degrees."""
+        lon = np.array([0, 10])
+        lat = np.array([20, 30])
+        p1 = SMultiPoint.from_degrees(lon, lat)
+        p2 = SMultiPoint(np.deg2rad(lon), np.deg2rad(lat))
+        assert p1 == p2
 
     def test_vertices(self):
         """Test vertices property."""

@@ -34,6 +34,11 @@ class SPoint(SCoordinate):
             raise ValueError("Use SMultiPoint to define multiple points.")
         super().__init__(lon, lat)
 
+    @classmethod
+    def from_degrees(cls, lon, lat):
+        """Create SPoint from lon/lat coordinates in degrees."""
+        return cls(np.deg2rad(lon), np.deg2rad(lat))
+
     def __str__(self):
         """Get simplified representation of lon/lat arrays in radians."""
         return str((float(self.lon), float(self.lat)))
@@ -58,6 +63,11 @@ class SMultiPoint(SCoordinate):
         if lon.ndim == 0 or lat.ndim == 0:
             raise ValueError("Use SPoint to define single points.")
         super().__init__(lon, lat)
+
+    @classmethod
+    def from_degrees(cls, lon, lat):
+        """Create SMultiPoint from lon/lat coordinates in degrees."""
+        return cls(np.deg2rad(lon), np.deg2rad(lat))
 
     def __eq__(self, other):
         """Check equality."""
