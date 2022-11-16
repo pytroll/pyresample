@@ -135,7 +135,7 @@ class SCoordinate(object):
         """Return point(s) vertices in a ndarray of shape [n,2]."""
         # Single values
         if self.lon.ndim == 0:
-            vertices = np.array([self.lon, self.lat])[None, :]
+            vertices = np.array([self.lon, self.lat])[np.newaxis, :]
         # Array values
         else:
             vertices = np.vstack((self.lon, self.lat)).T
