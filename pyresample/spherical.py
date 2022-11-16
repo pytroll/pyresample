@@ -50,14 +50,15 @@ def _xyz_to_vertices(x, y, z):
 def _ensure_is_array(arr):
     """Ensure that a possible np.value input is converted to np.array."""
     if arr.ndim == 0:
-        arr = np.array([arr])
+        arr = np.asarray([arr])
     return arr
 
 
 def _vincenty_matrix(lon, lat, lon_ref, lat_ref):
     """Compute a distance matrix using Vincenty formula.
 
-    The result must be multiplied by Earth radius to obtain distance in m or km.
+    The lon/lat inputs must be provided in radians !
+    The output must be multiplied by the Earth radius to obtain the distance in m or km.
     The returned distance matrix has shape (n x n_ref).
     """
     lon = _ensure_is_array(lon)
@@ -79,7 +80,8 @@ def _vincenty_matrix(lon, lat, lon_ref, lat_ref):
 def _haversine_matrix(lon, lat, lon_ref, lat_ref):
     """Compute a distance matrix using haversine formula.
 
-    The result must be multiplied by Earth radius to obtain distance in m or km.
+    The lon/lat inputs must be provided in radians !
+    The output must be multiplied by the Earth radius to obtain the distance in m or km.
     The returned distance matrix has shape (n x n_ref).
     """
     lon = _ensure_is_array(lon)
@@ -95,13 +97,13 @@ def _haversine_matrix(lon, lat, lon_ref, lat_ref):
     return dist
 
 
-def check_lon_validity(lon):
+def _check_lon_validity(lon):
     """Check longitude validity."""
     if np.any(np.isinf(lon)):
         raise ValueError("Longitude values can not contain inf values.")
 
 
-def check_lat_validity(lat):
+def _check_lat_validity(lat):
     """Check latitude validity."""
     if np.any(np.isinf(lat)):
         raise ValueError("Latitude values can not contain inf values.")
@@ -109,12 +111,12 @@ def check_lat_validity(lat):
         raise ValueError("Latitude values must range between [-pi/2, pi/2].")
 
 
-def check_lon_lat(lon, lat):
+def _check_lon_lat(lon, lat):
     """Check and format lon/lat values/arrays."""
     lon = np.asarray(lon, dtype=np.float64)
     lat = np.asarray(lat, dtype=np.float64)
-    check_lon_validity(lon)
-    check_lat_validity(lat)
+    _check_lon_validity(lon)
+    _check_lat_validity(lat)
     return lon, lat
 
 
@@ -126,13 +128,13 @@ class SCoordinate(object):
     """
 
     def __init__(self, lon, lat):
-        lon, lat = check_lon_lat(lon, lat)
+        lon, lat = _check_lon_lat(lon, lat)
         self.lon = _unwrap_radians(lon)
         self.lat = lat
 
     @property
     def vertices(self):
-        """Return point(s) vertices in a ndarray of shape [n,2]."""
+        """Return point(s) radians vertices in a ndarray of shape [n,2]."""
         # Single values
         if self.lon.ndim == 0:
             vertices = np.array([self.lon, self.lat])[np.newaxis, :]
@@ -140,6 +142,11 @@ class SCoordinate(object):
         else:
             vertices = np.vstack((self.lon, self.lat)).T
         return vertices
+
+    @property
+    def vertices_in_degrees(self):
+        """Return point(s) degrees vertices in a ndarray of shape [n,2]."""
+        return np.rad2deg(self.vertices)
 
     def cross2cart(self, point):
         """Compute the cross product, and convert to cartesian coordinates.
@@ -224,7 +231,12 @@ class SCoordinate(object):
         """Get iterator over lon/lat pairs."""
         return zip([self.lon, self.lat]).__iter__()
 
-    def plot(self, ax=None, **plot_kwargs):
+    def plot(self, ax=None,
+             projection_crs=None,
+             add_coastlines=True,
+             add_gridlines=True,
+             add_background=True,
+             **plot_kwargs):
         """Plot the point(s) using Cartopy.
 
         Assume vertices to be in radians.
@@ -233,24 +245,27 @@ class SCoordinate(object):
         try:
             import cartopy.crs as ccrs
         except ModuleNotFoundError:
-            raise ModuleNotFoundError("Install cartopy to plot spherical geometries. For example, 'pip install cartopy'.")
+            raise ModuleNotFoundError(
+                "Install cartopy to plot spherical geometries. For example, 'pip install cartopy'.")
 
         # Create figure if ax not provided
-        ax_not_provided = False
         if ax is None:
-            ax_not_provided = True
-            proj_crs = ccrs.PlateCarree()
-            fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
+            if projection_crs is None:
+                projection_crs = ccrs.PlateCarree()
+            fig, ax = plt.subplots(subplot_kw=dict(projection=projection_crs))
 
         # Plot Points
-        ax.scatter(x=np.rad2deg(self.vertices[:, 0]),
-                   y=np.rad2deg(self.vertices[:, 1]),
+        vertices = self.vertices_in_degrees
+        ax.scatter(x=vertices[:, 0],
+                   y=vertices[:, 1],
                    **plot_kwargs)
 
-        # Beautify plot by default
-        if ax_not_provided:
+        # Beautify plots
+        if add_background:
             ax.stock_img()
+        if add_coastlines:
             ax.coastlines()
+        if add_gridlines():
             gl = ax.gridlines(draw_labels=True, linestyle='--')
             gl.xlabels_top = False
             gl.ylabels_right = False

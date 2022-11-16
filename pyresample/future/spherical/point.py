@@ -34,10 +34,18 @@ class SPoint(SCoordinate):
             raise ValueError("Use SMultiPoint to define multiple points.")
         super().__init__(lon, lat)
 
+    def __str__(self):
+        """Get simplified representation of lon/lat arrays in radians."""
+        return str((float(self.lon), float(self.lat)))
+
+    def __repr__(self):
+        """Get simplified representation of lon/lat arrays in radians."""
+        return str((float(self.lon), float(self.lat)))
+
     def to_shapely(self):
         """Convert the SPoint to a shapely Point (in lon/lat degrees)."""
         from shapely.geometry import Point
-        point = Point(*np.rad2deg(self.vertices[0]))
+        point = Point(*self.vertices_in_degrees[0])
         return point
 
 
@@ -57,16 +65,14 @@ class SMultiPoint(SCoordinate):
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
-        vertices = np.rad2deg(self.vertices)
-        return str(vertices)
+        return str(self.vertices)
 
     def __repr__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
-        vertices = np.rad2deg(self.vertices)
-        return str(vertices)
+        return str(self.vertices)
 
     def to_shapely(self):
         """Convert the SMultiPoint to a shapely MultiPoint (in lon/lat degrees)."""
         from shapely.geometry import MultiPoint
-        point = MultiPoint(np.rad2deg(self.vertices))
+        point = MultiPoint(self.vertices_in_degrees)
         return point
