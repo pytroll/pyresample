@@ -42,7 +42,7 @@ class SPoint(SCoordinate):
 
 
 class SMultiPoint(SCoordinate):
-    """Create a SMultiPoint object."""
+    """Object representing multiple points on a sphere."""
 
     def __init__(self, lon, lat):
         lon = np.asarray(lon)
