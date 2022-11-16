@@ -37,7 +37,7 @@ def _unwrap_radians(val, mod=np.pi):
 def _xyz_to_vertices(x, y, z):
     """Create vertices array from x,y,z values or vectors.
 
-    If x, y, z are np.values, it create a 1x3 np.array.
+    If x, y, z are scalar arrays, it creates a 1x3 np.array.
     If x, y, z are np.array with shape nx1, it creates a nx3 np.array.
     """
     if x.ndim == 0:
