@@ -64,7 +64,7 @@ class SMultiPoint(SCoordinate):
         return np.allclose(self.lon, other.lon) and np.allclose(self.lat, other.lat)
 
     def __str__(self):
-        """Get simplified representation of lon/lat arrays in degrees."""
+        """Get simplified representation of lon/lat arrays in radians."""
         return str(self.vertices)
 
     def __repr__(self):
