@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Define SPoint and SMultiPoint class."""
+"""Define single and multiple points on the sphere through SPoint and SMultiPoint classes."""
 import numpy as np
 
 from pyresample.spherical import SCoordinate
