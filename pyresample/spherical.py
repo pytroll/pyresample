@@ -366,19 +366,19 @@ class Arc(object):
     def __eq__(self, other):
         """Check equality."""
         if self.start == other.start and self.end == other.end:
-            return 1
-        return 0
+            return True
+        return False
 
     def __ne__(self, other):
         """Check not equal comparison."""
         return not self.__eq__(other)
 
     def __str__(self):
-        """Get simplified representation."""
+        """Get simplified str representation."""
         return str(self.start) + " -> " + str(self.end)
 
     def __repr__(self):
-        """Get simplified representation."""
+        """Get simplified repr representation."""
         return str(self.start) + " -> " + str(self.end)
 
     def angle(self, other_arc):
@@ -427,9 +427,9 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Give the two intersections of the greats circles defined by the current arc and *other_arc*.
+        """Compute the intersections points of the greats circles over which the arcs lies.
 
-        From http://williams.best.vwh.net/intersect.htm
+        A great circle divides the sphere in two equal hemispheres.
         """
         end_lon = self.end.lon
         other_end_lon = other_arc.end.lon
@@ -465,10 +465,10 @@ class Arc(object):
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
-        """Return where, if the current arc and the *other_arc* intersect.
+        """Compute the intersection point between two arcs.
 
-        None is returned if there is not intersection. An arc is defined
-        as the shortest tracks between two points.
+        If arc and *other_arc* intersect, it returns the intersection SPoint.
+        If arc and *other_arc* does not intersect, it returns None.
         """
         if self == other_arc:
             return None
@@ -490,7 +490,11 @@ class Arc(object):
         return None
 
     def get_next_intersection(self, arcs, known_inter=None):
-        """Get the next intersection between the current arc and *arcs*."""
+        """Get the next intersection between the current arc and *arcs*.
+
+        It return a tuple with the intersecting point and the arc within *arcs*
+        that intersect the self arc.
+        """
         res = []
         for arc in arcs:
             inter = self.intersection(arc)

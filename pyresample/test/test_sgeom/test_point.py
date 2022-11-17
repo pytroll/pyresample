@@ -55,6 +55,18 @@ class TestSPoint(unittest.TestCase):
         p2 = SPoint(np.deg2rad(lon), np.deg2rad(lat))
         assert p1 == p2
 
+    def test_is_pole(self):
+        """Test is pole method."""
+        assert SPoint.from_degrees(0, -90).is_pole()
+        assert SPoint.from_degrees(0, 90).is_pole()
+        assert not SPoint.from_degrees(0, 89.99).is_pole()
+
+    def test_is_on_equator(self):
+        """Test is on equator method."""
+        assert SPoint.from_degrees(0, 0).is_on_equator()
+        assert SPoint.from_degrees(10, -0).is_on_equator()
+        assert not SPoint.from_degrees(0, 0.001).is_on_equator()
+
     def test_vertices(self):
         """Test vertices property."""
         lons = 0
@@ -78,15 +90,42 @@ class TestSPoint(unittest.TestCase):
         with pytest.raises(ValueError):
             SPoint(lons, lats)
 
+    def test_eq(self):
+        """Check the equality."""
+        p1 = SPoint.from_degrees(0, 10)
+        p2 = SPoint.from_degrees(0, 10)
+        assert p1 == p2
+
+    def test_pole_equality(self):
+        """Check pole point equality."""
+        p1 = SPoint.from_degrees(0, 90)
+        p2 = SPoint.from_degrees(10, 90)
+        assert p1 == p2
+
+        p1 = SPoint.from_degrees(0, -90)
+        p2 = SPoint.from_degrees(10, -90)
+        assert p1 == p2
+
+        p1 = SPoint.from_degrees(0, -90)
+        p2 = SPoint.from_degrees(0, 90)
+        assert not p1 == p2
+        assert p1 != p2
+
+    def test_eq_antimeridian(self):
+        """Check the equality of a point on the antimeridian."""
+        p = SPoint.from_degrees(-180, 0)
+        p1 = SPoint.from_degrees(180, 0)
+        assert p == p1
+
     def test_str(self):
         """Check the string representation."""
         d = SPoint(1.0, 0.5)
-        self.assertEqual(str(d), "(1.0, 0.5)")
+        assert str(d) == "(1.0, 0.5)"
 
     def test_repr(self):
         """Check the representation."""
         d = SPoint(1.0, 0.5)
-        self.assertEqual(repr(d), "(1.0, 0.5)")
+        assert repr(d) == 'SPoint: (1.0, 0.5)'
 
     def test_to_shapely(self):
         """Test conversion to shapely."""
@@ -148,8 +187,8 @@ class TestSMultiPoint(unittest.TestCase):
         p2 = SMultiPoint(lons, lats)
         d12 = p1.distance(p2)
         d21 = p2.distance(p1)
-        self.assertEqual(d12.shape, (2, 3))
-        self.assertEqual(d21.shape, (3, 2))
+        assert d12.shape == (2, 3)
+        assert d21.shape == (3, 2)
         res = np.array([[0., 1.57079633, 3.14159265],
                         [3.14159265, 1.57079633, 0.]])
         assert np.allclose(d12, res)
@@ -169,19 +208,22 @@ class TestSMultiPoint(unittest.TestCase):
         p2 = SMultiPoint(lons, lats)
         d12 = p1.hdistance(p2)
         d21 = p2.hdistance(p1)
-        self.assertEqual(d12.shape, (2, 3))
-        self.assertEqual(d21.shape, (3, 2))
+        assert d12.shape == (2, 3)
+        assert d21.shape == (3, 2)
         res = np.array([[0., 1.57079633, 3.14159265],
                         [3.14159265, 1.57079633, 0.]])
         assert np.allclose(d12, res)
 
-    def test_eq(self):
-        """Check the equality."""
-        lons = [0, np.pi]
-        lats = [-np.pi / 2, np.pi / 2]
-        p = SMultiPoint(lons, lats)
-        p1 = SMultiPoint(lons, lats)
-        assert p == p1
+    def test_pole_equality(self):
+        """Check pole point equality."""
+        p1 = SMultiPoint.from_degrees([0, 0, 1], [0, 0, 90])
+        p2 = SMultiPoint.from_degrees([0, 0, 50], [0, 0, 90])
+        assert p1 == p2
+
+        p1 = SMultiPoint.from_degrees([0, 0, 1], [0, 0, 90])
+        p2 = SMultiPoint.from_degrees([0, 0, 1], [0, 0, -90])
+        assert not p1 == p2
+        assert p1 != p2
 
     def test_eq_antimeridian(self):
         """Check the equality with longitudes at -180/180 degrees."""
@@ -192,13 +234,28 @@ class TestSMultiPoint(unittest.TestCase):
         p1 = SMultiPoint(lons1, lats)
         assert p == p1
 
+    def test_eq(self):
+        """Check the equality."""
+        lons = [0, np.pi]
+        lats = [-np.pi / 2, np.pi / 2]
+        p = SMultiPoint(lons, lats)
+        p1 = SMultiPoint(lons, lats)
+        assert p == p1
+
     def test_neq(self):
         """Check the equality."""
+        lons = np.array([0, np.pi])
+        lats = [0, np.pi / 2]
+        p = SMultiPoint(lons, lats)
+        p1 = SMultiPoint(lons + 0.1, lats)
+        assert p != p1
+
+        # Equality at the pole
         lons = np.array([0, np.pi])
         lats = [-np.pi / 2, np.pi / 2]
         p = SMultiPoint(lons, lats)
         p1 = SMultiPoint(lons + 0.1, lats)
-        assert p != p1
+        assert not p != p1
 
     def test_str(self):
         """Check the string representation."""
@@ -206,15 +263,15 @@ class TestSMultiPoint(unittest.TestCase):
         lats = [-np.pi / 2, np.pi / 2]
         p = SMultiPoint(lons, lats)
         expected_str = '[[ 0.         -1.57079633]\n [-3.14159265  1.57079633]]'
-        self.assertEqual(str(p), expected_str)
+        assert str(p) == expected_str
 
     def test_repr(self):
         """Check the representation."""
         lons = [0, np.pi]
         lats = [-np.pi / 2, np.pi / 2]
         p = SMultiPoint(lons, lats)
-        expected_repr = '[[ 0.         -1.57079633]\n [-3.14159265  1.57079633]]'
-        self.assertEqual(repr(p), expected_repr)
+        expected_repr = 'SMultiPoint:\n [[ 0.         -1.57079633]\n [-3.14159265  1.57079633]]'
+        assert repr(p) == expected_repr
 
     def test_to_shapely(self):
         """Test conversion to shapely."""

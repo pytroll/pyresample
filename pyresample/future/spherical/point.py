@@ -39,13 +39,32 @@ class SPoint(SCoordinate):
         """Create SPoint from lon/lat coordinates in degrees."""
         return cls(np.deg2rad(lon), np.deg2rad(lat))
 
+    def is_pole(self):
+        """Test if the point is on a pole."""
+        if self.lat in [-np.pi / 2, np.pi / 2]:
+            return True
+        return False
+
+    def is_on_equator(self):
+        """Test if the point is on the equator."""
+        if self.lat == 0:
+            return True
+        return False
+
     def __str__(self):
         """Get simplified representation of lon/lat arrays in radians."""
         return str((float(self.lon), float(self.lat)))
 
     def __repr__(self):
         """Get simplified representation of lon/lat arrays in radians."""
-        return str((float(self.lon), float(self.lat)))
+        coords = str((float(self.lon), float(self.lat)))
+        return f"{self.__class__.__name__}: {coords}"
+
+    def __eq__(self, other):
+        """Check equality."""
+        if self.lat == other.lat and self.is_pole():
+            return True
+        return np.allclose((self.lon, self.lat), (other.lon, other.lat))
 
     def to_shapely(self):
         """Convert the SPoint to a shapely Point (in lon/lat degrees)."""
@@ -71,7 +90,14 @@ class SMultiPoint(SCoordinate):
 
     def __eq__(self, other):
         """Check equality."""
-        return np.allclose(self.lon, other.lon) and np.allclose(self.lat, other.lat)
+        lon1 = self.lon.copy()
+        lon2 = other.lon.copy()
+        lat1 = self.lat
+        lat2 = other.lat
+        # Set longitude 0 at the pole for array comparison
+        lon1[np.isin(lat1, [-np.pi / 2, np.pi / 2])] = 0
+        lon2[np.isin(lat2, [-np.pi / 2, np.pi / 2])] = 0
+        return np.allclose(lon1, lon2) and np.allclose(lat1, lat2)
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in radians."""
@@ -79,7 +105,7 @@ class SMultiPoint(SCoordinate):
 
     def __repr__(self):
         """Get simplified representation of lon/lat arrays in radians."""
-        return str(self.vertices)
+        return f"{self.__class__.__name__}:\n {self.vertices}"
 
     def to_shapely(self):
         """Convert the SMultiPoint to a shapely MultiPoint (in lon/lat degrees)."""

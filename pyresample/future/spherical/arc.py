@@ -15,86 +15,84 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Define a single great-circle arc on the sphere through the SArc class."""
+"""Define a great-circle arc between two points on the sphere through the SArc class."""
+
 import numpy as np
+import pyproj
+from shapely.geometry import LineString
 
-from pyresample.future.spherical import EPSILON
-from pyresample.spherical import SCoordinate, _unwrap_radians
+from pyresample.future.spherical import SPoint
+from pyresample.spherical import Arc
+
+EPSILON = 0.0000001
 
 
-class Arc(object):
-    """An arc of the great circle between two points."""
+def _check_valid_arc(start_point, end_point):
+    """Check arc validity."""
+    if start_point == end_point:
+        raise ValueError("An SArc can not be represented by the same start and end SPoint.")
+    if start_point.is_pole() and end_point.is_pole():
+        raise ValueError("An SArc can not be uniquely defined between the two poles.")
+    if start_point.is_on_equator and end_point.is_on_equator and abs(start_point.lon - end_point.lon) == np.pi:
+        raise ValueError(
+            "An SArc can not be uniquely defined on the equator if start and end points are 180 degrees apart.")
 
-    def __init__(self, start, end):
-        self.start, self.end = start, end
+
+class SArc(Arc):
+    """Object representing a great-circle arc between two points on a sphere.
+
+    The ``start_point`` and ``end_point`` must be SPoint objects.
+    The great-circle arc is defined as the shortest track(s) between the two points.
+    Between the north and south pole there are an infinite number of great-circle arcs.
+    """
+
+    def __init__(self, start_point, end_point):
+        _check_valid_arc(start_point, end_point)
+        super().__init__(start_point, end_point)
+
+    def __hash__(self):
+        """Define SArc hash."""
+        return hash((float(self.start.lon), float(self.start.lat),
+                     float(self.end.lon), float(self.end.lat)))
+
+    def is_on_equator(self):
+        """Check if the SArc lies on the equator."""
+        if self.start.lat == 0 and self.end.lat == 0:
+            return True
+        return False
 
     def __eq__(self, other):
         """Check equality."""
         if self.start == other.start and self.end == other.end:
-            return 1
-        return 0
+            return True
+        return False
 
-    def __ne__(self, other):
-        """Check not equal comparison."""
-        return not self.__eq__(other)
+    def reverse_direction(self):
+        """Reverse SArc direction."""
+        return SArc(self.end, self.start)
 
-    def __str__(self):
-        """Get simplified representation."""
-        return str(self.start) + " -> " + str(self.end)
+    @property
+    def vertices(self):
+        """Get start SPoint and end SPoint (radians) vertices array."""
+        return self.start.vertices, self.end.vertices
 
-    def __repr__(self):
-        """Get simplified representation."""
-        return str(self.start) + " -> " + str(self.end)
+    @property
+    def vertices_in_degrees(self):
+        """Get start SPoint and end SPoint (degrees) vertices array."""
+        return self.start.vertices_in_degrees, self.end.vertices_in_degrees
 
-    def angle(self, other_arc):
-        """Oriented angle between two arcs.
-
-        Returns:
-            Angle in radians. A straight line will be 0. A clockwise path
-            will be a negative angle and counter-clockwise will be positive.
-
-        """
-        if self.start == other_arc.start:
-            a__ = self.start
-            b__ = self.end
-            c__ = other_arc.end
-        elif self.start == other_arc.end:
-            a__ = self.start
-            b__ = self.end
-            c__ = other_arc.start
-        elif self.end == other_arc.end:
-            a__ = self.end
-            b__ = self.start
-            c__ = other_arc.start
-        elif self.end == other_arc.start:
-            a__ = self.end
-            b__ = self.start
-            c__ = other_arc.end
-        else:
-            raise ValueError("No common point in angle computation.")
-
-        ua_ = a__.cross2cart(b__)
-        ub_ = a__.cross2cart(c__)
-
-        val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
-
-        if abs(val - 1) < EPSILON:
-            angle = 0
-        elif abs(val + 1) < EPSILON:
-            angle = np.pi
-        else:
-            angle = np.arccos(val)
-
-        n__ = ua_.normalize()
-        if n__.dot(c__.to_cart()) > 0:
-            return -angle
-        else:
-            return angle
+    def get_next_intersection(self, other_arc):
+        """Overwrite a Arc deprecated function. Inherited from Arc class."""
+        raise ValueError("This function is deprecated.")
 
     def intersections(self, other_arc):
-        """Give the two intersections of the greats circles defined by the current arc and *other_arc*.
+        """Overwritea Arc deprecated function. Inherited from Arc class."""
+        raise ValueError("'SArc.intersections' is deprecated. Use '_great_circle_intersections' instead.")
 
-        From http://williams.best.vwh.net/intersect.htm
+    def _great_circle_intersections(self, other_arc):
+        """Compute the intersections points of the greats circles over which the arcs lies.
+
+        A great circle divides the sphere in two equal hemispheres.
         """
         end_lon = self.end.lon
         other_end_lon = other_arc.end.lon
@@ -108,8 +106,8 @@ class Arc(object):
         if other_arc.end.lon - other_arc.start.lon < -np.pi:
             other_end_lon += 2 * np.pi
 
-        end_point = SCoordinate(end_lon, self.end.lat)
-        other_end_point = SCoordinate(other_end_lon, other_arc.end.lat)
+        end_point = SPoint(end_lon, self.end.lat)
+        other_end_point = SPoint(other_end_lon, other_arc.end.lat)
 
         ea_ = self.start.cross2cart(end_point).normalize()
         eb_ = other_arc.start.cross2cart(other_end_point).normalize()
@@ -119,63 +117,92 @@ class Arc(object):
                          np.sqrt(cross.cart[0] ** 2 + cross.cart[1] ** 2))
         lon = np.arctan2(cross.cart[1], cross.cart[0])
 
-        return (SCoordinate(lon, lat),
-                SCoordinate(_unwrap_radians(lon + np.pi), -lat))
-
-    def intersects(self, other_arc):
-        """Check if the current arc and the *other_arc* intersect.
-
-        An arc is defined as the shortest tracks between two points.
-        """
-        return bool(self.intersection(other_arc))
+        return (SPoint(lon, lat), SPoint(lon + np.pi, -lat))
 
     def intersection(self, other_arc):
-        """Return where, if the current arc and the *other_arc* intersect.
+        """Overwrite a Arc deprecated function. Inherited from Arc class."""
+        raise ValueError("'SArc.intersection' is deprecated. Use 'intersection_point' instead.")
 
-        None is returned if there is not intersection. An arc is defined
-        as the shortest tracks between two points.
+    def intersection_point(self, other_arc):
+        """Compute the intersection point between two arcs.
+
+        If arc and *other_arc* intersect, it returns the intersection SPoint.
+        If arc and *other_arc* does not intersect, it returns None.
+        If same arc (also same direction), it returns None.
         """
+        # If same arc (same direction), return None
         if self == other_arc:
             return None
 
-        for i in self.intersections(other_arc):
-            a__ = self.start
-            b__ = self.end
-            c__ = other_arc.start
-            d__ = other_arc.end
+        great_circles_intersection_spoints = self._great_circle_intersections(other_arc)
 
-            ab_ = a__.hdistance(b__)
-            cd_ = c__.hdistance(d__)
+        for spoint in great_circles_intersection_spoints:
+            a = self.start
+            b = self.end
+            c = other_arc.start
+            d = other_arc.end
 
-            if (((i in (a__, b__)) or
-                (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
-                ((i in (c__, d__)) or
-                 (abs(c__.hdistance(i) + d__.hdistance(i) - cd_) < EPSILON))):
-                return i
+            ab_dist = a.hdistance(b)
+            cd_dist = c.hdistance(d)
+            ap_dist = a.hdistance(spoint)
+            bp_dist = b.hdistance(spoint)
+            cp_dist = c.hdistance(spoint)
+            dp_dist = d.hdistance(spoint)
+
+            if (((spoint in (a, b)) or (abs(ap_dist + bp_dist - ab_dist) < EPSILON)) and
+                    ((spoint in (c, d)) or (abs(cp_dist + dp_dist - cd_dist) < EPSILON))):
+                return spoint
         return None
 
-    def get_next_intersection(self, arcs, known_inter=None):
-        """Get the next intersection between the current arc and *arcs*."""
-        res = []
-        for arc in arcs:
-            inter = self.intersection(arc)
-            if (inter is not None and
-                    inter != arc.end and
-                    inter != self.end):
-                res.append((inter, arc))
+    def intersects(self, other_arc):
+        """Check if the current Sarc and another SArc intersect."""
+        return bool(self.intersection_point(other_arc))
 
-        def dist(args):
-            """Get distance key."""
-            return self.start.distance(args[0])
+    def midpoint(self, ellips='sphere'):
+        """Return the SArc midpoint SPoint."""
+        geod = pyproj.Geod(ellps=ellips)
+        lon_start = self.start.lon
+        lon_end = self.end.lon
+        lat_start = self.start.lat
+        lat_end = self.end.lat
+        lon_mid, lat_mid = geod.npts(lon_start, lat_start, lon_end, lat_end, npts=1, radians=True)[0]
+        return SPoint(lon_mid, lat_mid)
 
-        take_next = False
-        for inter, arc in sorted(res, key=dist):
-            if known_inter is not None:
-                if known_inter == inter:
-                    take_next = True
-                elif take_next:
-                    return inter, arc
-            else:
-                return inter, arc
+    def to_shapely(self):
+        """Convert to Shapely LineString."""
+        start_coord, end_coord = self.vertices_in_degrees
+        return LineString((start_coord.tolist()[0], end_coord.tolist()[0]))
 
-        return None, None
+    # def segmentize(self, npts=0, max_distance=0, ellips='sphere'):
+    #     """Segmentize the great-circle arc.
+
+    #     It returns an SLine.
+    #     npts or max_distance are mutually exclusively. Specify one of them.
+    #     max_distance must be provided in kilometers.
+    #     """
+    #     if npts != 0:
+    #         npts = npts + 2  # + 2 to account for initial and terminus
+    #     geod = pyproj.Geod(ellps=ellips)
+    #     lon_start = self.start.lon
+    #     lon_end = self.end.lon
+    #     lat_start = self.start.lat
+    #     lat_end = self.end.lat
+    #     points = geod.inv_intermediate(lon_start, lat_start, lon_end, lat_end,
+    #                                    del_s=max_distance,
+    #                                    npts=npts,
+    #                                    radians=True,
+    #                                    initial_idx=0, terminus_idx=0)
+    #     lons, lats = (points.lons, points.lats)
+    #     lons = np.asarray(lons)
+    #     lats = np.asarray(lats)
+    #     vertices = np.stack((lons, lats)).T
+    #     return SLine(vertices)
+
+    # def to_line(self):
+    #     """Convert to SLine."""
+    #     vertices = np.vstack(self.vertices)
+    #     return SLine(vertices)
+
+    # def plot(self, *args, **kwargs):
+    #     """Convert to SLine."""
+    #     self.to_line.plot(*args, **kwargs)

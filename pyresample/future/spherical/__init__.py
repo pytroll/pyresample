@@ -17,6 +17,5 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Future features that are backwards incompatible with current functionality."""
 
+from .arc import SArc  # noqa
 from .point import SMultiPoint, SPoint  # noqa
-
-EPSILON = 0.0000001
