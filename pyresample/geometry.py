@@ -2692,8 +2692,8 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
     Notes:
-    - The first and last element of the output vectors are equals.
-    - If nb_points is even, it will returns x and y vectors of length nb_points + 1.
+    - The first and last element of the output vectors are equal.
+    - If nb_points is even, it will return x and y vectors of length nb_points + 1.
 
     Parameters
     ----------
