@@ -18,3 +18,5 @@
 """Future features that are backwards incompatible with current functionality."""
 
 from .point import SMultiPoint, SPoint  # noqa
+
+EPSILON = 0.0000001
