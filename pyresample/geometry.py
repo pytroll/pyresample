@@ -2712,8 +2712,7 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
 
     x *= h
     y *= h
-    # Here below wer remove one element with [:-1] to avoid duplicated values
-    #  at the equator
+    # We remove one element with [:-1] to avoid duplicate values at the equator
     x = np.clip(np.concatenate([x[:-1], x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
     y = np.clip(np.concatenate([y[:-1], -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
