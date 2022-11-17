@@ -21,8 +21,9 @@ import numpy as np
 import pyproj
 from shapely.geometry import LineString
 
-from pyresample.future.spherical import SPoint
 from pyresample.spherical import Arc
+
+from .point import SPoint
 
 EPSILON = 0.0000001
 
