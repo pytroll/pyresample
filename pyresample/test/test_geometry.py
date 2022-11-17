@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2020 Pyresample developers
+# Copyright (C) 2010-2022 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -3023,6 +3023,238 @@ def _is_clockwise(lons, lats):
         edge_sum += xdiff * ysum
         prev_point = point
     return edge_sum > 0
+
+
+class TestBoundary(unittest.TestCase):
+    """Test 'boundary' method for <area_type>Definition classes."""
+
+    def test_polar_south_pole_projection(self):
+        """Test boundary for polar projection around the south pole."""
+        # Define polar projection
+        proj_dict_polar_sh = {
+            'proj_id': "polar_sh_projection",
+            "area_id": 'polar_sh_projection',
+            "description": 'Antarctic EASE grid',
+            # projection : 'EPSG:3409',
+            "projection": {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            "width": 2,
+            "height": 2,
+            "area_extent": (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_polar_sh)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-45., -55.61313895],
+                                      [45., -55.61313895],
+                                      [135., -55.61313895],
+                                      [-135., -55.61313895]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_nort_pole_projection(self):
+        """Test boundary for polar projection around the nort pole."""
+        # Define polar projection
+        proj_dict_polar_nh = {
+            'proj_id': "polar_nh_projection",
+            "area_id": 'polar_nh_projection',
+            "description": 'Artic EASE grid',
+            "projection": {'proj': 'laea', 'lat_0': 90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            "width": 2,
+            "height": 2,
+            "area_extent": (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_polar_nh)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 55.61313895],
+                                      [135., 55.61313895],
+                                      [45., 55.61313895],
+                                      [-45., 55.61313895]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_geostationary_projection(self):
+        """Test boundary for geostationary projection."""
+        # Define geostationary projection
+        proj_dict_geostationary = {
+            'proj_id': "dummy_geo_projection",
+            "area_id": 'dummy_geo_projection',
+            "description": 'geostationary projection',
+            "projection": {'a': 6378169.00, 'b': 6356583.80, 'h': 35785831.00, 'lon_0': 0, 'proj': 'geos'},
+            "area_extent": (-5500000., -5500000., 5500000., 5500000.),
+            "width": 100,
+            "height": 100,
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_geostationary)
+
+        # Check default boundary shape
+        default_n_vertices = 50
+        boundary = areadef.boundary(frequency=None)
+        assert boundary.vertices.shape == (default_n_vertices, 2)
+
+        # Check minimum boundary vertices
+        n_vertices = 3
+        minimum_n_vertices = 4
+        boundary = areadef.boundary(frequency=n_vertices)
+        assert boundary.vertices.shape == (minimum_n_vertices, 2)
+
+        # Check odd frequency number
+        # - Rounded to the sequent even number (to construct the sides)
+        n_odd_vertices = 5
+        boundary = areadef.boundary(frequency=n_odd_vertices)
+        assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
+
+        # Check boundary vertices
+        n_vertices = 10
+        boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
+        boundary.vertices.shape
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-7.92337283e+01, 6.94302533e-15],
+                                      [-7.54251621e+01, 3.53432890e+01],
+                                      [-5.68985178e+01, 6.90053314e+01],
+                                      [5.68985178e+01, 6.90053314e+01],
+                                      [7.54251621e+01, 3.53432890e+01],
+                                      [7.92337283e+01, -6.94302533e-15],
+                                      [7.54251621e+01, -3.53432890e+01],
+                                      [5.68985178e+01, -6.90053314e+01],
+                                      [-5.68985178e+01, -6.90053314e+01],
+                                      [-7.54251621e+01, -3.53432890e+01]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_global_platee_caree_projection(self):
+        """Test boundary for global platee caree projection."""
+        # Define global projection
+        proj_dict_global_wgs84 = {
+            'proj_id': "epsg4326",
+            'area_id': 'epsg4326',
+            'description': 'Global equal latitude/longitude grid for global sphere',
+            "projection": 'EPSG:4326',
+            "width": 4,
+            "height": 4,
+            "area_extent": (-180.0, -90.0, 180.0, 90.0),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_global_wgs84)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 67.5],
+                                      [-45., 67.5],
+                                      [45., 67.5],
+                                      [135., 67.5],
+                                      [135., 22.5],
+                                      [135., -22.5],
+                                      [135., -67.5],
+                                      [45., -67.5],
+                                      [-45., -67.5],
+                                      [-135., -67.5],
+                                      [-135., -22.5],
+                                      [-135., 22.5]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_minimal_global_platee_caree_projection(self):
+        """Test boundary for global platee caree projection."""
+        # Define minimal global projection
+        proj_dict_global_wgs84 = {
+            'proj_id': "epsg4326",
+            'area_id': 'epsg4326',
+            'description': 'Global equal latitude/longitude grid for global sphere',
+            "projection": 'EPSG:4326',
+            "width": 2,
+            "height": 2,
+            "area_extent": (-180.0, -90.0, 180.0, 90.0),
+        }
+
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_global_wgs84)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-90., 45.],
+                                      [90., 45.],
+                                      [90., -45.],
+                                      [-90., -45.]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_local_area_projection(self):
+        """Test local area projection in meter."""
+        # Define ch1903 projection (eastings, northings)
+        proj_dict_ch1903 = {
+            'proj_id': "swiss_area",
+            'area_id': 'swiss_area',
+            'description': 'Swiss CH1903+ / LV95',
+            "projection": 'EPSG:2056',
+            "width": 2,
+            "height": 2,
+            "area_extent": (2_600_000.0, 1_050_000, 2_800_000.0, 1_170_000),
+        }
+
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_ch1903)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[8.08993639, 46.41074744],
+                                      [9.39028624, 46.39582417],
+                                      [9.37106733, 45.85619242],
+                                      [8.08352612, 45.87097006]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_swath_definition(self):
+        """Test boundary for swath definition."""
+        lons = np.array([[1.2, 1.3, 1.4, 1.5],
+                         [1.2, 1.3, 1.4, 1.5]])
+        lats = np.array([[65.9, 65.86, 65.82, 65.78],
+                         [65.89, 65.86, 65.82, 65.78]])
+
+        # Define SwathDefinition and retrieve AreaBoundary
+        swath_def = SwathDefinition(lons, lats)
+        boundary = swath_def.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = swath_def.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[1.2, 65.9],
+                                      [1.3, 65.86],
+                                      [1.4, 65.82],
+                                      [1.5, 65.78],
+                                      [1.5, 65.78],
+                                      [1.4, 65.82],
+                                      [1.3, 65.86],
+                                      [1.2, 65.89]])
+        assert np.allclose(expected_vertices, boundary.vertices)
 
 
 def _gen_swath_def_xarray_dask():

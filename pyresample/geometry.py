@@ -391,6 +391,28 @@ class BaseDefinition:
         x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
         return np.hstack(x), np.hstack(y)
 
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                     force_clockwise=force_clockwise)
+        return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
 
@@ -1506,6 +1528,59 @@ class AreaDefinition(_ProjectionDefinition):
         if coord_operation is None:
             return False
         return 'geostationary' in coord_operation.method_name.lower()
+
+    def _get_geo_boundary_sides(self, frequency=None):
+        """Retrieve the boundary sides list for geostationary projections."""
+        # Define default frequency
+        if frequency is None:
+            frequency = 50
+        # Ensure at least 4 points are used
+        if frequency < 4:
+            frequency = 4
+        # Ensure an even number of vertices for side creation
+        if (frequency % 2) != 0:
+            frequency = frequency + 1
+        lons, lats = get_geostationary_bounding_box(self, nb_points=frequency)
+        # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
+        side02_step = int(frequency / 2) - 1
+        lon_sides = [lons[slice(0, side02_step + 1)],
+                     lons[slice(side02_step, side02_step + 1 + 1)],
+                     lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lons[side02_step * 2 + 1], lons[0])
+                     ]
+        lat_sides = [lats[slice(0, side02_step + 1)],
+                     lats[slice(side02_step, side02_step + 1 + 1)],
+                     lats[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lats[side02_step * 2 + 1], lats[0])
+                     ]
+        return lon_sides, lat_sides
+
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided, except for geostationary
+            projection where by default only 50 points are selected.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        if self.is_geostationary:
+            lon_sides, lat_sides = self._get_geo_boundary_sides(frequency=frequency)
+        else:
+            lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                         force_clockwise=force_clockwise)
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        return boundary
 
     @property
     def area_extent(self):
@@ -2725,7 +2800,9 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    return get_geostationary_bounding_box(geos_area, nb_points)
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
+    return lons, lats
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
@@ -2734,9 +2811,10 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
-
-    return Proj(geos_area.crs)(x, y, inverse=True)
+    warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
+                  "'get_geostationary_bounding_box_in_lonlats' instead.",
+                  DeprecationWarning)
+    return get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
 
 def combine_area_extents_vertical(area1, area2):
