@@ -2603,19 +2603,21 @@ class TestCrop(unittest.TestCase):
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
         # This musk be equal to lon.
-        elon = np.array([-79.23372832, -77.9694809, -74.55229623, -67.32816598,
-                         -41.45591465, 41.45591465, 67.32816598, 74.55229623,
-                         77.9694809, 79.23372832, 79.23372832, 77.9694809,
-                         74.55229623, 67.32816598, 41.45591465, -41.45591465,
-                         -67.32816598, -74.55229623, -77.9694809, -79.23372832])
-        elat = np.array([6.94302533e-15, 1.97333299e+01, 3.92114217e+01, 5.82244715e+01,
-                         7.52409201e+01, 7.52409201e+01, 5.82244715e+01, 3.92114217e+01,
-                         1.97333299e+01, -0.00000000e+00, -6.94302533e-15, -1.97333299e+01,
-                         -3.92114217e+01, -5.82244715e+01, -7.52409201e+01, -7.52409201e+01,
-                         -5.82244715e+01, -3.92114217e+01, -1.97333299e+01, 0.0])
+        elon = np.array([-79.23372832, -78.19662326, -75.42516215, -70.22636028,
+                         -56.89851775, 0., 56.89851775, 70.22636028,
+                         75.42516215, 78.19662326, 79.23372832, 78.19662326,
+                         75.42516215, 70.22636028, 56.89851775, 0.,
+                        -56.89851775, -70.22636028, -75.42516215, -78.19662326,
+                        -79.23372832])
+        elat = np.array([0., 17.76879577, 35.34328897, 52.5978607,
+                         69.00533142, 79.14811219, 69.00533142, 52.5978607,
+                         35.34328897, 17.76879577, -0., -17.76879577,
+                         -35.34328897, -52.5978607, -69.00533142, -79.14811219,
+                         -69.00533142, -52.5978607, -35.34328897, -17.76879577,
+                         0.])
 
-        np.testing.assert_allclose(lon, elon)
-        np.testing.assert_allclose(lat, elat)
+        np.testing.assert_allclose(lon, elon, atol=1e-07)
+        np.testing.assert_allclose(lat, elat, atol=1e-07)
 
         geos_area = MagicMock()
         lon_0 = 10
@@ -2825,7 +2827,7 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
         assert isinstance(slice_x.start, int)
         assert isinstance(slice_y.start, int)
         self.assertEqual(slice(46, 3667, None), slice_x)
-        self.assertEqual(slice(52, 3663, None), slice_y)
+        self.assertEqual(slice(56, 3659, None), slice_y)
 
         area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                                 {'a': 6378144.0,
@@ -2883,7 +2885,7 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
             assert isinstance(slice_x.start, int)
             assert isinstance(slice_y.start, int)
             self.assertEqual(slice_x, slice(46, 3667, None))
-            self.assertEqual(slice_y, slice(52, 3663, None))
+            self.assertEqual(slice_y, slice(56, 3659, None))
 
     def test_get_area_slices_nongeos(self):
         """Check area slicing for non-geos projections."""

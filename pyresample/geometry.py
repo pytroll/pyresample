@@ -2691,24 +2691,30 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
-    Args:
-      nb_points: Number of points on the polygon
+    Notes:
+    - The first and last element of the output vectors are equal.
+    - If nb_points is even, it will return x and y vectors of length nb_points + 1.
+
+    Parameters
+    ----------
+    nb_points : Number of points on the polygon.
+
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
     h = get_geostationary_height(geos_area.crs)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (ymax - 0.0001)
+    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
     x *= h
     y *= h
-
-    x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
-    y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
+    # We remove one element with [:-1] to avoid duplicate values at the equator
+    x = np.clip(np.concatenate([x[:-1], x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
+    y = np.clip(np.concatenate([y[:-1], -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
     return x, y
 
