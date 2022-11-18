@@ -41,6 +41,30 @@ def _check_valid_arc(start_point, end_point):
         raise ValueError("An SArc can not be uniquely defined between antipodal points.")
 
 
+def _is_point_on_arc(point, arc):
+    """Check if the point is on the arc."""
+    # Define arc start and end points
+    start = arc.start
+    end = arc.end
+
+    # Compute arc length
+    arc_length = start.hdistance(end)
+
+    # Distance from self arc start & end points to a great circle intersection point
+    start_to_point_dist = start.hdistance(point)
+    end_to_point_dist = end.hdistance(point)
+
+    # Check if point is a start/end point of the arcs
+    point_is_on_arc_extremities = point in (start, end)
+
+    # Check if point is on the arc segment
+    point_is_on_arc_segment = abs(start_to_point_dist + end_to_point_dist - arc_length) < EPSILON
+
+    # Assess if point is on the arc
+    point_is_on_arc = point_is_on_arc_extremities or point_is_on_arc_segment
+    return point_is_on_arc
+
+
 class SArc(Arc):
     """Object representing a great-circle arc between two points on a sphere.
 
@@ -65,6 +89,13 @@ class SArc(Arc):
     def __eq__(self, other):
         """Check equality."""
         return self.start == other.start and self.end == other.end
+
+    def __contains__(self, point):
+        """Check if a point lies on the SArc."""
+        if isinstance(point, SPoint):
+            return _is_point_on_arc(point, arc=self)
+        else:
+            raise NotImplementedError("SArc.__contains__ currently accept only SPoint objects.")
 
     def reverse_direction(self):
         """Reverse SArc direction."""
@@ -135,42 +166,11 @@ class SArc(Arc):
         # If same arc (same direction), return None
         if self == other_arc:
             return None
-
+        # Compute the great circle intersection points
         great_circles_intersection_spoints = self._great_circle_intersections(other_arc)
-
-        # Define arcs start and end points
-        a = self.start
-        b = self.end
-        c = other_arc.start
-        d = other_arc.end
-
-        # Compute arc distance
-        ab_dist = a.hdistance(b)
-        cd_dist = c.hdistance(d)
-
-        # If a great circle intersection point lies on one of the arc,
-        #  it is the intersection point
-
+        # If a great circle intersection point lies on the arcs, it is the intersection point
         for point in great_circles_intersection_spoints:
-            # Distance from self arc start & end points to a great circle intersection point
-            ap_dist = a.hdistance(point)
-            bp_dist = b.hdistance(point)
-
-            # Distance from other arcs  start & end points to a great circle intersection point
-            cp_dist = c.hdistance(point)
-            dp_dist = d.hdistance(point)
-
-            # Check if point is a start/end point of the arcs
-            point_is_on_self_extremities = point in (a, b)
-            point_is_on_other_arc_extremities = point in (c, d)
-
-            # Check if point is on the arcs segment
-            point_is_on_self_segment = abs(ap_dist + bp_dist - ab_dist) < EPSILON
-            point_is_on_other_arc_segment = abs(cp_dist + dp_dist - cd_dist) < EPSILON
-
-            point_is_on_self = point_is_on_self_extremities or point_is_on_self_segment
-            point_is_on_other_arc = point_is_on_other_arc_extremities or point_is_on_other_arc_segment
-            if point_is_on_self and point_is_on_other_arc:
+            if point in self and point in other_arc:
                 return point
         return None
 
