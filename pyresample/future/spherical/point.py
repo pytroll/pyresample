@@ -41,9 +41,7 @@ class SPoint(SCoordinate):
 
     def is_pole(self):
         """Test if the point is on a pole."""
-        if self.lat in [-np.pi / 2, np.pi / 2]:
-            return True
-        return False
+        return self.lat in (-np.pi / 2, np.pi / 2)
 
     def is_on_equator(self):
         """Test if the point is on the equator."""
