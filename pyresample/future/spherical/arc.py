@@ -50,11 +50,11 @@ def _is_point_on_arc(point, arc):
     # Compute arc length
     arc_length = start.hdistance(end)
 
-    # Distance from self arc start & end points to a great circle intersection point
+    # Distance from arc start & end points to the input point
     start_to_point_dist = start.hdistance(point)
     end_to_point_dist = end.hdistance(point)
 
-    # Check if point is a start/end point of the arcs
+    # Check if point is a start or end point of the arc
     point_is_on_arc_extremities = point in (start, end)
 
     # Check if point is on the arc segment
