@@ -45,9 +45,7 @@ class SPoint(SCoordinate):
 
     def is_on_equator(self):
         """Test if the point is on the equator."""
-        if self.lat == 0:
-            return True
-        return False
+        return self.lat == 0
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in radians."""
