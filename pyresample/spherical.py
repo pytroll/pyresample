@@ -471,15 +471,15 @@ class Arc(object):
         if self == other_arc:
             return None
 
+        a__ = self.start
+        b__ = self.end
+        c__ = other_arc.start
+        d__ = other_arc.end
+
+        ab_ = a__.hdistance(b__)
+        cd_ = c__.hdistance(d__)
+
         for i in self.intersections(other_arc):
-            a__ = self.start
-            b__ = self.end
-            c__ = other_arc.start
-            d__ = other_arc.end
-
-            ab_ = a__.hdistance(b__)
-            cd_ = c__.hdistance(d__)
-
             if (((i in (a__, b__)) or
                 (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
                 ((i in (c__, d__)) or

@@ -129,6 +129,8 @@ class SArc(Arc):
         If arc and *other_arc* are the same (whatever direction), it returns None.
         If arc and *other_arc* overlaps, within or contain, it returns None.
         If arc and *other_arc* intersect, it returns the intersection SPoint.
+        If arc and *other_arc* touches in 1 point, it returns the intersection SPoint.
+
         """
         # If same arc (same direction), return None
         if self == other_arc:
@@ -136,22 +138,40 @@ class SArc(Arc):
 
         great_circles_intersection_spoints = self._great_circle_intersections(other_arc)
 
-        for spoint in great_circles_intersection_spoints:
-            a = self.start
-            b = self.end
-            c = other_arc.start
-            d = other_arc.end
+        # Define arcs start and end points
+        a = self.start
+        b = self.end
+        c = other_arc.start
+        d = other_arc.end
 
-            ab_dist = a.hdistance(b)
-            cd_dist = c.hdistance(d)
-            ap_dist = a.hdistance(spoint)
-            bp_dist = b.hdistance(spoint)
-            cp_dist = c.hdistance(spoint)
-            dp_dist = d.hdistance(spoint)
+        # Compute arc distance
+        ab_dist = a.hdistance(b)
+        cd_dist = c.hdistance(d)
 
-            if (((spoint in (a, b)) or (abs(ap_dist + bp_dist - ab_dist) < EPSILON)) and
-                    ((spoint in (c, d)) or (abs(cp_dist + dp_dist - cd_dist) < EPSILON))):
-                return spoint
+        # If a great circle intersection point lies on one of the arc,
+        #  it is the intersection point
+
+        for point in great_circles_intersection_spoints:
+            # Distance from self arc start & end points to a great circle intersection point
+            ap_dist = a.hdistance(point)
+            bp_dist = b.hdistance(point)
+
+            # Distance from other arcs  start & end points to a great circle intersection point
+            cp_dist = c.hdistance(point)
+            dp_dist = d.hdistance(point)
+
+            # Check if point is a start/end point of the arcs
+            point_is_on_self_extremities = point in (a, b)
+            point_is_on_other_arc_extremities = point in (c, d)
+
+            # Check if point is on the arcs segment
+            point_is_on_self_segment = abs(ap_dist + bp_dist - ab_dist) < EPSILON
+            point_is_on_other_arc_segment = abs(cp_dist + dp_dist - cd_dist) < EPSILON
+
+            point_is_on_self = point_is_on_self_extremities or point_is_on_self_segment
+            point_is_on_other_arc = point_is_on_other_arc_extremities or point_is_on_other_arc_segment
+            if point_is_on_self and point_is_on_other_arc:
+                return point
         return None
 
     def intersects(self, other_arc):
