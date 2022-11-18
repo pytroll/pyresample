@@ -22,8 +22,6 @@ from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
 
-import numpy as np
-
 import pyresample.geometry as geom
 
 try:
@@ -91,46 +89,17 @@ def plot_area_def(area, feature_res="110m", fmt="svg"):
         crs = area.to_cartopy_crs()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
     elif isinstance(area, geom.SwathDefinition):
-
-        crs_wkt = """PROJCRS["unknown",BASEGEOGCRS["unknown",DATUM["Unknown based on Normal Sphere
-        (r=6370997) ellipsoid",ELLIPSOID["Normal Sphere
-        (r=6370997)",6370997,0,LENGTHUNIT["metre",1,ID["EPSG",9001]]]],
-        PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8901]]],CONVERSION["unknown",METHOD["Hotine
-        Oblique Mercator (variant B)",ID["EPSG",9815]],PARAMETER["Latitude of projection
-        centre",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8811]],PARAMETER["Longitude of projection
-        centre",5.06691991743878,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8812]],PARAMETER["Azimuth
-        of initial
-        line",9.63110427857409,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8813]],PARAMETER["Angle from
-        Rectified to Skew Grid",0,ANGLEUNIT["degree",0.0174532925199433],ID["EPSG",8814]],PARAMETER["Scale
-        factor on initial line",1,SCALEUNIT["unity",1],ID["EPSG",8815]],PARAMETER["Easting at projection
-        centre",0,LENGTHUNIT["metre",1],ID["EPSG",8816]],PARAMETER["Northing at projection
-        centre",0,LENGTHUNIT["metre",1],ID["EPSG",8817]]],CS[Cartesian,2],AXIS["(E)",east,
-        ORDER[1],LENGTHUNIT["metre",1,ID["EPSG",9001]]],AXIS["(N)",north,ORDER[2],
-        LENGTHUNIT["metre",1,ID["EPSG",9001]]]]"""
+        import cartopy.crs as ccrs
+        from shapely.geometry.polygon import Polygon
 
         lx, ly = area.get_edge_lonlats()
 
-        from pyproj import CRS
-
-        from pyresample.utils.cartopy import Projection
-        crs = CRS.from_wkt(crs_wkt)
-        bounds = (np.min(lx), np.max(lx), np.min(ly), np.max(ly))
-        crs = Projection(crs, bounds=bounds, transform_bounds=True)
-
+        crs = cartopy.crs.Mercator()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        import geopandas as gpd
-        import pandas as pd
-        from pygeos import polygons
-
-        poly = polygons(list(zip(lx, ly)))
-
-        df = pd.DataFrame({"area": ["modis_swath"], "geom": [poly]})
-        gdf = gpd.GeoDataFrame(df, crs=area.crs)
-        gdf = gdf.set_geometry("geom")
-        gdf = gdf.to_crs(crs.proj4_init)
-        # gdf.plot(ax=ax)
-        ax.add_geometries(gdf["geom"], crs=crs)
+        poly = Polygon(list(zip(lx, ly)))
+        ax.add_geometries([poly], crs=ccrs.CRS(area.crs), facecolor="none", edgecolor="red")
+        ax.set_extent(poly.bounds)
 
     coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
                                                      name="coastline",
@@ -152,12 +121,14 @@ def plot_area_def(area, feature_res="110m", fmt="svg"):
         plt.savefig(svg_str, format="svg", bbox_inches="tight")
         plt.close()
         return svg_str.getvalue()
+
     elif fmt == "png":
         png_str = BytesIO()
         plt.savefig(png_str, format="png", bbox_inches="tight")
         img_str = f"<img src='data:image/png;base64, {base64.encodestring(png_str.getvalue()).decode('utf-8')}'/>"
         plt.close()
         return img_str
+
     else:
         plt.show()
 
@@ -339,10 +310,9 @@ def area_repr(area, include_header=True):
     html += "<div class='pyresample-area-sections'>"
     if isinstance(area, geom.AreaDefinition):
         html += proj_area_attrs_section(area)
+        html += map_section(area)
     elif isinstance(area, geom.SwathDefinition):
         html += swath_area_attrs_section(area)
-
-    html += map_section(area)
 
     html += "</div>"
 
