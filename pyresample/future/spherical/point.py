@@ -47,6 +47,12 @@ class SPoint(SCoordinate):
         """Test if the point is on the equator."""
         return self.lat == 0
 
+    def get_antipode(self):
+        """Return the antipode point."""
+        lat = - self.lat
+        lon = self.lon - np.pi
+        return SPoint(lon, lat)
+
     def __str__(self):
         """Get simplified representation of lon/lat arrays in radians."""
         return str((float(self.lon), float(self.lat)))
@@ -84,6 +90,12 @@ class SMultiPoint(SCoordinate):
         """Create SMultiPoint from lon/lat coordinates in degrees."""
         return cls(np.deg2rad(lon), np.deg2rad(lat))
 
+    def get_antipodes(self):
+        """Return the antipodal points."""
+        lat = - self.lat
+        lon = self.lon - np.pi
+        return SMultiPoint(lon, lat)
+
     def __eq__(self, other):
         """Check equality."""
         lon1 = self.lon.copy()
@@ -108,3 +120,18 @@ class SMultiPoint(SCoordinate):
         from shapely.geometry import MultiPoint
         point = MultiPoint(self.vertices_in_degrees)
         return point
+
+
+def create_spherical_point(lon, lat):
+    """Create a SPoint or SMultiPoint class depending on the number of point coordinates.
+
+    If a single point coordinate is provided, it returns an SPoint.
+    If multiple point coordinates are provided, it returns an SMultiPoint.
+    """
+    lon = np.asarray(lon)
+    lat = np.asarray(lat)
+    if lon.ndim == 0:
+        p = SPoint(lon, lat)
+    else:
+        p = SMultiPoint(lon, lat)
+    return p

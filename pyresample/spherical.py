@@ -372,7 +372,7 @@ class Arc(object):
         return not self.__eq__(other)
 
     def __str__(self):
-        """Get simplified str representation."""
+        """Get simplified string representation."""
         return str(self.start) + " -> " + str(self.end)
 
     def __repr__(self):
@@ -425,7 +425,7 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Compute the intersections points of the greats circles over which the arcs lies.
+        """Compute the intersections points of the great circles over which the arcs lies.
 
         A great circle divides the sphere in two equal hemispheres.
         """

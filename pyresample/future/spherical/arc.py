@@ -23,7 +23,7 @@ from shapely.geometry import LineString
 
 from pyresample.spherical import Arc
 
-from .point import SPoint
+from .point import SPoint, create_spherical_point
 
 EPSILON = 0.0000001
 
@@ -34,9 +34,11 @@ def _check_valid_arc(start_point, end_point):
         raise ValueError("An SArc can not be represented by the same start and end SPoint.")
     if start_point.is_pole() and end_point.is_pole():
         raise ValueError("An SArc can not be uniquely defined between the two poles.")
-    if start_point.is_on_equator and end_point.is_on_equator and abs(start_point.lon - end_point.lon) == np.pi:
+    if start_point.is_on_equator() and end_point.is_on_equator() and abs(start_point.lon - end_point.lon) == np.pi:
         raise ValueError(
             "An SArc can not be uniquely defined on the equator if start and end points are 180 degrees apart.")
+    if start_point.get_antipode() == end_point:
+        raise ValueError("An SArc can not be uniquely defined between antipodal points.")
 
 
 class SArc(Arc):
@@ -121,11 +123,12 @@ class SArc(Arc):
         raise ValueError("'SArc.intersection' is deprecated. Use 'intersection_point' instead.")
 
     def intersection_point(self, other_arc):
-        """Compute the intersection point between two arcs.
+        """Compute the intersection point between two great circle arcs.
 
-        If arc and *other_arc* intersect, it returns the intersection SPoint.
         If arc and *other_arc* does not intersect, it returns None.
-        If same arc (also same direction), it returns None.
+        If arc and *other_arc* are the same (whatever direction), it returns None.
+        If arc and *other_arc* overlaps, within or contain, it returns None.
+        If arc and *other_arc* intersect, it returns the intersection SPoint.
         """
         # If same arc (same direction), return None
         if self == other_arc:
@@ -170,15 +173,77 @@ class SArc(Arc):
         start_coord, end_coord = self.vertices_in_degrees
         return LineString((start_coord.tolist()[0], end_coord.tolist()[0]))
 
+    def forward_points(self, distance, ellps="sphere"):
+        """Get points at given distance(s) from SArc end point in the forward direction.
+
+        The distance value(s) must be provided in meters.
+        If the distance is positive, the point will be located outside the SArc.
+        If the distance is negative, the point will be located inside the SArc.
+        The function returns an SPoint or SMultiPoint.
+        """
+        # Define geoid
+        geod = pyproj.Geod(ellps=ellps)
+        # Retrieve forward and back azimuth
+        fwd_az, back_az, _ = geod.inv(self.start.lon, self.start.lat,
+                                      self.end.lon, self.end.lat, radians=True)
+        # Retreve forward points
+        distance = np.array(distance)
+        lon, lat, back_az = geod.fwd(np.broadcast_to(np.array(self.end.lon), distance.shape),
+                                     np.broadcast_to(np.array(self.end.lat), distance.shape),
+                                     az=np.broadcast_to(fwd_az, distance.shape),
+                                     dist=distance, radians=True)
+        p = create_spherical_point(lon, lat)
+        return p
+
+    def backward_points(self, distance, ellps="sphere"):
+        """Get points at given distance(s) from SArc start point in the backward direction.
+
+        The distance value(s) must be provided in meters.
+        If the distance is positive, the point will be located outside the SArc.
+        If the distance is negative, the point will be located inside the SArc.
+        The function returns an SPoint or SMultiPoint.
+        """
+        reverse_arc = self.reverse_direction()
+        return reverse_arc.forward_points(distance=distance, ellps=ellps)
+
+    def extend(self, distance, direction="both", ellps="sphere"):
+        """Extend the SArc of a given distance in both, forward or backward directions.
+
+        If the distance is positive, it extends the SArc.
+        If the distance is negative, it shortens the SArc.
+        """
+        valid_direction = ["both", "forward", "backward"]
+        if direction not in valid_direction:
+            raise ValueError(f"Valid direction values are: {valid_direction}")
+        if direction in ["both", "forward"]:
+            end_point = self.forward_points(distance=distance, ellps="sphere")
+        else:
+            end_point = self.end
+
+        if direction in ["both", "backward"]:
+            start_point = self.backward_points(distance=distance, ellps="sphere")
+        else:
+            start_point = self.start
+        arc = create_spherical_arcs(start_point, end_point)
+        return arc
+
+    def shorten(self, distance, direction="both", ellps="sphere"):
+        """Short the SArc of a given distance in both, forward or backward directions.
+
+        If the distance is positive, it shortens the SArc.
+        If the distance is negative, it extends the SArc.
+        """
+        return self.extend(distance=-distance, direction=direction, ellps="sphere")
+
     # def segmentize(self, npts=0, max_distance=0, ellips='sphere'):
     #     """Segmentize the great-circle arc.
 
     #     It returns an SLine.
     #     npts or max_distance are mutually exclusively. Specify one of them.
-    #     max_distance must be provided in kilometers.
+    #     max_distance must be provided in meters.
     #     """
     #     if npts != 0:
-    #         npts = npts + 2  # + 2 to account for initial and terminus
+    #         npts = npts + 2  # + 2 to account for initial and terminus points
     #     geod = pyproj.Geod(ellps=ellips)
     #     lon_start = self.start.lon
     #     lon_end = self.end.lon
@@ -203,3 +268,16 @@ class SArc(Arc):
     # def plot(self, *args, **kwargs):
     #     """Convert to SLine."""
     #     self.to_line.plot(*args, **kwargs)
+
+
+def create_spherical_arcs(start_point, end_point):
+    """Create a SArc or SArcs class depending on the number of points.
+
+    If a Spoint is provided, it returns an SArc.
+    If a SMultiPoint is provided, it returns an SArcs.
+    """
+    if isinstance(start_point, SPoint) and isinstance(end_point, SPoint):
+        arc = SArc(start_point, end_point)
+    else:
+        raise NotImplementedError("SArcs class is not yet available.")
+    return arc

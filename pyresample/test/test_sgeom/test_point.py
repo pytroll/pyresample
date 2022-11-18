@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 from pyresample.future.spherical import SMultiPoint, SPoint
+from pyresample.future.spherical.point import create_spherical_point
 
 
 class TestSPoint:
@@ -54,6 +55,16 @@ class TestSPoint:
         p2 = SPoint(np.deg2rad(lon), np.deg2rad(lat))
         assert p1 == p2
 
+    def test_spherical_point_creation(self):
+        """Test SPoint or SMultiPoint factory."""
+        # SPoint
+        p = create_spherical_point(0, np.pi / 2)
+        assert isinstance(p, SPoint)
+
+        # SMultiPoint
+        p = create_spherical_point([0, 0], [np.pi / 2, 0])
+        assert isinstance(p, SMultiPoint)
+
     def test_is_pole(self):
         """Test is pole method."""
         assert SPoint.from_degrees(0, -90).is_pole()
@@ -65,6 +76,31 @@ class TestSPoint:
         assert SPoint.from_degrees(0, 0).is_on_equator()
         assert SPoint.from_degrees(10, -0).is_on_equator()
         assert not SPoint.from_degrees(0, 0.001).is_on_equator()
+
+    def test_antipodal_point(self):
+        """Test get_antipode method."""
+        antipode = SPoint.from_degrees(0, 0).get_antipode()
+        assert np.allclose(antipode.vertices_in_degrees, (-180, 0))
+
+        antipode = SPoint.from_degrees(90, 0).get_antipode()
+        assert np.allclose(antipode.vertices_in_degrees, (-90, 0))
+
+        antipode = SPoint.from_degrees(-90, 0).get_antipode()
+        assert np.allclose(antipode.vertices_in_degrees, (90, 0))
+
+        antipode = SPoint.from_degrees(180, 0).get_antipode()
+        assert np.allclose(antipode.vertices_in_degrees, (0, 0))
+
+        antipode = SPoint.from_degrees(0, 90).get_antipode()
+        assert antipode == SPoint.from_degrees(-5, -90)
+        assert np.allclose(antipode.vertices_in_degrees, (-180, -90))
+
+        antipode = SPoint.from_degrees(0, -90).get_antipode()
+        assert antipode == SPoint.from_degrees(-5, 90)
+        assert np.allclose(antipode.vertices_in_degrees, (-180, 90))
+
+        antipode = SPoint.from_degrees(45, 45).get_antipode()
+        assert np.allclose(antipode.vertices_in_degrees, (-135., -45.))
 
     def test_vertices(self):
         """Test vertices property."""
@@ -157,6 +193,16 @@ class TestSMultiPoint:
         p1 = SMultiPoint.from_degrees(lon, lat)
         p2 = SMultiPoint(np.deg2rad(lon), np.deg2rad(lat))
         assert p1 == p2
+
+    def test_antipodal_points(self):
+        """Test get_antipodes method."""
+        lon = [0, 90, -90, 180, 0, 0, 45]
+        lat = [0, 0, 0, 0, 90, -90, 45]
+        antipodal_lon = [-180, -90, 90, 0, -5, -5, -135]
+        antipodal_lat = [0, 0, 0, 0, -90, 90, -45]
+        p = SMultiPoint.from_degrees(lon, lat)
+        antipodal_p = SMultiPoint.from_degrees(antipodal_lon, antipodal_lat)
+        assert p.get_antipodes() == antipodal_p
 
     def test_vertices(self):
         """Test vertices property."""
