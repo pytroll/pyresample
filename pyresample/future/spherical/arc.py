@@ -58,15 +58,11 @@ class SArc(Arc):
 
     def is_on_equator(self):
         """Check if the SArc lies on the equator."""
-        if self.start.lat == 0 and self.end.lat == 0:
-            return True
-        return False
+        return self.start.lat == 0 and self.end.lat == 0
 
     def __eq__(self, other):
         """Check equality."""
-        if self.start == other.start and self.end == other.end:
-            return True
-        return False
+        return self.start == other.start and self.end == other.end
 
     def reverse_direction(self):
         """Reverse SArc direction."""

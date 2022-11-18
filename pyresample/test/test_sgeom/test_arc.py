@@ -18,7 +18,6 @@
 """Define tests for the SArc class."""
 
 import copy
-import unittest
 
 import numpy as np
 import pytest

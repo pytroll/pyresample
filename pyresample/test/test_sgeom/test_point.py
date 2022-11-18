@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test cases for SPoint and SMultiPoint."""
-import unittest
 
 import numpy as np
 import pytest
@@ -23,7 +22,7 @@ import pytest
 from pyresample.future.spherical import SMultiPoint, SPoint
 
 
-class TestSPoint(unittest.TestCase):
+class TestSPoint:
     """Test SPoint."""
 
     def test_latitude_validity(self):
@@ -137,7 +136,7 @@ class TestSPoint(unittest.TestCase):
         assert shapely_point.equals_exact(spherical_point.to_shapely(), tolerance=1e-10)
 
 
-class TestSMultiPoint(unittest.TestCase):
+class TestSMultiPoint:
     """Test SMultiPoint."""
 
     def test_single_point(self):
