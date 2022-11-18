@@ -365,7 +365,7 @@ class Arc(object):
 
     def __eq__(self, other):
         """Check equality."""
-        if self.start == other.start and self.end == other.end:
+        return self.start == other.start and self.end == other.end
             return True
         return False
 
