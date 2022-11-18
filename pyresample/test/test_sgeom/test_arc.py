@@ -27,7 +27,7 @@ from shapely.geometry import LineString
 from pyresample.future.spherical import SArc, SPoint
 
 
-class TestSArc(unittest.TestCase):
+class TestSArc:
     """Test SArc class."""
 
     # TODO: Fixtures defined here?
