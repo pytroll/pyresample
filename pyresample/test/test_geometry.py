@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the geometry objects."""
+import contextlib
 import random
 import sys
 import unittest
@@ -35,7 +36,11 @@ from pyresample.geometry import (
     combine_area_extents_vertical,
     concatenate_area_defs,
 )
-from pyresample.test.utils import catch_warnings
+from pyresample.test.utils import (
+    catch_warnings,
+    create_test_latitude,
+    create_test_longitude,
+)
 
 
 class Test(unittest.TestCase):
@@ -2958,37 +2963,22 @@ class TestBboxLonlats:
     @pytest.mark.parametrize("force_clockwise", [False, True])
     @pytest.mark.parametrize("use_dask", [False, True])
     @pytest.mark.parametrize("use_xarray", [False, True])
+    @pytest.mark.parametrize("nan_pattern", [None, "scan", "half", "whole"])
     def test_swath_def_bbox(self, lon_start, lon_stop,
                             lat_start, lat_stop, exp_nonforced_clockwise,
                             force_clockwise,
-                            use_dask, use_xarray):
-        from pyresample.geometry import SwathDefinition
-
-        from .utils import create_test_latitude, create_test_longitude
+                            use_dask, use_xarray, nan_pattern):
         swath_shape = (50, 10)
         lons = create_test_longitude(lon_start, lon_stop, swath_shape)
         lats = create_test_latitude(lat_start, lat_stop, swath_shape)
-
-        if use_dask:
-            lons = da.from_array(lons)
-            lats = da.from_array(lats)
-        if use_xarray:
-            lons = xr.DataArray(lons, dims=('y', 'x'))
-            lats = xr.DataArray(lats, dims=('y', 'x'))
-
+        lons, lats = _add_nans_if_necessary(lons, lats, nan_pattern)
+        lons, lats = _convert_type_if_necessary(lons, lats, use_dask, use_xarray)
         swath_def = SwathDefinition(lons, lats)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
-        assert len(bbox_lons) == len(bbox_lats)
-        assert len(bbox_lons) == 4
-        for side_lons, side_lats in zip(bbox_lons, bbox_lats):
-            assert isinstance(side_lons, np.ndarray)
-            assert isinstance(side_lats, np.ndarray)
-            assert side_lons.shape == side_lats.shape
-        is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
-        if exp_nonforced_clockwise or force_clockwise:
-            assert is_cw
-        else:
-            assert not is_cw
+        with _raises_if(nan_pattern == "whole", ValueError):
+            bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
+        if nan_pattern != "whole":
+            _check_bbox_structure_and_values(bbox_lons, bbox_lats)
+            _check_bbox_clockwise(bbox_lons, bbox_lats, exp_nonforced_clockwise, force_clockwise)
 
     def test_swath_def_bbox_decimated(self):
         from pyresample.geometry import SwathDefinition
@@ -3011,6 +3001,52 @@ class TestBboxLonlats:
         assert len(bbox_lons[2]) == 5
         assert len(bbox_lons[3]) == 5
         assert bbox_lons[0][-1] == bbox_lons[1][0]
+
+
+def _add_nans_if_necessary(lons, lats, nan_pattern):
+    if nan_pattern == "scan":
+        lons[20:30, -1] = np.nan
+    elif nan_pattern == "half":
+        lons[:25, -1] = np.nan
+    elif nan_pattern == "whole":
+        lons[:, -1] = np.nan
+    return lons, lats
+
+
+def _convert_type_if_necessary(lons, lats, use_dask, use_xarray):
+    if use_dask:
+        lons = da.from_array(lons)
+        lats = da.from_array(lats)
+    if use_xarray:
+        lons = xr.DataArray(lons, dims=('y', 'x'))
+        lats = xr.DataArray(lats, dims=('y', 'x'))
+    return lons, lats
+
+
+def _check_bbox_structure_and_values(bbox_lons, bbox_lats):
+    assert not any(np.isnan(side_lon).any() for side_lon in bbox_lons)
+    assert not any(np.isnan(side_lat).any() for side_lat in bbox_lats)
+    assert len(bbox_lons) == len(bbox_lats)
+    assert len(bbox_lons) == 4
+    for side_lons, side_lats in zip(bbox_lons, bbox_lats):
+        assert isinstance(side_lons, np.ndarray)
+        assert isinstance(side_lats, np.ndarray)
+        assert side_lons.shape == side_lats.shape
+
+
+def _check_bbox_clockwise(bbox_lons, bbox_lats, exp_nonforced_clockwise, force_clockwise):
+    is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
+    if exp_nonforced_clockwise or force_clockwise:
+        assert is_cw
+    else:
+        assert not is_cw
+
+
+@contextlib.contextmanager
+def _raises_if(condition, exp_exception, *args, **kwargs):
+    expectation = pytest.raises(exp_exception, *args, **kwargs) if condition else contextlib.nullcontext()
+    with expectation:
+        yield
 
 
 def _is_clockwise(lons, lats):
@@ -3286,7 +3322,6 @@ def _gen_swath_def_numpy():
 
 
 def _gen_swath_lons_lats():
-    from .utils import create_test_latitude, create_test_longitude
     swath_shape = (50, 10)
     lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
     lons = create_test_longitude(lon_start, lon_stop, swath_shape)
