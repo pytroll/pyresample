@@ -1,3 +1,14 @@
+## Version 1.26.0.post0 (2022/11/24)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 480](https://github.com/pytroll/pyresample/pull/480) - Add Python 3.11 to wheel building
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.26.0 (2022/11/24)
 
 ### Issues Closed
