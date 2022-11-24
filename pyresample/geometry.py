@@ -327,7 +327,23 @@ class BaseDefinition:
                            (s4_dim1.squeeze(), s4_dim2.squeeze())])
         if hasattr(dim1[0], 'compute') and da is not None:
             dim1, dim2 = da.compute(dim1, dim2)
-        return dim1, dim2
+        clean_dim1, clean_dim2 = self._filter_bbox_nans(dim1, dim2)
+        return clean_dim1, clean_dim2
+
+    def _filter_bbox_nans(
+            self,
+            dim1_sides: list[np.ndarray],
+            dim2_sides: list[np.ndarray],
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        new_dim1_sides = []
+        new_dim2_sides = []
+        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
+            is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
+            if not is_valid_mask.any():
+                raise ValueError("Can't compute swath bounding coordinates. At least one side is completely invalid.")
+            new_dim1_sides.append(dim1_side[is_valid_mask])
+            new_dim2_sides.append(dim2_side[is_valid_mask])
+        return new_dim1_sides, new_dim2_sides
 
     def _get_bbox_slices(self, frequency):
         height, width = self.shape
