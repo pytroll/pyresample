@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2010-2020 Pyresample developers
 #
@@ -274,22 +273,27 @@ def swath_area_attrs_section(area):
     return f"{coll}"
 
 
-def area_repr(area, include_header=True):
+def area_repr(area, include_header=True, include_static_files=True):
     """Return html repr of an AreaDefinition.
 
     Args:
         area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.AreaDefinition`]):
             Area definition.
-        include_header (boolean): If true a header with object type will be included in
+        include_header (Optional[bool]): If true a header with object type will be included in
             the html. This is mainly intented for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
+        include_static_files (Optional[bool]): Load and include css and html needed for representation.
 
     Returns:
         str: String of html.
 
     """
-    icons_svg, css_style = _load_static_files()
+    if include_static_files:
+        icons_svg, css_style = _load_static_files()
+        html = f"{icons_svg}<style>{css_style}</style>"
+    else:
+        html = ""
 
     obj_type = f"pyresample.{type(area).__name__}"
     header = ("<div class='pyresample-header'>"
@@ -299,10 +303,9 @@ def area_repr(area, include_header=True):
               "</div>"
               )
 
-    html = (f"{icons_svg}<style>{css_style}</style>"
-            f"<pre class='pyresample-text-repr-fallback'>{escape(repr(area))}</pre>"
-            "<div class='pyresample-wrap' style='display:none'>"
-            )
+    html += (f"<pre class='pyresample-text-repr-fallback'>{escape(repr(area))}</pre>"
+             "<div class='pyresample-wrap' style='display:none'>"
+             )
 
     if include_header:
         html += f"{header}"
