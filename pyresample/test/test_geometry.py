@@ -1429,7 +1429,7 @@ class Test(unittest.TestCase):
                                 3712, 3712,
                                 area_extent)
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(10646.562531, geo_res)
+        np.testing.assert_allclose(10646.562531, geo_res, rtol=1e-05)
 
         # non-square area non-space area
         area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
@@ -1438,7 +1438,7 @@ class Test(unittest.TestCase):
                                 2000, 5000,
                                 area_extent)
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(2397.687307, geo_res)
+        np.testing.assert_allclose(2397.687307, geo_res, rtol=1e-05)
 
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
@@ -1447,7 +1447,7 @@ class Test(unittest.TestCase):
                                 3712, 3712,
                                 [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(298.647232, geo_res)
+        np.testing.assert_allclose(298.647232, geo_res, rtol=1e-04)
 
     def test_area_def_geocentric_resolution_latlong(self):
         """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
