@@ -206,21 +206,29 @@ class TestDaskEWAResampler:
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
                 mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
             resampler = resampler_class(source_swath, target_area)
+            print(f"ll2cr call count before resample call ({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
+            print(f"ll2cr call count after resample call ({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test', 'test')
             # make sure we can actually compute everything
             new_data.compute()
+            print(f"ll2cr call count after first compute call "
+                  f"({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             lonlat_calls = get_lonlats.call_count
             ll2cr_calls = ll2cr.call_count
 
             # resample a different dataset and make sure cache is used
             swath_data2 = _create_second_test_data(swath_data)
+            print(f"ll2cr call count before second resample call "
+                  f"({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             new_data = resampler.resample(swath_data2, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
+            print(f"ll2cr call count after second resample call "
+                  f"({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')
             _coord_and_crs_checks(new_data, target_area,
@@ -228,6 +236,8 @@ class TestDaskEWAResampler:
             result = new_data.compute()
 
             # ll2cr will be called once more because of the computation
+            print(f"ll2cr call count after second compute call "
+                  f"({resampler_class} | {input_shape=}): {ll2cr.call_count=}")
             assert ll2cr.call_count == ll2cr_calls + num_chunks
             # but we should already have taken the lonlats from the SwathDefinition
             assert get_lonlats.call_count == lonlat_calls
