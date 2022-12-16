@@ -104,9 +104,8 @@ class LegacyDaskEWAResampler(BaseResampler):
         kwargs.setdefault('mask_area', False)
         return super().resample(*args, **kwargs)
 
-    def _call_ll2cr(self, lons, lats, target_geo_def, swath_usage=0, block_info=None):
+    def _call_ll2cr(self, lons, lats, target_geo_def, swath_usage=0):
         """Wrap ll2cr() for handling dask delayed calls better."""
-        print(block_info)
         new_src = SwathDefinition(lons, lats)
 
         swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
