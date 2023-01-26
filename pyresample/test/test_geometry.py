@@ -2606,7 +2606,7 @@ class TestCrop(unittest.TestCase):
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         # This musk be equal to lon.
         elon = np.array([-79.23372832, -78.19662326, -75.42516215, -70.22636028,
                          -56.89851775, 0., 56.89851775, 70.22636028,
@@ -2634,8 +2634,21 @@ class TestCrop(unittest.TestCase):
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         np.testing.assert_allclose(lon, elon + lon_0)
+
+    def test_get_geostationary_bbox_does_not_contain_inf(self):
+        """Ensure the geostationary bbox does not contain np.inf."""
+        projection = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
+                      'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
+        area_extent = (5567248.0742, 5570248.4773, -5570248.4773, 1393687.2705)
+        width = 3712
+        height = 1392
+        geos_area = geometry.AreaDefinition('msg_rss', "msg_rss", "msg_rss", projection, width, height, area_extent)
+
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(geos_area, 20)
+        assert not any(np.isinf(lon))
+        assert not any(np.isinf(lat))
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""

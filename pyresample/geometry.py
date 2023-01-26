@@ -1556,7 +1556,7 @@ class AreaDefinition(_ProjectionDefinition):
         # Ensure an even number of vertices for side creation
         if (frequency % 2) != 0:
             frequency = frequency + 1
-        lons, lats = get_geostationary_bounding_box(self, nb_points=frequency)
+        lons, lats = get_geostationary_bounding_box_in_lonlats(self, nb_points=frequency)
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
         side02_step = int(frequency / 2) - 1
         lon_sides = [lons[slice(0, side02_step + 1)],
@@ -2818,6 +2818,8 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
     lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
+    lons[np.isinf(lons)] = np.nan
+    lats[np.isinf(lats)] = np.nan
     return lons, lats
 
 
