@@ -27,52 +27,104 @@ from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, BaseDefinition, SwathDefinition
 from pyresample.future.geometry.area import (
     get_geostationary_angle_extent,
-    get_geostationary_bounding_box,
+    get_geostationary_bounding_box_in_lonlats,
 )
 from pyresample.future.geometry.base import get_array_hashable
+from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
 from pyresample.test.utils import catch_warnings
+
+
+@pytest.fixture(params=[LegacyAreaDefinition, AreaDefinition],
+                ids=["LegacyAreaDefinition", "AreaDefinition"])
+def area_class(request):
+    """Get one of the currently active 'AreaDefinition' classes.
+
+    Currently only includes the legacy 'AreaDefinition' class and the future
+    'AreaDefinition' class in 'pyresample.future.geometry.area'.
+
+    """
+    return request.param
+
+
+@pytest.fixture
+def create_test_area(area_class):
+    """Get a function for creating AreaDefinitions for testing.
+
+    Should be used as a pytest fixture and will automatically run the test
+    function with the legacy AreaDefinition class and the future
+    AreaDefinition class. If tests require a specific class they should
+    NOT use this fixture and instead use the exact class directly.
+
+    """
+    def _create_test_area(crs, width, height, area_extent, **kwargs):
+        """Create an AreaDefinition object for testing."""
+        args = (crs, width, height, area_extent)
+        if area_class is LegacyAreaDefinition:
+            attrs = kwargs.pop("attrs", {})
+            area_id = attrs.pop("name", "test_area")
+            args = (area_id, "", "") + args
+        area = area_class(*args, **kwargs)
+        return area
+    return _create_test_area
+
+
+@pytest.fixture
+def stere_area(create_test_area):
+    """Create basic polar-stereographic area definition."""
+    return create_test_area(
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '50.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        },
+        800,
+        800,
+        (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+        attrs={"name": 'areaD'},
+    )
+
+
+@pytest.fixture
+def geos_src_area(create_test_area):
+    """Create basic geostationary area definition."""
+    x_size = 3712
+    y_size = 3712
+    area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+    proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
+                 'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
+    return create_test_area(
+        proj_dict,
+        x_size,
+        y_size,
+        area_extent,
+    )
 
 
 class Test:
     """Unit testing the geometry and geo_filter modules."""
 
-    @staticmethod
-    def _stere_area(area_cls=AreaDefinition):
-        area_def = area_cls(
-            'areaD',
-            {
-                'a': '6378144.0',
-                'b': '6356759.0',
-                'lat_0': '50.00',
-                'lat_ts': '50.00',
-                'lon_0': '8.00',
-                'proj': 'stere'
-            },
-            800,
-            800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-        return area_def
-
-    def test_lonlat_precomp(self):
+    def test_lonlat_precomp(self, stere_area):
         """Test the lonlat precomputation."""
-        area_def = self._stere_area()
+        area_def = stere_area
         area_def.get_lonlats()
         lon, lat = area_def.get_lonlat(400, 400)
         np.testing.assert_allclose(lon, 5.5028467120975835, err_msg='lon retrieval from precomputed grid failed')
         np.testing.assert_allclose(lat, 52.566998432390619, err_msg='lat retrieval from precomputed grid failed')
 
-    def test_cartesian(self):
+    def test_cartesian(self, stere_area):
         """Test getting the cartesian coordinates."""
-        area_def = self._stere_area()
+        area_def = stere_area
         cart_coords = area_def.get_cartesian_coords()
         exp = 5872039989466.8457031
         assert (cart_coords.sum() - exp) < 1e-7 * exp, 'Calculation of cartesian coordinates failed'
 
-    def test_cartopy_crs(self):
+    def test_cartopy_crs(self, stere_area, create_test_area):
         """Test conversion from area definition to cartopy crs."""
-        europe = self._stere_area()
-        seviri = AreaDefinition(
-            'seviri',
+        europe = stere_area
+        seviri = create_test_area(
             {
                 'proj': 'geos',
                 'lon_0': 0.0,
@@ -98,21 +150,19 @@ class Test:
                              np.fabs(area_def.area_extent[3] - area_def.area_extent[1])) / 100.
             assert crs.threshold == thresh_exp
 
-    def test_cartopy_crs_epsg(self):
+    def test_cartopy_crs_epsg(self, create_test_area):
         """Test conversion from area def to cartopy crs with EPSG codes."""
         projections = ['+init=EPSG:6932', 'EPSG:6932']
         for projection in projections:
-            area = AreaDefinition(
-                'ease-sh-2.0',
+            area = create_test_area(
                 projection,
                 123, 123,
                 (-40000., -40000., 40000., 40000.))
             area.to_cartopy_crs()
 
-    def test_cartopy_crs_latlon_bounds(self):
+    def test_cartopy_crs_latlon_bounds(self, create_test_area):
         """Test that a cartopy CRS for a lon/lat area has proper bounds."""
-        area_def = AreaDefinition(
-            'latlong',
+        area_def = create_test_area(
             {'proj': 'latlong', 'lon0': 0},
             360,
             180,
@@ -120,13 +170,12 @@ class Test:
         latlong_crs = area_def.to_cartopy_crs()
         np.testing.assert_allclose(latlong_crs.bounds, [-180, 180, -90, 90])
 
-    def test_dump(self):
+    def test_dump(self, create_test_area):
         """Test exporting area defs."""
         from io import StringIO
 
         import yaml
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -137,7 +186,9 @@ class Test:
             },
             800,
             800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+            attrs={"name": "areaD"},
+        )
         res = yaml.safe_load(area_def.dump())
         expected = yaml.safe_load(('areaD:\n  description: ""\n'
                                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
@@ -165,12 +216,13 @@ class Test:
         }
 
         for projection, epsg_yaml in projections.items():
-            area_def = AreaDefinition(
-                'baws300_sweref99tm',
+            area_def = create_test_area(
                 projection,
                 4667,
                 4667,
-                (-49739, 5954123, 1350361, 7354223))
+                (-49739, 5954123, 1350361, 7354223),
+                attrs={"name": "baws300_sweref99tm"},
+            )
             res = yaml.safe_load(area_def.dump())
             yaml_string = ('baws300_sweref99tm:\n'
                            '  description: \'\'\n'
@@ -197,12 +249,11 @@ class Test:
             mock_open.assert_called_once_with('area_file.yml', 'a')
             mock_open.return_value.__enter__().write.assert_called_once_with(yaml_string)
 
-    def test_dump_numpy_extents(self):
+    def test_dump_numpy_extents(self, create_test_area):
         """Test exporting area defs when extents are Numpy floats."""
         import yaml
 
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -216,7 +267,9 @@ class Test:
             [np.float64(-1370912.72),
              np.float64(-909968.64000000001),
              np.float64(1029087.28),
-             np.float64(1490031.3600000001)])
+             np.float64(1490031.3600000001)],
+            attrs={"name": "areaD"},
+        )
         res = yaml.safe_load(area_def.dump())
         expected = yaml.safe_load(('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                                    '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
@@ -228,9 +281,9 @@ class Test:
 
         assert res['areaD']['area_extent']['lower_left_xy'] == expected['areaD']['area_extent']['lower_left_xy']
 
-    def test_parse_area_file(self):
+    def test_parse_area_file(self, stere_area, create_test_area):
         """Test parsing the area file."""
-        expected = self._stere_area()
+        expected = stere_area
         yaml_str = ('areaD:\n  description: Europe (3km, HRV, VTC)\n'
                     '  projection:\n    a: 6378144.0\n    b: 6356759.0\n'
                     '    lat_0: 50.0\n    lat_ts: 50.0\n    lon_0: 8.0\n'
@@ -247,11 +300,13 @@ class Test:
             'EPSG:3006': 'EPSG: 3006',
         }
         for projection, epsg_yaml in projections.items():
-            expected = AreaDefinition('baws300_sweref99tm',
-                                      projection,
-                                      4667,
-                                      4667,
-                                      (-49739, 5954123, 1350361, 7354223))
+            expected = create_test_area(
+                projection,
+                4667,
+                4667,
+                (-49739, 5954123, 1350361, 7354223),
+                attrs={"name": "baws300_sweref99tm"}
+            )
             yaml_str = ('baws300_sweref99tm:\n'
                         '  description: BAWS, 300m resolution, sweref99tm\n'
                         '  projection:\n'
@@ -299,14 +354,13 @@ class Test:
         assert lons.dtype == lons2_ints.dtype, \
             f"BaseDefinition did not maintain dtype of longitudes (in:{lons2_ints.dtype} out:{lons.dtype})"
 
-    def test_area_hash(self):
+    def test_area_hash(self, stere_area, create_test_area):
         """Test the area hash."""
-        area_def = self._stere_area()
+        area_def = stere_area
         assert isinstance(hash(area_def), int)
 
         # different dict order
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -316,12 +370,13 @@ class Test:
                 'proj': 'stere'},
             800,
             800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+            attrs={"name": "areaD"},
+        )
 
         assert isinstance(hash(area_def), int)
 
-        area_def = AreaDefinition(
-            'New area',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -331,7 +386,9 @@ class Test:
                 'proj': 'stere'},
             800,
             800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+            attrs={"name": "New area"},
+        )
 
         assert isinstance(hash(area_def), int)
 
@@ -417,10 +474,9 @@ class Test:
         swath_def_subset = swath_def[:, slice(0, 2)]
         assert isinstance(hash(swath_def_subset), int)
 
-    def test_area_equal(self):
+    def test_area_equal(self, create_test_area):
         """Test areas equality."""
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -432,8 +488,7 @@ class Test:
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-        area_def2 = AreaDefinition(
-            'areaD',
+        area_def2 = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -447,10 +502,9 @@ class Test:
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert not (area_def != area_def2), 'area_defs are not equal as expected'
 
-    def test_not_area_equal(self):
-        """Test areas inequality."""
-        area_def = AreaDefinition(
-            'areaD',
+    def test_not_area_equal(self, create_test_area):
+        """Test area inequality."""
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -463,8 +517,7 @@ class Test:
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
 
-        msg_area = AreaDefinition(
-            'msg_full',
+        msg_area = create_test_area(
             {
                 'a': '6378169.0',
                 'b': '6356584.0',
@@ -478,28 +531,27 @@ class Test:
         assert not (area_def == msg_area), 'area_defs are not expected to be equal'
         assert not (area_def == "area"), 'area_defs are not expected to be equal'
 
-    def test_swath_equal_area(self):
+    def test_swath_equal_area(self, stere_area):
         """Test equality swath area."""
-        area_def = self._stere_area()
+        area_def = stere_area
         swath_def = SwathDefinition(*area_def.get_lonlats())
         assert not (swath_def != area_def), "swath_def and area_def should be equal"
 
-    def test_swath_not_equal_area(self):
+    def test_swath_not_equal_area(self, stere_area):
         """Test inequality swath area."""
-        area_def = self._stere_area()
+        area_def = stere_area
         lons = np.array([1.2, 1.3, 1.4, 1.5])
         lats = np.array([65.9, 65.86, 65.82, 65.78])
         swath_def = SwathDefinition(lons, lats)
 
         assert not (swath_def == area_def), "swath_def and area_def should be different"
 
-    def test_grid_filter_valid(self):
+    def test_grid_filter_valid(self, create_test_area):
         """Test valid grid filtering."""
         lons = np.array([-170, -30, 30, 170])
         lats = np.array([20, -40, 50, -80])
         swath_def = SwathDefinition(lons, lats)
-        filter_area = AreaDefinition(
-            'test',
+        filter_area = create_test_area(
             {
                 'proj': 'eqc',
                 'lon_0': 0.0,
@@ -522,14 +574,13 @@ class Test:
         expected = np.array([1, 0, 0, 1])
         np.testing.assert_array_equal(valid_index, expected, err_msg='Failed to find grid filter')
 
-    def test_grid_filter(self):
+    def test_grid_filter(self, create_test_area):
         """Test filtering a grid."""
         lons = np.array([-170, -30, 30, 170])
         lats = np.array([20, -40, 50, -80])
         swath_def = SwathDefinition(lons, lats)
         data = np.array([1, 2, 3, 4])
-        filter_area = AreaDefinition(
-            'test',
+        filter_area = create_test_area(
             {
                 'proj': 'eqc',
                 'lon_0': 0.0,
@@ -556,7 +607,7 @@ class Test:
         assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
                 np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding grid filtering lon lats'
 
-    def test_grid_filter2D(self):
+    def test_grid_filter2D(self, create_test_area):
         """Test filtering a 2D grid."""
         lons = np.array([[-170, -30, 30, 170],
                          [-170, -30, 30, 170]])
@@ -567,8 +618,7 @@ class Test:
         data2 = np.ones((2, 4)) * 2
         data3 = np.ones((2, 4)) * 3
         data = np.dstack((data1, data2, data3))
-        filter_area = AreaDefinition(
-            'test',
+        filter_area = create_test_area(
             {
                 'proj': 'eqc',
                 'lon_0': 0.0,
@@ -595,10 +645,9 @@ class Test:
         assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
                 np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding 2D grid filtering lon lats'
 
-    def test_boundary(self):
+    def test_boundary(self, create_test_area):
         """Test getting the boundary."""
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -620,10 +669,9 @@ class Test:
         np.testing.assert_allclose(proj_x_boundary, expected_x, err_msg='Failed to find projection x coords')
         np.testing.assert_allclose(proj_y_boundary, expected_y, err_msg='Failed to find projection y coords')
 
-    def test_area_extent_ll(self):
+    def test_area_extent_ll(self, create_test_area):
         """Test getting the lower left area extent."""
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -638,10 +686,9 @@ class Test:
         np.testing.assert_allclose(sum(area_def.area_extent_ll), 122.06448093539757, atol=1e-5,
                                    err_msg='Failed to get lon and lats of area extent')
 
-    def test_latlong_area(self):
+    def test_latlong_area(self, create_test_area):
         """Test getting lons and lats from an area."""
-        area_def = AreaDefinition(
-            '',
+        area_def = create_test_area(
             {
                 'proj': 'latlong',
             },
@@ -952,15 +999,13 @@ class Test:
         np.testing.assert_allclose(lons, lon)
         np.testing.assert_allclose(lats, lat)
 
-    def test_area_corners_around_south_pole(self):
+    def test_area_corners_around_south_pole(self, create_test_area):
         """Test corner values for the ease-sh area."""
-        area_id = 'ease_sh'
         projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
         width = 425
         height = 425
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-        area_def = AreaDefinition(area_id, projection,
-                                  width, height, area_extent)
+        area_def = create_test_area(projection, width, height, area_extent)
 
         expected = [(-45.0, -17.713517415148853),
                     (45.000000000000014, -17.71351741514884),
@@ -1115,7 +1160,7 @@ class Test:
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
-    def test_proj_str(self):
+    def test_proj_str(self, create_test_area):
         """Test the 'proj_str' property of AreaDefinition."""
         from collections import OrderedDict
 
@@ -1129,8 +1174,7 @@ class Test:
         proj_dict['lat_0'] = 90.00
         proj_dict['lat_ts'] = 50.00
         proj_dict['lon_0'] = 8.00
-        area = AreaDefinition(
-            'areaD',
+        area = create_test_area(
             proj_dict,
             10,
             10,
@@ -1145,8 +1189,7 @@ class Test:
         proj_dict['lat_0'] = 50.0
         proj_dict['alpha'] = proj_dict.pop('lat_ts')
         proj_dict['no_rot'] = True
-        area = AreaDefinition(
-            'areaD',
+        area = create_test_area(
             proj_dict,
             10,
             10,
@@ -1166,8 +1209,7 @@ class Test:
             ('EPSG:6932', full_proj)
         ]
         for projection, expected_proj in projections:
-            area = AreaDefinition(
-                'ease-sh-2.0',
+            area = create_test_area(
                 projection,
                 123,
                 123,
@@ -1178,8 +1220,7 @@ class Test:
         # we remove towgs84 if they are all 0s
         projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
                       'ellps': 'GRS80', 'towgs84': '0,0,0,0,0,0,0', 'units': 'm', 'no_defs': True}
-        area = AreaDefinition(
-            'test_towgs84',
+        area = create_test_area(
             projection,
             123,
             123,
@@ -1188,8 +1229,7 @@ class Test:
                                  '+type=crs +units=m +x_0=4321000 +y_0=3210000')
         projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
                       'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
-        area = AreaDefinition(
-            'test_towgs84',
+        area = create_test_area(
             projection,
             123,
             123,
@@ -1224,10 +1264,9 @@ class Test:
                                                               area_extent[3]))
         assert reduced_area.shape == (928, 928)
 
-    def test_get_lonlats_options(self):
+    def test_get_lonlats_options(self, create_test_area):
         """Test that lotlat options are respected."""
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -1298,9 +1337,9 @@ class Test:
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(299.411133, geo_res)
 
-    def test_from_epsg(self):
+    def test_from_epsg(self, area_class):
         """Test the from_epsg class method."""
-        sweref = AreaDefinition.from_epsg('3006', 2000)
+        sweref = area_class.from_epsg('3006', 2000)
         assert sweref.name == 'SWEREF99 TM'
         assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
                                     'proj': 'utm', 'type': 'crs', 'units': 'm',
@@ -1311,7 +1350,7 @@ class Test:
                                    (181896.3291, 6101648.0705,
                                     1086312.942376, 7689478.3056))
 
-    def test_from_cf(self):
+    def test_from_cf(self, area_class):
         """Test the from_cf class method."""
         # prepare a netCDF/CF lookalike with xarray
         import xarray as xr
@@ -1327,7 +1366,7 @@ class Test:
         ds['lon'].attrs['standard_name'] = 'longitude'
 
         # call from_cf() and check the results
-        adef = AreaDefinition.from_cf(ds)
+        adef = area_class.from_cf(ds)
 
         assert adef.shape == (19, 37)
         xc = adef.projection_x_coords
@@ -1337,7 +1376,7 @@ class Test:
         assert yc[0] == -90., "Wrong y axis (index 0)"
         assert yc[1] == -90. + 10.0, "Wrong y axis (index 1)"
 
-    def test_area_def_init_projection(self):
+    def test_area_def_init_projection(self, create_test_area):
         """Test AreaDefinition with different projection definitions."""
         proj_dict = {
             'a': '6378144.0',
@@ -1349,40 +1388,35 @@ class Test:
         }
         crs = CRS(CRS.from_dict(proj_dict).to_wkt())
         # pass CRS object directly
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             crs,
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ dictionary
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             crs.to_dict(),
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ string
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             crs.to_string(),
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # WKT2
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             crs.to_wkt(),
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # WKT1_ESRI
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             crs.to_wkt(version='WKT1_ESRI'),
             800,
             800,
@@ -1390,10 +1424,9 @@ class Test:
         # WKT1 to WKT2 has some different naming of things so this fails
         # assert crs == area_def.crs
 
-    def test_areadef_immutable(self):
+    def test_areadef_immutable(self, create_test_area):
         """Test that some properties of an area definition are immutable."""
-        area_def = AreaDefinition(
-            'areaD',
+        area_def = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -1422,7 +1455,6 @@ class TestAreaDefinitionMetadata:
             "a": 1,
         }
         area_def = AreaDefinition(
-            "myarea",
             4326,
             200,
             100,
@@ -1434,7 +1466,6 @@ class TestAreaDefinitionMetadata:
     def test_area_def_creation_no_metadata(self):
         """Test not passing metadata to AreaDefinition still results in a usable mapping."""
         area_def = AreaDefinition(
-            "myarea",
             4326,
             200,
             100,
@@ -1445,7 +1476,6 @@ class TestAreaDefinitionMetadata:
     def test_area_def_metadata_equality(self):
         """Test that metadata differences don't contribute to inequality."""
         area_def1 = AreaDefinition(
-            "myarea",
             4326,
             200,
             100,
@@ -1453,7 +1483,6 @@ class TestAreaDefinitionMetadata:
             attrs={"a": 1},
         )
         area_def2 = AreaDefinition(
-            "myarea",
             4326,
             200,
             100,
@@ -1535,7 +1564,7 @@ class TestCreateAreaDef:
             (1, 2, 3),
         ])
     @pytest.mark.parametrize('units', ['meters', 'degrees'])
-    def test_create_area_def_base_combinations(self, projection, center, units):
+    def test_create_area_def_base_combinations(self, projection, center, units, create_test_area):
         """Test create_area_def and the four sub-methods that call it in AreaDefinition."""
         from pyresample.area_config import create_area_def as cad
 
@@ -1544,10 +1573,10 @@ class TestCreateAreaDef:
         proj_id = 'ease_sh'
         shape = (425, 850)
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
-        base_def = AreaDefinition(
-            area_id,
+        base_def = create_test_area(
             {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
-            shape[1], shape[0], area_extent)
+            shape[1], shape[0], area_extent,
+        )
 
         # Tests that incorrect lists do not create an area definition, that both projection strings and
         # dicts are accepted, and that degrees and meters both create the same area definition.
@@ -1585,7 +1614,7 @@ class TestCreateAreaDef:
             area_def = cad(*args, **kwargs)
             self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
 
-    def test_create_area_def_extra_combinations(self):
+    def test_create_area_def_extra_combinations(self, create_test_area):
         """Test extra combinations of create_area_def parameters."""
         from xarray import DataArray
 
@@ -1598,8 +1627,7 @@ class TestCreateAreaDef:
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
-        base_def = AreaDefinition(
-            area_id,
+        base_def = create_test_area(
             {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
             shape[1], shape[0], area_extent)
 
@@ -1657,10 +1685,9 @@ class TestCreateAreaDef:
         np.testing.assert_allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761))
         assert area_def.shape == (101, 90)
 
-    def test_aggregate(self):
+    def test_aggregate(self, create_test_area):
         """Test aggregation of AreaDefinitions."""
-        area = AreaDefinition(
-            'areaD',
+        area = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -1701,7 +1728,7 @@ class TestCrop:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = get_geostationary_bounding_box(geos_area, 20)
+        lon, lat = get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         # This musk be equal to lon.
         elon = np.array([-79.23372832, -78.19662326, -75.42516215, -70.22636028,
                          -56.89851775, 0., 56.89851775, 70.22636028,
@@ -1729,7 +1756,7 @@ class TestCrop:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = get_geostationary_bounding_box(geos_area, 20)
+        lon, lat = get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         np.testing.assert_allclose(lon, elon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
@@ -1770,10 +1797,9 @@ class TestCrop:
         np.testing.assert_allclose(expected,
                                    get_geostationary_angle_extent(geos_area))
 
-    def test_sub_area(self):
+    def test_sub_area(self, create_test_area):
         """Sub area slicing."""
-        area = AreaDefinition(
-            'areaD',
+        area = create_test_area(
             {
                 'a': '6378144.0',
                 'b': '6356759.0',
@@ -1849,28 +1875,11 @@ def test_enclose_areas():
 class TestAreaDefGetAreaSlices:
     """Test AreaDefinition's get_area_slices."""
 
-    @staticmethod
-    def _geos_src_area():
-        area_id = 'orig'
-        x_size = 3712
-        y_size = 3712
-        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
-        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
-                     'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        area_def = AreaDefinition(
-            area_id,
-            proj_dict,
-            x_size,
-            y_size,
-            area_extent)
-        return area_def
-
-    def test_get_area_slices_geos_subset(self):
+    def test_get_area_slices_geos_subset(self, geos_src_area, create_test_area):
         """Check area slicing."""
-        area_def = self._geos_src_area()
+        area_def = geos_src_area
         # An area that is a subset of the original one
-        area_to_cover = AreaDefinition(
-            'cover_subset',
+        area_to_cover = create_test_area(
             area_def.crs,
             1000, 1000,
             area_extent=(area_def.area_extent[0] + 10000,
@@ -1883,17 +1892,15 @@ class TestAreaDefGetAreaSlices:
         assert slice(3, 3709, None) == slice_x
         assert slice(3, 3709, None) == slice_y
 
-    def test_get_area_slices_geos_similar(self):
+    def test_get_area_slices_geos_similar(self, geos_src_area, create_test_area):
         """Test slicing with an area similar to the source data but not the same."""
-        area_def = self._geos_src_area()
-        area_id = 'cover'
+        area_def = geos_src_area
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261)
         proj_dict = {'a': 6378169.5, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        area_to_cover = AreaDefinition(
-            area_id,
+        area_to_cover = create_test_area(
             proj_dict,
             x_size,
             y_size,
@@ -1904,11 +1911,10 @@ class TestAreaDefGetAreaSlices:
         assert slice(46, 3667, None) == slice_x
         assert slice(56, 3659, None) == slice_y
 
-    def test_get_area_slices_geos_stereographic(self):
+    def test_get_area_slices_geos_stereographic(self, geos_src_area, create_test_area):
         """Test slicing with a geos area and polar stereographic area."""
-        area_def = self._geos_src_area()
-        area_to_cover = AreaDefinition(
-            'areaD',
+        area_def = geos_src_area
+        area_to_cover = create_test_area(
             {'a': 6378144.0, 'b': 6356759.0, 'lat_0': 50.00, 'lat_ts': 50.00, 'lon_0': 8.00, 'proj': 'stere'},
             10,
             10,
@@ -1919,17 +1925,15 @@ class TestAreaDefGetAreaSlices:
         assert slice_x == slice(1610, 2343)
         assert slice_y == slice(158, 515, None)
 
-    def test_get_area_slices_geos_flipped_xy(self):
+    def test_get_area_slices_geos_flipped_xy(self, geos_src_area, create_test_area):
         """Test slicing with two geos areas but one has flipped x/y dimensions."""
-        area_def = self._geos_src_area()
-        area_id = 'cover'
+        area_def = geos_src_area
         x_size = 3712
         y_size = 3712
         area_extent = (5567248.074173927, 5570248.477339745, -5570248.477339745, -5561247.267842293)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        area_to_cover = AreaDefinition(
-            area_id,
+        area_to_cover = create_test_area(
             proj_dict,
             x_size,
             y_size,
@@ -1940,13 +1944,12 @@ class TestAreaDefGetAreaSlices:
         assert slice(0, x_size, None) == slice_x
         assert slice(0, y_size, None) == slice_y
 
-    def test_get_area_slices_geos_epsg_lonlat(self):
+    def test_get_area_slices_geos_epsg_lonlat(self, geos_src_area, create_test_area):
         """Test slicing with a geos area and EPSG lon/lat areas."""
-        area_def = self._geos_src_area()
+        area_def = geos_src_area
         projections = [{"init": 'EPSG:4326'}, 'EPSG:4326']
         for projection in projections:
-            area_to_cover = AreaDefinition(
-                'epsg4326',
+            area_to_cover = create_test_area(
                 projection,
                 8192,
                 4096,
@@ -1958,22 +1961,19 @@ class TestAreaDefGetAreaSlices:
             assert slice_x == slice(46, 3667, None)
             assert slice_y == slice(56, 3659, None)
 
-    def test_get_area_slices_nongeos(self):
+    def test_get_area_slices_nongeos(self, create_test_area):
         """Check area slicing for non-geos projections."""
-        area_id = 'orig'
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
                      'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
-        area_def = AreaDefinition(
-            area_id,
+        area_def = create_test_area(
             proj_dict,
             x_size,
             y_size,
             area_extent)
-        area_to_cover = AreaDefinition(
-            'cover_subset',
+        area_to_cover = create_test_area(
             area_def.crs,
             1000,
             1000,
@@ -1983,12 +1983,12 @@ class TestAreaDefGetAreaSlices:
         assert slice(3, 3709, None) == slice_x
         assert slice(3, 3709, None) == slice_y
 
-    def test_on_flipped_geos_area(self):
+    def test_on_flipped_geos_area(self, create_test_area):
         """Test get_area_slices on flipped areas."""
-        src_area = AreaDefinition('dst',
-                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
-                                  100, 100,
-                                  (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        src_area = create_test_area(
+            {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+            100, 100,
+            (5550000.0, 5550000.0, -5550000.0, -5550000.0))
         expected_slice_lines = slice(60, 91)
         expected_slice_cols = slice(90, 100)
         cropped_area = src_area[expected_slice_lines, expected_slice_cols]

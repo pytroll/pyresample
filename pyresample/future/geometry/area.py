@@ -27,7 +27,8 @@ from pyresample.geometry import AreaDefinition as LegacyAreaDefinition  # noqa
 from pyresample.geometry import (  # noqa
     DynamicAreaDefinition,
     get_geostationary_angle_extent,
-    get_geostationary_bounding_box,
+    get_geostationary_bounding_box_in_lonlats,
+    get_geostationary_bounding_box_in_proj_coords,
 )
 
 
@@ -35,8 +36,6 @@ class AreaDefinition(LegacyAreaDefinition):
     """Uniformly-spaced grid of pixels on a coordinate referenced system.
 
     Args:
-        area_id
-            Identifier for the area
         crs:
             Dictionary of PROJ parameters or string of PROJ or WKT parameters.
             Can also be a :class:`pyproj.crs.CRS` object.
@@ -47,11 +46,24 @@ class AreaDefinition(LegacyAreaDefinition):
         area_extent:
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
         attrs:
-            Arbitrary metadata related to the area.
+            Arbitrary metadata related to the area. Some keys in this
+            dictionary have special meaning and may be used for various
+            logging or serialization processes. The primary special keys are:
+
+            * name: The identifying name for this area. This is equivalent
+                to 'area_id' in the legacy AreaDefinition class. It is used
+                in YAML serialization if provided. Defaults to an empty string
+                if not provided. Not providing this should not affect normal
+                coordinate operations.
+            * description: A human-readable description of the area. This is
+                equivalent to 'description' in the legacy AreaDefinition class.
+                It is used in YAML serialization if provided.
 
     Attributes:
         area_id (str):
-            Identifier for the area
+            Identifier for the area. This is a convenience for backwards
+            compatibility and accesses the ``.attrs['name']`` metadata.
+            This will be set to an empty string if not provided.
         width (int):
             x dimension in number of pixels, aka number of grid columns
         height (int):
@@ -86,13 +98,19 @@ class AreaDefinition(LegacyAreaDefinition):
 
     def __init__(
             self,
-            area_id: str,
             crs: Union[str, int, dict, CRS],
             width: int,
             height: int,
             area_extent: tuple[float, float, float, float],
             attrs: Optional[dict] = None
     ):
+        # FUTURE: Maybe do `shape` instead of the separate height and width
+        # FUTURE: Add 'to_legacy()' method
+        # FUTURE: Add __slots__
+        # FUTURE: Convert this to new class that uses a legacy area internally
+        #         Use this to more easily deprecate usage of old properties
+        attrs = attrs or {}
+        area_id = attrs.get("name", "")
         super().__init__(
             area_id,
             "",
@@ -102,4 +120,4 @@ class AreaDefinition(LegacyAreaDefinition):
             height,
             area_extent,
         )
-        self.attrs = attrs or {}
+        self.attrs = attrs
