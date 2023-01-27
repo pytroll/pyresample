@@ -117,8 +117,7 @@ def area_def_lcc_conus_1km():
     """Create an AreaDefinition with an LCC projection over CONUS (1500, 2000)."""
     proj_str = "+proj=lcc +lon_0=-95 +lat_1=35.0 +lat_2=35.0 +datum=WGS84 +no_defs"
     crs = CRS.from_string(proj_str)
-    area_def = AreaDefinition("area_def_lcc_conus",
-                              crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+    area_def = AreaDefinition(crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
                               (-750000, -750000, 750000, 750000))
     return area_def
 
@@ -131,7 +130,6 @@ def area_def_stere_source():
 
     """
     return AreaDefinition(
-        'areaD',
         {
             'a': '6378144.0',
             'b': '6356759.0',
@@ -149,7 +147,6 @@ def area_def_stere_source():
 def area_def_stere_target():
     """Create an AreaDefinition with a polar-stereographic projection (800, 850)."""
     return AreaDefinition(
-        'areaD',
         {
             'a': '6378144.0',
             'b': '6356759.0',
@@ -167,7 +164,6 @@ def area_def_stere_target():
 def area_def_lonlat_pm180_target():
     """Create an AreaDefinition with a geographic lon/lat projection with prime meridian at 180 (800, 850)."""
     return AreaDefinition(
-        'lonlat_pm180',
         {
             'proj': 'longlat',
             'pm': '180.0',
