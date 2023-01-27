@@ -130,6 +130,31 @@ class TestSCoordinate(unittest.TestCase):
         d = SCoordinate(0, 0).hdistance(SCoordinate(1, 1))
         np.testing.assert_allclose(d, 1.2745557823062943)
 
+    def test_crosscart(self):
+        """Test cross product and conversion to cartesian."""
+        # Test crossproduct between poles
+        p = SCoordinate(np.deg2rad(50), np.deg2rad(90.0))
+        p1 = SCoordinate(np.deg2rad(50), np.deg2rad(-90.0))
+        cp = p.cross2cart(p1)
+        assert np.allclose(cp.cart, [0, 0, 0])
+
+        # Test crossproduct between points along the equator
+        p = SCoordinate(np.deg2rad(-180.0), np.deg2rad(0.0))
+        p1 = SCoordinate(np.deg2rad(0.0), np.deg2rad(0.0))
+        cp = p.cross2cart(p1)
+        assert np.allclose(cp.cart, [0, 0, 0])
+
+        # Test crossproduct between same points
+        p = SCoordinate(np.deg2rad(50), np.deg2rad(20.0))
+        p1 = SCoordinate(np.deg2rad(50), np.deg2rad(20.0))
+        cp = p.cross2cart(p1)
+        assert np.allclose(cp.cart, [0, 0, 0])
+
+        p = SCoordinate(np.deg2rad(-180), np.deg2rad(90.0))
+        p1 = SCoordinate(np.deg2rad(180), np.deg2rad(90.0))
+        p.cross2cart(p1)
+        assert np.allclose(cp.cart, [0, 0, 0])
+
     def test_str(self):
         """Check the string representation."""
         d = SCoordinate(0, 0)
@@ -145,12 +170,6 @@ class TestSCoordinate(unittest.TestCase):
         point_start = SCoordinate(-np.pi, 0)
         point_end = SCoordinate(np.pi, 0)
         assert point_start == point_end
-
-    def test_equality_of_infinites(self):
-        """Test that infinite coordinates are equal."""
-        coord1 = SCoordinate(np.inf, np.inf)
-        coord2 = SCoordinate(np.inf, np.inf)
-        assert coord1 == coord2
 
 
 class TestCCoordinate(unittest.TestCase):

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v2
@@ -111,7 +111,7 @@ jobs:
           cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 
       - name: Upload unittest coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           flags: unittests
           file: ./coverage.xml

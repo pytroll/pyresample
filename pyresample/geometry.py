@@ -327,7 +327,23 @@ class BaseDefinition:
                            (s4_dim1.squeeze(), s4_dim2.squeeze())])
         if hasattr(dim1[0], 'compute') and da is not None:
             dim1, dim2 = da.compute(dim1, dim2)
-        return dim1, dim2
+        clean_dim1, clean_dim2 = self._filter_bbox_nans(dim1, dim2)
+        return clean_dim1, clean_dim2
+
+    def _filter_bbox_nans(
+            self,
+            dim1_sides: list[np.ndarray],
+            dim2_sides: list[np.ndarray],
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        new_dim1_sides = []
+        new_dim2_sides = []
+        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
+            is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
+            if not is_valid_mask.any():
+                raise ValueError("Can't compute swath bounding coordinates. At least one side is completely invalid.")
+            new_dim1_sides.append(dim1_side[is_valid_mask])
+            new_dim2_sides.append(dim2_side[is_valid_mask])
+        return new_dim1_sides, new_dim2_sides
 
     def _get_bbox_slices(self, frequency):
         height, width = self.shape
@@ -390,6 +406,28 @@ class BaseDefinition:
         """Return the bounding box in projection coordinates."""
         x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
         return np.hstack(x), np.hstack(y)
+
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                     force_clockwise=force_clockwise)
+        return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1506,6 +1544,59 @@ class AreaDefinition(_ProjectionDefinition):
         if coord_operation is None:
             return False
         return 'geostationary' in coord_operation.method_name.lower()
+
+    def _get_geo_boundary_sides(self, frequency=None):
+        """Retrieve the boundary sides list for geostationary projections."""
+        # Define default frequency
+        if frequency is None:
+            frequency = 50
+        # Ensure at least 4 points are used
+        if frequency < 4:
+            frequency = 4
+        # Ensure an even number of vertices for side creation
+        if (frequency % 2) != 0:
+            frequency = frequency + 1
+        lons, lats = get_geostationary_bounding_box(self, nb_points=frequency)
+        # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
+        side02_step = int(frequency / 2) - 1
+        lon_sides = [lons[slice(0, side02_step + 1)],
+                     lons[slice(side02_step, side02_step + 1 + 1)],
+                     lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lons[side02_step * 2 + 1], lons[0])
+                     ]
+        lat_sides = [lats[slice(0, side02_step + 1)],
+                     lats[slice(side02_step, side02_step + 1 + 1)],
+                     lats[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lats[side02_step * 2 + 1], lats[0])
+                     ]
+        return lon_sides, lat_sides
+
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided, except for geostationary
+            projection where by default only 50 points are selected.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        if self.is_geostationary:
+            lon_sides, lat_sides = self._get_geo_boundary_sides(frequency=frequency)
+        else:
+            lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                         force_clockwise=force_clockwise)
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        return boundary
 
     @property
     def area_extent(self):
@@ -2691,24 +2782,30 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
-    Args:
-      nb_points: Number of points on the polygon
+    Notes:
+    - The first and last element of the output vectors are equal.
+    - If nb_points is even, it will return x and y vectors of length nb_points + 1.
+
+    Parameters
+    ----------
+    nb_points : Number of points on the polygon.
+
     """
     xmax, ymax = get_geostationary_angle_extent(geos_area)
     h = get_geostationary_height(geos_area.crs)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (ymax - 0.0001)
+    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (xmax - 0.0001)
+    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (ymax - 0.0001)
 
     ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
 
     x *= h
     y *= h
-
-    x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
-    y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
+    # We remove one element with [:-1] to avoid duplicate values at the equator
+    x = np.clip(np.concatenate([x[:-1], x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
+    y = np.clip(np.concatenate([y[:-1], -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
     return x, y
 
@@ -2719,7 +2816,9 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    return get_geostationary_bounding_box(geos_area, nb_points)
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
+    return lons, lats
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
@@ -2728,9 +2827,10 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
-
-    return Proj(geos_area.crs)(x, y, inverse=True)
+    warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
+                  "'get_geostationary_bounding_box_in_lonlats' instead.",
+                  DeprecationWarning)
+    return get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
 
 def combine_area_extents_vertical(area1, area2):

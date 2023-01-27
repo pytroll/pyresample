@@ -155,6 +155,7 @@ class LegacyDaskEWAResampler(BaseResampler):
         chunks = (2,) + lons.chunks
         res = da.map_blocks(self._call_ll2cr, lons, lats,
                             target_geo_def, swath_usage,
+                            meta=np.array((), dtype=lons.dtype),
                             dtype=lons.dtype, chunks=chunks, new_axis=[0])
         cols = res[0]
         rows = res[1]
@@ -232,7 +233,7 @@ class LegacyDaskEWAResampler(BaseResampler):
         rows_per_scan = self._get_rows_per_scan(kwargs, data)
         data_in = self._get_data_arr(data)
 
-        res = dask.delayed(self._call_fornav)(
+        res = dask.delayed(self._call_fornav, pure=True)(
             cols, rows, self.target_geo_def, data_in,
             grid_coverage=grid_coverage,
             rows_per_scan=rows_per_scan, weight_count=weight_count,
@@ -243,7 +244,8 @@ class LegacyDaskEWAResampler(BaseResampler):
             new_shape = (len(data_in),) + self.target_geo_def.shape
         else:
             new_shape = self.target_geo_def.shape
-        data_arr = da.from_delayed(res, new_shape, data.dtype)
+        data_arr = da.from_delayed(res, new_shape, dtype=data.dtype,
+                                   meta=np.array((), dtype=data.dtype))
         # from delayed creates one large chunk, break it up a bit if we can
         data_arr = data_arr.rechunk([chunks or CHUNK_SIZE] * data_arr.ndim)
         if data.ndim == 3 and data.dims[0] == 'bands':

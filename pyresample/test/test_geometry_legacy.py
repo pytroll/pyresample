@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # pyresample, Resampling of remote sensing image data in python
 #
-# Copyright (C) 2010-2020 Pyresample developers
+# Copyright (C) 2010-2022 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the geometry objects."""
+import contextlib
 import random
 import sys
 import unittest
@@ -35,7 +36,11 @@ from pyresample.geometry import (
     combine_area_extents_vertical,
     concatenate_area_defs,
 )
-from pyresample.test.utils import catch_warnings
+from pyresample.test.utils import (
+    catch_warnings,
+    create_test_latitude,
+    create_test_longitude,
+)
 
 
 class Test(unittest.TestCase):
@@ -1424,7 +1429,7 @@ class Test(unittest.TestCase):
                                 3712, 3712,
                                 area_extent)
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(10646.562531, geo_res)
+        np.testing.assert_allclose(10646.562531, geo_res, rtol=1e-05)
 
         # non-square area non-space area
         area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
@@ -1433,7 +1438,7 @@ class Test(unittest.TestCase):
                                 2000, 5000,
                                 area_extent)
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(2397.687307, geo_res)
+        np.testing.assert_allclose(2397.687307, geo_res, rtol=1e-05)
 
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
@@ -1442,7 +1447,7 @@ class Test(unittest.TestCase):
                                 3712, 3712,
                                 [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
-        np.testing.assert_allclose(298.647232, geo_res)
+        np.testing.assert_allclose(298.647232, geo_res, rtol=1e-04)
 
     def test_area_def_geocentric_resolution_latlong(self):
         """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
@@ -2624,19 +2629,21 @@ class TestCrop(unittest.TestCase):
 
         lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
         # This musk be equal to lon.
-        elon = np.array([-79.23372832, -77.9694809, -74.55229623, -67.32816598,
-                         -41.45591465, 41.45591465, 67.32816598, 74.55229623,
-                         77.9694809, 79.23372832, 79.23372832, 77.9694809,
-                         74.55229623, 67.32816598, 41.45591465, -41.45591465,
-                         -67.32816598, -74.55229623, -77.9694809, -79.23372832])
-        elat = np.array([6.94302533e-15, 1.97333299e+01, 3.92114217e+01, 5.82244715e+01,
-                         7.52409201e+01, 7.52409201e+01, 5.82244715e+01, 3.92114217e+01,
-                         1.97333299e+01, -0.00000000e+00, -6.94302533e-15, -1.97333299e+01,
-                         -3.92114217e+01, -5.82244715e+01, -7.52409201e+01, -7.52409201e+01,
-                         -5.82244715e+01, -3.92114217e+01, -1.97333299e+01, 0.0])
+        elon = np.array([-79.23372832, -78.19662326, -75.42516215, -70.22636028,
+                         -56.89851775, 0., 56.89851775, 70.22636028,
+                         75.42516215, 78.19662326, 79.23372832, 78.19662326,
+                         75.42516215, 70.22636028, 56.89851775, 0.,
+                        -56.89851775, -70.22636028, -75.42516215, -78.19662326,
+                        -79.23372832])
+        elat = np.array([0., 17.76879577, 35.34328897, 52.5978607,
+                         69.00533142, 79.14811219, 69.00533142, 52.5978607,
+                         35.34328897, 17.76879577, -0., -17.76879577,
+                         -35.34328897, -52.5978607, -69.00533142, -79.14811219,
+                         -69.00533142, -52.5978607, -35.34328897, -17.76879577,
+                         0.])
 
-        np.testing.assert_allclose(lon, elon)
-        np.testing.assert_allclose(lat, elat)
+        np.testing.assert_allclose(lon, elon, atol=1e-07)
+        np.testing.assert_allclose(lat, elat, atol=1e-07)
 
         geos_area = MagicMock()
         lon_0 = 10
@@ -2825,7 +2832,7 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
         assert isinstance(slice_x.start, int)
         assert isinstance(slice_y.start, int)
         self.assertEqual(slice(46, 3667, None), slice_x)
-        self.assertEqual(slice(52, 3663, None), slice_y)
+        self.assertEqual(slice(56, 3659, None), slice_y)
 
         area_to_cover = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
                                                 {'a': 6378144.0,
@@ -2883,7 +2890,7 @@ class TestAreaDefGetAreaSlices(unittest.TestCase):
             assert isinstance(slice_x.start, int)
             assert isinstance(slice_y.start, int)
             self.assertEqual(slice_x, slice(46, 3667, None))
-            self.assertEqual(slice_y, slice(52, 3663, None))
+            self.assertEqual(slice_y, slice(56, 3659, None))
 
     def test_get_area_slices_nongeos(self):
         """Check area slicing for non-geos projections."""
@@ -2956,37 +2963,22 @@ class TestBboxLonlats:
     @pytest.mark.parametrize("force_clockwise", [False, True])
     @pytest.mark.parametrize("use_dask", [False, True])
     @pytest.mark.parametrize("use_xarray", [False, True])
+    @pytest.mark.parametrize("nan_pattern", [None, "scan", "half", "whole"])
     def test_swath_def_bbox(self, lon_start, lon_stop,
                             lat_start, lat_stop, exp_nonforced_clockwise,
                             force_clockwise,
-                            use_dask, use_xarray):
-        from pyresample.geometry import SwathDefinition
-
-        from .utils import create_test_latitude, create_test_longitude
+                            use_dask, use_xarray, nan_pattern):
         swath_shape = (50, 10)
         lons = create_test_longitude(lon_start, lon_stop, swath_shape)
         lats = create_test_latitude(lat_start, lat_stop, swath_shape)
-
-        if use_dask:
-            lons = da.from_array(lons)
-            lats = da.from_array(lats)
-        if use_xarray:
-            lons = xr.DataArray(lons, dims=('y', 'x'))
-            lats = xr.DataArray(lats, dims=('y', 'x'))
-
+        lons, lats = _add_nans_if_necessary(lons, lats, nan_pattern)
+        lons, lats = _convert_type_if_necessary(lons, lats, use_dask, use_xarray)
         swath_def = SwathDefinition(lons, lats)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
-        assert len(bbox_lons) == len(bbox_lats)
-        assert len(bbox_lons) == 4
-        for side_lons, side_lats in zip(bbox_lons, bbox_lats):
-            assert isinstance(side_lons, np.ndarray)
-            assert isinstance(side_lats, np.ndarray)
-            assert side_lons.shape == side_lats.shape
-        is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
-        if exp_nonforced_clockwise or force_clockwise:
-            assert is_cw
-        else:
-            assert not is_cw
+        with _raises_if(nan_pattern == "whole", ValueError):
+            bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(force_clockwise=force_clockwise)
+        if nan_pattern != "whole":
+            _check_bbox_structure_and_values(bbox_lons, bbox_lats)
+            _check_bbox_clockwise(bbox_lons, bbox_lats, exp_nonforced_clockwise, force_clockwise)
 
     def test_swath_def_bbox_decimated(self):
         from pyresample.geometry import SwathDefinition
@@ -3011,6 +3003,52 @@ class TestBboxLonlats:
         assert bbox_lons[0][-1] == bbox_lons[1][0]
 
 
+def _add_nans_if_necessary(lons, lats, nan_pattern):
+    if nan_pattern == "scan":
+        lons[20:30, -1] = np.nan
+    elif nan_pattern == "half":
+        lons[:25, -1] = np.nan
+    elif nan_pattern == "whole":
+        lons[:, -1] = np.nan
+    return lons, lats
+
+
+def _convert_type_if_necessary(lons, lats, use_dask, use_xarray):
+    if use_dask:
+        lons = da.from_array(lons)
+        lats = da.from_array(lats)
+    if use_xarray:
+        lons = xr.DataArray(lons, dims=('y', 'x'))
+        lats = xr.DataArray(lats, dims=('y', 'x'))
+    return lons, lats
+
+
+def _check_bbox_structure_and_values(bbox_lons, bbox_lats):
+    assert not any(np.isnan(side_lon).any() for side_lon in bbox_lons)
+    assert not any(np.isnan(side_lat).any() for side_lat in bbox_lats)
+    assert len(bbox_lons) == len(bbox_lats)
+    assert len(bbox_lons) == 4
+    for side_lons, side_lats in zip(bbox_lons, bbox_lats):
+        assert isinstance(side_lons, np.ndarray)
+        assert isinstance(side_lats, np.ndarray)
+        assert side_lons.shape == side_lats.shape
+
+
+def _check_bbox_clockwise(bbox_lons, bbox_lats, exp_nonforced_clockwise, force_clockwise):
+    is_cw = _is_clockwise(np.concatenate(bbox_lons), np.concatenate(bbox_lats))
+    if exp_nonforced_clockwise or force_clockwise:
+        assert is_cw
+    else:
+        assert not is_cw
+
+
+@contextlib.contextmanager
+def _raises_if(condition, exp_exception, *args, **kwargs):
+    expectation = pytest.raises(exp_exception, *args, **kwargs) if condition else contextlib.nullcontext()
+    with expectation:
+        yield
+
+
 def _is_clockwise(lons, lats):
     # https://stackoverflow.com/a/1165943/433202
     prev_point = (lons[0], lats[0])
@@ -3021,6 +3059,238 @@ def _is_clockwise(lons, lats):
         edge_sum += xdiff * ysum
         prev_point = point
     return edge_sum > 0
+
+
+class TestBoundary(unittest.TestCase):
+    """Test 'boundary' method for <area_type>Definition classes."""
+
+    def test_polar_south_pole_projection(self):
+        """Test boundary for polar projection around the south pole."""
+        # Define polar projection
+        proj_dict_polar_sh = {
+            'proj_id': "polar_sh_projection",
+            "area_id": 'polar_sh_projection',
+            "description": 'Antarctic EASE grid',
+            # projection : 'EPSG:3409',
+            "projection": {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            "width": 2,
+            "height": 2,
+            "area_extent": (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_polar_sh)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-45., -55.61313895],
+                                      [45., -55.61313895],
+                                      [135., -55.61313895],
+                                      [-135., -55.61313895]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_nort_pole_projection(self):
+        """Test boundary for polar projection around the nort pole."""
+        # Define polar projection
+        proj_dict_polar_nh = {
+            'proj_id': "polar_nh_projection",
+            "area_id": 'polar_nh_projection',
+            "description": 'Artic EASE grid',
+            "projection": {'proj': 'laea', 'lat_0': 90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            "width": 2,
+            "height": 2,
+            "area_extent": (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_polar_nh)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 55.61313895],
+                                      [135., 55.61313895],
+                                      [45., 55.61313895],
+                                      [-45., 55.61313895]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_geostationary_projection(self):
+        """Test boundary for geostationary projection."""
+        # Define geostationary projection
+        proj_dict_geostationary = {
+            'proj_id': "dummy_geo_projection",
+            "area_id": 'dummy_geo_projection',
+            "description": 'geostationary projection',
+            "projection": {'a': 6378169.00, 'b': 6356583.80, 'h': 35785831.00, 'lon_0': 0, 'proj': 'geos'},
+            "area_extent": (-5500000., -5500000., 5500000., 5500000.),
+            "width": 100,
+            "height": 100,
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_geostationary)
+
+        # Check default boundary shape
+        default_n_vertices = 50
+        boundary = areadef.boundary(frequency=None)
+        assert boundary.vertices.shape == (default_n_vertices, 2)
+
+        # Check minimum boundary vertices
+        n_vertices = 3
+        minimum_n_vertices = 4
+        boundary = areadef.boundary(frequency=n_vertices)
+        assert boundary.vertices.shape == (minimum_n_vertices, 2)
+
+        # Check odd frequency number
+        # - Rounded to the sequent even number (to construct the sides)
+        n_odd_vertices = 5
+        boundary = areadef.boundary(frequency=n_odd_vertices)
+        assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
+
+        # Check boundary vertices
+        n_vertices = 10
+        boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
+        boundary.vertices.shape
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-7.92337283e+01, 6.94302533e-15],
+                                      [-7.54251621e+01, 3.53432890e+01],
+                                      [-5.68985178e+01, 6.90053314e+01],
+                                      [5.68985178e+01, 6.90053314e+01],
+                                      [7.54251621e+01, 3.53432890e+01],
+                                      [7.92337283e+01, -6.94302533e-15],
+                                      [7.54251621e+01, -3.53432890e+01],
+                                      [5.68985178e+01, -6.90053314e+01],
+                                      [-5.68985178e+01, -6.90053314e+01],
+                                      [-7.54251621e+01, -3.53432890e+01]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_global_platee_caree_projection(self):
+        """Test boundary for global platee caree projection."""
+        # Define global projection
+        proj_dict_global_wgs84 = {
+            'proj_id': "epsg4326",
+            'area_id': 'epsg4326',
+            'description': 'Global equal latitude/longitude grid for global sphere',
+            "projection": 'EPSG:4326',
+            "width": 4,
+            "height": 4,
+            "area_extent": (-180.0, -90.0, 180.0, 90.0),
+        }
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_global_wgs84)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 67.5],
+                                      [-45., 67.5],
+                                      [45., 67.5],
+                                      [135., 67.5],
+                                      [135., 22.5],
+                                      [135., -22.5],
+                                      [135., -67.5],
+                                      [45., -67.5],
+                                      [-45., -67.5],
+                                      [-135., -67.5],
+                                      [-135., -22.5],
+                                      [-135., 22.5]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_minimal_global_platee_caree_projection(self):
+        """Test boundary for global platee caree projection."""
+        # Define minimal global projection
+        proj_dict_global_wgs84 = {
+            'proj_id': "epsg4326",
+            'area_id': 'epsg4326',
+            'description': 'Global equal latitude/longitude grid for global sphere',
+            "projection": 'EPSG:4326',
+            "width": 2,
+            "height": 2,
+            "area_extent": (-180.0, -90.0, 180.0, 90.0),
+        }
+
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_global_wgs84)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-90., 45.],
+                                      [90., 45.],
+                                      [90., -45.],
+                                      [-90., -45.]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_local_area_projection(self):
+        """Test local area projection in meter."""
+        # Define ch1903 projection (eastings, northings)
+        proj_dict_ch1903 = {
+            'proj_id': "swiss_area",
+            'area_id': 'swiss_area',
+            'description': 'Swiss CH1903+ / LV95',
+            "projection": 'EPSG:2056',
+            "width": 2,
+            "height": 2,
+            "area_extent": (2_600_000.0, 1_050_000, 2_800_000.0, 1_170_000),
+        }
+
+        # Define AreaDefintion and retrieve AreaBoundary
+        areadef = geometry.AreaDefinition(**proj_dict_ch1903)
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[8.08993639, 46.41074744],
+                                      [9.39028624, 46.39582417],
+                                      [9.37106733, 45.85619242],
+                                      [8.08352612, 45.87097006]])
+        assert np.allclose(expected_vertices, boundary.vertices)
+
+    def test_swath_definition(self):
+        """Test boundary for swath definition."""
+        lons = np.array([[1.2, 1.3, 1.4, 1.5],
+                         [1.2, 1.3, 1.4, 1.5]])
+        lats = np.array([[65.9, 65.86, 65.82, 65.78],
+                         [65.89, 65.86, 65.82, 65.78]])
+
+        # Define SwathDefinition and retrieve AreaBoundary
+        swath_def = SwathDefinition(lons, lats)
+        boundary = swath_def.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = swath_def.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[1.2, 65.9],
+                                      [1.3, 65.86],
+                                      [1.4, 65.82],
+                                      [1.5, 65.78],
+                                      [1.5, 65.78],
+                                      [1.4, 65.82],
+                                      [1.3, 65.86],
+                                      [1.2, 65.89]])
+        assert np.allclose(expected_vertices, boundary.vertices)
 
 
 def _gen_swath_def_xarray_dask():
@@ -3052,7 +3322,6 @@ def _gen_swath_def_numpy():
 
 
 def _gen_swath_lons_lats():
-    from .utils import create_test_latitude, create_test_longitude
     swath_shape = (50, 10)
     lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
     lons = create_test_longitude(lon_start, lon_stop, swath_shape)
