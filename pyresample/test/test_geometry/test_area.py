@@ -1350,7 +1350,6 @@ class TestCreateAreaDef:
             radius=essentials[1],
             description=description,
             units=units,
-            rotation=45,
         )
 
         should_fail = isinstance(center, str) or len(center) != 2

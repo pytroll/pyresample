@@ -1006,14 +1006,12 @@ class DynamicAreaDefinition(object):
             or a scalar if pixel_size_x == pixel_size_y.
         optimize_projection:
             Whether the projection parameters have to be optimized.
-        rotation:
-            Rotation in degrees (negative is cw)
 
     """
 
     def __init__(self, area_id=None, description=None, projection=None,
                  width=None, height=None, area_extent=None,
-                 resolution=None, optimize_projection=False, rotation=None):
+                 resolution=None, optimize_projection=False):
         """Initialize the DynamicAreaDefinition."""
         self.area_id = area_id
         self.description = description
@@ -1025,7 +1023,6 @@ class DynamicAreaDefinition(object):
         if isinstance(resolution, (int, float)):
             resolution = (resolution, resolution)
         self.resolution = resolution
-        self.rotation = rotation
         self._projection = projection
 
         # check if non-dict projections are valid
@@ -1209,7 +1206,7 @@ class DynamicAreaDefinition(object):
             area_extent, width, height = self.compute_domain(corners, resolution, shape, projection)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
-                              area_extent, self.rotation)
+                              area_extent)
 
     def _compute_bound_centers(self, proj_dict, lonslats, antimeridian_mode):
         from pyresample.utils.proj4 import DaskFriendlyTransformer
@@ -1437,8 +1434,6 @@ class AreaDefinition(_ProjectionDefinition):
         y dimension in number of pixels, aka number of grid rows
     area_extent : list
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-    rotation: float, optional
-        rotation in degrees (negative is clockwise)
     nprocs : int, optional
         Number of processor cores to be used for certain calculations
 
@@ -1456,8 +1451,6 @@ class AreaDefinition(_ProjectionDefinition):
         x dimension in number of pixels, aka number of grid columns
     height : int
         y dimension in number of pixels, aka number of grid rows
-    rotation: float
-        rotation in degrees (negative is cw)
     size : int
         Number of points in grid
     area_extent_ll : tuple
@@ -1489,7 +1482,7 @@ class AreaDefinition(_ProjectionDefinition):
     """
 
     def __init__(self, area_id, description, proj_id, projection, width, height,
-                 area_extent, rotation=None, nprocs=1, lons=None, lats=None,
+                 area_extent, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         """Initialize AreaDefinition."""
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
@@ -1499,10 +1492,6 @@ class AreaDefinition(_ProjectionDefinition):
         self.width = int(width)
         self.height = int(height)
         self.crop_offset = (0, 0)
-        try:
-            self.rotation = float(rotation)
-        except TypeError:
-            self.rotation = 0
         if lons is not None:
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
@@ -1614,7 +1603,7 @@ class AreaDefinition(_ProjectionDefinition):
                   'width': self.width,
                   'height': self.height,
                   'area_extent': self.area_extent,
-                  'rotation': self.rotation}
+                  }
         kwargs.update(override_kwargs)
         return AreaDefinition(**kwargs)
 
@@ -1684,8 +1673,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1733,8 +1720,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1789,8 +1774,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1837,8 +1820,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -2009,7 +1990,6 @@ class AreaDefinition(_ProjectionDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
-        # fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.description, area_id=self.area_id,
                                   proj_str=proj_str, x_size=self.width,
@@ -2293,14 +2273,6 @@ class AreaDefinition(_ProjectionDefinition):
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return lon.item(), lat.item()
 
-    @staticmethod
-    def _do_rotation(xspan, yspan, rot_deg=0):
-        """Apply a rotation factor to a matrix of points."""
-        rot_rad = np.radians(rot_deg)
-        rot_mat = np.array([[np.cos(rot_rad), np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
-        x, y = np.meshgrid(xspan, yspan)
-        return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
-
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         """Get projection vectors."""
         warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
@@ -2309,10 +2281,8 @@ class AreaDefinition(_ProjectionDefinition):
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
 
-    def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
+    def _get_proj_vectors(self, dtype=None, chunks=None):
         """Get 1D projection coordinates."""
-        if check_rotation and self.rotation != 0:
-            warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
         if dtype is None:
             dtype = self.dtype
         x, y = _generate_1d_proj_vectors((0, self.width),
@@ -2374,8 +2344,6 @@ class AreaDefinition(_ProjectionDefinition):
             Removed 'cache' keyword argument and add 'chunks' for creating
             dask arrays.
         """
-        if self.rotation != 0 and chunks is not None:
-            raise ValueError("'rotation' is not supported with dask operations.")
         if dtype is None:
             dtype = self.dtype
         y_slice, x_slice = self._get_yx_data_slice(data_slice)
@@ -2386,18 +2354,13 @@ class AreaDefinition(_ProjectionDefinition):
                 target_y = target_y[y_slice, x_slice]
             return target_x, target_y
 
-        target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
+        target_x, target_y = self._get_proj_vectors(dtype=dtype, chunks=chunks)
         if y_slice is not None:
             target_y = target_y[y_slice]
         if x_slice is not None:
             target_x = target_x[x_slice]
 
-        if self.rotation != 0:
-            res = self._do_rotation(target_x, target_y, self.rotation)
-            target_x, target_y = res[0, :, :], res[1, :, :]
-        else:
-            target_x, target_y = np.meshgrid(target_x, target_y)
-
+        target_x, target_y = np.meshgrid(target_x, target_y)
         return target_x, target_y
 
     @staticmethod
@@ -2438,17 +2401,11 @@ class AreaDefinition(_ProjectionDefinition):
     @property
     def projection_x_coords(self):
         """Return projection X coordinates."""
-        if self.rotation != 0:
-            # rotation is only supported in 'get_proj_coords' right now
-            return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
         return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
         """Return projection Y coordinates."""
-        if self.rotation != 0:
-            # rotation is only supported in 'get_proj_coords' right now
-            return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
         return self.get_proj_vectors()[1]
 
     @property
