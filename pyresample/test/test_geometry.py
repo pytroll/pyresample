@@ -2603,6 +2603,18 @@ def truncated_geos_area():
     return geos_area
 
 
+@pytest.fixture
+def truncated_geos_area_in_space():
+    """Create a truncated geostationary area."""
+    projection = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
+                  'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
+    area_extent = (5575000, 5575000, 5570000, 5570000)
+    width = 10
+    height = 10
+    geos_area = geometry.AreaDefinition('msg_rss', "msg_rss", "msg_rss", projection, width, height, area_extent)
+    return geos_area
+
+
 class TestGeostationaryTools:
     """Test the geostationary bbox tools."""
 
@@ -2666,6 +2678,13 @@ class TestGeostationaryTools:
         lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
         assert not any(np.isinf(lon))
         assert not any(np.isinf(lat))
+
+    def test_get_geostationary_bbox_returns_empty_lonlats_in_space(self, truncated_geos_area_in_space):
+        """Ensure the geostationary bbox is empty when in space."""
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(truncated_geos_area_in_space, 20)
+
+        assert len(lon) == 0
+        assert len(lat) == 0
 
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
@@ -3230,20 +3249,19 @@ class TestBoundary(unittest.TestCase):
         # Check boundary vertices
         n_vertices = 10
         boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
-        boundary.vertices.shape
 
         # Check boundary vertices is in correct order
-        expected_vertices = np.array([[-7.92337283e+01, 6.94302533e-15],
-                                      [-7.54251621e+01, 3.53432890e+01],
+        expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],
                                       [-5.68985178e+01, 6.90053314e+01],
                                       [5.68985178e+01, 6.90053314e+01],
                                       [7.54251621e+01, 3.53432890e+01],
-                                      [7.92337283e+01, -6.94302533e-15],
+                                      [7.92337283e+01, -0.00000000e+00],
                                       [7.54251621e+01, -3.53432890e+01],
                                       [5.68985178e+01, -6.90053314e+01],
                                       [-5.68985178e+01, -6.90053314e+01],
-                                      [-7.54251621e+01, -3.53432890e+01]])
-        assert np.allclose(expected_vertices, boundary.vertices)
+                                      [-7.54251621e+01, -3.53432890e+01],
+                                      [-7.92337283e+01, 6.94302533e-15]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
 
     def test_global_platee_caree_projection(self):
         """Test boundary for global platee caree projection."""

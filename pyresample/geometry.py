@@ -2792,8 +2792,11 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     geo_bbox = Polygon(np.vstack((x, y)).T)
     area_bbox = Polygon(((ll_x, ll_y), (ll_x, ur_y), (ur_x, ur_y), (ur_x, ll_y)))
     intersection = area_bbox.intersection(geo_bbox)
-    x, y = intersection.boundary.xy
-    return x[:-1], y[:-1]
+    try:
+        x, y = intersection.boundary.xy
+    except NotImplementedError:
+        return [], []
+    return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
 
 def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
