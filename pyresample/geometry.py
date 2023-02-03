@@ -2827,8 +2827,6 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
     lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
-    # lons[np.isinf(lons)] = np.nan
-    # lats[np.isinf(lats)] = np.nan
     return lons, lats
 
 
