@@ -34,8 +34,8 @@ requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
 if sys.version_info < (3, 10):
     requirements.append('importlib_metadata')
 
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixtures']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixtures', 'shapely']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
@@ -43,11 +43,10 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr'],
-                  'tests': test_requires}
+                  'tests': test_requires,
+                  "geos_areas": ["shapely"]}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixture']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []

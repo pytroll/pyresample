@@ -38,11 +38,11 @@ from pyresample.area_config import create_area_def
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
 from pyresample.utils import (
     check_slice_orientation,
-    get_geostationary_height,
     load_cf_area,
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
+from pyresample.utils.proj4 import get_geostationary_height
 
 try:
     from xarray import DataArray
@@ -2772,40 +2772,46 @@ def get_geostationary_angle_extent(geos_area):
     aeq = 1 - req ** 2 / (h ** 2)
     ap_ = 1 - rp ** 2 / (h ** 2)
 
-    # generate points around the north hemisphere in satellite projection
-    # make it a bit smaller so that we stay inside the valid area
-    xmax = np.arccos(np.sqrt(aeq))
-    ymax = np.arccos(np.sqrt(ap_))
-    return xmax, ymax
+    x_angle = np.arccos(np.sqrt(aeq))
+    y_angle = np.arccos(np.sqrt(ap_))
+    return x_angle, y_angle
 
 
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
-
-    Notes:
-    - The first and last element of the output vectors are equal.
-    - If nb_points is even, it will return x and y vectors of length nb_points + 1.
 
     Parameters
     ----------
     nb_points : Number of points on the polygon.
 
     """
-    xmax, ymax = get_geostationary_angle_extent(geos_area)
+    x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
+
+    from shapely.geometry import Polygon
+    geo_bbox = Polygon(np.vstack((x, y)).T)
+    area_bbox = Polygon(((ll_x, ll_y), (ll_x, ur_y), (ur_x, ur_y), (ur_x, ll_y)))
+    intersection = area_bbox.intersection(geo_bbox)
+    x, y = intersection.boundary.xy
+    return x[:-1], y[:-1]
+
+
+def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
+    """Get the bbox in geos projection coordinates of the full disk in `geos_area` projection.
+
+    Args:
+      nb_points: Number of points on the polygon
+    """
+    x_max_angle, y_max_angle = get_geostationary_angle_extent(geos_area)
     h = get_geostationary_height(geos_area.crs)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0) + 1)) * (ymax - 0.0001)
-
-    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
-
+    points_around = np.linspace(-np.pi, np.pi, nb_points, endpoint=False)
+    x = np.cos(points_around) * (x_max_angle - 0.0001)
+    y = -np.sin(points_around) * (y_max_angle - 0.0001)
     x *= h
     y *= h
-    # We remove one element with [:-1] to avoid duplicate values at the equator
-    x = np.clip(np.concatenate([x[:-1], x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
-    y = np.clip(np.concatenate([y[:-1], -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
     return x, y
 
@@ -2818,8 +2824,8 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
     lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
-    lons[np.isinf(lons)] = np.nan
-    lats[np.isinf(lats)] = np.nan
+    # lons[np.isinf(lons)] = np.nan
+    # lats[np.isinf(lats)] = np.nan
     return lons, lats
 
 
