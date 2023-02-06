@@ -36,13 +36,12 @@ from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import (
-    check_slice_orientation,
-    load_cf_area,
+from pyresample.utils import check_slice_orientation, load_cf_area
+from pyresample.utils.proj4 import (
+    get_geostationary_height,
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
-from pyresample.utils.proj4 import get_geostationary_height
 
 try:
     from xarray import DataArray
