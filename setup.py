@@ -29,6 +29,7 @@ import versioneer
 
 requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+                "shapely",
                 ]
 
 if sys.version_info < (3, 10):
@@ -43,8 +44,7 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr'],
-                  'tests': test_requires,
-                  "geos_areas": ["shapely"]}
+                  'tests': test_requires}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
 
