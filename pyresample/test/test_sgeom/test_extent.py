@@ -24,7 +24,7 @@ import pytest
 from pyresample.future.spherical import SExtent
 
 
-class TestSExtent(unittest.TestCase):
+class TestSExtent:
     """Test SExtent."""
 
     def test_sextent_with_bad_value(self):
