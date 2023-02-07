@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test cases for shapely."""
-import unittest
-
 import numpy as np
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union

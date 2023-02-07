@@ -116,9 +116,9 @@ def _check_non_overlapping_extents(polygons):
 
     Note: Touching extents are considered valids.
     """
-    for poly in polygons:
+    for poly in polygons.geoms:
         # Intersects includes within/contain/equals/touches !
-        n_intersects = np.sum([p.intersects(poly) and not p.touches(poly) for p in polygons])
+        n_intersects = np.sum([p.intersects(poly) and not p.touches(poly) for p in polygons.geoms])
         if n_intersects >= 2:
             raise ValueError("The extents composing SExtent can not be duplicates or overlapping.")
 
@@ -175,28 +175,28 @@ class SExtent:
         # Get list of extents
         list_extents = _get_list_extents_from_args(args)
         # Check extents format and value validity
-        self.list = [_check_valid_extent(ext) for ext in list_extents]
+        self._extents = [_check_valid_extent(ext) for ext in list_extents]
         # Pre-compute shapely polygon
-        list_polygons = [Polygon.from_bounds(*bounds_from_extent(ext)) for ext in self.list]
-        self.polygons = MultiPolygon(list_polygons)
+        list_polygons = [Polygon.from_bounds(*bounds_from_extent(ext)) for ext in self._extents]
+        self._polygons = MultiPolygon(list_polygons)
         # Check topological validity of extents polygons
-        _check_non_overlapping_extents(self.polygons)
+        _check_non_overlapping_extents(self._polygons)
 
     def to_shapely(self):
         """Return the shapely extent rectangle(s) polygon(s)."""
-        return self.polygons
+        return self._polygons
 
     def __str__(self):
         """Get simplified representation of SExtent."""
-        return str(self.list)
+        return str(self._extents)
 
     def __repr__(self):
         """Get simplified representation of SExtent."""
-        return str(self.list)
+        return str(self._extents)
 
     def __iter__(self):
         """Get extents iterator."""
-        return self.list.__iter__()
+        return self._extents.__iter__()
 
     def _repr_svg_(self):
         """Display the SExtent in the Ipython terminal."""
@@ -206,7 +206,7 @@ class SExtent:
     def is_global(self):
         """Check if the extent is global."""
         # Try union the polygons
-        unioned_polygon = unary_union(self.polygons)
+        unioned_polygon = unary_union(self._polygons)
         # If still a MultiPolygon, not a global extent
         if not isinstance(unioned_polygon, Polygon):
             return False
@@ -266,9 +266,6 @@ class SExtent:
         if not isinstance(other, SExtent):
             raise TypeError("SExtent.equals() expects a SExtent class instance.")
         return self.to_shapely().equals(other.to_shapely())
-
-    # TODO: equals_exact
-    # - Choose whether to use shapely for equals and equals_exact
 
     def plot(self, ax=None, **plot_kwargs):
         """Plot the SLine using Cartopy."""

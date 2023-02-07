@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test cases for SExtent class."""
-import unittest
-
 import numpy as np
 import pytest
 
@@ -149,13 +147,13 @@ class TestSExtent:
         with pytest.raises(ValueError):
             SExtent(extent)
 
-    def test_multple_touching_extents(self):
+    def test_multiple_touching_extents(self):
         """Test that touching extents composing SExtent do not raise error."""
         extent1 = [0, 40, 0, 40]
         extent2 = [0, 40, -40, 0]
         _ = SExtent(extent1, extent2)
 
-    def test_multple_overlapping_extents(self):
+    def test_multiple_overlapping_extents(self):
         """Test that raise error when the extents composing SExtent overlaps."""
         # Intersecting raise error
         extent1 = [0, 40, 0, 40]
@@ -183,17 +181,32 @@ class TestSExtent:
         shapely_polygon = MultiPolygon([Polygon.from_bounds(*bounds)])
         assert shapely_sext.equals(shapely_polygon)
 
+    def test_iter(self):
+        """Test extent list extraction."""
+        # Check single extent
+        extent = [0, 20, 10, 30]
+        sext = SExtent(extent)
+        list_extents = list(sext)
+        assert list_extents == [extent]
+
+        # Check multiple extents
+        extent1 = [0, 20, 10, 30]
+        extent2 = [0, 10, 40, 60]
+        sext = SExtent(extent1, extent2)
+        list_extents = list(sext)
+        assert list_extents == [extent1, extent2]
+
     def test_str(self):
         """Check the string representation."""
         extent = [0, 20, 10, 30]
         sext = SExtent(extent)
-        self.assertEqual(str(sext), '[[0, 20, 10, 30]]')
+        assert str(sext) == '[[0, 20, 10, 30]]'
 
     def test_repr(self):
         """Check the representation."""
         extent = [0, 20, 10, 30]
         sext = SExtent(extent)
-        self.assertEqual(repr(sext), '[[0, 20, 10, 30]]')
+        assert repr(sext) == '[[0, 20, 10, 30]]'
 
     def test_repr_svg(self):
         """Check the sketch Ipython representation."""
@@ -209,7 +222,7 @@ class TestSExtent:
                    'stroke-width="2.592" opacity="0.6" ' + \
                    'd="M -180.0,-90.0 L -180.0,90.0 L 180.0,90.0 L 180.0,-90.0 L -180.0,-90.0 z" ' + \
                    '/></g></g></svg>'
-        self.assertEqual(sext._repr_svg_(), repr_svg)
+        assert sext._repr_svg_() == repr_svg
 
     def test_is_global(self):
         """Check is_global property."""
