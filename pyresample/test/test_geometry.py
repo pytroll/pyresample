@@ -2591,8 +2591,100 @@ def _get_fake_antimeridian_lonlats(use_dask: bool) -> tuple:
     return lons, lats
 
 
-class TestCrop(unittest.TestCase):
-    """Test the area helpers."""
+@pytest.fixture
+def truncated_geos_area():
+    """Create a truncated geostationary area."""
+    projection = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
+                  'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
+    area_extent = (5567248.0742, 5570248.4773, -5570248.4773, 1393687.2705)
+    width = 3712
+    height = 1392
+    geos_area = geometry.AreaDefinition('msg_rss', "msg_rss", "msg_rss", projection, width, height, area_extent)
+    return geos_area
+
+
+@pytest.fixture
+def truncated_geos_area_in_space():
+    """Create a truncated geostationary area."""
+    projection = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
+                  'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
+    area_extent = (5575000, 5575000, 5570000, 5570000)
+    width = 10
+    height = 10
+    geos_area = geometry.AreaDefinition('msg_rss', "msg_rss", "msg_rss", projection, width, height, area_extent)
+    return geos_area
+
+
+class TestGeostationaryTools:
+    """Test the geostationary bbox tools."""
+
+    def test_get_full_geostationary_bbox(self, truncated_geos_area):
+        nb_points = 20
+        x, y = geometry.get_full_geostationary_bounding_box_in_proj_coords(truncated_geos_area, nb_points)
+        assert len(x) == nb_points
+        assert len(y) == nb_points
+
+        assert x[0] != x[-1]
+        assert y[0] != y[-1]
+
+        expected_x = np.array([-5.43062255e+06, -5.16482897e+06, -4.39346593e+06, -3.19203985e+06,
+                               -1.67815466e+06, 3.32529726e-10, 1.67815466e+06, 3.19203985e+06,
+                               4.39346593e+06, 5.16482897e+06, 5.43062255e+06, 5.16482897e+06,
+                               4.39346593e+06, 3.19203985e+06, 1.67815466e+06, 3.32529726e-10,
+                               -1.67815466e+06, -3.19203985e+06, -4.39346593e+06, -5.16482897e+06])
+
+        expected_y = np.array([6.62789871e-10, 1.67242779e+06, 3.18114670e+06, 4.37847280e+06,
+                               5.14720348e+06, 5.41209002e+06, 5.14720348e+06, 4.37847280e+06,
+                               3.18114670e+06, 1.67242779e+06, -0.00000000e+00, -1.67242779e+06,
+                               -3.18114670e+06, -4.37847280e+06, -5.14720348e+06, -5.41209002e+06,
+                               -5.14720348e+06, -4.37847280e+06, -3.18114670e+06, -1.67242779e+06])
+
+        np.testing.assert_allclose(x, expected_x)
+        np.testing.assert_allclose(y, expected_y)
+
+    def test_get_geostationary_bbox_works_with_truncated_area(self, truncated_geos_area):
+        """Ensure the geostationary bbox works when truncated."""
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
+
+        expected_lon = np.array(
+            [-64.24072434653284, -68.69662326361153, -65.92516214783112, -60.726360278290336,
+             -47.39851775032484, 9.500000000000018, 66.39851775032487, 79.72636027829033,
+             84.92516214783113, 87.69662326361151, 83.24072434653286])
+        expected_lat = np.array(
+            [14.554922655532085, 17.768795771961937, 35.34328897185421, 52.597860701318254, 69.00533141646078,
+             79.1481121862375, 69.00533141646076, 52.597860701318254, 35.34328897185421, 17.768795771961933,
+             14.554922655532085])
+        np.testing.assert_allclose(lon, expected_lon)
+        np.testing.assert_allclose(lat, expected_lat)
+
+    def test_get_geostationary_bbox_works_with_truncated_area_proj_coords(self, truncated_geos_area):
+        """Ensure the geostationary bbox works when truncated."""
+        x, y = geometry.get_geostationary_bounding_box_in_proj_coords(truncated_geos_area, 20)
+
+        expected_x = np.array(
+            [-5209128.302753595, -5164828.965702432, -4393465.934674804, -3192039.8468840676, -1678154.6586309497,
+             3.325297262895822e-10, 1678154.6586309501, 3192039.846884068, 4393465.934674805, 5164828.965702432,
+             5209128.302753594])
+        expected_y = np.array(
+            [1393687.2705, 1672427.7900638399, 3181146.6955466354, 4378472.798117005, 5147203.47659387,
+             5412090.016106332, 5147203.476593869, 4378472.798117005, 3181146.695546635, 1672427.7900638392,
+             1393687.2705])
+
+        np.testing.assert_allclose(x, expected_x)
+        np.testing.assert_allclose(y, expected_y)
+
+    def test_get_geostationary_bbox_does_not_contain_inf(self, truncated_geos_area):
+        """Ensure the geostationary bbox does not contain np.inf."""
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
+        assert not any(np.isinf(lon))
+        assert not any(np.isinf(lat))
+
+    def test_get_geostationary_bbox_returns_empty_lonlats_in_space(self, truncated_geos_area_in_space):
+        """Ensure the geostationary bbox is empty when in space."""
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(truncated_geos_area_in_space, 20)
+
+        assert len(lon) == 0
+        assert len(lat) == 0
 
     def test_get_geostationary_bbox(self):
         """Get the geostationary bbox."""
@@ -2606,23 +2698,20 @@ class TestCrop(unittest.TestCase):
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
-        # This musk be equal to lon.
-        elon = np.array([-79.23372832, -78.19662326, -75.42516215, -70.22636028,
-                         -56.89851775, 0., 56.89851775, 70.22636028,
-                         75.42516215, 78.19662326, 79.23372832, 78.19662326,
-                         75.42516215, 70.22636028, 56.89851775, 0.,
-                        -56.89851775, -70.22636028, -75.42516215, -78.19662326,
-                        -79.23372832])
-        elat = np.array([0., 17.76879577, 35.34328897, 52.5978607,
-                         69.00533142, 79.14811219, 69.00533142, 52.5978607,
-                         35.34328897, 17.76879577, -0., -17.76879577,
-                         -35.34328897, -52.5978607, -69.00533142, -79.14811219,
-                         -69.00533142, -52.5978607, -35.34328897, -17.76879577,
-                         0.])
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(geos_area, 20)
+        expected_lon = np.array([-78.19662326, -75.42516215, -70.22636028,
+                                 -56.89851775, 0., 56.89851775, 70.22636028,
+                                 75.42516215, 78.19662326, 79.23372832, 78.19662326,
+                                 75.42516215, 70.22636028, 56.89851775, 0.,
+                                 -56.89851775, -70.22636028, -75.42516215, -78.19662326, -79.23372832, ])
+        expected_lat = np.array([17.76879577, 35.34328897, 52.5978607,
+                                 69.00533142, 79.14811219, 69.00533142, 52.5978607,
+                                 35.34328897, 17.76879577, -0., -17.76879577,
+                                 -35.34328897, -52.5978607, -69.00533142, -79.14811219,
+                                 -69.00533142, -52.5978607, -35.34328897, -17.76879577, 0.])
 
-        np.testing.assert_allclose(lon, elon, atol=1e-07)
-        np.testing.assert_allclose(lat, elat, atol=1e-07)
+        np.testing.assert_allclose(lon, expected_lon, atol=1e-07)
+        np.testing.assert_allclose(lat, expected_lat, atol=1e-07)
 
         geos_area = MagicMock()
         lon_0 = 10
@@ -2634,8 +2723,8 @@ class TestCrop(unittest.TestCase):
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geometry.get_geostationary_bounding_box(geos_area, 20)
-        np.testing.assert_allclose(lon, elon + lon_0)
+        lon, lat = geometry.get_geostationary_bounding_box_in_lonlats(geos_area, 20)
+        np.testing.assert_allclose(lon, expected_lon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
@@ -2674,6 +2763,10 @@ class TestCrop(unittest.TestCase):
         expected = (0.15185277703584374, 0.15133971368991794)
         np.testing.assert_allclose(expected,
                                    geometry.get_geostationary_angle_extent(geos_area))
+
+
+class TestCrop(unittest.TestCase):
+    """Test the area helpers."""
 
     def test_sub_area(self):
         """Sub area slicing."""
@@ -3156,20 +3249,19 @@ class TestBoundary(unittest.TestCase):
         # Check boundary vertices
         n_vertices = 10
         boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
-        boundary.vertices.shape
 
         # Check boundary vertices is in correct order
-        expected_vertices = np.array([[-7.92337283e+01, 6.94302533e-15],
-                                      [-7.54251621e+01, 3.53432890e+01],
+        expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],
                                       [-5.68985178e+01, 6.90053314e+01],
                                       [5.68985178e+01, 6.90053314e+01],
                                       [7.54251621e+01, 3.53432890e+01],
-                                      [7.92337283e+01, -6.94302533e-15],
+                                      [7.92337283e+01, -0.00000000e+00],
                                       [7.54251621e+01, -3.53432890e+01],
                                       [5.68985178e+01, -6.90053314e+01],
                                       [-5.68985178e+01, -6.90053314e+01],
-                                      [-7.54251621e+01, -3.53432890e+01]])
-        assert np.allclose(expected_vertices, boundary.vertices)
+                                      [-7.54251621e+01, -3.53432890e+01],
+                                      [-7.92337283e+01, 6.94302533e-15]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
 
     def test_global_platee_caree_projection(self):
         """Test boundary for global platee caree projection."""
