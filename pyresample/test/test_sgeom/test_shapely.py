@@ -23,7 +23,7 @@ from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 
-class TestShapely(unittest.TestCase):
+class TestShapely:
     """Test Shapely methods."""
 
     def test_polygon_unary_union(self):
