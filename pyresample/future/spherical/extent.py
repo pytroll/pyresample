@@ -140,7 +140,7 @@ def _is_global_extent(polygons):
     return is_global
 
 
-class SExtent(object):
+class SExtent:
     """Spherical Extent.
 
     SExtent longitudes are defined between -180 and 180 degree.
