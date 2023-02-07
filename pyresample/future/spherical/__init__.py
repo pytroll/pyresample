@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2022 Pyresample developers
+# Copyright (c) 2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -18,3 +18,10 @@
 """Future features that are backwards incompatible with current functionality."""
 
 from .extent import SExtent  # noqa
+from .point import SMultiPoint, SPoint  # noqa
+
+__all__ = [
+    "SExtent",
+    "SPoint",
+    "SMultiPoint",
+]
