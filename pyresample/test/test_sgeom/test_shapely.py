@@ -44,7 +44,7 @@ class TestShapely(unittest.TestCase):
                                       [0., -90.],
                                       [-180., -90.],
                                       [-180., 90.]])
-        assert np.allclose(expected_vertices, vertices)
+        np.testing.assert_allclose(expected_vertices, vertices)
 
     def test_polygon_from_bounds(self):
         """Test Polygon definition from bounds."""
