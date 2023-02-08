@@ -32,41 +32,6 @@ from pyresample.future.geometry.area import (
     get_geostationary_bounding_box_in_proj_coords,
 )
 from pyresample.future.geometry.base import get_array_hashable
-from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
-
-
-@pytest.fixture(params=[LegacyAreaDefinition, AreaDefinition],
-                ids=["LegacyAreaDefinition", "AreaDefinition"])
-def area_class(request):
-    """Get one of the currently active 'AreaDefinition' classes.
-
-    Currently only includes the legacy 'AreaDefinition' class and the future
-    'AreaDefinition' class in 'pyresample.future.geometry.area'.
-
-    """
-    return request.param
-
-
-@pytest.fixture
-def create_test_area(area_class):
-    """Get a function for creating AreaDefinitions for testing.
-
-    Should be used as a pytest fixture and will automatically run the test
-    function with the legacy AreaDefinition class and the future
-    AreaDefinition class. If tests require a specific class they should
-    NOT use this fixture and instead use the exact class directly.
-
-    """
-    def _create_test_area(crs, width, height, area_extent, **kwargs):
-        """Create an AreaDefinition object for testing."""
-        args = (crs, width, height, area_extent)
-        if area_class is LegacyAreaDefinition:
-            attrs = kwargs.pop("attrs", {})
-            area_id = attrs.pop("name", "test_area")
-            args = (area_id, "", "") + args
-        area = area_class(*args, **kwargs)
-        return area
-    return _create_test_area
 
 
 @pytest.fixture
@@ -174,6 +139,84 @@ class TestAreaHashability:
 
         xrarr.attrs['hash'] = 42
         assert get_array_hashable(xrarr) == xrarr.attrs['hash']
+
+
+class TestAreaComparisons:
+    """Test comparisons with areas and other areas or swaths."""
+
+    def test_area_equal(self, create_test_area):
+        """Test area equality."""
+        area_def = create_test_area(
+            {
+                'a': '6378144.0',
+                'b': '6356759.0',
+                'lat_0': '50.00',
+                'lat_ts': '50.00',
+                'lon_0': '8.00',
+                'proj': 'stere'
+            },
+            800,
+            800,
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+        area_def2 = create_test_area(
+            {
+                'a': '6378144.0',
+                'b': '6356759.0',
+                'lat_0': '50.00',
+                'lat_ts': '50.00',
+                'lon_0': '8.00',
+                'proj': 'stere'
+            },
+            800,
+            800,
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+        assert not (area_def != area_def2), 'area_defs are not equal as expected'
+
+    def test_not_area_equal(self, create_test_area):
+        """Test area inequality."""
+        area_def = create_test_area(
+            {
+                'a': '6378144.0',
+                'b': '6356759.0',
+                'lat_0': '50.00',
+                'lat_ts': '50.00',
+                'lon_0': '8.00',
+                'proj': 'stere'
+            },
+            800,
+            800,
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+
+        msg_area = create_test_area(
+            {
+                'a': '6378169.0',
+                'b': '6356584.0',
+                'h': '35785831.0',
+                'lon_0': '0',
+                'proj': 'geos'
+            },
+            3712,
+            3712,
+            (-5568742.4000000004, -5568742.4000000004, 5568742.4000000004, 5568742.4000000004))
+        assert not (area_def == msg_area), 'area_defs are not expected to be equal'
+        assert not (area_def == "area"), 'area_defs are not expected to be equal'
+
+    def test_swath_equal_area(self, stere_area, create_test_swath):
+        """Test equality between an area and a swath definition."""
+        area_def = stere_area
+        swath_def = create_test_swath(*area_def.get_lonlats())
+        assert not (swath_def != area_def), "swath_def and area_def should be equal"
+        assert not (area_def != swath_def), "swath_def and area_def should be equal"
+
+    def test_swath_not_equal_area(self, stere_area, create_test_swath):
+        """Test inequality between an area and a swath definition."""
+        area_def = stere_area
+        lons = np.array([1.2, 1.3, 1.4, 1.5])
+        lats = np.array([65.9, 65.86, 65.82, 65.78])
+        swath_def = create_test_swath(lons, lats)
+
+        assert not (swath_def == area_def), "swath_def and area_def should be different"
+        assert not (area_def == swath_def), "swath_def and area_def should be different"
 
 
 class TestAreaDefinition:
@@ -392,78 +435,6 @@ class TestAreaDefinition:
                         '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
             area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
             assert area_def == expected
-
-    def test_area_equal(self, create_test_area):
-        """Test areas equality."""
-        area_def = create_test_area(
-            {
-                'a': '6378144.0',
-                'b': '6356759.0',
-                'lat_0': '50.00',
-                'lat_ts': '50.00',
-                'lon_0': '8.00',
-                'proj': 'stere'
-            },
-            800,
-            800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-        area_def2 = create_test_area(
-            {
-                'a': '6378144.0',
-                'b': '6356759.0',
-                'lat_0': '50.00',
-                'lat_ts': '50.00',
-                'lon_0': '8.00',
-                'proj': 'stere'
-            },
-            800,
-            800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-        assert not (area_def != area_def2), 'area_defs are not equal as expected'
-
-    def test_not_area_equal(self, create_test_area):
-        """Test area inequality."""
-        area_def = create_test_area(
-            {
-                'a': '6378144.0',
-                'b': '6356759.0',
-                'lat_0': '50.00',
-                'lat_ts': '50.00',
-                'lon_0': '8.00',
-                'proj': 'stere'
-            },
-            800,
-            800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-
-        msg_area = create_test_area(
-            {
-                'a': '6378169.0',
-                'b': '6356584.0',
-                'h': '35785831.0',
-                'lon_0': '0',
-                'proj': 'geos'
-            },
-            3712,
-            3712,
-            (-5568742.4000000004, -5568742.4000000004, 5568742.4000000004, 5568742.4000000004))
-        assert not (area_def == msg_area), 'area_defs are not expected to be equal'
-        assert not (area_def == "area"), 'area_defs are not expected to be equal'
-
-    def test_swath_equal_area(self, stere_area):
-        """Test equality swath area."""
-        area_def = stere_area
-        swath_def = SwathDefinition(*area_def.get_lonlats())
-        assert not (swath_def != area_def), "swath_def and area_def should be equal"
-
-    def test_swath_not_equal_area(self, stere_area):
-        """Test inequality swath area."""
-        area_def = stere_area
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        swath_def = SwathDefinition(lons, lats)
-
-        assert not (swath_def == area_def), "swath_def and area_def should be different"
 
     def test_grid_filter_valid(self, create_test_area):
         """Test valid grid filtering."""

@@ -20,36 +20,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pyresample.future.geometry import SwathDefinition
-from pyresample.geometry import SwathDefinition as LegacySwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
-
-
-@pytest.fixture(params=[LegacySwathDefinition, SwathDefinition],
-                ids=["LegacySwathDefinition", "SwathDefinition"])
-def swath_class(request):
-    """Get one of the currently active 'SwathDefinition' classes.
-
-    Currently only includes the legacy 'SwathDefinition' class and the future
-    'SwathDefinition' class in 'pyresample.future.geometry.swath'.
-
-    """
-    return request.param
-
-
-@pytest.fixture
-def create_test_swath(swath_class):
-    """Get a function for creating SwathDefinitions for testing.
-
-    Should be used as a pytest fixture and will automatically run the test
-    function with the legacy SwathDefinition class and the future
-    SwathDefinition class. If tests require a specific class they should
-    NOT use this fixture and instead use the exact class directly.
-
-    """
-    def _create_test_swath(lons, lats):
-        return swath_class(lons, lats)
-    return _create_test_swath
 
 
 def _gen_swath_def_xarray_dask(create_test_swath):
