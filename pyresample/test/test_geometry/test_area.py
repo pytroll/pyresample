@@ -69,6 +69,16 @@ def geos_src_area(create_test_area):
     )
 
 
+@pytest.fixture
+def laea_area(create_test_area):
+    """Create basic LAEA area definition."""
+    x_size = 10
+    y_size = 10
+    area_extent = [1000000, 0, 1050000, 50000]
+    proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
+    return create_test_area(proj_dict, x_size, y_size, area_extent)
+
+
 class TestAreaHashability:
     """Test various hashing cases of AreaDefinitions."""
 
@@ -607,27 +617,17 @@ class TestAreaDefinition:
         assert x.item() == 3723
         assert y.item() == 3746
 
-    def test_lonlat2colrow(self):
+    def test_lonlat2colrow(self, create_test_area):
         """Test lonlat2colrow."""
-        from pyresample import utils
-        area_id = 'meteosat_0deg'
-        area_name = 'Meteosat 0 degree Service'
-        proj_id = 'geos0'
         x_size = 3712
         y_size = 3712
-        area_extent = [-5570248.477339261, -5567248.074173444,
-                       5567248.074173444, 5570248.477339261]
+        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
         proj_dict = {'a': '6378169.00',
                      'b': '6356583.80',
                      'h': '35785831.0',
                      'lon_0': '0.0',
                      'proj': 'geos'}
-        area = utils.get_area_def(area_id,
-                                  area_name,
-                                  proj_id,
-                                  proj_dict,
-                                  x_size, y_size,
-                                  area_extent)
+        area = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         # Imatra, Wiesbaden
         longitudes = np.array([28.75242, 8.24932])
@@ -644,14 +644,9 @@ class TestAreaDefinition:
         lon, lat = (-8.125547604568746, -14.345524111874646)
         assert area.get_array_indices_from_lonlat(lon, lat) == (1567, 2375)
 
-    def test_colrow2lonlat(self):
+    def test_colrow2lonlat(self, create_test_area):
         """Test colrow2lonlat."""
-        from pyresample import utils
-
         # test square, symmetric areadef
-        area_id = 'meteosat_0deg'
-        area_name = 'Meteosat 0 degree Service'
-        proj_id = 'geos0'
         x_size = 3712
         y_size = 3712
         area_extent = [-5570248.477339261, -5567248.074173444,
@@ -661,12 +656,7 @@ class TestAreaDefinition:
                      'h': '35785831.0',
                      'lon_0': '0.0',
                      'proj': 'geos'}
-        area = utils.get_area_def(area_id,
-                                  area_name,
-                                  proj_id,
-                                  proj_dict,
-                                  x_size, y_size,
-                                  area_extent)
+        area = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         # Imatra, Wiesbaden
         cols = np.array([2304, 2040])
@@ -687,9 +677,6 @@ class TestAreaDefinition:
         np.testing.assert_allclose(lat__, lat_expect, rtol=0, atol=1e-7)
 
         # test rectangular areadef
-        area_id = 'eurol'
-        area_name = 'Euro 3.0km area - Europe'
-        proj_id = 'eurol'
         x_size = 2560
         y_size = 2048
         area_extent = [-3780000.0, -7644000.0, 3900000.0, -1500000.0]
@@ -699,12 +686,7 @@ class TestAreaDefinition:
             'lat_ts': 60.0,
             'ellps': 'WGS84',
             'proj': 'stere'}
-        area = utils.get_area_def(area_id,
-                                  area_name,
-                                  proj_id,
-                                  proj_dict,
-                                  x_size, y_size,
-                                  area_extent)
+        area = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         # Darmstadt, Gibraltar
         cols = np.array([1477, 1069])
@@ -725,19 +707,14 @@ class TestAreaDefinition:
         np.testing.assert_allclose(lon__, lon_expect, rtol=0, atol=1e-7)
         np.testing.assert_allclose(lat__, lat_expect, rtol=0, atol=1e-7)
 
-    def test_get_proj_coords_basic(self):
+    @pytest.mark.parametrize("use_dask", [False, True])
+    def test_get_proj_coords(self, laea_area, use_dask):
         """Test basic get_proj_coords usage."""
-        from pyresample import utils
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
-        x_size = 10
-        y_size = 10
-        area_extent = [1000000, 0, 1050000, 50000]
-        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
-        area_def = utils.get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
+        kwargs = {} if not use_dask else {"chunks": 4096}
+        xcoord, ycoord = laea_area.get_proj_coords(**kwargs)
+        if use_dask:
+            xcoord, ycoord = da.compute(xcoord, ycoord)
 
-        xcoord, ycoord = area_def.get_proj_coords()
         np.testing.assert_allclose(xcoord[0, :],
                                    np.array([1002500., 1007500., 1012500.,
                                              1017500., 1022500., 1027500.,
@@ -748,8 +725,15 @@ class TestAreaDefinition:
                                              27500., 22500., 17500., 12500.,
                                              7500., 2500.]))
 
-        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
-                                                              slice(None, None, 2)))
+    @pytest.mark.parametrize("use_dask", [False, True])
+    def test_get_proj_coords_slices(self, laea_area, use_dask):
+        """Test get_proj_coords with slicing."""
+        kwargs = {} if not use_dask else {"chunks": 4096}
+        xcoord, ycoord = laea_area.get_proj_coords(data_slice=(slice(None, None, 2),
+                                                               slice(None, None, 2)),
+                                                   **kwargs)
+        if use_dask:
+            xcoord, ycoord = da.compute(xcoord, ycoord)
 
         np.testing.assert_allclose(xcoord[0, :],
                                    np.array([1002500., 1012500., 1022500.,
@@ -758,48 +742,12 @@ class TestAreaDefinition:
                                    np.array([47500., 37500., 27500., 17500.,
                                              7500.]))
 
-    def test_get_proj_coords_dask(self):
-        """Test get_proj_coords usage with dask arrays."""
-        from pyresample import get_area_def
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
-        x_size = 10
-        y_size = 10
-        area_extent = [1000000, 0, 1050000, 50000]
-        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
-        area_def = get_area_def(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent)
-
-        xcoord, ycoord = area_def.get_proj_coords(chunks=4096)
-        # make sure different chunk size provides a different dask name
-        xcoord2, ycoord2 = area_def.get_proj_coords(chunks=2048)
+    def test_get_proj_coords_dask_names(self, laea_area):
+        """Test that generated coordinate dask task names are chunks-unique."""
+        xcoord, ycoord = laea_area.get_proj_coords(chunks=4096)
+        xcoord2, ycoord2 = laea_area.get_proj_coords(chunks=2048)
         assert xcoord2.name != xcoord.name
         assert ycoord2.name != ycoord.name
-
-        xcoord = xcoord.compute()
-        ycoord = ycoord.compute()
-        np.testing.assert_allclose(xcoord[0, :],
-                                   np.array([1002500., 1007500., 1012500.,
-                                             1017500., 1022500., 1027500.,
-                                             1032500., 1037500., 1042500.,
-                                             1047500.]))
-        np.testing.assert_allclose(ycoord[:, 0],
-                                   np.array([47500., 42500., 37500., 32500.,
-                                             27500., 22500., 17500., 12500.,
-                                             7500., 2500.]))
-
-        # use the shared method and provide chunks and slices
-        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2),
-                                                              slice(None, None, 2)),
-                                                  chunks=4096)
-        xcoord = xcoord.compute()
-        ycoord = ycoord.compute()
-        np.testing.assert_allclose(xcoord[0, :],
-                                   np.array([1002500., 1012500., 1022500.,
-                                             1032500., 1042500.]))
-        np.testing.assert_allclose(ycoord[:, 0],
-                                   np.array([47500., 37500., 27500., 17500.,
-                                             7500.]))
 
     def test_roundtrip_lonlat_array_coordinates(self):
         """Test roundtrip."""
