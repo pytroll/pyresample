@@ -219,6 +219,109 @@ class TestAreaComparisons:
         assert not (area_def == swath_def), "swath_def and area_def should be different"
 
 
+class TestGridFilter:
+    """Tests for the GridFilter class."""
+
+    def test_grid_filter_valid(self, create_test_area):
+        """Test valid grid filtering."""
+        lons = np.array([-170, -30, 30, 170])
+        lats = np.array([20, -40, 50, -80])
+        swath_def = SwathDefinition(lons, lats)
+        filter_area = create_test_area(
+            {
+                'proj': 'eqc',
+                'lon_0': 0.0,
+                'lat_0': 0.0
+            },
+            8,
+            8,
+            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
+        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           ])
+        grid_filter = geo_filter.GridFilter(filter_area, filter)
+        valid_index = grid_filter.get_valid_index(swath_def)
+        expected = np.array([1, 0, 0, 1])
+        np.testing.assert_array_equal(valid_index, expected, err_msg='Failed to find grid filter')
+
+    def test_grid_filter(self, create_test_area):
+        """Test filtering a grid."""
+        lons = np.array([-170, -30, 30, 170])
+        lats = np.array([20, -40, 50, -80])
+        swath_def = SwathDefinition(lons, lats)
+        data = np.array([1, 2, 3, 4])
+        filter_area = create_test_area(
+            {
+                'proj': 'eqc',
+                'lon_0': 0.0,
+                'lat_0': 0.0
+            },
+            8,
+            8,
+            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
+        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           ])
+        grid_filter = geo_filter.GridFilter(filter_area, filter)
+        swath_def_f, data_f = grid_filter.filter(swath_def, data)
+        expected = np.array([1, 4])
+        np.testing.assert_array_equal(data_f, expected, err_msg='Failed grid filtering data')
+        expected_lons = np.array([-170, 170])
+        expected_lats = np.array([20, -80])
+        assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
+                np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding grid filtering lon lats'
+
+    def test_grid_filter2D(self, create_test_area):
+        """Test filtering a 2D grid."""
+        lons = np.array([[-170, -30, 30, 170],
+                         [-170, -30, 30, 170]])
+        lats = np.array([[20, -40, 50, -80],
+                         [25, -35, 55, -75]])
+        swath_def = SwathDefinition(lons, lats)
+        data1 = np.ones((2, 4))
+        data2 = np.ones((2, 4)) * 2
+        data3 = np.ones((2, 4)) * 3
+        data = np.dstack((data1, data2, data3))
+        filter_area = create_test_area(
+            {
+                'proj': 'eqc',
+                'lon_0': 0.0,
+                'lat_0': 0.0
+            },
+            8,
+            8,
+            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
+        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [1, 1, 1, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           [0, 0, 0, 0, 1, 1, 1, 1],
+                           ])
+        grid_filter = geo_filter.GridFilter(filter_area, filter, nprocs=2)
+        swath_def_f, data_f = grid_filter.filter(swath_def, data)
+        expected = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]])
+        np.testing.assert_array_equal(data_f, expected, err_msg='Failed 2D grid filtering data')
+        expected_lons = np.array([-170, 170, -170, 170])
+        expected_lats = np.array([20, -80, 25, -75])
+        assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
+                np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding 2D grid filtering lon lats'
+
+
 class TestAreaDefinition:
     """Unit tests for the AreaDefinition class."""
 
@@ -436,106 +539,7 @@ class TestAreaDefinition:
             area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
             assert area_def == expected
 
-    def test_grid_filter_valid(self, create_test_area):
-        """Test valid grid filtering."""
-        lons = np.array([-170, -30, 30, 170])
-        lats = np.array([20, -40, 50, -80])
-        swath_def = SwathDefinition(lons, lats)
-        filter_area = create_test_area(
-            {
-                'proj': 'eqc',
-                'lon_0': 0.0,
-                'lat_0': 0.0
-            },
-            8,
-            8,
-            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
-        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           ])
-        grid_filter = geo_filter.GridFilter(filter_area, filter)
-        valid_index = grid_filter.get_valid_index(swath_def)
-        expected = np.array([1, 0, 0, 1])
-        np.testing.assert_array_equal(valid_index, expected, err_msg='Failed to find grid filter')
-
-    def test_grid_filter(self, create_test_area):
-        """Test filtering a grid."""
-        lons = np.array([-170, -30, 30, 170])
-        lats = np.array([20, -40, 50, -80])
-        swath_def = SwathDefinition(lons, lats)
-        data = np.array([1, 2, 3, 4])
-        filter_area = create_test_area(
-            {
-                'proj': 'eqc',
-                'lon_0': 0.0,
-                'lat_0': 0.0
-            },
-            8,
-            8,
-            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
-        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           ])
-        grid_filter = geo_filter.GridFilter(filter_area, filter)
-        swath_def_f, data_f = grid_filter.filter(swath_def, data)
-        expected = np.array([1, 4])
-        np.testing.assert_array_equal(data_f, expected, err_msg='Failed grid filtering data')
-        expected_lons = np.array([-170, 170])
-        expected_lats = np.array([20, -80])
-        assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
-                np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding grid filtering lon lats'
-
-    def test_grid_filter2D(self, create_test_area):
-        """Test filtering a 2D grid."""
-        lons = np.array([[-170, -30, 30, 170],
-                         [-170, -30, 30, 170]])
-        lats = np.array([[20, -40, 50, -80],
-                         [25, -35, 55, -75]])
-        swath_def = SwathDefinition(lons, lats)
-        data1 = np.ones((2, 4))
-        data2 = np.ones((2, 4)) * 2
-        data3 = np.ones((2, 4)) * 3
-        data = np.dstack((data1, data2, data3))
-        filter_area = create_test_area(
-            {
-                'proj': 'eqc',
-                'lon_0': 0.0,
-                'lat_0': 0.0
-            },
-            8,
-            8,
-            (-20037508.34, -10018754.17, 20037508.34, 10018754.17))
-        filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [1, 1, 1, 1, 0, 0, 0, 0],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           [0, 0, 0, 0, 1, 1, 1, 1],
-                           ])
-        grid_filter = geo_filter.GridFilter(filter_area, filter, nprocs=2)
-        swath_def_f, data_f = grid_filter.filter(swath_def, data)
-        expected = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]])
-        np.testing.assert_array_equal(data_f, expected, err_msg='Failed 2D grid filtering data')
-        expected_lons = np.array([-170, 170, -170, 170])
-        expected_lats = np.array([20, -80, 25, -75])
-        assert (np.array_equal(swath_def_f.lons[:], expected_lons) and
-                np.array_equal(swath_def_f.lats[:], expected_lats)), 'Failed finding 2D grid filtering lon lats'
-
-    def test_boundary(self, create_test_area):
+    def test_projection_coordinates(self, create_test_area):
         """Test getting the boundary."""
         area_def = create_test_area(
             {
@@ -589,25 +593,14 @@ class TestAreaDefinition:
         assert lons[0, 0] == -179.5
         assert lats[0, 0] == 89.5
 
-    def test_get_array_indices_from_lonlat_mask_actual_values(self):
+    def test_get_array_indices_from_lonlat_mask_actual_values(self, create_test_area):
         """Test that the masked values of get_array_indices_from_lonlat can be valid."""
-        from pyresample import get_area_def
-
-        # The area of our source data
-        area_id = 'orig'
-        area_name = 'Test area'
-        proj_id = 'test'
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
                      'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
-        area_def = get_area_def(area_id,
-                                area_name,
-                                proj_id,
-                                proj_dict,
-                                x_size, y_size,
-                                area_extent)
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         # Choose a point just outside the area
         x, y = area_def.get_array_indices_from_lonlat([33.5], [-40.5])
