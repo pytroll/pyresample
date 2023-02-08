@@ -18,10 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the geometry objects."""
 import random
-import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
+import dask
 import dask.array as da
 import numpy as np
 import pytest
@@ -38,179 +38,48 @@ from pyresample.geometry import (
 from pyresample.test.utils import catch_warnings
 
 
-class Test(unittest.TestCase):
-    """Unit testing the geometry and geo_filter modules."""
+class TestBaseDefinition:
+    """Tests for the BaseDefinition class."""
 
     def test_base_type(self):
         """Test the base type."""
+        from pyresample.geometry import BaseDefinition
+
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
 
         # Test dtype is preserved without longitude wrapping
-        basedef = geometry.BaseDefinition(lons1, lats)
+        basedef = BaseDefinition(lons1, lats)
         lons, _ = basedef.get_lonlats()
-        self.assertEqual(lons.dtype, lons1.dtype,
-                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
-                         (lons1.dtype, lons.dtype,))
+        assert lons.dtype == lons1.dtype, \
+            f"BaseDefinition did not maintain dtype of longitudes (in:{lons1.dtype} out:{lons.dtype})"
 
         lons1_ints = lons1.astype('int')
-        basedef = geometry.BaseDefinition(lons1_ints, lats)
+        basedef = BaseDefinition(lons1_ints, lats)
         lons, _ = basedef.get_lonlats()
-        self.assertEqual(lons.dtype, lons1_ints.dtype,
-                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
-                         (lons1_ints.dtype, lons.dtype,))
+        assert lons.dtype == lons1_ints.dtype, \
+            f"BaseDefinition did not maintain dtype of longitudes (in:{lons1_ints.dtype} out:{lons.dtype})"
 
         # Test dtype is preserved with automatic longitude wrapping
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
         with catch_warnings():
-            basedef = geometry.BaseDefinition(lons2, lats)
+            basedef = BaseDefinition(lons2, lats)
 
         lons, _ = basedef.get_lonlats()
-        self.assertEqual(lons.dtype, lons2.dtype,
-                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
-                         (lons2.dtype, lons.dtype,))
+        assert lons.dtype == lons2.dtype, \
+            f"BaseDefinition did not maintain dtype of longitudes (in:{lons2.dtype} out:{lons.dtype})"
 
         lons2_ints = lons2.astype('int')
         with catch_warnings():
-            basedef = geometry.BaseDefinition(lons2_ints, lats)
+            basedef = BaseDefinition(lons2_ints, lats)
 
         lons, _ = basedef.get_lonlats()
-        self.assertEqual(lons.dtype, lons2_ints.dtype,
-                         "BaseDefinition did not maintain dtype of longitudes (in:%s out:%s)" %
-                         (lons2_ints.dtype, lons.dtype,))
+        assert lons.dtype == lons2_ints.dtype, \
+            f"BaseDefinition did not maintain dtype of longitudes (in:{lons2_ints.dtype} out:{lons.dtype})"
 
-    def test_area_hash(self):
-        """Test the area hash."""
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                           {'a': '6378144.0',
-                                            'b': '6356759.0',
-                                            'lat_0': '50.00',
-                                            'lat_ts': '50.00',
-                                            'lon_0': '8.00',
-                                            'proj': 'stere'},
-                                           800,
-                                           800,
-                                           [-1370912.72,
-                                               -909968.64000000001,
-                                               1029087.28,
-                                               1490031.3600000001])
 
-        self.assertIsInstance(hash(area_def), int)
-
-        area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
-                                           {'a': '6378144.0',
-                                            'b': '6356759.0',
-                                            'lat_ts': '50.00',
-                                            'lon_0': '8.00',
-                                            'lat_0': '50.00',
-                                            'proj': 'stere'},
-                                           800,
-                                           800,
-                                           [-1370912.72,
-                                               -909968.64000000001,
-                                               1029087.28,
-                                               1490031.3600000001])
-
-        self.assertIsInstance(hash(area_def), int)
-
-        area_def = geometry.AreaDefinition('New area', 'Europe', 'areaD',
-                                           {'a': '6378144.0',
-                                            'b': '6356759.0',
-                                            'lat_ts': '50.00',
-                                            'lon_0': '8.00',
-                                            'lat_0': '50.00',
-                                            'proj': 'stere'},
-                                           800,
-                                           800,
-                                           [-1370912.72,
-                                               -909968.64000000001,
-                                               1029087.28,
-                                               1490031.3600000001])
-
-        self.assertIsInstance(hash(area_def), int)
-
-    def test_get_array_hashable(self):
-        """Test making the array hashable."""
-        arr = np.array([1.2, 1.3, 1.4, 1.5])
-        if sys.byteorder == 'little':
-            # arr.view(np.uint8)
-            reference = np.array([51, 51, 51, 51, 51, 51, 243,
-                                  63, 205, 204, 204, 204, 204,
-                                  204, 244, 63, 102, 102, 102, 102,
-                                  102, 102, 246, 63, 0, 0,
-                                  0, 0, 0, 0, 248, 63],
-                                 dtype=np.uint8)
-        else:
-            # on le machines use arr.byteswap().view(np.uint8)
-            reference = np.array([63, 243, 51, 51, 51, 51, 51,
-                                  51, 63, 244, 204, 204, 204,
-                                  204, 204, 205, 63, 246, 102, 102,
-                                  102, 102, 102, 102, 63, 248,
-                                  0, 0, 0, 0, 0, 0],
-                                 dtype=np.uint8)
-
-        np.testing.assert_allclose(reference,
-                                   geometry.get_array_hashable(arr))
-
-        try:
-            import xarray as xr
-        except ImportError:
-            pass
-        else:
-            xrarr = xr.DataArray(arr)
-            np.testing.assert_allclose(reference,
-                                       geometry.get_array_hashable(arr))
-
-            xrarr.attrs['hash'] = 42
-            self.assertEqual(geometry.get_array_hashable(xrarr),
-                             xrarr.attrs['hash'])
-
-    def test_swath_hash(self):
-        """Test swath hash."""
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        swath_def = geometry.SwathDefinition(lons, lats)
-
-        self.assertIsInstance(hash(swath_def), int)
-
-    def test_swath_hash_dask(self):
-        """Test hashing SwathDefinitions with dask arrays underneath."""
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        dalons = da.from_array(lons, chunks=1000)
-        dalats = da.from_array(lats, chunks=1000)
-        swath_def = geometry.SwathDefinition(dalons, dalats)
-        self.assertIsInstance(hash(swath_def), int)
-
-    def test_swath_hash_xarray(self):
-        """Test hashing SwathDefinitions with DataArrays underneath."""
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        xrlons = xr.DataArray(lons)
-        xrlats = xr.DataArray(lats)
-        swath_def = geometry.SwathDefinition(xrlons, xrlats)
-        self.assertIsInstance(hash(swath_def), int)
-
-    def test_swath_hash_xarray_with_dask(self):
-        """Test hashing SwathDefinitions with DataArrays:dask underneath."""
-        lons = np.array([1.2, 1.3, 1.4, 1.5])
-        lats = np.array([65.9, 65.86, 65.82, 65.78])
-        dalons = da.from_array(lons, chunks=1000)
-        dalats = da.from_array(lats, chunks=1000)
-        xrlons = xr.DataArray(dalons)
-        xrlats = xr.DataArray(dalats)
-        swath_def = geometry.SwathDefinition(xrlons, xrlats)
-        self.assertIsInstance(hash(swath_def), int)
-
-    def test_non_contiguous_swath_hash(self):
-        """Test swath hash."""
-        lons = np.array([[1.2, 1.3, 1.4, 1.5],
-                         [1.2, 1.3, 1.4, 1.5]])
-        lats = np.array([[65.9, 65.86, 65.82, 65.78],
-                         [65.9, 65.86, 65.82, 65.78]])
-        swath_def = geometry.SwathDefinition(lons, lats)
-        swath_def_subset = swath_def[:, slice(0, 2)]
-        self.assertIsInstance(hash(swath_def_subset), int)
+class Test(unittest.TestCase):
+    """Unit testing the geometry and geo_filter modules."""
 
     def test_area_equal(self):
         """Test areas equality."""
@@ -779,8 +648,6 @@ class Test(unittest.TestCase):
 
     def test_roundtrip_lonlat_array_coordinates_for_dask_array(self):
         """Test roundrip for dask arrays."""
-        import dask.array as da
-
         from pyresample import get_area_def
         area_id = 'test'
         area_name = 'Test area with 2x2 pixels'
@@ -836,8 +703,6 @@ class Test(unittest.TestCase):
 
     def test_area_corners_around_south_pole(self):
         """Test corner values for the ease-sh area."""
-        import numpy as np
-
         from pyresample.geometry import AreaDefinition
         area_id = 'ease_sh'
         description = 'Antarctic EASE grid'
@@ -1134,14 +999,13 @@ class Test(unittest.TestCase):
         (lon, _) = area_def.get_lonlats(dtype="f8")
         self.assertEqual(lon.dtype, np.dtype("f8"))
 
-        from dask.array.core import Array as dask_array
         (lon, _) = area_def.get_lonlats(dtype="f4", chunks=4)
         self.assertEqual(lon.dtype, np.dtype("f4"))
-        self.assertIsInstance(lon, dask_array)
+        self.assertIsInstance(lon, da.Array)
 
         (lon, _) = area_def.get_lonlats(dtype="f8", chunks=4)
         self.assertEqual(lon.dtype, np.dtype("f8"))
-        self.assertIsInstance(lon, dask_array)
+        self.assertIsInstance(lon, da.Array)
 
     def test_area_def_geocentric_resolution(self):
         """Test the AreaDefinition.geocentric_resolution method."""
@@ -1197,7 +1061,6 @@ class Test(unittest.TestCase):
                                     'zone': 33}
         assert sweref.width == 453
         assert sweref.height == 794
-        import numpy as np
         np.testing.assert_allclose(sweref.area_extent,
                                    (181896.3291, 6101648.0705,
                                     1086312.942376, 7689478.3056))
@@ -1205,8 +1068,6 @@ class Test(unittest.TestCase):
     def test_from_cf(self):
         """Test the from_cf class method."""
         # prepare a netCDF/CF lookalike with xarray
-        import xarray as xr
-
         from pyresample.geometry import AreaDefinition
         nlat = 19
         nlon = 37
@@ -1458,34 +1319,25 @@ class TestSwathDefinition(unittest.TestCase):
         self.assertFalse(
             swath_def != swath_def2, 'swath_defs are not equal as expected')
 
-        try:
-            import dask.array as da
-            lons = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
-            lats = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
-            lons2 = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
-            lats2 = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
-            swath_def = geometry.SwathDefinition(lons, lats)
-            swath_def2 = geometry.SwathDefinition(lons2, lats2)
-            # different arrays, same values, with nans
-            self.assertFalse(
-                swath_def != swath_def2, 'swath_defs are not equal as expected')
-        except ImportError:
-            pass
+        lons = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+        lats = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+        lons2 = da.from_array(np.array([1.2, 1.3, 1.4, np.nan]), chunks=2)
+        lats2 = da.from_array(np.array([65.9, 65.86, 65.82, np.nan]), chunks=2)
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values, with nans
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
 
-        try:
-            import xarray as xr
-            lons = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
-            lats = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
-            lons2 = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
-            lats2 = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
-            swath_def = geometry.SwathDefinition(lons, lats)
-            swath_def2 = geometry.SwathDefinition(lons2, lats2)
-            # different arrays, same values, with nans
-            self.assertFalse(
-                swath_def != swath_def2, 'swath_defs are not equal as expected')
-
-        except ImportError:
-            pass
+        lons = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+        lats = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+        lons2 = xr.DataArray(np.array([1.2, 1.3, 1.4, np.nan]))
+        lats2 = xr.DataArray(np.array([65.9, 65.86, 65.82, np.nan]))
+        swath_def = geometry.SwathDefinition(lons, lats)
+        swath_def2 = geometry.SwathDefinition(lons2, lats2)
+        # different arrays, same values, with nans
+        self.assertFalse(
+            swath_def != swath_def2, 'swath_defs are not equal as expected')
 
     def test_swath_not_equal(self):
         """Test swath inequality."""
@@ -1513,7 +1365,6 @@ class TestSwathDefinition(unittest.TestCase):
                      'gamma': 0, 'lat_0': -0.2821013754097188}
         assert_np_dict_allclose(area._compute_omerc_parameters('WGS84'),
                                 proj_dict)
-        import xarray as xr
         lats = xr.DataArray(np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469, np.nan],
                                       [80.84000396728516, 60.74200439453125, 34.08500289916992, np.nan],
                                       [67.07600402832031, 54.147003173828125, 30.547000885009766, np.nan]]).T,
@@ -1570,7 +1421,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_compute_optimal_bb(self):
         """Test computing the bb area."""
-        import xarray as xr
         nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                            [80.84000396728516, 60.74200439453125, 34.08500289916992],
                            [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
@@ -1614,7 +1464,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_compute_optimal_bb_with_resolution(self):
         """Test computing the bb area while passing in the resolution."""
-        import xarray as xr
         nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                            [80.84000396728516, 60.74200439453125, 34.08500289916992],
                            [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
@@ -1633,9 +1482,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_aggregation(self):
         """Test aggregation on SwathDefinitions."""
-        import dask.array as da
-        import numpy as np
-        import xarray as xr
         window_size = 2
         resolution = 3
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
@@ -1654,9 +1500,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_striding(self):
         """Test striding."""
-        import dask.array as da
-        import numpy as np
-        import xarray as xr
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
         xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
@@ -1669,10 +1512,6 @@ class TestSwathDefinition(unittest.TestCase):
 
     def test_swath_def_geocentric_resolution(self):
         """Test the SwathDefinition.geocentric_resolution method."""
-        import dask.array as da
-        import numpy as np
-        import xarray as xr
-
         from pyresample.geometry import SwathDefinition
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
@@ -1998,8 +1837,6 @@ class TestCreateAreaDef:
 
     def test_create_area_def_extra_combinations(self):
         """Test extra combinations of create_area_def parameters."""
-        from xarray import DataArray
-
         from pyresample import create_area_def as cad
         from pyresample.geometry import AreaDefinition
 
@@ -2018,7 +1855,7 @@ class TestCreateAreaDef:
 
         # Tests that specifying units through xarrays works.
         area_def = cad(area_id, projection, shape=shape,
-                       area_extent=DataArray(
+                       area_extent=xr.DataArray(
                            (-135.0, -17.516001139327766, 45.0, -17.516001139327766),
                            attrs={'units': 'degrees'}))
         self._compare_area_defs(area_def, base_def)
@@ -2138,7 +1975,6 @@ class TestDynamicAreaDefinition:
 
     def test_freeze_when_area_is_optimized_and_has_a_resolution(self):
         """Test freezing an optimized area with a resolution."""
-        import xarray as xr
         nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                            [80.84000396728516, 60.74200439453125, 34.08500289916992],
                            [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
@@ -2160,7 +1996,6 @@ class TestDynamicAreaDefinition:
 
     def test_freeze_when_area_is_optimized_and_a_resolution_is_provided(self):
         """Test freezing an optimized area when provided a resolution."""
-        import xarray as xr
         nplats = np.array([[85.23900604248047, 62.256004333496094, 35.58000183105469],
                            [80.84000396728516, 60.74200439453125, 34.08500289916992],
                            [67.07600402832031, 54.147003173828125, 30.547000885009766]]).T
@@ -2191,8 +2026,6 @@ class TestDynamicAreaDefinition:
     @pytest.mark.parametrize('use_dask', [False, True])
     def test_freeze_longlat_antimeridian(self, lats, use_dask):
         """Test geographic areas over the antimeridian."""
-        import dask
-
         from pyresample.test.utils import CustomScheduler
         area = geometry.DynamicAreaDefinition('test_area', 'A test area',
                                               'EPSG:4326')
@@ -2233,7 +2066,6 @@ class TestDynamicAreaDefinition:
         lats = [[66, 67, 68, 69.],
                 [58, 59, 60, 61],
                 [50, 51, 52, 53]]
-        import xarray as xr
         sdef = geometry.SwathDefinition(xr.DataArray(lons), xr.DataArray(lats))
         result = area.freeze(sdef)
         np.testing.assert_allclose(result.area_extent,

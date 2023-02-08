@@ -86,6 +86,21 @@ def _gen_swath_def_numpy(create_test_swath):
     return create_test_swath(lons, lats)
 
 
+def _gen_swath_def_numpy_small_noncontiguous(create_test_swath):
+    swath_def = _gen_swath_def_numpy_small(create_test_swath)
+    swath_def_subset = swath_def[:, slice(0, 2)]
+    return swath_def_subset
+
+
+def _gen_swath_def_numpy_small(create_test_swath):
+    lons = np.array([[1.2, 1.3, 1.4, 1.5],
+                     [1.2, 1.3, 1.4, 1.5]])
+    lats = np.array([[65.9, 65.86, 65.82, 65.78],
+                     [65.9, 65.86, 65.82, 65.78]])
+    swath_def = create_test_swath(lons, lats)
+    return swath_def
+
+
 def _gen_swath_lons_lats():
     swath_shape = (50, 10)
     lon_start, lon_stop, lat_start, lat_stop = (3.0, 12.0, 75.0, 26.0)
@@ -104,6 +119,7 @@ class TestSwathHashability:
             _gen_swath_def_dask,
             _gen_swath_def_xarray_numpy,
             _gen_swath_def_xarray_dask,
+            _gen_swath_def_numpy_small_noncontiguous,
         ])
     def test_swath_as_dict_keys(self, swath_def_func1, create_test_swath):
         from ..utils import assert_maximum_dask_computes
@@ -112,6 +128,7 @@ class TestSwathHashability:
 
         with assert_maximum_dask_computes(0):
             assert hash(swath_def1) == hash(swath_def2)
+            assert isinstance(hash(swath_def1), int)
 
             test_dict = {}
             test_dict[swath_def1] = 5
@@ -121,6 +138,12 @@ class TestSwathHashability:
             test_dict[swath_def2] = 6
             assert test_dict[swath_def1] == 6
             assert test_dict[swath_def2] == 6
+
+    def test_non_contiguous_swath_hash(self, create_test_swath):
+        """Test swath hash."""
+        swath_def = _gen_swath_def_numpy_small(create_test_swath)
+        swath_def_subset = _gen_swath_def_numpy_small_noncontiguous(create_test_swath)
+        assert hash(swath_def) != hash(swath_def_subset)
 
 
 class TestSwathBboxLonLats:
