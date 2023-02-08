@@ -16,7 +16,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test the geometry objects."""
+"""Test the geometry objects.
+
+DEPRECATED: Don't add new tests to this file. Put them in a module in ``test/test_geometry/`` instead.
+
+"""
 import random
 import unittest
 from unittest.mock import MagicMock, patch
