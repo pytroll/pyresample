@@ -1,3 +1,28 @@
+## Version 1.26.1 (2023/02/07)
+
+### Issues Closed
+
+* [Issue 497](https://github.com/pytroll/pyresample/issues/497) - resampling fails with `ValueError` if not padding data
+* [Issue 492](https://github.com/pytroll/pyresample/issues/492) - Infinite values in geostationary bounding box crash intersection function ([PR 493](https://github.com/pytroll/pyresample/pull/493) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 486](https://github.com/pytroll/pyresample/issues/486) - BUG: Import fails due to misconfigured setup.py ([PR 487](https://github.com/pytroll/pyresample/pull/487) by [@bzah](https://github.com/bzah))
+* [Issue 484](https://github.com/pytroll/pyresample/issues/484) - Fails to build with Shapely 2.0 ([PR 485](https://github.com/pytroll/pyresample/pull/485) by [@sebastic](https://github.com/sebastic))
+* [Issue 481](https://github.com/pytroll/pyresample/issues/481) - Intermittent failures on 32bit architectures
+* [Issue 448](https://github.com/pytroll/pyresample/issues/448) - Release 1.25.1 missing usual GPG signature
+
+In this release 6 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 493](https://github.com/pytroll/pyresample/pull/493) - Fix geostationary bbox having inf values ([2368](https://github.com/pytroll/satpy/issues/2368), [492](https://github.com/pytroll/pyresample/issues/492))
+* [PR 487](https://github.com/pytroll/pyresample/pull/487) - FIX: Update pyproj min version to 3.0.0 ([486](https://github.com/pytroll/pyresample/issues/486))
+* [PR 485](https://github.com/pytroll/pyresample/pull/485) - Tune tolerance to fix test failures with PROJ 9.1.1. ([484](https://github.com/pytroll/pyresample/issues/484))
+* [PR 482](https://github.com/pytroll/pyresample/pull/482) - Fix intermittent EWA test failures
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.26.0.post0 (2022/11/24)
 
 ### Pull Requests Merged
