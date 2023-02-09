@@ -749,12 +749,9 @@ class TestAreaDefinition:
         assert xcoord2.name != xcoord.name
         assert ycoord2.name != ycoord.name
 
-    def test_roundtrip_lonlat_array_coordinates(self):
-        """Test roundtrip."""
-        from pyresample import get_area_def
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
+    @pytest.mark.parametrize("use_dask", [False, True])
+    def test_roundtrip_lonlat_array_coordinates(self, create_test_area, use_dask):
+        """Test roundtrip array coordinates with lon/lat and x/y."""
         x_size = 100
         y_size = 100
         area_extent = [0, -500000, 1000000, 500000]
@@ -762,53 +759,23 @@ class TestAreaDefinition:
                      'lat_0': '50',
                      'lon_0': '0',
                      'a': '6371228.0', 'units': 'm'}
-        area_def = get_area_def(area_id,
-                                area_name,
-                                proj_id,
-                                proj_dict,
-                                x_size, y_size,
-                                area_extent)
-        lat, lon = 48.832222, 2.355556  # Paris, 13th arrondissement, France
-        x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
-        res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
-        np.testing.assert_allclose([res_lon, res_lat], [lon, lat])
-
-    def test_roundtrip_lonlat_array_coordinates_for_dask_array(self):
-        """Test roundrip for dask arrays."""
-        from pyresample import get_area_def
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
-        x_size = 100
-        y_size = 100
-        area_extent = [0, -500000, 1000000, 500000]
-        proj_dict = {"proj": 'laea',
-                     'lat_0': '50',
-                     'lon_0': '0',
-                     'a': '6371228.0', 'units': 'm'}
-        area_def = get_area_def(area_id,
-                                area_name,
-                                proj_id,
-                                proj_dict,
-                                x_size, y_size,
-                                area_extent)
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         lat1, lon1 = 48.832222, 2.355556  # Paris, 13th arrondissement, France
         lat2, lon2 = 58.6, 16.2  # Norrköping, Sweden
-        lon = da.from_array([lon1, lon2])
-        lat = da.from_array([lat1, lat2])
+        lon = np.array([lon1, lon2])
+        lat = np.array([lat1, lat2])
+        if use_dask:
+            lon = da.from_array(lon)
+            lat = da.from_array(lat)
         x__, y__ = area_def.get_array_coordinates_from_lonlat(lon, lat)
         res_lon, res_lat = area_def.get_lonlat_from_array_coordinates(x__, y__)
-        assert isinstance(res_lon, da.Array)
-        assert isinstance(res_lat, da.Array)
+        assert isinstance(res_lon, da.Array if use_dask else np.ndarray)
+        assert isinstance(res_lat, da.Array if use_dask else np.ndarray)
         np.testing.assert_allclose(res_lon, lon)
         np.testing.assert_allclose(res_lat, lat)
 
-    def test_get_lonlats_vs_get_lonlat(self):
+    def test_get_lonlats_vs_get_lonlat(self, create_test_area):
         """Test that both function yield similar results."""
-        from pyresample import get_area_def
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
         x_size = 100
         y_size = 100
         area_extent = [0, -500000, 1000000, 500000]
@@ -816,12 +783,7 @@ class TestAreaDefinition:
                      'lat_0': '50',
                      'lon_0': '0',
                      'a': '6371228.0', 'units': 'm'}
-        area_def = get_area_def(area_id,
-                                area_name,
-                                proj_id,
-                                proj_dict,
-                                x_size, y_size,
-                                area_extent)
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         lons, lats = area_def.get_lonlats()
         x, y = np.meshgrid(np.arange(x_size), np.arange(y_size))
         lon, lat = area_def.get_lonlat_from_array_coordinates(x, y)
@@ -843,12 +805,8 @@ class TestAreaDefinition:
         actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
         np.testing.assert_allclose(actual, expected)
 
-    def test_get_xy_from_lonlat(self):
+    def test_get_xy_from_lonlat(self, create_test_area):
         """Test the function get_xy_from_lonlat."""
-        from pyresample import utils
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
         x_size = 2
         y_size = 2
         area_extent = [1000000, 0, 1050000, 50000]
@@ -856,12 +814,7 @@ class TestAreaDefinition:
                      'lat_0': '60',
                      'lon_0': '0',
                      'a': '6371228.0', 'units': 'm'}
-        area_def = utils.get_area_def(area_id,
-                                      area_name,
-                                      proj_id,
-                                      proj_dict,
-                                      x_size, y_size,
-                                      area_extent)
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
         lon_ur, lat_ur = p__(1050000, 50000, inverse=True)
@@ -924,68 +877,39 @@ class TestAreaDefinition:
         assert (x__.data == x_expects).all()
         assert (y__.data == y_expects).all()
 
-    def test_get_slice_starts_stops(self):
+    def test_get_slice_starts_stops(self, create_test_area):
         """Check area slice end-points."""
-        from pyresample import utils
-        area_id = 'orig'
-        area_name = 'Test area'
-        proj_id = 'test'
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        target_area = utils.get_area_def(area_id,
-                                         area_name,
-                                         proj_id,
-                                         proj_dict,
-                                         x_size, y_size,
-                                         area_extent)
+        target_area = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         # Expected result is the same for all cases
         expected = (3, 3709, 3, 3709)
 
         # Source and target have the same orientation
         area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
-        source_area = utils.get_area_def(area_id,
-                                         area_name,
-                                         proj_id,
-                                         proj_dict,
-                                         x_size, y_size,
-                                         area_extent)
+        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
         # Source is flipped in X direction
         area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
-        source_area = utils.get_area_def(area_id,
-                                         area_name,
-                                         proj_id,
-                                         proj_dict,
-                                         x_size, y_size,
-                                         area_extent)
+        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
         # Source is flipped in Y direction
         area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
-        source_area = utils.get_area_def(area_id,
-                                         area_name,
-                                         proj_id,
-                                         proj_dict,
-                                         x_size, y_size,
-                                         area_extent)
+        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
         # Source is flipped in both X and Y directions
         area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
-        source_area = utils.get_area_def(area_id,
-                                         area_name,
-                                         proj_id,
-                                         proj_dict,
-                                         x_size, y_size,
-                                         area_extent)
+        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
         res = source_area._get_slice_starts_stops(target_area)
         assert res == expected
 
