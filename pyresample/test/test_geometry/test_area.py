@@ -991,24 +991,14 @@ class TestAreaDefinition:
                                  '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
                                  '+type=crs +units=m +x_0=4321000 +y_0=3210000')
 
-    def test_striding(self):
+    def test_striding(self, create_test_area):
         """Test striding AreaDefinitions."""
-        from pyresample import utils
-
-        area_id = 'orig'
-        area_name = 'Test area'
-        proj_id = 'test'
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
-        area_def = utils.get_area_def(area_id,
-                                      area_name,
-                                      proj_id,
-                                      proj_dict,
-                                      x_size, y_size,
-                                      area_extent)
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
 
         reduced_area = area_def[::4, ::4]
         np.testing.assert_allclose(reduced_area.area_extent, (area_extent[0],
@@ -1046,47 +1036,32 @@ class TestAreaDefinition:
         assert lon.dtype == np.dtype("f8", )
         assert isinstance(lon, dask_array)
 
-    def test_area_def_geocentric_resolution(self):
+    def test_area_def_geocentric_resolution(self, create_test_area):
         """Test the AreaDefinition.geocentric_resolution method."""
-        from pyresample import get_area_def
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
         # metered projection
-        area_def = get_area_def('orig', 'Test area', 'test',
-                                proj_dict,
-                                3712, 3712,
-                                area_extent)
+        area_def = create_test_area(proj_dict, 3712, 3712, area_extent)
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(10646.562531, geo_res)
 
         # non-square area non-space area
         area_extent = (-4570248.477339745, -3561247.267842293, 0, 3570248.477339745)
-        area_def = get_area_def('orig', 'Test area', 'test',
-                                proj_dict,
-                                2000, 5000,
-                                area_extent)
+        area_def = create_test_area(proj_dict, 2000, 5000, area_extent)
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(2397.687307, geo_res)
 
         # lon/lat
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'proj': 'latlong'}
-        area_def = get_area_def('orig', 'Test area', 'test',
-                                proj_dict,
-                                3712, 3712,
-                                [-130, 30, -120, 40])
+        area_def = create_test_area(proj_dict, 3712, 3712, [-130, 30, -120, 40])
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(298.647232, geo_res)
 
-    def test_area_def_geocentric_resolution_latlong(self):
+    def test_area_def_geocentric_resolution_latlong(self, create_test_area):
         """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
-        from pyresample import get_area_def
         area_extent = (-110.0, 45.0, -95.0, 55.0)
-        # metered projection
-        area_def = get_area_def('orig', 'Test area', 'test',
-                                {"EPSG": "4326"},
-                                3712, 3712,
-                                area_extent)
+        area_def = create_test_area({"EPSG": "4326"}, 3712, 3712, area_extent)
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(299.411133, geo_res)
 
