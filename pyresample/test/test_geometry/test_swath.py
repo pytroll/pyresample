@@ -538,7 +538,9 @@ class TestSwathDefinition:
         geo_res = sd.geocentric_resolution()
         np.testing.assert_allclose(111301.237078, geo_res)
 
-        # 1D
+    def test_swath_def_geocentric_resolution_xarray_dask(self, create_test_swath):
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
         xlats = xr.DataArray(da.from_array(lats.ravel(), chunks=2), dims=['y'])
         xlons = xr.DataArray(da.from_array(lons.ravel(), chunks=2), dims=['y'])
         sd = create_test_swath(xlons, xlats)
