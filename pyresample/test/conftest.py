@@ -60,8 +60,8 @@ def create_test_swath(swath_class):
     NOT use this fixture and instead use the exact class directly.
 
     """
-    def _create_test_swath(lons, lats):
-        return swath_class(lons, lats)
+    def _create_test_swath(lons, lats, **kwargs):
+        return swath_class(lons, lats, **kwargs)
     return _create_test_swath
 
 
