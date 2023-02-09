@@ -1061,7 +1061,7 @@ class TestAreaDefinition:
     def test_area_def_geocentric_resolution_latlong(self, create_test_area):
         """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
         area_extent = (-110.0, 45.0, -95.0, 55.0)
-        area_def = create_test_area({"EPSG": "4326"}, 3712, 3712, area_extent)
+        area_def = create_test_area("EPSG:4326", 3712, 3712, area_extent)
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(299.411133, geo_res)
 
