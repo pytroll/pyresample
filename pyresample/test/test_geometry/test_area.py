@@ -1171,6 +1171,26 @@ class TestAreaDefinition:
         with pytest.raises(AttributeError):
             area_def.area_extent = (-1000000, -900000, 1000000, 1500000)
 
+    def test_aggregate(self, create_test_area):
+        """Test aggregation of AreaDefinitions."""
+        area = create_test_area(
+            {
+                'a': '6378144.0',
+                'b': '6356759.0',
+                'lat_0': '50.00',
+                'lat_ts': '50.00',
+                'lon_0': '8.00',
+                'proj': 'stere'
+            },
+            800,
+            800,
+            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
+        res = area.aggregate(x=4, y=2)
+        assert res.proj_dict == area.proj_dict
+        np.testing.assert_allclose(res.area_extent, area.area_extent)
+        assert res.shape[0] == area.shape[0] / 2
+        assert res.shape[1] == area.shape[1] / 4
+
 
 class TestAreaDefinitionMetadata:
     """Test behavior of metadata in an AreaDefinition."""
@@ -1409,33 +1429,6 @@ class TestCreateAreaDef:
         np.testing.assert_allclose(area_def.area_extent, (-5003950.7698, -5615432.0761, 5003950.7698, 5615432.0761))
         assert area_def.shape == (101, 90)
 
-    def test_aggregate(self, create_test_area):
-        """Test aggregation of AreaDefinitions."""
-        area = create_test_area(
-            {
-                'a': '6378144.0',
-                'b': '6356759.0',
-                'lat_0': '50.00',
-                'lat_ts': '50.00',
-                'lon_0': '8.00',
-                'proj': 'stere'
-            },
-            800,
-            800,
-            (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
-        res = area.aggregate(x=4, y=2)
-        assert res.proj_dict == area.proj_dict
-        np.testing.assert_allclose(res.area_extent, area.area_extent)
-        assert res.shape[0] == area.shape[0] / 2
-        assert res.shape[1] == area.shape[1] / 4
-
-
-def _check_final_area_lon_lat_with_chunks(final_area, lons, lats, chunks):
-    """Compute the lons and lats with chunk definition and check that they are as expected."""
-    lons_c, lats_c = final_area.get_lonlats(chunks=chunks)
-    np.testing.assert_array_equal(lons, lons_c)
-    np.testing.assert_array_equal(lats, lats_c)
-
 
 @pytest.fixture
 def truncated_geos_area(create_test_area):
@@ -1635,49 +1628,44 @@ class TestCrop:
         assert res.shape == (700, 400)
 
 
-def test_enclose_areas():
+def test_enclose_areas(create_test_area):
     """Test enclosing areas."""
-    from pyresample.geometry import create_area_def, enclose_areas
+    from pyresample.geometry import enclose_areas
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
                  'no_defs': None, 'type': 'crs'}
     proj_dict_alt = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0,
                      'units': 'm'}
 
-    ar1 = create_area_def(
-        "test-area",
-        projection=proj_dict,
-        units="m",
+    ar1 = create_test_area(
+        proj_dict,
+        10, 10,
         area_extent=[0, 20, 100, 120],
-        shape=(10, 10))
+    )
 
-    ar2 = create_area_def(
-        "test-area",
-        projection=proj_dict,
-        units="m",
-        area_extent=[20, 40, 120, 140],
-        shape=(10, 10))
+    ar2 = create_test_area(
+        proj_dict,
+        10, 10,
+        [20, 40, 120, 140],
+    )
 
-    ar3 = create_area_def(
-        "test-area",
-        projection=proj_dict,
-        units="m",
-        area_extent=[20, 0, 120, 100],
-        shape=(10, 10))
+    ar3 = create_test_area(
+        proj_dict,
+        10, 10,
+        [20, 0, 120, 100],
+    )
 
-    ar4 = create_area_def(
-        "test-area",
-        projection=proj_dict_alt,
-        units="m",
-        area_extent=[20, 0, 120, 100],
-        shape=(10, 10))
+    ar4 = create_test_area(
+        proj_dict_alt,
+        10, 10,
+        [20, 0, 120, 100],
+    )
 
-    ar5 = create_area_def(
-        "test-area",
-        projection=proj_dict,
-        units="m",
-        area_extent=[-50, -50, 50, 50],
-        shape=(100, 100))
+    ar5 = create_test_area(
+        proj_dict,
+        100, 100,
+        [-50, -50, 50, 50],
+    )
 
     ar_joined = enclose_areas(ar1, ar2, ar3)
     np.testing.assert_allclose(ar_joined.area_extent, [0, 0, 120, 140])
