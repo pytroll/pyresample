@@ -14,11 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# workaround python bug: http://bugs.python.org/issue15881#msg170215
-# remove when python 2 support is dropped
 """The setup module."""
-import multiprocessing  # noqa: F401
 import sys
 
 import numpy as np
@@ -91,7 +87,7 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
-          python_requires='>=3.8',
+          python_requires='>=3.9',
           setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,
