@@ -820,7 +820,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     else:  # One channel
         output_raw_shape = output_size
 
-    full_result = np.ones(output_raw_shape, dtype=data.dtype) * fill_value
+    full_result = np.full(output_raw_shape, fill_value, dtype=result.dtype)
     full_result[valid_output_index] = result
     result = full_result
 
