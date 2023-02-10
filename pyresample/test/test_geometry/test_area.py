@@ -1806,3 +1806,162 @@ class TestAreaDefGetAreaSlices:
         slice_cols, slice_lines = src_area.get_area_slices(cropped_area)
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
+
+
+class TestBoundary:
+    """Test 'boundary' method for AreaDefinition classes."""
+
+    def test_polar_south_pole_projection(self, create_test_area):
+        """Test boundary for polar projection around the South Pole."""
+        areadef = create_test_area(
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            2, 2,
+            (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        )
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-45., -55.61313895],
+                                      [45., -55.61313895],
+                                      [135., -55.61313895],
+                                      [-135., -55.61313895]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+
+    def test_nort_pole_projection(self, create_test_area):
+        """Test boundary for polar projection around the North Pole."""
+        areadef = create_test_area(
+            {'proj': 'laea', 'lat_0': 90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            2, 2,
+            (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625),
+        )
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 55.61313895],
+                                      [135., 55.61313895],
+                                      [45., 55.61313895],
+                                      [-45., 55.61313895]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+
+    def test_geostationary_projection(self, create_test_area):
+        """Test boundary for geostationary projection."""
+        areadef = create_test_area(
+            {'a': 6378169.00, 'b': 6356583.80, 'h': 35785831.00, 'lon_0': 0, 'proj': 'geos'},
+            100, 100,
+            (-5500000., -5500000., 5500000., 5500000.),
+        )
+
+        # Check default boundary shape
+        default_n_vertices = 50
+        boundary = areadef.boundary(frequency=None)
+        assert boundary.vertices.shape == (default_n_vertices, 2)
+
+        # Check minimum boundary vertices
+        n_vertices = 3
+        minimum_n_vertices = 4
+        boundary = areadef.boundary(frequency=n_vertices)
+        assert boundary.vertices.shape == (minimum_n_vertices, 2)
+
+        # Check odd frequency number
+        # - Rounded to the sequent even number (to construct the sides)
+        n_odd_vertices = 5
+        boundary = areadef.boundary(frequency=n_odd_vertices)
+        assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
+
+        # Check boundary vertices
+        n_vertices = 10
+        boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],
+                                      [-5.68985178e+01, 6.90053314e+01],
+                                      [5.68985178e+01, 6.90053314e+01],
+                                      [7.54251621e+01, 3.53432890e+01],
+                                      [7.92337283e+01, -0.00000000e+00],
+                                      [7.54251621e+01, -3.53432890e+01],
+                                      [5.68985178e+01, -6.90053314e+01],
+                                      [-5.68985178e+01, -6.90053314e+01],
+                                      [-7.54251621e+01, -3.53432890e+01],
+                                      [-7.92337283e+01, 6.94302533e-15]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+
+    def test_global_platee_caree_projection(self, create_test_area):
+        """Test boundary for global platee caree projection."""
+        areadef = create_test_area(
+            'EPSG:4326',
+            4, 4,
+            (-180.0, -90.0, 180.0, 90.0),
+        )
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-135., 67.5],
+                                      [-45., 67.5],
+                                      [45., 67.5],
+                                      [135., 67.5],
+                                      [135., 22.5],
+                                      [135., -22.5],
+                                      [135., -67.5],
+                                      [45., -67.5],
+                                      [-45., -67.5],
+                                      [-135., -67.5],
+                                      [-135., -22.5],
+                                      [-135., 22.5]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+
+    def test_minimal_global_platee_caree_projection(self, create_test_area):
+        """Test boundary for global platee caree projection."""
+        areadef = create_test_area(
+            'EPSG:4326',
+            2, 2,
+            (-180.0, -90.0, 180.0, 90.0),
+        )
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[-90., 45.],
+                                      [90., 45.],
+                                      [90., -45.],
+                                      [-90., -45.]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+
+    def test_local_area_projection(self, create_test_area):
+        """Test local area projection in meter."""
+        areadef = create_test_area(
+            'EPSG:2056',
+            2, 2,
+            (2_600_000.0, 1_050_000, 2_800_000.0, 1_170_000),
+        )
+        boundary = areadef.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = areadef.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[8.08993639, 46.41074744],
+                                      [9.39028624, 46.39582417],
+                                      [9.37106733, 45.85619242],
+                                      [8.08352612, 45.87097006]])
+        assert np.allclose(expected_vertices, boundary.vertices)

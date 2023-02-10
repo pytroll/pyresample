@@ -574,3 +574,34 @@ def assert_np_dict_allclose(dict1, dict2):
             np.testing.assert_allclose(val, dict2[key])
         except TypeError:
             assert val == dict2[key]
+
+
+class TestSwathBoundary:
+    """Test 'boundary' method for SwathDefinition classes."""
+
+    def test_swath_definition(self, create_test_swath):
+        """Test boundary for swath definition."""
+        lons = np.array([[1.2, 1.3, 1.4, 1.5],
+                         [1.2, 1.3, 1.4, 1.5]])
+        lats = np.array([[65.9, 65.86, 65.82, 65.78],
+                         [65.89, 65.86, 65.82, 65.78]])
+
+        # Define SwathDefinition and retrieve AreaBoundary
+        swath_def = create_test_swath(lons, lats)
+        boundary = swath_def.boundary(force_clockwise=False)
+
+        # Check boundary shape
+        height, width = swath_def.shape
+        n_vertices = (width - 1) * 2 + (height - 1) * 2
+        assert boundary.vertices.shape == (n_vertices, 2)
+
+        # Check boundary vertices is in correct order
+        expected_vertices = np.array([[1.2, 65.9],
+                                      [1.3, 65.86],
+                                      [1.4, 65.82],
+                                      [1.5, 65.78],
+                                      [1.5, 65.78],
+                                      [1.4, 65.82],
+                                      [1.3, 65.86],
+                                      [1.2, 65.89]])
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
