@@ -331,19 +331,11 @@ def _create_area(area_id, area_content):
     config = config_obj.dict()
     config['REGION'] = area_id
 
-    try:
-        string_types = basestring
-    except NameError:
-        string_types = str
-    if not isinstance(config['NAME'], string_types):
+    if not isinstance(config['NAME'], str):
         config['NAME'] = ', '.join(config['NAME'])
 
     config['XSIZE'] = int(config['XSIZE'])
     config['YSIZE'] = int(config['YSIZE'])
-    if 'ROTATION' in config.keys():
-        config['ROTATION'] = float(config['ROTATION'])
-    else:
-        config['ROTATION'] = 0
     config['AREA_EXTENT'][0] = config['AREA_EXTENT'][0].replace('(', '')
     config['AREA_EXTENT'][3] = config['AREA_EXTENT'][3].replace(')', '')
 
