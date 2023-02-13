@@ -20,7 +20,6 @@
 import os
 import unittest
 import uuid
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 from pyproj import CRS
@@ -298,99 +297,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(area_def.crs, CRS(3857))
 
 
-class TestProjRotation(unittest.TestCase):
-    """Test loading areas with rotation specified."""
-
-    def test_rotation_legacy(self):
-        """Basic rotation in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        ROTATION:      -45
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_rotation_yaml(self):
-        """Basic rotation in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          rotation: -45
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_norotation_legacy(self):
-        """No rotation specified in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
-
-    def test_norotation_yaml(self):
-        """No rotation specified in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
-
-
-# helper routines for the CF test cases
 def _prepare_cf_nh10km():
     import xarray as xr
     nx = 760

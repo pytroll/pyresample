@@ -22,7 +22,6 @@ DEPRECATED: Don't add new tests to this file. Put them in a module in ``test/tes
 
 """
 import random
-import unittest
 from unittest.mock import MagicMock, patch
 
 import dask
@@ -78,40 +77,6 @@ class TestBaseDefinition:
         lons, _ = basedef.get_lonlats()
         assert lons.dtype == lons2_ints.dtype, \
             f"BaseDefinition did not maintain dtype of longitudes (in:{lons2_ints.dtype} out:{lons.dtype})"
-
-
-class Test(unittest.TestCase):
-    """Unit testing the geometry and geo_filter modules."""
-
-    def test_get_proj_coords_rotation(self):
-        """Test basic get_proj_coords usage with rotation specified."""
-        from pyresample.geometry import AreaDefinition
-        area_id = 'test'
-        area_name = 'Test area with 2x2 pixels'
-        proj_id = 'test'
-        x_size = 10
-        y_size = 10
-        area_extent = [1000000, 0, 1050000, 50000]
-        proj_dict = {"proj": 'laea', 'lat_0': '60', 'lon_0': '0', 'a': '6371228.0', 'units': 'm'}
-        area_def = AreaDefinition(area_id, area_name, proj_id, proj_dict, x_size, y_size, area_extent, rotation=45)
-
-        xcoord, ycoord = area_def.get_proj_coords()
-        np.testing.assert_allclose(xcoord[0, :],
-                                   np.array([742462.120246, 745997.654152, 749533.188058, 753068.721964,
-                                             756604.25587, 760139.789776, 763675.323681, 767210.857587,
-                                             770746.391493, 774281.925399]))
-        np.testing.assert_allclose(ycoord[:, 0],
-                                   np.array([-675286.976033, -678822.509939, -682358.043845, -685893.577751,
-                                             -689429.111657, -692964.645563, -696500.179469, -700035.713375,
-                                             -703571.247281, -707106.781187]))
-
-        xcoord, ycoord = area_def.get_proj_coords(data_slice=(slice(None, None, 2), slice(None, None, 2)))
-        np.testing.assert_allclose(xcoord[0, :],
-                                   np.array([742462.120246, 749533.188058, 756604.25587, 763675.323681,
-                                             770746.391493]))
-        np.testing.assert_allclose(ycoord[:, 0],
-                                   np.array([-675286.976033, -682358.043845, -689429.111657, -696500.179469,
-                                             -703571.247281]))
 
 
 def assert_np_dict_allclose(dict1, dict2):
