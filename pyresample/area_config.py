@@ -76,7 +76,7 @@ def load_area(area_file_name, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
 
@@ -109,7 +109,7 @@ def load_area_from_string(area_strs, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
     """
@@ -376,7 +376,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
         Number of pixel in y dimension
     rotation: float
         Rotation in degrees (negative is cw)
-    area_extent : list
+    area_extent : list | tuple
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 
     Returns
@@ -458,7 +458,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     Returns
     -------
-    AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+    area : pyresample.geometry.AreaDefinition or pyresample.geometry.DynamicAreaDefinition
         If shape and area_extent are found, an AreaDefinition object is returned.
         If only shape or area_extent can be found, a DynamicAreaDefinition object is returned
 
