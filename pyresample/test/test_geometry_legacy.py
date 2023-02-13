@@ -22,7 +22,6 @@ DEPRECATED: Don't add new tests to this file. Put them in a module in ``test/tes
 
 """
 import random
-import unittest
 from unittest.mock import MagicMock, patch
 
 import dask
