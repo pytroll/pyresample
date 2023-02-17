@@ -27,6 +27,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
+from pyproj import Proj
 
 
 class TestNumpyBilinear(unittest.TestCase):
@@ -71,9 +72,13 @@ class TestNumpyBilinear(unittest.TestCase):
         cls.data1 = np.ones((in_shape[0], in_shape[1]))
         cls.data2 = 2. * cls.data1
         cls.data3 = cls.data1 + 9.5
+        cls.data3_1d = np.ravel(cls.data3)
+
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
                                  np.linspace(45., 75., num=in_shape[1]))
         cls.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        cls.source_def_1d = geometry.SwathDefinition(lons=np.ravel(lons),
+                                                     lats=np.ravel(lats))
 
         cls.radius = 50e3
         cls._neighbours = 32
@@ -222,7 +227,6 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test calculation of input xy-coordinates."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
@@ -233,7 +237,6 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import (
             _get_four_closest_corners,
             _get_input_xy,
@@ -330,6 +333,22 @@ class TestNumpyBilinear(unittest.TestCase):
         res = get_sample_from_bil_info(data.ravel(), t__, s__,
                                        input_idxs, idx_arr)
         assert not hasattr(res, 'mask')
+
+    def test_get_sample_from_bil_info_1d(self):
+        """Test resampling using resampling indices for 1D data."""
+        from pyresample.bilinear import get_bil_info, get_sample_from_bil_info
+
+        t__, s__, input_idxs, idx_arr = get_bil_info(self.source_def_1d,
+                                                     self.target_def,
+                                                     50e5, neighbours=32,
+                                                     nprocs=1)
+        # Sample from 1D data
+        res = get_sample_from_bil_info(self.data3_1d, t__, s__,
+                                       input_idxs, idx_arr)
+        self.assertAlmostEqual(np.nanmin(res), 10.5)
+        self.assertAlmostEqual(np.nanmax(res), 10.5)
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum(), 4)
 
     def test_resample_bilinear(self):
         """Test whole bilinear resampling."""
@@ -462,14 +481,33 @@ class TestXarrayBilinear(unittest.TestCase):
                                                           [-5326849.0625, -5326849.0625,
                                                            5326849.0625, 5326849.0625])
 
+        # Area that partially overlaps the source data
+        self.target_def_partial = geometry.AreaDefinition('area_partial_overlap',
+                                                          'Europe (3km, HRV, VTC)',
+                                                          'areaD',
+                                                          {'a': '6378144.0',
+                                                           'b': '6356759.0',
+                                                           'lat_0': '50.00',
+                                                           'lat_ts': '50.00',
+                                                           'lon_0': '8.00',
+                                                           'proj': 'stere'},
+                                                          4, 4,
+                                                          [59559.320999999996,
+                                                           -909968.64000000001,
+                                                           2920503.401,
+                                                           1490031.3600000001])
+
         # Input data around the target pixel at 0.63388324, 55.08234642,
         in_shape = (100, 100)
         self.data1 = DataArray(da.ones((in_shape[0], in_shape[1])), dims=('y', 'x'))
         self.data2 = 2. * self.data1
         self.data3 = self.data1 + 9.5
+
         lons, lats = np.meshgrid(np.linspace(-25., 40., num=in_shape[0]),
                                  np.linspace(45., 75., num=in_shape[1]))
         self.source_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        self.source_def_1d = geometry.SwathDefinition(lons=np.ravel(lons),
+                                                      lats=np.ravel(lats))
 
         self.radius = 50e3
         self._neighbours = 32
@@ -714,6 +752,45 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertTrue(np.all(np.isnan(p_1)) and np.all(np.isnan(p_2)) and
                         np.all(np.isnan(p_3)) and np.all(np.isnan(p_4)))
 
+    def test_slice_data_1d(self):
+        """Test slicing 1D data."""
+        import dask.array as da
+        from xarray import DataArray
+
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        # 1D data
+        data = DataArray(da.ones(self.source_def_1d.shape))
+        p_1, p_2, p_3, p_4 = resampler._slice_data(data, np.nan)
+        self.assertEqual(p_1.shape, resampler.bilinear_s.shape)
+        self.assertTrue(p_1.shape == p_2.shape == p_3.shape == p_4.shape)
+        self.assertTrue(np.all(p_1 == 1.0) and np.all(p_2 == 1.0) and
+                        np.all(p_3 == 1.0) and np.all(p_4 == 1.0))
+
+    def test_get_sample_from_bil_info_1d(self):
+        """Test resampling using resampling indices for 1D data."""
+        import dask.array as da
+        from xarray import DataArray
+
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def_1d, self.target_def,
+                                            50e5)
+        resampler.get_bil_info()
+
+        # Sample from 1D data
+        data = DataArray(da.ones(self.source_def_1d.shape), dims=('y'))
+        res = resampler.get_sample_from_bil_info(data)  # noqa
+        assert 'x' in res.dims
+        assert 'y' in res.dims
+
+        # Four pixels are outside of the data
+        self.assertEqual(np.isnan(res).sum().compute(), 4)
+
     @mock.patch('pyresample.bilinear.xarr.np.meshgrid')
     def test_get_slices(self, meshgrid):
         """Test slice array creation."""
@@ -780,7 +857,6 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_input_xy(self):
         """Test computation of input X and Y coordinates in target proj."""
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear.xarr import _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
@@ -798,7 +874,6 @@ class TestXarrayBilinear(unittest.TestCase):
         import dask.array as da
 
         from pyresample import CHUNK_SIZE
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_four_closest_corners
         from pyresample.bilinear.xarr import _get_input_xy
 
@@ -829,7 +904,6 @@ class TestXarrayBilinear(unittest.TestCase):
         import dask.array as da
 
         from pyresample import CHUNK_SIZE
-        from pyresample._spatial_mp import Proj
         from pyresample.bilinear._base import _get_corner, _get_input_xy
 
         proj = Proj(self.target_def.proj_str)
@@ -1138,6 +1212,33 @@ class TestXarrayBilinear(unittest.TestCase):
                 orig = getattr(resampler, attr)
                 reloaded = getattr(new_resampler, attr).compute()
                 np.testing.assert_array_equal(orig, reloaded)
+        finally:
+            shutil.rmtree(tempdir, ignore_errors=True)
+
+    def test_get_sample_from_cached_bil_info(self):
+        """Test getting data using pre-calculated resampling info."""
+        import os
+        import shutil
+        from tempfile import mkdtemp
+
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        resampler = XArrayBilinearResampler(self.source_def, self.target_def_partial,
+                                            self.radius)
+        resampler.get_bil_info()
+
+        try:
+            tempdir = mkdtemp()
+            filename = os.path.join(tempdir, "test.zarr")
+
+            resampler.save_resampling_info(filename)
+
+            assert os.path.exists(filename)
+
+            new_resampler = XArrayBilinearResampler(self.source_def, self.target_def_partial,
+                                                    self.radius)
+            new_resampler.load_resampling_info(filename)
+            _ = new_resampler.get_sample_from_bil_info(self.data1)
         finally:
             shutil.rmtree(tempdir, ignore_errors=True)
 

@@ -18,6 +18,7 @@
 """Filters based on geolocation validity."""
 
 import numpy as np
+from pyproj import Proj
 
 from . import _spatial_mp, geometry
 
@@ -60,12 +61,14 @@ class GridFilter(object):
         lats = geometry_def.lats[:]
 
         # Get projection coords
+        proj_kwargs = {}
         if self.nprocs > 1:
             proj = _spatial_mp.Proj_MP(**self.area_def.proj_dict)
+            proj_kwargs["nprocs"] = self.nprocs
         else:
-            proj = _spatial_mp.Proj(**self.area_def.proj_dict)
+            proj = Proj(**self.area_def.proj_dict)
 
-        x_coord, y_coord = proj(lons, lats, nprocs=self.nprocs)
+        x_coord, y_coord = proj(lons, lats, **proj_kwargs)
 
         # Find array indices of coordinates
         target_x = ((x_coord / self.area_def.pixel_size_x) +

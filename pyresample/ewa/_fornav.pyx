@@ -39,10 +39,6 @@ cdef extern from "_fornav_templates.h":
     ctypedef float ewa_param_type
     ctypedef float accum_type
     cdef float EPSILON
-    # ctypedef double weight_type
-    # ctypedef double ewa_param_type
-    # ctypedef double accum_type
-    # cdef double EPSILON
 
     ctypedef struct ewa_parameters:
         ewa_param_type a
@@ -64,28 +60,28 @@ cdef extern from "_fornav_templates.h":
         weight_type * wtab
 
     cdef int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max,
-                               weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight * ewaw)
-    cdef void deinitialize_weight(ewa_weight * ewaw)
-    cdef accum_type ** initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows)
-    cdef weight_type ** initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows)
-    cdef void deinitialize_grids(size_t chan_count, void ** grids)
+                               weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight * ewaw) nogil
+    cdef void deinitialize_weight(ewa_weight * ewaw) nogil
+    cdef accum_type ** initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows) nogil
+    cdef weight_type ** initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows) nogil
+    cdef void deinitialize_grids(size_t chan_count, void ** grids) nogil
 
     cdef int compute_ewa_parameters[CR_TYPE](size_t swath_cols, size_t swath_rows,
-                                             CR_TYPE * uimg, CR_TYPE * vimg, ewa_weight * ewaw, ewa_parameters * ewap)
+                                             CR_TYPE * uimg, CR_TYPE * vimg, ewa_weight * ewaw, ewa_parameters * ewap) nogil
 
     cdef int compute_ewa[CR_TYPE, IMAGE_TYPE](
         size_t chan_count, bint maximum_weight_mode,
         size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
         CR_TYPE * uimg, CR_TYPE * vimg,
         IMAGE_TYPE ** images, IMAGE_TYPE img_fill, accum_type ** grid_accums, weight_type ** grid_weights,
-        ewa_weight * ewaw, ewa_parameters * ewap)
+        ewa_weight * ewaw, ewa_parameters * ewap) nogil
 
     cdef int compute_ewa_single[CR_TYPE, IMAGE_TYPE](
         bint maximum_weight_mode,
         size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
         CR_TYPE * uimg, CR_TYPE * vimg,
         IMAGE_TYPE * image, IMAGE_TYPE img_fill, accum_type * grid_accum, weight_type * grid_weight,
-        ewa_weight * ewaw, ewa_parameters * ewap)
+        ewa_weight * ewaw, ewa_parameters * ewap) nogil
 
     # For some reason cython can't deduce the type when using the template
     # cdef int write_grid_image[GRID_TYPE](GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
@@ -93,13 +89,13 @@ cdef extern from "_fornav_templates.h":
     #    int maximum_weight_mode, weight_type weight_sum_min)
     cdef unsigned int write_grid_image(numpy.float32_t * output_image, numpy.float32_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min)
+                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
     cdef unsigned int write_grid_image(numpy.float64_t * output_image, numpy.float64_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min)
+                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
     cdef unsigned int write_grid_image(numpy.int8_t * output_image, numpy.int8_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min)
+                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
 
 ctypedef fused cr_dtype:
     numpy.float32_t
@@ -124,7 +120,7 @@ cdef int fornav(unsigned int * valid_list, size_t chan_count, size_t swath_cols,
                 image_dtype ** input_arrays, grid_dtype ** output_arrays,
                 image_dtype input_fill, grid_dtype output_fill, size_t rows_per_scan,
                 unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max, weight_type weight_delta_max,
-                weight_type weight_sum_min, bint maximum_weight_mode) except -1:
+                weight_type weight_sum_min, bint maximum_weight_mode) nogil except -1:
     cdef unsigned int row_idx
     cdef unsigned int idx
     cdef bint got_point = 0
@@ -279,54 +275,74 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
     if not all(output_array.dtype == out_type for output_array in output_arrays):
         raise ValueError("Input arrays must all be of the same data type")
 
-    cdef void ** input_pointer = <void ** >malloc(num_items * sizeof(void * ))
+    cdef void** input_pointer = <void ** >malloc(num_items * sizeof(void * ))
     if not input_pointer:
         raise MemoryError()
-    cdef void ** output_pointer = <void ** >malloc(num_items * sizeof(void * ))
+    cdef void** output_pointer = <void ** >malloc(num_items * sizeof(void * ))
     if not output_pointer:
         raise MemoryError()
     cdef unsigned int * valid_arr = <unsigned int * >malloc(num_items * sizeof(unsigned int))
     valid_list = []
+    cdef cr_dtype * cols_pointer = &cols_array[0, 0]
+    cdef cr_dtype * rows_pointer = &rows_array[0, 0]
+    cdef bint mwm = maximum_weight_mode
+    cdef int func_result
+    cdef numpy.float32_t input_fill_f32
+    cdef numpy.float64_t input_fill_f64
+    cdef numpy.int8_t input_fill_i8
+    cdef numpy.float32_t output_fill_f32
+    cdef numpy.float64_t output_fill_f64
+    cdef numpy.int8_t output_fill_i8
     cdef numpy.ndarray[numpy.float32_t, ndim= 2] tmp_arr_f32
     cdef numpy.ndarray[numpy.float64_t, ndim= 2] tmp_arr_f64
     cdef numpy.ndarray[numpy.int8_t, ndim= 2] tmp_arr_i8
-    cdef cr_dtype * cols_pointer = &cols_array[0, 0]
-    cdef cr_dtype * rows_pointer = &rows_array[0, 0]
-    cdef int func_result
+    cdef cr_dtype[:, ::1] tmp_arr
 
     if in_type == numpy.float32:
+        input_fill_f32 = <numpy.float32_t>input_fill
+        output_fill_f32 = <numpy.float32_t>output_fill
         for i in range(num_items):
             tmp_arr_f32 = input_arrays[i]
             input_pointer[i] = &tmp_arr_f32[0, 0]
             tmp_arr_f32 = output_arrays[i]
             output_pointer[i] = &tmp_arr_f32[0, 0]
-        func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
-                             < numpy.float32_t ** >input_pointer, < numpy.float32_t ** >output_pointer,
-                             < numpy.float32_t > input_fill, < numpy.float32_t > output_fill, rows_per_scan,
-                             weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                             < bint > maximum_weight_mode)
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.float32_t ** >input_pointer, < numpy.float32_t ** >output_pointer,
+                                 output_fill_f32, output_fill_f32, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
     elif in_type == numpy.float64:
+        input_fill_f64 = <numpy.float64_t>input_fill
+        output_fill_f64 = <numpy.float64_t>output_fill
         for i in range(num_items):
             tmp_arr_f64 = input_arrays[i]
             input_pointer[i] = &tmp_arr_f64[0, 0]
             tmp_arr_f64 = output_arrays[i]
             output_pointer[i] = &tmp_arr_f64[0, 0]
-        func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
-                             < numpy.float64_t ** >input_pointer, < numpy.float64_t ** >output_pointer,
-                             < numpy.float64_t > input_fill, < numpy.float64_t > output_fill, rows_per_scan,
-                             weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                             < bint > maximum_weight_mode)
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.float64_t ** >input_pointer, < numpy.float64_t ** >output_pointer,
+                                 input_fill_f64, output_fill_f64, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
     elif in_type == numpy.int8:
+        input_fill_i8 = <numpy.int8_t>input_fill
+        output_fill_i8 = <numpy.int8_t>output_fill
         for i in range(num_items):
             tmp_arr_i8 = input_arrays[i]
             input_pointer[i] = &tmp_arr_i8[0, 0]
             tmp_arr_i8 = output_arrays[i]
             output_pointer[i] = &tmp_arr_i8[0, 0]
-        func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
-                             < numpy.int8_t ** >input_pointer, < numpy.int8_t ** >output_pointer,
-                             < numpy.int8_t > input_fill, < numpy.int8_t > output_fill, rows_per_scan,
-                             weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                             < bint > maximum_weight_mode)
+        with nogil:
+            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                 cols_pointer, rows_pointer,
+                                 < numpy.int8_t ** >input_pointer, < numpy.int8_t ** >output_pointer,
+                                 input_fill_i8, output_fill_i8, rows_per_scan,
+                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                 mwm)
     else:
         raise ValueError("Unknown input and output data type")
 
@@ -347,7 +363,7 @@ cdef int fornav_weights_and_sums(
         image_dtype * input_array, weight_type * grid_weights, accum_type * grid_accums,
         image_dtype input_fill, grid_dtype output_fill, size_t rows_per_scan,
         unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max, weight_type weight_delta_max,
-        weight_type weight_sum_min, bint maximum_weight_mode) except -1:
+        weight_type weight_sum_min, bint maximum_weight_mode) nogil except -1:
     """Get the weights and sums arrays from the fornav algorithm.
 
     Typically fornav performs the entire operation of computing the weights
@@ -482,12 +498,14 @@ def fornav_weights_and_sums_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] co
     cdef weight_type * weights_pointer = &grid_weights[0, 0]
     cdef accum_type * accums_pointer = &grid_accums[0, 0]
     cdef int got_point
+    cdef bint mwm = maximum_weight_mode
 
-    ret_val = fornav_weights_and_sums(swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
-                                      input_pointer, weights_pointer, accums_pointer,
-                                      input_fill, output_fill, rows_per_scan,
-                                      weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                                      < bint > maximum_weight_mode)
+    with nogil:
+        ret_val = fornav_weights_and_sums(swath_cols, swath_rows, grid_cols, grid_rows, cols_pointer, rows_pointer,
+                                          input_pointer, weights_pointer, accums_pointer,
+                                          input_fill, output_fill, rows_per_scan,
+                                          weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                          mwm)
 
     succeeded = ret_val == 0
     return succeeded
@@ -501,8 +519,11 @@ def write_grid_image_single(numpy.ndarray[grid_dtype, ndim=2, mode='c'] output_a
                             grid_dtype output_fill,
                             weight_type weight_sum_min=-1.0,
                             cpython.bool maximum_weight_mode=False):
-    # unsigned int write_grid_image(GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
-    # accum_type *grid_accum, weight_type *grid_weights,
-    # int maximum_weight_mode, weight_type weight_sum_min) {
-    return write_grid_image(& output_array[0, 0], output_fill, < size_t > output_array.shape[1], < size_t > output_array.shape[0],
-                             & grid_accums[0, 0], & grid_weights[0, 0], < int > maximum_weight_mode, weight_sum_min)
+    cdef int mwm = <int>maximum_weight_mode
+    cdef size_t grid_cols = <size_t>output_array.shape[1]
+    cdef size_t grid_rows = <size_t>output_array.shape[0]
+    cdef unsigned int result
+    with nogil:
+        result = write_grid_image(& output_array[0, 0], output_fill, grid_cols, grid_rows,
+                                  & grid_accums[0, 0], & grid_weights[0, 0], mwm, weight_sum_min)
+    return result

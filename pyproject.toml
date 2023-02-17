@@ -1,2 +1,3 @@
 [build-system]
-requires = ["setuptools", "wheel", "oldest-supported-numpy", "Cython"]
+requires = ["setuptools", "wheel", "oldest-supported-numpy", "Cython", "versioneer-518"]
+build-backend = "setuptools.build_meta"

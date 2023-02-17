@@ -128,6 +128,21 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
+    def test_nearest_swath_2d_to_area_1n_pm180(self, swath_def_2d_xarray_dask_antimeridian, data_2d_float32_xarray_dask,
+                                               area_def_lonlat_pm180_target):
+        """Test 2D swath definition to 2D area definition; 1 neighbor; output prime meridian at 180 degrees."""
+        resampler = KDTreeNearestXarrayResampler(
+            swath_def_2d_xarray_dask_antimeridian, area_def_lonlat_pm180_target)
+        res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
+        assert isinstance(res, xr.DataArray)
+        assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(area_def_lonlat_pm180_target, AreaDefinition))
+        res = res.values
+        cross_sum = float(np.nansum(res))
+        expected = 115591.0
+        assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
+
     def test_nearest_area_2d_to_area_1n_no_roi(self, area_def_stere_source, data_2d_float32_xarray_dask,
                                                area_def_stere_target):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
@@ -273,8 +288,11 @@ class TestInvalidUsageNearestNeighborResampler:
         # transpose the source geometries
         if isinstance(src_geom, AreaDefinition):
             src_geom = AreaDefinition(
-                src_geom.area_id, src_geom.description, src_geom.proj_id,
-                src_geom.crs, src_geom.height, src_geom.width, src_geom.area_extent,
+                src_geom.crs,
+                src_geom.height,
+                src_geom.width,
+                src_geom.area_extent,
+                attrs=src_geom.attrs.copy(),
             )
         else:
             src_geom = SwathDefinition(

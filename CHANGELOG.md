@@ -1,3 +1,157 @@
+## Version 1.26.1 (2023/02/07)
+
+### Issues Closed
+
+* [Issue 497](https://github.com/pytroll/pyresample/issues/497) - resampling fails with `ValueError` if not padding data
+* [Issue 492](https://github.com/pytroll/pyresample/issues/492) - Infinite values in geostationary bounding box crash intersection function ([PR 493](https://github.com/pytroll/pyresample/pull/493) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 486](https://github.com/pytroll/pyresample/issues/486) - BUG: Import fails due to misconfigured setup.py ([PR 487](https://github.com/pytroll/pyresample/pull/487) by [@bzah](https://github.com/bzah))
+* [Issue 484](https://github.com/pytroll/pyresample/issues/484) - Fails to build with Shapely 2.0 ([PR 485](https://github.com/pytroll/pyresample/pull/485) by [@sebastic](https://github.com/sebastic))
+* [Issue 481](https://github.com/pytroll/pyresample/issues/481) - Intermittent failures on 32bit architectures
+* [Issue 448](https://github.com/pytroll/pyresample/issues/448) - Release 1.25.1 missing usual GPG signature
+
+In this release 6 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 493](https://github.com/pytroll/pyresample/pull/493) - Fix geostationary bbox having inf values ([2368](https://github.com/pytroll/satpy/issues/2368), [492](https://github.com/pytroll/pyresample/issues/492))
+* [PR 487](https://github.com/pytroll/pyresample/pull/487) - FIX: Update pyproj min version to 3.0.0 ([486](https://github.com/pytroll/pyresample/issues/486))
+* [PR 485](https://github.com/pytroll/pyresample/pull/485) - Tune tolerance to fix test failures with PROJ 9.1.1. ([484](https://github.com/pytroll/pyresample/issues/484))
+* [PR 482](https://github.com/pytroll/pyresample/pull/482) - Fix intermittent EWA test failures
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.26.0.post0 (2022/11/24)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 480](https://github.com/pytroll/pyresample/pull/480) - Add Python 3.11 to wheel building
+
+In this release 1 pull request was closed.
+
+
+## Version 1.26.0 (2022/11/24)
+
+### Issues Closed
+
+* [Issue 474](https://github.com/pytroll/pyresample/issues/474) - get_geostationary_bounding_box* contains duplicated vertices at the equator  ([PR 475](https://github.com/pytroll/pyresample/pull/475) by [@ghiggi](https://github.com/ghiggi))
+* [Issue 457](https://github.com/pytroll/pyresample/issues/457) - Pyresample 1.25.1 create_area_def return wrong lons with the .get_lonlats()
+* [Issue 453](https://github.com/pytroll/pyresample/issues/453) - Import Error using XArrayBilinearResampler missing failed import of dask ([PR 454](https://github.com/pytroll/pyresample/pull/454) by [@benjaminesse](https://github.com/benjaminesse))
+* [Issue 445](https://github.com/pytroll/pyresample/issues/445) - Release GIL in gradient search resampling ([PR 455](https://github.com/pytroll/pyresample/pull/455) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 439](https://github.com/pytroll/pyresample/issues/439) - SwathDefinition.update_hash() raise error after slicing the swath object ([PR 462](https://github.com/pytroll/pyresample/pull/462) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 5 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 479](https://github.com/pytroll/pyresample/pull/479) - Fix bbox creation for SwathDefinitions with NaNs
+* [PR 475](https://github.com/pytroll/pyresample/pull/475) - Fix for duplicate coordinates in bbox_lonlats for geostationary area  ([474](https://github.com/pytroll/pyresample/issues/474), [474](https://github.com/pytroll/pyresample/issues/474))
+* [PR 463](https://github.com/pytroll/pyresample/pull/463) - Fix EWA default for 'weight_delta_max' to match docstring
+* [PR 462](https://github.com/pytroll/pyresample/pull/462) - Fix hashing of definitions for non contiguous arrays ([439](https://github.com/pytroll/pyresample/issues/439))
+* [PR 438](https://github.com/pytroll/pyresample/pull/438) - Fix using cached LUTs in bilinear resampler
+
+#### Features added
+
+* [PR 473](https://github.com/pytroll/pyresample/pull/473) - Add boundary method to AreaDefinition and SwathDefinition
+* [PR 465](https://github.com/pytroll/pyresample/pull/465) - [Future Spherical Class] Add SPoint and SMultiPoint
+* [PR 455](https://github.com/pytroll/pyresample/pull/455) - Use memoryviews and allow nogil in gradient search ([445](https://github.com/pytroll/pyresample/issues/445))
+* [PR 451](https://github.com/pytroll/pyresample/pull/451) - Refactor the area loading internal function
+
+#### Documentation changes
+
+* [PR 454](https://github.com/pytroll/pyresample/pull/454) - Fix import warning in bilinear resampler to mention dask ([453](https://github.com/pytroll/pyresample/issues/453))
+
+In this release 10 pull requests were closed.
+
+
+## Version 1.25.1 (2022/08/02)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 447](https://github.com/pytroll/pyresample/pull/447) - Fix handling of lon/lat coordinates on CRS with prime meridian != 0
+
+In this release 1 pull request was closed.
+
+
+## Version 1.25.0 (2022/07/29)
+
+### Issues Closed
+
+* [Issue 428](https://github.com/pytroll/pyresample/issues/428) - Add more flexible antimeridian handling to DynamicAreaDefinition ([PR 431](https://github.com/pytroll/pyresample/pull/431) by [@djhoese](https://github.com/djhoese))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 446](https://github.com/pytroll/pyresample/pull/446) - Fix incorrect extents for DynamicAreaDefinition with 'modify_crs' antimeridian mode
+
+#### Features added
+
+* [PR 431](https://github.com/pytroll/pyresample/pull/431) - Add 'antimeridian_mode' to DynamicAreaDefinition ([428](https://github.com/pytroll/pyresample/issues/428))
+
+In this release 2 pull requests were closed.
+
+
+## Version 1.24.1 (2022/07/06)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 441](https://github.com/pytroll/pyresample/pull/441) - Fix infinite coordinates failing to be equal
+
+#### Features added
+
+* [PR 443](https://github.com/pytroll/pyresample/pull/443) - Remove Python 3.7 support
+
+#### Backward incompatible changes
+
+* [PR 443](https://github.com/pytroll/pyresample/pull/443) - Remove Python 3.7 support
+
+In this release 3 pull requests were closed.
+
+
+## Version 1.24.0 (2022/07/06)
+
+### Issues Closed
+
+* [Issue 417](https://github.com/pytroll/pyresample/issues/417) - Add get_abs_max (and get_abs_min) to BucketResampler ([PR 418](https://github.com/pytroll/pyresample/pull/418) by [@gerritholl](https://github.com/gerritholl))
+* [Issue 316](https://github.com/pytroll/pyresample/issues/316) - Upgrade to pyresample 1.17.0 causes IndexError with one-dimensional data ([PR 324](https://github.com/pytroll/pyresample/pull/324) by [@pnuu](https://github.com/pnuu))
+* [Issue 171](https://github.com/pytroll/pyresample/issues/171) - Update AreaDefinition to accept pyproj CRS objects and WKT
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 324](https://github.com/pytroll/pyresample/pull/324) - Fix bilinear resampler for 1D data ([316](https://github.com/pytroll/pyresample/issues/316))
+
+#### Features added
+
+* [PR 435](https://github.com/pytroll/pyresample/pull/435) - Fix SwathDefinition causing unnecessary dask computes when used as a dict key
+* [PR 418](https://github.com/pytroll/pyresample/pull/418) - Implement get_abs_max on BucketResampler ([417](https://github.com/pytroll/pyresample/issues/417))
+* [PR 368](https://github.com/pytroll/pyresample/pull/368) - Speed up Bucket `get_min` and `get_max`
+* [PR 341](https://github.com/pytroll/pyresample/pull/341) - Dask resampler and gradient search overhaul
+
+#### Documentation changes
+
+* [PR 429](https://github.com/pytroll/pyresample/pull/429) - Improve docs for dump and load_area_from_string
+* [PR 427](https://github.com/pytroll/pyresample/pull/427) - Add Cython classifier to package metadata
+
+In this release 7 pull requests were closed.
+
+
 ## Version 1.23.0 (2022/03/21)
 
 ### Issues Closed

@@ -34,9 +34,9 @@ import warnings
 
 import numpy as np
 from pykdtree.kdtree import KDTree
+from pyproj import Proj
 
 from pyresample import data_reduce, geometry
-from pyresample._spatial_mp import Proj
 
 from ..future.resamplers._transform_utils import lonlat2xyz
 
@@ -190,13 +190,17 @@ class BilinearBase(object):
 
     def _get_slices(self):
         shp = self._source_geo_def.shape
-        cols, lines = np.meshgrid(np.arange(shp[1]),
-                                  np.arange(shp[0]))
+        try:
+            cols, lines = np.meshgrid(np.arange(shp[1]),
+                                      np.arange(shp[0]))
+            data = (np.ravel(lines), np.ravel(cols))
+        except IndexError:
+            data = (np.zeros(shp[0], dtype=np.uint32), np.arange(shp[0]))
 
         valid_lines_and_columns = array_slice_for_multiple_arrays(
             self._valid_input_index,
-            (np.ravel(lines), np.ravel(cols))
-        )
+            data)
+
         self.slices_y, self.slices_x = array_slice_for_multiple_arrays(
             self._index_array,
             valid_lines_and_columns

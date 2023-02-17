@@ -15,12 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Definitions for geographic regions."""
+"""Future features that are backwards incompatible with current functionality."""
 
-from typing import Union
-
-from .area import AreaDefinition, DynamicAreaDefinition  # noqa
-from .base import BaseDefinition  # noqa
-from .swath import CoordinateDefinition, SwathDefinition  # noqa
-
-StaticGeometry = Union[SwathDefinition, CoordinateDefinition, AreaDefinition]
+from .point import SMultiPoint, SPoint  # noqa

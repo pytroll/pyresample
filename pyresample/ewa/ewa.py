@@ -31,9 +31,9 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
 
     Parameters
     ----------
-    swath_def : SwathDefinition
+    swath_def : pyresample.geometry.SwathDefinition
         Navigation definition for swath data to remap
-    area_def : AreaDefinition
+    area_def : pyresample.geometry.AreaDefinition
         Grid definition to be mapped to
     fill : float, optional
         Fill value used in longitude and latitude arrays
@@ -95,7 +95,7 @@ def fornav(cols, rows, area_def, data_in,
         Column location for each input swath pixel (from `ll2cr`)
     rows : numpy array
         Row location for each input swath pixel (from `ll2cr`)
-    area_def : AreaDefinition
+    area_def : pyresample.geometry.AreaDefinition
         Grid definition to be mapped to
     data_in : numpy array or tuple of numpy arrays
         Swath data to be remapped to output grid
@@ -149,7 +149,9 @@ def fornav(cols, rows, area_def, data_in,
     """
     if isinstance(data_in, (tuple, list)):
         # we can only support one data type per call at this time
-        assert(in_arr.dtype == data_in[0].dtype for in_arr in data_in[1:])
+        for in_arr in data_in[1:]:
+            if in_arr.dtype != data_in[0].dtype:
+                raise ValueError("All input arrays must be the same dtype")
     else:
         # assume they gave us a single numpy array-like object
         data_in = [data_in]

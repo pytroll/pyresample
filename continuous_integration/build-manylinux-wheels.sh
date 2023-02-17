@@ -24,9 +24,13 @@ mkdir -p /io/temp-wheels
 # Clean out any old existing wheels.
 find /io/temp-wheels/ -type f -delete
 
+# /io might be owned by someone else since we are in docker
+# this may stop versioneer from using git the way it needs
+git config --global --add safe.directory /io
+
 # Iterate through available pythons.
-for PYBIN in /opt/python/cp*/bin; do
-    "${PYBIN}/pip" install -q -U setuptools wheel nose --cache-dir /io/pip-cache
+for PYBIN in /opt/python/cp3{9,10,11}*/bin; do
+    "${PYBIN}/pip" install -q -U setuptools wheel --cache-dir /io/pip-cache
     # Run the following in root of this repo.
     (cd /io/ && "${PYBIN}/pip" install -q .)
     (cd /io/ && "${PYBIN}/python" -m build -w -o /io/temp-wheels)

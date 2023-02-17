@@ -20,6 +20,7 @@
 import logging
 from unittest import mock
 
+import dask
 import numpy as np
 import pytest
 from pyproj import CRS
@@ -204,7 +205,8 @@ class TestDaskEWAResampler:
         num_chunks = _get_num_chunks(source_swath, resampler_class, rows_per_scan)
 
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
-                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats, \
+                dask.config.set(scheduler='sync'):
             resampler = resampler_class(source_swath, target_area)
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
