@@ -3,31 +3,40 @@ Pyresample
 
 Pyresample is a python package for resampling geospatial image data. It is the
 primary method for resampling in the `SatPy <https://github.com/pytroll/satpy>`_
-library, but can also be used as a standalone library. Resampling or
-reprojection is the process of mapping input geolocated data points to a
-new target geographic projection and area.
+library, but can also be used as a standalone library.
 
-Pyresample can operate on both fixed grids of data and geolocated swath data.
-To describe these data Pyresample uses various "geometry" objects including
-the `AreaDefinition` and `SwathDefinition` classes.
+You can use pyresample to transform data in one coordinate system to another
+coordinate system (ex. mercator projection) using one of the available
+resampling algorithms. For more information on how
+to resample your data see our :doc:`howtos/index` section. If resampling is a
+new concept for you then you may find the :doc:`tutorials/index` helpful to
+walk you through the process with some artificial data.
 
-Pyresample offers multiple resampling algorithms including:
+Data to be resampled can consist of uniformly spaced/gridded pixels or a
+variably spaced "swath" of pixels. To be able to resample data, Pyresample
+must have a good understanding of the geometry of the area these pixels
+represent. Pyresample uses "geometry" objects to describe the different
+properties of these geolocated datasets. If concepts like projections,
+pixel resolutions, or representing data on a sphere or spheroid are new to you
+it is recommended you start with the :doc:`concepts/index` section to learn
+more without worrying too much about the actual code. After that, the
+:doc:`tutorials/index` and :doc:`howtos/index` sections will be able to
+show you the code needed to apply these concepts to your data.
 
-- Nearest Neighbor
-- Elliptical Weighted Average (EWA)
-- Bilinear
-- Bucket resampling (count hits per bin, averaging, ratios)
-
-For nearest neighbor and bilinear interpolation pyresample uses a kd-tree
-approach by using the fast KDTree implementation provided by the
-`pykdtree <https://github.com/storpipfugl/pykdtree>`_ library.
-Pyresample works with numpy arrays and numpy masked arrays. Interfaces to
-XArray objects (including dask array support) are provided in separate
-Resampler class interfaces and are in active development.
-Utility functions are available to easily plot data using Cartopy.
+Throughout the documentation you'll find information on various utilities
+provided by Pyresample to accomplish things like making plots with Cartopy
+or describing data from a NetCDF or GeoTIFF file. Pyresample is generally
+able to handle data represented as numpy arrays, numpy masked arrays, and
+in some parts Xarray DataArray objects and dask arrays. In addition to these
+libraries Pyresample also benefits from the works of the
+`pykdtree <https://github.com/storpipfugl/pykdtree>`_ and
+`shapely <https://shapely.readthedocs.io/en/stable/>`_ libraries. Pyresample
+includes Python extension code written in `Cython <https://cython.org/>`_
+in the more performance critical portions of the library.
 
 Documentation
 -------------
+
 .. toctree::
    :maxdepth: 2
 
