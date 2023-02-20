@@ -47,7 +47,8 @@ class SPoint(SCoordinate):
         """Test if the point is on the equator."""
         return self.lat == 0
 
-    def get_antipode(self):
+    @property
+    def antipode(self):
         """Return the antipode point."""
         lat = - self.lat
         lon = self.lon - np.pi
@@ -90,7 +91,8 @@ class SMultiPoint(SCoordinate):
         """Create SMultiPoint from lon/lat coordinates in degrees."""
         return cls(np.deg2rad(lon), np.deg2rad(lat))
 
-    def get_antipodes(self):
+    @property
+    def antipodes(self):
         """Return the antipodal points."""
         lat = - self.lat
         lon = self.lon - np.pi

@@ -349,12 +349,17 @@ class CCoordinate(object):
         """Multiply."""
         return self.__mul__(other)
 
-    def to_spherical(self):
+    def to_spherical(self, future=False):
         """Convert to SPoint/SMultiPoint object."""
         # TODO: this in future should point to SPoint or SMultiPoint
+        from pyresample.future.spherical.point import create_spherical_point
+
         lon = np.arctan2(self.cart[..., 1], self.cart[..., 0])
         lat = np.arcsin(self.cart[..., 2])
-        return SCoordinate(lon, lat)
+        if not future:
+            return SCoordinate(lon, lat)
+        else:
+            return create_spherical_point(lon, lat)
 
 
 class Arc(object):

@@ -37,7 +37,7 @@ def _check_valid_arc(start_point, end_point):
     if start_point.is_on_equator() and end_point.is_on_equator() and abs(start_point.lon - end_point.lon) == np.pi:
         raise ValueError(
             "An SArc can not be uniquely defined on the equator if start and end points are 180 degrees apart.")
-    if start_point.get_antipode() == end_point:
+    if start_point.antipode == end_point:
         raise ValueError("An SArc can not be uniquely defined between antipodal points.")
 
 
@@ -177,6 +177,19 @@ class SArc(Arc):
     def intersects(self, other_arc):
         """Check if the current Sarc and another SArc intersect."""
         return bool(self.intersection_point(other_arc))
+
+    # def midpoint(self):
+    #     """Return the SArc midpoint SPoint."""
+    #     # Retrieve start and end point in Cartesian coordinates
+    #     start_xyz = self.start.to_cart().cart
+    #     end_xyz = self.end.to_cart().cart
+    #     # Find midpoint
+    #     midpoint_xyz = (start_xyz + end_xyz) / 2.0
+    #     # Normalize
+    #     midpoint_xyz = CCoordinate(midpoint_xyz).normalize()
+    #     # Convert back to SPoint(s)
+    #     midpoint = midpoint_xyz.to_spherical(future=True)
+    #     return midpoint
 
     def midpoint(self, ellips='sphere'):
         """Return the SArc midpoint SPoint."""
