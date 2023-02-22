@@ -226,9 +226,9 @@ intersphinx_mapping = {
     'xarray': ('https://xarray.pydata.org/en/stable', None),
     'dask': ('https://docs.dask.org/en/latest', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
-    'pyresample': ('https://pyresample.readthedocs.io/en/stable', None),
     'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
     'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
     'pyproj': ('https://pyproj4.github.io/pyproj/dev/', None),
     'proj4': ('https://proj.org', None),
+    'satpy': ('https://satpy.readthedocs.io/en/stable', None),
 }
