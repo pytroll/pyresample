@@ -394,7 +394,8 @@ The example above shows the default value for each keyword argument.
 Resampling from bilinear coefficients
 *************************************
 
-..note:
+.. note::
+
   This usage is deprecated, please use the **bilinear.NumpyBilinearResampler** or
   **bilinear.XArrayBilinearResampler** classes directly depending on the input data format.
 
