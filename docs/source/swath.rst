@@ -296,8 +296,8 @@ XArrayBilinearResampler
 >>> resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
 >>> result = resampler.resample(data)
 
-The resampling info can be saved for later reuse and much faster processinf for a matching area. The
-data are saved to a ZARR arcive, so `zarr` Python package needs to be installed.
+The resampling info can be saved for later reuse and much faster processing for a matching area. The
+data are saved to a Zarr archive, so `zarr` Python package needs to be installed.
 
 >>> import os
 >>> from tempfile import gettempdir
