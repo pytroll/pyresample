@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2021 Pyresample developers
+# Copyright (c) 2022 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +12,4 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Definitions for geographic regions."""
-
-from typing import Union
-
-from .area import AreaDefinition, DynamicAreaDefinition  # noqa
-from .base import BaseDefinition  # noqa
-from .swath import CoordinateDefinition, SwathDefinition  # noqa
-
-StaticGeometry = Union[SwathDefinition, CoordinateDefinition, AreaDefinition]
+"""Tests for geometry objects."""

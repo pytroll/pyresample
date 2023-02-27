@@ -599,7 +599,7 @@ def test_check_overlap():
     assert check_overlap(poly1, poly2) is False
 
 
-@mock.patch('pyresample.gradient.get_geostationary_bounding_box')
+@mock.patch('pyresample.gradient.get_geostationary_bounding_box_in_lonlats')
 def test_get_border_lonlats(get_geostationary_bounding_box):
     """Test that correct methods are called in get_border_lonlats()."""
     from pyresample.gradient import get_border_lonlats

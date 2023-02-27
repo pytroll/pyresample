@@ -14,11 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# workaround python bug: http://bugs.python.org/issue15881#msg170215
-# remove when python 2 support is dropped
 """The setup module."""
-import multiprocessing  # noqa: F401
 import sys
 
 import numpy as np
@@ -27,15 +23,16 @@ from setuptools import Extension, find_packages, setup
 
 import versioneer
 
-requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
+requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+                "shapely",
                 ]
 
 if sys.version_info < (3, 10):
     requirements.append('importlib_metadata')
 
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixtures']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixtures', 'shapely']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
@@ -46,8 +43,6 @@ extras_require = {'numexpr': ['numexpr'],
                   'tests': test_requires}
 
 setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixture']
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
@@ -92,7 +87,7 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
-          python_requires='>=3.8',
+          python_requires='>=3.9',
           setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,

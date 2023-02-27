@@ -36,10 +36,9 @@ from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
-from pyresample.utils import (
-    check_slice_orientation,
+from pyresample.utils import check_slice_orientation, load_cf_area
+from pyresample.utils.proj4 import (
     get_geostationary_height,
-    load_cf_area,
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
@@ -327,7 +326,23 @@ class BaseDefinition:
                            (s4_dim1.squeeze(), s4_dim2.squeeze())])
         if hasattr(dim1[0], 'compute') and da is not None:
             dim1, dim2 = da.compute(dim1, dim2)
-        return dim1, dim2
+        clean_dim1, clean_dim2 = self._filter_bbox_nans(dim1, dim2)
+        return clean_dim1, clean_dim2
+
+    def _filter_bbox_nans(
+            self,
+            dim1_sides: list[np.ndarray],
+            dim2_sides: list[np.ndarray],
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        new_dim1_sides = []
+        new_dim2_sides = []
+        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
+            is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
+            if not is_valid_mask.any():
+                raise ValueError("Can't compute swath bounding coordinates. At least one side is completely invalid.")
+            new_dim1_sides.append(dim1_side[is_valid_mask])
+            new_dim2_sides.append(dim2_side[is_valid_mask])
+        return new_dim1_sides, new_dim2_sides
 
     def _get_bbox_slices(self, frequency):
         height, width = self.shape
@@ -390,6 +405,28 @@ class BaseDefinition:
         """Return the bounding box in projection coordinates."""
         x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
         return np.hstack(x), np.hstack(y)
+
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                     force_clockwise=force_clockwise)
+        return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -969,14 +1006,12 @@ class DynamicAreaDefinition(object):
             or a scalar if pixel_size_x == pixel_size_y.
         optimize_projection:
             Whether the projection parameters have to be optimized.
-        rotation:
-            Rotation in degrees (negative is cw)
 
     """
 
     def __init__(self, area_id=None, description=None, projection=None,
                  width=None, height=None, area_extent=None,
-                 resolution=None, optimize_projection=False, rotation=None):
+                 resolution=None, optimize_projection=False):
         """Initialize the DynamicAreaDefinition."""
         self.area_id = area_id
         self.description = description
@@ -988,7 +1023,6 @@ class DynamicAreaDefinition(object):
         if isinstance(resolution, (int, float)):
             resolution = (resolution, resolution)
         self.resolution = resolution
-        self.rotation = rotation
         self._projection = projection
 
         # check if non-dict projections are valid
@@ -1172,7 +1206,7 @@ class DynamicAreaDefinition(object):
             area_extent, width, height = self.compute_domain(corners, resolution, shape, projection)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
-                              area_extent, self.rotation)
+                              area_extent)
 
     def _compute_bound_centers(self, proj_dict, lonslats, antimeridian_mode):
         from pyresample.utils.proj4 import DaskFriendlyTransformer
@@ -1400,8 +1434,6 @@ class AreaDefinition(_ProjectionDefinition):
         y dimension in number of pixels, aka number of grid rows
     area_extent : list
         Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
-    rotation: float, optional
-        rotation in degrees (negative is clockwise)
     nprocs : int, optional
         Number of processor cores to be used for certain calculations
 
@@ -1419,8 +1451,6 @@ class AreaDefinition(_ProjectionDefinition):
         x dimension in number of pixels, aka number of grid columns
     height : int
         y dimension in number of pixels, aka number of grid rows
-    rotation: float
-        rotation in degrees (negative is cw)
     size : int
         Number of points in grid
     area_extent_ll : tuple
@@ -1452,7 +1482,7 @@ class AreaDefinition(_ProjectionDefinition):
     """
 
     def __init__(self, area_id, description, proj_id, projection, width, height,
-                 area_extent, rotation=None, nprocs=1, lons=None, lats=None,
+                 area_extent, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         """Initialize AreaDefinition."""
         super(AreaDefinition, self).__init__(lons, lats, nprocs)
@@ -1462,10 +1492,6 @@ class AreaDefinition(_ProjectionDefinition):
         self.width = int(width)
         self.height = int(height)
         self.crop_offset = (0, 0)
-        try:
-            self.rotation = float(rotation)
-        except TypeError:
-            self.rotation = 0
         if lons is not None:
             if lons.shape != self.shape:
                 raise ValueError('Shape of lon lat grid must match '
@@ -1507,6 +1533,59 @@ class AreaDefinition(_ProjectionDefinition):
             return False
         return 'geostationary' in coord_operation.method_name.lower()
 
+    def _get_geo_boundary_sides(self, frequency=None):
+        """Retrieve the boundary sides list for geostationary projections."""
+        # Define default frequency
+        if frequency is None:
+            frequency = 50
+        # Ensure at least 4 points are used
+        if frequency < 4:
+            frequency = 4
+        # Ensure an even number of vertices for side creation
+        if (frequency % 2) != 0:
+            frequency = frequency + 1
+        lons, lats = get_geostationary_bounding_box_in_lonlats(self, nb_points=frequency)
+        # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
+        side02_step = int(frequency / 2) - 1
+        lon_sides = [lons[slice(0, side02_step + 1)],
+                     lons[slice(side02_step, side02_step + 1 + 1)],
+                     lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lons[side02_step * 2 + 1], lons[0])
+                     ]
+        lat_sides = [lats[slice(0, side02_step + 1)],
+                     lats[slice(side02_step, side02_step + 1 + 1)],
+                     lats[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
+                     np.append(lats[side02_step * 2 + 1], lats[0])
+                     ]
+        return lon_sides, lat_sides
+
+    def boundary(self, frequency=None, force_clockwise=False):
+        """Retrieve the AreaBoundary object.
+
+        Parameters
+        ----------
+        frequency:
+            The number of points to provide for each side. By default (None)
+            the full width and height will be provided, except for geostationary
+            projection where by default only 50 points are selected.
+        force_clockwise:
+            Perform minimal checks and reordering of coordinates to ensure
+            that the returned coordinates follow a clockwise direction.
+            This is important for compatibility with
+            :class:`pyresample.spherical.SphPolygon` where operations depend
+            on knowing the inside versus the outside of a polygon. These
+            operations assume that coordinates are clockwise.
+            Default is False.
+        """
+        from pyresample.boundary import AreaBoundary
+        if self.is_geostationary:
+            lon_sides, lat_sides = self._get_geo_boundary_sides(frequency=frequency)
+        else:
+            lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+                                                         force_clockwise=force_clockwise)
+        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        return boundary
+
     @property
     def area_extent(self):
         """Tuple of this area's extent (xmin, ymin, xmax, ymax)."""
@@ -1524,7 +1603,7 @@ class AreaDefinition(_ProjectionDefinition):
                   'width': self.width,
                   'height': self.height,
                   'area_extent': self.area_extent,
-                  'rotation': self.rotation}
+                  }
         kwargs.update(override_kwargs)
         return AreaDefinition(**kwargs)
 
@@ -1594,8 +1673,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1643,8 +1720,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1699,8 +1774,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1747,8 +1820,6 @@ class AreaDefinition(_ProjectionDefinition):
             Description/name of area. Defaults to area_id
         proj_id : str, optional
             ID of projection
-        rotation: float, optional
-            rotation in degrees (negative is cw)
         nprocs : int, optional
             Number of processor cores to be used
         lons : numpy array, optional
@@ -1919,7 +1990,6 @@ class AreaDefinition(_ProjectionDefinition):
         fmt += "\tPCS_DEF:\t{proj_str}\n"
         fmt += "\tXSIZE:\t{x_size}\n"
         fmt += "\tYSIZE:\t{y_size}\n"
-        # fmt += "\tROTATION:\t{rotation}\n"
         fmt += "\tAREA_EXTENT: {area_extent}\n}};\n"
         area_def_str = fmt.format(name=self.description, area_id=self.area_id,
                                   proj_str=proj_str, x_size=self.width,
@@ -2203,14 +2273,6 @@ class AreaDefinition(_ProjectionDefinition):
         lon, lat = self.get_lonlats(nprocs=None, data_slice=(row, col))
         return lon.item(), lat.item()
 
-    @staticmethod
-    def _do_rotation(xspan, yspan, rot_deg=0):
-        """Apply a rotation factor to a matrix of points."""
-        rot_rad = np.radians(rot_deg)
-        rot_mat = np.array([[np.cos(rot_rad), np.sin(rot_rad)], [-np.sin(rot_rad), np.cos(rot_rad)]])
-        x, y = np.meshgrid(xspan, yspan)
-        return np.einsum('ji, mni -> jmn', rot_mat, np.dstack([x, y]))
-
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         """Get projection vectors."""
         warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
@@ -2219,10 +2281,8 @@ class AreaDefinition(_ProjectionDefinition):
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
 
-    def _get_proj_vectors(self, dtype=None, check_rotation=True, chunks=None):
+    def _get_proj_vectors(self, dtype=None, chunks=None):
         """Get 1D projection coordinates."""
-        if check_rotation and self.rotation != 0:
-            warnings.warn("Projection vectors will not be accurate because rotation is not 0", RuntimeWarning)
         if dtype is None:
             dtype = self.dtype
         x, y = _generate_1d_proj_vectors((0, self.width),
@@ -2284,8 +2344,6 @@ class AreaDefinition(_ProjectionDefinition):
             Removed 'cache' keyword argument and add 'chunks' for creating
             dask arrays.
         """
-        if self.rotation != 0 and chunks is not None:
-            raise ValueError("'rotation' is not supported with dask operations.")
         if dtype is None:
             dtype = self.dtype
         y_slice, x_slice = self._get_yx_data_slice(data_slice)
@@ -2296,18 +2354,13 @@ class AreaDefinition(_ProjectionDefinition):
                 target_y = target_y[y_slice, x_slice]
             return target_x, target_y
 
-        target_x, target_y = self._get_proj_vectors(dtype=dtype, check_rotation=False, chunks=chunks)
+        target_x, target_y = self._get_proj_vectors(dtype=dtype, chunks=chunks)
         if y_slice is not None:
             target_y = target_y[y_slice]
         if x_slice is not None:
             target_x = target_x[x_slice]
 
-        if self.rotation != 0:
-            res = self._do_rotation(target_x, target_y, self.rotation)
-            target_x, target_y = res[0, :, :], res[1, :, :]
-        else:
-            target_x, target_y = np.meshgrid(target_x, target_y)
-
+        target_x, target_y = np.meshgrid(target_x, target_y)
         return target_x, target_y
 
     @staticmethod
@@ -2348,17 +2401,11 @@ class AreaDefinition(_ProjectionDefinition):
     @property
     def projection_x_coords(self):
         """Return projection X coordinates."""
-        if self.rotation != 0:
-            # rotation is only supported in 'get_proj_coords' right now
-            return self.get_proj_coords(data_slice=(0, slice(None)))[0].squeeze()
         return self.get_proj_vectors()[0]
 
     @property
     def projection_y_coords(self):
         """Return projection Y coordinates."""
-        if self.rotation != 0:
-            # rotation is only supported in 'get_proj_coords' right now
-            return self.get_proj_coords(data_slice=(slice(None), 0))[1].squeeze()
         return self.get_proj_vectors()[1]
 
     @property
@@ -2681,34 +2728,49 @@ def get_geostationary_angle_extent(geos_area):
     aeq = 1 - req ** 2 / (h ** 2)
     ap_ = 1 - rp ** 2 / (h ** 2)
 
-    # generate points around the north hemisphere in satellite projection
-    # make it a bit smaller so that we stay inside the valid area
-    xmax = np.arccos(np.sqrt(aeq))
-    ymax = np.arccos(np.sqrt(ap_))
-    return xmax, ymax
+    x_angle = np.arccos(np.sqrt(aeq))
+    y_angle = np.arccos(np.sqrt(ap_))
+    return x_angle, y_angle
 
 
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
+    Parameters
+    ----------
+    nb_points : Number of points on the polygon.
+
+    """
+    x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
+
+    from shapely.geometry import Polygon
+    geo_bbox = Polygon(np.vstack((x, y)).T)
+    area_bbox = Polygon(((ll_x, ll_y), (ll_x, ur_y), (ur_x, ur_y), (ur_x, ll_y)))
+    intersection = area_bbox.intersection(geo_bbox)
+    try:
+        x, y = intersection.boundary.xy
+    except NotImplementedError:
+        return [], []
+    return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
+
+
+def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
+    """Get the bbox in geos projection coordinates of the full disk in `geos_area` projection.
+
     Args:
       nb_points: Number of points on the polygon
     """
-    xmax, ymax = get_geostationary_angle_extent(geos_area)
+    x_max_angle, y_max_angle = get_geostationary_angle_extent(geos_area)
     h = get_geostationary_height(geos_area.crs)
 
     # generate points around the north hemisphere in satellite projection
     # make it a bit smaller so that we stay inside the valid area
-    x = np.cos(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (xmax - 0.0001)
-    y = -np.sin(np.linspace(-np.pi, 0, int(nb_points / 2.0))) * (ymax - 0.0001)
-
-    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
-
+    points_around = np.linspace(-np.pi, np.pi, nb_points, endpoint=False)
+    x = np.cos(points_around) * (x_max_angle - 0.0001)
+    y = -np.sin(points_around) * (y_max_angle - 0.0001)
     x *= h
     y *= h
-
-    x = np.clip(np.concatenate([x, x[::-1]]), min(ll_x, ur_x), max(ll_x, ur_x))
-    y = np.clip(np.concatenate([y, -y]), min(ll_y, ur_y), max(ll_y, ur_y))
 
     return x, y
 
@@ -2719,7 +2781,9 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    return get_geostationary_bounding_box(geos_area, nb_points)
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
+    return lons, lats
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
@@ -2728,9 +2792,10 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
-
-    return Proj(geos_area.crs)(x, y, inverse=True)
+    warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
+                  "'get_geostationary_bounding_box_in_lonlats' instead.",
+                  DeprecationWarning)
+    return get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
 
 def combine_area_extents_vertical(area1, area2):

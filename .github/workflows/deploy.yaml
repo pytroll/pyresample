@@ -38,18 +38,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.9', '3.10', '3.11']
         include:
           # Using pythons inside a docker image to provide all the Linux
           # python-versions permutations.
           - name: manylinux 64-bit
             os: ubuntu-latest
-            python-version: '3.8'
+            python-version: '3.11'
             docker-image: manylinux2014_x86_64
-          - name: manylinux 32-bit
-            os: ubuntu-latest
-            python-version: '3.8'
-            docker-image: manylinux2014_i686
 
     steps:
       - uses: actions/checkout@v3
@@ -115,7 +111,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@v1.6.4
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -137,9 +133,8 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@v1.6.4
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
           skip_existing: true
-
