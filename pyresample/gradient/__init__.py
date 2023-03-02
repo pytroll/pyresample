@@ -54,7 +54,7 @@ def GradientSearchResampler(source_geo_def, target_geo_def):
     """Create a gradient search resampler."""
     warnings.warn("`GradientSearchResampler` is deprecated, please use "
                   "`create_gradient_search_resampler` instead.",
-                  DeprecationWarning)
+                  DeprecationWarning, stacklevel=2)
     return create_gradient_search_resampler(source_geo_def, target_geo_def)
 
 
@@ -80,7 +80,7 @@ class StackingGradientSearchResampler(BaseResampler):
         """Init GradientResampler."""
         super().__init__(source_geo_def, target_geo_def)
         import warnings
-        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
+        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.", stacklevel=2)
         self.use_input_coords = None
         self._src_dst_filtered = False
         self.prj = None

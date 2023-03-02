@@ -310,7 +310,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     """
     if source_geo_def.size < neighbours:
         warnings.warn('Searching for %s neighbours in %s data points' %
-                      (neighbours, source_geo_def.size))
+                      (neighbours, source_geo_def.size), stacklevel=2)
 
     if segments is None:
         cut_off = 3000000
@@ -383,7 +383,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
         if not np.all(np.isinf(distance_array[:, -1])):
             warnings.warn(('Possible more than %s neighbours '
                            'within %s m for some data points') %
-                          (neighbours, radius_of_influence))
+                          (neighbours, radius_of_influence), stacklevel=2)
 
     return valid_input_index, valid_output_index, index_array, distance_array
 
@@ -980,7 +980,7 @@ class XArrayResamplerNN(object):
         """
         if self.source_geo_def.size < self.neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
-                          (self.neighbours, self.source_geo_def.size))
+                          (self.neighbours, self.source_geo_def.size), stacklevel=2)
 
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE

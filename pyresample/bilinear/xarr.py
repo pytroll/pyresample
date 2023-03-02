@@ -286,7 +286,7 @@ class XArrayResamplerBilinear(XArrayBilinearResampler):
                  radius_of_influence,
                  **kwargs):
         """Initialize resampler."""
-        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead", stacklevel=2)
 
         super(XArrayResamplerBilinear, self).__init__(
             source_geo_def,
