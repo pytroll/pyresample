@@ -123,7 +123,7 @@ class AreaDefBoundary(AreaBoundary):
         lons, lats = area.get_bbox_lonlats()
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
-                      PendingDeprecationWarning)
+                      PendingDeprecationWarning, stacklevel=2)
         AreaBoundary.__init__(self,
                               *zip(lons, lats))
 

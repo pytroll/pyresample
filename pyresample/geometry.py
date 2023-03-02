@@ -261,7 +261,7 @@ class BaseDefinition:
     def get_lonlats_dask(self, chunks=None):
         """Get the lon lats as a single dask array."""
         warnings.warn("'get_lonlats_dask' is deprecated, please use "
-                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning, stacklevel=2)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_lonlats(chunks=chunks)
@@ -447,7 +447,7 @@ class BaseDefinition:
         """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
-                          "future and data will not be cached.", PendingDeprecationWarning)
+                          "future and data will not be cached.", PendingDeprecationWarning, stacklevel=2)
 
         if self.cartesian_coords is None:
             # Coordinates are not cached
@@ -1322,13 +1322,13 @@ class _ProjectionDefinition(BaseDefinition):
     @property
     def x_size(self):
         """Return area width."""
-        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning)
+        warnings.warn("'x_size' is deprecated, use 'width' instead.", PendingDeprecationWarning, stacklevel=2)
         return self.width
 
     @property
     def y_size(self):
         """Return area height."""
-        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning)
+        warnings.warn("'y_size' is deprecated, use 'height' instead.", PendingDeprecationWarning, stacklevel=2)
         return self.height
 
     @property
@@ -1621,7 +1621,7 @@ class AreaDefinition(_ProjectionDefinition):
     @property
     def name(self):
         """Return area name."""
-        warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning)
+        warnings.warn("'name' is deprecated, use 'description' instead.", PendingDeprecationWarning, stacklevel=2)
         return self.description
 
     @classmethod
@@ -1934,7 +1934,7 @@ class AreaDefinition(_ProjectionDefinition):
         Deprecated.  Use :meth:`dump` instead.
         """
         warnings.warn("'create_areas_def' is deprecated. Please use `dump` instead, which also "
-                      "supports writing directly to a file.", DeprecationWarning)
+                      "supports writing directly to a file.", DeprecationWarning, stacklevel=2)
 
         return self.dump()
 
@@ -1979,7 +1979,7 @@ class AreaDefinition(_ProjectionDefinition):
     def create_areas_def_legacy(self):
         """Create area definition in legacy format."""
         warnings.warn("Pyresample's legacy areas file format is deprecated. "
-                      "Use the 'YAML' format instead.")
+                      "Use the 'YAML' format instead.", stacklevel=2)
         proj_dict = self.proj_dict
         proj_str = ','.join(["%s=%s" % (str(k), str(proj_dict[k]))
                              for k in sorted(proj_dict.keys())])
@@ -2210,7 +2210,7 @@ class AreaDefinition(_ProjectionDefinition):
         get_xy_from_lonlat, renamed for convenience.
         """
         warnings.warn("'lonlat2colrow' is deprecated, please use "
-                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning)
+                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning, stacklevel=2)
 
         return self.get_array_indices_from_lonlat(lons, lats)
 
@@ -2231,7 +2231,8 @@ class AreaDefinition(_ProjectionDefinition):
             (x, y) : tuple of points/arrays
         """
         warnings.warn("'get_xy_from_lonlat' is deprecated, please use "
-                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning)
+                      "'get_array_indices_from_lonlat' instead.", DeprecationWarning,
+                      stacklevel=2)
 
         return self.get_array_indices_from_lonlat(lon, lat)
 
@@ -2254,7 +2255,8 @@ class AreaDefinition(_ProjectionDefinition):
             ValueError: if the return point is outside the area domain
         """
         warnings.warn("'get_xy_from_proj_coords' is deprecated, please use "
-                      "'get_array_indices_from_projection_coordinates' instead.", DeprecationWarning)
+                      "'get_array_indices_from_projection_coordinates' instead.", DeprecationWarning,
+                      stacklevel=2)
 
         return self.get_array_indices_from_projection_coordinates(self, xm, ym)
 
@@ -2276,7 +2278,8 @@ class AreaDefinition(_ProjectionDefinition):
     def get_proj_vectors_dask(self, chunks=None, dtype=None):
         """Get projection vectors."""
         warnings.warn("'get_proj_vectors_dask' is deprecated, please use "
-                      "'get_proj_vectors' with the 'chunks' keyword argument specified.", DeprecationWarning)
+                      "'get_proj_vectors' with the 'chunks' keyword argument specified.", DeprecationWarning,
+                      stacklevel=2)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_vectors(dtype=dtype, chunks=chunks)
@@ -2317,7 +2320,8 @@ class AreaDefinition(_ProjectionDefinition):
     def get_proj_coords_dask(self, chunks=None, dtype=None):
         """Get projection coordinates."""
         warnings.warn("'get_proj_coords_dask' is deprecated, please use "
-                      "'get_proj_coords' with the 'chunks' keyword argument specified.", DeprecationWarning)
+                      "'get_proj_coords' with the 'chunks' keyword argument specified.", DeprecationWarning,
+                      stacklevel=2)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_proj_coords(chunks=chunks, dtype=dtype)
@@ -2426,7 +2430,7 @@ class AreaDefinition(_ProjectionDefinition):
     def get_lonlats_dask(self, chunks=None, dtype=None):
         """Get longitudes and latitudes."""
         warnings.warn("'get_lonlats_dask' is deprecated, please use "
-                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning)
+                      "'get_lonlats' with the 'chunks' keyword argument specified.", DeprecationWarning, stacklevel=2)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_lonlats(chunks=chunks, dtype=dtype)
@@ -2456,7 +2460,7 @@ class AreaDefinition(_ProjectionDefinition):
         """
         if cache:
             warnings.warn("'cache' keyword argument will be removed in the "
-                          "future and data will not be cached.", PendingDeprecationWarning)
+                          "future and data will not be cached.", PendingDeprecationWarning, stacklevel=2)
         if dtype is None:
             dtype = self.dtype
 
@@ -2512,7 +2516,7 @@ class AreaDefinition(_ProjectionDefinition):
     def proj4_string(self):
         """Return projection definition as Proj.4 string."""
         warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
-                      "instead.", DeprecationWarning)
+                      "instead.", DeprecationWarning, stacklevel=2)
         return proj4_dict_to_str(self.proj_dict)
 
     def _get_slice_starts_stops(self, area_to_cover):
@@ -2794,7 +2798,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
                   "'get_geostationary_bounding_box_in_lonlats' instead.",
-                  DeprecationWarning)
+                  DeprecationWarning, stacklevel=2)
     return get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
 
@@ -2940,7 +2944,7 @@ class StackedAreaDefinition(_ProjectionDefinition):
         """Return lon and lat dask arrays of the area."""
         warnings.warn("'get_lonlats_dask' is deprecated, please use "
                       "'get_lonlats' with the 'chunks' keyword argument specified.",
-                      DeprecationWarning)
+                      DeprecationWarning, stacklevel=2)
         if chunks is None:
             chunks = CHUNK_SIZE  # FUTURE: Use a global config object instead
         return self.get_lonlats(chunks=chunks, dtype=dtype)
@@ -2956,7 +2960,7 @@ class StackedAreaDefinition(_ProjectionDefinition):
     def proj4_string(self):
         """Return projection definition as Proj.4 string."""
         warnings.warn("'proj4_string' is deprecated, please use 'proj_str' "
-                      "instead.", DeprecationWarning)
+                      "instead.", DeprecationWarning, stacklevel=2)
         return self.defs[0].proj_str
 
     @property

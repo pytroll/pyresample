@@ -167,7 +167,7 @@ def _read_yaml_area_file_content(area_file_name):
                               "directly.  This is deprecated since pyresample "
                               "1.14.1, please use load_area_from_string or "
                               "pass a stream or a path to a file instead",
-                              DeprecationWarning)
+                              DeprecationWarning, stacklevel=3)
                 tmp_dict = yaml.safe_load(area_file_obj)
             else:
                 with open(area_file_obj) as area_file_obj:

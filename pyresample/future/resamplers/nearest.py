@@ -207,7 +207,7 @@ class KDTreeNearestXarrayResampler(Resampler):
         """
         if self.source_geo_def.size < neighbors:
             warnings.warn('Searching for %s neighbors in %s data points' %
-                          (neighbors, self.source_geo_def.size))
+                          (neighbors, self.source_geo_def.size), stacklevel=3)
 
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE
@@ -483,7 +483,7 @@ class KDTreeNearestXarrayResampler(Resampler):
                 "but a pure numpy array was provided. Data will be converted "
                 "to dask arrays for computation and then converted back. To "
                 "avoid this warning convert your numpy array before providing "
-                "it to the resampler.", PerformanceWarning)
+                "it to the resampler.", PerformanceWarning, stacklevel=3)
             data = data.copy()
             data.data = da.from_array(data.data, chunks="auto")
         return data
