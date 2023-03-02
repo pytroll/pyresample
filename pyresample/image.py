@@ -58,7 +58,7 @@ class ImageContainer(object):
         """Initialize ImageContainer."""
         warnings.warn(
             "Usage of ImageContainer is deprecated, please use NumpyResamplerBilinear class instead",
-            FutureWarning)
+            FutureWarning, stacklevel=2)
 
         if type(geo_def).__name__ == "DynamicAreaDefinition":
             geo_def = geo_def.freeze()

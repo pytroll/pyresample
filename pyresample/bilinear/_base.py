@@ -102,7 +102,7 @@ class BilinearBase(object):
         """Calculate bilinear neighbour info."""
         if self._source_geo_def.size < self._neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
-                          (self._neighbours, self._source_geo_def.size))
+                          (self._neighbours, self._source_geo_def.size), stacklevel=2)
 
         self._get_valid_input_index_and_kdtree(
             kdtree_class=kdtree_class,

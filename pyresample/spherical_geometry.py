@@ -26,7 +26,7 @@ import numpy as np
 
 warnings.warn("This module will be removed in pyresample 2.0, please use the "
               "`pyresample.spherical` module functions and class instead.",
-              DeprecationWarning)
+              DeprecationWarning, stacklevel=2)
 
 EPSILON = 0.0000001
 
