@@ -34,6 +34,7 @@ from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
 
 from .future.resamplers._transform_utils import lonlat2xyz
 from .future.resamplers.nearest import _my_index, query_no_distance
+from .utils.row_appendable_array import RowAppendableArray
 
 logger = getLogger(__name__)
 
@@ -277,7 +278,7 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
 
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                        neighbours=8, epsilon=0, reduce_data=True,
-                       nprocs=1, segments=None):
+                       nprocs=1, segments=None, preallocate_size=0):
     """Return neighbour info.
 
     Parameters
@@ -301,7 +302,9 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
-
+    preallocate_size: int
+        Size to preallocate result arrays with.
+        This can be useful if appending segments becomes costly for large target areas
     Returns
     -------
     (valid_input_index, valid_output_index,
@@ -339,8 +342,11 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
 
     if segments > 1:
         # Iterate through segments
-        for i, target_slice in enumerate(geometry._get_slice(segments,
-                                                             target_geo_def.shape)):
+        appendable_valid_output_index = RowAppendableArray(preallocate_size)
+        appendable_index_array = RowAppendableArray(preallocate_size)
+        appendable_distance_array = RowAppendableArray(preallocate_size)
+
+        for target_slice in geometry._get_slice(segments, target_geo_def.shape):
 
             # Query on slice of target coordinates
             next_voi, next_ia, next_da = \
@@ -352,20 +358,12 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                                        reduce_data=reduce_data,
                                        nprocs=nprocs)
 
-            # Build result iteratively
-            if i == 0:
-                # First iteration
-                valid_output_index = next_voi
-                index_array = next_ia
-                distance_array = next_da
-            else:
-                valid_output_index = np.append(valid_output_index, next_voi)
-                if neighbours > 1:
-                    index_array = np.row_stack((index_array, next_ia))
-                    distance_array = np.row_stack((distance_array, next_da))
-                else:
-                    index_array = np.append(index_array, next_ia)
-                    distance_array = np.append(distance_array, next_da)
+            appendable_valid_output_index.append_row(next_voi)
+            appendable_index_array.append_row(next_ia)
+            appendable_distance_array.append_row(next_da)
+        valid_output_index = appendable_valid_output_index.to_array()
+        index_array = appendable_index_array.to_array()
+        distance_array = appendable_distance_array.to_array()
     else:
         # Query kd-tree with full target coordinate set
         full_slice = slice(None)

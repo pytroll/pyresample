@@ -20,11 +20,13 @@
 import os
 import unittest
 import uuid
+from timeit import timeit
 
 import numpy as np
 from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
+from pyresample.utils.row_appendable_array import RowAppendableArray
 
 
 def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
@@ -264,7 +266,7 @@ class TestMisc(unittest.TestCase):
         area_def = utils.rasterio.get_area_def_from_raster(source)
         epsg3857_names = (
             'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
-            'WGS 84 / Pseudo-Mercator',                # proj<6.0
+            'WGS 84 / Pseudo-Mercator',  # proj<6.0
         )
         self.assertIn(area_def.proj_id, epsg3857_names)
 
@@ -724,3 +726,38 @@ def test_check_slice_orientation():
     slice_in = slice(start, stop, step)
     res = check_slice_orientation(slice_in)
     assert res == slice(start, stop, -1)
+
+
+class TestRowAppendableArray(unittest.TestCase):
+    def test_append_1d_arrays_unallocated_appendable_array(self):
+        appendable = RowAppendableArray()
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_to_unallocated_appendable_array(self):
+        appendable = RowAppendableArray()
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_1d_arrays_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_to_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_pre_allocation_can_double_appending_performance(self):
+        unallocated = RowAppendableArray()
+        pre_allocated = RowAppendableArray(10000)
+
+        unallocated_performance = timeit(lambda: unallocated.append_row(np.array([42])), number=10000)
+        pre_allocated_performance = timeit(lambda: pre_allocated.append_row(np.array([42])), number=10000)
+        self.assertGreater(unallocated_performance / pre_allocated_performance, 2)
+
