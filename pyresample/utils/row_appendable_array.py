@@ -21,13 +21,13 @@ import numpy as np
 
 
 class RowAppendableArray:
-    """ Helper class which allows efficient concatenation of numpy arrays bey pre-allocating buffers
+    """Helper class which allows efficient concatenation of numpy arrays bey pre-allocating buffers.
 
     By default, this class behaves the same as subsequent array concatenations.
     """
 
     def __init__(self, reserve=0):
-        """ Create an appendable array by pre-allocating the bytes specified by reserve."""
+        """Create an appendable array by pre-allocating the bytes specified by reserve."""
         self._reserve_size = reserve
         self._data = None
         self._cursor = 0

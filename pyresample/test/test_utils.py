@@ -730,6 +730,7 @@ def test_check_slice_orientation():
 
 class TestRowAppendableArray(unittest.TestCase):
     """Test appending numpy arrays to possible pre-allocated buffer."""
+
     def test_append_1d_arrays_unallocated_appendable_array(self):
         appendable = RowAppendableArray()
         appendable.append_row(np.zeros(3))
