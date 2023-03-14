@@ -22,7 +22,6 @@ This mostly takes from astropy's method for checking collected_warnings during
 tests.
 """
 import sys
-import time
 import types
 import warnings
 from contextlib import contextmanager
@@ -279,18 +278,3 @@ def assert_warnings_contain(collected_warnings: list, message: str, count: int =
     msgs = [msg.message.args[0].lower() for msg in collected_warnings]
     msgs_with = [msg for msg in msgs if message in msg]
     assert len(msgs_with) == count
-
-
-class PerformanceClock:
-    def __init__(self):
-        self.measures = []
-
-    @property
-    def median(self):
-        return np.median(self.measures).item()
-
-    @contextmanager
-    def measure(self):
-        start = time.perf_counter_ns()
-        yield
-        self.measures.append((time.perf_counter_ns() - start) / 1e9)

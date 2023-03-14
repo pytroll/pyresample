@@ -729,6 +729,7 @@ def test_check_slice_orientation():
 
 
 class TestRowAppendableArray(unittest.TestCase):
+    """Test appending numpy arrays to possible pre-allocated buffer."""
     def test_append_1d_arrays_unallocated_appendable_array(self):
         appendable = RowAppendableArray()
         appendable.append_row(np.zeros(3))
@@ -760,4 +761,3 @@ class TestRowAppendableArray(unittest.TestCase):
         unallocated_performance = timeit(lambda: unallocated.append_row(np.array([42])), number=10000)
         pre_allocated_performance = timeit(lambda: pre_allocated.append_row(np.array([42])), number=10000)
         self.assertGreater(unallocated_performance / pre_allocated_performance, 2)
-
