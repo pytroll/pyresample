@@ -29,7 +29,8 @@ class RowAppendableArray:
     def __init__(self, expected_segments):
         """Create an appendable array by lazily pre-allocating the array buffer.
 
-        The size of the buffer depends on the expected number of segments and the size of the first segment."""
+        The size of the buffer depends on the expected number of segments and the size of the first segment.
+        """
         self._expected_segments = expected_segments
         self._data = None
         self._cursor = 0
