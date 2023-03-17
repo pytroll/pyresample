@@ -310,7 +310,7 @@ def _prepare_cf_nh10km():
                      'yc': ('yc', np.linspace(+5845, -5345, num=ny),
                             {'standard_name': 'projection_y_coordinate', 'units': 'km'})},
                     coords={'lat': (('yc', 'xc'), np.ma.masked_all((ny, nx))),
-                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))},)
+                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))}, )
     ds['lat'].attrs['units'] = 'degrees_north'
     ds['lat'].attrs['standard_name'] = 'latitude'
     ds['lon'].attrs['units'] = 'degrees_east'
@@ -438,14 +438,14 @@ class TestLoadCFArea_Public(unittest.TestCase):
         self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
 
         # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', )
 
         # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc', )
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc', )
 
         # try to load using a variable= that does not define a grid mapping
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat', )
 
     def test_load_cf_nh10km(self):
         from pyresample.utils import load_cf_area
@@ -463,7 +463,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
-        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
+        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc', )
         validate_nh10km_adef(adef)
 
         # load using a variable= that has a :grid_mapping attribute
@@ -606,16 +606,16 @@ class TestLoadCFArea_Private(unittest.TestCase):
         from pyresample.utils.cf import _guess_cf_lonlat_varname
 
         # nominal
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat',)
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon',)
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat', )
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon', )
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lon'), 'lon')
 
         # error cases
-        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
-        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
+        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong', )
+        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat', )
 
     def test_cf_guess_axis_varname(self):
         from pyresample.utils.cf import _guess_cf_axis_varname
@@ -731,32 +731,44 @@ def test_check_slice_orientation():
 class TestRowAppendableArray(unittest.TestCase):
     """Test appending numpy arrays to possible pre-allocated buffer."""
 
-    def test_append_1d_arrays_unallocated_appendable_array(self):
-        appendable = RowAppendableArray()
+    def test_append_1d_arrays_but_stop_before_expected_number_of_segments(self):
+        appendable = RowAppendableArray(3)
         appendable.append_row(np.zeros(3))
         appendable.append_row(np.ones(3))
         self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
 
-    def test_append_rows_of_nd_arrays_to_unallocated_appendable_array(self):
-        appendable = RowAppendableArray()
+    def test_append_rows_of_nd_arrays_but_stop_before_expected_number_of_segments(self):
+        appendable = RowAppendableArray(3)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_more_1d_arrays_than_expected(self):
+        appendable = RowAppendableArray(1)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_more_rows_of_nd_arrays_than_expected(self):
+        appendable = RowAppendableArray(1)
         appendable.append_row(np.zeros((3, 2)))
         appendable.append_row(np.ones((3, 2)))
         self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
 
     def test_append_1d_arrays_pre_allocated_appendable_array(self):
-        appendable = RowAppendableArray(6)
+        appendable = RowAppendableArray(2)
         appendable.append_row(np.zeros(3))
         appendable.append_row(np.ones(3))
         self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
 
     def test_append_rows_of_nd_arrays_to_pre_allocated_appendable_array(self):
-        appendable = RowAppendableArray(6)
+        appendable = RowAppendableArray(2)
         appendable.append_row(np.zeros((3, 2)))
         appendable.append_row(np.ones((3, 2)))
         self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
 
     def test_pre_allocation_can_double_appending_performance(self):
-        unallocated = RowAppendableArray()
+        unallocated = RowAppendableArray(0)
         pre_allocated = RowAppendableArray(10000)
 
         unallocated_performance = timeit(lambda: unallocated.append_row(np.array([42])), number=10000)

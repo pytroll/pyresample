@@ -278,7 +278,7 @@ def _resample(source_geo_def, data, target_geo_def, resample_type,
 
 def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
                        neighbours=8, epsilon=0, reduce_data=True,
-                       nprocs=1, segments=None, preallocate_size=0):
+                       nprocs=1, segments=None):
     """Return neighbour info.
 
     Parameters
@@ -302,9 +302,6 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
-    preallocate_size: int
-        Size to preallocate result arrays with.
-        This can be useful if appending segments becomes costly for large target areas
     Returns
     -------
     (valid_input_index, valid_output_index,
@@ -342,9 +339,9 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
 
     if segments > 1:
         # Iterate through segments
-        appendable_valid_output_index = RowAppendableArray(preallocate_size)
-        appendable_index_array = RowAppendableArray(preallocate_size)
-        appendable_distance_array = RowAppendableArray(preallocate_size)
+        appendable_valid_output_index = RowAppendableArray(segments)
+        appendable_index_array = RowAppendableArray(segments)
+        appendable_distance_array = RowAppendableArray(segments)
 
         for target_slice in geometry._get_slice(segments, target_geo_def.shape):
 

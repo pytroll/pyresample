@@ -26,16 +26,19 @@ class RowAppendableArray:
     By default, this class behaves the same as subsequent array concatenations.
     """
 
-    def __init__(self, reserve=0):
-        """Create an appendable array by pre-allocating the bytes specified by reserve."""
-        self._reserve_size = reserve
+    def __init__(self, expected_segments):
+        """Create an appendable array by lazily pre-allocating the array buffer.
+
+        The size of the buffer depends on the expected number of segments and the size of the first segment."""
+        self._expected_segments = expected_segments
         self._data = None
         self._cursor = 0
 
     def append_row(self, next_array):
         """Append the specified array."""
         if self._data is None:
-            self._data = np.empty((self._reserve_size, *next_array.shape[1:]), dtype=next_array.dtype)
+            self._data = np.empty((self._expected_segments * next_array.shape[0], *next_array.shape[1:]),
+                                  dtype=next_array.dtype)
         cursor_end = self._cursor + next_array.shape[0]
         if cursor_end > self._data.shape[0]:
             if len(next_array.shape) == 1:
