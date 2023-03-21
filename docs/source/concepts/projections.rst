@@ -7,7 +7,9 @@ You may also see the term projection referred to as a Projected Coordinate
 Reference System (CRS) or just CRS. The below documentation can be seen as
 a primer, but it is still quite limited for this complex topic.
 
-The book "Map Projections" by Battersby [#]_ describes map projections::
+The book "Map Projections" by Battersby [#]_ describes map projections:
+
+.. code-block:: text
 
     Map projection is the process of transforming angular
     (spherical / elliptical) coordinates into planar coordinates. All map
