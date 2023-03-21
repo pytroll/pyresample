@@ -266,7 +266,7 @@ class TestMisc(unittest.TestCase):
         area_def = utils.rasterio.get_area_def_from_raster(source)
         epsg3857_names = (
             'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
-            'WGS 84 / Pseudo-Mercator',  # proj<6.0
+            'WGS 84 / Pseudo-Mercator',                # proj<6.0
         )
         self.assertIn(area_def.proj_id, epsg3857_names)
 
@@ -310,7 +310,7 @@ def _prepare_cf_nh10km():
                      'yc': ('yc', np.linspace(+5845, -5345, num=ny),
                             {'standard_name': 'projection_y_coordinate', 'units': 'km'})},
                     coords={'lat': (('yc', 'xc'), np.ma.masked_all((ny, nx))),
-                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))}, )
+                            'lon': (('yc', 'xc'), np.ma.masked_all((ny, nx)))},)
     ds['lat'].attrs['units'] = 'degrees_north'
     ds['lat'].attrs['standard_name'] = 'latitude'
     ds['lon'].attrs['units'] = 'degrees_east'
@@ -438,14 +438,14 @@ class TestLoadCFArea_Public(unittest.TestCase):
         self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
 
         # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', )
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
 
         # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc', )
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc', )
+        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
 
         # try to load using a variable= that does not define a grid mapping
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat', )
+        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
 
     def test_load_cf_nh10km(self):
         from pyresample.utils import load_cf_area
@@ -463,7 +463,7 @@ class TestLoadCFArea_Public(unittest.TestCase):
         cf_file = _prepare_cf_nh10km()
 
         # load using a variable= that is a valid grid_mapping container
-        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc', )
+        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
         validate_nh10km_adef(adef)
 
         # load using a variable= that has a :grid_mapping attribute
@@ -606,16 +606,16 @@ class TestLoadCFArea_Private(unittest.TestCase):
         from pyresample.utils.cf import _guess_cf_lonlat_varname
 
         # nominal
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat', )
-        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon', )
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lat'), 'lat',)
+        self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['nh10km'], 'ice_conc', 'lon'), 'lon',)
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llwgs84'], 'temp', 'lon'), 'lon')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lat'), 'lat')
         self.assertEqual(_guess_cf_lonlat_varname(self.nc_handles['llnocrs'], 'temp', 'lon'), 'lon')
 
         # error cases
-        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong', )
-        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat', )
+        self.assertRaises(ValueError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'ice_conc', 'wrong',)
+        self.assertRaises(KeyError, _guess_cf_lonlat_varname, self.nc_handles['nh10km'], 'doesNotExist', 'lat',)
 
     def test_cf_guess_axis_varname(self):
         from pyresample.utils.cf import _guess_cf_axis_varname
