@@ -116,7 +116,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -221,14 +221,14 @@ latex_documents = [
 # Intersphinx extention
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'xarray': ('https://xarray.pydata.org/en/stable', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy', None),
+    'xarray': ('https://docs.xarray.dev/en/stable', None),
     'dask': ('https://docs.dask.org/en/latest', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
     'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
     'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
     'pyproj': ('https://pyproj4.github.io/pyproj/dev/', None),
-    'proj4': ('https://proj.org', None),
+    'proj': ('https://proj.org', None),
     'satpy': ('https://satpy.readthedocs.io/en/stable', None),
 }

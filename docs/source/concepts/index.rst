@@ -9,6 +9,7 @@ the :doc:`../tutorials/index` and :doc:`../howtos/index` sections of the
 documentation.
 
 .. toctree::
+   :maxdepth: 2
 
    geolocated_data
    projections

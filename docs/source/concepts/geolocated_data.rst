@@ -70,14 +70,14 @@ correction. At the time of writing Pyresample does not currently have any
 parallax correction algorithms implemented, but the
 :doc:`Satpy library <satpy:index>` does.
 
-Uniform Grid or Not
--------------------
+Pixel Spacing
+-------------
 
 The two most common structures of geolocated data used with Pyresample are
 uniformly spaced grids of pixels (sometimes called "areas") and swaths of
 variably spaced pixels. Depending on the structure of our data we are able to
 take certain shortcuts in representing it or in how we approach resampling.
-For example, if our data is uniformly spaced we don't need a coordinate for
+For example, if our data are uniformly spaced we don't need a coordinate for
 each pixel, we can store the coordinates for one pixel and the offset (size)
 to the next pixel. This can save memory (not storing coordinates for every
 pixel), but also lets us quickly and efficiently calculate subsets of our
