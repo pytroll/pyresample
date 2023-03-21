@@ -339,9 +339,9 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
 
     if segments > 1:
         # Iterate through segments
-        appendable_valid_output_index = RowAppendableArray(segments)
-        appendable_index_array = RowAppendableArray(segments)
-        appendable_distance_array = RowAppendableArray(segments)
+        appendable_valid_output_index = RowAppendableArray(target_geo_def.size)
+        appendable_index_array = RowAppendableArray(target_geo_def.size)
+        appendable_distance_array = RowAppendableArray(target_geo_def.size)
 
         for target_slice in geometry._get_slice(segments, target_geo_def.shape):
 

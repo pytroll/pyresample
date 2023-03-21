@@ -26,26 +26,27 @@ class RowAppendableArray:
     By default, this class behaves the same as subsequent array concatenations.
     """
 
-    def __init__(self, expected_segments):
-        """Create an appendable array by lazily pre-allocating the array buffer.
+    def __init__(self, reserved_capacity):
+        """Create an appendable array with a pre-allocated buffer.
 
-        The size of the buffer depends on the expected number of segments and the size of the first segment.
+        The size of the buffer depends also on the shape after the first axis of the first segment.
         """
-        self._expected_segments = expected_segments
+        self._reserved_capacity = reserved_capacity
         self._data = None
         self._cursor = 0
 
     def append_row(self, next_array):
         """Append the specified array."""
         if self._data is None:
-            self._data = np.empty((self._expected_segments * next_array.shape[0], *next_array.shape[1:]),
-                                  dtype=next_array.dtype)
+            self._data = np.empty((self._reserved_capacity, *next_array.shape[1:]), dtype=next_array.dtype)
         cursor_end = self._cursor + next_array.shape[0]
         if cursor_end > self._data.shape[0]:
+            remaining = self._data.shape[0] - self._cursor
+            self._data[self._cursor:] = next_array[:remaining]
             if len(next_array.shape) == 1:
-                self._data = np.append(self._data, next_array)
+                self._data = np.append(self._data, next_array[remaining:])
             else:
-                self._data = np.row_stack((self._data, next_array))
+                self._data = np.row_stack((self._data, next_array[remaining:]))
         else:
             self._data[self._cursor:cursor_end] = next_array
         self._cursor = cursor_end

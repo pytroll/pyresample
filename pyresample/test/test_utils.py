@@ -731,38 +731,38 @@ def test_check_slice_orientation():
 class TestRowAppendableArray(unittest.TestCase):
     """Test appending numpy arrays to possible pre-allocated buffer."""
 
-    def test_append_1d_arrays_but_stop_before_expected_number_of_segments(self):
-        appendable = RowAppendableArray(3)
+    def test_append_1d_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
         appendable.append_row(np.zeros(3))
         appendable.append_row(np.ones(3))
         self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
 
-    def test_append_rows_of_nd_arrays_but_stop_before_expected_number_of_segments(self):
-        appendable = RowAppendableArray(3)
+    def test_append_rows_of_nd_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
         appendable.append_row(np.zeros((3, 2)))
         appendable.append_row(np.ones((3, 2)))
         self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
 
     def test_append_more_1d_arrays_than_expected(self):
-        appendable = RowAppendableArray(1)
+        appendable = RowAppendableArray(5)
         appendable.append_row(np.zeros(3))
         appendable.append_row(np.ones(3))
         self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
 
     def test_append_more_rows_of_nd_arrays_than_expected(self):
-        appendable = RowAppendableArray(1)
+        appendable = RowAppendableArray(2)
         appendable.append_row(np.zeros((3, 2)))
         appendable.append_row(np.ones((3, 2)))
         self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
 
     def test_append_1d_arrays_pre_allocated_appendable_array(self):
-        appendable = RowAppendableArray(2)
+        appendable = RowAppendableArray(6)
         appendable.append_row(np.zeros(3))
         appendable.append_row(np.ones(3))
         self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
 
     def test_append_rows_of_nd_arrays_to_pre_allocated_appendable_array(self):
-        appendable = RowAppendableArray(2)
+        appendable = RowAppendableArray(6)
         appendable.append_row(np.zeros((3, 2)))
         appendable.append_row(np.ones((3, 2)))
         self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
