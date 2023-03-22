@@ -16,3 +16,4 @@ dependencies:
   - shapely
   - pykdtree
   - sphinx_rtd_theme
+  - sphinx-reredirects

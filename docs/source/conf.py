@@ -21,7 +21,9 @@ from pyresample import __version__  # noqa
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx']
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx',
+    'sphinx_reredirects',
+]
 
 # DocTest Settings
 # don't run regular >>> code blocks
@@ -49,6 +51,21 @@ napoleon_numpy_docstring = True
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
+
+redirects = {
+    "data_reduce": "howtos/data_reduce",
+    "geo_def": "howtos/data_reduce",
+    "geo_filter": "howtos/data_reduce",
+    "geometry_utils": "howtos/data_reduce",
+    "grid": "howtos/data_reduce",
+    "multi": "howtos/data_reduce",
+    "plot": "howtos/data_reduce",
+    "plot_cartopy_basemap": "howtos/data_reduce",
+    "plot_projections": "howtos/data_reduce",
+    "preproc": "howtos/data_reduce",
+    "spherical_geometry": "howtos/data_reduce",
+    "swath": "howtos/data_reduce",
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

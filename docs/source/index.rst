@@ -60,16 +60,6 @@ Documentation
    concepts/index
    tutorials/index
    howtos/index
-   geo_def
-   geometry_utils
-   geo_filter
-   grid
-   swath
-   multi
-   preproc
-   spherical_geometry
-   plot
-   data_reduce
    roadmap
    API <api/pyresample>
    dev_guide/index
