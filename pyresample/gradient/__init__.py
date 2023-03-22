@@ -501,8 +501,6 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
 
     def precompute(self, **kwargs):
         """Precompute resampling parameters."""
-        if self.source_geo_def == self.target_geo_def:
-            return
         if self.indices_xy is None:
             self.indices_xy = resample_blocks(gradient_resampler_indices_block,
                                               self.source_geo_def, [], self.target_geo_def,
@@ -511,8 +509,6 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
         """Perform the resampling."""
-        if self.source_geo_def == self.target_geo_def:
-            return data
         if method == "bilinear":
             fun = block_bilinear_interpolator
         elif method in ["nearest_neighbour", "nn"]:

@@ -288,12 +288,6 @@ class TestRBGradientSearchResamplerArea2Area:
         self.resampler.precompute()
         assert self.resampler.indices_xy.shape == (2, ) + self.dst_area.shape
 
-    def test_precompute_does_nothing_when_src_equals_dst(self):
-        """Test that precomputing does nothing when src and dst areas are equal."""
-        resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.src_area)
-        resampler.precompute()
-        assert self.resampler.indices_xy is None
-
     def test_resampler_accepts_only_dataarrays_if_not_2d(self):
         data = da.ones(self.src_area.shape + (1,), dtype=np.float64, chunks=40)
         self.resampler.precompute()
@@ -490,15 +484,6 @@ class TestRBGradientSearchResamplerArea2Area:
         print(res)
         np.testing.assert_allclose(res, expected_resampled_data)
         assert res.shape == dst_area.shape
-
-    def test_resample_does_nothing_when_src_equals_dst(self):
-        """Test that resampling does nothing when src and dst areas are equal."""
-        data = xr.DataArray(da.arange(np.prod(self.src_area.shape), dtype=np.float64).reshape(self.src_area.shape),
-                            dims=['y', 'x'])
-
-        resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.src_area)
-        result = resampler.resample(data)
-        assert result.data is data.data
 
 
 class TestRBGradientSearchResamplerArea2Swath:
