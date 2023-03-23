@@ -31,6 +31,7 @@ import xarray as xr
 
 from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition, SwathDefinition
+from pyresample.gradient import ResampleBlocksGradientSearchResampler
 
 
 class TestOGradientResampler(unittest.TestCase):
@@ -266,9 +267,8 @@ class TestOGradientResampler(unittest.TestCase):
 class TestRBGradientSearchResamplerArea2Area:
     """Test RBGradientSearchResampler for the Area to Area case."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
-        from pyresample.gradient import ResampleBlocksGradientSearchResampler
         self.src_area = AreaDefinition('src', 'src area', None,
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,

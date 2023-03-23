@@ -25,6 +25,8 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from pyresample.future.resamplers.resampler import Resampler
+from pyresample.geometry import AreaDefinition
+from pyresample.resampler import BaseResampler
 
 
 class FakeResampler(Resampler):
@@ -72,3 +74,15 @@ def test_resampler(src, dst):
     resample_results = rs.resample(some_data)
     rs.precompute.assert_called_once()
     assert resample_results.shape == dst.shape
+
+
+def test_base_resampler_does_nothing_when_src_and_dst_areas_are_equal():
+    """Test that the BaseResampler does nothing when the source and target areas are the same."""
+    src_area = AreaDefinition('src', 'src area', None,
+                              {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                              100, 100,
+                              (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+
+    resampler = BaseResampler(src_area, src_area)
+    some_data = np.zeros(src_area.shape, dtype=np.float64)
+    assert resampler.resample(some_data) is some_data
