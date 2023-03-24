@@ -80,7 +80,8 @@ pixel if there is one within the radius, otherwise the fill value will be
 used.
 
 One good part about this algorithm and its simplicity is that it works with
-any pair of input and output geometries (swath, area, etc). This is not
+any pair of input and output geometries (swath, area, etc) whether the pixels
+are geographically contiguous or not. This is not
 necessarily true for all algorithms.
 This is the oldest algorithm implemented in pyresample and has been adapted in
 different interfaces to support numpy, dask, and xarray DataArrays.
@@ -100,17 +101,75 @@ without having to generate or query a k-d tree.
 Gradient Search
 ^^^^^^^^^^^^^^^
 
-:doi:`10.1109/TGRS.2008.916633`
+The gradient search algorithm is based on work by Alexander Trishchenko
+(see :doi:`10.1109/TGRS.2008.916633`). The algorithm benefits from its
+assumption that pixels are all contiguous. By only looking
+at nearby pixels the algorithm can efficiently compute a nearest neighbor
+or perform a bilinear interpolation.
+
+For the interfaces that exist (see warning below) and with the data that meet
+the limitations of this algorithm (contiguous, etc), this algorithm should be
+faster and more memory efficient for nearest neighbor than the k-d tree
+approach (see above) and the other bilinear algorithm implemented in
+Pyresample (see below). The algorithm does not currently support caching, but
+also doesn't need to due to its speed.
 
 .. warning::
 
-   This resampling algorithm is still considered experimental.
+   This resampling algorithm is still considered experimental. At the time of
+   writing it only supports area to area resampling and requires xarray
+   DataArray objects backed by dask arrays.
 
 Bilinear
 ^^^^^^^^
 
+Pyresample also offers a standalone bilinear algorithm that existed before
+gradient search. It is based on the same k-d tree as the nearest neighbor
+algorithm described above. Due to its use of the k-d tree it is able to handle
+non-contiguous data. It is currently limited to xarray DataArray with
+dask arrays as inputs. The current implementation currently requires getting
+multiple nearby neighbors for every output pixel and then doing a bilinear
+interpolation between the four nearest surrounding pixels.
+For contiguous data, it is recommended to use the gradient search algorithm.
+
 Bucket
 ^^^^^^
 
+The bucket resampling algorithm is actually multiple algorithms following a
+similar structure. Bucket resampling is used to compute various types of
+statistics about the input data falling within an output pixel. These
+statistics include sum, min, max, count, average, and fraction of each
+category for integer category data.
+
+The current implementation is limited to xarray DataArrays and dask arrays.
+
 Elliptical Weighted Averaging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pyresample makes it possible to resample swath data to a uniform grid
+using an Elliptical Weighted Averaging algorithm or EWA for short.
+This algorithm behaves differently than the KDTree based resampling
+algorithms. The KDTree-based algorithms
+process each output grid pixel by searching for all "nearby" input
+pixels and applying a certain interpolation (nearest neighbor, gaussian, etc).
+The EWA algorithm processes each input pixel mapping it to one or more output
+pixels. Once each input pixel has been analyzed, the intermediate results are
+averaged to produce the final gridded result.
+
+The EWA algorithm also has limitations on how the input data are structured
+compared to the generic KDTree algorithms. EWA assumes that data in the array
+is organized geographically; adjacent data in the array is adjacent data
+geographically. The algorithm uses this to configure parameters based on the
+size and location of the swath pixels. It also assumes that data are
+scan-based, recorded by a orbiting satellite scan by scan, and the user must
+provide scan size with the ``rows_per_scan`` option.
+
+The EWA algorithm consists of two
+steps: ll2cr and fornav. The algorithm was originally part of the
+MODIS Swath to Grid Toolbox (ms2gt) created by the
+NASA National Snow & Ice Data Center (NSIDC). Its default parameters
+work best with MODIS L1B data, but it has been proven to produce high
+quality images from VIIRS and AVHRR data with the right parameters.
+
+There are multiple high-level interfaces to this algorithm in order to support
+for numpy arrays or xarray DataArrays backed by dask arrays.
