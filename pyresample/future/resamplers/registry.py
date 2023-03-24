@@ -83,7 +83,7 @@ def with_loaded_registry(callable: Callable) -> Callable:
         if not RESAMPLER_REGISTRY:
             warnings.warn("No builtin resamplers found. This probably means you "
                           "installed pyresample in editable mode. Try reinstalling "
-                          "pyresample to ensure builtin resamplers are included.")
+                          "pyresample to ensure builtin resamplers are included.", stacklevel=2)
         return callable(*args, **kwargs)
     return functools.update_wrapper(_wrapper, callable)
 
@@ -100,7 +100,7 @@ def _load_entry_point_resamplers():
         try:
             loaded_resampler = entry_point.load()
         except ImportError:
-            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
+            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}", stacklevel=3)
         else:
             register_resampler(entry_point.name, loaded_resampler)
 

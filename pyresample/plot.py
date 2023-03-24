@@ -115,7 +115,7 @@ def area_def2basemap(area_def, **kwargs):
     import warnings
     warnings.warn("Basemap is no longer maintained. Please switch to cartopy "
                   "by using 'area_def.to_cartopy_crs()'. See the pyresample "
-                  "documentation for more details.", DeprecationWarning)
+                  "documentation for more details.", DeprecationWarning, stacklevel=2)
 
     from mpl_toolkits.basemap import Basemap
     try:
@@ -205,7 +205,7 @@ def _translate_coast_resolution_to_cartopy(coast_res):
 
     if coast_res and coast_res not in ['110m', '50m', '10m']:
         import warnings
-        warnings.warn("'coast_res' should be either '110m', '50m', '10m'.")
+        warnings.warn("'coast_res' should be either '110m', '50m', '10m'.", stacklevel=3)
         coast_res = {
             'c': '110m',
             'l': '110m',

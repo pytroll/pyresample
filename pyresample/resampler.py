@@ -121,6 +121,8 @@ class BaseResampler:
         Returns (xarray.DataArray): Data resampled to the target area
 
         """
+        if self.source_geo_def == self.target_geo_def:
+            return data
         # default is to mask areas for SwathDefinitions
         if mask_area is None and isinstance(
                 self.source_geo_def, SwathDefinition):
