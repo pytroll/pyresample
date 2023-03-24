@@ -12,9 +12,14 @@
 # serve to show the default.
 """Sphinx documentation configuration."""
 
+import os
+import sys
 from datetime import datetime
 
 from pyresample import __version__  # noqa
+
+# Add `source/` directory to make custom extensions/plugins importable
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 # -- General configuration -----------------------------------------------
 
@@ -22,7 +27,7 @@ from pyresample import __version__  # noqa
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx',
-    'sphinx_reredirects',
+    'sphinx_reredirects', 'doi_role',
 ]
 
 # DocTest Settings
