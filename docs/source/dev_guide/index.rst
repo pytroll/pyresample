@@ -11,7 +11,11 @@ The pyresample sphinx documentation is structured following the information
 described in this presentation by Daniele Procida:
 https://youtu.be/t4vKPhjcMZg
 
-The documentation is split into 4 main sections:
+For more details on this scheme see:
+
+https://documentation.divio.com/
+
+The documentation is split into 4 main groups:
 
 1. Concepts (topics): The high-level concepts involved with using pyresample.
    This section tries to not include any code examples and sticks to pure text
