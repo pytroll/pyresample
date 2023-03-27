@@ -6,7 +6,7 @@ geolocation through a combination of the concepts discussed in
 :doc:`geolocated_data` and :doc:`projections`. Pyresample defines geolocation
 through a set of "geometry" objects that fall into two main categories: areas
 and swaths. Areas (a.k.a area definitions) typically represent a grid of
-contiguous pixels that are equally sized. A swath of pixels on the other hand
+equally-spaced pixels. A swath of pixels on the other hand
 represents non-uniformly spaced pixels. See the sections below for more details
 on these concepts and how Pyresample understands the information.
 
@@ -23,7 +23,7 @@ of the instrument the easiest way to specify the locations of the observed value
 is individual coordinates. In Pyresample, we represent swaths with the
 :class:`~pyresample.geometry.SwathDefinition` class.
 
-For data to be consider contiguous it means that pixels at one location
+For data to be considered contiguous it means that pixels at one location
 in the array are geographically close to the pixels next to them in the array.
 Non-contiguous data is therefore any array where there is no guarantee of
 the geographic location of one pixel relative to any other pixel in the array.
@@ -103,7 +103,7 @@ arrays being provided.
 
 A common use case is to have a dynamic area where we know the CRS and the
 resolution of each pixel, but we don't know the extents needed to completely
-contain our swath data when it is resampled. By freezing the dynamic area with
-the swath longitude and latitude arrays we can have output that is consistent
-in pixel size and "look" (based on the CRS) between swath data cases (ex.
-orbits of polar-orbiting satellite instrument data).
+contain our input data when it is resampled. By freezing the dynamic area with
+the longitude and latitude arrays of our input we can have output that is
+consistent in pixel size and "look" (based on the CRS) between data
+cases (ex. orbits of polar-orbiting satellite instrument data).

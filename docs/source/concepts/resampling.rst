@@ -3,7 +3,8 @@ Resampling
 
 In the general sense, resampling is the process of creating new data points
 from data we already have. In Pyresample, we use the term "resample" when we
-transform data from one :doc:`geometry <geometries>` to another. With
+use the data from one :doc:`geometry <geometries>` to create data points in
+another geometry. With
 the available geometries in mind we typically use resampling in a few common
 use cases:
 
@@ -36,7 +37,7 @@ Algorithms
 ----------
 
 When resampling we have a lot of options for mapping input pixels to an output
-pixel. Depending on the algorithm we choose we may get better looking results
+pixels. Depending on the algorithm we choose we may get better looking results
 than others, but at the cost of more processing time or larger memory
 requirements. Below is a basic description of some of the algorithms
 implemented in Pyresample, but for a more detailed description see the
@@ -62,7 +63,8 @@ overlap of these footprints.
 Nearest Neighbor
 ^^^^^^^^^^^^^^^^
 
-Nearest neighbor is one of the simplest resampling algorithms available. It
+Nearest neighbor is one of the simplest ways of mapping input pixels to output
+pixels. It
 sets every output pixel to the value of the input pixel that is geographically
 closest to the output pixel's location. In Pyresample this is implemented using
 a `k-d tree <https://en.wikipedia.org/wiki/K-d_tree>`_ via the
@@ -103,7 +105,8 @@ Gradient Search
 
 The gradient search algorithm is based on work by Alexander Trishchenko
 (see :doi:`10.1109/TGRS.2008.916633`). The algorithm benefits from its
-assumption that pixels are all contiguous. By only looking
+assumption that an array representation preserves the topology of the observed
+data. By only looking
 at nearby pixels the algorithm can efficiently compute a nearest neighbor
 or perform a bilinear interpolation.
 
@@ -129,7 +132,8 @@ algorithm described above. Due to its use of the k-d tree it is able to handle
 non-contiguous data. It is currently limited to xarray DataArray with
 dask arrays as inputs. The current implementation currently requires getting
 multiple nearby neighbors for every output pixel and then doing a bilinear
-interpolation between the four nearest surrounding pixels.
+interpolation between the four nearest surrounding pixels. This typically
+uses a lot of CPU and memory.
 For contiguous data, it is recommended to use the gradient search algorithm.
 
 Bucket
@@ -137,9 +141,15 @@ Bucket
 
 The bucket resampling algorithm is actually multiple algorithms following a
 similar structure. Bucket resampling is used to compute various types of
-statistics about the input data falling within an output pixel. These
-statistics include sum, min, max, count, average, and fraction of each
-category for integer category data.
+statistics about the input data falling within an output pixel (the "bucket").
+These statistics include sum, min, max, count, average, and fraction of each
+category for integer category data. Due to the possible differences
+between geometries (ex. projections, pixel resolution, etc), an output pixel
+might overlap with zero or more input pixels. Instead of only getting the
+nearest input pixel (nearest neighbor), bucket resampling allows us to get the
+maximum input value, or the minimum, or the average, or any other implementated
+calculation. This allows for more control over the final output that may be more
+useful or accurate depending on the type of data being worked with.
 
 The current implementation is limited to xarray DataArrays and dask arrays.
 

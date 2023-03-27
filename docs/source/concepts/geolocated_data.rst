@@ -11,7 +11,9 @@ easier and simplify how we work with them.
 Points or Pixels
 ----------------
 
-Pyresample can work with arrays of data that represent a series of individual
+Pyresample can generally work with arrays of data with any number of
+dimensions. Most examples will stick to the basic cases of arrays that
+represent a series of individual
 points (1D array), an "image" (2D), and in some cases a multi-band image or
 volume (3D) array. In all of these cases we still break things down to
 individual points and when visualizing them we may represent them as pixels,
@@ -29,14 +31,14 @@ Footprint
 We should also consider the "footprint" or size of that point on the Earth.
 Usually a space-based instrument isn't measuring a single micrometer of the
 Earth. More likely it is measuring a region tens, hundreds, or thousands of
-meters wide. We could represent this measured region as a circle with a radius,
+meters wide. We could represent this measured region as a disc with a radius,
 but another shape (ex. ellipse) could be more accurate depending things like
 the angle that the measurement was taken, the way the instrument makes the
 measurement (ex. moving while recording), the way the instrument works, or
 the way it works in various space and Earth atmospheric conditions, or many
 other complicated situations. All of these potential representations of this
 single "point" of data require different numbers of coordinates (single point
-versus circle versus ellipse versus bounding box).
+versus disc versus ellipse versus bounding box).
 
 In many of the algorithms implemented in Pyresample these points will be
 treated as either a single point with no radius of influence (ex. distance

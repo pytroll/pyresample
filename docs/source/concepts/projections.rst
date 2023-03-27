@@ -53,9 +53,9 @@ aren't actually representing the same location if those coordinates are defined
 for different CRSes. Typically to make comparison the easiest it can be
 coordinates are transformed or data resampled to one single CRS.
 For example, data from a forecast model may be defined
-on a longitude/latitude projection with coordinates specified in degrees. If
-you wanted to combine this data with data observed from geostationary data on
-a geostationary projection with coordinates specified in meters, you'd need to
+on a longitude/latitude projection with coordinates specified in degrees. Data
+from a geostationary satellite might be on a geostationary projection with
+coordinates in meters. If you wanted to combine these data you'd need to
 transform the coordinates from one projection to the other.
 
 .. [#]
