@@ -60,8 +60,6 @@ Documentation
    concepts/index
    tutorials/index
    howtos/index
-   roadmap
-   API <api/pyresample>
-   dev_guide/index
+   reference
 
 
