@@ -15,6 +15,14 @@ They assume some minimal level of understanding of the
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   ./*
+   geo_def
+   geometry_utils
+   geo_filter
+   grid
+   swath
+   multi
+   preproc
+   spherical_geometry
+   plot
+   data_reduce

@@ -1,6 +1,6 @@
 Reduction of swath data
 =======================
-Given a swath and a cartesian grid or grid lons and lats pyresample can reduce the swath data
+Given a swath and a cartesian grid or grid lons and lats, pyresample can reduce the swath data
 to only the relevant part covering the grid area. The reduction is coarse in order not to risk removing 
 relevant data.
 
