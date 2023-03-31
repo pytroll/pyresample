@@ -24,7 +24,7 @@ is individual coordinates. In Pyresample, we represent swaths with the
 :class:`~pyresample.geometry.SwathDefinition` class.
 
 For data to be considered contiguous it means that pixels at one location
-in the array are geographically close to the pixels next to them in the array.
+in the array are geographically adjacent to the pixels next to them in the array.
 Non-contiguous data is therefore any array where there is no guarantee of
 the geographic location of one pixel relative to any other pixel in the array.
 
