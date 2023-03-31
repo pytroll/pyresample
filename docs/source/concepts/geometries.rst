@@ -14,7 +14,11 @@ Swaths
 ------
 
 Swaths are a collection of pixels that may or may not be uniformly sized and
-spaced. The pixels may be contiguous or non-contiguous. In this way swaths of
+spaced. The pixels may be contiguous where the edges of the footprints touch
+or be non-contiguous. They could overlap or be spaced far apart. The data in
+the array could maintain the topology of the data or could consist of unordered
+pixels. The pixels of the swath can each have a different footprint shape
+(ex. disc, ellipse, square, etc) and be different sizes. In this way swaths of
 pixels can be used to represent any data as a pair of coordinate arrays.
 Typically these coordinates are longitude and latitude arrays in degrees. One
 real world and common case for using swaths to represent data is for low Earth
@@ -23,10 +27,18 @@ of the instrument the easiest way to specify the locations of the observed value
 is individual coordinates. In Pyresample, we represent swaths with the
 :class:`~pyresample.geometry.SwathDefinition` class.
 
-For data to be considered contiguous it means that pixels at one location
-in the array are geographically adjacent to the pixels next to them in the array.
-Non-contiguous data is therefore any array where there is no guarantee of
-the geographic location of one pixel relative to any other pixel in the array.
+At the time of writing, Pyresample does not have a way to define a swath as
+having one or more of these properties. It is up to the user to use the tools
+that are compatible with their data.
+While many utilities and algorithms in Pyresample may accept swaths as inputs,
+they may depend on those swaths having specific properties. For example, some
+resampling algorithms may assume that a swath's array preserve the geographic
+topology of the observed pixels as an optimization. If this isn't true, the
+results may not be accurate, and the algorithm will likely not warn you of
+this incompatibility. On the other side of this, many algorithms or tools in
+Pyresample may simplify the representation of your swath and treat footprints
+as individual points in space (ex. for distance calculations) or assume a
+less complex footprint (ex. square versus ellipse).
 
 For all its simplicity, defining your data's geolocation as a swath can come
 with some unfortunate consequences. In the most basic definition of a swath
@@ -38,12 +50,13 @@ costly compared to using something like an "area" (see below) if that is at
 all an option. For example, if we wanted to create a polygon representing the
 bounding coordinates of the swath we must assume that the outer edges of our 2D
 longitude and latitude arrays actually represent the edge of the swath. A
-swath is not necessarily contiguous or in a specific order so this may be
-an incorrect assumption. On the other hand, for large arrays it could take a
+swath's pixels are not necessarily in a specific order so this may be
+an incorrect assumption. Additionally, for large arrays it could take a
 long time to compute accurate bounding coordinates.
-In some cases data files may come with longitude and latitude arrays for their
-familiarity, but are actually representing gridded data. In these cases it may
-be more efficient to create an area (see below sections).
+In some cases, data files may come with longitude and latitude arrays for their
+familiarity with the typical users of those data, but are actually representing
+gridded data. In these cases it may be more efficient to create an area (see
+below sections).
 
 .. warning::
 
@@ -80,7 +93,7 @@ AreaDefinition from the :doc:`../howtos/geometry_utils` guide.
 
 Unlike swaths, an area definition's properties mean we don't have to hold
 arrays of data in memory. The order and contiguous nature of the pixels also
-means that we can easily getting bounding coordinates or create subsets of the
+means that we can easily get bounding coordinates or create subsets of the
 data and area. We also know that pixels don't overlap one another so there is
 little concern of artifacts for dividing the area into separate chunks or
 segments for parallel processing and then merging the results back together.

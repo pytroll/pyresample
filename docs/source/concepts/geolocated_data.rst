@@ -28,11 +28,12 @@ still wouldn't completely define what this temperature really means.
 Footprint
 ^^^^^^^^^
 
-We should also consider the "footprint" or size of that point on the Earth.
+We should also consider the "footprint" or size and shape of that point on
+the Earth.
 Usually a space-based instrument isn't measuring a single micrometer of the
 Earth. More likely it is measuring a region tens, hundreds, or thousands of
 meters wide. We could represent this measured region as a disc with a radius,
-but another shape (ex. ellipse) could be more accurate depending things like
+but another shape (ex. ellipse) could be more accurate depending on things like
 the angle that the measurement was taken, the way the instrument makes the
 measurement (ex. moving while recording), the way the instrument works, or
 the way it works in various space and Earth atmospheric conditions, or many

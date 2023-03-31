@@ -83,7 +83,7 @@ used.
 
 One good part about this algorithm and its simplicity is that it works with
 any pair of input and output geometries (swath, area, etc) whether the pixels
-are geographically contiguous or not. This is not
+are topology preserving or not. This is not
 necessarily true for all algorithms.
 This is the oldest algorithm implemented in pyresample and has been adapted in
 different interfaces to support numpy, dask, and xarray DataArrays.
@@ -111,7 +111,8 @@ at nearby pixels the algorithm can efficiently compute a nearest neighbor
 or perform a bilinear interpolation.
 
 For the interfaces that exist (see warning below) and with the data that meet
-the limitations of this algorithm (contiguous, etc), this algorithm should be
+the limitations of this algorithm (topology preserving, etc), this algorithm
+should be
 faster and more memory efficient for nearest neighbor than the k-d tree
 approach (see above) and the other bilinear algorithm implemented in
 Pyresample (see below). The algorithm does not currently support caching, but
@@ -129,12 +130,14 @@ Bilinear
 Pyresample also offers a standalone bilinear algorithm that existed before
 gradient search. It is based on the same k-d tree as the nearest neighbor
 algorithm described above. Due to its use of the k-d tree it is able to handle
-non-contiguous data. It is currently limited to xarray DataArray with
+arrays that do not preserve the geographic topology of the data. It is
+currently limited to xarray DataArray with
 dask arrays as inputs. The current implementation currently requires getting
 multiple nearby neighbors for every output pixel and then doing a bilinear
 interpolation between the four nearest surrounding pixels. This typically
 uses a lot of CPU and memory.
-For contiguous data, it is recommended to use the gradient search algorithm.
+For topology preserving data, it is recommended to use the gradient search
+algorithm.
 
 Bucket
 ^^^^^^
