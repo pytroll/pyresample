@@ -73,7 +73,7 @@ file that defines the :code:`ease_sh` area, or see
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
 the above Satpy_ example) the result might look something like this:
 
-  .. image:: _static/images/tb37v_quick.png
+  .. image:: /_static/images/tb37v_quick.png
   
 The data passed to the functions is a 2D array matching the AreaDefinition.
 

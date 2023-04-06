@@ -48,7 +48,7 @@ used like any other Cartopy_ CRS object.
 Assuming **lons**, **lats**, and **i04_data** are initialized with real data
 the result might look something like this:
 
-  .. image:: _static/images/amsr2_tb37v_cartopy.png
+  .. image:: /_static/images/amsr2_tb37v_cartopy.png
 
 Getting a Basemap object
 ------------------------
@@ -90,7 +90,7 @@ AreaDefinition using the :func:`area_def2basemap <pyresample.plot.area_def2basem
 Assuming **lons**, **lats** and **tb37v** are initialized with real data as in
 the previous examples the result might look something like this:
 
-  .. image:: _static/images/tb37v_bmng.png
+  .. image:: /_static/images/tb37v_bmng.png
   
 Any keyword arguments (not concerning the projection) passed to
 **plot.area_def2basemap** will be passed directly to the Basemap
@@ -131,7 +131,7 @@ parameter `CARTOPY_USER_BACKGROUNDS`.
 
 With real data (same AMSR-2 as above) this might look like this:
  
-  .. image:: _static/images/tb37v_bmng_cartopy.png
+  .. image:: /_static/images/tb37v_bmng_cartopy.png
              
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _`Cartopy gallery example`: http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html

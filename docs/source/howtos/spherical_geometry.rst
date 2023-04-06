@@ -96,7 +96,7 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
  >>> print("Area coverage = {0}".format(area_cov)) # doctest: +SKIP
  0.889317815
 
-.. image:: _static/images/2_passes_between_202001051137_and_202001051156.png
+.. image:: /_static/images/2_passes_between_202001051137_and_202001051156.png
    
 In this case the relative area covered by the two passes (blue outlines) over
 the area of interest (red outlines) is 89%.

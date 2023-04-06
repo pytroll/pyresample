@@ -30,7 +30,7 @@ jobs:
       - name: Install Satpy
         shell: bash -l {0}
         run: |
-          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc
+          pip install sphinx sphinx_rtd_theme sphinxcontrib-apidoc sphinx-reredirects
           pip install --no-deps -e .
 
       - name: Run Sphinx Build

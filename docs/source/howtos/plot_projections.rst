@@ -76,7 +76,7 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data (like
 above we use AMSR-2 data in this example) the result might look something like
 this:
 
-  .. image:: _static/images/tb37v_pc.png
+  .. image:: /_static/images/tb37v_pc.png
 
 
 The Globe projections
@@ -138,6 +138,6 @@ should also work with these projections. Again assuming the area-config file
 Assuming **lons**, **lats** and **tb37v** are initialized with real data, like
 in the above examples, the result might look something like this:
 
-  .. image:: _static/images/tb37v_ortho.png
+  .. image:: /_static/images/tb37v_ortho.png
 
 .. _Cartopy: http://scitools.org.uk/cartopy/

@@ -12,16 +12,23 @@
 # serve to show the default.
 """Sphinx documentation configuration."""
 
+import os
+import sys
 from datetime import datetime
 
 from pyresample import __version__  # noqa
+
+# Add `source/` directory to make custom extensions/plugins importable
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 # -- General configuration -----------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx']
+    'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx',
+    'sphinx_reredirects', 'doi_role',
+]
 
 # DocTest Settings
 # don't run regular >>> code blocks
@@ -49,6 +56,21 @@ napoleon_numpy_docstring = True
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
+
+redirects = {
+    "data_reduce": "howtos/data_reduce",
+    "geo_def": "howtos/data_reduce",
+    "geo_filter": "howtos/data_reduce",
+    "geometry_utils": "howtos/data_reduce",
+    "grid": "howtos/data_reduce",
+    "multi": "howtos/data_reduce",
+    "plot": "howtos/data_reduce",
+    "plot_cartopy_basemap": "howtos/data_reduce",
+    "plot_projections": "howtos/data_reduce",
+    "preproc": "howtos/data_reduce",
+    "spherical_geometry": "howtos/data_reduce",
+    "swath": "howtos/data_reduce",
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -116,7 +138,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -221,14 +243,14 @@ latex_documents = [
 # Intersphinx extention
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'xarray': ('https://xarray.pydata.org/en/stable', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy', None),
+    'xarray': ('https://docs.xarray.dev/en/stable', None),
     'dask': ('https://docs.dask.org/en/latest', None),
     'pandas': ('https://pandas.pydata.org/docs', None),
-    'pyresample': ('https://pyresample.readthedocs.io/en/stable', None),
     'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
     'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
     'pyproj': ('https://pyproj4.github.io/pyproj/dev/', None),
-    'proj4': ('https://proj.org', None),
+    'proj': ('https://proj.org', None),
+    'satpy': ('https://satpy.readthedocs.io/en/stable', None),
 }

@@ -36,4 +36,5 @@ there might be neglible performance improvement using say 8 compared to 4 proces
 Test on the actual system to determine the most sensible number of processes to use. 
 
 Here is an example of the performance for a varying number of processors on a 64-bit ubuntu 14.04, 32 GB RAM, 2 x Intel Xeon E5-2630 with 6 physical cores each:
-  .. image:: _static/images/time_vs_nproc_1-12.png
+
+.. image:: /_static/images/time_vs_nproc_1-12.png
