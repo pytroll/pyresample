@@ -18,6 +18,7 @@
 """Classes for geometry operations."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import math
 import warnings
@@ -57,6 +58,17 @@ from pyproj import CRS
 
 logger = getLogger(__name__)
 HashType = hashlib._hashlib.HASH
+
+
+@contextlib.contextmanager
+def _ignore_pyproj_proj_warnings():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            "You will likely lose important projection information",
+            UserWarning,
+        )
+        yield
 
 
 class DimensionError(ValueError):
@@ -1259,6 +1271,7 @@ class DynamicAreaDefinition(object):
 def _invproj(data_x, data_y, proj_dict):
     """Perform inverse projection."""
     # XXX: does pyproj copy arrays? What can we do so it doesn't?
+    print(f"Running _invproj {data_x.shape}")
     target_proj = Proj(proj_dict)
     lon, lat = target_proj(data_x, data_y, inverse=True)
     return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
@@ -1889,7 +1902,8 @@ class AreaDefinition(_ProjectionDefinition):
     def __str__(self):
         """Return string representation of the AreaDefinition."""
         # We need a sorted dictionary for a unique hash of str(self)
-        proj_dict = self.proj_dict
+        with _ignore_pyproj_proj_warnings():
+            proj_dict = self.proj_dict
         proj_param_str = ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
         proj_str = '{' + proj_param_str + '}'
         if not self.proj_id:
