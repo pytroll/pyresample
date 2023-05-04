@@ -489,7 +489,7 @@ class TestRBGradientSearchResamplerArea2Area:
 class TestRBGradientSearchResamplerArea2Swath:
     """Test RBGradientSearchResampler for the Swath to Area case."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
         chunks = 20
 
@@ -815,7 +815,7 @@ def test_concatenate_chunks_stack_calls(dask_da):
 class TestGradientCython():
     """Test the core gradient features."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
         self.src_x, self.src_y = np.meshgrid(range(10), range(10))
 

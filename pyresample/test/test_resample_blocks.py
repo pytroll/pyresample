@@ -32,7 +32,7 @@ from pyresample.geometry import AreaDefinition
 class TestResampleBlocksArea2Area:
     """Test resample_block in an area to area resampling case."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
         self.src_area = AreaDefinition(
             'omerc_otf',

@@ -29,8 +29,9 @@ from pathlib import Path
 from typing import Optional, Sequence, Union
 
 import numpy as np
+import pyproj
 import yaml
-from pyproj import Geod, Proj, transform
+from pyproj import Geod, Proj
 from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
@@ -807,7 +808,8 @@ class SwathDefinition(CoordinateDefinition):
     @staticmethod
     def _do_transform(src, dst, lons, lats, alt):
         """Run pyproj.transform and stack the results."""
-        x, y, z = transform(src, dst, lons, lats, alt)
+        transformer = pyproj.Transformer.from_crs(src, dst)
+        x, y, z = transformer.transform(lons, lats, alt)
         return np.dstack((x, y, z))
 
     def aggregate(self, **dims):
@@ -819,8 +821,8 @@ class SwathDefinition(CoordinateDefinition):
         import dask.array as da
         import pyproj
 
-        geocent = pyproj.Proj(proj='geocent')
-        latlong = pyproj.Proj(proj='latlong')
+        geocent = pyproj.CRS(proj='geocent')
+        latlong = pyproj.CRS(proj='latlong')
         res = da.map_blocks(self._do_transform, latlong, geocent,
                             self.lons.data, self.lats.data,
                             da.zeros_like(self.lons.data), new_axis=[2],

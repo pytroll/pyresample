@@ -805,7 +805,7 @@ class TestAreaDefinition:
         actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
         np.testing.assert_allclose(actual, expected)
 
-    def test_get_xy_from_lonlat(self, create_test_area):
+    def test_get_array_indices_from_lonlat(self, create_test_area):
         """Test the function get_xy_from_lonlat."""
         x_size = 2
         y_size = 2
@@ -823,54 +823,50 @@ class TestAreaDefinition:
 
         eps_lonlat = 0.01
         eps_meters = 100
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ul + eps_lonlat,
-                                               lat_ul - eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ul + eps_lonlat, lat_ul - eps_lonlat)
         x_expect, y_expect = 0, 0
         assert x__ == x_expect
         assert y__ == y_expect
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ur - eps_lonlat,
-                                               lat_ur - eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ur - eps_lonlat, lat_ur - eps_lonlat)
         assert x__ == 1
         assert y__ == 0
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ll + eps_lonlat,
-                                               lat_ll + eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ll + eps_lonlat, lat_ll + eps_lonlat)
         assert x__ == 0
         assert y__ == 1
-        x__, y__ = area_def.get_xy_from_lonlat(lon_lr - eps_lonlat,
-                                               lat_lr + eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_lr - eps_lonlat, lat_lr + eps_lonlat)
         assert x__ == 1
         assert y__ == 1
 
         lon, lat = p__(1025000 - eps_meters, 25000 - eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 0
         assert y__ == 1
 
         lon, lat = p__(1025000 + eps_meters, 25000 - eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 1
         assert y__ == 1
 
         lon, lat = p__(1025000 - eps_meters, 25000 + eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 0
         assert y__ == 0
 
         lon, lat = p__(1025000 + eps_meters, 25000 + eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 1
         assert y__ == 0
 
         lon, lat = p__(999000, -10, inverse=True)
         with pytest.raises(ValueError):
-            area_def.get_xy_from_lonlat(lon, lat)
+            area_def.get_array_indices_from_lonlat(lon, lat)
         with pytest.raises(ValueError):
-            area_def.get_xy_from_lonlat(0., 0.)
+            area_def.get_array_indices_from_lonlat(0., 0.)
 
         # Test getting arrays back:
         lons = [lon_ll + eps_lonlat, lon_ur - eps_lonlat]
         lats = [lat_ll + eps_lonlat, lat_ur - eps_lonlat]
-        x__, y__ = area_def.get_xy_from_lonlat(lons, lats)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lons, lats)
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
@@ -1068,7 +1064,7 @@ class TestAreaDefinition:
     def test_from_epsg(self, area_class):
         """Test the from_epsg class method."""
         sweref = area_class.from_epsg('3006', 2000)
-        assert sweref.name == 'SWEREF99 TM'
+        assert sweref.description == 'SWEREF99 TM'
         assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
                                     'proj': 'utm', 'type': 'crs', 'units': 'm',
                                     'zone': 33}
