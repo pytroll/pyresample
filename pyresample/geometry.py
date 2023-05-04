@@ -682,14 +682,13 @@ class CoordinateDefinition(BaseDefinition):
         if self.ndim == 1:
             raise RuntimeError("Can't confidently determine geocentric "
                                "resolution for 1D swath.")
-        from pyproj import transform
         rows = self.shape[0]
         start_row = rows // 2  # middle row
-        src = Proj('+proj=latlong +datum=WGS84')
+        src = CRS('+proj=latlong +datum=WGS84')
         if radius:
-            dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
+            dst = CRS("+proj=cart +a={} +b={}".format(radius, radius))
         else:
-            dst = Proj("+proj=cart +ellps={}".format(ellps))
+            dst = CRS("+proj=cart +ellps={}".format(ellps))
         # simply take the first two columns of the middle of the swath
         lons = self.lons[start_row: start_row + 1, :2]
         lats = self.lats[start_row: start_row + 1, :2]
@@ -705,7 +704,8 @@ class CoordinateDefinition(BaseDefinition):
         lats = lats.ravel()
         alt = np.zeros_like(lons)
 
-        xyz = np.stack(transform(src, dst, lons, lats, alt), axis=1)
+        transformer = pyproj.Transformer.from_crs(src, dst)
+        xyz = np.stack(transformer.transform(lons, lats, alt), axis=1)
         dist = np.linalg.norm(xyz[1] - xyz[0])
         dist = dist[np.isfinite(dist)]
         if not dist.size:
