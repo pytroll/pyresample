@@ -30,6 +30,7 @@ from pyresample.geometry import (  # noqa
     get_geostationary_angle_extent,
     get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
+    ignore_pyproj_proj_warnings,
 )
 
 

@@ -30,6 +30,7 @@ from pyresample.future.geometry.area import (
     get_geostationary_angle_extent,
     get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
+    ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
 
@@ -965,7 +966,8 @@ class TestAreaDefinition:
                 123,
                 123,
                 (-40000., -40000., 40000., 40000.))
-            assert area.proj_str == expected_proj
+            with ignore_pyproj_proj_warnings():
+                assert area.proj_str == expected_proj
 
         # CRS with towgs84 in it
         # we remove towgs84 if they are all 0s
@@ -976,8 +978,9 @@ class TestAreaDefinition:
             123,
             123,
             (-40000., -40000., 40000., 40000.))
-        assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                                 '+type=crs +units=m +x_0=4321000 +y_0=3210000')
+        with ignore_pyproj_proj_warnings():
+            assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                                     '+type=crs +units=m +x_0=4321000 +y_0=3210000')
         projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
                       'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
         area = create_test_area(
@@ -985,9 +988,10 @@ class TestAreaDefinition:
             123,
             123,
             (-40000., -40000., 40000., 40000.))
-        assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                                 '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
-                                 '+type=crs +units=m +x_0=4321000 +y_0=3210000')
+        with ignore_pyproj_proj_warnings():
+            assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                                     '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
+                                     '+type=crs +units=m +x_0=4321000 +y_0=3210000')
 
     def test_striding(self, create_test_area):
         """Test striding AreaDefinitions."""
@@ -1067,9 +1071,10 @@ class TestAreaDefinition:
         """Test the from_epsg class method."""
         sweref = area_class.from_epsg('3006', 2000)
         assert sweref.description == 'SWEREF99 TM'
-        assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
-                                    'proj': 'utm', 'type': 'crs', 'units': 'm',
-                                    'zone': 33}
+        with ignore_pyproj_proj_warnings():
+            assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
+                                        'proj': 'utm', 'type': 'crs', 'units': 'm',
+                                        'zone': 33}
         assert sweref.width == 453
         assert sweref.height == 794
         np.testing.assert_allclose(sweref.area_extent,
@@ -1119,15 +1124,19 @@ class TestAreaDefinition:
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ dictionary
+        with ignore_pyproj_proj_warnings():
+            proj_dict = crs.to_dict()
+            proj_str = crs.to_string()
+
         area_def = create_test_area(
-            crs.to_dict(),
+            proj_dict,
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ string
         area_def = create_test_area(
-            crs.to_string(),
+            proj_str,
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
@@ -1184,7 +1193,7 @@ class TestAreaDefinition:
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         res = area.aggregate(x=4, y=2)
-        assert res.proj_dict == area.proj_dict
+        assert res.crs == area.crs
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         assert res.shape[0] == area.shape[0] / 2
         assert res.shape[1] == area.shape[1] / 4
@@ -1284,8 +1293,9 @@ class TestCreateAreaDef:
         if use_proj4:
             # some EPSG codes have a lot of extra metadata that makes the CRS
             # unequal. Skip real area equality and use this as an approximation
-            actual_str = actual.crs.to_proj4()
-            expected_str = expected.crs.to_proj4()
+            with ignore_pyproj_proj_warnings():
+                actual_str = actual.crs.to_proj4()
+                expected_str = expected.crs.to_proj4()
             assert actual_str == expected_str
             assert actual.shape == expected.shape
             np.allclose(actual.area_extent, expected.area_extent)

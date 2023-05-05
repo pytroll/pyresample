@@ -62,7 +62,15 @@ HashType = hashlib._hashlib.HASH
 
 
 @contextlib.contextmanager
-def _ignore_pyproj_proj_warnings():
+def ignore_pyproj_proj_warnings():
+    """Wrap operations that we know will produce a PROJ.4 precision warning.
+
+    Only to be used internally to Pyresample when we have no other choice but
+    to use PROJ.4 strings/dicts. For example, serialization to YAML or other
+    human-readable formats or testing the methods that produce the PROJ.4
+    versions of the CRS.
+
+    """
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -1656,7 +1664,7 @@ class AreaDefinition(_ProjectionDefinition):
         up = max(up1, up2)
         low = min(low1, low2)
         area_extent = (left, low, right, up)
-        return create_area_def(crs.name, crs.to_dict(), area_extent=area_extent, resolution=resolution)
+        return create_area_def(crs.name, crs, area_extent=area_extent, resolution=resolution)
 
     @classmethod
     def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
@@ -1904,7 +1912,7 @@ class AreaDefinition(_ProjectionDefinition):
     def __str__(self):
         """Return string representation of the AreaDefinition."""
         # We need a sorted dictionary for a unique hash of str(self)
-        with _ignore_pyproj_proj_warnings():
+        with ignore_pyproj_proj_warnings():
             proj_dict = self.proj_dict
         proj_param_str = ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
         proj_str = '{' + proj_param_str + '}'
@@ -1969,7 +1977,7 @@ class AreaDefinition(_ProjectionDefinition):
         if self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
-            with _ignore_pyproj_proj_warnings():
+            with ignore_pyproj_proj_warnings():
                 proj_dict = self.crs.to_dict()
 
         res = OrderedDict(description=self.description,
