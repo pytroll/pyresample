@@ -75,7 +75,6 @@ def _get_test_swath_def(input_shape, chunk_size, geo_dims):
 
 def _get_test_target_area(output_shape, output_proj=None):
     from pyresample.geometry import AreaDefinition
-    from pyresample.utils import proj4_str_to_dict
     if output_proj is None:
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
                        '+lon_0=-95. +lat_0=25 +lat_1=25 +units=m +no_defs')
@@ -83,7 +82,7 @@ def _get_test_target_area(output_shape, output_proj=None):
         'test_target',
         'test_target',
         'test_target',
-        proj4_str_to_dict(output_proj),
+        output_proj,
         output_shape[1],  # width
         output_shape[0],  # height
         (-100000., -150000., 100000., 150000.),
@@ -146,7 +145,7 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
         assert 'bands' in new_data.coords
     assert 'crs' in new_data.coords
     assert isinstance(new_data.coords['crs'].item(), CRS)
-    assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+    assert "Lambert" in new_data.coords['crs'].item().coordinate_operation.method_name
     assert new_data.coords['y'].attrs['units'] == 'meter'
     assert new_data.coords['x'].attrs['units'] == 'meter'
     assert target_area.crs == new_data.coords['crs'].item()
