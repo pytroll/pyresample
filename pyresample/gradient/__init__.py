@@ -126,12 +126,12 @@ class StackingGradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = transform(
                     self.dst_x, self.dst_y,
                     src_prj=dst_crs, dst_prj=src_crs)
-                self.prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                self.prj = pyproj.Proj(self.source_geo_def.crs)
             else:
                 self.src_x, self.src_y = transform(
                     self.src_x, self.src_y,
                     src_prj=src_crs, dst_prj=dst_crs)
-                self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                self.prj = pyproj.Proj(self.target_geo_def.crs)
 
     def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
         """Get bounding polygon for source chunk."""
@@ -373,9 +373,9 @@ def _check_input_coordinates(dst_x, dst_y,
         raise ValueError("Target arrays should all have the same shape")
 
 
-def get_border_lonlats(geo_def):
+def get_border_lonlats(geo_def: AreaDefinition):
     """Get the border x- and y-coordinates."""
-    if geo_def.proj_dict['proj'] == 'geos':
+    if geo_def.is_geostationary:
         lon_b, lat_b = get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
     else:
         lons, lats = geo_def.get_boundary_lonlats()
