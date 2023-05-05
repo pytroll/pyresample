@@ -1969,7 +1969,8 @@ class AreaDefinition(_ProjectionDefinition):
         if self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
-            proj_dict = self.crs.to_dict()
+            with _ignore_pyproj_proj_warnings():
+                proj_dict = self.crs.to_dict()
 
         res = OrderedDict(description=self.description,
                           projection=OrderedDict(proj_dict),
@@ -2214,7 +2215,7 @@ class AreaDefinition(_ProjectionDefinition):
         Both scalars and arrays are supported. To be used with scarse
         data points instead of slices (see get_lonlats).
         """
-        p = Proj(self.proj_str)
+        p = Proj(self.crs)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(x[cols], y[rows], inverse=True)
