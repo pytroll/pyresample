@@ -18,6 +18,7 @@
 """Classes for geometry operations."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import math
 import warnings
@@ -28,8 +29,9 @@ from pathlib import Path
 from typing import Optional, Sequence, Union
 
 import numpy as np
+import pyproj
 import yaml
-from pyproj import Geod, Proj, transform
+from pyproj import Geod, Proj
 from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
@@ -57,6 +59,25 @@ from pyproj import CRS
 
 logger = getLogger(__name__)
 HashType = hashlib._hashlib.HASH
+
+
+@contextlib.contextmanager
+def ignore_pyproj_proj_warnings():
+    """Wrap operations that we know will produce a PROJ.4 precision warning.
+
+    Only to be used internally to Pyresample when we have no other choice but
+    to use PROJ.4 strings/dicts. For example, serialization to YAML or other
+    human-readable formats or testing the methods that produce the PROJ.4
+    versions of the CRS.
+
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            "You will likely lose important projection information",
+            UserWarning,
+        )
+        yield
 
 
 class DimensionError(ValueError):
@@ -669,14 +690,13 @@ class CoordinateDefinition(BaseDefinition):
         if self.ndim == 1:
             raise RuntimeError("Can't confidently determine geocentric "
                                "resolution for 1D swath.")
-        from pyproj import transform
         rows = self.shape[0]
         start_row = rows // 2  # middle row
-        src = Proj('+proj=latlong +datum=WGS84')
+        src = CRS('+proj=latlong +datum=WGS84')
         if radius:
-            dst = Proj("+proj=cart +a={} +b={}".format(radius, radius))
+            dst = CRS("+proj=cart +a={} +b={}".format(radius, radius))
         else:
-            dst = Proj("+proj=cart +ellps={}".format(ellps))
+            dst = CRS("+proj=cart +ellps={}".format(ellps))
         # simply take the first two columns of the middle of the swath
         lons = self.lons[start_row: start_row + 1, :2]
         lats = self.lats[start_row: start_row + 1, :2]
@@ -692,7 +712,8 @@ class CoordinateDefinition(BaseDefinition):
         lats = lats.ravel()
         alt = np.zeros_like(lons)
 
-        xyz = np.stack(transform(src, dst, lons, lats, alt), axis=1)
+        transformer = pyproj.Transformer.from_crs(src, dst)
+        xyz = np.stack(transformer.transform(lons, lats, alt), axis=1)
         dist = np.linalg.norm(xyz[1] - xyz[0])
         dist = dist[np.isfinite(dist)]
         if not dist.size:
@@ -795,7 +816,8 @@ class SwathDefinition(CoordinateDefinition):
     @staticmethod
     def _do_transform(src, dst, lons, lats, alt):
         """Run pyproj.transform and stack the results."""
-        x, y, z = transform(src, dst, lons, lats, alt)
+        transformer = pyproj.Transformer.from_crs(src, dst)
+        x, y, z = transformer.transform(lons, lats, alt)
         return np.dstack((x, y, z))
 
     def aggregate(self, **dims):
@@ -807,8 +829,8 @@ class SwathDefinition(CoordinateDefinition):
         import dask.array as da
         import pyproj
 
-        geocent = pyproj.Proj(proj='geocent')
-        latlong = pyproj.Proj(proj='latlong')
+        geocent = pyproj.CRS(proj='geocent')
+        latlong = pyproj.CRS(proj='latlong')
         res = da.map_blocks(self._do_transform, latlong, geocent,
                             self.lons.data, self.lats.data,
                             da.zeros_like(self.lons.data), new_axis=[2],
@@ -1641,7 +1663,7 @@ class AreaDefinition(_ProjectionDefinition):
         up = max(up1, up2)
         low = min(low1, low2)
         area_extent = (left, low, right, up)
-        return create_area_def(crs.name, crs.to_dict(), area_extent=area_extent, resolution=resolution)
+        return create_area_def(crs.name, crs, area_extent=area_extent, resolution=resolution)
 
     @classmethod
     def from_extent(cls, area_id, projection, shape, area_extent, units=None, **kwargs):
@@ -1889,7 +1911,8 @@ class AreaDefinition(_ProjectionDefinition):
     def __str__(self):
         """Return string representation of the AreaDefinition."""
         # We need a sorted dictionary for a unique hash of str(self)
-        proj_dict = self.proj_dict
+        with ignore_pyproj_proj_warnings():
+            proj_dict = self.proj_dict
         proj_param_str = ', '.join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in sorted(proj_dict.keys())])
         proj_str = '{' + proj_param_str + '}'
         if not self.proj_id:
@@ -1953,7 +1976,8 @@ class AreaDefinition(_ProjectionDefinition):
         if self.crs.to_epsg() is not None:
             proj_dict = {'EPSG': self.crs.to_epsg()}
         else:
-            proj_dict = self.crs.to_dict()
+            with ignore_pyproj_proj_warnings():
+                proj_dict = self.crs.to_dict()
 
         res = OrderedDict(description=self.description,
                           projection=OrderedDict(proj_dict),
@@ -2198,7 +2222,7 @@ class AreaDefinition(_ProjectionDefinition):
         Both scalars and arrays are supported. To be used with scarse
         data points instead of slices (see get_lonlats).
         """
-        p = Proj(self.proj_str)
+        p = Proj(self.crs)
         x = self.projection_x_coords
         y = self.projection_y_coords
         return p(x[cols], y[rows], inverse=True)

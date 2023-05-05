@@ -150,7 +150,7 @@ def _read_yaml_area_file_content(area_file_name):
     """Read one or more area files in to a single dict object."""
     from pyresample.utils import recursive_dict_update
 
-    if isinstance(area_file_name, (str, pathlib.Path)):
+    if isinstance(area_file_name, (str, pathlib.Path, io.IOBase)):
         area_file_name = [area_file_name]
 
     area_dict = {}

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test AreaDefinition objects."""
-
+import io
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -30,6 +30,7 @@ from pyresample.future.geometry.area import (
     get_geostationary_angle_extent,
     get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
+    ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
 
@@ -520,7 +521,8 @@ class TestAreaDefinition:
                     '    width: 800\n  area_extent:\n'
                     '    lower_left_xy: [-1370912.72, -909968.64]\n'
                     '    upper_right_xy: [1029087.28, 1490031.36]\n')
-        area_def = parse_area_file(yaml_str, 'areaD')[0]
+        yaml_filelike = io.StringIO(yaml_str)
+        area_def = parse_area_file(yaml_filelike, 'areaD')[0]
         assert area_def == expected
 
         # EPSG
@@ -546,7 +548,8 @@ class TestAreaDefinition:
                         '  area_extent:\n'
                         '    lower_left_xy: [-49739, 5954123]\n'
                         '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
-            area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
+            yaml_filelike = io.StringIO(yaml_str)
+            area_def = parse_area_file(yaml_filelike, 'baws300_sweref99tm')[0]
             assert area_def == expected
 
     def test_projection_coordinates(self, create_test_area):
@@ -805,7 +808,7 @@ class TestAreaDefinition:
         actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
         np.testing.assert_allclose(actual, expected)
 
-    def test_get_xy_from_lonlat(self, create_test_area):
+    def test_get_array_indices_from_lonlat(self, create_test_area):
         """Test the function get_xy_from_lonlat."""
         x_size = 2
         y_size = 2
@@ -823,54 +826,50 @@ class TestAreaDefinition:
 
         eps_lonlat = 0.01
         eps_meters = 100
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ul + eps_lonlat,
-                                               lat_ul - eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ul + eps_lonlat, lat_ul - eps_lonlat)
         x_expect, y_expect = 0, 0
         assert x__ == x_expect
         assert y__ == y_expect
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ur - eps_lonlat,
-                                               lat_ur - eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ur - eps_lonlat, lat_ur - eps_lonlat)
         assert x__ == 1
         assert y__ == 0
-        x__, y__ = area_def.get_xy_from_lonlat(lon_ll + eps_lonlat,
-                                               lat_ll + eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_ll + eps_lonlat, lat_ll + eps_lonlat)
         assert x__ == 0
         assert y__ == 1
-        x__, y__ = area_def.get_xy_from_lonlat(lon_lr - eps_lonlat,
-                                               lat_lr + eps_lonlat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon_lr - eps_lonlat, lat_lr + eps_lonlat)
         assert x__ == 1
         assert y__ == 1
 
         lon, lat = p__(1025000 - eps_meters, 25000 - eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 0
         assert y__ == 1
 
         lon, lat = p__(1025000 + eps_meters, 25000 - eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 1
         assert y__ == 1
 
         lon, lat = p__(1025000 - eps_meters, 25000 + eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 0
         assert y__ == 0
 
         lon, lat = p__(1025000 + eps_meters, 25000 + eps_meters, inverse=True)
-        x__, y__ = area_def.get_xy_from_lonlat(lon, lat)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lon, lat)
         assert x__ == 1
         assert y__ == 0
 
         lon, lat = p__(999000, -10, inverse=True)
         with pytest.raises(ValueError):
-            area_def.get_xy_from_lonlat(lon, lat)
+            area_def.get_array_indices_from_lonlat(lon, lat)
         with pytest.raises(ValueError):
-            area_def.get_xy_from_lonlat(0., 0.)
+            area_def.get_array_indices_from_lonlat(0., 0.)
 
         # Test getting arrays back:
         lons = [lon_ll + eps_lonlat, lon_ur - eps_lonlat]
         lats = [lat_ll + eps_lonlat, lat_ur - eps_lonlat]
-        x__, y__ = area_def.get_xy_from_lonlat(lons, lats)
+        x__, y__ = area_def.get_array_indices_from_lonlat(lons, lats)
 
         x_expects = np.array([0, 1])
         y_expects = np.array([1, 0])
@@ -967,7 +966,8 @@ class TestAreaDefinition:
                 123,
                 123,
                 (-40000., -40000., 40000., 40000.))
-            assert area.proj_str == expected_proj
+            with ignore_pyproj_proj_warnings():
+                assert area.proj_str == expected_proj
 
         # CRS with towgs84 in it
         # we remove towgs84 if they are all 0s
@@ -978,8 +978,9 @@ class TestAreaDefinition:
             123,
             123,
             (-40000., -40000., 40000., 40000.))
-        assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                                 '+type=crs +units=m +x_0=4321000 +y_0=3210000')
+        with ignore_pyproj_proj_warnings():
+            assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                                     '+type=crs +units=m +x_0=4321000 +y_0=3210000')
         projection = {'proj': 'laea', 'lat_0': 52, 'lon_0': 10, 'x_0': 4321000, 'y_0': 3210000,
                       'ellps': 'GRS80', 'towgs84': '0,5,0,0,0,0,0', 'units': 'm', 'no_defs': True}
         area = create_test_area(
@@ -987,9 +988,10 @@ class TestAreaDefinition:
             123,
             123,
             (-40000., -40000., 40000., 40000.))
-        assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
-                                 '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
-                                 '+type=crs +units=m +x_0=4321000 +y_0=3210000')
+        with ignore_pyproj_proj_warnings():
+            assert area.proj_str == ('+ellps=GRS80 +lat_0=52 +lon_0=10 +no_defs +proj=laea '
+                                     '+towgs84=0.0,5.0,0.0,0.0,0.0,0.0,0.0 '
+                                     '+type=crs +units=m +x_0=4321000 +y_0=3210000')
 
     def test_striding(self, create_test_area):
         """Test striding AreaDefinitions."""
@@ -1068,10 +1070,11 @@ class TestAreaDefinition:
     def test_from_epsg(self, area_class):
         """Test the from_epsg class method."""
         sweref = area_class.from_epsg('3006', 2000)
-        assert sweref.name == 'SWEREF99 TM'
-        assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
-                                    'proj': 'utm', 'type': 'crs', 'units': 'm',
-                                    'zone': 33}
+        assert sweref.description == 'SWEREF99 TM'
+        with ignore_pyproj_proj_warnings():
+            assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
+                                        'proj': 'utm', 'type': 'crs', 'units': 'm',
+                                        'zone': 33}
         assert sweref.width == 453
         assert sweref.height == 794
         np.testing.assert_allclose(sweref.area_extent,
@@ -1121,15 +1124,19 @@ class TestAreaDefinition:
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ dictionary
+        with ignore_pyproj_proj_warnings():
+            proj_dict = crs.to_dict()
+            proj_str = crs.to_string()
+
         area_def = create_test_area(
-            crs.to_dict(),
+            proj_dict,
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         assert crs == area_def.crs
         # PROJ string
         area_def = create_test_area(
-            crs.to_string(),
+            proj_str,
             800,
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
@@ -1186,7 +1193,7 @@ class TestAreaDefinition:
             800,
             (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001))
         res = area.aggregate(x=4, y=2)
-        assert res.proj_dict == area.proj_dict
+        assert res.crs == area.crs
         np.testing.assert_allclose(res.area_extent, area.area_extent)
         assert res.shape[0] == area.shape[0] / 2
         assert res.shape[1] == area.shape[1] / 4
@@ -1286,8 +1293,9 @@ class TestCreateAreaDef:
         if use_proj4:
             # some EPSG codes have a lot of extra metadata that makes the CRS
             # unequal. Skip real area equality and use this as an approximation
-            actual_str = actual.crs.to_proj4()
-            expected_str = expected.crs.to_proj4()
+            with ignore_pyproj_proj_warnings():
+                actual_str = actual.crs.to_proj4()
+                expected_str = expected.crs.to_proj4()
             assert actual_str == expected_str
             assert actual.shape == expected.shape
             np.allclose(actual.area_extent, expected.area_extent)
