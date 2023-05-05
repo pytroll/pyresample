@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test AreaDefinition objects."""
-
+import io
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -520,7 +520,8 @@ class TestAreaDefinition:
                     '    width: 800\n  area_extent:\n'
                     '    lower_left_xy: [-1370912.72, -909968.64]\n'
                     '    upper_right_xy: [1029087.28, 1490031.36]\n')
-        area_def = parse_area_file(yaml_str, 'areaD')[0]
+        yaml_filelike = io.StringIO(yaml_str)
+        area_def = parse_area_file(yaml_filelike, 'areaD')[0]
         assert area_def == expected
 
         # EPSG
@@ -546,7 +547,8 @@ class TestAreaDefinition:
                         '  area_extent:\n'
                         '    lower_left_xy: [-49739, 5954123]\n'
                         '    upper_right_xy: [1350361, 7354223]'.format(epsg=epsg_yaml))
-            area_def = parse_area_file(yaml_str, 'baws300_sweref99tm')[0]
+            yaml_filelike = io.StringIO(yaml_str)
+            area_def = parse_area_file(yaml_filelike, 'baws300_sweref99tm')[0]
             assert area_def == expected
 
     def test_projection_coordinates(self, create_test_area):
