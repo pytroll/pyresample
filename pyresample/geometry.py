@@ -1281,7 +1281,6 @@ class DynamicAreaDefinition(object):
 def _invproj(data_x, data_y, proj_dict):
     """Perform inverse projection."""
     # XXX: does pyproj copy arrays? What can we do so it doesn't?
-    print(f"Running _invproj {data_x.shape}")
     target_proj = Proj(proj_dict)
     lon, lat = target_proj(data_x, data_y, inverse=True)
     return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
