@@ -449,7 +449,7 @@ class TestSwathDefinition:
         proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
                           'k': 1, 'gamma': 0,
                           'no_defs': None, 'type': 'crs'})
-        assert_np_dict_allclose(res.proj_dict, proj_dict)
+        assert res.crs == CRS.from_dict(proj_dict)
         assert res.shape == (6, 3)
 
         area = create_test_swath(nplons, nplats)
@@ -464,7 +464,7 @@ class TestSwathDefinition:
         proj_dict.update({'x_0': 0, 'y_0': 0, 'units': 'm',
                           'k': 1, 'gamma': 0,
                           'no_defs': None, 'type': 'crs'})
-        assert_np_dict_allclose(res.proj_dict, proj_dict)
+        assert res.crs == CRS.from_dict(proj_dict)
         assert res.shape == (6, 3)
 
     def test_compute_optimal_bb_with_resolution(self, create_test_swath):
