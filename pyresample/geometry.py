@@ -1207,7 +1207,8 @@ class DynamicAreaDefinition(object):
         Shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
         """
-        proj_dict = self._get_proj_dict()
+        with ignore_pyproj_proj_warnings():
+            proj_dict = self._get_proj_dict()
         projection = self._projection
         if proj_info is not None:
             # this is now our complete projection information
