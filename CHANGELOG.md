@@ -1,3 +1,43 @@
+## Version 1.27.0 (2023/05/17)
+
+### Issues Closed
+
+* [Issue 507](https://github.com/pytroll/pyresample/issues/507) - `gradient_search` fails when resampling Himawari data ([PR 508](https://github.com/pytroll/pyresample/pull/508) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 504](https://github.com/pytroll/pyresample/issues/504) - `get_neighbour_info` slows down significantly when working with large target rasters using many segments ([PR 505](https://github.com/pytroll/pyresample/pull/505) by [@SwamyDev](https://github.com/SwamyDev))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 513](https://github.com/pytroll/pyresample/pull/513) - Remove more warnings encountered during tests
+* [PR 512](https://github.com/pytroll/pyresample/pull/512) - Ignore pyproj to_proj4 warning when converting an AreaDefinition to a string
+* [PR 508](https://github.com/pytroll/pyresample/pull/508) - Fix gradient resampling to same area not working ([507](https://github.com/pytroll/pyresample/issues/507))
+* [PR 502](https://github.com/pytroll/pyresample/pull/502) - Add stacklevel to all pyresample warnings
+* [PR 498](https://github.com/pytroll/pyresample/pull/498) - Fix data type handling (complex) in nearest neighbor resampling
+
+#### Features added
+
+* [PR 505](https://github.com/pytroll/pyresample/pull/505) - Add pre-allocation option to `get_neighbour_info` to improve performance on large raster data ([504](https://github.com/pytroll/pyresample/issues/504))
+* [PR 499](https://github.com/pytroll/pyresample/pull/499) - Drop Python 3.8 support
+* [PR 496](https://github.com/pytroll/pyresample/pull/496) - Deprecate AreaDefinition 'rotation' argument
+* [PR 464](https://github.com/pytroll/pyresample/pull/464) - Add optional metadata to Pyresample 2.0 AreaDefinition
+
+#### Documentation changes
+
+* [PR 515](https://github.com/pytroll/pyresample/pull/515) - Remove python versions tested note in documentation
+* [PR 501](https://github.com/pytroll/pyresample/pull/501) - Couple of small typos found in documentation.
+* [PR 434](https://github.com/pytroll/pyresample/pull/434) - Add initial restructuring of sphinx docs
+
+#### Backward incompatible changes
+
+* [PR 499](https://github.com/pytroll/pyresample/pull/499) - Drop Python 3.8 support
+* [PR 496](https://github.com/pytroll/pyresample/pull/496) - Deprecate AreaDefinition 'rotation' argument
+
+In this release 14 pull requests were closed.
+
+
 ## Version 1.26.1 (2023/02/07)
 
 ### Issues Closed
