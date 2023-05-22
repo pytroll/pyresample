@@ -39,7 +39,7 @@ from pyresample import CHUNK_SIZE
 from pyresample.geometry import (
     AreaDefinition,
     SwathDefinition,
-    get_geostationary_bounding_box,
+    get_geostationary_bounding_box_in_lonlats,
 )
 from pyresample.gradient._gradient_search import (
     one_step_gradient_indices,
@@ -54,7 +54,7 @@ def GradientSearchResampler(source_geo_def, target_geo_def):
     """Create a gradient search resampler."""
     warnings.warn("`GradientSearchResampler` is deprecated, please use "
                   "`create_gradient_search_resampler` instead.",
-                  DeprecationWarning)
+                  DeprecationWarning, stacklevel=2)
     return create_gradient_search_resampler(source_geo_def, target_geo_def)
 
 
@@ -70,7 +70,8 @@ def create_gradient_search_resampler(source_geo_def, target_geo_def):
 @da.as_gufunc(signature='(),()->(),()')
 def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     """Calculate projection coordinates."""
-    return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
+    transformer = pyproj.Transformer.from_crs(src_prj, dst_prj)
+    return transformer.transform(x_coords, y_coords)
 
 
 class StackingGradientSearchResampler(BaseResampler):
@@ -80,7 +81,7 @@ class StackingGradientSearchResampler(BaseResampler):
         """Init GradientResampler."""
         super().__init__(source_geo_def, target_geo_def)
         import warnings
-        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
+        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.", stacklevel=2)
         self.use_input_coords = None
         self._src_dst_filtered = False
         self.prj = None
@@ -104,33 +105,33 @@ class StackingGradientSearchResampler(BaseResampler):
             try:
                 self.src_x, self.src_y = self.source_geo_def.get_proj_coords(
                     chunks=datachunks)
-                src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                src_crs = self.source_geo_def.crs
                 self.use_input_coords = True
             except AttributeError:
                 self.src_x, self.src_y = self.source_geo_def.get_lonlats(
                     chunks=datachunks)
-                src_prj = pyproj.Proj("+proj=longlat")
+                src_crs = pyproj.CRS.from_string("+proj=longlat")
                 self.use_input_coords = False
             try:
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                dst_crs = self.target_geo_def.crs
             except AttributeError:
                 if self.use_input_coords is False:
                     raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj("+proj=longlat")
+                dst_crs = pyproj.CRS.from_string("+proj=longlat")
             if self.use_input_coords:
                 self.dst_x, self.dst_y = transform(
                     self.dst_x, self.dst_y,
-                    src_prj=dst_prj, dst_prj=src_prj)
-                self.prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                    src_prj=dst_crs, dst_prj=src_crs)
+                self.prj = pyproj.Proj(self.source_geo_def.crs)
             else:
                 self.src_x, self.src_y = transform(
                     self.src_x, self.src_y,
-                    src_prj=src_prj, dst_prj=dst_prj)
-                self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                    src_prj=src_crs, dst_prj=dst_crs)
+                self.prj = pyproj.Proj(self.target_geo_def.crs)
 
     def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
         """Get bounding polygon for source chunk."""
@@ -372,10 +373,10 @@ def _check_input_coordinates(dst_x, dst_y,
         raise ValueError("Target arrays should all have the same shape")
 
 
-def get_border_lonlats(geo_def):
+def get_border_lonlats(geo_def: AreaDefinition):
     """Get the border x- and y-coordinates."""
-    if geo_def.proj_dict['proj'] == 'geos':
-        lon_b, lat_b = get_geostationary_bounding_box(geo_def, 3600)
+    if geo_def.is_geostationary:
+        lon_b, lat_b = get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
     else:
         lons, lats = geo_def.get_boundary_lonlats()
         lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))

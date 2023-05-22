@@ -19,6 +19,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import warnings
 from unittest import mock
 
 import pytest
@@ -72,7 +74,8 @@ class TestResamplerRegistryManipulation:
         rname = "my_resampler"
         _register_resampler_class(rname, Resampler)
         unregister_resampler(rname)
-        assert rname not in list_resamplers()
+        with _ignore_no_builtin_resamplers():
+            assert rname not in list_resamplers()
 
     @pytest.mark.parametrize('new_resampler', [Resampler, _custom_resampler_class()])
     def test_multiple_registration_warning_same_class(self, new_resampler):
@@ -88,9 +91,17 @@ class TestResamplerRegistryManipulation:
 
 def _register_resampler_class(rname, rcls, no_exist=True):
     if no_exist:
-        assert rname not in list_resamplers()
+        with _ignore_no_builtin_resamplers():
+            assert rname not in list_resamplers()
     register_resampler(rname, rcls)
     assert rname in list_resamplers()
+
+
+@contextlib.contextmanager
+def _ignore_no_builtin_resamplers():
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="No builtin resamplers", category=UserWarning)
+        yield
 
 
 class TestBuiltinResamplerRegistry:

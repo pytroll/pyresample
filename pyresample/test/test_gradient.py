@@ -22,6 +22,7 @@
 """Tests for the gradien search resampling."""
 
 import unittest
+import warnings
 from unittest import mock
 
 import dask.array as da
@@ -31,12 +32,13 @@ import xarray as xr
 
 from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition, SwathDefinition
+from pyresample.gradient import ResampleBlocksGradientSearchResampler
 
 
-class TestOGradientResampler(unittest.TestCase):
+class TestOGradientResampler:
     """Test case for the gradient resampling."""
 
-    def setUp(self):
+    def setup_method(self):
         """Set up the test case."""
         from pyresample.gradient import StackingGradientSearchResampler
         self.src_area = AreaDefinition('dst', 'dst area', None,
@@ -52,9 +54,10 @@ class TestOGradientResampler(unittest.TestCase):
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-        self.resampler = StackingGradientSearchResampler(self.src_area, self.dst_area)
-        self.swath_resampler = StackingGradientSearchResampler(self.src_swath,
-                                                               self.dst_area)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*which is still EXPERIMENTAL.*", category=UserWarning)
+            self.resampler = StackingGradientSearchResampler(self.src_area, self.dst_area)
+            self.swath_resampler = StackingGradientSearchResampler(self.src_swath, self.dst_area)
 
     def test_get_projection_coordinates_area_to_area(self):
         """Check that the coordinates are initialized, for area -> area."""
@@ -244,8 +247,9 @@ class TestOGradientResampler(unittest.TestCase):
         """Resample swath to area, 2d."""
         data = xr.DataArray(da.ones(self.src_swath.shape, dtype=np.float64),
                             dims=['y', 'x'])
-        res = self.swath_resampler.compute(
-            data, method='bil').compute(scheduler='single-threaded')
+        with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
+            res = self.swath_resampler.compute(
+                data, method='bil').compute(scheduler='single-threaded')
         assert res.shape == self.dst_area.shape
         assert not np.all(np.isnan(res))
 
@@ -255,8 +259,9 @@ class TestOGradientResampler(unittest.TestCase):
                                     dtype=np.float64) *
                             np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
                             dims=['bands', 'y', 'x'])
-        res = self.swath_resampler.compute(
-            data, method='bil').compute(scheduler='single-threaded')
+        with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
+            res = self.swath_resampler.compute(
+                data, method='bil').compute(scheduler='single-threaded')
         assert res.shape == (3, ) + self.dst_area.shape
         for i in range(res.shape[0]):
             arr = np.ravel(res[i, :, :])
@@ -266,9 +271,8 @@ class TestOGradientResampler(unittest.TestCase):
 class TestRBGradientSearchResamplerArea2Area:
     """Test RBGradientSearchResampler for the Area to Area case."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
-        from pyresample.gradient import ResampleBlocksGradientSearchResampler
         self.src_area = AreaDefinition('src', 'src area', None,
                                        {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
                                        100, 100,
@@ -489,7 +493,7 @@ class TestRBGradientSearchResamplerArea2Area:
 class TestRBGradientSearchResamplerArea2Swath:
     """Test RBGradientSearchResampler for the Swath to Area case."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
         chunks = 20
 
@@ -599,24 +603,31 @@ def test_check_overlap():
     assert check_overlap(poly1, poly2) is False
 
 
-@mock.patch('pyresample.gradient.get_geostationary_bounding_box')
-def test_get_border_lonlats(get_geostationary_bounding_box):
-    """Test that correct methods are called in get_border_lonlats()."""
+def test_get_border_lonlats_geos():
+    """Test that correct methods are called in get_border_lonlats() with geos inputs."""
     from pyresample.gradient import get_border_lonlats
-    geo_def = mock.MagicMock(proj_dict={'proj': 'geos'})
-    get_geostationary_bounding_box.return_value = 1, 2
-    res = get_border_lonlats(geo_def)
+    geo_def = AreaDefinition("", "", "",
+                             "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
+    with mock.patch("pyresample.gradient.get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
+        get_geostationary_bounding_box.return_value = 1, 2
+        res = get_border_lonlats(geo_def)
     assert res == (1, 2)
     get_geostationary_bounding_box.assert_called_with(geo_def, 3600)
-    geo_def.get_boundary_lonlats.assert_not_called()
 
-    lon_sides = mock.MagicMock(side1=np.array([1]), side2=np.array([2]),
+
+def test_get_border_lonlats():
+    """Test that correct methods are called in get_border_lonlats()."""
+    from pyresample.boundary import SimpleBoundary
+    from pyresample.gradient import get_border_lonlats
+    lon_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
                                side3=np.array([3]), side4=np.array([4]))
-    lat_sides = mock.MagicMock(side1=np.array([1]), side2=np.array([2]),
+    lat_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
                                side3=np.array([3]), side4=np.array([4]))
-    geo_def = mock.MagicMock()
-    geo_def.get_boundary_lonlats.return_value = lon_sides, lat_sides
-    lon_b, lat_b = get_border_lonlats(geo_def)
+    geo_def = AreaDefinition("", "", "",
+                             "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
+    with mock.patch.object(geo_def, "get_boundary_lonlats") as get_boundary_lonlats:
+        get_boundary_lonlats.return_value = lon_sides, lat_sides
+        lon_b, lat_b = get_border_lonlats(geo_def)
     assert np.all(lon_b == np.array([1, 2, 3, 4]))
     assert np.all(lat_b == np.array([1, 2, 3, 4]))
 
@@ -815,7 +826,7 @@ def test_concatenate_chunks_stack_calls(dask_da):
 class TestGradientCython():
     """Test the core gradient features."""
 
-    def setup(self):
+    def setup_method(self):
         """Set up the test case."""
         self.src_x, self.src_y = np.meshgrid(range(10), range(10))
 

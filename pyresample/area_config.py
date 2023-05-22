@@ -77,7 +77,7 @@ def load_area(area_file_name, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
 
@@ -110,7 +110,7 @@ def load_area_from_string(area_strs, *regions):
 
     Returns
     -------
-    area_defs : AreaDefinition or list
+    area_defs : pyresample.geometry.AreaDefinition or list
         If one area name is specified a single AreaDefinition object is returned.
         If several area names are specified a list of AreaDefinition objects is returned
     """
@@ -151,7 +151,7 @@ def _read_yaml_area_file_content(area_file_name):
     """Read one or more area files in to a single dict object."""
     from pyresample.utils import recursive_dict_update
 
-    if isinstance(area_file_name, (str, pathlib.Path)):
+    if isinstance(area_file_name, (str, pathlib.Path, io.IOBase)):
         area_file_name = [area_file_name]
 
     area_dict = {}
@@ -168,7 +168,7 @@ def _read_yaml_area_file_content(area_file_name):
                               "directly.  This is deprecated since pyresample "
                               "1.14.1, please use load_area_from_string or "
                               "pass a stream or a path to a file instead",
-                              DeprecationWarning)
+                              DeprecationWarning, stacklevel=3)
                 tmp_dict = yaml.safe_load(area_file_obj)
             else:
                 with open(area_file_obj) as area_file_obj:
@@ -213,7 +213,6 @@ def _create_area_def_from_dict(area_name, params):
                                                                           'upper_right_xy', 'units'])
     params['resolution'] = _capture_subarguments(params, 'resolution', ['resolution', 'dx', 'dy', 'units'])
     params['radius'] = _capture_subarguments(params, 'radius', ['radius', 'dx', 'dy', 'units'])
-    params['rotation'] = _capture_subarguments(params, 'rotation', ['rotation', 'units'])
     area_def = create_area_def(**params)
     return area_def
 
@@ -333,19 +332,11 @@ def _create_area(area_id, area_content):
     config = config_obj.dict()
     config['REGION'] = area_id
 
-    try:
-        string_types = basestring
-    except NameError:
-        string_types = str
-    if not isinstance(config['NAME'], string_types):
+    if not isinstance(config['NAME'], str):
         config['NAME'] = ', '.join(config['NAME'])
 
     config['XSIZE'] = int(config['XSIZE'])
     config['YSIZE'] = int(config['YSIZE'])
-    if 'ROTATION' in config.keys():
-        config['ROTATION'] = float(config['ROTATION'])
-    else:
-        config['ROTATION'] = 0
     config['AREA_EXTENT'][0] = config['AREA_EXTENT'][0].replace('(', '')
     config['AREA_EXTENT'][3] = config['AREA_EXTENT'][3].replace(')', '')
 
@@ -355,10 +346,10 @@ def _create_area(area_id, area_content):
     config['PCS_DEF'] = _get_proj4_args(config['PCS_DEF'])
     return create_area_def(config['REGION'], config['PCS_DEF'], description=config['NAME'], proj_id=config['PCS_ID'],
                            shape=(config['YSIZE'], config['XSIZE']), area_extent=config['AREA_EXTENT'],
-                           rotation=config['ROTATION'])
+                           )
 
 
-def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_extent, rotation=0):
+def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_extent):
     """Construct AreaDefinition object from arguments.
 
     Parameters
@@ -375,9 +366,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
         Number of pixel in x dimension
     height : int
         Number of pixel in y dimension
-    rotation: float
-        Rotation in degrees (negative is cw)
-    area_extent : list
+    area_extent : list | tuple
         Area extent as a list of ints (LL_x, LL_y, UR_x, UR_y)
 
     Returns
@@ -446,8 +435,6 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
         Size of pixels: (dx, dy)
     radius : list or float, optional
         Length from the center to the edges of the projection (dx, dy)
-    rotation: float, optional
-        rotation in degrees(negative is cw)
     nprocs : int, optional
         Number of processor cores to be used
     lons : numpy array, optional
@@ -459,7 +446,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
 
     Returns
     -------
-    AreaDefinition or DynamicAreaDefinition : AreaDefinition or DynamicAreaDefinition
+    area : pyresample.geometry.AreaDefinition or pyresample.geometry.DynamicAreaDefinition
         If shape and area_extent are found, an AreaDefinition object is returned.
         If only shape or area_extent can be found, a DynamicAreaDefinition object is returned
 
@@ -551,7 +538,7 @@ def _make_area(
         return AreaDefinition(area_id, description, proj_id, projection, width, height, area_extent, **kwargs)
 
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
-                                 height=height, area_extent=area_extent, rotation=kwargs.get('rotation'),
+                                 height=height, area_extent=area_extent,
                                  resolution=resolution, optimize_projection=optimize_projection)
 
 

@@ -29,7 +29,7 @@ find /io/temp-wheels/ -type f -delete
 git config --global --add safe.directory /io
 
 # Iterate through available pythons.
-for PYBIN in /opt/python/cp3{8,9,10}*/bin; do
+for PYBIN in /opt/python/cp3{9,10,11}*/bin; do
     "${PYBIN}/pip" install -q -U setuptools wheel --cache-dir /io/pip-cache
     # Run the following in root of this repo.
     (cd /io/ && "${PYBIN}/pip" install -q .)

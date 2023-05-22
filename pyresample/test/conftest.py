@@ -28,12 +28,75 @@ from pyresample.future.geometry import (
     CoordinateDefinition,
     SwathDefinition,
 )
+from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
+from pyresample.geometry import SwathDefinition as LegacySwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
 SRC_SWATH_2D_SHAPE = (50, 10)
 SRC_SWATH_1D_SHAPE = (3,)
 SRC_AREA_SHAPE = (50, 10)
 DST_AREA_SHAPE = (80, 85)
+
+
+@pytest.fixture(params=[LegacySwathDefinition, SwathDefinition],
+                ids=["LegacySwathDefinition", "SwathDefinition"])
+def swath_class(request):
+    """Get one of the currently active 'SwathDefinition' classes.
+
+    Currently only includes the legacy 'SwathDefinition' class and the future
+    'SwathDefinition' class in 'pyresample.future.geometry.swath'.
+
+    """
+    return request.param
+
+
+@pytest.fixture
+def create_test_swath(swath_class):
+    """Get a function for creating SwathDefinitions for testing.
+
+    Should be used as a pytest fixture and will automatically run the test
+    function with the legacy SwathDefinition class and the future
+    SwathDefinition class. If tests require a specific class they should
+    NOT use this fixture and instead use the exact class directly.
+
+    """
+    def _create_test_swath(lons, lats, **kwargs):
+        return swath_class(lons, lats, **kwargs)
+    return _create_test_swath
+
+
+@pytest.fixture(params=[LegacyAreaDefinition, AreaDefinition],
+                ids=["LegacyAreaDefinition", "AreaDefinition"])
+def area_class(request):
+    """Get one of the currently active 'AreaDefinition' classes.
+
+    Currently only includes the legacy 'AreaDefinition' class and the future
+    'AreaDefinition' class in 'pyresample.future.geometry.area'.
+
+    """
+    return request.param
+
+
+@pytest.fixture
+def create_test_area(area_class):
+    """Get a function for creating AreaDefinitions for testing.
+
+    Should be used as a pytest fixture and will automatically run the test
+    function with the legacy AreaDefinition class and the future
+    AreaDefinition class. If tests require a specific class they should
+    NOT use this fixture and instead use the exact class directly.
+
+    """
+    def _create_test_area(crs, width, height, area_extent, **kwargs):
+        """Create an AreaDefinition object for testing."""
+        args = (crs, width, height, area_extent)
+        if area_class is LegacyAreaDefinition:
+            attrs = kwargs.pop("attrs", {})
+            area_id = attrs.pop("name", "test_area")
+            args = (area_id, "", "") + args
+        area = area_class(*args, **kwargs)
+        return area
+    return _create_test_area
 
 
 def _euro_lonlats():
@@ -117,8 +180,7 @@ def area_def_lcc_conus_1km():
     """Create an AreaDefinition with an LCC projection over CONUS (1500, 2000)."""
     proj_str = "+proj=lcc +lon_0=-95 +lat_1=35.0 +lat_2=35.0 +datum=WGS84 +no_defs"
     crs = CRS.from_string(proj_str)
-    area_def = AreaDefinition("area_def_lcc_conus", "", "",
-                              crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+    area_def = AreaDefinition(crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
                               (-750000, -750000, 750000, 750000))
     return area_def
 
@@ -131,7 +193,6 @@ def area_def_stere_source():
 
     """
     return AreaDefinition(
-        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
         {
             'a': '6378144.0',
             'b': '6356759.0',
@@ -141,7 +202,7 @@ def area_def_stere_source():
             'proj': 'stere'
         },
         SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
-        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+        (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
     )
 
 
@@ -149,7 +210,6 @@ def area_def_stere_source():
 def area_def_stere_target():
     """Create an AreaDefinition with a polar-stereographic projection (800, 850)."""
     return AreaDefinition(
-        'areaD', 'Europe (3km, HRV, VTC)', 'areaD',
         {
             'a': '6378144.0',
             'b': '6356759.0',
@@ -159,7 +219,7 @@ def area_def_stere_target():
             'proj': 'stere'
         },
         DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
-        [-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001]
+        (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001)
     )
 
 
@@ -167,7 +227,6 @@ def area_def_stere_target():
 def area_def_lonlat_pm180_target():
     """Create an AreaDefinition with a geographic lon/lat projection with prime meridian at 180 (800, 850)."""
     return AreaDefinition(
-        'lonlat_pm180', '', '',
         {
             'proj': 'longlat',
             'pm': '180.0',
@@ -175,7 +234,7 @@ def area_def_lonlat_pm180_target():
             'no_defs': None,
         },
         DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
-        [-20.0, 20.0, 20.0, 35.0]
+        (-20.0, 20.0, 20.0, 35.0)
     )
 
 

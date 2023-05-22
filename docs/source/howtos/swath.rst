@@ -194,13 +194,13 @@ Usage only differs in the number of return values from **resample_gauss** and **
  ...                                                   fill_value=None, with_uncert=True)
 
 Below is shown a plot of the result of the resampling using a real data set:
-  .. image:: _static/images/uncert_conc_nh.png
+  .. image:: /_static/images/uncert_conc_nh.png
 
 The corresponding standard deviations:
-  .. image:: _static/images/uncert_stddev_nh.png
+  .. image:: /_static/images/uncert_stddev_nh.png
 
 And the number of contributing neighbours for each element:
-  .. image:: _static/images/uncert_count_nh.png
+  .. image:: /_static/images/uncert_count_nh.png
 
 Notice the standard deviation is only calculated where there are more than one contributing neighbour.
 
@@ -259,9 +259,9 @@ Below is shown a comparison between image generated with nearest
 neighbour resampling (top) and with bilinear interpolation
 (bottom):
 
-.. image:: _static/images/nearest_overview.png
+.. image:: /_static/images/nearest_overview.png
    :width: 50%
-.. image:: _static/images/bilinear_overview.png
+.. image:: /_static/images/bilinear_overview.png
    :width: 50%
 
 Click images to see the full resolution versions.
@@ -296,8 +296,8 @@ XArrayBilinearResampler
 >>> resampler = XArrayBilinearResampler(source_def, target_def, 30e3)
 >>> result = resampler.resample(data)
 
-The resampling info can be saved for later reuse and much faster processinf for a matching area. The
-data are saved to a ZARR arcive, so `zarr` Python package needs to be installed.
+The resampling info can be saved for later reuse and much faster processing for a matching area. The
+data are saved to a Zarr archive, so `zarr` Python package needs to be installed.
 
 >>> import os
 >>> from tempfile import gettempdir
@@ -394,7 +394,8 @@ The example above shows the default value for each keyword argument.
 Resampling from bilinear coefficients
 *************************************
 
-..note:
+.. note::
+
   This usage is deprecated, please use the **bilinear.NumpyBilinearResampler** or
   **bilinear.XArrayBilinearResampler** classes directly depending on the input data format.
 

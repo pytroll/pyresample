@@ -20,12 +20,13 @@
 import os
 import unittest
 import uuid
-from tempfile import NamedTemporaryFile
+from timeit import timeit
 
 import numpy as np
 from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
+from pyresample.utils.row_appendable_array import RowAppendableArray
 
 
 def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
@@ -298,99 +299,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(area_def.crs, CRS(3857))
 
 
-class TestProjRotation(unittest.TestCase):
-    """Test loading areas with rotation specified."""
-
-    def test_rotation_legacy(self):
-        """Basic rotation in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        ROTATION:      -45
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_rotation_yaml(self):
-        """Basic rotation in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          rotation: -45
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_norotation_legacy(self):
-        """No rotation specified in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
-
-    def test_norotation_yaml(self):
-        """No rotation specified in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
-
-
-# helper routines for the CF test cases
 def _prepare_cf_nh10km():
     import xarray as xr
     nx = 760
@@ -818,3 +726,51 @@ def test_check_slice_orientation():
     slice_in = slice(start, stop, step)
     res = check_slice_orientation(slice_in)
     assert res == slice(start, stop, -1)
+
+
+class TestRowAppendableArray(unittest.TestCase):
+    """Test appending numpy arrays to possible pre-allocated buffer."""
+
+    def test_append_1d_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_more_1d_arrays_than_expected(self):
+        appendable = RowAppendableArray(5)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_more_rows_of_nd_arrays_than_expected(self):
+        appendable = RowAppendableArray(2)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_1d_arrays_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_to_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_pre_allocation_can_double_appending_performance(self):
+        unallocated = RowAppendableArray(0)
+        pre_allocated = RowAppendableArray(10000)
+
+        unallocated_performance = timeit(lambda: unallocated.append_row(np.array([42])), number=10000)
+        pre_allocated_performance = timeit(lambda: pre_allocated.append_row(np.array([42])), number=10000)
+        self.assertGreater(unallocated_performance / pre_allocated_performance, 2)
