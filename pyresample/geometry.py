@@ -2587,11 +2587,9 @@ class AreaDefinition(_ProjectionDefinition):
             return x_slice, y_slice
 
         if not self.is_geostationary:
-            raise NotImplementedError("Source projection must be 'geos' if "
-                                      "source/target projections are not "
-                                      "equal.")
-
-        data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
+            data_boundary = self.boundary(frequency=100)
+        else:
+            data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
         if area_to_cover.is_geostationary:
             area_boundary = Boundary(
                 *get_geostationary_bounding_box_in_lonlats(area_to_cover))
