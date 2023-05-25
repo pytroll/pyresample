@@ -21,6 +21,9 @@ from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
 
+import dask.array as da
+import numpy as np
+
 import pyresample.geometry as geom
 
 try:
@@ -110,8 +113,11 @@ def plot_area_def(area, feature_res="110m", fmt="svg"):
                                                   scale=feature_res,
                                                   edgecolor="black",
                                                   facecolor="never") # noqa E1>
+    ocean = cartopy.feature.OCEAN
+
     ax.add_feature(borders)
     ax.add_feature(coastlines)
+    ax.add_feature(ocean, color="lightgrey")
 
     plt.tight_layout(pad=0)
 
@@ -172,10 +178,6 @@ def map_section(area):
     Args:
         area(Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`]):
             Area definition or Swath definition.
-        include_header (boolean): If true a header with object type will be included in
-            the html. This is mainly intented for display in Jupyter Notebooks. For the
-            display in the overview of area definitions for the Satpy documentation this
-            should be set to false.
 
     Returns:
         str: String of html.
@@ -197,12 +199,8 @@ def proj_area_attrs_section(area):
     """Create html for attribute section based on an area Area.
 
     Args:
-        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`]):
+        area (:class:`~pyresample.geometry.AreaDefinition`):
             Area definition.
-        include_header (boolean): If true a header with object type will be included in
-            the html. This is mainly intented for display in Jupyter Notebooks. For the
-            display in the overview of area definitions for the Satpy documentation this
-            should be set to false.
 
     Returns:
         str: String of html.
@@ -242,13 +240,21 @@ def swath_area_attrs_section(area):
         str: String of html.
 
     """
-    lon_attrs = area.lons.attrs
-    lat_attrs = area.lats.attrs
+    if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
+        area_name = "test name"
+        resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
+        resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
+        resolution_str = f"{resolution_x}/{resolution_y}"
+        area_units = "test"
+    else:
+        lon_attrs = area.lons.attrs
+        lat_attrs = area.lats.attrs
 
-    area_name = f"{lon_attrs.get('sensor')} swath"
+        area_name = f"{lon_attrs.get('sensor')} swath"
+        resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
+        area_units = "m"
+
     height, width = area.lons.shape
-    resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
-    area_units = "m"
 
     attrs_icon = _icon("icon-file-text2")
 
@@ -260,13 +266,40 @@ def swath_area_attrs_section(area):
                   "</dl>"
                   )
 
-    if xarray:
+    if xarray and not (isinstance(area.lons, np.ndarray) or isinstance(area.lons, da.Array)):
         ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [area.lons, area.lats]}
         dss = xr.merge(ds_dict.values())
 
         area_attrs += _obj_repr(dss, header_components=[""], sections=[datavar_section(dss.data_vars)])
     else:
-        area_attrs += "Note: if xarray is installed lat/lon arrays are displayed here."
+        with np.printoptions(threshold=50):
+            lons = f"{area.lons}".replace("\n", "<br>")
+            lats = f"{area.lats}".replace("\n", "<br>")
+            area_attrs += ("<div class='xr-wrap', style='display:none'>"
+                           "<div class='xr-header'></div>"
+                           "<ul class='xr-sections'>"
+                           "<li class='xr-section-item'>"
+                               "<div class='xr-section-details', style='display:contents'>"  # noqa E127
+                                   "<ul class='xr-var-list'>"  # noqa E127
+                                       "<li class='xr-var-item'>"  # noqa E127
+                                           "<div class='xr-var-name'>"  # noqa E127
+                                           "<span>Longitude</span>"
+                                           "</div>"
+                                           f"<div class=xr-var-preview xr-preview>{lons}</div>"
+                                       "</li>"
+                                       "<li class='xr-var-item'>"
+                                           "<div class='xr-var-name'>"
+                                           "<span>Latitude</span>"
+                                           "</div>"
+                                           f"<div class=xr-var-preview xr-preview>{lats}</div>"
+                                       "</li>"
+                                   "</ul>"
+                               "</div>"
+                           "</li>"
+                           "</ul>"
+                           "</div>"
+                           "</div>"
+                           )
 
     coll = collapsible_section("Properties", details=area_attrs, icon=attrs_icon)
 
