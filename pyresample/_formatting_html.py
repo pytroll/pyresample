@@ -241,11 +241,13 @@ def swath_area_attrs_section(area):
 
     """
     if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
-        area_name = "test name"
+        area_name = "Area name"
         resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
         resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
-        resolution_str = f"{resolution_x}/{resolution_y}"
-        area_units = "test"
+        resolution = np.mean(np.array([resolution_x, resolution_y]))
+        resolution = 40075000 * resolution / 360
+        resolution_str = f"{resolution}/{resolution}"
+        area_units = "m"
     else:
         lon_attrs = area.lons.attrs
         lat_attrs = area.lats.attrs
