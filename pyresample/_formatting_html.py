@@ -21,7 +21,6 @@ from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
 
-import dask.array as da
 import numpy as np
 
 import pyresample.geometry as geom
@@ -268,7 +267,7 @@ def swath_area_attrs_section(area):
                   "</dl>"
                   )
 
-    if xarray and not (isinstance(area.lons, np.ndarray) or isinstance(area.lons, da.Array)):
+    if xarray and not isinstance(area.lons, np.ndarray):
         ds_dict = {i.attrs['name']: i.rename(i.attrs['name']) for i in [area.lons, area.lats]}
         dss = xr.merge(ds_dict.values())
 
