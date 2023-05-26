@@ -23,13 +23,12 @@ import pytest
 import xarray as xr
 from pyproj import CRS
 
+from pyresample import LegacyAreaDefinition, LegacySwathDefinition
 from pyresample.future.geometry import (
     AreaDefinition,
     CoordinateDefinition,
     SwathDefinition,
 )
-from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
-from pyresample.geometry import SwathDefinition as LegacySwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
 SRC_SWATH_2D_SHAPE = (50, 10)
