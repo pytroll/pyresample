@@ -23,9 +23,11 @@ import uuid
 from timeit import timeit
 
 import numpy as np
+import pytest
 from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
+from pyresample.utils import load_cf_area
 from pyresample.utils.row_appendable_array import RowAppendableArray
 
 
@@ -414,182 +416,131 @@ def _prepare_cf_llnocrs():
     return ds
 
 
-class TestLoadCFArea_Public(unittest.TestCase):
+class TestLoadCFAreaPublic:
     """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
 
-    def test_load_cf_from_wrong_filepath(self):
-        from pyresample.utils import load_cf_area
-
-        # wrong case #1: the path does not exist
+    def test_load_cf_no_exist(self):
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
-        self.assertRaises(FileNotFoundError, load_cf_area, cf_file)
+        with pytest.raises(FileNotFoundError):
+            load_cf_area(cf_file)
 
-        # wrong case #2: the path exists, but is not a netCDF file
+    def test_load_cf_from_not_nc(self):
         cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
-        self.assertRaises((ValueError, OSError), load_cf_area, cf_file)
+        with pytest.raises((ValueError, OSError)):
+            load_cf_area(cf_file)
 
-    def test_load_cf_parameters_errors(self):
-        from pyresample.utils import load_cf_area
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("exc_type", "kwargs"),
+        [
+            (KeyError, {"variable": "doesNotExist"}),
+            (ValueError, {"variable": "Polar_Stereographic_Grid"}),
+            (KeyError, {"variable": "Polar_Stereographic_Grid", "y": "doesNotExist", "x": "xc"}),
+            (ValueError, {"variable": "Polar_Stereographic_Grid", "y": "time", "x": "xc"}),
+            (ValueError, {"variable": "lat"}),
+        ]
+    )
+    def test_load_cf_parameters_errors(self, exc_type, kwargs):
         cf_file = _prepare_cf_nh10km()
+        with pytest.raises(exc_type):
+            load_cf_area(cf_file, **kwargs)
 
-        # try to load from a variable= that does not exist
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
-
-        # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
-
-        # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
-
-        # try to load using a variable= that does not define a grid mapping
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
-
-    def test_load_cf_nh10km(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_nh10km_adef(adef):
-            self.assertEqual(adef.shape, (1120, 760))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -3845000.0, msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], xc[0] + 10000.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], 5845000.0, msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], yc[0] - 10000.0, msg="Wrong y axis (index 1)")
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"variable": "Polar_Stereographic_Grid", "y": "yc", "x": "xc"},
+            {"variable": "ice_conc"},
+            {},
+        ]
+    )
+    def test_load_cf_nh10km(self, kwargs):
         cf_file = _prepare_cf_nh10km()
+        adef, _ = load_cf_area(cf_file, **kwargs)
+        assert adef.shape == (1120, 760)
+        xc = adef.projection_x_coords
+        yc = adef.projection_y_coords
+        assert xc[0] == -3845000.0, "Wrong x axis (index 0)"
+        assert xc[1] == xc[0] + 10000.0, "Wrong x axis (index 1)"
+        assert yc[0] == 5845000.0, "Wrong y axis (index 0)"
+        assert yc[1] == yc[0] - 10000.0, "Wrong y axis (index 1)"
 
-        # load using a variable= that is a valid grid_mapping container
-        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
-        validate_nh10km_adef(adef)
-
-        # load using a variable= that has a :grid_mapping attribute
-        adef, _ = load_cf_area(cf_file, 'ice_conc')
-        validate_nh10km_adef(adef)
-
-        # load without using a variable=
-        adef, _ = load_cf_area(cf_file)
-        validate_nh10km_adef(adef)
-
-    def test_load_cf_nh10km_cfinfo(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
-            # test some of the fields
-            self.assertEqual(cf_info['variable'], variable)
-            self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
-            self.assertEqual(cf_info['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['x']['varname'], 'xc')
-            self.assertEqual(cf_info['x']['first'], -3845.0)
-            self.assertEqual(cf_info['y']['varname'], 'yc')
-            self.assertEqual(cf_info['y']['last'], -5345.0)
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("kwargs", "exp_var", "exp_lat", "exp_lon"),
+        [
+            ({"variable": "Polar_Stereographic_Grid", "y": "yc", "x": "xc"}, "Polar_Stereographic_Grid", None, None),
+            ({"variable": "ice_conc"}, "ice_conc", "lat", "lon"),
+            ({}, "ice_conc", "lat", "lon"),
+        ]
+    )
+    def test_load_cf_nh10km_cfinfo(self, kwargs, exp_var, exp_lat, exp_lon):
         cf_file = _prepare_cf_nh10km()
+        _, cf_info = load_cf_area(cf_file, **kwargs)
+        assert cf_info['variable'] == exp_var
+        assert cf_info['grid_mapping_variable'] == 'Polar_Stereographic_Grid'
+        assert cf_info['type_of_grid_mapping'] == 'polar_stereographic'
+        assert cf_info['lon'] == exp_lon
+        assert cf_info['lat'] == exp_lat
+        assert cf_info['x']['varname'] == 'xc'
+        assert cf_info['x']['first'] == -3845.0
+        assert cf_info['y']['varname'] == 'yc'
+        assert cf_info['y']['last'] == -5345.0
 
-        # load using a variable= that is a valid grid_mapping container
-        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc')
-        validate_nh10km_cfinfo(cf_info, variable='Polar_Stereographic_Grid', lat=None, lon=None)
-
-        # load using a variable= that has a :grid_mapping attribute
-        _, cf_info = load_cf_area(cf_file, 'ice_conc')
-        validate_nh10km_cfinfo(cf_info)
-
-        # load without using a variable=
-        _, cf_info = load_cf_area(cf_file)
-        validate_nh10km_cfinfo(cf_info)
-
-    def test_load_cf_goes(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_goes(adef, cfinfo):
-            # test some of the fields
-            self.assertEqual(cf_info['grid_mapping_variable'], 'GOES-East')
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'geostationary')
-            self.assertEqual(cf_info['x']['varname'], 'x')
-            self.assertEqual(cf_info['x']['first'], -3627271.2913)
-            self.assertEqual(cf_info['y']['varname'], 'y')
-            self.assertEqual(cf_info['y']['last'], 1583173.6575)
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"variable": "C13"},
+            {},
+        ])
+    def test_load_cf_goes(self, kwargs):
         cf_file = _prepare_cf_goes()
+        adef, cf_info = load_cf_area(cf_file, **kwargs)
+        assert cf_info['grid_mapping_variable'] == 'GOES-East'
+        assert cf_info['type_of_grid_mapping'] == 'geostationary'
+        assert cf_info['x']['varname'] == 'x'
+        assert cf_info['x']['first'] == -3627271.2913
+        assert cf_info['y']['varname'] == 'y'
+        assert cf_info['y']['last'] == 1583173.6575
 
-        # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'C13')
-        validate_goes(adef, cf_info)
-
-        # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file)
-        validate_goes(adef, cf_info)
-
-    def test_load_cf_llwgs84(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
-            self.assertEqual(adef.shape, (19, 37))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
-            self.assertEqual(cfinfo['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
-            self.assertEqual(cf_info['x']['varname'], 'lon')
-            self.assertEqual(cf_info['x']['first'], -180.)
-            self.assertEqual(cf_info['y']['varname'], 'lat')
-            self.assertEqual(cf_info['y']['first'], -90.)
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("kwargs", "exp_lat", "exp_lon"),
+        [
+            ({"variable": "crs", "y": "lat", "x": "lon"}, None, None),
+            ({"variable": "temp"}, "lat", "lon"),
+            ({}, "lat", "lon"),
+        ]
+    )
+    def test_load_cf_llwgs84(self, kwargs, exp_lat, exp_lon):
         cf_file = _prepare_cf_llwgs84()
+        adef, cf_info = load_cf_area(cf_file, **kwargs)
+        _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
 
-        # load using a variable= that is a valid grid_mapping container
-        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon')
-        validate_llwgs84(adef, cf_info, lat=None, lon=None)
-
-        # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp')
-        validate_llwgs84(adef, cf_info)
-
-        # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file)
-        validate_llwgs84(adef, cf_info)
-
-    def test_load_cf_llnocrs(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_llnocrs(adef, cfinfo, lat='lat', lon='lon'):
-            self.assertEqual(adef.shape, (19, 37))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
-            self.assertEqual(cfinfo['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
-            self.assertEqual(cf_info['x']['varname'], 'lon')
-            self.assertEqual(cf_info['x']['first'], -180.)
-            self.assertEqual(cf_info['y']['varname'], 'lat')
-            self.assertEqual(cf_info['y']['first'], -90.)
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("kwargs", "exp_lat", "exp_lon"),
+        [
+            ({"variable": "temp"}, "lat", "lon"),
+            ({}, "lat", "lon"),
+        ]
+    )
+    def test_load_cf_llnocrs(self, kwargs, exp_lat, exp_lon):
         cf_file = _prepare_cf_llnocrs()
+        adef, cf_info = load_cf_area(cf_file, **kwargs)
+        _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
 
-        # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp')
-        validate_llnocrs(adef, cf_info)
 
-        # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file)
-        validate_llnocrs(adef, cf_info)
+def _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat):
+    assert adef.shape == (19, 37)
+    xc = adef.projection_x_coords
+    yc = adef.projection_y_coords
+    assert xc[0] == -180., "Wrong x axis (index 0)"
+    assert xc[1] == -180. + 10.0, "Wrong x axis (index 1)"
+    assert yc[0] == -90., "Wrong y axis (index 0)"
+    assert yc[1] == -90. + 10.0, "Wrong y axis (index 1)"
+    assert cf_info['lon'] == exp_lon
+    assert cf_info['lat'] == exp_lat
+    assert cf_info['type_of_grid_mapping'] == 'latitude_longitude'
+    assert cf_info['x']['varname'] == 'lon'
+    assert cf_info['x']['first'] == -180.
+    assert cf_info['y']['varname'] == 'lat'
+    assert cf_info['y']['first'] == -90.
 
 
 class TestLoadCFArea_Private(unittest.TestCase):
