@@ -23,6 +23,7 @@ import pytest
 import xarray as xr
 from pyproj import CRS, Proj
 
+import pyresample
 from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import (
@@ -1364,9 +1365,15 @@ class TestCreateAreaDef:
         should_fail = isinstance(center, str) or len(center) != 2
         if should_fail:
             pytest.raises(ValueError, cad, *args, **kwargs)
-        else:
+            return
+
+        future_geometries = isinstance(base_def, AreaDefinition)
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
             area_def = cad(*args, **kwargs)
-            self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
+        # roundabout isinstance check since future area is currently subclass of legacy area
+        is_new_area = isinstance(area_def, AreaDefinition)
+        assert is_new_area if future_geometries else not is_new_area
+        self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
 
     def test_create_area_def_extra_combinations(self, create_test_area):
         """Test extra combinations of create_area_def parameters."""
