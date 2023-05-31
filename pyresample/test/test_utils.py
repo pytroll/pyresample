@@ -501,27 +501,17 @@ class TestLoadCFAreaPublic:
         assert cf_info['y']['last'] == 1583173.6575
 
     @pytest.mark.parametrize(
-        ("kwargs", "exp_lat", "exp_lon"),
+        ("file_func", "kwargs", "exp_lat", "exp_lon"),
         [
-            ({"variable": "crs", "y": "lat", "x": "lon"}, None, None),
-            ({"variable": "temp"}, "lat", "lon"),
-            ({}, "lat", "lon"),
+            (_prepare_cf_llwgs84, {"variable": "crs", "y": "lat", "x": "lon"}, None, None),
+            (_prepare_cf_llwgs84, {"variable": "temp"}, "lat", "lon"),
+            (_prepare_cf_llwgs84, {}, "lat", "lon"),
+            (_prepare_cf_llnocrs, {"variable": "temp"}, "lat", "lon"),
+            (_prepare_cf_llnocrs, {}, "lat", "lon"),
         ]
     )
-    def test_load_cf_llwgs84(self, kwargs, exp_lat, exp_lon):
-        cf_file = _prepare_cf_llwgs84()
-        adef, cf_info = load_cf_area(cf_file, **kwargs)
-        _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
-
-    @pytest.mark.parametrize(
-        ("kwargs", "exp_lat", "exp_lon"),
-        [
-            ({"variable": "temp"}, "lat", "lon"),
-            ({}, "lat", "lon"),
-        ]
-    )
-    def test_load_cf_llnocrs(self, kwargs, exp_lat, exp_lon):
-        cf_file = _prepare_cf_llnocrs()
+    def test_load_cf_latlon(self, file_func, kwargs, exp_lat, exp_lon):
+        cf_file = file_func()
         adef, cf_info = load_cf_area(cf_file, **kwargs)
         _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
 
