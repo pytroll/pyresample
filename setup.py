@@ -25,7 +25,7 @@ import versioneer
 
 requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
-                "shapely",
+                "shapely", "donfig",
                 ]
 
 if sys.version_info < (3, 10):
