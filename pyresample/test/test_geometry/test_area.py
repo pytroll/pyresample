@@ -33,6 +33,7 @@ from pyresample.future.geometry.area import (
     ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
+from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
 
 
 @pytest.fixture
@@ -1972,3 +1973,26 @@ class TestBoundary:
                                       [9.37106733, 45.85619242],
                                       [8.08352612, 45.87097006]])
         assert np.allclose(expected_vertices, boundary.vertices)
+
+
+def test_future_to_legacy_conversion():
+    """Test that future AreaDefinitions can be converted to legacy areas."""
+    area_def = AreaDefinition(
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '50.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        },
+        800,
+        800,
+        (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+        attrs={"name": 'areaD'},
+    )
+    legacy_area = area_def.to_legacy()
+    assert isinstance(legacy_area, LegacyAreaDefinition)
+    assert legacy_area.area_extent == area_def.area_extent
+    assert legacy_area.crs == area_def.crs
+    assert legacy_area.area_id == area_def.attrs["name"]
