@@ -293,14 +293,17 @@ class TestFromRasterio:
         with pytest.raises(ValueError):
             utils.rasterio.get_area_def_from_raster(source)
 
-    def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
+    @pytest.mark.parametrize("future_geometries", [False, True])
+    def test_get_area_def_from_raster_non_georef_respects_proj_dict(self, future_geometries):
         from affine import Affine
 
         from pyresample import utils
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
+            area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
+        assert_future_geometry(area_def, future_geometries)
         assert area_def.crs == CRS(3857)
 
 

@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utilities for working with rasterio objects."""
+import pyresample
+
 from . import proj4_str_to_dict
 
 
-def _get_area_def_from_gdal(dataset, area_id=None, name=None, proj_id=None, projection=None):
-    from pyresample.geometry import AreaDefinition
+def _get_area_def_from_gdal(dataset, area_id=None, description=None, proj_id=None, projection=None):
+    from pyresample.future.geometry import AreaDefinition
 
     # a: width of a pixel
     # b: row rotation (typically zero)
@@ -45,13 +47,13 @@ def _get_area_def_from_gdal(dataset, area_id=None, name=None, proj_id=None, proj
         if proj_id is None:
             proj_id = proj.split('"')[1]
 
-    area_def = AreaDefinition(area_id, name, proj_id, projection,
-                              dataset.RasterXSize, dataset.RasterYSize, area_extent)
+    attrs = {"name": area_id, "description": description, "proj_id": proj_id}
+    area_def = AreaDefinition(projection, dataset.RasterXSize, dataset.RasterYSize, area_extent, attrs=attrs)
     return area_def
 
 
-def _get_area_def_from_rasterio(dataset, area_id, name, proj_id=None, projection=None):
-    from pyresample.geometry import AreaDefinition
+def _get_area_def_from_rasterio(dataset, area_id, description, proj_id=None, projection=None):
+    from pyresample.future.geometry import AreaDefinition
 
     a, b, c, d, e, f, _, _, _ = dataset.transform
     if not (b == d == 0):
@@ -65,8 +67,8 @@ def _get_area_def_from_rasterio(dataset, area_id, name, proj_id=None, projection
         if proj_id is None:
             proj_id = projection.wkt.split('"')[1]
 
-    area_def = AreaDefinition(area_id, name, proj_id, projection,
-                              dataset.width, dataset.height, dataset.bounds)
+    attrs = {"name": area_id, "description": description, "proj_id": proj_id}
+    area_def = AreaDefinition(projection, dataset.width, dataset.height, dataset.bounds, attrs=attrs)
     return area_def
 
 
@@ -81,7 +83,7 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
     area_id : str, optional
         ID of area
     name : str, optional
-        Name of area
+        Description of area
     proj_id : str, optional
         ID of projection
     projection : pyproj.CRS, dict, or string, optional
@@ -113,10 +115,13 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
 
     try:
         if rasterio is not None and isinstance(source, (rasterio.io.DatasetReader, rasterio.io.DatasetWriter)):
-            return _get_area_def_from_rasterio(source, area_id, name, proj_id, projection)
-        return _get_area_def_from_gdal(source, area_id, name, proj_id, projection)
+            area_def = _get_area_def_from_rasterio(source, area_id, name, proj_id, projection)
+        else:
+            area_def = _get_area_def_from_gdal(source, area_id, name, proj_id, projection)
     finally:
         if cleanup_rasterio:
             source.close()
         elif cleanup_gdal:
             source = None
+
+    return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
