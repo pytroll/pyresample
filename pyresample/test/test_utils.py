@@ -26,7 +26,12 @@ import numpy as np
 import pytest
 from pyproj import CRS
 
-from pyresample.test.utils import create_test_latitude, create_test_longitude
+import pyresample
+from pyresample.test.utils import (
+    assert_future_geometry,
+    create_test_latitude,
+    create_test_longitude,
+)
 from pyresample.utils import load_cf_area
 from pyresample.utils.row_appendable_array import RowAppendableArray
 
@@ -510,10 +515,13 @@ class TestLoadCFAreaPublic:
             (_prepare_cf_llnocrs, {}, "lat", "lon"),
         ]
     )
-    def test_load_cf_latlon(self, file_func, kwargs, exp_lat, exp_lon):
+    @pytest.mark.parametrize("future_geometries", [False, True])
+    def test_load_cf_latlon(self, file_func, kwargs, exp_lat, exp_lon, future_geometries):
         cf_file = file_func()
-        adef, cf_info = load_cf_area(cf_file, **kwargs)
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
+            adef, cf_info = load_cf_area(cf_file, **kwargs)
         _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
+        assert_future_geometry(adef, future_geometries)
 
 
 def _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat):

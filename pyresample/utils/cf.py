@@ -307,17 +307,14 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
 
 def _load_cf_area_one_variable_areadef(axis_info, crs, unit, grid_mapping_variable):
     """Prepare the AreaDefinition object."""
-    from pyresample import geometry
-
-    # create shape
+    from pyresample import create_area_def
     shape = (axis_info['y']['nb'], axis_info['x']['nb'])
-
-    # get area extent from the x and y info
     extent = _get_area_extent_from_cf_axis(axis_info['x'], axis_info['y'])
-
-    # finally prepare the AreaDefinition object
-    return geometry.AreaDefinition.from_extent(grid_mapping_variable, crs,
-                                               shape, extent, units=unit)
+    return create_area_def(grid_mapping_variable, crs,
+                           width=shape[1],
+                           height=shape[0],
+                           area_extent=extent,
+                           units=unit)
 
 
 def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):

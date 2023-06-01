@@ -543,7 +543,7 @@ def _make_area(
         }
         attrs.update(kwargs)
         area_def = AreaDefinition(projection, width, height, area_extent, attrs=attrs)
-        return area_def if pyresample.config.get("features.future_geometries") else area_def.to_legacy()
+        return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
 
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
                                  height=height, area_extent=area_extent,

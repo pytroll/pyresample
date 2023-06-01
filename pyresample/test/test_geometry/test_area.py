@@ -35,6 +35,7 @@ from pyresample.future.geometry.area import (
 )
 from pyresample.future.geometry.base import get_array_hashable
 from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
+from pyresample.test.utils import assert_future_geometry
 
 
 @pytest.fixture
@@ -1370,9 +1371,7 @@ class TestCreateAreaDef:
         future_geometries = isinstance(base_def, AreaDefinition)
         with pyresample.config.set({"features.future_geometries": future_geometries}):
             area_def = cad(*args, **kwargs)
-        # roundabout isinstance check since future area is currently subclass of legacy area
-        is_new_area = isinstance(area_def, AreaDefinition)
-        assert is_new_area if future_geometries else not is_new_area
+        assert_future_geometry(area_def, future_geometries)
         self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
 
     def test_create_area_def_extra_combinations(self, create_test_area):
