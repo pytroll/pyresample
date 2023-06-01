@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utilities for working with rasterio objects."""
+import contextlib
+
 import pyresample
 
 from . import proj4_str_to_dict
@@ -95,6 +97,32 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
     area_def : object
         AreaDefinition object
     """
+    with _open_raster(source) as opened_source:
+        if hasattr(opened_source, "transform"):
+            area_def = _get_area_def_from_rasterio(opened_source, area_id, name, proj_id, projection)
+        else:
+            area_def = _get_area_def_from_gdal(opened_source, area_id, name, proj_id, projection)
+
+    return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
+
+
+@contextlib.contextmanager
+def _open_raster(source):
+    rasterio, gdal = _import_raster_libs()
+    if rasterio is None and gdal is None:
+        raise ImportError('Either rasterio or gdal must be available')
+    if isinstance(source, str):
+        source = rasterio.open(source) if rasterio is not None else gdal.Open(source)
+    try:
+        yield source
+    finally:
+        if rasterio is not None:
+            source.close()
+
+
+def _import_raster_libs():
+    """Avoid importing large libraries at module import time."""
+    gdal = None
     try:
         import rasterio
     except ImportError:
@@ -102,26 +130,5 @@ def get_area_def_from_raster(source, area_id=None, name=None, proj_id=None, proj
         try:
             from osgeo import gdal
         except ImportError:
-            raise ImportError('Either rasterio or gdal must be available')
-
-    cleanup_gdal = cleanup_rasterio = None
-    if isinstance(source, str):
-        if rasterio is not None:
-            source = rasterio.open(source)
-            cleanup_rasterio = True
-        else:
-            source = gdal.Open(source)
-            cleanup_gdal = True
-
-    try:
-        if rasterio is not None and isinstance(source, (rasterio.io.DatasetReader, rasterio.io.DatasetWriter)):
-            area_def = _get_area_def_from_rasterio(source, area_id, name, proj_id, projection)
-        else:
-            area_def = _get_area_def_from_gdal(source, area_id, name, proj_id, projection)
-    finally:
-        if cleanup_rasterio:
-            source.close()
-        elif cleanup_gdal:
-            source = None
-
-    return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
+            gdal = None
+    return rasterio, gdal

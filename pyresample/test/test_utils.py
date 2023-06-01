@@ -21,6 +21,7 @@ import os
 import unittest
 import uuid
 from timeit import timeit
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -294,7 +295,11 @@ class TestFromRasterio:
             utils.rasterio.get_area_def_from_raster(source)
 
     @pytest.mark.parametrize("future_geometries", [False, True])
-    def test_get_area_def_from_raster_non_georef_respects_proj_dict(self, future_geometries):
+    def test_get_area_def_from_raster_non_georef_respects_proj_dict(
+            self,
+            future_geometries,
+            _mock_rasterio_with_importerror
+    ):
         from affine import Affine
 
         from pyresample import utils
@@ -305,6 +310,23 @@ class TestFromRasterio:
             area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
         assert_future_geometry(area_def, future_geometries)
         assert area_def.crs == CRS(3857)
+
+
+@pytest.fixture(params=[False, True])
+def _mock_rasterio_with_importerror(request):
+    """Mock rasterio importing so it isn't available and GDAL is used."""
+    if not request.param:
+        yield None
+        return
+    try:
+        from osgeo import gdal
+    except ImportError:
+        # GDAL isn't available at all
+        pytest.skip("'gdal' not available for testing")
+
+    with mock.patch("pyresample.utils.rasterio._import_raster_libs") as imp_func:
+        imp_func.return_value = (None, gdal)
+        yield imp_func
 
 
 def _prepare_cf_nh10km():
