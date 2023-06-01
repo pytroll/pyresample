@@ -239,6 +239,10 @@ class TestMisc(unittest.TestCase):
         finally:
             os.remove(yaml_file)
 
+
+class TestFromRasterio:
+    """Test loading geometries from rasterio datasets."""
+
     def test_get_area_def_from_raster(self):
         from affine import Affine
         from rasterio.crs import CRS as RCRS
@@ -255,14 +259,15 @@ class TestMisc(unittest.TestCase):
         description = 'name'
         area_def = utils.rasterio.get_area_def_from_raster(
             source, area_id=area_id, name=description, proj_id=proj_id)
-        self.assertEqual(area_def.area_id, area_id)
-        self.assertEqual(area_def.proj_id, proj_id)
-        self.assertEqual(area_def.description, description)
-        self.assertEqual(area_def.width, x_size)
-        self.assertEqual(area_def.height, y_size)
-        self.assertEqual(crs, area_def.crs)
-        self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
-                                                     transform.c + transform.a * x_size, transform.f))
+        assert area_def.area_id == area_id
+        assert area_def.proj_id == proj_id
+        assert area_def.description == description
+        assert area_def.width == x_size
+        assert area_def.height == y_size
+        assert crs == area_def.crs
+        assert area_def.area_extent == (
+            transform.c, transform.f + transform.e * y_size,
+            transform.c + transform.a * x_size, transform.f)
 
     def test_get_area_def_from_raster_extracts_proj_id(self):
         from rasterio.crs import CRS as RCRS
@@ -275,25 +280,18 @@ class TestMisc(unittest.TestCase):
             'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
             'WGS 84 / Pseudo-Mercator',                # proj<6.0
         )
-        self.assertIn(area_def.proj_id, epsg3857_names)
+        assert area_def.proj_id in epsg3857_names
 
-    def test_get_area_def_from_raster_rotated_value_err(self):
+    @pytest.mark.parametrize("x_rotation", [0.0, 0.1])
+    def test_get_area_def_from_raster_non_georef_value_err(self, x_rotation):
         from affine import Affine
 
         from pyresample import utils
-        transform = Affine(300.0379266750948, 0.1, 101985.0,
+        transform = Affine(300.0379266750948, x_rotation, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
-
-    def test_get_area_def_from_raster_non_georef_value_err(self):
-        from affine import Affine
-
-        from pyresample import utils
-        transform = Affine(300.0379266750948, 0.0, 101985.0,
-                           0.0, -300.041782729805, 2826915.0)
-        source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
+        with pytest.raises(ValueError):
+            utils.rasterio.get_area_def_from_raster(source)
 
     def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
         from affine import Affine
@@ -303,7 +301,7 @@ class TestMisc(unittest.TestCase):
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
         area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
-        self.assertEqual(area_def.crs, CRS(3857))
+        assert area_def.crs == CRS(3857)
 
 
 def _prepare_cf_nh10km():
