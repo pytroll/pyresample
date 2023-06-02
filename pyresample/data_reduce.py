@@ -225,6 +225,9 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                      lats_side1, lats_side2, lats_side3, lats_side4,
                      lons, lats, radius_of_influence):
     """Find relevant indices from grid boundaries using the winding number theorem."""
+    masked_grid = any([isinstance(side, np.ma.MaskedArray) and side.mask.any()
+                       for side in (lons_side1, lons_side2, lons_side3, lons_side4)])
+
     # Coarse reduction of data based on extrema analysis of the boundary
     # lon lat values of the target grid
     illegal_lons = (((lons_side1 < -180) | (lons_side1 > 180)).any() or
@@ -237,7 +240,7 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
                     ((lats_side3 < -90) | (lats_side3 > 90)).any() or
                     ((lats_side4 < -90) | (lats_side4 > 90)).any())
 
-    if illegal_lons or illegal_lats:
+    if masked_grid or illegal_lons or illegal_lats:
         # Grid boundaries are not safe to operate on
         return np.ones(lons.size, dtype=bool)
 
@@ -279,13 +282,13 @@ def _get_valid_index(lons_side1, lons_side2, lons_side3, lons_side4,
     # 360: area covers south pole
     #   0: area covers no poles
     # else: area covers both poles
-    if np.round(angle_sum) == -360:
+    if round(angle_sum) == -360:
         # Covers NP
         valid_index = (lats >= lat_min_buffered)
-    elif np.round(angle_sum) == 360:
+    elif round(angle_sum) == 360:
         # Covers SP
         valid_index = (lats <= lat_max_buffered)
-    elif np.round(angle_sum) == 0:
+    elif round(angle_sum) == 0:
         # Covers no poles
         valid_lats = (lats >= lat_min_buffered) * (lats <= lat_max_buffered)
 
