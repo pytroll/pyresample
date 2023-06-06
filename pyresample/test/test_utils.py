@@ -214,6 +214,16 @@ class TestMisc(unittest.TestCase):
         # EPSG to PROJ.4 can be lossy
         # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
+    def test_proj4_str_dict_conversion_with_valueless_parameter(self):
+        from pyresample import utils
+
+        # Value-less south parameter
+        proj_str = "+ellps=WGS84 +no_defs +proj=utm +south +type=crs +units=m +zone=54"
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
+        proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
+        proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
+        self.assertDictEqual(proj_dict, proj_dict2)
+
     def test_def2yaml_converter(self):
         import tempfile
 
