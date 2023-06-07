@@ -16,6 +16,7 @@ They assume some minimal level of understanding of the
 .. toctree::
    :maxdepth: 1
 
+   configuration
    geo_def
    geometry_utils
    geo_filter
