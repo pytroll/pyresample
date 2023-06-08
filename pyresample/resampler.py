@@ -121,7 +121,7 @@ class BaseResampler:
         Returns (xarray.DataArray): Data resampled to the target area
 
         """
-        if self.source_geo_def == self.target_geo_def:
+        if self._geometries_are_the_same():
             return data
         # default is to mask areas for SwathDefinitions
         if mask_area is None and isinstance(
@@ -142,6 +142,42 @@ class BaseResampler:
 
         cache_id = self.precompute(cache_dir=cache_dir, **kwargs)
         return self.compute(data, cache_id=cache_id, **kwargs)
+
+    def _geometries_are_the_same(self):
+        """Check if two geometries are the same object and resampling isn't needed.
+
+        For area definitions this is a simple comparison using the ``==``.
+        When swaths are involved care is taken to not check coordinate equality
+        to avoid the expensive computation. A swath and an area are never
+        considered equal in this case even if they describe the same geographic
+        region.
+
+        Two swaths are only considered equal if the underlying arrays are the
+        exact same objects. Otherwise, they are considered not equal and
+        coordinate values are never checked. This has
+        the downside that if two SwathDefinitions have equal coordinates but
+        are loaded or created separately they will be considered not equal.
+
+        """
+        if self.source_geo_def is self.target_geo_def:
+            return True
+        if type(self.source_geo_def) is not type(self.target_geo_def):  # noqa
+            # these aren't the exact same class
+            return False
+        if isinstance(self.source_geo_def, AreaDefinition):
+            return self.source_geo_def == self.target_geo_def
+        # swath or coordinate definitions
+        src_lons, src_lats = self.source_geo_def.get_lonlats()
+        dst_lons, dst_lats = self.target_geo_def.get_lonlats()
+        if (src_lons is dst_lons) and (src_lats is dst_lats):
+            return True
+
+        if not all(isinstance(arr, da.Array) for arr in (src_lons, src_lats, dst_lons, dst_lats)):
+            # they aren't the same object and they aren't dask arrays so not equal
+            return False
+        # if dask task names are the same then they are the same even if the
+        # dask Array instance itself is different
+        return src_lons.name == dst_lons.name and src_lats.name == dst_lats.name
 
     def _create_cache_filename(self, cache_dir=None, prefix='',
                                fmt='.zarr', **kwargs):
