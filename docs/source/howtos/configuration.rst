@@ -71,7 +71,7 @@ Or for specific blocks of code:
     import pyresample
     with pyresample.config.set(some_key="some_value):
         # ... some pyresample code ...
-    # ... code using the original cache_dir
+    # ... code using the original 'some_key' setting
 
 Similarly, if you need to access one of the values you can
 use the ``pyresample.config.get`` method.
