@@ -15,7 +15,7 @@ This functionality is provided by the :doc:`donfig <donfig:configuration>`
 library. The currently available settings are described below.
 Each option is available from all three methods. If specified as an
 environment variable or specified in the YAML file on disk, it must be set
-**before** Satpy is imported.
+**before** Pyresample is imported.
 
 **YAML Configuration**
 
@@ -70,11 +70,11 @@ Or for specific blocks of code:
 
     import pyresample
     with pyresample.config.set(some_key="some_value):
-        # ... some satpy code ...
+        # ... some pyresample code ...
     # ... code using the original cache_dir
 
 Similarly, if you need to access one of the values you can
-use the ``satpy.config.get`` method.
+use the ``pyresample.config.get`` method.
 
 Feature Flags
 -------------

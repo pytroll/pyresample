@@ -39,7 +39,7 @@ DST_AREA_SHAPE = (80, 85)
 
 
 @pytest.fixture(autouse=True)
-def reset_satpy_config(tmpdir):
+def reset_pyresample_config(tmpdir):
     """Set pyresample config to logical defaults for tests."""
     test_config = {
         "features": {
