@@ -1131,6 +1131,9 @@ class DynamicAreaDefinition(object):
             x_resolution, y_resolution = resolution
             width = int(np.rint((corners[2] - corners[0]) * 1.0 / x_resolution + 1))
             height = int(np.rint((corners[3] - corners[1]) * 1.0 / y_resolution + 1))
+            # align corners with pixel resolution
+            corners[2] = corners[0] + (width - 1) * x_resolution
+            corners[3] = corners[1] + (height - 1) * y_resolution
 
         area_extent = (corners[0] - x_resolution / 2,
                        corners[1] - y_resolution / 2,

@@ -293,27 +293,30 @@ class TestDynamicAreaDefinition:
 
         np.testing.assert_allclose(result.area_extent, (-432079.38952,
                                                         -872594.690447,
-                                                        432079.38952,
-                                                        904633.303964))
+                                                        431920.61048,
+                                                        903405.309553))
         assert result.proj_dict['lon_0'] == 16
         assert result.proj_dict['lat_0'] == 58
         assert result.width == 288
         assert result.height == 592
+        assert result.pixel_size_x == 3000
+        assert result.pixel_size_y == 3000
 
-        # make sure that setting `proj_info` once doesn't
-        # set it in the dynamic area
+        # make sure that setting `proj_info` once doesn't set it in the dynamic area
         result = area.freeze((lons, lats),
                              resolution=3000,
                              proj_info={'lon_0': 0})
         np.testing.assert_allclose(result.area_extent, (538546.7274949469,
                                                         5380808.879250369,
-                                                        1724415.6519203288,
-                                                        6998895.701001488))
+                                                        1723546.727495,
+                                                        6997808.87925))
         assert result.proj_dict['lon_0'] == 0
         # lat_0 could be provided or not depending on version of pyproj
         assert result.proj_dict.get('lat_0', 0) == 0
         assert result.width == 395
         assert result.height == 539
+        assert result.pixel_size_x == 3000
+        assert result.pixel_size_y == 3000
 
     def test_freeze_when_area_is_optimized_and_has_a_resolution(self):
         """Test freezing an optimized area with a resolution."""
