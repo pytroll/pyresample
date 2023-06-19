@@ -485,7 +485,6 @@ class TestRBGradientSearchResamplerArea2Area:
         res = self.resampler.compute(
             data, method='nn',
             fill_value=2.0).compute(scheduler='single-threaded').values
-        print(res)
         np.testing.assert_allclose(res, expected_resampled_data)
         assert res.shape == dst_area.shape
 
