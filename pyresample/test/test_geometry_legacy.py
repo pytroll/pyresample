@@ -291,29 +291,32 @@ class TestDynamicAreaDefinition:
                              resolution=3000,
                              proj_info={'lon_0': 16, 'lat_0': 58})
 
-        np.testing.assert_allclose(result.area_extent, (-432079.38952,
-                                                        -872594.690447,
-                                                        432079.38952,
-                                                        904633.303964))
+        np.testing.assert_allclose(result.area_extent, (-435000.0,
+                                                        -873000.0,
+                                                        435000.0,
+                                                        906000.0))
         assert result.proj_dict['lon_0'] == 16
         assert result.proj_dict['lat_0'] == 58
-        assert result.width == 288
-        assert result.height == 592
+        assert result.width == 290
+        assert result.height == 593
+        assert result.pixel_size_x == 3000
+        assert result.pixel_size_y == 3000
 
-        # make sure that setting `proj_info` once doesn't
-        # set it in the dynamic area
+        # make sure that setting `proj_info` once doesn't set it in the dynamic area
         result = area.freeze((lons, lats),
                              resolution=3000,
                              proj_info={'lon_0': 0})
-        np.testing.assert_allclose(result.area_extent, (538546.7274949469,
-                                                        5380808.879250369,
-                                                        1724415.6519203288,
-                                                        6998895.701001488))
+        np.testing.assert_allclose(result.area_extent, (537000.0,
+                                                        5379000.0,
+                                                        1725000.0,
+                                                        6999000.0))
         assert result.proj_dict['lon_0'] == 0
         # lat_0 could be provided or not depending on version of pyproj
         assert result.proj_dict.get('lat_0', 0) == 0
-        assert result.width == 395
-        assert result.height == 539
+        assert result.width == 396
+        assert result.height == 540
+        assert result.pixel_size_x == 3000
+        assert result.pixel_size_y == 3000
 
     def test_freeze_when_area_is_optimized_and_has_a_resolution(self):
         """Test freezing an optimized area with a resolution."""
@@ -391,11 +394,11 @@ class TestDynamicAreaDefinition:
         if is_pole:
             assert extent[0] < -178
             assert extent[2] > 178
-            assert result.width == 64088
+            assert result.width == 64090
         else:
             assert extent[0] > 0
             assert extent[2] > 0
-            assert result.width == 1787
+            assert result.width == 1788
         assert result.height == 2680
 
     def test_freeze_with_bb(self):
@@ -454,10 +457,10 @@ class TestDynamicAreaDefinition:
             "exclude_proj_components"
         ),
         [
-            (None, (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
-            ("modify_extents", (21, 59), (164.75, 24.75, 194.25, 35.25), tuple(), ("+pm=180",)),
-            ("modify_crs", (21, 59), (164.75 - 180.0, 24.75, 194.25 - 180.0, 35.25), ("+pm=180",), tuple()),
-            ("global_extents", (21, 720), (-180.0, 24.75, 180.0, 35.25), tuple(), ("+pm=180",)),
+            (None, (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+pm=180",)),
+            ("modify_extents", (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+pm=180",)),
+            ("modify_crs", (22, 60), (164.5 - 180.0, 24.5, 194.5 - 180.0, 35.5), ("+pm=180",), tuple()),
+            ("global_extents", (22, 720), (-180.0, 24.5, 180.0, 35.5), tuple(), ("+pm=180",)),
         ],
     )
     @pytest.mark.parametrize("use_dask", [False, True])

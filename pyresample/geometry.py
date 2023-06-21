@@ -1127,15 +1127,24 @@ class DynamicAreaDefinition(object):
             height, width = shape
             x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
             y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
+            area_extent = (corners[0] - x_resolution / 2,
+                           corners[1] - y_resolution / 2,
+                           corners[2] + x_resolution / 2,
+                           corners[3] + y_resolution / 2)
         else:
             x_resolution, y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0 / x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0 / y_resolution + 1))
+            half_x = x_resolution / 2
+            half_y = y_resolution / 2
+            # align extents with pixel resolution
+            area_extent = (
+                math.floor((corners[0] - half_x) / x_resolution) * x_resolution,
+                math.floor((corners[1] - half_y) / y_resolution) * y_resolution,
+                math.ceil((corners[2] + half_x) / x_resolution) * x_resolution,
+                math.ceil((corners[3] + half_y) / y_resolution) * y_resolution,
+            )
+            width = int(round((area_extent[2] - area_extent[0]) / x_resolution))
+            height = int(round((area_extent[3] - area_extent[1]) / y_resolution))
 
-        area_extent = (corners[0] - x_resolution / 2,
-                       corners[1] - y_resolution / 2,
-                       corners[2] + x_resolution / 2,
-                       corners[3] + y_resolution / 2)
         return area_extent, width, height
 
     def _update_corners_for_full_extent(self, corners, shape, resolution, projection):
