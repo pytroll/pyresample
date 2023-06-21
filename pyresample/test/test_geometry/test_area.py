@@ -1814,6 +1814,17 @@ class TestAreaDefGetAreaSlices:
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
 
+    def test_area_to_cover_all_nan_bounds(self, geos_src_area, create_test_area):
+        """Check area slicing when the target doesn't have a valid boundary."""
+        area_def = geos_src_area
+        # An area that is a subset of the original one
+        area_to_cover = create_test_area(
+            {"proj": "moll"},
+            1000, 1000,
+            area_extent=(-18000000.0, -9000000.0, 18000000.0, 9000000.0))
+        with pytest.raises(NotImplementedError):
+            area_def.get_area_slices(area_to_cover)
+
 
 class TestBoundary:
     """Test 'boundary' method for AreaDefinition classes."""

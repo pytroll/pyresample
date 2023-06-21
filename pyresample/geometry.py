@@ -2601,14 +2601,8 @@ class AreaDefinition(_ProjectionDefinition):
                                       "equal.")
 
         data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
-        if area_to_cover.is_geostationary:
-            area_boundary = Boundary(
-                *get_geostationary_bounding_box_in_lonlats(area_to_cover))
-        else:
-            area_boundary = AreaDefBoundary(area_to_cover, 100)
-
-        intersection = data_boundary.contour_poly.intersection(
-            area_boundary.contour_poly)
+        area_boundary = self._get_area_to_cover_boundary(area_to_cover)
+        intersection = data_boundary.contour_poly.intersection(area_boundary.contour_poly)
         if intersection is None:
             logger.debug('Cannot determine appropriate slicing. '
                          "Data and projection area do not overlap.")
@@ -2627,6 +2621,15 @@ class AreaDefinition(_ProjectionDefinition):
 
         return (check_slice_orientation(x_slice),
                 check_slice_orientation(y_slice))
+
+    @staticmethod
+    def _get_area_to_cover_boundary(area_to_cover: AreaDefinition) -> Boundary:
+        try:
+            if area_to_cover.is_geostationary:
+                return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
+            return AreaDefBoundary(area_to_cover, 100)
+        except ValueError:
+            raise NotImplementedError("Can't determine boundary of area to cover")
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
