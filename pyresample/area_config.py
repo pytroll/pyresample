@@ -875,9 +875,9 @@ def generate_area_def_rst_list(area_file):
             continue
 
         if i == 0:
-            area_rep = area_repr(area, include_header=False, include_static_files=False)
-        else:
             area_rep = area_repr(area, include_header=False)
+        else:
+            area_rep = area_repr(area, include_header=False, include_static_files=False)
 
         content = "\n".join([x.rjust(len(x) + 5) for x in area_rep.split("\n")])
         area_list.append(template.format(area_name=aname, n="", header_title_length=len(aname),
