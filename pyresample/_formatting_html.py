@@ -64,7 +64,7 @@ def _icon(icon_name):
     )
 
 
-def plot_area_def(area, feature_res="110m", fmt="svg"):
+def plot_area_def(area, feature_res="110m", fmt=None):
     """Plot area.
 
     CURRENTLY feature_res is not used instead cartopy auto scaled features are added.
@@ -75,8 +75,8 @@ def plot_area_def(area, feature_res="110m", fmt="svg"):
             Resolution of the features added to the map. Argument is handed over
             to `scale` parameter in cartopy.feature.
         fmt (str): Output format of the plot. The output is the string representation of
-            the respective format xml for svg and base64 for png. Either svg (default) or png.
-            If other plot is just shown.
+            the respective format xml for svg and base64 for png. Either svg or png.
+            If None (default) plot is just shown.
 
     Returns:
         str: svg or png image as string.
@@ -185,7 +185,7 @@ def map_section(area):
     map_icon = _icon("icon-globe")
 
     if cart:
-        coll = collapsible_section("Map", details=plot_area_def(area), collapsed=True, icon=map_icon)
+        coll = collapsible_section("Map", details=plot_area_def(area, fmt="svg"), collapsed=True, icon=map_icon)
     else:
         coll = collapsible_section("Map",
                                    details="Note: If cartopy is installed a display of the area can be seen here",
