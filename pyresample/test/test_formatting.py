@@ -17,45 +17,55 @@
 """Test html formatting."""
 
 import pyresample
-from pyresample.geometry import AreaDefinition
+# from pyresample.geometry import AreaDefinition, SwathDefinition
+from .test_geometry.test_area import stere_area
+from .test_geometry.test_swath import _gen_swath_def_numpy, _gen_swath_def_xarray_dask
 
+from pyresample._formatting_html import area_repr, swath_area_attrs_section
 
-def test_area_def_cartopy_missing(monkeypatch):
+def test_area_def_cartopy_missing(monkeypatch, stere_area):
     """Test missing cartopy installation."""
-    projection = {'a': '6378144.0',
-                  'b': '6356759.0',
-                  'lat_0': '50.00',
-                  'lat_ts': '50.00',
-                  'lon_0': '8.00',
-                  'proj': 'stere'}
-    proj_id = "test"
-    width = 800
-    height = 800
-    area_extent = (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001)
-    area_id = "areaD"
-    description = "test"
 
     with monkeypatch.context() as m:
         m.setattr(pyresample._formatting_html, "cart", False)
 
-        area = AreaDefinition(area_id, description, proj_id, projection, width, height, area_extent)
+        area = stere_area
         assert "Note: If cartopy is installed a display of the area can be seen here" in area._repr_html_()
 
 
-def test_area_def_cartopy_installed():
+def test_area_def_cartopy_installed(stere_area):
     """Test cartopy installed."""
-    projection = {'a': '6378144.0',
-                  'b': '6356759.0',
-                  'lat_0': '50.00',
-                  'lat_ts': '50.00',
-                  'lon_0': '8.00',
-                  'proj': 'stere'}
-    proj_id = "test"
-    width = 800
-    height = 800
-    area_extent = (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001)
-    area_id = "areaD"
-    description = "test"
-
-    area = AreaDefinition(area_id, description, proj_id, projection, width, height, area_extent)
+    area = stere_area #geos_src_area
     assert "Note: If cartopy is installed a display of the area can be seen here" not in area._repr_html_()
+
+
+def test_area_repr_w_static_files(stere_area):
+    """Test area representation with static files (css/icons) included."""
+
+    area_def = stere_area
+    res = area_repr(area_def)
+    assert "<style>" in res
+
+
+def test_area_repr_wo_static_files(stere_area):
+    """Test area representation without static files (css/icons) included."""
+
+    area_def = stere_area
+    res = area_repr(area_def, include_static_files=False)
+    assert "<style>" not in res
+
+
+def test_swath_area_attrs_section_w_numpy(create_test_swath):
+    """Test SwathDefinition attrs section with numpy lons/lats."""
+
+    swath_def = _gen_swath_def_numpy(create_test_swath)
+    res = swath_area_attrs_section(swath_def)
+    assert "class=\'xr-text-repr-fallback\'" not in res
+
+
+def test_swath_area_attrs_section_w_xarray(create_test_swath):
+    """Test SwathDefinition attrs section with numpy lons/lats."""
+
+    swath_def = _gen_swath_def_xarray_dask(create_test_swath)
+    res = swath_area_attrs_section(swath_def)
+    assert "class=\'xr-text-repr-fallback\'" in res
