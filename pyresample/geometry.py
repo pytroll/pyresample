@@ -660,6 +660,8 @@ class CoordinateDefinition(BaseDefinition):
                                                     str(self.lons),
                                                     str(self.lats))
 
+    __repr__ = __str__
+
     def geocentric_resolution(self, ellps='WGS84', radius=None, nadir_factor=2):
         """Calculate maximum geocentric pixel resolution.
 
@@ -860,12 +862,6 @@ class SwathDefinition(CoordinateDefinition):
         if self.hash is None:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
-
-    def __str__(self):
-        """Return string representation."""
-        return "SwathArea"
-
-    __repr__ = __str__
 
     def _repr_html_(self):
         """Html representation."""
