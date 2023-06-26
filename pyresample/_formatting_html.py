@@ -244,7 +244,7 @@ def swath_area_attrs_section(area):
         resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
         resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
         resolution = np.mean(np.array([resolution_x, resolution_y]))
-        resolution = 40075000 * resolution / 360
+        resolution = np.round(40075000 * resolution / 360, 1)
         resolution_str = f"{resolution}/{resolution}"
         area_units = "m"
     else:
