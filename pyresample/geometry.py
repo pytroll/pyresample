@@ -619,7 +619,7 @@ class CoordinateDefinition(BaseDefinition):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
-        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
             self.size = lons.size
@@ -747,7 +747,7 @@ class GridDefinition(CoordinateDefinition):
 
     def __init__(self, lons, lats, nprocs=1):
         """Initialize GridDefinition."""
-        super(GridDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
         elif lons.ndim != 2:
@@ -802,7 +802,7 @@ class SwathDefinition(CoordinateDefinition):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
-        super(SwathDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
@@ -1517,7 +1517,7 @@ class AreaDefinition(_ProjectionDefinition):
                  area_extent, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         """Initialize AreaDefinition."""
-        super(AreaDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         self.area_id = area_id
         self.description = description
         self.proj_id = proj_id
@@ -2038,7 +2038,7 @@ class AreaDefinition(_ProjectionDefinition):
                     (self.crs == other.crs) and
                     (self.shape == other.shape))
         except AttributeError:
-            return super(AreaDefinition, self).__eq__(other)
+            return super().__eq__(other)
 
     def __ne__(self, other):
         """Test for equality."""
@@ -2891,7 +2891,7 @@ class StackedAreaDefinition(_ProjectionDefinition):
         *kwargs* used here are `nprocs` and `dtype` (see AreaDefinition).
         """
         nprocs = kwargs.get('nprocs', 1)
-        super(StackedAreaDefinition, self).__init__(nprocs=nprocs)
+        super().__init__(nprocs=nprocs)
         self.dtype = kwargs.get('dtype', np.float64)
         self.defs = []
         self.crs_wkt = None

@@ -123,3 +123,15 @@ class AreaDefinition(LegacyAreaDefinition):
             area_extent,
         )
         self.attrs = attrs
+
+    def to_legacy(self) -> LegacyAreaDefinition:
+        """Create a pyresample 1.x AreaDefinition object from this instance."""
+        return LegacyAreaDefinition(
+            self.attrs.get("name", ""),
+            self.attrs.get("description", ""),
+            self.attrs.get("proj_id", ""),
+            self.crs,
+            self.width,
+            self.height,
+            self.area_extent,
+        )
