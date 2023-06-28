@@ -296,11 +296,12 @@ class BaseDefinition:
         return (SimpleBoundary(s1_lon.squeeze(), s2_lon.squeeze(), s3_lon.squeeze(), s4_lon.squeeze()),
                 SimpleBoundary(s1_lat.squeeze(), s2_lat.squeeze(), s3_lat.squeeze(), s4_lat.squeeze()))
 
-    def get_bbox_lonlats(self, frequency: Optional[int] = None, force_clockwise: bool = True) -> tuple:
+    def get_bbox_lonlats(self, bbox_shape: Optional[int] = None, force_clockwise: bool = True,
+                         frequency: Optional[int] = None) -> tuple:
         """Return the bounding box lons and lats.
 
         Args:
-            frequency:
+            bbox_shape (formerly frequency):
                 The number of points to provide for each side. By default (None)
                 the full width and height will be provided.
             force_clockwise:
@@ -328,15 +329,19 @@ class BaseDefinition:
             pyresample (ex. :class:`pyresample.spherical.SphPolygon`).
 
         """
-        lons, lats = self._get_bbox_elements(self.get_lonlats, frequency)
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `bbox_shape` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        bbox_shape = bbox_shape or frequency
+        lons, lats = self._get_bbox_elements(self.get_lonlats, bbox_shape)
         if force_clockwise and not self._corner_is_clockwise(
                 lons[0][-2], lats[0][-2], lons[0][-1], lats[0][-1], lons[1][1], lats[1][1]):
             # going counter-clockwise
             lons, lats = self._reverse_boundaries(lons, lats)
         return lons, lats
 
-    def _get_bbox_elements(self, coord_fun, frequency: Optional[int] = None) -> tuple:
-        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(frequency)
+    def _get_bbox_elements(self, coord_fun, bbox_shape: Optional[int] = None) -> tuple:
+        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(bbox_shape)
         s1_dim1, s1_dim2 = coord_fun(data_slice=s1_slice)
         s2_dim1, s2_dim2 = coord_fun(data_slice=s2_slice)
         s3_dim1, s3_dim2 = coord_fun(data_slice=s3_slice)
@@ -365,14 +370,14 @@ class BaseDefinition:
             new_dim2_sides.append(dim2_side[is_valid_mask])
         return new_dim1_sides, new_dim2_sides
 
-    def _get_bbox_slices(self, frequency):
+    def _get_bbox_slices(self, bbox_shape):
         height, width = self.shape
-        if frequency is None:
+        if bbox_shape is None:
             row_num = height
             col_num = width
         else:
-            row_num = frequency
-            col_num = frequency
+            row_num = bbox_shape
+            col_num = bbox_shape
         s1_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
         s2_slice = (np.linspace(0, height - 1, row_num, dtype=int), -1)
         s3_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
@@ -415,24 +420,33 @@ class BaseDefinition:
         is_clockwise = -np.pi < angle < 0
         return is_clockwise
 
-    def get_edge_lonlats(self, frequency=None):
+    def get_edge_lonlats(self, bbox_shape=None, frequency=None):
         """Get the concatenated boundary of the current swath."""
-        lons, lats = self.get_bbox_lonlats(frequency=frequency, force_clockwise=False)
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `bbox_shape` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        bbox_shape = bbox_shape or frequency
+        lons, lats = self.get_bbox_lonlats(bbox_shape=bbox_shape, force_clockwise=False)
         blons = np.ma.concatenate(lons)
         blats = np.ma.concatenate(lats)
         return blons, blats
 
-    def get_edge_bbox_in_projection_coordinates(self, frequency: Optional[int] = None):
+    def get_edge_bbox_in_projection_coordinates(self, bbox_shape: Optional[int] = None,
+                                                frequency: Optional[int] = None):
         """Return the bounding box in projection coordinates."""
-        x, y = self._get_bbox_elements(self.get_proj_coords, frequency)
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `bbox_shape` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        bbox_shape = bbox_shape or frequency
+        x, y = self._get_bbox_elements(self.get_proj_coords, bbox_shape)
         return np.hstack(x), np.hstack(y)
 
-    def boundary(self, frequency=None, force_clockwise=False):
+    def boundary(self, bbox_shape=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
 
         Parameters
         ----------
-        frequency:
+        bbox_shape (formerly frequency):
             The number of points to provide for each side. By default (None)
             the full width and height will be provided.
         force_clockwise:
@@ -445,7 +459,11 @@ class BaseDefinition:
             Default is False.
         """
         from pyresample.boundary import AreaBoundary
-        lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `bbox_shape` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        bbox_shape = bbox_shape or frequency
+        lon_sides, lat_sides = self.get_bbox_lonlats(bbox_shape=bbox_shape,
                                                      force_clockwise=force_clockwise)
         return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
@@ -1565,20 +1583,20 @@ class AreaDefinition(_ProjectionDefinition):
             return False
         return 'geostationary' in coord_operation.method_name.lower()
 
-    def _get_geo_boundary_sides(self, frequency=None):
+    def _get_geo_boundary_sides(self, bbox_shape=None):
         """Retrieve the boundary sides list for geostationary projections."""
         # Define default frequency
-        if frequency is None:
-            frequency = 50
+        if bbox_shape is None:
+            bbox_shape = 50
         # Ensure at least 4 points are used
-        if frequency < 4:
-            frequency = 4
+        if bbox_shape < 4:
+            bbox_shape = 4
         # Ensure an even number of vertices for side creation
-        if (frequency % 2) != 0:
-            frequency = frequency + 1
-        lons, lats = get_geostationary_bounding_box_in_lonlats(self, nb_points=frequency)
+        if (bbox_shape % 2) != 0:
+            bbox_shape = bbox_shape + 1
+        lons, lats = get_geostationary_bounding_box_in_lonlats(self, nb_points=bbox_shape)
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
-        side02_step = int(frequency / 2) - 1
+        side02_step = int(bbox_shape / 2) - 1
         lon_sides = [lons[slice(0, side02_step + 1)],
                      lons[slice(side02_step, side02_step + 1 + 1)],
                      lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
@@ -1591,12 +1609,12 @@ class AreaDefinition(_ProjectionDefinition):
                      ]
         return lon_sides, lat_sides
 
-    def boundary(self, frequency=None, force_clockwise=False):
+    def boundary(self, bbox_shape=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
 
         Parameters
         ----------
-        frequency:
+        bbox_shape(formerly frequency):
             The number of points to provide for each side. By default (None)
             the full width and height will be provided, except for geostationary
             projection where by default only 50 points are selected.
@@ -1610,10 +1628,14 @@ class AreaDefinition(_ProjectionDefinition):
             Default is False.
         """
         from pyresample.boundary import AreaBoundary
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `bbox_shape` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        bbox_shape = bbox_shape or frequency
         if self.is_geostationary:
-            lon_sides, lat_sides = self._get_geo_boundary_sides(frequency=frequency)
+            lon_sides, lat_sides = self._get_geo_boundary_sides(bbox_shape=bbox_shape)
         else:
-            lon_sides, lat_sides = self.get_bbox_lonlats(frequency=frequency,
+            lon_sides, lat_sides = self.get_bbox_lonlats(bbox_shape=bbox_shape,
                                                          force_clockwise=force_clockwise)
         boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
         return boundary
