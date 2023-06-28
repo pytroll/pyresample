@@ -2595,8 +2595,8 @@ class AreaDefinition(_ProjectionDefinition):
             y_slice = _ensure_integer_slice(y_slice)
             return x_slice, y_slice
 
-        data_boundary = self._get_area_to_cover_boundary(self)
-        area_boundary = self._get_area_to_cover_boundary(area_to_cover)
+        data_boundary = _get_area_boundary(self)
+        area_boundary = _get_area_boundary(area_to_cover)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
         if intersection is None:
@@ -2617,16 +2617,6 @@ class AreaDefinition(_ProjectionDefinition):
 
         return (check_slice_orientation(x_slice),
                 check_slice_orientation(y_slice))
-
-    @staticmethod
-    def _get_area_to_cover_boundary(area_to_cover: AreaDefinition) -> Boundary:
-        try:
-            if area_to_cover.is_geostationary:
-                return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
-            boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
-            return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
-        except ValueError:
-            raise NotImplementedError("Can't determine boundary of area to cover")
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -2725,6 +2715,16 @@ class AreaDefinition(_ProjectionDefinition):
             raise RuntimeError("Could not calculate geocentric resolution")
         # return np.max(np.concatenate(vert_dist, hor_dist))  # alternative to histogram
         return res
+
+
+def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
+    try:
+        if area_to_cover.is_geostationary:
+            return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
+        boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
+        return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
+    except ValueError:
+        raise NotImplementedError("Can't determine boundary of area to cover")
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
