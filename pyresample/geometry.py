@@ -37,7 +37,7 @@ from pyproj.aoi import AreaOfUse
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
-from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
+from pyresample.boundary import Boundary, SimpleBoundary
 from pyresample.utils import check_slice_orientation, load_cf_area
 from pyresample.utils.proj4 import (
     get_geostationary_height,
@@ -2595,10 +2595,7 @@ class AreaDefinition(_ProjectionDefinition):
             y_slice = _ensure_integer_slice(y_slice)
             return x_slice, y_slice
 
-        if not self.is_geostationary:
-            data_boundary = self.boundary(frequency=100)
-        else:
-            data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
+        data_boundary = self._get_area_to_cover_boundary(self)
         area_boundary = self._get_area_to_cover_boundary(area_to_cover)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
@@ -2626,7 +2623,8 @@ class AreaDefinition(_ProjectionDefinition):
         try:
             if area_to_cover.is_geostationary:
                 return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
-            return AreaDefBoundary(area_to_cover, 100)
+            boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
+            return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
         except ValueError:
             raise NotImplementedError("Can't determine boundary of area to cover")
 
