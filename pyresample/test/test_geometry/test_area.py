@@ -1821,6 +1821,18 @@ class TestAreaDefGetAreaSlices:
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
 
+    def test_non_geos_can_be_cropped(self, create_test_area):
+        """Test that non-geos areas can be cropped also."""
+        src_area = create_test_area(dict(proj="utm", zone=33),
+                                    10980, 10980,
+                                    (499980.0, 6490200.0, 609780.0, 6600000.0))
+        crop_area = create_test_area({'proj': 'latlong'},
+                                     100, 100,
+                                     (15.9689, 58.5284, 16.4346, 58.6995))
+        slice_x, slice_y = src_area.get_area_slices(crop_area)
+        assert slice_x == slice(5630, 8339)
+        assert slice_y == slice(9261, 10980)
+
     def test_area_to_cover_all_nan_bounds(self, geos_src_area, create_test_area):
         """Check area slicing when the target doesn't have a valid boundary."""
         area_def = geos_src_area
