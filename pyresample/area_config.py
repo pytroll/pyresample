@@ -30,6 +30,7 @@ import yaml
 from pyproj import Proj, Transformer
 from pyproj.crs import CRS, CRSError
 
+import pyresample
 from pyresample.utils import proj4_str_to_dict
 
 try:
@@ -523,7 +524,8 @@ def _make_area(
         area_extent: tuple,
         **kwargs):
     """Handle the creation of an area definition for create_area_def."""
-    from pyresample.geometry import AreaDefinition, DynamicAreaDefinition
+    from pyresample.future.geometry import AreaDefinition
+    from pyresample.geometry import DynamicAreaDefinition
 
     # Remove arguments that are only for DynamicAreaDefinition.
     optimize_projection = kwargs.pop('optimize_projection', False)
@@ -534,7 +536,14 @@ def _make_area(
     if shape is not None:
         height, width = shape
     if None not in (area_extent, shape):
-        return AreaDefinition(area_id, description, proj_id, projection, width, height, area_extent, **kwargs)
+        attrs = {
+            "name": area_id,
+            "description": description,
+            "proj_id": proj_id,
+        }
+        attrs.update(kwargs)
+        area_def = AreaDefinition(projection, width, height, area_extent, attrs=attrs)
+        return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
 
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
                                  height=height, area_extent=area_extent,

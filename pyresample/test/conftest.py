@@ -23,19 +23,31 @@ import pytest
 import xarray as xr
 from pyproj import CRS
 
+import pyresample
+from pyresample import LegacyAreaDefinition, LegacySwathDefinition
 from pyresample.future.geometry import (
     AreaDefinition,
     CoordinateDefinition,
     SwathDefinition,
 )
-from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
-from pyresample.geometry import SwathDefinition as LegacySwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
 SRC_SWATH_2D_SHAPE = (50, 10)
 SRC_SWATH_1D_SHAPE = (3,)
 SRC_AREA_SHAPE = (50, 10)
 DST_AREA_SHAPE = (80, 85)
+
+
+@pytest.fixture(autouse=True)
+def reset_pyresample_config(tmpdir):
+    """Set pyresample config to logical defaults for tests."""
+    test_config = {
+        "features": {
+            "future_geometries": False,
+        },
+    }
+    with pyresample.config.set(test_config):
+        yield
 
 
 @pytest.fixture(params=[LegacySwathDefinition, SwathDefinition],

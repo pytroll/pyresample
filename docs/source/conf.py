@@ -253,4 +253,5 @@ intersphinx_mapping = {
     'pyproj': ('https://pyproj4.github.io/pyproj/dev/', None),
     'proj': ('https://proj.org', None),
     'satpy': ('https://satpy.readthedocs.io/en/stable', None),
+    'donfig': ('https://donfig.readthedocs.io/en/latest', None),
 }

@@ -64,7 +64,7 @@ def proj4_dict_to_str(proj4_dict, sort=False):
     params = []
     for key, val in items:
         key = str(key) if key.startswith('+') else '+' + str(key)
-        if key in ['+no_defs', '+no_off', '+no_rot']:
+        if key in ['+no_defs', '+no_off', '+no_rot'] or val is None:
             param = key
         else:
             param = '{}={}'.format(key, val)
