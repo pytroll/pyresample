@@ -23,6 +23,7 @@ import pytest
 import xarray as xr
 from pyproj import CRS, Proj
 
+import pyresample
 from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import (
@@ -33,6 +34,8 @@ from pyresample.future.geometry.area import (
     ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
+from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
+from pyresample.test.utils import assert_future_geometry
 
 
 @pytest.fixture
@@ -1363,9 +1366,13 @@ class TestCreateAreaDef:
         should_fail = isinstance(center, str) or len(center) != 2
         if should_fail:
             pytest.raises(ValueError, cad, *args, **kwargs)
-        else:
+            return
+
+        future_geometries = isinstance(base_def, AreaDefinition)
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
             area_def = cad(*args, **kwargs)
-            self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
+        assert_future_geometry(area_def, future_geometries)
+        self._compare_area_defs(area_def, base_def, use_proj4="EPSG" in projection)
 
     def test_create_area_def_extra_combinations(self, create_test_area):
         """Test extra combinations of create_area_def parameters."""
@@ -1814,6 +1821,29 @@ class TestAreaDefGetAreaSlices:
         assert slice_lines == expected_slice_lines
         assert slice_cols == expected_slice_cols
 
+    def test_non_geos_can_be_cropped(self, create_test_area):
+        """Test that non-geos areas can be cropped also."""
+        src_area = create_test_area(dict(proj="utm", zone=33),
+                                    10980, 10980,
+                                    (499980.0, 6490200.0, 609780.0, 6600000.0))
+        crop_area = create_test_area({'proj': 'latlong'},
+                                     100, 100,
+                                     (15.9689, 58.5284, 16.4346, 58.6995))
+        slice_x, slice_y = src_area.get_area_slices(crop_area)
+        assert slice_x == slice(5630, 8339)
+        assert slice_y == slice(9261, 10980)
+
+    def test_area_to_cover_all_nan_bounds(self, geos_src_area, create_test_area):
+        """Check area slicing when the target doesn't have a valid boundary."""
+        area_def = geos_src_area
+        # An area that is a subset of the original one
+        area_to_cover = create_test_area(
+            {"proj": "moll"},
+            1000, 1000,
+            area_extent=(-18000000.0, -9000000.0, 18000000.0, 9000000.0))
+        with pytest.raises(NotImplementedError):
+            area_def.get_area_slices(area_to_cover)
+
 
 class TestBoundary:
     """Test 'boundary' method for AreaDefinition classes."""
@@ -1972,3 +2002,26 @@ class TestBoundary:
                                       [9.37106733, 45.85619242],
                                       [8.08352612, 45.87097006]])
         assert np.allclose(expected_vertices, boundary.vertices)
+
+
+def test_future_to_legacy_conversion():
+    """Test that future AreaDefinitions can be converted to legacy areas."""
+    area_def = AreaDefinition(
+        {
+            'a': '6378144.0',
+            'b': '6356759.0',
+            'lat_0': '50.00',
+            'lat_ts': '50.00',
+            'lon_0': '8.00',
+            'proj': 'stere'
+        },
+        800,
+        800,
+        (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
+        attrs={"name": 'areaD'},
+    )
+    legacy_area = area_def.to_legacy()
+    assert isinstance(legacy_area, LegacyAreaDefinition)
+    assert legacy_area.area_extent == area_def.area_extent
+    assert legacy_area.crs == area_def.crs
+    assert legacy_area.area_id == area_def.attrs["name"]

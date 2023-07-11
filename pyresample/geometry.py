@@ -37,7 +37,7 @@ from pyproj.aoi import AreaOfUse
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
-from pyresample.boundary import AreaDefBoundary, Boundary, SimpleBoundary
+from pyresample.boundary import Boundary, SimpleBoundary
 from pyresample.utils import check_slice_orientation, load_cf_area
 from pyresample.utils.proj4 import (
     get_geostationary_height,
@@ -621,7 +621,7 @@ class CoordinateDefinition(BaseDefinition):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
-        super(CoordinateDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape == lats.shape and lons.dtype == lats.dtype:
             self.shape = lons.shape
             self.size = lons.size
@@ -751,7 +751,7 @@ class GridDefinition(CoordinateDefinition):
 
     def __init__(self, lons, lats, nprocs=1):
         """Initialize GridDefinition."""
-        super(GridDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat grid must have same shape')
         elif lons.ndim != 2:
@@ -806,7 +806,7 @@ class SwathDefinition(CoordinateDefinition):
         if not isinstance(lons, (np.ndarray, DataArray)):
             lons = np.asanyarray(lons)
             lats = np.asanyarray(lats)
-        super(SwathDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         if lons.shape != lats.shape:
             raise ValueError('lon and lat arrays must have same shape')
         elif lons.ndim > 2:
@@ -1135,15 +1135,24 @@ class DynamicAreaDefinition(object):
             height, width = shape
             x_resolution = (corners[2] - corners[0]) * 1.0 / (width - 1)
             y_resolution = (corners[3] - corners[1]) * 1.0 / (height - 1)
+            area_extent = (corners[0] - x_resolution / 2,
+                           corners[1] - y_resolution / 2,
+                           corners[2] + x_resolution / 2,
+                           corners[3] + y_resolution / 2)
         else:
             x_resolution, y_resolution = resolution
-            width = int(np.rint((corners[2] - corners[0]) * 1.0 / x_resolution + 1))
-            height = int(np.rint((corners[3] - corners[1]) * 1.0 / y_resolution + 1))
+            half_x = x_resolution / 2
+            half_y = y_resolution / 2
+            # align extents with pixel resolution
+            area_extent = (
+                math.floor((corners[0] - half_x) / x_resolution) * x_resolution,
+                math.floor((corners[1] - half_y) / y_resolution) * y_resolution,
+                math.ceil((corners[2] + half_x) / x_resolution) * x_resolution,
+                math.ceil((corners[3] + half_y) / y_resolution) * y_resolution,
+            )
+            width = int(round((area_extent[2] - area_extent[0]) / x_resolution))
+            height = int(round((area_extent[3] - area_extent[1]) / y_resolution))
 
-        area_extent = (corners[0] - x_resolution / 2,
-                       corners[1] - y_resolution / 2,
-                       corners[2] + x_resolution / 2,
-                       corners[3] + y_resolution / 2)
         return area_extent, width, height
 
     def _update_corners_for_full_extent(self, corners, shape, resolution, projection):
@@ -1516,7 +1525,7 @@ class AreaDefinition(_ProjectionDefinition):
                  area_extent, nprocs=1, lons=None, lats=None,
                  dtype=np.float64):
         """Initialize AreaDefinition."""
-        super(AreaDefinition, self).__init__(lons, lats, nprocs)
+        super().__init__(lons, lats, nprocs)
         self.area_id = area_id
         self.description = description
         self.proj_id = proj_id
@@ -2040,7 +2049,7 @@ class AreaDefinition(_ProjectionDefinition):
                     (self.crs == other.crs) and
                     (self.shape == other.shape))
         except AttributeError:
-            return super(AreaDefinition, self).__eq__(other)
+            return super().__eq__(other)
 
     def __ne__(self, other):
         """Test for equality."""
@@ -2597,18 +2606,8 @@ class AreaDefinition(_ProjectionDefinition):
             y_slice = _ensure_integer_slice(y_slice)
             return x_slice, y_slice
 
-        if not self.is_geostationary:
-            raise NotImplementedError("Source projection must be 'geos' if "
-                                      "source/target projections are not "
-                                      "equal.")
-
-        data_boundary = Boundary(*get_geostationary_bounding_box_in_lonlats(self))
-        if area_to_cover.is_geostationary:
-            area_boundary = Boundary(
-                *get_geostationary_bounding_box_in_lonlats(area_to_cover))
-        else:
-            area_boundary = AreaDefBoundary(area_to_cover, 100)
-
+        data_boundary = _get_area_boundary(self)
+        area_boundary = _get_area_boundary(area_to_cover)
         intersection = data_boundary.contour_poly.intersection(
             area_boundary.contour_poly)
         if intersection is None:
@@ -2727,6 +2726,16 @@ class AreaDefinition(_ProjectionDefinition):
             raise RuntimeError("Could not calculate geocentric resolution")
         # return np.max(np.concatenate(vert_dist, hor_dist))  # alternative to histogram
         return res
+
+
+def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
+    try:
+        if area_to_cover.is_geostationary:
+            return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
+        boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
+        return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
+    except ValueError:
+        raise NotImplementedError("Can't determine boundary of area to cover")
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
@@ -2890,7 +2899,7 @@ class StackedAreaDefinition(_ProjectionDefinition):
         *kwargs* used here are `nprocs` and `dtype` (see AreaDefinition).
         """
         nprocs = kwargs.get('nprocs', 1)
-        super(StackedAreaDefinition, self).__init__(nprocs=nprocs)
+        super().__init__(nprocs=nprocs)
         self.dtype = kwargs.get('dtype', np.float64)
         self.defs = []
         self.crs_wkt = None

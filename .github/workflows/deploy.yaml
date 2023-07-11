@@ -79,10 +79,14 @@ jobs:
 
       - name: Check version number from inside wheel
         if:  matrix.docker-image != 'manylinux2014_i686'
+        # install dependencies
+        # uninstall source installation
+        # move source to make sure it isn't include in checks
         run: |
+          python -m pip install pip-tools
+          python -m piptools compile -o requirements.txt
           mv pyresample unused_src_to_prevent_local_import
-          python -m pip install pyresample
-          python -m pip uninstall -y pyresample
+          python -m pip install -r requirements.txt
           python -m pip install --force-reinstall --no-index --no-cache-dir --no-deps --find-links=./dist/ pyresample
           python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
           python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
@@ -111,7 +115,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.6
+        uses: pypa/gh-action-pypi-publish@v1.8.7
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -133,7 +137,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.6
+        uses: pypa/gh-action-pypi-publish@v1.8.7
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}

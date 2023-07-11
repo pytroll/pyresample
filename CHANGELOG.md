@@ -1,3 +1,26 @@
+## Version 1.27.1 (2023/06/21)
+
+### Issues Closed
+
+* [Issue 517](https://github.com/pytroll/pyresample/issues/517) - EWA resampling in 1.27 slows down four times than 1.26.1 ([PR 520](https://github.com/pytroll/pyresample/pull/520) by [@djhoese](https://github.com/djhoese))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 524](https://github.com/pytroll/pyresample/pull/524) - Preserve get_area_slices behavior when area to cover has an invalid boundary
+* [PR 523](https://github.com/pytroll/pyresample/pull/523) - Fix DynamicAreaDefinition not preserving user's requested resolution ([517](https://github.com/pytroll/pyresample/issues/517))
+* [PR 520](https://github.com/pytroll/pyresample/pull/520) - Fix performance regression in base resampler class when comparing geometries ([517](https://github.com/pytroll/pyresample/issues/517))
+
+#### Documentation changes
+
+* [PR 518](https://github.com/pytroll/pyresample/pull/518) - Add configuration for readthedocs to fail on warnings
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.27.0 (2023/05/17)
 
 ### Issues Closed
