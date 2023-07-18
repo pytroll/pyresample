@@ -108,8 +108,6 @@ class AreaDefinition(LegacyAreaDefinition):
             area_extent: tuple[float, float, float, float],
             attrs: Optional[dict] = None
     ):
-        # FUTURE: Maybe do `shape` instead of the separate height and width
-        # FUTURE: Add 'to_legacy()' method
         # FUTURE: Add __slots__
         # FUTURE: Convert this to new class that uses a legacy area internally
         #         Use this to more easily deprecate usage of old properties
