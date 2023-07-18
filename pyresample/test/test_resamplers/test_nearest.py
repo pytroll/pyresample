@@ -289,8 +289,7 @@ class TestInvalidUsageNearestNeighborResampler:
         if isinstance(src_geom, AreaDefinition):
             src_geom = AreaDefinition(
                 src_geom.crs,
-                src_geom.height,
-                src_geom.width,
+                (src_geom.width, src_geom.height),
                 src_geom.area_extent,
                 attrs=src_geom.attrs.copy(),
             )
