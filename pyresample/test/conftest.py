@@ -101,8 +101,9 @@ def create_test_area(area_class):
     """
     def _create_test_area(crs, width, height, area_extent, **kwargs):
         """Create an AreaDefinition object for testing."""
-        args = (crs, width, height, area_extent)
+        args = (crs, (height, width), area_extent)
         if area_class is LegacyAreaDefinition:
+            args = (crs, width, height, area_extent)
             attrs = kwargs.pop("attrs", {})
             area_id = attrs.pop("name", "test_area")
             args = (area_id, "", "") + args

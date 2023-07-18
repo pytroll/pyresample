@@ -1212,8 +1212,7 @@ class TestAreaDefinitionMetadata:
         }
         area_def = AreaDefinition(
             4326,
-            200,
-            100,
+            (100, 200),
             (-1000, -500, 1500, 2000),
             attrs=my_meta,
         )
@@ -1223,8 +1222,7 @@ class TestAreaDefinitionMetadata:
         """Test not passing metadata to AreaDefinition still results in a usable mapping."""
         area_def = AreaDefinition(
             4326,
-            200,
-            100,
+            (100, 200),
             (-1000, -500, 1500, 2000),
         )
         assert area_def.attrs == {}
@@ -1233,15 +1231,13 @@ class TestAreaDefinitionMetadata:
         """Test that metadata differences don't contribute to inequality."""
         area_def1 = AreaDefinition(
             4326,
-            200,
-            100,
+            (100, 200),
             (-1000, -500, 1500, 2000),
             attrs={"a": 1},
         )
         area_def2 = AreaDefinition(
             4326,
-            200,
-            100,
+            (100, 200),
             (-1000, -500, 1500, 2000),
             attrs={"a": 2},
         )
@@ -2015,8 +2011,7 @@ def test_future_to_legacy_conversion():
             'lon_0': '8.00',
             'proj': 'stere'
         },
-        800,
-        800,
+        (800, 800),
         (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
         attrs={"name": 'areaD'},
     )

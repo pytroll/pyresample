@@ -41,10 +41,11 @@ class AreaDefinition(LegacyAreaDefinition):
         crs:
             Dictionary of PROJ parameters or string of PROJ or WKT parameters.
             Can also be a :class:`pyproj.crs.CRS` object.
-        width:
-            x dimension in number of pixels, aka number of grid columns
-        height:
-            y dimension in number of pixels, aka number of grid rows
+        shape:
+            Shape of the geographic region. Currently only a 2-element tuple
+            is supported. The first element should be the number of elements
+            in the Y direction (rows) and the second in the X direction
+            (columns). So the final tuple is (rows, columns).
         area_extent:
             Area extent as a list (lower_left_x, lower_left_y, upper_right_x, upper_right_y)
         attrs:
@@ -66,6 +67,8 @@ class AreaDefinition(LegacyAreaDefinition):
             Identifier for the area. This is a convenience for backwards
             compatibility and accesses the ``.attrs['name']`` metadata.
             This will be set to an empty string if not provided.
+        shape:
+            Shape of the grid as (rows, columns).
         width (int):
             x dimension in number of pixels, aka number of grid columns
         height (int):
@@ -101,8 +104,7 @@ class AreaDefinition(LegacyAreaDefinition):
     def __init__(
             self,
             crs: Union[str, int, dict, CRS],
-            width: int,
-            height: int,
+            shape: tuple[int, ...],
             area_extent: tuple[float, float, float, float],
             attrs: Optional[dict] = None
     ):
@@ -118,8 +120,8 @@ class AreaDefinition(LegacyAreaDefinition):
             "",
             area_id,
             crs,
-            width,
-            height,
+            shape[1],
+            shape[0],
             area_extent,
         )
         self.attrs = attrs
