@@ -106,7 +106,7 @@ class BaseDefinition:
 
     def __init__(self, lons=None, lats=None, nprocs=1):
         """Initialize BaseDefinition."""
-        if type(lons) != type(lats):
+        if type(lons) is not type(lats):
             raise TypeError('lons and lats must be of same type')
         elif lons is not None:
             if not isinstance(lons, (np.ndarray, DataArray)):
