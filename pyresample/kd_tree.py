@@ -1061,7 +1061,7 @@ class XArrayResamplerNN(object):
         # verify that the dims are next to each other
         first_dim_idx = data.dims.index(src_geo_dims[0])
         num_dims = len(src_geo_dims)
-        assert (data.dims[first_dim_idx:first_dim_idx + num_dims] == data_geo_dims),\
+        assert (data.dims[first_dim_idx:first_dim_idx + num_dims] == data_geo_dims), \
             "Data's geolocation dimensions are not consecutive."
 
         # FIXME: Can't include coordinates whose dimensions depend on the geo
