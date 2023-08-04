@@ -1961,6 +1961,16 @@ class AreaDefinition(_ProjectionDefinition):
             return "EPSG:{}".format(self.crs.to_epsg())
         return self.crs.to_proj4()
 
+    def to_odc_geobox(self):
+        """Convert AreaDefinition to ODC GeoBox.
+
+        See: https://odc-geo.readthedocs.io/en/latest/
+        """
+        from odc.geo.geobox import GeoBox
+
+        return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs, resolution=np.mean([self.pixel_size_x,
+                                                                                         self.pixel_size_y]))
+
     def create_areas_def(self):
         """Generate YAML formatted representation of this area.
 
