@@ -40,7 +40,13 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr'],
+                  'odc-geo': ['odc-geo'],
                   'tests': test_requires}
+
+all_extras = []
+for extra_deps in extras_require.values():
+    all_extras.extend(extra_deps)
+extras_require['all'] = list(set(all_extras))
 
 setup_requires = ['numpy>=1.10.0', 'cython']
 
