@@ -1966,7 +1966,10 @@ class AreaDefinition(_ProjectionDefinition):
 
         See: https://odc-geo.readthedocs.io/en/latest/
         """
-        from odc.geo.geobox import GeoBox
+        try:
+            from odc.geo.geobox import GeoBox
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Please install 'odc-geo' to use this method.")
 
         return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs,
                                 resolution=np.mean([self.pixel_size_x, self.pixel_size_y]), tight=True)
