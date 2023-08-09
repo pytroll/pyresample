@@ -1968,8 +1968,8 @@ class AreaDefinition(_ProjectionDefinition):
         """
         from odc.geo.geobox import GeoBox
 
-        return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs, resolution=np.mean([self.pixel_size_x,
-                                                                                         self.pixel_size_y]))
+        return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs,
+                                resolution=np.mean([self.pixel_size_x, self.pixel_size_y]), tight=True)
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area.
