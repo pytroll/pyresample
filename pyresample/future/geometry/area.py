@@ -111,6 +111,9 @@ class AreaDefinition(LegacyAreaDefinition):
         # FUTURE: Add __slots__
         # FUTURE: Convert this to new class that uses a legacy area internally
         #         Use this to more easily deprecate usage of old properties
+        if len(shape) != 2:
+            raise NotImplementedError("Only 2-dimensional areas are supported at this time.")
+
         attrs = attrs or {}
         area_id = attrs.get("name", "")
         super().__init__(

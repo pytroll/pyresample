@@ -2020,3 +2020,10 @@ def test_future_to_legacy_conversion():
     assert legacy_area.area_extent == area_def.area_extent
     assert legacy_area.crs == area_def.crs
     assert legacy_area.area_id == area_def.attrs["name"]
+
+
+@pytest.mark.parametrize("shape", [(100,), (100, 100, 100)])
+def test_non2d_shape_error(shape):
+    """Test that non-2D shapes fail."""
+    with pytest.raises(NotImplementedError):
+        AreaDefinition("EPSG:4326", shape, (-1000.0, -1000.0, 1000.0, 1000.0))
