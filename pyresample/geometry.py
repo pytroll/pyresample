@@ -57,6 +57,7 @@ except ImportError:
     da = None
 
 from pyproj import CRS
+from pyproj.enums import TransformDirection
 
 logger = getLogger(__name__)
 HashType = hashlib._hashlib.HASH
@@ -1276,7 +1277,7 @@ def _invproj(data_x, data_y, proj_wkt):
     crs = CRS.from_wkt(proj_wkt)
     gcrs = get_geodetic_crs_with_no_datum_shift(crs)
     transformer = pyproj.Transformer.from_crs(gcrs, crs, always_xy=True)
-    lon, lat = transformer.transform(data_x, data_y, direction="INVERSE")
+    lon, lat = transformer.transform(data_x, data_y, direction=TransformDirection.INVERSE)
     return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
 
 
@@ -2528,7 +2529,7 @@ class AreaDefinition(_ProjectionDefinition):
             gcrs = get_geodetic_crs_with_no_datum_shift(self.crs)
             target_trans = pyproj.Transformer.from_crs(gcrs, self.crs, always_xy=True)
             target_proj = target_trans.transform
-            proj_kwargs["direction"] = "INVERSE"
+            proj_kwargs["direction"] = TransformDirection.INVERSE
 
         # Get corresponding longitude and latitude values
         lons, lats = target_proj(target_x, target_y, **proj_kwargs)
