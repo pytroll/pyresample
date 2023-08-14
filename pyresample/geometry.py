@@ -448,8 +448,8 @@ class BaseDefinition:
 
         Parameters
         ----------
-        vertices_per_side (formerly frequency):
-            The number of points to provide for each side. By default (None)
+        vertices_per_side:
+             (formerly `frequency`) The number of points to provide for each side. By default (None)
             the full width and height will be provided.
         force_clockwise:
             Perform minimal checks and reordering of coordinates to ensure
