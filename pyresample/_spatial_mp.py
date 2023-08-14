@@ -25,6 +25,7 @@ import multiprocessing as mp
 import numpy as np
 import pyproj
 from pyproj import CRS
+from pyproj.enums import TransformDirection
 
 try:
     import numexpr as ne
@@ -244,7 +245,8 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,
         crs = CRS.from_user_input(proj_def)
         gcrs = get_geodetic_crs_with_no_datum_shift(crs)
         transformer = pyproj.Transformer.from_crs(gcrs, crs, always_xy=True)
-        trans_kwargs = {"radians": radians, "errcheck": errcheck, "direction": "INVERSE" if inverse else "FORWARD"}
+        trans_kwargs = {"radians": radians, "errcheck": errcheck,
+                        "direction": TransformDirection.INVERSE if inverse else TransformDirection.FORWARD}
 
         # Reproject data segment
         for s in scheduler:
