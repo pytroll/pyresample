@@ -1611,7 +1611,7 @@ class AreaDefinition(_ProjectionDefinition):
                      ]
         return lon_sides, lat_sides
 
-    def boundary(self, vertices_per_side=None, force_clockwise=False, frequency=None):
+    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
 
         Parameters
