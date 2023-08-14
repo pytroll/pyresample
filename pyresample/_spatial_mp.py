@@ -24,6 +24,7 @@ import multiprocessing as mp
 
 import numpy as np
 import pyproj
+from pyproj import CRS
 
 try:
     import numexpr as ne
@@ -31,6 +32,7 @@ except ImportError:
     ne = None
 
 from ._multi_proc import Scheduler, shmem_as_ndarray
+from .utils.proj4 import get_geodetic_crs_with_no_datum_shift
 
 # Earth radius
 R = 6370997.0
@@ -238,12 +240,15 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,
         _res2 = shmem_as_ndarray(res2)
 
         # Initialise pyproj
-        proj = pyproj.Proj(*proj_args, **proj_kwargs)
+        proj_def = proj_args[0] if proj_args else proj_kwargs
+        crs = CRS.from_user_input(proj_def)
+        gcrs = get_geodetic_crs_with_no_datum_shift(crs)
+        transformer = pyproj.Transformer.from_crs(gcrs, crs, always_xy=True)
+        trans_kwargs = {"radians": radians, "errcheck": errcheck, "direction": "INVERSE" if inverse else "FORWARD"}
 
         # Reproject data segment
         for s in scheduler:
-            _res1[s], _res2[s] = proj(_data1[s], _data2[s], inverse=inverse,
-                                      radians=radians, errcheck=errcheck)
+            _res1[s], _res2[s] = transformer.transform(_data1[s], _data2[s], **trans_kwargs)
 
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.

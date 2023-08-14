@@ -18,7 +18,6 @@
 """Classes for geometry operations."""
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import math
 import warnings
@@ -40,7 +39,9 @@ from pyresample.area_config import create_area_def
 from pyresample.boundary import Boundary, SimpleBoundary
 from pyresample.utils import check_slice_orientation, load_cf_area
 from pyresample.utils.proj4 import (
+    get_geodetic_crs_with_no_datum_shift,
     get_geostationary_height,
+    ignore_pyproj_proj_warnings,
     proj4_dict_to_str,
     proj4_radius_parameters,
 )
@@ -59,25 +60,6 @@ from pyproj import CRS
 
 logger = getLogger(__name__)
 HashType = hashlib._hashlib.HASH
-
-
-@contextlib.contextmanager
-def ignore_pyproj_proj_warnings():
-    """Wrap operations that we know will produce a PROJ.4 precision warning.
-
-    Only to be used internally to Pyresample when we have no other choice but
-    to use PROJ.4 strings/dicts. For example, serialization to YAML or other
-    human-readable formats or testing the methods that produce the PROJ.4
-    versions of the CRS.
-
-    """
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            "You will likely lose important projection information",
-            UserWarning,
-        )
-        yield
 
 
 class DimensionError(ValueError):
@@ -1288,11 +1270,13 @@ class DynamicAreaDefinition(object):
         return xmin, xmax
 
 
-def _invproj(data_x, data_y, proj_dict):
+def _invproj(data_x, data_y, proj_wkt):
     """Perform inverse projection."""
     # XXX: does pyproj copy arrays? What can we do so it doesn't?
-    target_proj = Proj(proj_dict)
-    lon, lat = target_proj(data_x, data_y, inverse=True)
+    crs = CRS.from_wkt(proj_wkt)
+    gcrs = get_geodetic_crs_with_no_datum_shift(crs)
+    transformer = pyproj.Transformer.from_crs(gcrs, crs, always_xy=True)
+    lon, lat = transformer.transform(data_x, data_y, direction="INVERSE")
     return np.stack([lon.astype(data_x.dtype), lat.astype(data_y.dtype)])
 
 
@@ -2472,6 +2456,14 @@ class AreaDefinition(_ProjectionDefinition):
     def get_lonlats(self, nprocs=None, data_slice=None, cache=False, dtype=None, chunks=None):
         """Return lon and lat arrays of area.
 
+        Note that this historically this method always returns
+        longitude/latitudes on the geodetic (unprojected) model of the Earth
+        used by the Coordinate Reference System (CRS) for this area. However,
+        this is not true for shifted datums. For example, a projection
+        including a PROJ.4 parameter like ``+pm=180`` to shift
+        longitudes/latitudes 180 degrees, will return degrees on the ``+pm=0``
+        equivalent of the geodetic CRS.
+
         Parameters
         ----------
         nprocs : int, optional
@@ -2523,7 +2515,7 @@ class AreaDefinition(_ProjectionDefinition):
                              chunks=(2,) + target_x.chunks,
                              meta=np.array((), dtype=target_x.dtype),
                              dtype=target_x.dtype,
-                             new_axis=[0], proj_dict=self.crs_wkt)
+                             new_axis=[0], proj_wkt=self.crs_wkt)
             lons, lats = res[0], res[1]
             return lons, lats
 
@@ -2531,11 +2523,15 @@ class AreaDefinition(_ProjectionDefinition):
         if nprocs > 1:
             target_proj = Proj_MP(self.crs)
             proj_kwargs["nprocs"] = nprocs
+            proj_kwargs["inverse"] = True
         else:
-            target_proj = Proj(self.crs)
+            gcrs = get_geodetic_crs_with_no_datum_shift(self.crs)
+            target_trans = pyproj.Transformer.from_crs(gcrs, self.crs, always_xy=True)
+            target_proj = target_trans.transform
+            proj_kwargs["direction"] = "INVERSE"
 
         # Get corresponding longitude and latitude values
-        lons, lats = target_proj(target_x, target_y, inverse=True, **proj_kwargs)
+        lons, lats = target_proj(target_x, target_y, **proj_kwargs)
         lons = np.asanyarray(lons, dtype=dtype)
         lats = np.asanyarray(lats, dtype=dtype)
 

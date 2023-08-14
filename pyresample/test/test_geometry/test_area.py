@@ -2001,7 +2001,7 @@ class TestBoundary:
                                       [9.39028624, 46.39582417],
                                       [9.37106733, 45.85619242],
                                       [8.08352612, 45.87097006]])
-        assert np.allclose(expected_vertices, boundary.vertices)
+        np.testing.assert_allclose(expected_vertices, boundary.vertices)
 
 
 def test_future_to_legacy_conversion():
