@@ -33,69 +33,67 @@ jobs:
 
 
   build_wheels:
+    name: "Build wheels on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']
-        include:
-          # Using pythons inside a docker image to provide all the Linux
-          # python-versions permutations.
-          - name: manylinux 64-bit
-            os: ubuntu-latest
-            python-version: '3.11'
-            docker-image: manylinux2014_x86_64
+        os: [windows-2019, macos-11, ubuntu-20.04]
 
     steps:
       - uses: actions/checkout@v4
       - run: |
           git fetch --prune --unshallow
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: '${{ matrix.python-version }}'
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.0
+        env:
+          CIBW_SKIP: "cp36-* cp37-* cp38-* pp* *-manylinux_i686 *-musllinux*"
+          CIBW_ARCHS: auto64
+          CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
 
-      - name: Install dependencies
-        run: |
-          python -m pip install -U -q pip Cython wheel setuptools twine numpy build
 
-      - name: Build and install macOS/Windows wheel
-        if: matrix.os != 'ubuntu-latest'
-        run: |
-          python -m build -w
-          pip install --find-links=./dist/ pyresample
-
-      - name: Build Linux wheels inside docker
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          docker run \
-            -e PLAT=${{ matrix.docker-image }} \
-            -e USE_OMP=1 \
-            -v `pwd`:/io \
-            quay.io/pypa/${{ matrix.docker-image }} \
-            /io/continuous_integration/build-manylinux-wheels.sh
-
-      - name: Check version number from inside wheel
-        if:  matrix.docker-image != 'manylinux2014_i686'
-        # install dependencies
-        # uninstall source installation
-        # move source to make sure it isn't include in checks
-        run: |
-          python -m pip install pip-tools
-          python -m piptools compile -o requirements.txt
-          mv pyresample unused_src_to_prevent_local_import
-          python -m pip install -r requirements.txt
-          python -m pip install --force-reinstall --no-index --no-cache-dir --no-deps --find-links=./dist/ pyresample
-          python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
-          python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
+#
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install -U -q pip Cython wheel setuptools twine numpy build
+#
+#      - name: Build and install macOS/Windows wheel
+#        if: matrix.os != 'ubuntu-latest'
+#        run: |
+#          python -m build -w
+#          pip install --find-links=./dist/ pyresample
+#
+#      - name: Build Linux wheels inside docker
+#        if: matrix.os == 'ubuntu-latest'
+#        run: |
+#          docker run \
+#            -e PLAT=${{ matrix.docker-image }} \
+#            -e USE_OMP=1 \
+#            -v `pwd`:/io \
+#            quay.io/pypa/${{ matrix.docker-image }} \
+#            /io/continuous_integration/build-manylinux-wheels.sh
+#
+#      - name: Check version number from inside wheel
+#        if:  matrix.docker-image != 'manylinux2014_i686'
+#        # install dependencies
+#        # uninstall source installation
+#        # move source to make sure it isn't include in checks
+#        run: |
+#          python -m pip install pip-tools
+#          python -m piptools compile -o requirements.txt
+#          mv pyresample unused_src_to_prevent_local_import
+#          python -m pip install -r requirements.txt
+#          python -m pip install --force-reinstall --no-index --no-cache-dir --no-deps --find-links=./dist/ pyresample
+#          python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
+#          python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist/*.whl
+          path: ./wheelhouse/*.whl
 
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
