@@ -12,6 +12,8 @@ dependencies:
   - pillow
   - platformdirs
   - pyyaml
+  # 9.3.1 includes bug fix
+  - proj !=9.3.0
   - pyproj
   - pykdtree
   - rasterio
