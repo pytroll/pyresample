@@ -24,6 +24,7 @@ from functools import lru_cache
 
 import numpy as np
 from pyproj import Transformer
+from pyproj.enums import TransformDirection
 
 from pyresample import AreaDefinition, SwathDefinition
 from pyresample.geometry import (
@@ -154,7 +155,7 @@ class AreaSlicer(Slicer):
         x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
-            x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction='INVERSE')
+            x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos))
             poly = Polygon(zip(x, y))
             poly = poly.intersection(geos_poly)

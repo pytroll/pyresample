@@ -101,8 +101,9 @@ def create_test_area(area_class):
     """
     def _create_test_area(crs, width, height, area_extent, **kwargs):
         """Create an AreaDefinition object for testing."""
-        args = (crs, width, height, area_extent)
+        args = (crs, (height, width), area_extent)
         if area_class is LegacyAreaDefinition:
+            args = (crs, width, height, area_extent)
             attrs = kwargs.pop("attrs", {})
             area_id = attrs.pop("name", "test_area")
             args = (area_id, "", "") + args
@@ -192,7 +193,7 @@ def area_def_lcc_conus_1km():
     """Create an AreaDefinition with an LCC projection over CONUS (1500, 2000)."""
     proj_str = "+proj=lcc +lon_0=-95 +lat_1=35.0 +lat_2=35.0 +datum=WGS84 +no_defs"
     crs = CRS.from_string(proj_str)
-    area_def = AreaDefinition(crs, SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+    area_def = AreaDefinition(crs, (SRC_AREA_SHAPE[0], SRC_AREA_SHAPE[1]),
                               (-750000, -750000, 750000, 750000))
     return area_def
 
@@ -213,7 +214,7 @@ def area_def_stere_source():
             'lon_0': '5.00',
             'proj': 'stere'
         },
-        SRC_AREA_SHAPE[1], SRC_AREA_SHAPE[0],
+        (SRC_AREA_SHAPE[0], SRC_AREA_SHAPE[1]),
         (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001),
     )
 
@@ -230,7 +231,7 @@ def area_def_stere_target():
             'lon_0': '8.00',
             'proj': 'stere'
         },
-        DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
+        (DST_AREA_SHAPE[0], DST_AREA_SHAPE[1]),
         (-1370912.72, -909968.64000000001, 1029087.28, 1490031.3600000001)
     )
 
@@ -245,7 +246,7 @@ def area_def_lonlat_pm180_target():
             'datum': 'WGS84',
             'no_defs': None,
         },
-        DST_AREA_SHAPE[1], DST_AREA_SHAPE[0],
+        (DST_AREA_SHAPE[0], DST_AREA_SHAPE[1]),
         (-20.0, 20.0, 20.0, 35.0)
     )
 

@@ -94,7 +94,6 @@ if __name__ == "__main__":
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
           python_requires='>=3.9',
-          setup_requires=setup_requires,
           install_requires=requirements,
           extras_require=extras_require,
           ext_modules=cythonize(extensions),
