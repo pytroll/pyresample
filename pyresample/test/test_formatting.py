@@ -60,7 +60,7 @@ def test_swath_area_attrs_section_w_numpy(create_test_swath):
 
 
 def test_swath_area_attrs_section_w_xarray(create_test_swath):
-    """Test SwathDefinition attrs section with numpy lons/lats."""
+    """Test SwathDefinition attrs section with xarray lons/lats."""
     swath_def = _gen_swath_def_xarray_dask(create_test_swath)
     res = swath_area_attrs_section(swath_def)
     assert "class=\'xr-text-repr-fallback\'" in res
