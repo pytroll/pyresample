@@ -226,3 +226,53 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         results3 = load_area_from_string(area_list)
         self.assertEqual(results, results2)
         self.assertEqual(results, results3)
+
+
+def test_area_def_rst_list(mocker):
+    """Test output of rst generation from area list."""
+    import unittest.mock as mock
+
+    from pyresample.area_config import generate_area_def_rst_list
+
+    areas = """msg_seviri_fes_3km:
+  description:
+    MSG SEVIRI Full Earth Scanning service area definition
+    with 3 km resolution
+  projection:
+    proj: geos
+    lon_0: 0.0
+    a: 6378169.0
+    b: 6356583.8
+    h: 35785831.0
+  shape:
+    height: 3712
+    width: 3712
+  area_extent:
+    lower_left_xy: [-5570248.686685662, -5567248.28340708]
+    upper_right_xy: [5567248.28340708,   5570248.686685662]
+
+australia:
+  description: australia
+  projection:
+    proj: merc
+    lat_0: -27.5
+    lon_0: 132.5
+    ellps: WGS84
+  shape:
+    height: 895
+    width: 1001
+  area_extent:
+    lower_left_xy: [-2504688.5428486555, -5591295.9185533915]
+    upper_right_xy: [2504688.5428486555, -1111475.102852225]"""
+
+    with open("test_areas.yaml", "w") as file:
+        file.write(areas)
+
+    with mock.patch('pyresample.area_config.area_repr') as mock_area_repr:
+        generate_area_def_rst_list("test_areas.yaml")
+        assert mock_area_repr.call_count == 2
+        call_args = mock_area_repr.call_args_list
+        # check that static files are included for the first area
+        assert call_args[0][1]['include_static_files']
+        # check that static files are not included for the second area
+        assert not call_args[1][1]['include_static_files']
