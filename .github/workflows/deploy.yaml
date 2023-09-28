@@ -1,4 +1,4 @@
-name: Deploy sdist and wheels
+name: Build sdist and wheels
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency
 # https://docs.github.com/en/developers/webhooks-and-events/events/github-event-types#pullrequestevent
 concurrency:
@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Create sdist
         shell: bash -l {0}
+        # For non-tags/releases this won't produce a valid version number in the package
+        # We'd have to download the entire git history which is wasteful in CI
         run: |
           python -m pip install -q build
           python -m build -s
@@ -33,69 +35,45 @@ jobs:
 
 
   build_wheels:
+    name: "Build wheels on ${{ matrix.os }} ${{ matrix.cibw_archs }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']
         include:
-          # Using pythons inside a docker image to provide all the Linux
-          # python-versions permutations.
-          - name: manylinux 64-bit
-            os: ubuntu-latest
-            python-version: '3.11'
-            docker-image: manylinux2014_x86_64
+          - os: windows-2019
+            cibw_archs: "AMD64 ARM64"
+          - os: macos-11
+            cibw_archs: "x86_64 arm64"
+          - os: "ubuntu-20.04"
+            cibw_archs: "aarch64"
+          - os: "ubuntu-20.04"
+            cibw_archs: "x86_64"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: |
           git fetch --prune --unshallow
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
         with:
-          python-version: '${{ matrix.python-version }}'
+          platforms: all
 
-      - name: Install dependencies
-        run: |
-          python -m pip install -U -q pip Cython wheel setuptools twine numpy build
-
-      - name: Build and install macOS/Windows wheel
-        if: matrix.os != 'ubuntu-latest'
-        run: |
-          python -m build -w
-          pip install --find-links=./dist/ pyresample
-
-      - name: Build Linux wheels inside docker
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          docker run \
-            -e PLAT=${{ matrix.docker-image }} \
-            -e USE_OMP=1 \
-            -v `pwd`:/io \
-            quay.io/pypa/${{ matrix.docker-image }} \
-            /io/continuous_integration/build-manylinux-wheels.sh
-
-      - name: Check version number from inside wheel
-        if:  matrix.docker-image != 'manylinux2014_i686'
-        # install dependencies
-        # uninstall source installation
-        # move source to make sure it isn't include in checks
-        run: |
-          python -m pip install pip-tools
-          python -m piptools compile -o requirements.txt
-          mv pyresample unused_src_to_prevent_local_import
-          python -m pip install -r requirements.txt
-          python -m pip install --force-reinstall --no-index --no-cache-dir --no-deps --find-links=./dist/ pyresample
-          python -c "import pyresample; print(pyresample.__file__, pyresample.__version__)"
-          python -c "import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'"
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.0
+        env:
+          CIBW_SKIP: "cp36-* cp37-* cp38-* pp* *i686 *-musllinux* cp312-*"
+          CIBW_ARCHS: "${{ matrix.cibw_archs }}"
+          CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
+          CIBW_TEST_SKIP: "*_arm64 *_universal2:arm64"
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist/*.whl
+          path: ./wheelhouse/*.whl
 
   upload_test_pypi:
     needs: [build_sdist, build_wheels]
@@ -115,7 +93,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.7
+        uses: pypa/gh-action-pypi-publish@v1.8.10
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -137,7 +115,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.7
+        uses: pypa/gh-action-pypi-publish@v1.8.10
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}

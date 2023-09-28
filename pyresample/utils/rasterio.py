@@ -50,7 +50,7 @@ def _get_area_def_from_gdal(dataset, area_id=None, description=None, proj_id=Non
             proj_id = proj.split('"')[1]
 
     attrs = {"name": area_id, "description": description, "proj_id": proj_id}
-    area_def = AreaDefinition(projection, dataset.RasterXSize, dataset.RasterYSize, area_extent, attrs=attrs)
+    area_def = AreaDefinition(projection, (dataset.RasterYSize, dataset.RasterXSize), area_extent, attrs=attrs)
     return area_def
 
 
@@ -70,7 +70,7 @@ def _get_area_def_from_rasterio(dataset, area_id, description, proj_id=None, pro
             proj_id = projection.wkt.split('"')[1]
 
     attrs = {"name": area_id, "description": description, "proj_id": proj_id}
-    area_def = AreaDefinition(projection, dataset.width, dataset.height, dataset.bounds, attrs=attrs)
+    area_def = AreaDefinition(projection, (dataset.height, dataset.width), dataset.bounds, attrs=attrs)
     return area_def
 
 
