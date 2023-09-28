@@ -1,0 +1,30 @@
+msg_seviri_fes_3km:
+  description:
+    MSG SEVIRI Full Earth Scanning service area definition
+    with 3 km resolution
+  projection:
+    proj: geos
+    lon_0: 0.0
+    a: 6378169.0
+    b: 6356583.8
+    h: 35785831.0
+  shape:
+    height: 3712
+    width: 3712
+  area_extent:
+    lower_left_xy: [-5570248.686685662, -5567248.28340708]
+    upper_right_xy: [5567248.28340708,   5570248.686685662]
+
+australia:
+  description: australia
+  projection:
+    proj: merc
+    lat_0: -27.5
+    lon_0: 132.5
+    ellps: WGS84
+  shape:
+    height: 895
+    width: 1001
+  area_extent:
+    lower_left_xy: [-2504688.5428486555, -5591295.9185533915]
+    upper_right_xy: [2504688.5428486555, -1111475.102852225]
