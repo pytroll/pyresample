@@ -228,7 +228,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         self.assertEqual(results, results3)
 
 
-def test_area_def_rst_list(mocker):
+def test_area_def_rst_list():
     """Test output of rst generation from area list."""
     import unittest.mock as mock
 
