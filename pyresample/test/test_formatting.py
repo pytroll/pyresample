@@ -16,11 +16,47 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test html formatting."""
 
+import unittest.mock as mock
+
 import pyresample
-from pyresample._formatting_html import area_repr, swath_area_attrs_section
+from pyresample._formatting_html import (
+    area_repr,
+    plot_area_def,
+    swath_area_attrs_section,
+)
 
 from .test_geometry.test_area import stere_area  # noqa F401
 from .test_geometry.test_swath import _gen_swath_def_numpy, _gen_swath_def_xarray_dask
+
+
+def test_plot_area_def_w_area_def(stere_area):  # noqa F811
+    """Test AreaDefinition plotting as svg/png."""
+    area = stere_area
+
+    with mock.patch('matplotlib.pyplot.savefig') as mock_savefig:
+        plot_area_def(area, fmt="svg")
+        assert mock_savefig.called_with(fmt="svg")
+        mock_savefig.reset_mock()
+        plot_area_def(area, fmt="png")
+        assert mock_savefig.called_with(fmt="png")
+
+
+def test_plot_area_def_w_area_def_show(stere_area):  # noqa F811
+    """Test AreaDefinition plotting as svg/png."""
+    area = stere_area
+
+    with mock.patch('matplotlib.pyplot.show') as mock_show_plot:
+        plot_area_def(area)
+        assert mock_show_plot.called_once()
+
+
+def test_plot_area_def_w_swath_def(create_test_swath):
+    """Test SwathDefinition plotting."""
+    swath_def = _gen_swath_def_numpy(create_test_swath)
+
+    with mock.patch('matplotlib.pyplot.savefig') as mock_savefig:
+        plot_area_def(swath_def, fmt="svg")
+        assert mock_savefig.called_with(fmt="svg")
 
 
 def test_area_def_cartopy_missing(monkeypatch, stere_area):  # noqa F811
