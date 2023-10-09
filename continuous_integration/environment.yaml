@@ -2,27 +2,28 @@ name: test-environment
 channels:
   - conda-forge
 dependencies:
-  - xarray
+  - cartopy
+  - configobj
+  - Cython
   - dask
   - distributed
   - donfig
-  - toolz
-  - Cython
-  - sphinx
-  - cartopy
-  - pillow
   - matplotlib
+  - pillow
+  - platformdirs
   - pyyaml
+  # 9.3.1 includes bug fix
+  - proj !=9.3.0
   - pyproj
   - pykdtree
   - rasterio
-  - coveralls
-  - coverage
-  - codecov
-  - configobj
-  - zarr
   - shapely
   - scipy
+  - sphinx
+  - toolz
+  - xarray
+  - zarr
+  - coverage
   - pytest
   - pytest-cov
   - pytest-lazy-fixture
