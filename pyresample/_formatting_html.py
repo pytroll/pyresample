@@ -90,7 +90,6 @@ def plot_area_def(area, feature_res="110m", fmt=None):
         crs = area.to_cartopy_crs()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
     elif isinstance(area, geom.SwathDefinition):
-        import cartopy.crs as ccrs
         from shapely.geometry.polygon import Polygon
 
         lx, ly = area.get_edge_lonlats()
@@ -98,9 +97,10 @@ def plot_area_def(area, feature_res="110m", fmt=None):
         crs = cartopy.crs.Mercator()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        poly = Polygon(list(zip(lx, ly)))
-        ax.add_geometries([poly], crs=ccrs.CRS(area.crs), facecolor="none", edgecolor="red")
-        ax.set_extent(poly.bounds)
+        poly = Polygon(list(zip(lx[::-1], ly[::-1])))  # make lat/lon counterclockwise for shapely
+        ax.add_geometries([poly], crs=cartopy.crs.CRS(area.crs), facecolor="none", edgecolor="red")
+        bounds = poly.buffer(5).bounds
+        ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
 
     coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
                                                      name="coastline",
@@ -129,7 +129,7 @@ def plot_area_def(area, feature_res="110m", fmt=None):
     elif fmt == "png":
         png_str = BytesIO()
         plt.savefig(png_str, format="png", bbox_inches="tight")
-        img_str = f"<img src='data:image/png;base64, {base64.encodestring(png_str.getvalue()).decode('utf-8')}'/>"
+        img_str = f"<img src='data:image/png;base64, {base64.encodebytes(png_str.getvalue()).decode('utf-8')}'/>"
         plt.close()
         return img_str
 
@@ -238,9 +238,13 @@ def swath_area_attrs_section(area):
     Returns:
         str: String of html.
 
+    Todo:
+        - Improve resolution estimation from lat/lon arrays. Maybe use CoordinateDefinition.geocentric_resolution?
+
     """
     if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
-        area_name = "Area name"
+        # Calculate and estimated resolution from lats/lons in meter
+        area_name = "Arbitrary Swath"
         resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
         resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
         resolution = np.mean(np.array([resolution_x, resolution_y]))
@@ -251,6 +255,7 @@ def swath_area_attrs_section(area):
         lon_attrs = area.lons.attrs
         lat_attrs = area.lats.attrs
 
+        # use resolution from lat/lons dataarray attributes -> are these always set? -> Maybe try/except?
         area_name = f"{lon_attrs.get('sensor')} swath"
         resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
         area_units = "m"
