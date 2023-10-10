@@ -39,7 +39,7 @@ from pyresample import CHUNK_SIZE
 from pyresample.geometry import (
     AreaDefinition,
     SwathDefinition,
-    get_geostationary_bounding_box_in_lonlats,
+    _get_geostationary_bounding_box,
 )
 from pyresample.gradient._gradient_search import (
     one_step_gradient_indices,
@@ -376,8 +376,9 @@ def _check_input_coordinates(dst_x, dst_y,
 def get_border_lonlats(geo_def: AreaDefinition):
     """Get the border x- and y-coordinates."""
     if geo_def.is_geostationary:
-        lon_b, lat_b = get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
+        lon_b, lat_b = geo_def.get_bbox_lonlats(3600)
     else:
+        # TODO: lon_b, lat_b = geo_def.get_bbox_lonlats()
         lons, lats = geo_def.get_boundary_lonlats()
         lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))
         lat_b = np.concatenate((lats.side1, lats.side2, lats.side3, lats.side4))

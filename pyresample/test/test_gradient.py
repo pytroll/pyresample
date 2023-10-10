@@ -607,7 +607,7 @@ def test_get_border_lonlats_geos():
     from pyresample.gradient import get_border_lonlats
     geo_def = AreaDefinition("", "", "",
                              "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
-    with mock.patch("pyresample.gradient.get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
+    with mock.patch("pyresample.gradient._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
         get_geostationary_bounding_box.return_value = 1, 2
         res = get_border_lonlats(geo_def)
     assert res == (1, 2)
