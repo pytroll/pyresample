@@ -26,9 +26,9 @@ from pyproj import CRS
 from pyresample.geometry import AreaDefinition as LegacyAreaDefinition  # noqa
 from pyresample.geometry import (  # noqa
     DynamicAreaDefinition,
+    _get_geostationary_bounding_box_in_lonlats,
     get_full_geostationary_bounding_box_in_proj_coords,
     get_geostationary_angle_extent,
-    _get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
     ignore_pyproj_proj_warnings,
 )
