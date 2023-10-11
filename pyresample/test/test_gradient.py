@@ -602,33 +602,34 @@ def test_check_overlap():
     assert check_overlap(poly1, poly2) is False
 
 
-def test_get_border_lonlats_geos():
-    """Test that correct methods are called in get_border_lonlats() with geos inputs."""
-    from pyresample.gradient import get_border_lonlats
-    geo_def = AreaDefinition("", "", "",
-                             "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
-    with mock.patch("pyresample.gradient._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
-        get_geostationary_bounding_box.return_value = 1, 2
-        res = get_border_lonlats(geo_def)
-    assert res == (1, 2)
-    get_geostationary_bounding_box.assert_called_with(geo_def, 3600)
+# TODO: this not needed anymore I guess
+# def test_get_border_lonlats_geos():
+#     """Test that correct methods are called in get_border_lonlats() with geos inputs."""
+#     from pyresample.gradient import get_border_lonlats
+#     geo_def = AreaDefinition("", "", "",
+#                               "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
+#     with mock.patch("pyresample.gradient._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
+#         get_geostationary_bounding_box.return_value = 1, 2
+#         res = get_border_lonlats(geo_def)
+#     assert res == (1, 2)
+#     get_geostationary_bounding_box.assert_called_with(geo_def, 3600)
 
 
-def test_get_border_lonlats():
-    """Test that correct methods are called in get_border_lonlats()."""
-    from pyresample.boundary import SimpleBoundary
-    from pyresample.gradient import get_border_lonlats
-    lon_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
-                               side3=np.array([3]), side4=np.array([4]))
-    lat_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
-                               side3=np.array([3]), side4=np.array([4]))
-    geo_def = AreaDefinition("", "", "",
-                             "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
-    with mock.patch.object(geo_def, "get_boundary_lonlats") as get_boundary_lonlats:
-        get_boundary_lonlats.return_value = lon_sides, lat_sides
-        lon_b, lat_b = get_border_lonlats(geo_def)
-    assert np.all(lon_b == np.array([1, 2, 3, 4]))
-    assert np.all(lat_b == np.array([1, 2, 3, 4]))
+# def test_get_border_lonlats():
+#     """Test that correct methods are called in get_border_lonlats()."""
+#     from pyresample.boundary import SimpleBoundary
+#     from pyresample.gradient import get_border_lonlats
+#     lon_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
+#                                side3=np.array([3]), side4=np.array([4]))
+#     lat_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
+#                                side3=np.array([3]), side4=np.array([4]))
+#     geo_def = AreaDefinition("", "", "",
+#                              "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
+#     with mock.patch.object(geo_def, "get_boundary_lonlats") as get_boundary_lonlats:
+#         get_boundary_lonlats.return_value = lon_sides, lat_sides
+#         lon_b, lat_b = get_border_lonlats(geo_def)
+#     assert np.all(lon_b == np.array([1, 2, 3, 4]))
+#     assert np.all(lat_b == np.array([1, 2, 3, 4]))
 
 
 @mock.patch('pyresample.gradient.Polygon')

@@ -30,6 +30,7 @@ from pyresample.future.geometry.area import (
     get_full_geostationary_bounding_box_in_proj_coords,
     get_geostationary_angle_extent,
     get_geostationary_bounding_box_in_proj_coords,
+    _get_geostationary_bounding_box_in_lonlats,
     ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
@@ -1492,8 +1493,7 @@ class TestGeostationaryTools:
 
     def test_get_geostationary_bbox_works_with_truncated_area(self, truncated_geos_area):
         """Ensure the geostationary bbox works when truncated."""
-        lon, lat = truncated_geos_area.get_bbox_lonlats(20)
-
+        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
         expected_lon = np.array(
             [-64.24072434653284, -68.69662326361153, -65.92516214783112, -60.726360278290336,
              -47.39851775032484, 9.500000000000018, 66.39851775032487, 79.72636027829033,
@@ -1523,13 +1523,13 @@ class TestGeostationaryTools:
 
     def test_get_geostationary_bbox_does_not_contain_inf(self, truncated_geos_area):
         """Ensure the geostationary bbox does not contain np.inf."""
-        lon, lat = truncated_geos_area.get_bbox_lonlats(20)
+        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
         assert not any(np.isinf(lon))
         assert not any(np.isinf(lat))
 
     def test_get_geostationary_bbox_returns_empty_lonlats_in_space(self, truncated_geos_area_in_space):
         """Ensure the geostationary bbox is empty when in space."""
-        lon, lat = truncated_geos_area_in_space.get_bbox_lonlats(20)
+        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area_in_space, 20)
 
         assert len(lon) == 0
         assert len(lat) == 0
@@ -1546,7 +1546,7 @@ class TestGeostationaryTools:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geos_area.get_bbox_lonlats(20)
+        lon, lat = _get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         expected_lon = np.array([-78.19662326, -75.42516215, -70.22636028,
                                  -56.89851775, 0., 56.89851775, 70.22636028,
                                  75.42516215, 78.19662326, 79.23372832, 78.19662326,
@@ -1571,7 +1571,7 @@ class TestGeostationaryTools:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = geos_area.get_bbox_lonlats(20)
+        lon, lat = _get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         np.testing.assert_allclose(lon, expected_lon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
