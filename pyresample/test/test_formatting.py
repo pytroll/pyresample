@@ -62,7 +62,7 @@ def test_plot_area_def_w_swath_def(create_test_swath):
 def test_area_def_cartopy_missing(monkeypatch, stere_area):  # noqa F811
     """Test missing cartopy installation."""
     with monkeypatch.context() as m:
-        m.setattr(pyresample._formatting_html, "cart", False)
+        m.setattr(pyresample._formatting_html, "cartopy", None)
 
         area = stere_area
         assert "Note: If cartopy is installed a display of the area can be seen here" in area._repr_html_()
