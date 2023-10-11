@@ -374,7 +374,7 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
     area_def : object
         AreaDefinition object
     """
-    return create_area_def(area_id, proj_dict, description=area_name, proj_id=proj_id,
+    return create_area_def(area_id, proj4_args, description=area_name, proj_id=proj_id,
                            shape=(height, width), area_extent=area_extent)
 
 
