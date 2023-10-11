@@ -18,6 +18,7 @@ import uuid
 from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
+from typing import Literal, Optional, Union
 
 import numpy as np
 
@@ -25,9 +26,8 @@ import pyresample.geometry as geom
 
 try:
     import cartopy
-    cart = True
 except ModuleNotFoundError:
-    cart = False
+    cartopy = None
 
 try:
     import xarray as xr
@@ -62,22 +62,22 @@ def _icon(icon_name):
     )
 
 
-def plot_area_def(area, feature_res="110m", fmt=None):
+def plot_area_def(area: Union['AreaDefinition', 'SwathDefinition'], # noqa F821
+                  feature_res: Optional[str] = "110m",
+                  fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
     """Plot area.
 
-    CURRENTLY feature_res is not used instead cartopy auto scaled features are added.
-
     Args:
-        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`])
-        feature_res (str):
+        area : Area/Swath to plot.
+        feature_res :
             Resolution of the features added to the map. Argument is handed over
             to `scale` parameter in cartopy.feature.
-        fmt (str): Output format of the plot. The output is the string representation of
+        fmt : Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg or png.
             If None (default) plot is just shown.
 
     Returns:
-        str: svg or png image as string.
+        svg or png image as string.
     """
     import base64
     from io import BytesIO, StringIO
@@ -135,18 +135,21 @@ def plot_area_def(area, feature_res="110m", fmt=None):
         plt.show()
 
 
-def collapsible_section(name, inline_details="", details="", enabled=True, collapsed=False, icon=None):
+def collapsible_section(name: str, inline_details: Optional[str] = "", details: Optional[str] = "",
+                        enabled: Optional[bool] = True, collapsed: Optional[bool] = False,
+                        icon: Optional[str] = None) -> str:
     """Create a collapsible section.
 
     Args:
-      name (str): Name of the section
-      inline_details (str): Information to show when section is collapsed. Default nothing.
-      details (str): Details to show when section is expanded.
-      enabled (boolean): Is collapsing enabled. Default True.
-      collapsed (boolean): Is the section collapsed on first show. Default False.
+      name : Name of the section
+      inline_details : Information to show when section is collapsed. Default nothing.
+      details : Details to show when section is expanded.
+      enabled : Is collapsing enabled. Default True.
+      collapsed  Is the section collapsed on first show. Default False.
+      icon : Icon to use for collapsible section.
 
     Returns:
-      str: Html div structure for collapsible section.
+      Html div structure for collapsible section.
 
     """
     # "unique" id to expand/collapse the section
@@ -169,20 +172,19 @@ def collapsible_section(name, inline_details="", details="", enabled=True, colla
             )
 
 
-def map_section(area):
+def map_section(area: Union['AreaDefinition', 'SwathDefinition']) -> str: # noqa F821
     """Create html for map section.
 
     Args:
-        area(Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.SwathDefinition`]):
-            Area definition or Swath definition.
+        area : AreaDefinition or SwathDefinition.
 
     Returns:
-        str: String of html.
+        Html with collapsible section with a cartopy plot.
 
     """
     map_icon = _icon("icon-globe")
 
-    if cart:
+    if cartopy:
         coll = collapsible_section("Map", details=plot_area_def(area, fmt="svg"), collapsed=True, icon=map_icon)
     else:
         coll = collapsible_section("Map",
@@ -192,15 +194,14 @@ def map_section(area):
     return f"{coll}"
 
 
-def proj_area_attrs_section(area):
+def proj_area_attrs_section(area: 'AreaDefinition') -> str: # noqa F821
     """Create html for attribute section based on an area Area.
 
     Args:
-        area (:class:`~pyresample.geometry.AreaDefinition`):
-            Area definition.
+        area : Area definition.
 
     Returns:
-        str: String of html.
+        Html with collapsible section of attributes of Area.
 
     """
     resolution_str = "/".join([str(round(x, 1)) for x in area.resolution])
@@ -227,14 +228,14 @@ def proj_area_attrs_section(area):
     return f"{coll}"
 
 
-def swath_area_attrs_section(area):
+def swath_area_attrs_section(area: 'SwathDefinition') -> str: # noqa F821
     """Create html for attribute section based on SwathDefinition.
 
     Args:
-        area (:class:`~pyresample.geometry.SwathDefinition`): Swath definition.
+        area : Swath definition.
 
     Returns:
-        str: String of html.
+        Html with collapsible section of swath attributes.
 
     Todo:
         - Improve resolution estimation from lat/lon arrays. Maybe use CoordinateDefinition.geocentric_resolution?
@@ -310,20 +311,20 @@ def swath_area_attrs_section(area):
     return f"{coll}"
 
 
-def area_repr(area, include_header=True, include_static_files=True):
+def area_repr(area: Union['AreaDefinition', 'SwathDefinition'], include_header: Optional[bool] = True, # noqa F821
+              include_static_files: Optional[bool] = True):
     """Return html repr of an AreaDefinition.
 
     Args:
-        area (Union[:class:`~pyresample.geometry.AreaDefinition`, :class:`~pyresample.geometry.AreaDefinition`]):
-            Area definition.
-        include_header (Optional[bool]): If true a header with object type will be included in
+        area : Area definition.
+        include_header : If true a header with object type will be included in
             the html. This is mainly intented for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
-        include_static_files (Optional[bool]): Load and include css and html needed for representation.
+        include_static_files : Load and include css and html needed for representation.
 
     Returns:
-        str: String of html.
+        Html.
 
     """
     if include_static_files:

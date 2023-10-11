@@ -861,14 +861,14 @@ def convert_def_to_yaml(def_area_file, yaml_area_file):
             yaml_file.write(area.create_areas_def())
 
 
-def generate_area_def_rst_list(area_file):
+def generate_area_def_rst_list(area_file: str) -> str:
     """Create rst list of available area definitions with overview plot.
 
     Args:
-        area_file (str): Path to area yaml file.
+        area_file : Path to area yaml file.
 
     Returns:
-        str: rst list formatted string.
+        rst list formatted string.
     """
     area_list = []
 
