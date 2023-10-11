@@ -326,16 +326,16 @@ class BaseDefinition:
         vertices_per_side = vertices_per_side or frequency
         if self.is_geostationary:
             lon_sides, lat_sides = self._get_geo_boundary_sides(vertices_per_side=vertices_per_side)
-        else: 
+        else:
             lon_sides, lat_sides = self._get_boundary_sides(self.get_lonlats, vertices_per_side)
         if force_clockwise and not self._corner_is_clockwise(
                 lon_sides[0][-2], lat_sides[0][-2],
-                lon_sides[0][-1], lat_sides[0][-1], 
+                lon_sides[0][-1], lat_sides[0][-1],
                 lon_sides[1][1], lat_sides[1][1]):
             # going counter-clockwise
             lon_sides, lat_sides = self._reverse_boundaries(lon_sides, lat_sides)
         return lon_sides, lat_sides
-    
+
 
     def _get_geo_boundary_sides(self, vertices_per_side=None):
         """Retrieve the boundary sides list for geostationary projections."""
@@ -349,10 +349,11 @@ class BaseDefinition:
         if (vertices_per_side % 2) != 0:
             vertices_per_side = vertices_per_side + 1
         lons, lats = _get_geostationary_bounding_box_in_lonlats(self, nb_points=vertices_per_side)
-        
+
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
-        # - TODO: _get_geostationary_bounding_box_in_lonlats now does not return nb_points ! 
-        side02_step = int(lons.shape[0] / 2) - 1 # 
+        # - TODO: _get_geostationary_bounding_box_in_lonlats now does not return nb_points !
+        # side02_step = int(vertices_per_side / 2) - 1 # old code
+        side02_step = int(lons.shape[0] / 2) - 1
         lon_sides = [lons[slice(0, side02_step + 1)],
                         lons[slice(side02_step, side02_step + 1 + 1)],
                         lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
@@ -2727,7 +2728,7 @@ def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
     try:
         if area_to_cover.is_geostationary:
             vertices_per_side = None
-        else: 
+        else:
             vertices_per_side = max(max(*area_to_cover.shape) // 100 + 1, 3)
         return area_to_cover.boundary(vertices_per_side=vertices_per_side, force_clockwise=True)
     except ValueError:
@@ -2837,8 +2838,8 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
       nb_points: Number of points on the polygon
     """
     warnings.warn("'get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
-                "'area.boundary().contour()' instead.",
-                DeprecationWarning, stacklevel=2)
+                  "'area.boundary().contour()' instead.",
+                  DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
 
@@ -2849,7 +2850,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
       nb_points: Number of points on the polygon
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
-                "'area.boundary().contour()' instead.",
+                  "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 

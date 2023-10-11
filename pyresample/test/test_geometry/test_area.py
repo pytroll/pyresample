@@ -1895,24 +1895,24 @@ class TestBoundary:
 
         # Check default boundary shape
         default_n_vertices = 50
-        boundary = areadef.boundary(frequency=None)
+        boundary = areadef.boundary(vertices_per_side=None)
         assert boundary.vertices.shape == (default_n_vertices, 2)
 
         # Check minimum boundary vertices
         n_vertices = 3
         minimum_n_vertices = 4
-        boundary = areadef.boundary(frequency=n_vertices)
+        boundary = areadef.boundary(vertices_per_side=n_vertices)
         assert boundary.vertices.shape == (minimum_n_vertices, 2)
 
-        # Check odd frequency number
+        # Check odd number of vertices per side
         # - Rounded to the sequent even number (to construct the sides)
         n_odd_vertices = 5
-        boundary = areadef.boundary(frequency=n_odd_vertices)
+        boundary = areadef.boundary(vertices_per_side=n_odd_vertices)
         assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
 
         # Check boundary vertices
         n_vertices = 10
-        boundary = areadef.boundary(frequency=n_vertices, force_clockwise=False)
+        boundary = areadef.boundary(vertices_per_side=n_vertices, force_clockwise=False)
 
         # Check boundary vertices is in correct order
         expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],

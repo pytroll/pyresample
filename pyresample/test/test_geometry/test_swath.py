@@ -152,7 +152,7 @@ class TestSwathBboxLonLats:
 
     def test_swath_def_bbox_decimated(self, create_test_swath):
         swath_def = _gen_swath_def_numpy(create_test_swath)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=None)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(vertices_per_side=None)
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         assert len(bbox_lons[0]) == 10
@@ -160,7 +160,7 @@ class TestSwathBboxLonLats:
         assert len(bbox_lons[2]) == 10
         assert len(bbox_lons[3]) == 50
 
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=5)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(vertices_per_side=5)
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         assert len(bbox_lons[0]) == 5
