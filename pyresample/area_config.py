@@ -360,8 +360,8 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
         Description of area
     proj_id : str
         ID of projection
-    proj4_args : list, dict, or str
-        Proj4 arguments as list of arguments or string
+    proj4_args : dict, CRS, or str
+        Projection information passed to pyproj's CRS object
     width : int
         Number of pixel in x dimension
     height : int
@@ -374,7 +374,6 @@ def get_area_def(area_id, area_name, proj_id, proj4_args, width, height, area_ex
     area_def : object
         AreaDefinition object
     """
-    proj_dict = _get_proj4_args(proj4_args)
     return create_area_def(area_id, proj_dict, description=area_name, proj_id=proj_id,
                            shape=(height, width), area_extent=area_extent)
 
