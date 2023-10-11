@@ -27,10 +27,10 @@ import pyresample
 from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import (
+    _get_geostationary_bounding_box_in_lonlats,
     get_full_geostationary_bounding_box_in_proj_coords,
     get_geostationary_angle_extent,
     get_geostationary_bounding_box_in_proj_coords,
-    _get_geostationary_bounding_box_in_lonlats,
     ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
