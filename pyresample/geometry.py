@@ -349,8 +349,10 @@ class BaseDefinition:
         if (vertices_per_side % 2) != 0:
             vertices_per_side = vertices_per_side + 1
         lons, lats = _get_geostationary_bounding_box_in_lonlats(self, nb_points=vertices_per_side)
+        
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
-        side02_step = int(vertices_per_side / 2) - 1
+        # - TODO: _get_geostationary_bounding_box_in_lonlats now does not return nb_points ! 
+        side02_step = int(lons.shape[0] / 2) - 1 # 
         lon_sides = [lons[slice(0, side02_step + 1)],
                         lons[slice(side02_step, side02_step + 1 + 1)],
                         lons[slice(side02_step + 1, side02_step * 2 + 1 + 1)],
@@ -2814,7 +2816,6 @@ def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     y = -np.sin(points_around) * (y_max_angle - 0.0001)
     x *= h
     y *= h
-
     return x, y
 
 
