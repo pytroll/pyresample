@@ -286,7 +286,7 @@ class BaseDefinition:
 
     def get_bbox_lonlats(self, vertices_per_side: Optional[int] = None, force_clockwise: bool = True,
                          frequency: Optional[int] = None) -> tuple:
-        """Return the bounding box lons and lats.
+        """Return the bounding box lons and lats sides.
 
         Args:
             vertices_per_side:
@@ -2836,8 +2836,8 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     Args:
       nb_points: Number of points on the polygon
     """
-    warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
-                "'area.get_bbox_lonlats' instead.",
+    warnings.warn("'get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
+                "'area.boundary().contour()' instead.",
                 DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
@@ -2849,7 +2849,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
       nb_points: Number of points on the polygon
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
-                "'area.get_bbox_lonlats' instead.",
+                "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 

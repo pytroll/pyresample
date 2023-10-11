@@ -375,7 +375,7 @@ def _check_input_coordinates(dst_x, dst_y,
 
 def get_border_lonlats(geo_def: AreaDefinition):
     """Get the border x- and y-coordinates."""
-    # TODO: we could use geo_def.boundary()
+    # TODO: we could use geo_def.boundary().contour() here
     if geo_def.is_geostationary:
         lon_b, lat_b = _get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
     else:
