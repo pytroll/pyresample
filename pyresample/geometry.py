@@ -329,10 +329,11 @@ class BaseDefinition:
         else: 
             lon_sides, lat_sides = self._get_boundary_sides(self.get_lonlats, vertices_per_side)
         if force_clockwise and not self._corner_is_clockwise(
-                lon_sides[0][-2], lat_sides[0][-2], lon_sides[0][-1], 
-                lat_sides[0][-1], lon_sides[1][1], lat_sides[1][1]):
+                lon_sides[0][-2], lat_sides[0][-2],
+                lon_sides[0][-1], lat_sides[0][-1], 
+                lon_sides[1][1], lat_sides[1][1]):
             # going counter-clockwise
-            lon_sides, lats = self._reverse_boundaries(lon_sides, lat_sides)
+            lon_sides, lat_sides = self._reverse_boundaries(lon_sides, lat_sides)
         return lon_sides, lat_sides
     
 
