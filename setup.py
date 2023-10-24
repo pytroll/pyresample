@@ -48,8 +48,6 @@ for extra_deps in extras_require.values():
     all_extras.extend(extra_deps)
 extras_require['all'] = list(set(all_extras))
 
-setup_requires = ['numpy>=1.10.0', 'cython']
-
 if sys.platform.startswith("win"):
     extra_compile_args = []
 else:
