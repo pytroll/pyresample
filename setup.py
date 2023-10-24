@@ -32,7 +32,7 @@ if sys.version_info < (3, 10):
     requirements.append('importlib_metadata')
 
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixtures', 'shapely']
+                 'pytest-lazy-fixtures', 'shapely', 'odc-geo']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
