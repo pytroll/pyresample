@@ -25,6 +25,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
+import pyproj
 from pyproj import CRS
 
 import pyresample
@@ -232,6 +233,7 @@ class TestMisc(unittest.TestCase):
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
         self.assertDictEqual(proj_dict, proj_dict2)
 
+    @pytest.mark.skipif(pyproj.__proj_version__ == "9.3.0", reason="Bug in PROJ causes inequality in EPSG comparison")
     def test_def2yaml_converter(self):
         import tempfile
 
