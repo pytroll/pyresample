@@ -24,8 +24,8 @@ from timeit import timeit
 from unittest import mock
 
 import numpy as np
-import pytest
 import pyproj
+import pytest
 from pyproj import CRS
 
 import pyresample
