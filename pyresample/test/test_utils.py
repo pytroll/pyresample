@@ -575,6 +575,82 @@ def _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat):
     assert cf_info['y']['varname'] == 'lat'
     assert cf_info['y']['first'] == -90.
 
+    def test_load_from_crs_wkt(self):
+        """Test that we can load with CRS WKT only.
+
+        Test that we can reconstruct the area when the grid mapping variable
+        only contains the CRS WKT attribute.  This is the case for
+        equirectangular projections, for example, ``pyproj.CRS(4087).to_cf()``.
+
+        See also https://github.com/pytroll/pyresample/issues/460.
+        """
+        import xarray as xr
+
+        from pyresample import create_area_def
+        from pyresample.utils import load_cf_area
+
+        width = height = 100
+        crs_wkt = """
+PROJCRS["WGS 84 / World Equidistant Cylindrical",
+    BASEGEOGCRS["WGS 84",
+        ENSEMBLE["World Geodetic System 1984 ensemble",
+            MEMBER["World Geodetic System 1984 (Transit)"],
+            MEMBER["World Geodetic System 1984 (G730)"],
+            MEMBER["World Geodetic System 1984 (G873)"],
+            MEMBER["World Geodetic System 1984 (G1150)"],
+            MEMBER["World Geodetic System 1984 (G1674)"],
+            MEMBER["World Geodetic System 1984 (G1762)"],
+            MEMBER["World Geodetic System 1984 (G2139)"],
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]],
+            ENSEMBLEACCURACY[2.0]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4326]],
+    CONVERSION["World Equidistant Cylindrical",
+        METHOD["Equidistant Cylindrical",
+            ID["EPSG",1028]],
+        PARAMETER["Latitude of 1st standard parallel",0,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8823]],
+        PARAMETER["Longitude of natural origin",0,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["False easting",0,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",0,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["easting (X)",east,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["northing (Y)",north,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Graticule coordinates expressed in simple Cartesian form."],
+        AREA["World."],
+        BBOX[-90,-180,90,180]],
+    ID["EPSG",4087]]
+"""
+        ds = xr.Dataset(
+            {"data": (
+                ('y', 'x'),
+                np.zeros((width, height)),
+                {"grid_mapping": "area"}),
+             "area": (
+                (),
+                 0,
+                 {"crs_wkt": crs_wkt, "long_name": "test"})},
+            coords={'x': np.linspace(-7049500, -6950500, width),
+                    'y': np.linspace(-49500, 49500, height)})
+        (adef, cf_info) = load_cf_area(ds)
+        assert adef == create_area_def(
+            "test", 4087, resolution=1000, width=100,
+            height=100, center=(-7000000, 0))
+
 
 class TestLoadCFArea_Private(unittest.TestCase):
     """Test private routines involved in loading an AreaDefinition from netCDF/CF files."""
