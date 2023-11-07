@@ -1978,12 +1978,13 @@ class AreaDefinition(_ProjectionDefinition):
         See: https://odc-geo.readthedocs.io/en/latest/
         """
         try:
+            from odc.geo import Resolution
             from odc.geo.geobox import GeoBox
         except ModuleNotFoundError:
             raise ModuleNotFoundError("Please install 'odc-geo' to use this method.")
 
         return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs,
-                                resolution=np.mean([self.pixel_size_x, self.pixel_size_y]), tight=True)
+                                resolution=Resolution(x=self.pixel_size_x, y=-self.pixel_size_y), tight=True)
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area.
