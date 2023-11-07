@@ -403,6 +403,16 @@ class TestAreaDefinition:
         latlong_crs = area_def.to_cartopy_crs()
         np.testing.assert_allclose(latlong_crs.bounds, [-180, 180, -90, 90])
 
+    def test_to_odc_geobox_odc_missing(self, monkeypatch, stere_area):
+        """Test odc-geo not installed."""
+        area = stere_area
+
+        with monkeypatch.context() as m:
+            m.setattr(pyresample.geometry, "odc_geo", None)
+
+            with pytest.raises(ModuleNotFoundError):
+                area.to_odc_geobox()
+
     def test_to_odc_geobox(self, stere_area, create_test_area):
         """Test conversion from area definition to odc GeoBox."""
         from odc.geo.geobox import GeoBox

@@ -56,6 +56,11 @@ try:
 except ImportError:
     da = None
 
+try:
+    import odc.geo as odc_geo
+except ModuleNotFoundError:
+    odc_geo = None
+
 from pyproj import CRS
 from pyproj.enums import TransformDirection
 
@@ -1977,14 +1982,12 @@ class AreaDefinition(_ProjectionDefinition):
 
         See: https://odc-geo.readthedocs.io/en/latest/
         """
-        try:
-            from odc.geo import Resolution
-            from odc.geo.geobox import GeoBox
-        except ModuleNotFoundError:
+        if odc_geo is None:
             raise ModuleNotFoundError("Please install 'odc-geo' to use this method.")
 
-        return GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs,
-                                resolution=Resolution(x=self.pixel_size_x, y=-self.pixel_size_y), tight=True)
+        return odc_geo.geobox.GeoBox.from_bbox(bbox=self.area_extent, crs=self.crs,
+                                               resolution=odc_geo.Resolution(x=self.pixel_size_x, y=-self.pixel_size_y),
+                                               tight=True)
 
     def create_areas_def(self):
         """Generate YAML formatted representation of this area.
