@@ -15,6 +15,7 @@
 """Test AreaDefinition objects."""
 import io
 import sys
+from glob import glob
 from unittest.mock import MagicMock, patch
 
 import dask.array as da
@@ -1839,6 +1840,25 @@ class TestAreaDefGetAreaSlices:
             area_extent=(-18000000.0, -9000000.0, 18000000.0, 9000000.0))
         with pytest.raises(NotImplementedError):
             area_def.get_area_slices(area_to_cover)
+
+    def test_area_slices_caching(self, create_test_area, tmp_path):
+        """Check that area slices can be cached."""
+        src_area = create_test_area(dict(proj="utm", zone=33),
+                                    10980, 10980,
+                                    (499980.0, 6490200.0, 609780.0, 6600000.0))
+        crop_area = create_test_area({'proj': 'latlong'},
+                                     100, 100,
+                                     (15.9689, 58.5284, 16.4346, 58.6995))
+        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=False):
+            assert len(glob(str(tmp_path / "geometry_slices" / "*.json"))) == 0
+            slice_x, slice_y = src_area.get_area_slices(crop_area)
+            assert len(glob(str(tmp_path / "geometry_slices" / "*.json"))) == 0
+        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=True):
+            assert len(glob(str(tmp_path / "geometry_slices" / "*.json"))) == 0
+            slice_x, slice_y = src_area.get_area_slices(crop_area)
+            assert len(glob(str(tmp_path / "geometry_slices" / "*.json"))) == 1
+        assert slice_x == slice(5630, 8339)
+        assert slice_y == slice(9261, 10980)
 
 
 class TestBoundary:

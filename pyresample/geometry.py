@@ -34,6 +34,7 @@ from pyproj import Geod, Proj
 from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
+from pyresample._caching import JSONCache
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import Boundary, SimpleBoundary
@@ -2576,70 +2577,9 @@ class AreaDefinition(_ProjectionDefinition):
                       "instead.", DeprecationWarning, stacklevel=2)
         return proj4_dict_to_str(self.proj_dict)
 
-    def _get_slice_starts_stops(self, area_to_cover):
-        """Get x and y start and stop points for slicing."""
-        llx, lly, urx, ury = area_to_cover.area_extent
-        x, y = self.get_array_coordinates_from_projection_coordinates([llx, urx], [lly, ury])
-
-        # we use `round` because we want the *exterior* of the pixels to contain the area_to_cover's area extent.
-        if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
-            xstart = max(0, round(x[1]))
-            xstop = min(self.width, round(x[0]) + 1)
-        else:
-            xstart = max(0, round(x[0]))
-            xstop = min(self.width, round(x[1]) + 1)
-        if (self.area_extent[1] > self.area_extent[3]) ^ (lly > ury):
-            ystart = max(0, round(y[0]))
-            ystop = min(self.height, round(y[1]) + 1)
-        else:
-            ystart = max(0, round(y[1]))
-            ystop = min(self.height, round(y[0]) + 1)
-
-        return xstart, xstop, ystart, ystop
-
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
-        if not isinstance(area_to_cover, AreaDefinition):
-            raise NotImplementedError('Only AreaDefinitions can be used')
-
-        # Intersection only required for two different projections
-        proj_def_to_cover = area_to_cover.crs
-        proj_def = self.crs
-        if proj_def_to_cover == proj_def:
-            logger.debug('Projections for data and slice areas are'
-                         ' identical: %s',
-                         proj_def_to_cover)
-            # Get slice parameters
-            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(area_to_cover)
-
-            x_slice = check_slice_orientation(slice(xstart, xstop))
-            y_slice = check_slice_orientation(slice(ystart, ystop))
-            x_slice = _ensure_integer_slice(x_slice)
-            y_slice = _ensure_integer_slice(y_slice)
-            return x_slice, y_slice
-
-        data_boundary = _get_area_boundary(self)
-        area_boundary = _get_area_boundary(area_to_cover)
-        intersection = data_boundary.contour_poly.intersection(
-            area_boundary.contour_poly)
-        if intersection is None:
-            logger.debug('Cannot determine appropriate slicing. '
-                         "Data and projection area do not overlap.")
-            raise NotImplementedError
-        x, y = self.get_array_indices_from_lonlat(
-            np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
-        x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
-        y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
-        x_slice = _ensure_integer_slice(x_slice)
-        y_slice = _ensure_integer_slice(y_slice)
-        if shape_divisible_by is not None:
-            x_slice = _make_slice_divisible(x_slice, self.width,
-                                            factor=shape_divisible_by)
-            y_slice = _make_slice_divisible(y_slice, self.height,
-                                            factor=shape_divisible_by)
-
-        return (check_slice_orientation(x_slice),
-                check_slice_orientation(y_slice))
+        return get_area_slices(self, area_to_cover, shape_divisible_by)
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -2738,6 +2678,77 @@ class AreaDefinition(_ProjectionDefinition):
             raise RuntimeError("Could not calculate geocentric resolution")
         # return np.max(np.concatenate(vert_dist, hor_dist))  # alternative to histogram
         return res
+
+
+@JSONCache()
+def get_area_slices(
+        src_area: AreaDefinition,
+        area_to_cover: AreaDefinition,
+        shape_divisible_by: int | None = None
+) -> tuple[slice, slice]:
+    """Compute the slice to read based on an `area_to_cover`."""
+    if not isinstance(area_to_cover, AreaDefinition):
+        raise NotImplementedError('Only AreaDefinitions can be used')
+
+    # Intersection only required for two different projections
+    proj_def_to_cover = area_to_cover.crs
+    proj_def = src_area.crs
+    if proj_def_to_cover == proj_def:
+        logger.debug('Projections for data and slice areas are identical: %s',
+                     proj_def_to_cover)
+        # Get slice parameters
+        xstart, xstop, ystart, ystop = _get_slice_starts_stops(src_area, area_to_cover)
+
+        x_slice = check_slice_orientation(slice(xstart, xstop))
+        y_slice = check_slice_orientation(slice(ystart, ystop))
+        x_slice = _ensure_integer_slice(x_slice)
+        y_slice = _ensure_integer_slice(y_slice)
+        return x_slice, y_slice
+
+    data_boundary = _get_area_boundary(src_area)
+    area_boundary = _get_area_boundary(area_to_cover)
+    intersection = data_boundary.contour_poly.intersection(
+        area_boundary.contour_poly)
+    if intersection is None:
+        logger.debug('Cannot determine appropriate slicing. '
+                     "Data and projection area do not overlap.")
+        raise NotImplementedError
+    x, y = src_area.get_array_indices_from_lonlat(
+        np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
+    x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
+    y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+    x_slice = _ensure_integer_slice(x_slice)
+    y_slice = _ensure_integer_slice(y_slice)
+    if shape_divisible_by is not None:
+        x_slice = _make_slice_divisible(x_slice, src_area.width,
+                                        factor=shape_divisible_by)
+        y_slice = _make_slice_divisible(y_slice, src_area.height,
+                                        factor=shape_divisible_by)
+
+    return (check_slice_orientation(x_slice),
+            check_slice_orientation(y_slice))
+
+
+def _get_slice_starts_stops(src_area, area_to_cover):
+    """Get x and y start and stop points for slicing."""
+    llx, lly, urx, ury = area_to_cover.area_extent
+    x, y = src_area.get_array_coordinates_from_projection_coordinates([llx, urx], [lly, ury])
+
+    # we use `round` because we want the *exterior* of the pixels to contain the area_to_cover's area extent.
+    if (src_area.area_extent[0] > src_area.area_extent[2]) ^ (llx > urx):
+        xstart = max(0, round(x[1]))
+        xstop = min(src_area.width, round(x[0]) + 1)
+    else:
+        xstart = max(0, round(x[0]))
+        xstop = min(src_area.width, round(x[1]) + 1)
+    if (src_area.area_extent[1] > src_area.area_extent[3]) ^ (lly > ury):
+        ystart = max(0, round(y[0]))
+        ystop = min(src_area.height, round(y[1]) + 1)
+    else:
+        ystart = max(0, round(y[1]))
+        ystop = min(src_area.height, round(y[0]) + 1)
+
+    return xstart, xstop, ystart, ystop
 
 
 def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
