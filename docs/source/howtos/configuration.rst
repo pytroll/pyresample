@@ -76,6 +76,56 @@ Or for specific blocks of code:
 Similarly, if you need to access one of the values you can
 use the ``pyresample.config.get`` method.
 
+Cache Directory
+^^^^^^^^^^^^^^^
+
+* **Environment variable**: ``PYRESAMPLE_CACHE_DIR``
+* **YAML/Config Key**: ``cache_dir``
+* **Default**: See below
+
+Directory where any files cached by Pyresample will be stored. This
+directory is not necessarily cleared out by Pyresample, but is rarely used
+without explicitly being enabled by the user. This
+defaults to a different path depending on your operating system following
+the `platformdirs <https://github.com/platformdirs/platformdirs#example-output>`_
+"user cache dir".
+
+.. note::
+
+   Some resampling algorithms provide caching functionality when the user
+   provides a directory to cache to. These resamplers do not currently use this
+   configuration option.
+
+.. _config_cache_sensor_angles_setting:
+
+Cache Geometry Slices
+^^^^^^^^^^^^^^^^^^^^^
+
+* **Environment variable**: ``PYRESAMPLE_CACHE_GEOM_SLICES``
+* **YAML/Config Key**: ``cache_geom_slices``
+* **Default**: ``False``
+
+Whether or not generated slices for geometry objects are cached to disk.
+These slices are used in various parts of Pyresample like
+cropping or overlap calculations including those performed in some resampling
+algorithms. At the time of writing this is only performed on
+``AreaDefinition`` objects through their
+:meth:`~pyresample.geometry.AreaDefinition.get_area_slices` method.
+Slices are stored in ``cache_dir`` (see above).
+Unlike other caching performed in Pyresample where potentially large arrays
+are cached, this option saves a pair of ``slice`` objects that consist of
+only 3 integers each. This makes the amount of space used in the cache very
+small for many cached results.
+
+When setting this as an environment variable, this should be set with the
+string equivalent of the Python boolean values ``="True"`` or ``="False"``.
+
+.. warning::
+
+    This caching does not limit the number of entries nor does it expire old
+    entries. It is up to the user to manage the contents of the cache
+    directory.
+
 Feature Flags
 -------------
 

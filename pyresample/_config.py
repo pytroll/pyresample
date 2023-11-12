@@ -36,6 +36,8 @@ _CONFIG_PATHS = [
 config = Config(
     "pyresample",
     defaults=[{
+        "cache_dir": platformdirs.user_cache_dir("pyresample", "pytroll"),
+        "cache_geom_slices": False,
         "features": {
             "future_geometries": False,
         },
