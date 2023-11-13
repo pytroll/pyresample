@@ -34,7 +34,7 @@ from pyproj import Geod, Proj
 from pyproj.aoi import AreaOfUse
 
 from pyresample import CHUNK_SIZE
-from pyresample._caching import JSONCache
+from pyresample._caching import cache_to_json_if
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import Boundary, SimpleBoundary
@@ -2680,7 +2680,7 @@ class AreaDefinition(_ProjectionDefinition):
         return res
 
 
-@JSONCache()
+@cache_to_json_if("cache_geom_slices")
 def get_area_slices(
         src_area: AreaDefinition,
         area_to_cover: AreaDefinition,
