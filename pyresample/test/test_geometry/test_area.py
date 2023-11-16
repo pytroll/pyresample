@@ -882,6 +882,7 @@ class TestAreaDefinition:
 
     def test_get_slice_starts_stops(self, create_test_area):
         """Check area slice end-points."""
+        from pyresample.future.geometry._subset import _get_slice_starts_stops
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
@@ -895,25 +896,25 @@ class TestAreaDefinition:
         # Source and target have the same orientation
         area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
         source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
+        res = _get_slice_starts_stops(source_area, target_area)
         assert res == expected
 
         # Source is flipped in X direction
         area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
         source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
+        res = _get_slice_starts_stops(source_area, target_area)
         assert res == expected
 
         # Source is flipped in Y direction
         area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
         source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
+        res = _get_slice_starts_stops(source_area, target_area)
         assert res == expected
 
         # Source is flipped in both X and Y directions
         area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
         source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
+        res = _get_slice_starts_stops(source_area, target_area)
         assert res == expected
 
     def test_proj_str(self, create_test_area):
@@ -1251,7 +1252,7 @@ class TestMakeSliceDivisible:
 
     def test_make_slice_divisible(self):
         """Test that making area shape divisible by a given factor works."""
-        from pyresample.geometry import _make_slice_divisible
+        from pyresample.future.geometry._subset import _make_slice_divisible
 
         # Divisible by 2
         sli = slice(10, 21)
