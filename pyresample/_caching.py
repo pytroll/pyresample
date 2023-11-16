@@ -6,7 +6,8 @@ throughout pyresample.
 """
 import hashlib
 import json
-import shutil
+import os
+import warnings
 from functools import update_wrapper
 from glob import glob
 from pathlib import Path
@@ -27,46 +28,71 @@ class JSONCacheHelper:
         self._callable = func
         self._cache_config_key = cache_config_key
         self._cache_version = cache_version
+        self._uncacheable_arg_type_names = ("",)
 
-    def cache_clear(self, cache_dir: str | None = None):
+    @staticmethod
+    def cache_clear(cache_dir: str | None = None):
         """Remove all on-disk files associated with this function.
 
         Intended to mimic the :func:`functools.cache` behavior.
         """
-        cache_dir = self._get_cache_dir_from_config(cache_dir=cache_dir, cache_version="*")
-        for zarr_dir in glob(str(cache_dir / "*.json")):
-            shutil.rmtree(zarr_dir, ignore_errors=True)
+        cache_dir = _get_cache_dir_from_config(cache_dir=cache_dir, cache_version="*")
+        for json_file in glob(str(cache_dir / "*.json")):
+            os.remove(json_file)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args):
         """Call decorated function and cache the result to JSON."""
-        if not pyresample.config.get(self._cache_config_key, False):
-            return self._callable(*args, **kwargs)
+        should_cache = pyresample.config.get(self._cache_config_key, False)
+        if not should_cache:
+            return self._callable(*args)
 
-        existing_hash = hashlib.sha1()
-        # TODO: exclude SwathDefinition for hashing reasons
-        hashable_args = [hash(arg) if arg.__class__.__name__ in ("AreaDefinition",) else arg for arg in args]
-        hashable_args += sorted(kwargs.items())
-        existing_hash.update(json.dumps(tuple(hashable_args)).encode("utf8"))
-        arg_hash = existing_hash.hexdigest()
-        base_cache_dir = self._get_cache_dir_from_config(cache_version=self._cache_version)
+        try:
+            arg_hash = _hash_args(args)
+        except TypeError as err:
+            warnings.warn("Cannot cache function due to unhashable argument: " + str(err),
+                          stacklevel=2)
+            return self._callable(*args)
+
+        return self._run_and_cache(arg_hash, args)
+
+    def _run_and_cache(self, arg_hash: str, args: tuple[Any]) -> Any:
+        base_cache_dir = _get_cache_dir_from_config(cache_version=self._cache_version)
         json_path = base_cache_dir / f"{arg_hash}.json"
         if not json_path.is_file():
-            res = self._callable(*args, **kwargs)
+            res = self._callable(*args)
             json_path.parent.mkdir(exist_ok=True)
             with open(json_path, "w") as json_cache:
                 json.dump(res, json_cache, cls=_ExtraJSONEncoder)
-        else:
-            with open(json_path, "r") as json_cache:
-                res = json.load(json_cache, object_hook=_object_hook)
+
+        # for consistency, always load the cached result
+        with open(json_path, "r") as json_cache:
+            res = json.load(json_cache, object_hook=_object_hook)
         return res
 
-    @staticmethod
-    def _get_cache_dir_from_config(cache_dir: str | None = None, cache_version: int | str = 1) -> Path:
-        cache_dir = cache_dir or pyresample.config.get("cache_dir")
-        if cache_dir is None:
-            raise RuntimeError("Can't use JSON caching. No 'cache_dir' configured.")
-        subdir = f"geometry_slices_v{cache_version}"
-        return Path(cache_dir) / subdir
+
+def _get_cache_dir_from_config(cache_dir: str | None = None, cache_version: int | str = 1) -> Path:
+    cache_dir = cache_dir or pyresample.config.get("cache_dir")
+    if cache_dir is None:
+        raise RuntimeError("Can't use JSON caching. No 'cache_dir' configured.")
+    subdir = f"geometry_slices_v{cache_version}"
+    return Path(cache_dir) / subdir
+
+
+def _hash_args(args: tuple[Any]) -> str:
+    from pyresample.future.geometry import AreaDefinition, SwathDefinition
+    from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
+    from pyresample.geometry import SwathDefinition as LegacySwathDefinition
+
+    hashable_args = []
+    for arg in args:
+        if isinstance(arg, (SwathDefinition, LegacySwathDefinition)):
+            raise TypeError(f"Unhashable type ({type(arg)})")
+        if isinstance(arg, (AreaDefinition, LegacyAreaDefinition)):
+            arg = hash(arg)
+        hashable_args.append(arg)
+    arg_hash = hashlib.sha1()  # nosec
+    arg_hash.update(json.dumps(tuple(hashable_args)).encode("utf8"))
+    return arg_hash.hexdigest()
 
 
 class _ExtraJSONEncoder(json.JSONEncoder):
