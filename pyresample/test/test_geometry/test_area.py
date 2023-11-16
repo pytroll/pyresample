@@ -880,7 +880,20 @@ class TestAreaDefinition:
         assert (x__.data == x_expects).all()
         assert (y__.data == y_expects).all()
 
-    def test_get_slice_starts_stops(self, create_test_area):
+    @pytest.mark.parametrize(
+        "src_extent",
+        [
+            # Source and target have the same orientation
+            (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745),
+            # Source is flipped in X direction
+            (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745),
+            # Source is flipped in Y direction
+            (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293),
+            # Source is flipped in both X and Y directions
+            (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293),
+        ]
+    )
+    def test_get_slice_starts_stops(self, create_test_area, src_extent):
         """Check area slice end-points."""
         from pyresample.future.geometry._subset import _get_slice_starts_stops
         x_size = 3712
@@ -889,33 +902,9 @@ class TestAreaDefinition:
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
         target_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-
-        # Expected result is the same for all cases
-        expected = (3, 3709, 3, 3709)
-
-        # Source and target have the same orientation
-        area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
+        source_area = create_test_area(proj_dict, x_size, y_size, src_extent)
         res = _get_slice_starts_stops(source_area, target_area)
-        assert res == expected
-
-        # Source is flipped in X direction
-        area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = _get_slice_starts_stops(source_area, target_area)
-        assert res == expected
-
-        # Source is flipped in Y direction
-        area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = _get_slice_starts_stops(source_area, target_area)
-        assert res == expected
-
-        # Source is flipped in both X and Y directions
-        area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = _get_slice_starts_stops(source_area, target_area)
-        assert res == expected
+        assert res == (3, 3709, 3, 3709)
 
     def test_proj_str(self, create_test_area):
         """Test the 'proj_str' property of AreaDefinition."""
@@ -1250,27 +1239,19 @@ class TestAreaDefinitionMetadata:
 class TestMakeSliceDivisible:
     """Test the _make_slice_divisible."""
 
-    def test_make_slice_divisible(self):
+    @pytest.mark.parametrize(
+        ("sli", "factor"),
+        [
+            (slice(10, 21), 2),
+            (slice(10, 23), 3),
+            (slice(10, 23), 5),
+        ]
+    )
+    def test_make_slice_divisible(self, sli, factor):
         """Test that making area shape divisible by a given factor works."""
         from pyresample.future.geometry._subset import _make_slice_divisible
 
         # Divisible by 2
-        sli = slice(10, 21)
-        factor = 2
-        assert (sli.stop - sli.start) % factor != 0
-        res = _make_slice_divisible(sli, 1000, factor=factor)
-        assert (res.stop - res.start) % factor == 0
-
-        # Divisible by 3
-        sli = slice(10, 23)
-        factor = 3
-        assert (sli.stop - sli.start) % factor != 0
-        res = _make_slice_divisible(sli, 1000, factor=factor)
-        assert (res.stop - res.start) % factor == 0
-
-        # Divisible by 5
-        sli = slice(10, 23)
-        factor = 5
         assert (sli.stop - sli.start) % factor != 0
         res = _make_slice_divisible(sli, 1000, factor=factor)
         assert (res.stop - res.start) % factor == 0
