@@ -1823,7 +1823,8 @@ class TestAreaDefGetAreaSlices:
         with pytest.raises(NotImplementedError):
             area_def.get_area_slices(area_to_cover)
 
-    def test_area_slices_caching(self, create_test_area, tmp_path):
+    @pytest.mark.parametrize("cache_slices", [False, True])
+    def test_area_slices_caching(self, create_test_area, tmp_path, cache_slices):
         """Check that area slices can be cached."""
         src_area = create_test_area(dict(proj="utm", zone=33),
                                     10980, 10980,
@@ -1832,21 +1833,49 @@ class TestAreaDefGetAreaSlices:
                                      100, 100,
                                      (15.9689, 58.5284, 16.4346, 58.6995))
         cache_glob = str(tmp_path / "geometry_slices_v1" / "*.json")
-        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=False):
+        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=cache_slices):
             assert len(glob(cache_glob)) == 0
             slice_x, slice_y = src_area.get_area_slices(crop_area)
-            assert len(glob(cache_glob)) == 0
-        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=True):
-            assert len(glob(cache_glob)) == 0
-            slice_x, slice_y = src_area.get_area_slices(crop_area)
-            assert len(glob(cache_glob)) == 1
+            assert len(glob(cache_glob)) == int(cache_slices)
         assert slice_x == slice(5630, 8339)
         assert slice_y == slice(9261, 10980)
 
+        if cache_slices:
+            from pyresample.future.geometry._subset import get_area_slices
+            with pyresample.config.set(cache_dir=tmp_path):
+                get_area_slices.cache_clear()
+            assert len(glob(cache_glob)) == 0
+
+    def test_area_slices_caching_no_swaths(self, tmp_path, create_test_area, create_test_swath):
+        """Test that swath inputs produce a warning when tried to use in caching."""
         from pyresample.future.geometry._subset import get_area_slices
-        with pyresample.config.set(cache_dir=tmp_path):
-            get_area_slices.cache_clear()
-        assert len(glob(cache_glob)) == 0
+        from pyresample.test.utils import create_test_latitude, create_test_longitude
+        area = create_test_area(dict(proj="utm", zone=33),
+                                10980, 10980,
+                                (499980.0, 6490200.0, 609780.0, 6600000.0))
+        lons = create_test_longitude(-95.0, -75.0, shape=(1000, 500))
+        lats = create_test_latitude(25.0, 35.0, shape=(1000, 500))
+        swath = create_test_swath(lons, lats)
+
+        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=True), pytest.raises(NotImplementedError):
+            with pytest.warns(UserWarning, match="unhashable"):
+                get_area_slices(swath, area, None)
+
+    @pytest.mark.parametrize("swath_as_src", [False, True])
+    def test_unsupported_slice_inputs(self, create_test_area, create_test_swath, swath_as_src):
+        """Test that swath inputs produce an error."""
+        from pyresample.future.geometry._subset import get_area_slices
+        from pyresample.test.utils import create_test_latitude, create_test_longitude
+        area = create_test_area(dict(proj="utm", zone=33),
+                                10980, 10980,
+                                (499980.0, 6490200.0, 609780.0, 6600000.0))
+        lons = create_test_longitude(-95.0, -75.0, shape=(1000, 500))
+        lats = create_test_latitude(25.0, 35.0, shape=(1000, 500))
+        swath = create_test_swath(lons, lats)
+
+        with pytest.raises(NotImplementedError):
+            args = (swath, area) if swath_as_src else (area, swath)
+            get_area_slices(*args, None)
 
 
 class TestBoundary:

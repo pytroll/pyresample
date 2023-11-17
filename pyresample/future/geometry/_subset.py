@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
-from pyresample import AreaDefinition
 
 # this caching module imports the geometries so this subset module
 # must be imported inside functions in the geometry modules if needed
@@ -15,6 +14,9 @@ from pyresample.boundary import Boundary
 from pyresample.geometry import get_geostationary_bounding_box_in_lonlats, logger
 from pyresample.utils import check_slice_orientation
 
+if TYPE_CHECKING:
+    from pyresample import AreaDefinition
+
 
 @cache_to_json_if("cache_geom_slices")
 def get_area_slices(
@@ -23,8 +25,10 @@ def get_area_slices(
         shape_divisible_by: int | None,
 ) -> tuple[slice, slice]:
     """Compute the slice to read based on an `area_to_cover`."""
-    if not isinstance(area_to_cover, AreaDefinition):
-        raise NotImplementedError('Only AreaDefinitions can be used')
+    if not _is_area_like(src_area):
+        raise NotImplementedError(f"Only AreaDefinitions are supported, not {type(src_area)}")
+    if not _is_area_like(area_to_cover):
+        raise NotImplementedError(f"Only AreaDefinitions are supported, not {type(area_to_cover)}")
 
     # Intersection only required for two different projections
     proj_def_to_cover = area_to_cover.crs
@@ -63,6 +67,10 @@ def get_area_slices(
 
     return (check_slice_orientation(x_slice),
             check_slice_orientation(y_slice))
+
+
+def _is_area_like(area_obj: Any) -> bool:
+    return hasattr(area_obj, "crs") and hasattr(area_obj, "area_extent")
 
 
 def _get_slice_starts_stops(src_area, area_to_cover):
