@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2020 Pyresample developers
+# Copyright (C) 2010-2023 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -693,7 +693,8 @@ class CoordinateDefinition(BaseDefinition):
         if self.ndim == 1:
             raise RuntimeError("Can't confidently determine geocentric "
                                "resolution for 1D swath.")
-        rows = self.shape[0]
+
+        rows = self.lons['y'].shape[0]
         start_row = rows // 2  # middle row
         src = CRS('+proj=latlong +datum=WGS84')
         if radius:
@@ -701,8 +702,8 @@ class CoordinateDefinition(BaseDefinition):
         else:
             dst = CRS("+proj=cart +ellps={}".format(ellps))
         # simply take the first two columns of the middle of the swath
-        lons = self.lons[start_row: start_row + 1, :2]
-        lats = self.lats[start_row: start_row + 1, :2]
+        lons = self.lons.sel(y=start_row)[:2]
+        lats = self.lats.sel(y=start_row)[:2]
         if hasattr(lons.data, 'compute'):
             # dask arrays, compute them together
             import dask.array as da
