@@ -61,5 +61,3 @@ Documentation
    tutorials/index
    howtos/index
    reference
-
-
