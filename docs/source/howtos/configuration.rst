@@ -101,8 +101,8 @@ the `platformdirs <https://github.com/platformdirs/platformdirs#example-output>`
 Cache Geometry Slices
 ^^^^^^^^^^^^^^^^^^^^^
 
-* **Environment variable**: ``PYRESAMPLE_CACHE_GEOM_SLICES``
-* **YAML/Config Key**: ``cache_geom_slices``
+* **Environment variable**: ``PYRESAMPLE_CACHE_GEOMETRY_SLICES``
+* **YAML/Config Key**: ``cache_geometry_slices``
 * **Default**: ``False``
 
 Whether or not generated slices for geometry objects are cached to disk.

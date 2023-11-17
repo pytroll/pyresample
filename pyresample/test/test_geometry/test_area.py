@@ -1833,7 +1833,7 @@ class TestAreaDefGetAreaSlices:
                                      100, 100,
                                      (15.9689, 58.5284, 16.4346, 58.6995))
         cache_glob = str(tmp_path / "geometry_slices_v1" / "*.json")
-        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=cache_slices):
+        with pyresample.config.set(cache_dir=tmp_path, cache_geometry_slices=cache_slices):
             assert len(glob(cache_glob)) == 0
             slice_x, slice_y = src_area.get_area_slices(crop_area)
             assert len(glob(cache_glob)) == int(cache_slices)
@@ -1857,7 +1857,7 @@ class TestAreaDefGetAreaSlices:
         lats = create_test_latitude(25.0, 35.0, shape=(1000, 500))
         swath = create_test_swath(lons, lats)
 
-        with pyresample.config.set(cache_dir=tmp_path, cache_geom_slices=True), pytest.raises(NotImplementedError):
+        with pyresample.config.set(cache_dir=tmp_path, cache_geometry_slices=True), pytest.raises(NotImplementedError):
             with pytest.warns(UserWarning, match="unhashable"):
                 get_area_slices(swath, area, None)
 

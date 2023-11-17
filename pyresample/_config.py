@@ -21,7 +21,6 @@ import platformdirs
 from donfig import Config
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
-# FIXME: Use package_resources?
 PACKAGE_CONFIG_PATH = os.path.join(BASE_PATH, 'etc')
 
 _user_config_dir = platformdirs.user_config_dir("pyresample", "pytroll")
@@ -37,7 +36,7 @@ config = Config(
     "pyresample",
     defaults=[{
         "cache_dir": platformdirs.user_cache_dir("pyresample", "pytroll"),
-        "cache_geom_slices": False,
+        "cache_geometry_slices": False,
         "features": {
             "future_geometries": False,
         },

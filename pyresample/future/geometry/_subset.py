@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pyresample import AreaDefinition
 
 
-@cache_to_json_if("cache_geom_slices")
+@cache_to_json_if("cache_geometry_slices")
 def get_area_slices(
         src_area: AreaDefinition,
         area_to_cover: AreaDefinition,

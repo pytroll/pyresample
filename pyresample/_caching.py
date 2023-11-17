@@ -64,7 +64,7 @@ class JSONCacheHelper:
             res = self._callable(*args)
             json_path.parent.mkdir(exist_ok=True)
             with open(json_path, "w") as json_cache:
-                json.dump(res, json_cache, cls=_ExtraJSONEncoder)
+                json.dump(res, json_cache, cls=_JSONEncoderWithSlice)
 
         # for consistency, always load the cached result
         with open(json_path, "r") as json_cache:
@@ -97,7 +97,7 @@ def _hash_args(args: tuple[Any]) -> str:
     return arg_hash.hexdigest()
 
 
-class _ExtraJSONEncoder(json.JSONEncoder):
+class _JSONEncoderWithSlice(json.JSONEncoder):
     def default(self, obj: Any) -> Any:
         if isinstance(obj, slice):
             return {"__slice__": True, "start": obj.start, "stop": obj.stop, "step": obj.step}
