@@ -873,12 +873,16 @@ class SwathDefinition(CoordinateDefinition):
         res = da.map_blocks(self._do_transform, latlong, geocent,
                             self.lons.data, self.lats.data,
                             da.zeros_like(self.lons.data), new_axis=[2],
+                            meta=np.array((), dtype=self.lons.dtype),
+                            dtype=self.lons.dtype,
                             chunks=(self.lons.chunks[0], self.lons.chunks[1], 3))
         res = DataArray(res, dims=['y', 'x', 'coord'], coords=self.lons.coords)
         res = res.coarsen(**dims).mean()
         lonlatalt = da.map_blocks(self._do_transform, geocent, latlong,
                                   res[:, :, 0].data, res[:, :, 1].data,
                                   res[:, :, 2].data, new_axis=[2],
+                                  meta=np.array((), dtype=res.dtype),
+                                  dtype=res.dtype,
                                   chunks=res.data.chunks)
         lons = DataArray(lonlatalt[:, :, 0], dims=self.lons.dims,
                          coords=res.coords, attrs=self.lons.attrs.copy())

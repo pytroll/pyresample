@@ -188,7 +188,7 @@ def _run_jobs(target, args, nprocs):
         p.join()
     if ierr.value != 0:
         raise RuntimeError('%d errors in worker processes. Last one reported:\n%s' %
-                           (ierr.value, warn_msg.value.decode()))
+                           (ierr.value, warn_msg.value._object_hook()))
 
 # This is executed in an external process:
 

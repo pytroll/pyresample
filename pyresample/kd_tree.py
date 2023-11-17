@@ -999,6 +999,7 @@ class XArrayResamplerNN(object):
                         valid_oi, 'ji', *args, kdtree=resample_kdtree,
                         neighbours=self.neighbours, epsilon=self.epsilon,
                         radius=self.radius_of_influence, dtype=np.int64,
+                        meta=np.array((), dtype=np.int64),
                         new_axes={'k': self.neighbours}, concatenate=True)
         return res, None
 
@@ -1155,6 +1156,7 @@ class XArrayResamplerNN(object):
                         new_data, src_adims,
                         vii_slices=vii_slices, ia_slices=ia_slices,
                         fill_value=fill_value,
+                        meta=np.array((), dtype=new_data.dtype),
                         dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims, coords=coords,
                         attrs=deepcopy(data.attrs))

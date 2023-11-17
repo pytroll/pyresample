@@ -145,6 +145,7 @@ class DaskFriendlyTransformer:
         result = da.map_blocks(_transform_dask_chunk, x, y,
                                crs_from.to_wkt(), crs_to.to_wkt(),
                                dtype=x.dtype, chunks=x.chunks + ((2,),),
+                               meta=np.array((), dtype=x.dtype),
                                kwargs=self.kwargs,
                                transform_kwargs=kwargs,
                                new_axis=x.ndim)

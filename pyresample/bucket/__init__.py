@@ -181,6 +181,8 @@ class BucketResampler(object):
         lons = self.source_lons.ravel()
         lats = self.source_lats.ravel()
         result = da.map_blocks(self._get_proj_coordinates, lons, lats,
+                               meta=np.array((), dtype=lons.dtype),
+                               dtype=lons.dtype,
                                new_axis=0, chunks=(2,) + lons.chunks)
         proj_x = result[0, :]
         proj_y = result[1, :]
