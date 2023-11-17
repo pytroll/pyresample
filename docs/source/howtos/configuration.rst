@@ -117,6 +117,17 @@ are cached, this option saves a pair of ``slice`` objects that consist of
 only 3 integers each. This makes the amount of space used in the cache very
 small for many cached results.
 
+The slicing operations in Pyresample typically involve finding the intersection
+between two geometries. This requires generating bounding polygons for the
+geometries and doing polygon intersection calculations that can handle
+projection anti-meridians. At the time of writing these calculations can take
+as long as 15 seconds depending on number of vertices used in the bounding
+polygons. One use case for these slices is reducing input data to only the
+overlap of the target area. This can be done before or during resampling as
+part of the algorithm or as part of a third-party resampling interface
+(ex. Satpy). In the future as optimizations are made to the polygon
+intersection logic this caching option should hopefully not be needed.
+
 When setting this as an environment variable, this should be set with the
 string equivalent of the Python boolean values ``="True"`` or ``="False"``.
 
