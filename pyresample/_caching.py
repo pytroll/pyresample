@@ -4,6 +4,8 @@ These tools are rarely needed by users and are used where they make sense
 throughout pyresample.
 
 """
+from __future__ import annotations
+
 import hashlib
 import json
 import os
