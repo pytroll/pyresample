@@ -905,8 +905,8 @@ class XArrayResamplerNN(object):
         if radius_of_influence is None:
             radius_of_influence = self._compute_radius_of_influence()
         self.radius_of_influence = radius_of_influence
-        assert (self.target_geo_def.ndim == 2), \
-            "Target area definition must be 2 dimensions"
+        if self.target_geo_def.ndim != 2:
+            raise ValueError("Target area definition must be 2 dimensions")
 
     def _compute_radius_of_influence(self):
         """Estimate a good default radius_of_influence."""
@@ -989,8 +989,8 @@ class XArrayResamplerNN(object):
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))
 
         if mask is not None:
-            assert (mask.shape == self.source_geo_def.shape), \
-                "'mask' must be the same shape as the source geo definition"
+            if mask.shape != self.source_geo_def.shape:
+                raise ValueError("'mask' must be the same shape as the source geo definition")
             mask = mask.data
         index_arr, distance_arr = self.query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_output_idx, mask)
@@ -1056,13 +1056,13 @@ class XArrayResamplerNN(object):
         dst_geo_dims = ('y', 'x')
         # verify that source dims are the same between geo and data
         data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
-        assert (data_geo_dims == src_geo_dims), \
-            "Data dimensions do not match source area dimensions"
+        if data_geo_dims != src_geo_dims:
+            raise ValueError("Data dimensions do not match source area dimensions")
         # verify that the dims are next to each other
         first_dim_idx = data.dims.index(src_geo_dims[0])
         num_dims = len(src_geo_dims)
-        assert (data.dims[first_dim_idx:first_dim_idx + num_dims] == data_geo_dims), \
-            "Data's geolocation dimensions are not consecutive."
+        if data.dims[first_dim_idx:first_dim_idx + num_dims] != data_geo_dims:
+            raise ValueError("Data's geolocation dimensions are not consecutive.")
 
         # FIXME: Can't include coordinates whose dimensions depend on the geo
         #        dims either

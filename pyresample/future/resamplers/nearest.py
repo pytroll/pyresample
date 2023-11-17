@@ -127,8 +127,8 @@ class KDTreeNearestXarrayResampler(Resampler):
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
         super().__init__(source_geo_def, target_geo_def, cache=cache)
         self._internal_cache = {}
-        assert (self.target_geo_def.ndim == 2), \
-            "Target area definition must be 2 dimensions"
+        if self.target_geo_def.ndim != 2:
+            raise ValueError("Target area definition must be 2 dimensions")
 
     @property
     def version(self) -> str:
@@ -218,8 +218,8 @@ class KDTreeNearestXarrayResampler(Resampler):
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))
 
         if mask is not None:
-            assert (mask.shape == self.source_geo_def.shape), \
-                "'mask' must be the same shape as the source geo definition"
+            if mask.shape != self.source_geo_def.shape:
+                raise ValueError("'mask' must be the same shape as the source geo definition")
             mask = mask.data
         index_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_input_idx,

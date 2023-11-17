@@ -123,7 +123,7 @@ class BaseDefinition:
     def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
         """Update the hash."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(get_array_hashable(self.lons))
         existing_hash.update(get_array_hashable(self.lats))
         try:
@@ -2058,7 +2058,7 @@ class AreaDefinition(_ProjectionDefinition):
     def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
         """Update a hash, or return a new one if needed."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(self.crs_wkt.encode('utf-8'))
         existing_hash.update(np.array(self.shape))
         existing_hash.update(np.array(self.area_extent))

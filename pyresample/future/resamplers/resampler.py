@@ -38,7 +38,7 @@ HashType = hashlib._hashlib.HASH
 def hash_dict(the_dict: dict, existing_hash: Optional[HashType] = None) -> HashType:
     """Calculate a hash for a dictionary and optionally update an existing hash."""
     if existing_hash is None:
-        existing_hash = hashlib.sha1()
+        existing_hash = hashlib.sha1()  # nosec: B324
     existing_hash.update(json.dumps(the_dict, sort_keys=True).encode('utf-8'))
     return existing_hash
 
