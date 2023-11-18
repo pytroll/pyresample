@@ -40,7 +40,7 @@ _valid_cf_type_of_grid_mapping = \
 
 # dictionnary with the standard_names accepted by CF per projection type
 #   this can be used for reading from and writing to CF files
-_valid_cf_coordinate_standardnames = {}
+_valid_cf_coordinate_standardnames: dict[str, dict[str, tuple[str, ...]]] = {}
 # specific name for most grid mappings
 _valid_cf_coordinate_standardnames['default'] = dict()
 _valid_cf_coordinate_standardnames['default']['x'] = ('projection_x_coordinate',)
