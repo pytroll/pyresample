@@ -21,7 +21,8 @@ import logging
 
 import numpy as np
 
-from pyresample.ewa import _fornav, _ll2cr
+# Pyresample does not have type definition for all of it's cython modules
+from pyresample.ewa import _fornav, _ll2cr  # type: ignore
 
 LOG = logging.getLogger(__name__)
 

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -16,7 +13,6 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Nearest neighbor resampler."""
-
 from __future__ import annotations
 
 import warnings
@@ -126,7 +122,7 @@ class KDTreeNearestXarrayResampler(Resampler):
         if DataArray is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
         super().__init__(source_geo_def, target_geo_def, cache=cache)
-        self._internal_cache = {}
+        self._internal_cache: dict[tuple, dict] = {}
         if self.target_geo_def.ndim != 2:
             raise ValueError("Target area definition must be 2 dimensions")
 

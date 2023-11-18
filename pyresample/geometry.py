@@ -25,7 +25,7 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import numpy as np
 import pyproj
@@ -60,7 +60,10 @@ from pyproj import CRS
 from pyproj.enums import TransformDirection
 
 logger = getLogger(__name__)
-HashType = hashlib._hashlib.HASH
+
+if TYPE_CHECKING:
+    # defined in typeshed to hide private C-level type
+    from hashlib import _Hash
 
 
 class DimensionError(ValueError):
@@ -120,7 +123,7 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update the hash."""
         if existing_hash is None:
             existing_hash = hashlib.sha1()  # nosec: B324
@@ -1134,7 +1137,7 @@ class DynamicAreaDefinition(object):
                            corners[1] - y_resolution / 2,
                            corners[2] + x_resolution / 2,
                            corners[3] + y_resolution / 2)
-        else:
+        elif resolution:
             x_resolution, y_resolution = resolution
             half_x = x_resolution / 2
             half_y = y_resolution / 2
@@ -2055,7 +2058,7 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for equality."""
         return not self.__eq__(other)
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update a hash, or return a new one if needed."""
         if existing_hash is None:
             existing_hash = hashlib.sha1()  # nosec: B324
