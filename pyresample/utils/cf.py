@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Load an AreaDefinition object from a netCDF/CF file."""
+from __future__ import annotations
+
+from pathlib import Path
 
 import pyproj
+
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
 
 # list of valid CF grid mappings:
 _valid_cf_type_of_grid_mapping = \
@@ -446,24 +454,11 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
        cf_info holds info about how the AreaDefinition was defined in the CF file.
 
     """
-    import xarray as xr
-
     # basic check on the default values of the parameters.
     if (x is not None and y is None) or (x is None and y is not None):
-        raise ValueError("You must specify either both or none of x= and y=")
+        raise ValueError("You must specify both or neither of x= and y=")
 
-    # the nc_file can be either the path to a netCDF/CF file, or directly an opened xarray.Dataset()
-    if isinstance(nc_file, xr.Dataset):
-        nc_handle = nc_file
-    else:
-        #   if the path to a file, open the Dataset access to it
-        try:
-            nc_handle = xr.open_dataset(nc_file)
-        except FileNotFoundError as ex:
-            raise FileNotFoundError("This file does not exist ({})".format(ex))
-        except (OSError, TypeError) as ex:
-            raise OSError("This file is probably not a valid netCDF file ({}).".format(ex))
-
+    nc_handle = _open_nc_file(nc_file)
     if variable is None:
         # if the variable=None, we search through all variables
         area_def, cf_info = _load_cf_area_several_variables(nc_handle)
@@ -489,3 +484,17 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
         #   in the file.
 
     return area_def, cf_info
+
+
+def _open_nc_file(nc_file: str | Path | xr.Dataset) -> xr.Dataset:
+    if xr is None:
+        raise ImportError("Xarray (pip install xarray) is required to load geometries from a NetCDF file.")
+    if isinstance(nc_file, xr.Dataset):
+        return nc_file
+
+    try:
+        return xr.open_dataset(nc_file)
+    except FileNotFoundError as ex:
+        raise FileNotFoundError("This file does not exist ({})".format(ex))
+    except (OSError, TypeError) as ex:
+        raise OSError("This file is probably not a valid netCDF file ({}).".format(ex))
