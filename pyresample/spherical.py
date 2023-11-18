@@ -642,14 +642,8 @@ class SphPolygon:
         which direction to follow the edges of the polygons depends if you are
         interested in the union or the intersection of the two polygons.
         """
-        def rotate_arcs(start_arc, arcs):
-            idx = arcs.index(start_arc)
-            return arcs[idx:] + arcs[:idx]
-
         arcs1 = [edge for edge in self.aedges()]
         arcs2 = [edge for edge in other.aedges()]
-
-        nodes = []
 
         # find the first intersection, to start from.
         for edge1 in arcs1:
@@ -668,9 +662,17 @@ class SphPolygon:
 
             return None
 
-        # starting from the intersection, follow the edges of one of the
-        # polygons.
+        nodes = self._find_intersection_nodes(inter, edge1, edge2, arcs1, arcs2, sign)
+        return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]), radius=self.radius)
 
+    @staticmethod
+    def _find_intersection_nodes(inter, edge1, edge2, arcs1, arcs2, sign):
+        def rotate_arcs(start_arc, arcs):
+            idx = arcs.index(start_arc)
+            return arcs[idx:] + arcs[:idx]
+
+        # starting from the intersection, follow the edges of one of the polygons
+        nodes = []
         while True:
             arcs1 = rotate_arcs(edge1, arcs1)
             arcs2 = rotate_arcs(edge2, arcs2)
@@ -699,7 +701,7 @@ class SphPolygon:
                 break
             if inter == nodes[0]:
                 break
-        return SphPolygon(np.array([(node.lon, node.lat) for node in nodes]), radius=self.radius)
+        return nodes
 
     def union(self, other):
         """Return the union of this and `other` polygon.
