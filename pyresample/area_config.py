@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Area config handling and creation utilities."""
+from __future__ import annotations
 
 import io
 import logging
@@ -36,7 +37,7 @@ from pyresample.utils import proj4_str_to_dict
 try:
     from xarray import DataArray
 except ImportError:
-    class DataArray(object):
+    class DataArray:  # type: ignore
         """Stand-in for DataArray for holding units information."""
 
         def __init__(self, data, attrs=None):
@@ -519,8 +520,8 @@ def _make_area(
         description: str,
         proj_id: str,
         projection: Union[dict, CRS],
-        shape: tuple,
-        area_extent: tuple,
+        shape: tuple[int, ...] | None,
+        area_extent: tuple[float, float, float, float] | None,
         **kwargs):
     """Handle the creation of an area definition for create_area_def."""
     from pyresample.future.geometry import AreaDefinition
@@ -531,19 +532,17 @@ def _make_area(
     resolution = kwargs.pop('resolution', None)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
-    height, width = (None, None)
-    if shape is not None:
-        height, width = shape
-    if None not in (area_extent, shape):
+    if area_extent is not None and shape is not None:
         attrs = {
             "name": area_id,
             "description": description,
             "proj_id": proj_id,
         }
         attrs.update(kwargs)
-        area_def = AreaDefinition(projection, (height, width), area_extent, attrs=attrs)
+        area_def = AreaDefinition(projection, shape, area_extent, attrs=attrs)
         return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
 
+    height, width = (None, None) if shape is None else shape
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
                                  height=height, area_extent=area_extent,
                                  resolution=resolution, optimize_projection=optimize_projection)
