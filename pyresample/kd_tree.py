@@ -1083,26 +1083,9 @@ class XArrayResamplerNN(object):
         # Convert from multiple neighbor shape to 1 neighbor
         ia = self.index_array[:, :, 0]
         vii = self.valid_input_index
+        src_geo_dims, dst_geo_dims = self._get_valid_dims(data)
 
-        if isinstance(self.source_geo_def, geometry.SwathDefinition):
-            # could be 1D or 2D
-            src_geo_dims = self.source_geo_def.lons.dims
-        else:
-            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
-            src_geo_dims = ('y', 'x')
-        dst_geo_dims = ('y', 'x')
-        # verify that source dims are the same between geo and data
-        data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
-        if data_geo_dims != src_geo_dims:
-            raise ValueError("Data dimensions do not match source area dimensions")
-        # verify that the dims are next to each other
-        first_dim_idx = data.dims.index(src_geo_dims[0])
-        num_dims = len(src_geo_dims)
-        if data.dims[first_dim_idx:first_dim_idx + num_dims] != data_geo_dims:
-            raise ValueError("Data's geolocation dimensions are not consecutive.")
-
-        # FIXME: Can't include coordinates whose dimensions depend on the geo
-        #        dims either
+        # FIXME: Can't include coordinates whose dimensions depend on the geo dims either
         def contain_coords(var, coord_list):
             return bool(set(coord_list).intersection(set(var.dims)))
 
@@ -1176,6 +1159,25 @@ class XArrayResamplerNN(object):
                         attrs=deepcopy(data.attrs))
 
         return res
+
+    def _get_valid_dims(self, data):
+        if isinstance(self.source_geo_def, geometry.SwathDefinition):
+            # could be 1D or 2D
+            src_geo_dims = self.source_geo_def.lons.dims
+        else:
+            # assume AreaDefinitions and everything else are 2D with 'y', 'x'
+            src_geo_dims = ('y', 'x')
+        dst_geo_dims = ('y', 'x')
+        # verify that source dims are the same between geo and data
+        data_geo_dims = tuple(d for d in data.dims if d in src_geo_dims)
+        if data_geo_dims != src_geo_dims:
+            raise ValueError("Data dimensions do not match source area dimensions")
+        # verify that the dims are next to each other
+        first_dim_idx = data.dims.index(src_geo_dims[0])
+        num_dims = len(src_geo_dims)
+        if data.dims[first_dim_idx:first_dim_idx + num_dims] != data_geo_dims:
+            raise ValueError("Data's geolocation dimensions are not consecutive.")
+        return src_geo_dims, dst_geo_dims
 
 
 def _get_fill_mask_value(data_dtype):
