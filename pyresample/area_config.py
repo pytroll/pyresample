@@ -24,7 +24,7 @@ import math
 import os
 import pathlib
 import warnings
-from typing import Any, Union
+from typing import Any, Iterable, Union
 
 import numpy as np
 import yaml
@@ -285,35 +285,23 @@ def _parse_legacy_area_file(area_file_name, *regions):
     """Parse area information from a legacy area file."""
     area_file = _read_legacy_area_file_lines(area_file_name)
     area_list = list(regions)
-    if not area_list:
-        select_all_areas = True
-        area_defs = []
-    else:
-        select_all_areas = False
-        area_defs = [None for i in area_list]
+    select_all_areas = bool(not area_list)
+    area_defs = [] if select_all_areas else [None for area_id in area_list]
 
     # Extract area from file
-    in_area = False
     for line in area_file:
-        if not in_area:
-            if 'REGION' in line and not line.strip().startswith('#'):
-                area_id = line.replace('REGION:', ''). \
-                    replace('{', '').strip()
-                if area_id in area_list or select_all_areas:
-                    in_area = True
-                    area_content = ''
-        elif '};' in line:
-            in_area = False
-            try:
-                if select_all_areas:
-                    area_defs.append(_create_area(area_id, area_content))
-                else:
-                    area_defs[area_list.index(area_id)] = _create_area(area_id,
-                                                                       area_content)
-            except KeyError:
-                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
+        if "REGION" not in line or line.strip().startswith("#"):
+            continue
+
+        area_id = line.replace('REGION:', '').replace('{', '').strip()
+        if area_id not in area_list and not select_all_areas:
+            continue
+
+        area_def = _parse_one_legacy_area_lines(area_file, area_id)
+        if select_all_areas:
+            area_defs.append(area_def)
         else:
-            area_content += line
+            area_defs[area_list.index(area_id)] = area_def
 
     # Check if all specified areas were found
     if not select_all_areas:
@@ -322,6 +310,18 @@ def _parse_legacy_area_file(area_file_name, *regions):
                 raise AreaNotFound('Area "%s" not found in file "%s"' %
                                    (area_list[i], area_file_name))
     return area_defs
+
+
+def _parse_one_legacy_area_lines(area_file: Iterable[str], area_id: str):
+    area_content = ""
+    for line in area_file:
+        if '};' in line:
+            try:
+                return _create_area(area_id, area_content)
+            except KeyError:
+                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
+        else:
+            area_content += line
 
 
 def _create_area(area_id, area_content):
