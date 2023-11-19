@@ -19,15 +19,17 @@
 Several types of resampling are supported.
 """
 
-from __future__ import absolute_import
+from __future__ import annotations
 
 import sys
 import types
 import warnings
 from copy import deepcopy
 from logging import getLogger
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 from pykdtree.kdtree import KDTree
 
 from pyresample import CHUNK_SIZE, _spatial_mp, data_reduce, geometry
@@ -615,41 +617,10 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
     # Handle empty result set
     if valid_input_size == 0 or valid_output_size == 0:
-        if is_multi_channel:
-            output_shape = list(output_shape)
-            output_shape.append(data.shape[1])
+        return _get_empty_sample(data, output_shape, is_multi_channel, fill_value)
 
-        if fill_value is None:
-            # Use masked array for fill values
-            return np.ma.array(np.zeros(output_shape, data.dtype),
-                               mask=np.ones(output_shape, dtype=bool))
-        else:
-            # Return fill vaues for all pixels
-            return np.ones(output_shape, dtype=data.dtype) * fill_value
-
-    # Get size of output and reduced input
-    input_size = valid_input_size
-    if len(output_shape) > 1:
-        output_size = output_shape[0] * output_shape[1]
-    else:
-        output_size = output_shape[0]
-
-    # Check validity of input
-    if not isinstance(data, np.ndarray):
-        raise TypeError('data must be numpy array')
-    elif valid_input_index.ndim != 1:
-        raise TypeError('valid_index must be one dimensional array')
-    elif data.shape[0] != valid_input_index.size:
-        raise TypeError('Not the same number of datapoints in '
-                        'valid_input_index and data')
-
-    valid_types = ('nn', 'custom')
-    if resample_type not in valid_types:
-        raise TypeError('Invalid resampling type: %s' % resample_type)
-
-    if resample_type == 'custom' and weight_funcs is None:
-        raise ValueError('weight_funcs must be supplied when using '
-                         'custom resampling')
+    _validate_input_array(data, valid_input_index)
+    _validate_resampler_type(resample_type, weight_funcs)
 
     if index_array.ndim == 1:
         neighbours = 1
@@ -663,11 +634,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
     new_data = data[valid_input_index]
 
     # Nearest neighbour resampling should conserve data type
-    # Get data type
-    conserve_input_data_type = False
-    if resample_type == 'nn':
-        conserve_input_data_type = True
-        input_data_type = new_data.dtype
+    input_data_type = new_data.dtype if resample_type == 'nn' else None
 
     # Handle masked array input
     is_masked_data = False
@@ -680,163 +647,240 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         output_shape = list(output_shape)
         output_shape.append(new_data.shape[1])
 
-    # Prepare weight_funcs argument for handeling mask data
+    # Resample based on kd-tree query result
+    return _extract_resample_result(
+        resample_type, neighbours, new_data, index_array, distance_array,
+        valid_input_size, valid_output_index, weight_funcs, with_uncert,
+        fill_value, output_shape, is_masked_data, is_multi_channel,
+        input_data_type
+    )
+
+
+def _get_empty_sample(
+        data: npt.ArrayLike,
+        output_shape: tuple | list,
+        is_multi_channel: bool,
+        fill_value: float | None
+) -> npt.ArrayLike:
+    if is_multi_channel:
+        output_shape = list(output_shape)
+        output_shape.append(data.shape[1])
+
+    if fill_value is None:
+        # Use masked array for fill values
+        return np.ma.array(np.zeros(output_shape, data.dtype),
+                           mask=np.ones(output_shape, dtype=bool))
+    else:
+        # Return fill vaues for all pixels
+        return np.ones(output_shape, dtype=data.dtype) * fill_value
+
+
+def _validate_input_array(data: npt.ArrayLike, valid_input_index: npt.ArrayLike) -> None:
+    if not isinstance(data, np.ndarray):
+        raise TypeError('data must be numpy array')
+    elif valid_input_index.ndim != 1:
+        raise TypeError('valid_index must be one dimensional array')
+    elif data.shape[0] != valid_input_index.size:
+        raise TypeError('Not the same number of datapoints in '
+                        'valid_input_index and data')
+
+
+def _validate_resampler_type(resample_type: str, weight_funcs: Any) -> None:
+    valid_types = ("nn", "custom")
+    if resample_type not in valid_types:
+        raise TypeError(f"Invalid resampling type: {resample_type}")
+
+    if resample_type == "custom" and weight_funcs is None:
+        raise ValueError("weight_funcs must be supplied when using custom resampling")
+
+
+def _extract_resample_result(resample_type, neighbours, new_data, index_array, distance_array, valid_input_size,
+                             valid_output_index, weight_funcs, with_uncert, fill_value, output_shape,
+                             is_masked_data, is_multi_channel, input_data_type):
+    # Prepare weight_funcs argument for handling mask data
     if weight_funcs is not None and is_masked_data:
-        if is_multi_channel:
-            weight_funcs = weight_funcs * 2
-        else:
-            weight_funcs = (weight_funcs,) * 2
+        weight_funcs = weight_funcs * 2 if is_multi_channel else (weight_funcs,) * 2
 
     # Handle request for masking intead of using fill values
     use_masked_fill_value = False
     if fill_value is None:
         use_masked_fill_value = True
         fill_value = _get_fill_mask_value(new_data.dtype)
-
-    # Resample based on kd-tree query result
     if resample_type == 'nn' or neighbours == 1:
         # Get nearest neighbour using array indexing
-        index_mask = (index_array == input_size)
+        index_mask = (index_array == valid_input_size)
         new_index_array = np.where(index_mask, 0, index_array)
         result = new_data[new_index_array].copy()
         result[index_mask] = fill_value
+        stddev = count = None
     else:
-        # Calculate result using weighting.
-        # Note: the code below has low readability in order
-        #       to avoid looping over numpy arrays
-
-        # Get neighbours and masks of valid indices
-        ch_neighbour_list = []
-        index_mask_list = []
-        for i in range(neighbours):  # Iterate over number of neighbours
-            # Make working copy neighbour index and
-            # set out of bounds indices to zero
-            index_ni = index_array[:, i].copy()
-            index_mask_ni = (index_ni == input_size)
-            index_ni[index_mask_ni] = 0
-
-            # Get channel data for the corresponing indices
-            ch_ni = new_data[index_ni]
-            ch_neighbour_list.append(ch_ni)
-            index_mask_list.append(index_mask_ni)
-
-        # Calculate weights
-        weight_list = []
-        for i in range(neighbours):  # Iterate over number of neighbours
-            # Make working copy of neighbour distances and
-            # set out of bounds distance to 1 in order to avoid numerical Inf
-            distance = distance_array[:, i].copy()
-            distance[index_mask_list[i]] = 1
-
-            if new_data.ndim > 1:  # More than one channel in data set.
-                # Calculate weights for each channel
-                weights = []
-                num_weights = valid_output_index.sum()
-                num_channels = new_data.shape[1]
-                for j in range(num_channels):
-                    calc_weight = weight_funcs[j](distance)
-                    # Turn a scalar weight into a numpy array
-                    # (no effect if calc_weight already is an array)
-                    expanded_calc_weight = np.ones(num_weights) * calc_weight
-                    weights.append(expanded_calc_weight)
-
-                # Collect weights for all channels for neighbour number
-                weight_list.append(np.column_stack(weights))
-            else:  # Only one channel
-                weights = weight_funcs(distance)
-                weight_list.append(weights)
-
-        result = 0
-        norm = 0
-        count = 0
-        norm_sqr = 0
-        stddev = 0
-
-        # Calculate result
-        for i in range(neighbours):  # Iterate over number of neighbours
-            # Find invalid indices to be masked of from calculation
-            if new_data.ndim > 1:  # More than one channel in data set.
-                inv_index_mask = np.expand_dims(
-                    np.invert(index_mask_list[i]), axis=1)
-            else:  # Only one channel
-                inv_index_mask = np.invert(index_mask_list[i])
-
-            # Aggregate result and norm
-            weights_tmp = inv_index_mask * weight_list[i]
-            result += weights_tmp * ch_neighbour_list[i]
-            norm += weights_tmp
-
-        # Normalize result and set fillvalue
-        result_valid_index = (norm > 0)
-        result[result_valid_index] /= norm[result_valid_index]
-
-        if with_uncert:  # Calculate uncertainties
-            # 2. pass to calculate standard deviation
-            for i in range(neighbours):  # Iterate over number of neighbours
-                # Find invalid indices to be masked of from calculation
-                if new_data.ndim > 1:  # More than one channel in data set.
-                    inv_index_mask = np.expand_dims(
-                        np.invert(index_mask_list[i]), axis=1)
-                else:  # Only one channel
-                    inv_index_mask = np.invert(index_mask_list[i])
-
-                # Aggregate stddev information
-                weights_tmp = inv_index_mask * weight_list[i]
-                count += inv_index_mask
-                norm_sqr += weights_tmp ** 2
-                values = inv_index_mask * ch_neighbour_list[i]
-                stddev += weights_tmp * (values - result) ** 2
-
-            # Calculate final stddev
-            new_valid_index = (count > 1)
-            if stddev.ndim >= 2:
-                # If given more than 1 input data array
-                new_valid_index = new_valid_index[:, 0]
-                for i in range(stddev.shape[-1]):
-                    v1 = norm[new_valid_index, i]
-                    v2 = norm_sqr[new_valid_index, i]
-                    stddev[new_valid_index, i] = np.sqrt(
-                        (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index, i])
-                    stddev[~new_valid_index, i] = np.NaN
-            else:
-                # If given single input data array
-                v1 = norm[new_valid_index]
-                v2 = norm_sqr[new_valid_index]
-                stddev[new_valid_index] = np.sqrt(
-                    (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
-                stddev[~new_valid_index] = np.NaN
-
-        # Add fill values
-        result[np.invert(result_valid_index)] = fill_value
+        result, stddev, count = _resample_with_weights(
+            new_data, index_array, distance_array, neighbours, valid_input_size,
+            valid_output_index, weight_funcs, with_uncert, fill_value,
+        )
 
     # Create full result
-    if new_data.ndim > 1:  # More than one channel
-        output_raw_shape = ((output_size, new_data.shape[1]))
-    else:  # One channel
-        output_raw_shape = output_size
-
+    output_size = output_shape[0] * output_shape[1] if len(output_shape) > 1 else output_shape[0]
+    output_raw_shape = (output_size, new_data.shape[1]) if new_data.ndim > 1 else output_size
     full_result = np.full(output_raw_shape, fill_value, dtype=result.dtype)
     full_result[valid_output_index] = result
     result = full_result
+    result = _prepare_result(result, output_shape, is_masked_data, use_masked_fill_value, fill_value, input_data_type)
 
     if with_uncert:  # Add fill values for uncertainty
-        full_stddev = np.ones(output_raw_shape) * np.nan
-        full_count = np.zeros(output_raw_shape)
-        full_stddev[valid_output_index] = stddev
-        full_count[valid_output_index] = count
-        stddev = full_stddev
-        count = full_count
+        stddev, count = _prepare_and_fill_uncertainty_result(
+            stddev, count, output_raw_shape, output_shape, valid_output_index, is_masked_data)
+        if np.ma.isMA(result):
+            stddev = np.ma.array(stddev, mask=(result.mask | stddev.mask))
+            count = np.ma.array(count, mask=result.mask)
+        return result, stddev, count
+    return result
 
-        stddev = stddev.reshape(output_shape)
-        count = count.reshape(output_shape)
 
-        if is_masked_data:  # Ignore uncert computation of masks
-            stddev = _remask_data(stddev, is_to_be_masked=False)
-            count = _remask_data(count, is_to_be_masked=False)
+def _resample_with_weights(new_data, index_array, distance_array, neighbours,
+                           input_size, valid_output_index, weight_funcs,
+                           with_uncert, fill_value):
+    # Calculate result using weighting.
+    # Note: the code below has low readability in order
+    #       to avoid looping over numpy arrays
 
-        # Set masks for invalid stddev
-        stddev = np.ma.array(stddev, mask=np.isnan(stddev))
+    # Get neighbours and masks of valid indices
+    ch_neighbour_list = []
+    index_mask_list = []
+    for i in range(neighbours):  # Iterate over number of neighbours
+        # Make working copy neighbour index and
+        # set out of bounds indices to zero
+        index_ni = index_array[:, i].copy()
+        index_mask_ni = (index_ni == input_size)
+        index_ni[index_mask_ni] = 0
 
+        # Get channel data for the corresponing indices
+        ch_neighbour_list.append(new_data[index_ni])
+        index_mask_list.append(index_mask_ni)
+
+    # Calculate weights
+    weight_list = []
+    for i in range(neighbours):  # Iterate over number of neighbours
+        # Make working copy of neighbour distances and
+        # set out of bounds distance to 1 in order to avoid numerical Inf
+        distance = distance_array[:, i].copy()
+        distance[index_mask_list[i]] = 1
+        if new_data.ndim == 1:
+            # only one channel
+            weights = weight_funcs(distance)
+            weight_list.append(weights)
+            continue
+
+        # Calculate weights for each channel
+        weights = []
+        num_weights = valid_output_index.sum()
+        num_channels = new_data.shape[1]
+        for j in range(num_channels):
+            calc_weight = weight_funcs[j](distance)
+            # Turn a scalar weight into a numpy array
+            # (no effect if calc_weight already is an array)
+            expanded_calc_weight = np.ones(num_weights) * calc_weight
+            weights.append(expanded_calc_weight)
+
+        # Collect weights for all channels for neighbour number
+        weight_list.append(np.column_stack(weights))
+
+    result = 0
+    norm = 0
+
+    # Calculate result
+    for i in range(neighbours):  # Iterate over number of neighbours
+        # Find invalid indices to be masked of from calculation
+        if new_data.ndim > 1:  # More than one channel in data set.
+            inv_index_mask = np.expand_dims(
+                np.invert(index_mask_list[i]), axis=1)
+        else:  # Only one channel
+            inv_index_mask = np.invert(index_mask_list[i])
+
+        # Aggregate result and norm
+        weights_tmp = inv_index_mask * weight_list[i]
+        result += weights_tmp * ch_neighbour_list[i]
+        norm += weights_tmp
+
+    # Normalize result and set fillvalue
+    result_valid_index = (norm > 0)
+    result[result_valid_index] /= norm[result_valid_index]
+
+    if with_uncert:  # Calculate uncertainties
+        stddev, count = _calculate_uncertainty(
+            neighbours, new_data, index_mask_list, weight_list,
+            ch_neighbour_list, result, norm
+        )
+
+    # Add fill values
+    result[np.invert(result_valid_index)] = fill_value
+    return result, stddev, count
+
+
+def _calculate_uncertainty(neighbours, new_data, index_mask_list, weight_list,
+                           ch_neighbour_list, result, norm):
+    count = 0
+    norm_sqr = 0
+    stddev = 0
+    for i in range(neighbours):  # Iterate over number of neighbours
+        # Find invalid indices to be masked of from calculation
+        if new_data.ndim > 1:  # More than one channel in data set.
+            inv_index_mask = np.expand_dims(
+                np.invert(index_mask_list[i]), axis=1)
+        else:  # Only one channel
+            inv_index_mask = np.invert(index_mask_list[i])
+
+        # Aggregate stddev information
+        weights_tmp = inv_index_mask * weight_list[i]
+        count += inv_index_mask
+        norm_sqr += weights_tmp ** 2
+        values = inv_index_mask * ch_neighbour_list[i]
+        stddev += weights_tmp * (values - result) ** 2
+
+    # Calculate final stddev
+    new_valid_index = (count > 1)
+    if stddev.ndim >= 2:
+        # If given more than 1 input data array
+        new_valid_index = new_valid_index[:, 0]
+        for i in range(stddev.shape[-1]):
+            v1 = norm[new_valid_index, i]
+            v2 = norm_sqr[new_valid_index, i]
+            stddev[new_valid_index, i] = np.sqrt(
+                (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index, i])
+            stddev[~new_valid_index, i] = np.NaN
+    else:
+        # If given single input data array
+        v1 = norm[new_valid_index]
+        v2 = norm_sqr[new_valid_index]
+        stddev[new_valid_index] = np.sqrt(
+            (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
+        stddev[~new_valid_index] = np.NaN
+    return stddev, count
+
+
+def _prepare_and_fill_uncertainty_result(
+        stddev, count, output_raw_shape, output_shape, valid_output_index, is_masked_data
+):
+    full_stddev = np.ones(output_raw_shape) * np.nan
+    full_count = np.zeros(output_raw_shape)
+    full_stddev[valid_output_index] = stddev
+    full_count[valid_output_index] = count
+    stddev = full_stddev
+    count = full_count
+
+    stddev = stddev.reshape(output_shape)
+    count = count.reshape(output_shape)
+
+    if is_masked_data:  # Ignore uncert computation of masks
+        stddev = _remask_data(stddev, is_to_be_masked=False)
+        count = _remask_data(count, is_to_be_masked=False)
+
+    # Set masks for invalid stddev
+    stddev = np.ma.array(stddev, mask=np.isnan(stddev))
+    return stddev, count
+
+
+def _prepare_result(result, output_shape, is_masked_data, use_masked_fill_value, fill_value, input_data_type):
     # Reshape resampled data to correct shape
     result = result.reshape(output_shape)
 
@@ -849,16 +893,9 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         result = np.ma.masked_equal(result, fill_value)
 
     # Set output data type to input data type if relevant
-    if conserve_input_data_type:
+    if input_data_type is not None:
         result = result.astype(input_data_type)
-
-    if with_uncert:
-        if np.ma.isMA(result):
-            stddev = np.ma.array(stddev, mask=(result.mask | stddev.mask))
-            count = np.ma.array(count, mask=result.mask)
-        return result, stddev, count
-    else:
-        return result
+    return result
 
 
 class XArrayResamplerNN(object):
