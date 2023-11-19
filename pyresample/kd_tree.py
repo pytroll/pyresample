@@ -805,16 +805,16 @@ def _resample_with_weights(new_data, index_array, distance_array, neighbours,
     # Normalize result and set fillvalue
     result_valid_index = (norm > 0)
     result[result_valid_index] /= norm[result_valid_index]
+    result[np.invert(result_valid_index)] = fill_value
 
     if with_uncert:  # Calculate uncertainties
         stddev, count = _calculate_uncertainty(
             neighbours, new_data, index_mask_list, weight_list,
             ch_neighbour_list, result, norm
         )
+        return result, stddev, count
 
-    # Add fill values
-    result[np.invert(result_valid_index)] = fill_value
-    return result, stddev, count
+    return result, None, None
 
 
 def _calculate_uncertainty(neighbours, new_data, index_mask_list, weight_list,
