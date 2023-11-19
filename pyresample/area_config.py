@@ -218,7 +218,7 @@ def _create_area_def_from_dict(area_name, params):
     return area_def
 
 
-def _capture_subarguments(params, arg_name, sub_arg_list):
+def _capture_subarguments(params: dict, arg_name: str, sub_arg_list: list[str]) -> Any:
     """Capture :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
 
     Example:
@@ -232,21 +232,7 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
     argument = params.get(arg_name)
     if not isinstance(argument, dict):
         return argument
-    argument_keys = argument.keys()
-    for sub_arg in argument_keys:
-        # Verify that provided sub-arguments are valid.
-        if sub_arg not in sub_arg_list:
-            raise ValueError('Invalid area definition: {0} is not a valid sub-argument for {1}'.format(sub_arg,
-                                                                                                       arg_name))
-        elif arg_name in argument_keys:
-            # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
-            if sub_arg != arg_name and sub_arg != 'units':
-                raise ValueError('Invalid area definition: {0} has too many sub-arguments: Both {0} and {1} were '
-                                 'specified.'.
-                                 format(arg_name, sub_arg))
-            # If the arg_name is provided, it's expected that units is also provided.
-            elif 'units' not in argument_keys:
-                raise ValueError('Invalid area definition: {0} has the sub-argument {0} without units'.format(arg_name))
+    _validate_sub_arg_list(argument, arg_name, sub_arg_list)
     units = argument.pop('units', None)
     list_of_values = argument.pop(arg_name, [])
     for sub_arg in sub_arg_list:
@@ -261,6 +247,23 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
     if units is not None:
         return DataArray(list_of_values, attrs={'units': units})
     return list_of_values
+
+
+def _validate_sub_arg_list(argument, arg_name, sub_arg_list):
+    argument_keys = argument.keys()
+    for sub_arg in argument_keys:
+        # Verify that provided sub-arguments are valid.
+        if sub_arg not in sub_arg_list:
+            raise ValueError(f"Invalid area definition: {sub_arg} is not a valid sub-argument for {arg_name}")
+        if arg_name in argument_keys:
+            # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
+            if sub_arg != arg_name and sub_arg != "units":
+                raise ValueError(
+                    f"Invalid area definition: {arg_name} has too many sub-arguments: "
+                    f"Both {arg_name} and {sub_arg} were specified.")
+            # If the arg_name is provided, it's expected that units is also provided.
+            if 'units' not in argument_keys:
+                raise ValueError(f"Invalid area definition: {arg_name} has the sub-argument {arg_name} without units")
 
 
 def _read_legacy_area_file_lines(area_file_name):
