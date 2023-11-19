@@ -650,25 +650,12 @@ def _convert_units(
     """
     if var is None:
         return None
-    if isinstance(var, DataArray):
-        units = var.units
-        var = tuple(var.data.tolist())
-    if crs.is_geographic and not ('deg' == units or 'degrees' == units):
-        raise ValueError('latlon/latlong projection cannot take {0} as units: {1}'.format(units, name))
-    # Check if units are an angle.
-    is_angle = ('deg' == units or 'degrees' == units)
-    if ('deg' in units) and not is_angle:
-        logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
+    var, units = _extract_and_validate_units(var, units, crs)
+    is_angle = units == "degrees"
     if not is_angle:
-        if units == 'meters' or units == 'metres':
-            units = 'm'
-        if _get_proj_units(crs) != units:
-            tmp_proj_dict = crs.to_dict()
-            tmp_proj_dict['units'] = units
-            transformer = Transformer.from_crs(tmp_proj_dict, p.crs)
-            var = transformer.transform(*var)
-    if name == 'center':
+        var = _convert_coordinate_for_metered_units(var, units, crs, p.crs)
+    if name == "center":
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees.
@@ -688,6 +675,34 @@ def _convert_units(
     if name in ['radius', 'resolution']:
         var = (abs(var[0]), abs(var[1]))
     return var
+
+
+def _extract_and_validate_units(
+        var: DataArray | tuple[float, float],
+        units: str,
+        crs: CRS
+) -> tuple[tuple[float, float], str]:
+    if isinstance(var, DataArray):
+        units = var.attrs["units"]
+        var = tuple(var.data.tolist())
+    if "deg" == units or "degrees" == units:
+        return var, "degrees"
+    if crs.is_geographic:
+        raise ValueError(f"latlon/latlong projection cannot take '{units}' as units")
+    if "deg" in units:
+        raise ValueError(f"Invalid degrees-like units: {units}")
+    if units == 'meters' or units == 'metres':
+        return var, "m"
+    return var, units
+
+
+def _convert_coordinate_for_metered_units(var, units: str, src_crs: CRS, dst_crs: CRS):
+    if _get_proj_units(src_crs) == units:
+        return var
+    tmp_proj_dict = src_crs.to_dict()
+    tmp_proj_dict['units'] = units
+    transformer = Transformer.from_crs(tmp_proj_dict, dst_crs)
+    return transformer.transform(*var)
 
 
 def _round_shape(shape, radius=None, resolution=None):
