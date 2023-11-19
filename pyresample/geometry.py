@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import numpy as np
+import numpy.typing as npt
 import pyproj
 import yaml
 from pyproj import Geod, Proj
@@ -142,24 +143,8 @@ class BaseDefinition:
             return True
         if not isinstance(other, BaseDefinition):
             return False
-        if other.lons is None or other.lats is None:
-            other_lons, other_lats = other.get_lonlats()
-        else:
-            other_lons = other.lons
-            other_lats = other.lats
-
-        if self.lons is None or self.lats is None:
-            self_lons, self_lats = self.get_lonlats()
-        else:
-            self_lons = self.lons
-            self_lats = self.lats
-
-        if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
-            self_lons = self_lons.data
-            self_lats = self_lats.data
-        if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
-            other_lons = other_lons.data
-            other_lats = other_lats.data
+        self_lons, self_lats = self._extract_lonlat_subarrays(self)
+        other_lons, other_lats = self._extract_lonlat_subarrays(other)
         if self_lons is other_lons and self_lats is other_lats:
             return True
 
@@ -179,6 +164,21 @@ class BaseDefinition:
             return lats_close
         except ValueError:
             return False
+
+    @staticmethod
+    def _extract_lonlat_subarrays(
+            geom_obj: BaseDefinition
+    ) -> tuple[npt.ArrayLike | da.Array, npt.ArrayLike | da.Array]:
+        if geom_obj.lons is None or geom_obj.lats is None:
+            lons, lats = geom_obj.get_lonlats()
+        else:
+            lons = geom_obj.lons
+            lats = geom_obj.lats
+
+        if isinstance(lons, DataArray) and np.ndarray is not DataArray:
+            lons = lons.data
+            lats = lats.data
+        return lons, lats
 
     def __ne__(self, other):
         """Test for approximate equality."""
