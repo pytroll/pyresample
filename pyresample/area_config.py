@@ -183,8 +183,9 @@ def _parse_yaml_area_file(area_file_name, *regions):
     """Parse area information from a yaml area file.
 
     Args:
-        area_file_name: filename, file-like object, yaml string, or list of
-                        these.
+        area_file_name: filename, file-like object, yaml string, or list of these.
+        regions (str): Names of areas to parse. Optional and defaults to all areas
+            in the file.
 
     The result of loading multiple area files is the combination of all
     the files, using the first file as the "base", replacing things after

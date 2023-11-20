@@ -2800,9 +2800,9 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
-    Parameters
-    ----------
-    nb_points : Number of points on the polygon.
+    Args:
+      geos_area: Geostationary area definition to get the bounding box for.
+      nb_points: Number of points on the polygon.
 
     """
     x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2823,6 +2823,7 @@ def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the full disk in `geos_area` projection.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x_max_angle, y_max_angle = get_geostationary_angle_extent(geos_area)
@@ -2843,6 +2844,7 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2854,7 +2856,9 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
+
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
                   "'get_geostationary_bounding_box_in_lonlats' instead.",

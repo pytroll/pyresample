@@ -248,6 +248,11 @@ class KDTreeNearestXarrayResampler(Resampler):
 
         Args:
             data (xarray.DataArray): Source data pixels to sample
+            valid_input_index (ArrayLike): Index array of valid pixels in
+                the input geolocation data.
+            index_array (ArrayLike): Index array of nearest neighbors.
+            neighbors (int): Number of neighbors to return for each
+                data pixel. Currently only 1 (the default) is supported.
             fill_value (float): Output fill value when no source data is
                 near the target pixel. When omitted, if the input data is an
                 integer array then the maximum value for that integer type is
