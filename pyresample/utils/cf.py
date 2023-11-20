@@ -91,16 +91,16 @@ def _load_crs_from_cf_gridmapping(nc_handle, grid_mapping_varname):
     # check the variable exists
     try:
         v = nc_handle[grid_mapping_varname]
-    except KeyError:
-        raise KeyError("Variable '{}' does not exist in netCDF file".format(grid_mapping_varname))
+    except KeyError as err:
+        raise KeyError(f"Grid mapping variable '{grid_mapping_varname}' does not exist in netCDF file") from err
 
     # check this indeed is a supported grid mapping variable
     try:
-        if v.grid_mapping_name not in _valid_cf_type_of_grid_mapping:
-            raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
-    except AttributeError:
+        if v.attrs["grid_mapping_name"] not in _valid_cf_type_of_grid_mapping:
+            raise ValueError(f"Not a valid CF grid_mapping variable ({grid_mapping_varname})")
+    except KeyError as err:
         # no :grid_mapping_name thus it cannot be a valid grid_mapping variable
-        raise ValueError("Not a valid CF grid_mapping variable ({})".format(grid_mapping_varname))
+        raise ValueError(f"Not a valid CF grid_mapping variable ({grid_mapping_varname})") from err
 
     # use pyproj to load the CRS
     return pyproj.CRS.from_cf(v.attrs)
@@ -135,13 +135,13 @@ def _is_valid_coordinate_variable(nc_handle, coord_varname, axis, type_of_grid_m
 
     try:
         coord_var = nc_handle[coord_varname]
-    except KeyError:
-        raise KeyError("Variable '{}' does not exist in netCDF file".format(coord_varname))
+    except KeyError as err:
+        raise KeyError(f"Coordinate variable '{coord_varname}' does not exist in netCDF file") from err
 
     try:
-        coord_standard_name = coord_var.standard_name
+        coord_standard_name = coord_var.attrs["standard_name"]
         valid = _is_valid_coordinate_standardname(coord_standard_name, axis, type_of_grid_mapping)
-    except AttributeError:
+    except KeyError:
         # if the coordinate variable is missing a standard_name, it cannot be a valid CF coordinate axis
         valid = False
 
@@ -172,10 +172,8 @@ def _load_cf_axis_info(nc_handle, coord_varname):
         unit = None
 
     # return in a dictionnary structure
-    ret = {'first': first, 'last': last, 'spacing': spacing,
-           'nb': nb, 'sign': sign, 'unit': unit}
-
-    return ret
+    return {'first': first, 'last': last, 'spacing': spacing,
+            'nb': nb, 'sign': sign, 'unit': unit}
 
 
 def _get_area_extent_from_cf_axis(x, y):
@@ -194,37 +192,29 @@ def _get_area_extent_from_cf_axis(x, y):
     ur_y -= y['sign'] * 0.5 * y['spacing']
 
     # return as tuple
-    ret = (ll_x, ll_y, ur_x, ur_y)
-
-    return ret
+    return ll_x, ll_y, ur_x, ur_y
 
 
 def _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping):
     """Guess the name of the netCDF variable holding the coordinate axis of a netCDF field."""
-    ret = None
-
     if axis not in ('x', 'y'):
         raise ValueError("axis= parameter must be 'x' or 'y'")
 
     # the name of y and x are in the dimensions of the variable=
     try:
         dims = nc_handle[variable].dims
-    except KeyError:
-        raise KeyError("variable {} not found in file".format(variable))
+    except KeyError as err:
+        raise KeyError(f"variable {variable} not found in file") from err
 
     for dim in dims:
         # test if each dim is a valid CF coordinate variable
         if _is_valid_coordinate_variable(nc_handle, dim, axis, type_of_grid_mapping):
-            ret = dim
-            break
-
-    return ret
+            return dim
+    return None
 
 
 def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
     """Guess the name of the netCDF variable holding the longitude (or latitude) of a netCDF field."""
-    ret = None
-
     if lonlat not in ('lon', 'lat'):
         raise ValueError("lonlat= parameter must be 'lon' or 'lat'")
 
@@ -232,27 +222,23 @@ def _guess_cf_lonlat_varname(nc_handle, variable, lonlat):
 
     # By default (decode_cf=True) xarray puts all dims and :coordinates in .coords
     #   and remove the :coordinates attribute
-    try:
-        search_list = list(nc_handle[variable].coords)
-    except KeyError:
-        raise KeyError("variable {} not found in file".format(variable))
+    search_list = list(nc_handle[variable].coords)
 
     # if decode_cf=False was used, the look at the :coordinates attribute
     if 'coordinates' in nc_handle[variable].attrs.keys():
         search_list += (nc_handle[variable].attrs['coordinates']).split()
 
     # go through the list of variables and check if one of them is lat / lon
+    exp_standard_name = {"lat": "latitude", "lon": "longitude"}[lonlat]
     for v in search_list:
         try:
             # this allows for both 'latitude' and 'rotated_latitude'...
-            if {'lat': 'latitude', 'lon': 'longitude'}[lonlat] in nc_handle[v].standard_name:
-                ret = v
-                break
-        except AttributeError:
+            if exp_standard_name in nc_handle[v].attrs["standard_name"]:
+                return v
+        except KeyError:
             # no 'standard_name'. this is not what we are looking for.
-            pass
-
-    return ret
+            continue
+    return None
 
 
 def _load_cf_area_one_variable_crs(nc_handle, variable):
@@ -273,7 +259,7 @@ def _load_cf_area_one_variable_crs(nc_handle, variable):
             grid_mapping_variable = variable
             variable_is_itself_gridmapping = True
         except pyproj.exceptions.CRSError as ex:
-            raise ValueError("ERROR: pyproj didn't manage to load the CRS: {}".format(ex))
+            raise ValueError("pyproj couldn't manage to load the CRS") from ex
     else:
         # fallback position: maybe the variable is on a basic lat/lon grid with no
         #   grid_mapping. Note: there is no default CRS in CF, we choose WGS84
@@ -292,8 +278,7 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
         for axis in ('x', 'y'):
             xy[axis] = _guess_cf_axis_varname(nc_handle, variable, axis, type_of_grid_mapping)
             if xy[axis] is None:
-                raise ValueError("Could not guess the name of the '{}' axis for {}".format(
-                    axis, variable))
+                raise ValueError(f"Could not guess the name of the '{axis}' axis for {variable}")
     else:
         # y= and x= are provided by the caller. Check they are valid CF coordinate variables
         #   The order is always (y,x)
@@ -302,8 +287,7 @@ def _load_cf_area_one_variable_axis(nc_handle, variable, type_of_grid_mapping, y
         for axis in ('x', 'y'):
             _valid_axis = _is_valid_coordinate_variable(nc_handle, xy[axis], axis, type_of_grid_mapping)
             if not _valid_axis:
-                ve = "Variable x='{}' is not a valid CF coordinate variable for the {} axis".format(xy[axis], axis)
-                raise ValueError(ve)
+                raise ValueError(f"Variable x='{xy[axis]}' is not a valid CF coordinate variable for the {axis} axis")
 
     # we now have the names for the x= and y= coordinate variables: load the info of each axis separately
     axis_info = dict()
@@ -344,10 +328,9 @@ def _load_cf_area_one_variable(nc_handle, variable, y=None, x=None):
     else:
         try:
             type_of_grid_mapping = nc_handle[grid_mapping_variable].grid_mapping_name
-        except AttributeError:
-            raise ValueError(
-                ("Not a valid CF grid_mapping variable ({}):"
-                 "it lacks a :grid_mapping_name attribute").format(grid_mapping_variable))
+        except AttributeError as err:
+            raise ValueError(f"Not a valid CF grid_mapping variable ({grid_mapping_variable}): "
+                             f"it lacks a :grid_mapping_name attribute") from err
 
     cf_info['grid_mapping_variable'] = grid_mapping_variable
     cf_info['type_of_grid_mapping'] = type_of_grid_mapping
@@ -475,7 +458,7 @@ def load_cf_area(nc_file, variable=None, y=None, x=None):
         try:
             area_def, cf_info = _load_cf_area_one_variable(nc_handle, variable, y=y, x=x, )
         except ValueError as ve:
-            raise ValueError("Found no AreaDefinition associated with variable {} ({})".format(variable, ve))
+            raise ValueError(f"Found no AreaDefinition associated with variable {variable}") from ve
 
     # also guess the name of the latitude and longitude variables
     for ll in ('lon', 'lat'):
@@ -492,9 +475,4 @@ def _open_nc_file(nc_file: str | Path | xr.Dataset) -> xr.Dataset:
     if isinstance(nc_file, xr.Dataset):
         return nc_file
 
-    try:
-        return xr.open_dataset(nc_file)
-    except FileNotFoundError as ex:
-        raise FileNotFoundError("This file does not exist ({})".format(ex))
-    except (OSError, TypeError) as ex:
-        raise OSError("This file is probably not a valid netCDF file ({}).".format(ex))
+    return xr.open_dataset(nc_file)
