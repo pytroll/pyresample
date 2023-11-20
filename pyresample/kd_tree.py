@@ -643,11 +643,6 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
         is_masked_data = True
         new_data = np.column_stack((new_data.data, new_data.mask))
 
-    if new_data.ndim > 1:  # Multiple channels or masked input
-        output_shape = list(output_shape)
-        output_shape.append(new_data.shape[1])
-
-    # Resample based on kd-tree query result
     return _extract_resample_result(
         resample_type, neighbours, new_data, index_array, distance_array,
         valid_input_size, valid_output_index, weight_funcs, with_uncert,
@@ -725,11 +720,16 @@ def _extract_resample_result(resample_type, neighbours, new_data, index_array, d
     full_result = np.full(output_raw_shape, fill_value, dtype=result.dtype)
     full_result[valid_output_index] = result
     result = full_result
-    result = _prepare_result(result, output_shape, is_masked_data, use_masked_fill_value, fill_value, input_data_type)
+    # Multiple channels or masked input
+    final_output_shape = output_shape + (new_data.shape[1],) if new_data.ndim > 1 else output_shape
+
+    result = _prepare_result(
+        result, final_output_shape, is_masked_data, use_masked_fill_value,
+        fill_value, input_data_type)
 
     if with_uncert:  # Add fill values for uncertainty
         stddev, count = _prepare_and_fill_uncertainty_result(
-            stddev, count, output_raw_shape, output_shape, valid_output_index, is_masked_data)
+            stddev, count, output_raw_shape, final_output_shape, valid_output_index, is_masked_data)
         if np.ma.isMA(result):
             stddev = np.ma.array(stddev, mask=(result.mask | stddev.mask))
             count = np.ma.array(count, mask=result.mask)
