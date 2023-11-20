@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Optional, Sequence, Union
 
 import numpy as np
+import xarray as xr
 import pyproj
 import yaml
 from pyproj import Geod, Proj
@@ -694,7 +695,14 @@ class CoordinateDefinition(BaseDefinition):
             raise RuntimeError("Can't confidently determine geocentric "
                                "resolution for 1D swath.")
 
-        rows = self.lons['y'].shape[0]
+        if isinstance(self.lons, xr.DataArray):
+            rows = self.lons['y'].shape[0]
+        else:
+            # Data have no information on dimensions, so we assume first dimension (the rows) is the y-axis:
+            logger.warning('As Numpy data arrays carry no information on the data layout we here ' +
+                           'assume the first dimension (the rows) is the y-axis (the satellite scans)')
+            rows = self.shape[0]
+
         start_row = rows // 2  # middle row
         src = CRS('+proj=latlong +datum=WGS84')
         if radius:
@@ -702,8 +710,13 @@ class CoordinateDefinition(BaseDefinition):
         else:
             dst = CRS("+proj=cart +ellps={}".format(ellps))
         # simply take the first two columns of the middle of the swath
-        lons = self.lons.sel(y=start_row)[:2]
-        lats = self.lats.sel(y=start_row)[:2]
+        if isinstance(self.lons, xr.DataArray):
+            lons = self.lons.sel(y=start_row)[:2]
+            lats = self.lats.sel(y=start_row)[:2]
+        else:
+            lons = self.lons[start_row: start_row + 1, :2]
+            lats = self.lats[start_row: start_row + 1, :2]
+
         if hasattr(lons.data, 'compute'):
             # dask arrays, compute them together
             import dask.array as da

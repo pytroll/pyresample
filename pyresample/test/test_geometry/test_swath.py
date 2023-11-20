@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2022 Pyresample developers
+# Copyright (C) 2010-2023 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,6 +15,7 @@
 """Test AreaDefinition objects."""
 import contextlib
 
+import logging
 import dask.array as da
 import numpy as np
 import pytest
@@ -512,13 +513,31 @@ class TestSwathDefinition:
         np.testing.assert_allclose(res.lons, [[178.5, -179.5]])
         np.testing.assert_allclose(res.lats, [[0, 0]], atol=2e-5)
 
-    def test_swath_def_geocentric_resolution(self, create_test_swath):
-        """Test the SwathDefinition.geocentric_resolution method."""
+    def test_swath_def_geocentric_resolution_numpy(self, caplog, create_test_swath):
+        """Test the SwathDefinition.geocentric_resolution method - lon/lat are a numpy arrays."""
+        lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
+        lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
+        sd = create_test_swath(lons, lats)
+
+        with caplog.at_level(logging.DEBUG):
+            geo_res = sd.geocentric_resolution()
+
+        log_output = ('As Numpy data arrays carry no information on the data layout we here assume ' +
+                      'the first dimension (the rows) is the y-axis (the satellite scans)')
+        assert log_output in caplog.text
+
+        # google says 1 degrees of longitude is about ~111.321km
+        # so this seems good
+        np.testing.assert_allclose(111301.237078, geo_res)
+
+    def test_swath_def_geocentric_resolution_xarray(self, create_test_swath):
+        """Test the SwathDefinition.geocentric_resolution method lon/lat are Xarray data arrays."""
         lats = np.array([[0, 0, 0, 0], [1, 1, 1, 1.0]])
         lons = np.array([[178.5, 179.5, -179.5, -178.5], [178.5, 179.5, -179.5, -178.5]])
         xlats = xr.DataArray(da.from_array(lats, chunks=2), dims=['y', 'x'])
         xlons = xr.DataArray(da.from_array(lons, chunks=2), dims=['y', 'x'])
         sd = create_test_swath(xlons, xlats)
+
         geo_res = sd.geocentric_resolution()
         # google says 1 degrees of longitude is about ~111.321km
         # so this seems good
