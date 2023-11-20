@@ -244,9 +244,9 @@ class SCoordinate(object):
         import matplotlib.pyplot as plt
         try:
             import cartopy.crs as ccrs
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as err:
             raise ModuleNotFoundError(
-                "Install cartopy to plot spherical geometries. For example, 'pip install cartopy'.")
+                "Install cartopy to plot spherical geometries. For example, 'pip install cartopy'.") from err
 
         # Create figure if ax not provided
         if ax is None:

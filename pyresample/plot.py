@@ -92,9 +92,9 @@ def ellps2axis(ellps_name):
         ellps_axis = ellps[ellps_name.lower()]
         a = ellps_axis['a']
         b = ellps_axis['b']
-    except KeyError:
-        raise ValueError(('Could not determine semi-major and semi-minor axis '
-                          'of specified ellipsis %s') % ellps_name)
+    except KeyError as err:
+        raise ValueError(f"Could not determine semi-major and semi-minor "
+                         f"axis of specified ellipsis {ellps_name}") from err
     return a, b
 
 

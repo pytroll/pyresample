@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [tool.ruff]
 # See https://docs.astral.sh/ruff/rules/
 select = ["E", "W", "B", "D", "T10", "C90"]
+# Remove D417 when all docstrings have been converted to google-style
 ignore = ["D107", "D416", "D417"]
 line-length = 120
 exclude = ["versioneer.py", "pyresample/version.py"]

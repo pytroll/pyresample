@@ -321,8 +321,8 @@ def _parse_one_legacy_area_lines(area_file: Iterable[str], area_id: str):
         if '};' in line:
             try:
                 return _create_area(area_id, area_content)
-            except KeyError:
-                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
+            except KeyError as err:
+                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content)) from err
         else:
             area_content += line
 
@@ -854,10 +854,10 @@ def _verify_list(name, var, length):
             var = _format_list(var.data.tolist(), name)
         else:
             var = _format_list(var, name)
-    except TypeError:
-        raise ValueError('{0} is not list-like:\n{1}'.format(name, var))
-    except ValueError:
-        raise ValueError('{0} is not composed purely of numbers:\n{1}'.format(name, var))
+    except TypeError as err:
+        raise ValueError('{0} is not list-like:\n{1}'.format(name, var)) from err
+    except ValueError as err:
+        raise ValueError('{0} is not composed purely of numbers:\n{1}'.format(name, var)) from err
     # Confirm correct shape
     if len(var) != length:
         raise ValueError('{0} should have length {1}, but instead has length {2}:\n{3}'.format(name, length,

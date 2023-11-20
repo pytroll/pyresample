@@ -2749,8 +2749,8 @@ def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
             return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
         boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
         return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
-    except ValueError:
-        raise NotImplementedError("Can't determine boundary of area to cover")
+    except ValueError as err:
+        raise NotImplementedError("Can't determine boundary of area to cover") from err
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
