@@ -304,6 +304,7 @@ def get_neighbour_info(source_geo_def, target_geo_def, radius_of_influence,
     segments : int or None
         Number of segments to use when resampling.
         If set to None an estimate will be calculated
+
     Returns
     -------
     (valid_input_index, valid_output_index,

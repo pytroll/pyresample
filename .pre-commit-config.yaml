@@ -1,12 +1,17 @@
 exclude: '^$'
 fail_fast: false
 repos:
--   repo: https://github.com/pycqa/flake8
-    rev: 6.1.0
-    hooks:
-    - id: flake8
-      additional_dependencies: [flake8-docstrings, flake8-debugger, flake8-bugbear, mccabe]
-      args: [--max-complexity, "10"]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: 'v0.1.6'
+  hooks:
+  - id: ruff
+# once https://github.com/astral-sh/ruff/issues/2402 is fully resolved then we can get rid of flake8:
+- repo: https://github.com/pycqa/flake8
+  rev: 6.1.0
+  hooks:
+  - id: flake8
+    additional_dependencies: [flake8-docstrings, flake8-debugger, flake8-bugbear, mccabe]
+    args: [--max-complexity, "10"]
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.5.0
   hooks:
