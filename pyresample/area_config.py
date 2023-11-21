@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Area config handling and creation utilities."""
+from __future__ import annotations
 
 import io
 import logging
@@ -23,7 +24,7 @@ import math
 import os
 import pathlib
 import warnings
-from typing import Any, Union
+from typing import Any, Iterable, Union
 
 import numpy as np
 import yaml
@@ -36,7 +37,7 @@ from pyresample.utils import proj4_str_to_dict
 try:
     from xarray import DataArray
 except ImportError:
-    class DataArray(object):
+    class DataArray:  # type: ignore
         """Stand-in for DataArray for holding units information."""
 
         def __init__(self, data, attrs=None):
@@ -182,8 +183,9 @@ def _parse_yaml_area_file(area_file_name, *regions):
     """Parse area information from a yaml area file.
 
     Args:
-        area_file_name: filename, file-like object, yaml string, or list of
-                        these.
+        area_file_name: filename, file-like object, yaml string, or list of these.
+        regions (str): Names of areas to parse. Optional and defaults to all areas
+            in the file.
 
     The result of loading multiple area files is the combination of all
     the files, using the first file as the "base", replacing things after
@@ -217,7 +219,7 @@ def _create_area_def_from_dict(area_name, params):
     return area_def
 
 
-def _capture_subarguments(params, arg_name, sub_arg_list):
+def _capture_subarguments(params: dict, arg_name: str, sub_arg_list: list[str]) -> Any:
     """Capture :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
 
     Example:
@@ -231,21 +233,7 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
     argument = params.get(arg_name)
     if not isinstance(argument, dict):
         return argument
-    argument_keys = argument.keys()
-    for sub_arg in argument_keys:
-        # Verify that provided sub-arguments are valid.
-        if sub_arg not in sub_arg_list:
-            raise ValueError('Invalid area definition: {0} is not a valid sub-argument for {1}'.format(sub_arg,
-                                                                                                       arg_name))
-        elif arg_name in argument_keys:
-            # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
-            if sub_arg != arg_name and sub_arg != 'units':
-                raise ValueError('Invalid area definition: {0} has too many sub-arguments: Both {0} and {1} were '
-                                 'specified.'.
-                                 format(arg_name, sub_arg))
-            # If the arg_name is provided, it's expected that units is also provided.
-            elif 'units' not in argument_keys:
-                raise ValueError('Invalid area definition: {0} has the sub-argument {0} without units'.format(arg_name))
+    _validate_sub_arg_list(argument, arg_name, sub_arg_list)
     units = argument.pop('units', None)
     list_of_values = argument.pop(arg_name, [])
     for sub_arg in sub_arg_list:
@@ -260,6 +248,23 @@ def _capture_subarguments(params, arg_name, sub_arg_list):
     if units is not None:
         return DataArray(list_of_values, attrs={'units': units})
     return list_of_values
+
+
+def _validate_sub_arg_list(argument, arg_name, sub_arg_list):
+    argument_keys = argument.keys()
+    for sub_arg in argument_keys:
+        # Verify that provided sub-arguments are valid.
+        if sub_arg not in sub_arg_list:
+            raise ValueError(f"Invalid area definition: {sub_arg} is not a valid sub-argument for {arg_name}")
+        if arg_name in argument_keys:
+            # If the arg_name is provided as a sub_arg, then it contains all the data and does not need other sub_args.
+            if sub_arg != arg_name and sub_arg != "units":
+                raise ValueError(
+                    f"Invalid area definition: {arg_name} has too many sub-arguments: "
+                    f"Both {arg_name} and {sub_arg} were specified.")
+            # If the arg_name is provided, it's expected that units is also provided.
+            if 'units' not in argument_keys:
+                raise ValueError(f"Invalid area definition: {arg_name} has the sub-argument {arg_name} without units")
 
 
 def _read_legacy_area_file_lines(area_file_name):
@@ -284,35 +289,23 @@ def _parse_legacy_area_file(area_file_name, *regions):
     """Parse area information from a legacy area file."""
     area_file = _read_legacy_area_file_lines(area_file_name)
     area_list = list(regions)
-    if not area_list:
-        select_all_areas = True
-        area_defs = []
-    else:
-        select_all_areas = False
-        area_defs = [None for i in area_list]
+    select_all_areas = bool(not area_list)
+    area_defs = [] if select_all_areas else [None for area_id in area_list]
 
     # Extract area from file
-    in_area = False
     for line in area_file:
-        if not in_area:
-            if 'REGION' in line and not line.strip().startswith('#'):
-                area_id = line.replace('REGION:', ''). \
-                    replace('{', '').strip()
-                if area_id in area_list or select_all_areas:
-                    in_area = True
-                    area_content = ''
-        elif '};' in line:
-            in_area = False
-            try:
-                if select_all_areas:
-                    area_defs.append(_create_area(area_id, area_content))
-                else:
-                    area_defs[area_list.index(area_id)] = _create_area(area_id,
-                                                                       area_content)
-            except KeyError:
-                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content))
+        if "REGION" not in line or line.strip().startswith("#"):
+            continue
+
+        area_id = line.replace('REGION:', '').replace('{', '').strip()
+        if area_id not in area_list and not select_all_areas:
+            continue
+
+        area_def = _parse_one_legacy_area_lines(area_file, area_id)
+        if select_all_areas:
+            area_defs.append(area_def)
         else:
-            area_content += line
+            area_defs[area_list.index(area_id)] = area_def
 
     # Check if all specified areas were found
     if not select_all_areas:
@@ -321,6 +314,18 @@ def _parse_legacy_area_file(area_file_name, *regions):
                 raise AreaNotFound('Area "%s" not found in file "%s"' %
                                    (area_list[i], area_file_name))
     return area_defs
+
+
+def _parse_one_legacy_area_lines(area_file: Iterable[str], area_id: str):
+    area_content = ""
+    for line in area_file:
+        if '};' in line:
+            try:
+                return _create_area(area_id, area_content)
+            except KeyError as err:
+                raise ValueError('Invalid area definition: %s, %s' % (area_id, area_content)) from err
+        else:
+            area_content += line
 
 
 def _create_area(area_id, area_content):
@@ -519,8 +524,8 @@ def _make_area(
         description: str,
         proj_id: str,
         projection: Union[dict, CRS],
-        shape: tuple,
-        area_extent: tuple,
+        shape: tuple[int, ...] | None,
+        area_extent: tuple[float, float, float, float] | None,
         **kwargs):
     """Handle the creation of an area definition for create_area_def."""
     from pyresample.future.geometry import AreaDefinition
@@ -531,19 +536,17 @@ def _make_area(
     resolution = kwargs.pop('resolution', None)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
-    height, width = (None, None)
-    if shape is not None:
-        height, width = shape
-    if None not in (area_extent, shape):
+    if area_extent is not None and shape is not None:
         attrs = {
             "name": area_id,
             "description": description,
             "proj_id": proj_id,
         }
         attrs.update(kwargs)
-        area_def = AreaDefinition(projection, (height, width), area_extent, attrs=attrs)
+        area_def = AreaDefinition(projection, shape, area_extent, attrs=attrs)
         return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()
 
+    height, width = (None, None) if shape is None else shape
     return DynamicAreaDefinition(area_id=area_id, description=description, projection=projection, width=width,
                                  height=height, area_extent=area_extent,
                                  resolution=resolution, optimize_projection=optimize_projection)
@@ -651,25 +654,12 @@ def _convert_units(
     """
     if var is None:
         return None
-    if isinstance(var, DataArray):
-        units = var.units
-        var = tuple(var.data.tolist())
-    if crs.is_geographic and not ('deg' == units or 'degrees' == units):
-        raise ValueError('latlon/latlong projection cannot take {0} as units: {1}'.format(units, name))
-    # Check if units are an angle.
-    is_angle = ('deg' == units or 'degrees' == units)
-    if ('deg' in units) and not is_angle:
-        logging.warning('units provided to {0} are incorrect: {1}'.format(name, units))
     # Convert from var projection units to projection units given by projection from user.
+    var, units = _extract_and_validate_units(var, units, crs)
+    is_angle = units == "degrees"
     if not is_angle:
-        if units == 'meters' or units == 'metres':
-            units = 'm'
-        if _get_proj_units(crs) != units:
-            tmp_proj_dict = crs.to_dict()
-            tmp_proj_dict['units'] = units
-            transformer = Transformer.from_crs(tmp_proj_dict, p.crs)
-            var = transformer.transform(*var)
-    if name == 'center':
+        var = _convert_coordinate_for_metered_units(var, units, crs, p.crs)
+    if name == "center":
         var = _round_poles(var, units, p)
     # Return either degrees or meters depending on if the inverse is true or not.
     # Don't convert if inverse is True: Want degrees.
@@ -689,6 +679,34 @@ def _convert_units(
     if name in ['radius', 'resolution']:
         var = (abs(var[0]), abs(var[1]))
     return var
+
+
+def _extract_and_validate_units(
+        var: DataArray | tuple[float, float],
+        units: str,
+        crs: CRS
+) -> tuple[tuple[float, float], str]:
+    if isinstance(var, DataArray):
+        units = var.attrs["units"]
+        var = tuple(var.data.tolist())
+    if "deg" == units or "degrees" == units:
+        return var, "degrees"
+    if crs.is_geographic:
+        raise ValueError(f"latlon/latlong projection cannot take '{units}' as units")
+    if "deg" in units:
+        raise ValueError(f"Invalid degrees-like units: {units}")
+    if units == 'meters' or units == 'metres':
+        return var, "m"
+    return var, units
+
+
+def _convert_coordinate_for_metered_units(var, units: str, src_crs: CRS, dst_crs: CRS):
+    if _get_proj_units(src_crs) == units:
+        return var
+    tmp_proj_dict = src_crs.to_dict()
+    tmp_proj_dict['units'] = units
+    transformer = Transformer.from_crs(tmp_proj_dict, dst_crs)
+    return transformer.transform(*var)
 
 
 def _round_shape(shape, radius=None, resolution=None):
@@ -837,10 +855,10 @@ def _verify_list(name, var, length):
             var = _format_list(var.data.tolist(), name)
         else:
             var = _format_list(var, name)
-    except TypeError:
-        raise ValueError('{0} is not list-like:\n{1}'.format(name, var))
-    except ValueError:
-        raise ValueError('{0} is not composed purely of numbers:\n{1}'.format(name, var))
+    except TypeError as err:
+        raise ValueError('{0} is not list-like:\n{1}'.format(name, var)) from err
+    except ValueError as err:
+        raise ValueError('{0} is not composed purely of numbers:\n{1}'.format(name, var)) from err
     # Confirm correct shape
     if len(var) != length:
         raise ValueError('{0} should have length {1}, but instead has length {2}:\n{3}'.format(name, length,

@@ -38,8 +38,8 @@ class JSONCacheHelper:
 
         Intended to mimic the :func:`functools.cache` behavior.
         """
-        cache_dir = _get_cache_dir_from_config(cache_dir=cache_dir, cache_version="*")
-        for json_file in glob(str(cache_dir / "*.json")):
+        cache_path = _get_cache_dir_from_config(cache_dir=cache_dir, cache_version="*")
+        for json_file in glob(str(cache_path / "*.json")):
             os.remove(json_file)
 
     def __call__(self, *args):

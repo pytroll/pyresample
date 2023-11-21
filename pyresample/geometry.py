@@ -25,9 +25,10 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import numpy as np
+import numpy.typing as npt
 import pyproj
 import yaml
 from pyproj import Geod, Proj
@@ -60,7 +61,10 @@ from pyproj import CRS
 from pyproj.enums import TransformDirection
 
 logger = getLogger(__name__)
-HashType = hashlib._hashlib.HASH
+
+if TYPE_CHECKING:
+    # defined in typeshed to hide private C-level type
+    from hashlib import _Hash
 
 
 class DimensionError(ValueError):
@@ -120,10 +124,10 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update the hash."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(get_array_hashable(self.lons))
         existing_hash.update(get_array_hashable(self.lats))
         try:
@@ -139,24 +143,8 @@ class BaseDefinition:
             return True
         if not isinstance(other, BaseDefinition):
             return False
-        if other.lons is None or other.lats is None:
-            other_lons, other_lats = other.get_lonlats()
-        else:
-            other_lons = other.lons
-            other_lats = other.lats
-
-        if self.lons is None or self.lats is None:
-            self_lons, self_lats = self.get_lonlats()
-        else:
-            self_lons = self.lons
-            self_lats = self.lats
-
-        if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
-            self_lons = self_lons.data
-            self_lats = self_lats.data
-        if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
-            other_lons = other_lons.data
-            other_lats = other_lats.data
+        self_lons, self_lats = self._extract_lonlat_subarrays(self)
+        other_lons, other_lats = self._extract_lonlat_subarrays(other)
         if self_lons is other_lons and self_lats is other_lats:
             return True
 
@@ -176,6 +164,21 @@ class BaseDefinition:
             return lats_close
         except ValueError:
             return False
+
+    @staticmethod
+    def _extract_lonlat_subarrays(
+            geom_obj: BaseDefinition
+    ) -> tuple[npt.ArrayLike | da.Array, npt.ArrayLike | da.Array]:
+        if geom_obj.lons is None or geom_obj.lats is None:
+            lons, lats = geom_obj.get_lonlats()
+        else:
+            lons = geom_obj.lons
+            lats = geom_obj.lats
+
+        if isinstance(lons, DataArray) and np.ndarray is not DataArray:
+            lons = lons.data
+            lats = lats.data
+        return lons, lats
 
     def __ne__(self, other):
         """Test for approximate equality."""
@@ -415,16 +418,6 @@ class BaseDefinition:
         blons = np.ma.concatenate(lons)
         blats = np.ma.concatenate(lats)
         return blons, blats
-
-    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
-                                                frequency: Optional[int] = None):
-        """Return the bounding box in projection coordinates."""
-        if frequency is not None:
-            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
-                          PendingDeprecationWarning, stacklevel=2)
-        vertices_per_side = vertices_per_side or frequency
-        x, y = self._get_bbox_elements(self.get_proj_coords, vertices_per_side)
-        return np.hstack(x), np.hstack(y)
 
     def boundary(self, vertices_per_side=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
@@ -1134,7 +1127,7 @@ class DynamicAreaDefinition(object):
                            corners[1] - y_resolution / 2,
                            corners[2] + x_resolution / 2,
                            corners[3] + y_resolution / 2)
-        else:
+        elif resolution:
             x_resolution, y_resolution = resolution
             half_x = x_resolution / 2
             half_y = y_resolution / 2
@@ -1629,6 +1622,16 @@ class AreaDefinition(_ProjectionDefinition):
         boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
         return boundary
 
+    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
+                                                frequency: Optional[int] = None):
+        """Return the bounding box in projection coordinates."""
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        vertices_per_side = vertices_per_side or frequency
+        x, y = self._get_bbox_elements(self.get_proj_coords, vertices_per_side)
+        return np.hstack(x), np.hstack(y)
+
     @property
     def area_extent(self):
         """Tuple of this area's extent (xmin, ymin, xmax, ymax)."""
@@ -2055,10 +2058,10 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for equality."""
         return not self.__eq__(other)
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update a hash, or return a new one if needed."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(self.crs_wkt.encode('utf-8'))
         existing_hash.update(np.array(self.shape))
         existing_hash.update(np.array(self.area_extent))
@@ -2701,9 +2704,9 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
-    Parameters
-    ----------
-    nb_points : Number of points on the polygon.
+    Args:
+      geos_area: Geostationary area definition to get the bounding box for.
+      nb_points: Number of points on the polygon.
 
     """
     x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2724,6 +2727,7 @@ def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the full disk in `geos_area` projection.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x_max_angle, y_max_angle = get_geostationary_angle_extent(geos_area)
@@ -2744,6 +2748,7 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2755,7 +2760,9 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
+
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
                   "'get_geostationary_bounding_box_in_lonlats' instead.",

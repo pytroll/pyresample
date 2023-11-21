@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """EWA algorithms operating on numpy arrays."""
+from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
-from pyresample.ewa import _fornav, _ll2cr
+# Pyresample does not have type definition for all of it's cython modules
+from pyresample.ewa import _fornav, _ll2cr  # type: ignore
 
 LOG = logging.getLogger(__name__)
 
@@ -147,6 +150,48 @@ def fornav(cols, rows, area_def, data_in,
         array provided then the returned tuple is simply the singe points integer
         and single output grid array.
     """
+    data_in, convert_to_masked, fill = _data_in_as_masked_arrays(data_in, fill)
+
+    if out is not None:
+        # the user may have provided memmapped arrays or other array-like objects
+        if isinstance(out, (tuple, list)):
+            out = tuple(out)
+        else:
+            out = (out,)
+    else:
+        # create a place for output data to be written
+        out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype)
+                    for in_arr in data_in)
+
+    # see if the user specified rows per scan
+    # otherwise, use the entire swath as one "scanline"
+    rows_per_scan = rows_per_scan or data_in[0].shape[0]
+
+    results = _fornav.fornav_wrapper(cols, rows, data_in, out,
+                                     np.nan, np.nan, rows_per_scan,
+                                     weight_count=weight_count,
+                                     weight_min=weight_min,
+                                     weight_distance_max=weight_distance_max,
+                                     weight_delta_max=weight_delta_max,
+                                     weight_sum_min=weight_sum_min,
+                                     maximum_weight_mode=maximum_weight_mode)
+
+    if convert_to_masked:
+        # they gave us masked arrays so give them masked arrays back
+        out = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr)
+               for out_arr in out]
+    if len(out) == 1:
+        # they only gave us one data array as input, so give them one back
+        out = out[0]
+        results = results[0]
+
+    return results, out
+
+
+def _data_in_as_masked_arrays(
+        data_in: Any,
+        fill: float | int | None
+) -> tuple[tuple[np.ma.MaskedArray, ...], bool, float | int]:
     if isinstance(data_in, (tuple, list)):
         # we can only support one data type per call at this time
         for in_arr in data_in[1:]:
@@ -175,45 +220,10 @@ def fornav(cols, rows, area_def, data_in,
             convert_to_masked = True
             # convert masked arrays to single numpy arrays
             data_in[idx] = in_arr.filled(fill)
-    data_in = tuple(data_in)
+    return tuple(data_in), convert_to_masked, fill
 
-    if out is not None:
-        # the user may have provided memmapped arrays or other array-like
-        # objects
-        if isinstance(out, (tuple, list)):
-            out = tuple(out)
-        else:
-            out = (out,)
-    else:
-        # create a place for output data to be written
-        out = tuple(np.empty(area_def.shape, dtype=in_arr.dtype)
-                    for in_arr in data_in)
 
-    # see if the user specified rows per scan
-    # otherwise, use the entire swath as one "scanline"
-    rows_per_scan = rows_per_scan or data_in[0].shape[0]
-
-    results = _fornav.fornav_wrapper(cols, rows, data_in, out,
-                                     np.nan, np.nan, rows_per_scan,
-                                     weight_count=weight_count,
-                                     weight_min=weight_min,
-                                     weight_distance_max=weight_distance_max,
-                                     weight_delta_max=weight_delta_max,
-                                     weight_sum_min=weight_sum_min,
-                                     maximum_weight_mode=maximum_weight_mode)
-
-    def _mask_helper(data, fill):
-        if np.isnan(fill):
-            return np.isnan(data)
-        return data == fill
-
-    if convert_to_masked:
-        # they gave us masked arrays so give them masked arrays back
-        out = [np.ma.masked_where(_mask_helper(out_arr, fill), out_arr)
-               for out_arr in out]
-    if len(out) == 1:
-        # they only gave us one data array as input, so give them one back
-        out = out[0]
-        results = results[0]
-
-    return results, out
+def _mask_helper(data, fill):
+    if np.isnan(fill):
+        return np.isnan(data)
+    return data == fill

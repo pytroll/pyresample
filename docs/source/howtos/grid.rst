@@ -17,13 +17,13 @@ using the method **get_array_from_linesample**
 Resampling can be done using descendants of **ImageContainer** and calling their **resample** method.
 
 An **ImageContainerQuick** object allows for the grid to be resampled to a new area defintion
-using an approximate (but fast) nearest neighbour method. 
-Resampling an object of type **ImageContainerQuick** returns a new object of type **ImageContainerQuick**. 
+using an approximate (but fast) nearest neighbour method.
+Resampling an object of type **ImageContainerQuick** returns a new object of type **ImageContainerQuick**.
 
 An **ImageContainerNearest** object allows for the grid to be resampled to a new area defintion (or swath definition)
 using an accurate kd-tree method.
-Resampling an object of type **ImageContainerNearest** returns a new object of 
-type **ImageContainerNearest**. 
+Resampling an object of type **ImageContainerNearest** returns a new object of
+type **ImageContainerNearest**.
 
 .. doctest::
 
@@ -32,7 +32,7 @@ type **ImageContainerNearest**.
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -54,7 +54,7 @@ type **ImageContainerNearest**.
 
 Data is assumed to be a numpy array of shape (rows, cols) or (rows, cols, channels).
 
-Masked arrays can be used as data input. In order to have undefined pixels masked out instead of 
+Masked arrays can be used as data input. In order to have undefined pixels masked out instead of
 assigned a fill value set **fill_value=None** when calling **resample_area_***.
 
 Using **ImageContainerQuick** the risk of image artifacts increases as the distance
@@ -81,7 +81,7 @@ The constructor arguments of an ImageContainer object can be changed as attribut
  >>> msg_con_nn = image.ImageContainerNearest(data, msg_area, radius_of_influence=50000)
  >>> msg_con_nn.radius_of_influence = 45000
  >>> msg_con_nn.fill_value = -99
- 
+
 Multi channel images
 ********************
 
@@ -104,15 +104,15 @@ If the dataset has several channels the last index of the data array specifies t
  >>> channel3 = np.ones((3712, 3712)) * 3
  >>> data = np.dstack((channel1, channel2, channel3))
  >>> msg_con_nn = image.ImageContainerNearest(data, msg_area, radius_of_influence=50000)
- 
+
 
 Segmented resampling
 ********************
 
 Pyresample calculates the result in segments in order to reduce memory footprint. This is controlled by the **segments** contructor keyword argument. If no **segments** argument is given pyresample will estimate the number of segments to use.
- 
+
 Forcing quick resampling to use 4 resampling segments:
- 
+
 .. doctest::
 
  >>> import numpy as np
@@ -120,7 +120,7 @@ Forcing quick resampling to use 4 resampling segments:
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -141,7 +141,7 @@ Constructor arguments
 The full list of constructor arguments:
 
  **ImageContainerQuick**:
- 
+
 * image_data : Dataset. Masked arrays can be used.
 * geo_def : Geometry definition.
 * fill_value (optional) : Fill value for undefined pixels. Defaults to 0. If set to **None** they will be masked out.
@@ -162,5 +162,3 @@ The full list of constructor arguments:
 Preprocessing of grid resampling
 *********************************
 For preprocessing of grid resampling see :ref:`preproc`
- 
- 

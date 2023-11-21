@@ -217,26 +217,24 @@ class Arc(object):
         ub_ = a__.cross(c__)
 
         val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
-        if snap:
-            if abs(val - 1) < EPSILON:
-                angle = 0
-            elif abs(val + 1) < EPSILON:
-                angle = math.pi
-            else:
-                angle = math.acos(val)
-        else:
-            if 0 <= val - 1 < EPSILON:
-                angle = 0
-            elif -EPSILON < val + 1 <= 0:
-                angle = math.pi
-            else:
-                angle = math.acos(val)
+        angle = self._convert_to_angle(val, snap_to_zero=snap)
 
         n__ = ua_.normalize()
-        if n__.dot(c__) > 0:
-            return -angle
+        return -angle if n__.dot(c__) > 0 else angle
+
+    @staticmethod
+    def _convert_to_angle(val: float, snap_to_zero: bool) -> float:
+        if snap_to_zero:
+            if abs(val - 1) < EPSILON:
+                return 0
+            elif abs(val + 1) < EPSILON:
+                return math.pi
         else:
-            return angle
+            if 0 <= val - 1 < EPSILON:
+                return 0
+            elif -EPSILON < val + 1 <= 0:
+                return math.pi
+        return math.acos(val)
 
     def intersections(self, other_arc):
         """Get the two intersections of the greats circles defined by the current arc and *other_arc*."""

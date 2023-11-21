@@ -21,6 +21,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
+import pytest
 
 from pyresample import geometry, kd_tree, utils
 from pyresample.test.utils import catch_warnings
@@ -927,8 +928,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
@@ -954,8 +955,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
@@ -997,8 +998,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})

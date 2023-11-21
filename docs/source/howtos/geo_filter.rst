@@ -15,12 +15,12 @@ a full globe Plate Carrée projection using an 8x8 filter mask
  >>> import numpy as np
  >>> from pyresample import geometry, geo_filter
  >>> lons = np.array([-170, -30, 30, 170])
- >>> lats = np.array([20, -40, 50, -80]) 
+ >>> lats = np.array([20, -40, 50, -80])
  >>> swath_def = geometry.SwathDefinition(lons, lats)
  >>> data = np.array([1, 2, 3, 4])
- >>> filter_area = geometry.AreaDefinition('test', 'test', 'test', 
+ >>> filter_area = geometry.AreaDefinition('test', 'test', 'test',
  ...         {'proj' : 'eqc', 'lon_0' : 0.0, 'lat_0' : 0.0},
- ...           8, 8,                                               
+ ...           8, 8,
  ...          (-20037508.34, -10018754.17, 20037508.34, 10018754.17)
  ...		 )
  >>> filter = np.array([[1, 1, 1, 1, 0, 0, 0, 0],
