@@ -137,10 +137,10 @@ class StackingGradientSearchResampler(BaseResampler):
         """Get bounding polygon for source chunk."""
         geo_def = self.source_geo_def[src_y_start:src_y_end,
                                       src_x_start:src_x_end]
-        if isinstance(geo_def, SwathDefinition): 
-            return False 
-        
-        # NOTE: th code below could be used to return a polygon also for SwathDefinition object
+        if isinstance(geo_def, SwathDefinition):
+            return False
+
+        # NOTE: the code below could be used to return a polygon also for SwathDefinition object
         src_poly = get_polygon(self.prj, geo_def)
         return src_poly
 

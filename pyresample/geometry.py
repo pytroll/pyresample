@@ -274,6 +274,7 @@ class BaseDefinition:
         return self.get_lonlats(chunks=chunks)
 
     def get_proj_coords(self, data_slice=None, chunks=None, **kwargs):
+        """Return AreaDefinition projection coordinates."""
         class_name = self.__class__.__name__
         raise NotImplementedError(f"get_proj_coords is not available for geometry {class_name}.")
 
@@ -406,7 +407,7 @@ class BaseDefinition:
         if coordinates == "geographic":
             coord_fun = self.get_lonlats
         else:
-            coord_fun = self.get_proj_coords # AreaDefinition
+            coord_fun = self.get_proj_coords  # AreaDefinition
 
         s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(vertices_per_side)
         s1_dim1, s1_dim2 = coord_fun(data_slice=s1_slice)
@@ -499,13 +500,14 @@ class BaseDefinition:
     def get_edge_lonlats(self, vertices_per_side=None, frequency=None):
         """Get the concatenated boundary of the current swath."""
         if frequency is not None:
-            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
+            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead.",
                           PendingDeprecationWarning, stacklevel=2)
+        msg = "`get_edge_lonlats` is pending deprecation"
+        msg += "Use `area.boundary(vertices_per_side=vertices_per_side).contour()` instead."
+        warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lons, lats = self.get_bbox_lonlats(vertices_per_side=vertices_per_side, force_clockwise=False)
-        blons = np.ma.concatenate(lons)
-        blats = np.ma.concatenate(lats)
-        return blons, blats
+        lons, lats = self.boundary(vertices_per_side=vertices_per_side).contour()
+        return lons, lats
 
     def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
@@ -1072,7 +1074,7 @@ class SwathDefinition(CoordinateDefinition):
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
-        lons, lats = self.get_edge_lonlats()
+        lons, lats = self.boundary(vertices_per_side=None).contour()
         return area.freeze((lons, lats), shape=(height, width))
 
 
@@ -1659,8 +1661,7 @@ class AreaDefinition(_ProjectionDefinition):
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        x_sides, y_sides = self._get_boundary_sides(coordinates="projection", 
-                                                    vertices_per_side=vertices_per_side)
+        x_sides, y_sides = self._get_boundary_sides(coordinates="projection", vertices_per_side=vertices_per_side)
         return np.hstack(x_sides), np.hstack(y_sides)
 
     @property

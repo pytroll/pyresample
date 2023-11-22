@@ -133,7 +133,7 @@ def _get_chunk_polygons_for_swath_to_crop(swath_to_crop):
         line_slice = expand_slice(line_slice)
         col_slice = expand_slice(col_slice)
         smaller_swath = swath_to_crop[line_slice, col_slice]
-        lons, lats = smaller_swath.get_edge_lonlats(10)
+        lons, lats = smaller_swath.boundary(vertices_per_side=10).contour()
         lons = np.hstack(lons)
         lats = np.hstack(lats)
         smaller_poly = Polygon(zip(lons, lats))
