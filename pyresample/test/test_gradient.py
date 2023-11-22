@@ -123,7 +123,7 @@ class TestOGradientResampler:
         self.resampler._get_projection_coordinates(chunks)
         self.resampler._get_gradients()
         poly = self.resampler._get_src_poly(0, 40, 0, 40)
-        assert np.allclose(poly.area, 12365358458842.43)
+        assert np.allclose(poly.area, 12364231944935.44)
 
     def test_get_src_poly_swath(self):
         """Test defining source chunk polygon for SwathDefinition."""
@@ -147,11 +147,6 @@ class TestOGradientResampler:
         # The second call to the same index should come from cache
         self.resampler._get_dst_poly('idx1', 0, 10, 0, 10)
         assert get_polygon.call_count == 1
-
-        # Swath defs raise AttributeError, and False is returned
-        get_polygon.side_effect = AttributeError
-        self.resampler._get_dst_poly('idx2', 0, 10, 0, 10)
-        assert self.resampler.dst_polys['idx2'] is False
 
     def test_filter_data(self):
         """Test filtering chunks that do not overlap."""
@@ -604,31 +599,33 @@ def test_check_overlap():
 
 def test_get_border_lonlats_geos():
     """Test that correct methods are called in get_border_lonlats() with geos inputs."""
+    from pyresample.geometry import _get_geostationary_bounding_box_in_lonlats  # noqa
     from pyresample.gradient import get_border_lonlats
+
+    lons_v = np.array([1, 2, 3, 4])
+    lats_v = np.array([1, 2, 3, 4])
     geo_def = AreaDefinition("", "", "",
-                             "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
-    with mock.patch("pyresample.gradient._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
-        get_geostationary_bounding_box.return_value = 1, 2
-        res = get_border_lonlats(geo_def)
-    assert res == (1, 2)
-    get_geostationary_bounding_box.assert_called_with(geo_def, 3600)
+                             "+proj=geos +h=1234567", 2, 2,
+                             [1, 2, 3, 4])
+    with mock.patch("pyresample.geometry._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
+        get_geostationary_bounding_box.return_value = lons_v, lats_v
+        lons, lats = get_border_lonlats(geo_def)
+    np.testing.assert_allclose(lons, np.array([1, 2, 3, 4, 1]))
+    np.testing.assert_allclose(lats, np.array([1, 2, 3, 4, 1]))
 
 
 def test_get_border_lonlats():
     """Test that correct methods are called in get_border_lonlats()."""
-    from pyresample.boundary import SimpleBoundary
     from pyresample.gradient import get_border_lonlats
-    lon_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
-                               side3=np.array([3]), side4=np.array([4]))
-    lat_sides = SimpleBoundary(side1=np.array([1]), side2=np.array([2]),
-                               side3=np.array([3]), side4=np.array([4]))
+    lon_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    lat_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
-    with mock.patch.object(geo_def, "get_boundary_lonlats") as get_boundary_lonlats:
+    with mock.patch.object(geo_def, "_get_boundary_sides") as get_boundary_lonlats:
         get_boundary_lonlats.return_value = lon_sides, lat_sides
         lon_b, lat_b = get_border_lonlats(geo_def)
-    assert np.all(lon_b == np.array([1, 2, 3, 4]))
-    assert np.all(lat_b == np.array([1, 2, 3, 4]))
+    np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
+    np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
 
 
 @mock.patch('pyresample.gradient.Polygon')
@@ -648,7 +645,6 @@ def test_get_polygon(get_border_lonlats, Polygon):
     poly = mock.MagicMock(area=2.0)
     Polygon.return_value = poly
     res = get_polygon(prj, geo_def)
-    get_border_lonlats.assert_called_with(geo_def)
     prj.assert_called_with(1, 2)
     Polygon.assert_called_with(boundary)
     assert res is poly

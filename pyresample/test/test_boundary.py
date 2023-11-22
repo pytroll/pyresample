@@ -99,7 +99,7 @@ class TestAreaBoundary(unittest.TestCase):
         assert np.allclose(boundary.vertices, expected_vertices)
 
     def test_contour(self):
-        """Test that AreaBoundary.contour returns the correct (lon,lat) tuple."""
+        """Test that AreaBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
         list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
                       (np.array([2., 3.]), np.array([7., 8.])),
                       (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
@@ -108,3 +108,14 @@ class TestAreaBoundary(unittest.TestCase):
         lons, lats = boundary.contour()
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9.]))
+
+    def test_contour_closed(self):
+        """Test that AreaBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
+        list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
+                      (np.array([2., 3.]), np.array([7., 8.])),
+                      (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
+                      (np.array([4., 1.]), np.array([9., 6.]))]
+        boundary = AreaBoundary(*list_sides)
+        lons, lats = boundary.contour(closed=True)
+        assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4., 1.]))
+        assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9., 6.]))

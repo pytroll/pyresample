@@ -84,13 +84,20 @@ class AreaBoundary(Boundary):
         boundary = cls(*zip(lon_sides, lat_sides))
         return boundary
 
-    def contour(self):
+    def contour(self, closed=False):
         """Get the (lons, lats) tuple of the boundary object.
 
-        It excludes the last element of each side because it's included in the next side.
+        If excludes the last element of each side because it's included in the next side.
+        If closed=False (the default), the last vertex is not equal to the first vertex
+        If closed=True, the last vertex is set to be equal to the first
+        closed=True is required for shapely Polygon creation.
+        closed=False is required for pyresample SPolygon creation.
         """
         lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
         lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
+        if closed:
+            lons = np.hstack((lons, lons[0]))
+            lats = np.hstack((lats, lats[0]))
         return lons, lats
 
     @property
@@ -114,6 +121,21 @@ class AreaBoundary(Boundary):
                 points = points[:-1]
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
+
+    def _to_shapely_polygon(self):
+        from shapely.geometry import Polygon
+        lons, lats = self.contour(closed=True)
+        return Polygon(zip(lons, lats))
+
+    def _to_spherical_polygon(self):
+        raise NotImplementedError("This will return a SPolygon in pyresample 2.0")
+
+    def polygon(self, shapely=False):
+        """Return the boundary polygon."""
+        if shapely:
+            return self._to_shapely_polygon()
+        else:
+            return self._to_spherical_polygon()
 
 
 class AreaDefBoundary(AreaBoundary):

@@ -367,7 +367,9 @@ class BaseDefinition:
         if (vertices_per_side % 2) != 0:
             vertices_per_side = vertices_per_side + 1
         lons, lats = _get_geostationary_bounding_box_in_lonlats(self, nb_points=vertices_per_side)
-
+        # Ensure that a portion of the area is within the Earth disk.
+        if lons.shape[0] < 2:
+            raise ValueError("The geostationary projection area is entirely out of the Earth disk.")
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
         # - BUG: _get_geostationary_bounding_box_in_lonlats now does not return nb_points !
         # step = int(vertices_per_side / 2) - 1 # old code
@@ -2751,7 +2753,7 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     try:
         x, y = intersection.boundary.xy
     except NotImplementedError:
-        return [], []
+        return np.array([]), np.array([])
     return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
 
