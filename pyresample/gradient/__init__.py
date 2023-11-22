@@ -107,7 +107,7 @@ class StackingGradientSearchResampler(BaseResampler):
                     chunks=datachunks)
                 src_crs = self.source_geo_def.crs
                 self.use_input_coords = True
-            except AttributeError:
+            except NotImplementedError:
                 self.src_x, self.src_y = self.source_geo_def.get_lonlats(
                     chunks=datachunks)
                 src_crs = pyproj.CRS.from_string("+proj=longlat")
@@ -116,7 +116,7 @@ class StackingGradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
                 dst_crs = self.target_geo_def.crs
-            except AttributeError as err:
+            except NotImplementedError as err:
                 if self.use_input_coords is False:
                     raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.') from err
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
@@ -137,12 +137,11 @@ class StackingGradientSearchResampler(BaseResampler):
         """Get bounding polygon for source chunk."""
         geo_def = self.source_geo_def[src_y_start:src_y_end,
                                       src_x_start:src_x_end]
-        try:
-            src_poly = get_polygon(self.prj, geo_def)
-        except AttributeError:
-            # Can't create polygons for SwathDefinition
-            src_poly = False
-
+        if isinstance(geo_def, SwathDefinition): 
+            return False 
+        
+        # NOTE: th code below could be used to return a polygon also for SwathDefinition object
+        src_poly = get_polygon(self.prj, geo_def)
         return src_poly
 
     def _get_dst_poly(self, idx, dst_x_start, dst_x_end,

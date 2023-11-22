@@ -1659,7 +1659,8 @@ class AreaDefinition(_ProjectionDefinition):
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        x_sides, y_sides = self._get_boundary_sides(coordinates="projection", vertices_per_side=vertices_per_side)
+        x_sides, y_sides = self._get_boundary_sides(coordinates="projection", 
+                                                    vertices_per_side=vertices_per_side)
         return np.hstack(x_sides), np.hstack(y_sides)
 
     @property
