@@ -38,6 +38,7 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([7.0, 8.0]),
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
+
         # Define AreaBoundary
         boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
@@ -50,15 +51,17 @@ class TestAreaBoundary(unittest.TestCase):
 
     def test_creation(self):
         """Test AreaBoundary creation."""
-        list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
-                      (np.array([2., 3.]), np.array([7., 8.])),
-                      (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
-                      (np.array([4., 1.]), np.array([9., 6.]))]
-        lon_sides = [side[0]for side in list_sides]
-        lat_sides = [side[1]for side in list_sides]
+        lon_sides = [np.array([1.0, 1.5, 2.0]),
+                     np.array([2.0, 3.0]),
+                     np.array([3.0, 3.5, 4.0]),
+                     np.array([4.0, 1.0])]
+        lat_sides = [np.array([6.0, 6.5, 7.0]),
+                     np.array([7.0, 8.0]),
+                     np.array([8.0, 8.5, 9.0]),
+                     np.array([9.0, 6.0])]
 
         # Define AreaBoundary
-        boundary = AreaBoundary(*list_sides)
+        boundary = AreaBoundary(lon_sides, lat_sides)
 
         # Assert sides coincides
         for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
@@ -69,12 +72,14 @@ class TestAreaBoundary(unittest.TestCase):
 
     def test_number_sides_required(self):
         """Test AreaBoundary requires 4 sides ."""
-        list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
-                      (np.array([2., 3.]), np.array([7., 8.])),
-                      (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
-                      (np.array([4., 1.]), np.array([9., 6.]))]
+        lon_sides = [np.array([1.0, 1.5, 2.0]),
+                     np.array([2.0, 3.0]),
+                     np.array([4.0, 1.0])]
+        lat_sides = [np.array([6.0, 6.5, 7.0]),
+                     np.array([7.0, 8.0]),
+                     np.array([9.0, 6.0])]
         with pytest.raises(ValueError):
-            AreaBoundary(*list_sides[0:3])
+            AreaBoundary(lon_sides, lat_sides)
 
     def test_vertices_property(self):
         """Test AreaBoundary vertices property."""
@@ -87,7 +92,7 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
         # Define AreaBoundary
-        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        boundary = AreaBoundary(lon_sides, lat_sides)
 
         # Assert vertices
         expected_vertices = np.array([[1., 6.],
@@ -100,22 +105,32 @@ class TestAreaBoundary(unittest.TestCase):
 
     def test_contour(self):
         """Test that AreaBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
-        list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
-                      (np.array([2., 3.]), np.array([7., 8.])),
-                      (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
-                      (np.array([4., 1.]), np.array([9., 6.]))]
-        boundary = AreaBoundary(*list_sides)
+        lon_sides = [np.array([1.0, 1.5, 2.0]),
+                     np.array([2.0, 3.0]),
+                     np.array([3.0, 3.5, 4.0]),
+                     np.array([4.0, 1.0])]
+        lat_sides = [np.array([6.0, 6.5, 7.0]),
+                     np.array([7.0, 8.0]),
+                     np.array([8.0, 8.5, 9.0]),
+                     np.array([9.0, 6.0])]
+        # Define AreaBoundary
+        boundary = AreaBoundary(lon_sides, lat_sides)
         lons, lats = boundary.contour()
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9.]))
 
     def test_contour_closed(self):
         """Test that AreaBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
-        list_sides = [(np.array([1., 1.5, 2.]), np.array([6., 6.5, 7.])),
-                      (np.array([2., 3.]), np.array([7., 8.])),
-                      (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
-                      (np.array([4., 1.]), np.array([9., 6.]))]
-        boundary = AreaBoundary(*list_sides)
+        lon_sides = [np.array([1.0, 1.5, 2.0]),
+                     np.array([2.0, 3.0]),
+                     np.array([3.0, 3.5, 4.0]),
+                     np.array([4.0, 1.0])]
+        lat_sides = [np.array([6.0, 6.5, 7.0]),
+                     np.array([7.0, 8.0]),
+                     np.array([8.0, 8.5, 9.0]),
+                     np.array([9.0, 6.0])]
+        # Define AreaBoundary
+        boundary = AreaBoundary(lon_sides, lat_sides)
         lons, lats = boundary.contour(closed=True)
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4., 1.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9., 6.]))

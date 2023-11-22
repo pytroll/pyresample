@@ -54,22 +54,156 @@ class Boundary(object):
         self.contour_poly.draw(mapper, options, **more_options)
 
 
+def _is_corner_is_clockwise(lon1, lat1, corner_lon, corner_lat, lon2, lat2):
+    """Determine if coordinates follow a clockwise path.
+
+    This uses :class:`pyresample.spherical.Arc` to determine the angle
+    between the first line segment (Arc) from (lon1, lat1) to
+    (corner_lon, corner_lat) and the second line segment from
+    (corner_lon, corner_lat) to (lon2, lat2). A straight line would
+    produce an angle of 0, a clockwise path would have a negative angle,
+    and a counter-clockwise path would have a positive angle.
+
+    """
+    import math
+
+    from pyresample.spherical import Arc, SCoordinate
+    point1 = SCoordinate(math.radians(lon1), math.radians(lat1))
+    point2 = SCoordinate(math.radians(corner_lon), math.radians(corner_lat))
+    point3 = SCoordinate(math.radians(lon2), math.radians(lat2))
+    arc1 = Arc(point1, point2)
+    arc2 = Arc(point2, point3)
+    angle = arc1.angle(arc2)
+    is_clockwise = -np.pi < angle < 0
+    return is_clockwise
+
+
+def _is_boundary_clockwise(sides_lons, sides_lats):
+    """Determine if the boundary sides are clockwise."""
+    is_clockwise = _is_corner_is_clockwise(
+        lon1=sides_lons[0][-2],
+        lat1=sides_lats[0][-2],
+        corner_lon=sides_lons[0][-1],
+        corner_lat=sides_lats[0][-1],
+        lon2=sides_lons[1][1],
+        lat2=sides_lats[1][1])
+    return is_clockwise
+
+
+def _check_sides_list(sides):
+    if not isinstance(sides, list):
+        raise TypeError("Boundary sides must be a list")
+    if len(sides) != 4:
+        raise ValueError("Boundary sides list must be a list with 4 elements.")
+    # TODO:
+    # - Numpy array elements of at least length 2
+
+
 class AreaBoundary(Boundary):
     """Area boundary objects.
 
     The inputs must be a (lon_coords, lat_coords) tuple for each of the 4 sides.
     """
 
-    def __init__(self, *sides):
-        Boundary.__init__(self)
-        # Check 4 sides are provided
-        if len(sides) != 4:
-            raise ValueError("AreaBoundary expects 4 sides.")
-        # Retrieve sides
-        self.sides_lons, self.sides_lats = zip(*sides)
-        self.sides_lons = list(self.sides_lons)
-        self.sides_lats = list(self.sides_lats)
+    def __init__(self, lon_sides, lat_sides, wished_order=None):
+        _check_sides_list(lon_sides)
+        _check_sides_list(lat_sides)
 
+        # Old interface
+        self._contour_poly = None
+        self.sides_lons = lon_sides
+        self.sides_lats = lat_sides
+
+        # New interface
+        # TODO: self.sides (BoundarySide(s))
+
+        # Check if it is clockwise/counterclockwise
+        self.is_clockwise = _is_boundary_clockwise(sides_lons=lon_sides,
+                                                   sides_lats=lat_sides)
+        self.is_counterclockwise = not self.is_clockwise
+
+        # Define wished order
+        if self.is_clockwise:
+            self._actual_order = "clockwise"
+        else:
+            self._actual_order = "counterclockwise"
+
+        if wished_order is None:
+            self._wished_order = self._actual_order
+        else:
+            if wished_order not in ["clockwise", "counterclockwise"]:
+                raise ValueError("Valid order is 'clockwise' or 'counterclockwise'")
+            self._wished_order = wished_order
+
+    def set_clockwise(self):
+        """Set clockwise order for vertices retrieval."""
+        self._wished_order = "clockwise"
+        return self
+
+    def set_counterclockwise(self):
+        """Set counterclockwise order for vertices retrieval."""
+        self._wished_order = "counterclockwise"
+        return self
+
+    @property
+    def lons(self):
+        """Retrieve boundary longitude vertices."""
+        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
+        if self._wished_order == self._actual_order:
+            return lons
+        else:
+            return lons[::-1]
+
+    @property
+    def lats(self):
+        """Retrieve boundary latitude vertices."""
+        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
+        if self._wished_order == self._actual_order:
+            return lats
+        else:
+            return lats[::-1]
+
+    @property
+    def vertices(self):
+        """Return boundary vertices 2D array [lon, lat]."""
+        vertices = np.vstack((self.lons, self.lats)).T
+        vertices = vertices.astype(np.float64, copy=False)  # Important for spherical ops.
+        return vertices
+
+    def contour(self, closed=False):
+        """Return the (lons, lats) tuple of the boundary object.
+
+        If excludes the last element of each side because it's included in the next side.
+        If closed=False (the default), the last vertex is not equal to the first vertex
+        If closed=True, the last vertex is set to be equal to the first
+        closed=True is required for shapely Polygon creation.
+        closed=False is required for pyresample SPolygon creation.
+        """
+        lons = self.lons
+        lats = self.lats
+        if closed:
+            lons = np.hstack((lons, lons[0]))
+            lats = np.hstack((lats, lats[0]))
+        return lons, lats
+
+    def _to_shapely_polygon(self):
+        from shapely.geometry import Polygon
+        self = self.set_counterclockwise()  # TODO: add exception for pole wrapping polygons
+        lons, lats = self.contour(closed=True)
+        return Polygon(zip(lons, lats))
+
+    def _to_spherical_polygon(self):
+        self = self.set_clockwise()  # TODO: add exception for pole wrapping polygons
+        raise NotImplementedError("This will return a SPolygon in pyresample 2.0")
+
+    def polygon(self, shapely=False):
+        """Return the boundary polygon."""
+        if shapely:
+            return self._to_shapely_polygon()
+        else:
+            return self._to_spherical_polygon()
+
+    # For backward compatibility !
     @classmethod
     def from_lonlat_sides(cls, lon_sides, lat_sides):
         """Define AreaBoundary from list of lon_sides and lat_sides.
@@ -81,35 +215,14 @@ class AreaBoundary(Boundary):
                  np.array([vmn, ..., vm1, vm0]),
                  np.array([vm0, ... ,v10, v00])]
         """
-        boundary = cls(*zip(lon_sides, lat_sides))
+        warnings.warn("Use `AreaBoundary(lon_sides, lat_sides)` instead of `from_lonlat_sides`",
+                      PendingDeprecationWarning, stacklevel=2)
+        boundary = cls(lon_sides=lon_sides, lat_sides=lat_sides)
         return boundary
-
-    def contour(self, closed=False):
-        """Get the (lons, lats) tuple of the boundary object.
-
-        If excludes the last element of each side because it's included in the next side.
-        If closed=False (the default), the last vertex is not equal to the first vertex
-        If closed=True, the last vertex is set to be equal to the first
-        closed=True is required for shapely Polygon creation.
-        closed=False is required for pyresample SPolygon creation.
-        """
-        lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
-        lats = np.concatenate([lts[:-1] for lts in self.sides_lats])
-        if closed:
-            lons = np.hstack((lons, lons[0]))
-            lats = np.hstack((lats, lats[0]))
-        return lons, lats
-
-    @property
-    def vertices(self):
-        """Return boundary polygon vertices."""
-        lons, lats = self.contour()
-        vertices = np.vstack((lons, lats)).T
-        vertices = vertices.astype(np.float64, copy=False)  # Important for spherical ops.
-        return vertices
 
     def decimate(self, ratio):
         """Remove some points in the boundaries, but never the corners."""
+        # TODO: to update --> used by AreaDefBoundary
         for i in range(len(self.sides_lons)):
             length = len(self.sides_lons[i])
             start = int((length % ratio) / 2)
@@ -122,33 +235,27 @@ class AreaBoundary(Boundary):
             self.sides_lons[i] = self.sides_lons[i][points]
             self.sides_lats[i] = self.sides_lats[i][points]
 
-    def _to_shapely_polygon(self):
-        from shapely.geometry import Polygon
-        lons, lats = self.contour(closed=True)
-        return Polygon(zip(lons, lats))
+    @property
+    def contour_poly(self):
+        """Return the pyresample SphPolygon."""
+        if self._contour_poly is None:
+            self._contour_poly = SphPolygon(np.deg2rad(self.vertices))
+        return self._contour_poly
 
-    def _to_spherical_polygon(self):
-        raise NotImplementedError("This will return a SPolygon in pyresample 2.0")
-
-    def polygon(self, shapely=False):
-        """Return the boundary polygon."""
-        if shapely:
-            return self._to_shapely_polygon()
-        else:
-            return self._to_spherical_polygon()
+    def draw(self, mapper, options, **more_options):
+        """Draw the current boundary on the *mapper*."""
+        self.contour_poly.draw(mapper, options, **more_options)
 
 
 class AreaDefBoundary(AreaBoundary):
     """Boundaries for area definitions (pyresample)."""
 
     def __init__(self, area, frequency=1):
-        lons, lats = area.get_bbox_lonlats()
+        lon_sides, lat_sides = area.get_bbox_lonlats()
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
                       PendingDeprecationWarning, stacklevel=2)
-        AreaBoundary.__init__(self,
-                              *zip(lons, lats))
-
+        AreaBoundary.__init__(self, lon_sides=lon_sides, lat_sides=lat_sides)
         if frequency != 1:
             self.decimate(frequency)
 

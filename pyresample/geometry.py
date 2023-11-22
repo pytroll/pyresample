@@ -534,9 +534,15 @@ class BaseDefinition:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lon_sides, lat_sides = self.get_bbox_lonlats(vertices_per_side=vertices_per_side,
-                                                     force_clockwise=force_clockwise)
-        return AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        lon_sides, lat_sides = self._get_boundary_sides(coordinates="geographic",
+                                                        vertices_per_side=vertices_per_side)
+        # TODO: this could be changed but it would breaks backward compatibility
+        # TODO: Implement code to return projection boundary !
+        if force_clockwise:
+            wished_order = "clockwise"
+        else:
+            wished_order = None
+        return AreaBoundary(lon_sides, lat_sides, wished_order=wished_order)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
