@@ -202,4 +202,3 @@ using the **projection_x_coord** or **projection_y_coords** property of a geogra
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
  >>> proj_x_range = area_def.projection_x_coords
-

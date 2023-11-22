@@ -51,8 +51,7 @@ class GridFilter(object):
         """Calculate valid_index array based on lons and lats.
 
         Args:
-            lons (numpy array): Longitude degrees array
-            lats (numpy array): Latitude degrees array
+            geometry_def: Geometry definition (ex. SwathDefinition)
 
         Returns:
             Boolean numpy array of same shape as lons and lats

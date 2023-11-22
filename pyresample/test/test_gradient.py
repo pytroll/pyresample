@@ -601,11 +601,12 @@ def test_check_overlap():
     poly2 = Polygon(((5, 5), (6, 5), (6, 6), (5, 6)))
     assert check_overlap(poly1, poly2) is False
 
+
 def test_get_border_lonlats_geos():
     """Test that correct methods are called in get_border_lonlats() with geos inputs."""
     from pyresample.gradient import get_border_lonlats
     geo_def = AreaDefinition("", "", "",
-                              "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
+                             "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
     with mock.patch("pyresample.gradient._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
         get_geostationary_bounding_box.return_value = 1, 2
         res = get_border_lonlats(geo_def)

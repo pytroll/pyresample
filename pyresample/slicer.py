@@ -178,7 +178,7 @@ class AreaSlicer(Slicer):
             buffered_poly = poly_to_contain.buffer(buffer_size)
             bounds = buffered_poly.bounds
         except ValueError as err:
-            raise InvalidArea(str(err))
+            raise InvalidArea("Invalid area") from err
         from shapely.geometry import Polygon
         poly_to_crop = Polygon(zip(*self.area_to_crop.get_edge_bbox_in_projection_coordinates(vertices_per_side=10)))
         if not poly_to_crop.intersects(buffered_poly):
@@ -191,8 +191,8 @@ class AreaSlicer(Slicer):
         """Reset the bounds within the shape of the area."""
         try:
             (minx, miny, maxx, maxy) = bounds
-        except ValueError:
-            raise IncompatibleAreas('No slice on area.')
+        except ValueError as err:
+            raise IncompatibleAreas('No slice on area.') from err
         x_bounds, y_bounds = self.area_to_crop.get_array_coordinates_from_projection_coordinates(np.array([minx, maxx]),
                                                                                                  np.array([miny, maxy]))
         y_size, x_size = self.area_to_crop.shape
@@ -209,8 +209,8 @@ class AreaSlicer(Slicer):
                             int(np.ceil(np.max(x_bounds))))
             slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
                             int(np.ceil(np.max(y_bounds))))
-        except OverflowError:
-            raise IncompatibleAreas("Area not within finite bounds.")
+        except OverflowError as err:
+            raise IncompatibleAreas("Area not within finite bounds.") from err
         return expand_slice(slice_x), expand_slice(slice_y)
 
 

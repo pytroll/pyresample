@@ -91,7 +91,7 @@ Assuming **lons**, **lats** and **tb37v** are initialized with real data as in
 the previous examples the result might look something like this:
 
   .. image:: /_static/images/tb37v_bmng.png
-  
+
 Any keyword arguments (not concerning the projection) passed to
 **plot.area_def2basemap** will be passed directly to the Basemap
 initialization.
@@ -124,15 +124,15 @@ The above image can be generated using Cartopy_ instead by utilizing the method
    >>> plt.imshow(result, transform=crs, extent=crs.bounds, origin='upper', cmap='RdBu_r')  # doctest: +SKIP
    >>> plt.savefig('tb37v_bmng.png', bbox_inches='tight')  # doctest: +SKIP
 
- 
+
 The above provides you have the Bluemarble background data available in the
 Cartopy_ standard place or in a directory pointed to by the environment
 parameter `CARTOPY_USER_BACKGROUNDS`.
 
 With real data (same AMSR-2 as above) this might look like this:
- 
+
   .. image:: /_static/images/tb37v_bmng_cartopy.png
-             
+
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _`Cartopy gallery example`: http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html
 .. _Cartopy: http://scitools.org.uk/cartopy/

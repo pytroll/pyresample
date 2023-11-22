@@ -3,7 +3,7 @@
 Resampling of swath data
 ========================
 
-Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath. 
+Pyresample can be used to resample a swath dataset to a grid, a grid to a swath or a swath to another swath.
 Resampling can be done using nearest neighbour method, Guassian weighting, weighting with an arbitrary radial function.
 
 .. versionchanged:: 1.8.0
@@ -26,7 +26,7 @@ The ImageContainerNearest and ImageContanerBilinear classes can be used for resa
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -38,7 +38,7 @@ The ImageContainerNearest and ImageContanerBilinear classes can be used for resa
  >>> area_con = swath_con.resample(area_def)
  >>> result = area_con.image_data
 
-For other resampling types or splitting the process in two steps use e.g. the functions in **pyresample.kd_tree** described below. 
+For other resampling types or splitting the process in two steps use e.g. the functions in **pyresample.kd_tree** described below.
 
 pyresample.kd_tree
 ------------------
@@ -47,7 +47,7 @@ This module contains several functions for resampling swath data.
 
 Note distance calculation is approximated with cartesian distance.
 
-Masked arrays can be used as data input. In order to have undefined pixels masked out instead of 
+Masked arrays can be used as data input. In order to have undefined pixels masked out instead of
 assigned a fill value set **fill_value=None** when calling the **resample_*** function.
 
 resample_nearest
@@ -64,7 +64,7 @@ Example showing how to resample a generated swath dataset to a grid using neares
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -76,7 +76,7 @@ Example showing how to resample a generated swath dataset to a grid using neares
  ... area_def, radius_of_influence=50000, epsilon=0.5)
 
 If the arguments **swath_def** and **area_def** where switched (and **data** matched the dimensions of **area_def**) the grid of **area_def**
-would be resampled to the swath defined by **swath_def**.  
+would be resampled to the swath defined by **swath_def**.
 
 Note the keyword arguments:
 
@@ -85,7 +85,7 @@ Note the keyword arguments:
 
 If **data** is a masked array the mask will follow the neighbour pixel assignment.
 
-If there are multiple channels in the dataset the **data** argument should be of the shape of the lons and lat arrays 
+If there are multiple channels in the dataset the **data** argument should be of the shape of the lons and lat arrays
 with the channels along the last axis e.g. (rows, cols, channels). Note: the convention of pyresample < 0.7.4 is to pass
 **data** in the form of (number_of_data_points, channels) is still accepted.
 
@@ -96,7 +96,7 @@ with the channels along the last axis e.g. (rows, cols, channels). Note: the con
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -108,7 +108,7 @@ with the channels along the last axis e.g. (rows, cols, channels). Note: the con
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> result = kd_tree.resample_nearest(swath_def, data,
- ... area_def, radius_of_influence=50000) 
+ ... area_def, radius_of_influence=50000)
 
 For nearest neighbour resampling the class **image.ImageContainerNearest** can be used as well as **kd_tree.resample_nearest**
 
@@ -126,7 +126,7 @@ Example showing how to resample a generated swath dataset to a grid using Gaussi
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -134,7 +134,7 @@ Example showing how to resample a generated swath dataset to a grid using Gaussi
  >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> result = kd_tree.resample_gauss(swath_def, data, 
+ >>> result = kd_tree.resample_gauss(swath_def, data,
  ... area_def, radius_of_influence=50000, sigmas=25000)
 
 If more channels are present in **data** the keyword argument **sigmas** must be a list containing a sigma for each channel.
@@ -153,11 +153,11 @@ Example showing how to resample a generated swath dataset to a grid using an arb
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import kd_tree, geometry 
+ >>> from pyresample import kd_tree, geometry
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -180,17 +180,17 @@ Uncertainty estimates in the form of weighted standard deviation can be obtained
 By default the functions return the result of the resampling as a single numpy array. If the functions are given the keyword argument **with_uncert=True**
 then the following list of numpy arrays will be returned instead: **(result, stddev, count)**. **result** is the usual result. **stddev** is the weighted standard deviation for each element in the result. **count** is the number of data values used in the weighting for each element in the result.
 
-The principle is to view the calculated value for each element in the result as a weighted average of values sampled from a statistical variable. 
-An estimate of the standard deviation of the distribution is calculated using the unbiased weighted estimator given as 
-**stddev = sqrt((V1 / (V1 ** 2 + V2)) * sum(wi * (xi - result) ** 2))** where **result** is the result of the resampling. **xi** is the value of a contributing neighbour 
+The principle is to view the calculated value for each element in the result as a weighted average of values sampled from a statistical variable.
+An estimate of the standard deviation of the distribution is calculated using the unbiased weighted estimator given as
+**stddev = sqrt((V1 / (V1 ** 2 + V2)) * sum(wi * (xi - result) ** 2))** where **result** is the result of the resampling. **xi** is the value of a contributing neighbour
 and **wi** is the corresponding weight. The coefficients are given as **V1 = sum(wi)** and **V2 = sum(wi ** 2)**. The standard deviation is only calculated for elements in
 the result where more than one neighbour has contributed to the weighting. The **count** numpy array can be used for filtering at a higher number of contributing neigbours.
 
 Usage only differs in the number of return values from **resample_gauss** and **resample_custom**. E.g.:
 
- >>> result, stddev, count = pr.kd_tree.resample_gauss(swath_def, ice_conc, area_def, 
- ...                                                   radius_of_influence=20000, 
- ...                                                   sigmas=pr.utils.fwhm2sigma(35000), 
+ >>> result, stddev, count = pr.kd_tree.resample_gauss(swath_def, ice_conc, area_def,
+ ...                                                   radius_of_influence=20000,
+ ...                                                   sigmas=pr.utils.fwhm2sigma(35000),
  ...                                                   fill_value=None, with_uncert=True)
 
 Below is shown a plot of the result of the resampling using a real data set:
@@ -206,13 +206,13 @@ Notice the standard deviation is only calculated where there are more than one c
 
 Resampling from neighbour info
 ******************************
-The resampling can be split in two steps: 
+The resampling can be split in two steps:
 
-First get arrays containing information about the nearest neighbours to each grid point. 
+First get arrays containing information about the nearest neighbours to each grid point.
 Then use these arrays to retrive the resampling result.
 
-This approch can be useful if several datasets based on the same swath are to be resampled. The computational 
-heavy task of calculating the neighbour information can be done once and the result can be used to 
+This approch can be useful if several datasets based on the same swath are to be resampled. The computational
+heavy task of calculating the neighbour information can be done once and the result can be used to
 retrieve the resampled data from each of the datasets fast.
 
 .. doctest::
@@ -222,7 +222,7 @@ retrieve the resampled data from each of the datasets fast.
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
- ...                                 'lon_0': '8.00', 'proj': 'stere'}, 
+ ...                                 'lon_0': '8.00', 'proj': 'stere'},
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
@@ -231,20 +231,20 @@ retrieve the resampled data from each of the datasets fast.
  >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
  >>> valid_input_index, valid_output_index, index_array, distance_array = \
- ...                        kd_tree.get_neighbour_info(swath_def, 
- ...                               	                   area_def, 50000,  
+ ...                        kd_tree.get_neighbour_info(swath_def,
+ ...                               	                   area_def, 50000,
  ...                                                   neighbours=1)
- >>> res = kd_tree.get_sample_from_neighbour_info('nn', area_def.shape, data, 
+ >>> res = kd_tree.get_sample_from_neighbour_info('nn', area_def.shape, data,
  ...                                              valid_input_index, valid_output_index,
  ...                                              index_array)
- 
-Note the keyword argument **neighbours=1**. This specifies only to consider one neighbour for each 
+
+Note the keyword argument **neighbours=1**. This specifies only to consider one neighbour for each
 grid point (the nearest neighbour). Also note **distance_array** is not a required argument for
 **get_sample_from_neighbour_info** when using nearest neighbour resampling
 
 Segmented resampling
 ********************
-Whenever a resampling function takes the keyword argument **segments** the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of **segments** is left to default pyresample will estimate the number of segments to use. 
+Whenever a resampling function takes the keyword argument **segments** the number of segments to split the resampling process in can be specified. This affects the memory footprint of pyresample. If the value of **segments** is left to default pyresample will estimate the number of segments to use.
 
 pyresample.bilinear
 -------------------
@@ -380,7 +380,7 @@ Keyword arguments which are passed to **kd_tree**:
 * **radius**: radius around each target pixel in meters to search for
   neighbours in the source data
 * **neighbours**: number of closest locations to consider when
-  selecting the four data points around the target location.  Note that this 
+  selecting the four data points around the target location.  Note that this
   value needs to be large enough to ensure "surrounding" the target!
 * **nprocs**: number of processors to use for finding the closest pixels
 * **fill_value**: fill invalid pixel with this value.  If
@@ -413,8 +413,8 @@ significantly.  This is also done internally by the
 **resample_bilinear** function, but separating these steps makes it
 possible to cache the coefficients if the same transformation is done
 over and over again.  This is very typical in operational
-geostationary satellite image processing.  Note that the output shape is now 
-defined so that the result is reshaped to correct shape.  This reshaping 
+geostationary satellite image processing.  Note that the output shape is now
+defined so that the result is reshaped to correct shape.  This reshaping
 is done internally in **resample_bilinear**.
 
 .. doctest::
