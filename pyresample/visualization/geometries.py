@@ -18,23 +18,23 @@
 """Define how to plot a shapely geometry."""
 
 
-def _add_map_background(ax): 
+def _add_map_background(ax):
     """Add cartopy map background."""
     ax.stock_img()
     ax.coastlines()
     gl = ax.gridlines(draw_labels=True, linestyle="--")
     gl.top_labels = False
     gl.right_labels = False
-    return ax 
+    return ax
 
 
 def _check_subplot_kw(subplot_kw):
     """Check subplot_kw arguments."""
     import cartopy.crs as ccrs
-    
+
     if subplot_kw is None:
-       subplot_kw = dict(projection=ccrs.PlateCarree())
-    if not isinstance(subplot_kw, dict): 
+        subplot_kw = dict(projection=ccrs.PlateCarree())
+    if not isinstance(subplot_kw, dict):
         raise TypeError("'subplot_kw' must be a dictionary.'")
     if "projection" not in subplot_kw:
         raise ValueError("Specify a cartopy 'projection' in subplot_kw.")
@@ -44,15 +44,15 @@ def _check_subplot_kw(subplot_kw):
 def _initialize_plot(ax=None, subplot_kw=None):
     """Initialize plot."""
     import matplotlib.pyplot as plt
-    
+
     if ax is None:
         subplot_kw = _check_subplot_kw(subplot_kw)
         fig, ax = plt.subplots(subplot_kw=subplot_kw)
         return fig, ax, True
-    else: 
+    else:
         return None, ax, False
-    
-    
+
+
 def plot_geometries(geometries, crs, ax=None, subplot_kw=None, **kwargs):
     """Plot geometries in cartopy."""
     # Create figure if ax not provided
@@ -64,8 +64,6 @@ def plot_geometries(geometries, crs, ax=None, subplot_kw=None, **kwargs):
     ax.add_geometries(geometries, crs=crs, **kwargs)
     # Return Figure / Axis
     if initialized_here:
-        return fig 
+        return fig
     else:
         return ax
-    
-    

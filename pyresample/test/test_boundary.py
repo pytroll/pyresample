@@ -22,14 +22,14 @@ import unittest
 import numpy as np
 import pytest
 
-from pyresample.boundary import AreaBoundary
+from pyresample.boundary import GeographicBoundary
 
 
-class TestAreaBoundary(unittest.TestCase):
-    """Test 'AreaBoundary' class."""
+class TestGeographicBoundary(unittest.TestCase):
+    """Test 'GeographicBoundary' class."""
 
     def test_creation_from_lonlat_sides(self):
-        """Test AreaBoundary creation from sides."""
+        """Test GeographicBoundary creation from sides."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([3.0, 3.5, 4.0]),
@@ -39,8 +39,8 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
 
-        # Define AreaBoundary
-        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        # Define GeographicBoundary
+        boundary = GeographicBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
         # Assert sides coincides
         for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
@@ -50,7 +50,7 @@ class TestAreaBoundary(unittest.TestCase):
             assert np.allclose(b_lat, src_lat)
 
     def test_creation(self):
-        """Test AreaBoundary creation."""
+        """Test GeographicBoundary creation."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([3.0, 3.5, 4.0]),
@@ -60,8 +60,8 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
 
-        # Define AreaBoundary
-        boundary = AreaBoundary(lon_sides, lat_sides)
+        # Define GeographicBoundary
+        boundary = GeographicBoundary(lon_sides, lat_sides)
 
         # Assert sides coincides
         for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
@@ -71,7 +71,7 @@ class TestAreaBoundary(unittest.TestCase):
             assert np.allclose(b_lat, src_lat)
 
     def test_number_sides_required(self):
-        """Test AreaBoundary requires 4 sides ."""
+        """Test GeographicBoundary requires 4 sides ."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([4.0, 1.0])]
@@ -79,10 +79,10 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([7.0, 8.0]),
                      np.array([9.0, 6.0])]
         with pytest.raises(ValueError):
-            AreaBoundary(lon_sides, lat_sides)
+            GeographicBoundary(lon_sides, lat_sides)
 
     def test_vertices_property(self):
-        """Test AreaBoundary vertices property."""
+        """Test GeographicBoundary vertices property."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([3.0, 3.5, 4.0]),
@@ -91,8 +91,8 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([7.0, 8.0]),
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
-        # Define AreaBoundary
-        boundary = AreaBoundary(lon_sides, lat_sides)
+        # Define GeographicBoundary
+        boundary = GeographicBoundary(lon_sides, lat_sides)
 
         # Assert vertices
         expected_vertices = np.array([[1., 6.],
@@ -104,7 +104,7 @@ class TestAreaBoundary(unittest.TestCase):
         assert np.allclose(boundary.vertices, expected_vertices)
 
     def test_contour(self):
-        """Test that AreaBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
+        """Test that GeographicBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([3.0, 3.5, 4.0]),
@@ -113,14 +113,14 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([7.0, 8.0]),
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
-        # Define AreaBoundary
-        boundary = AreaBoundary(lon_sides, lat_sides)
+        # Define GeographicBoundary
+        boundary = GeographicBoundary(lon_sides, lat_sides)
         lons, lats = boundary.contour()
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9.]))
 
     def test_contour_closed(self):
-        """Test that AreaBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
+        """Test that GeographicBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),
                      np.array([2.0, 3.0]),
                      np.array([3.0, 3.5, 4.0]),
@@ -129,8 +129,8 @@ class TestAreaBoundary(unittest.TestCase):
                      np.array([7.0, 8.0]),
                      np.array([8.0, 8.5, 9.0]),
                      np.array([9.0, 6.0])]
-        # Define AreaBoundary
-        boundary = AreaBoundary(lon_sides, lat_sides)
+        # Define GeographicBoundary
+        boundary = GeographicBoundary(lon_sides, lat_sides)
         lons, lats = boundary.contour(closed=True)
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4., 1.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9., 6.]))

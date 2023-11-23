@@ -27,33 +27,6 @@ from pyresample.spherical import SphPolygon
 logger = logging.getLogger(__name__)
 
 
-class Boundary(object):
-    """Boundary objects."""
-
-    def __init__(self, lons=None, lats=None, frequency=1):
-        self._contour_poly = None
-        if lons is not None:
-            self.lons = lons[::frequency]
-        if lats is not None:
-            self.lats = lats[::frequency]
-
-    def contour(self):
-        """Get lon/lats of the contour."""
-        return self.lons, self.lats
-
-    @property
-    def contour_poly(self):
-        """Get the Spherical polygon corresponding to the Boundary."""
-        if self._contour_poly is None:
-            self._contour_poly = SphPolygon(
-                np.deg2rad(np.vstack(self.contour()).T))
-        return self._contour_poly
-
-    def draw(self, mapper, options, **more_options):
-        """Draw the current boundary on the *mapper*."""
-        self.contour_poly.draw(mapper, options, **more_options)
-
-
 def _is_corner_is_clockwise(lon1, lat1, corner_lon, corner_lat, lon2, lat2):
     """Determine if coordinates follow a clockwise path.
 
@@ -99,7 +72,26 @@ def _check_sides_list(sides):
     # - Numpy array elements of at least length 2
 
 
-class AreaBoundary(Boundary):
+# Potentially shared method
+# --> _x, _y ?
+# --> _sides_*
+# --> sides_*, # BoundarySide
+
+# sides_* = boundary.sides_* (as property) ? Depending on _side_*
+# sides_lon, sides_lat = boundary.sides
+# --> sides_lon, sides_lat of BoundarySide?
+# --> iter to behave as list ?
+
+# (x/lons), (y/lats),
+# --> contour,
+# --> vertices,
+
+# set_clockwise
+# set_counter_clockwise,
+# _to_shapely_polygon
+
+
+class GeographicBoundary():
     """Area boundary objects.
 
     The inputs must be a (lon_coords, lat_coords) tuple for each of the 4 sides.
@@ -109,7 +101,7 @@ class AreaBoundary(Boundary):
         _check_sides_list(lon_sides)
         _check_sides_list(lat_sides)
 
-        # Old interface
+        # Old interface for compatibility to AreaBoundary
         self._contour_poly = None
         self.sides_lons = lon_sides
         self.sides_lats = lat_sides
@@ -264,7 +256,161 @@ class AreaBoundary(Boundary):
         self.contour_poly.draw(mapper, options, **more_options)
 
 
-class AreaDefBoundary(AreaBoundary):
+class ProjectionBoundary():
+    """Projection Boundary object.
+
+    The inputs must be the x and y sides of the projection.
+    It expects the projection coordinates to be planar (i.e. metric, radians).
+    """
+
+    def __init__(self, sides_x, sides_y, wished_order=None, crs=None):
+
+        self.crs = crs  # TODO needed to plot
+
+        # New interface
+        self.sides_x = sides_x
+        self.sides_y = sides_y
+        # TODO: self.sides (BoundarySide(s))
+
+        # Check if it is clockwise/counterclockwise
+        self.is_clockwise = self._is_projection_boundary_clockwise()
+        self.is_counterclockwise = not self.is_clockwise
+
+        # Define wished order
+        if self.is_clockwise:
+            self._actual_order = "clockwise"
+        else:
+            self._actual_order = "counterclockwise"
+
+        if wished_order is None:
+            self._wished_order = self._actual_order
+        else:
+            if wished_order not in ["clockwise", "counterclockwise"]:
+                raise ValueError("Valid order is 'clockwise' or 'counterclockwise'")
+            self._wished_order = wished_order
+
+    def _is_projection_boundary_clockwise(self):
+        """Determine if the boundary is clockwise-defined in projection coordinates."""
+        from shapely.geometry import Polygon
+
+        x = np.concatenate([xs[:-1] for xs in self.sides_x])
+        y = np.concatenate([ys[:-1] for ys in self.sides_y])
+        x = np.hstack((x, x[0]))
+        y = np.hstack((y, y[0]))
+        polygon = Polygon(zip(x, y))
+        return not polygon.exterior.is_ccw
+
+    def set_clockwise(self):
+        """Set clockwise order for vertices retrieval."""
+        self._wished_order = "clockwise"
+        return self
+
+    def set_counterclockwise(self):
+        """Set counterclockwise order for vertices retrieval."""
+        self._wished_order = "counterclockwise"
+        return self
+
+    @property
+    def sides(self):
+        """Return the boundary sides as a tuple of (sides_x, sides_y) arrays."""
+        return self.sides_x, self.sides_y
+
+    @property
+    def x(self):
+        """Retrieve boundary x vertices."""
+        xs = np.concatenate([xs[:-1] for xs in self.sides_x])
+        if self._wished_order == self._actual_order:
+            return xs
+        else:
+            return xs[::-1]
+
+    @property
+    def y(self):
+        """Retrieve boundary y vertices."""
+        ys = np.concatenate([ys[:-1] for ys in self.sides_y])
+        if self._wished_order == self._actual_order:
+            return ys
+        else:
+            return ys[::-1]
+
+    @property
+    def vertices(self):
+        """Return boundary vertices 2D array [x, y]."""
+        vertices = np.vstack((self.x, self.y)).T
+        vertices = vertices.astype(np.float64, copy=False)
+        return vertices
+
+    def contour(self, closed=False):
+        """Return the (x, y) tuple of the boundary object.
+
+        If excludes the last element of each side because it's included in the next side.
+        If closed=False (the default), the last vertex is not equal to the first vertex
+        If closed=True, the last vertex is set to be equal to the first
+        closed=True is required for shapely Polygon creation.
+        """
+        x = self.x
+        y = self.y
+        if closed:
+            x = np.hstack((x, x[0]))
+            y = np.hstack((y, y[0]))
+        return x, y
+
+    def _to_shapely_polygon(self):
+        from shapely.geometry import Polygon
+        self = self.set_counterclockwise()
+        x, y = self.contour(closed=True)
+        return Polygon(zip(x, y))
+
+    def polygon(self, shapely=True):
+        """Return the boundary polygon."""
+        if shapely:
+            return self._to_shapely_polygon()
+        else:
+            raise NotImplementedError("Only shapely polygon available.")
+
+    def plot(self, ax=None, subplot_kw=None, crs=None, **kwargs):
+        """Plot the the boundary."""
+        from pyresample.visualization.geometries import plot_geometries
+
+        if self.crs is None and crs is None:
+            raise ValueError("Projection 'crs' is required to display projection boundary.")
+        if crs is None:
+            crs = self.crs
+
+        geom = self.polygon(shapely=True)
+        p = plot_geometries(geometries=[geom], crs=crs,
+                            ax=ax, subplot_kw=subplot_kw, **kwargs)
+        return p
+
+
+class Boundary(object):
+    """Boundary objects."""
+
+    def __init__(self, lons=None, lats=None, frequency=1):
+        self._contour_poly = None
+        if lons is not None:
+            self.lons = lons[::frequency]
+        if lats is not None:
+            self.lats = lats[::frequency]
+
+    def contour(self):
+        """Get lon/lats of the contour."""
+        return self.lons, self.lats
+
+    @property
+    def contour_poly(self):
+        """Get the Spherical polygon corresponding to the Boundary."""
+        if self._contour_poly is None:
+            self._contour_poly = SphPolygon(
+                np.deg2rad(np.vstack(self.contour()).T))
+        return self._contour_poly
+
+    def draw(self, mapper, options, **more_options):
+        """Draw the current boundary on the *mapper*."""
+        self.contour_poly.draw(mapper, options, **more_options)
+
+
+class AreaDefBoundary(GeographicBoundary):
     """Boundaries for area definitions (pyresample)."""
 
     def __init__(self, area, frequency=1):
@@ -272,7 +418,7 @@ class AreaDefBoundary(AreaBoundary):
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
                       PendingDeprecationWarning, stacklevel=2)
-        AreaBoundary.__init__(self, lon_sides=lon_sides, lat_sides=lat_sides)
+        GeographicBoundary.__init__(self, lon_sides=lon_sides, lat_sides=lat_sides)
         if frequency != 1:
             self.decimate(frequency)
 

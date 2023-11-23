@@ -602,7 +602,7 @@ class TestSwathBoundary:
         lats = np.array([[65.9, 65.86, 65.82, 65.78],
                          [65.89, 65.86, 65.82, 65.78]])
 
-        # Define SwathDefinition and retrieve AreaBoundary
+        # Define SwathDefinition and retrieve GeographicBoundary
         swath_def = create_test_swath(lons, lats)
         boundary = swath_def.boundary(force_clockwise=False)
 

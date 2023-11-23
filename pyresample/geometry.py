@@ -416,11 +416,7 @@ class BaseDefinition:
             if self.is_geostationary:
                 return self._get_geostationary_boundary_sides(vertices_per_side=vertices_per_side,
                                                               coordinates=coordinates)
-                # ELSE:
-                #    NOT IMPLEMENTED --> Would change behaviour of get_edge_bbox_in_projection_coordinates
-                # Currently return the x,y coordinates of the full image border
-
-            # if self.is_polar_projection
+            # if self.is_polar_projection # BUG
             #    self.is_robinson
             #    raise NotImplementedError("Likely a polar projection.")
         if coordinates == "geographic":
@@ -547,20 +543,30 @@ class BaseDefinition:
             operations assume that coordinates are clockwise.
             Default is False.
         """
-        from pyresample.boundary import AreaBoundary
+        from pyresample.boundary import GeographicBoundary, ProjectionBoundary
+
         if frequency is not None:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lon_sides, lat_sides = self._get_boundary_sides(coordinates=coordinates,
-                                                        vertices_per_side=vertices_per_side)
-        # TODO: this could be changed but it would breaks backward compatibility
-        # TODO: Implement code to return projection boundary !
+        x_sides, y_sides = self._get_boundary_sides(coordinates=coordinates,
+                                                    vertices_per_side=vertices_per_side)
+
+        # TODO: I would suggest to deprecate force_clockwise
+        # --> And use order/wished_order argument (None take as it is)
         if force_clockwise:
             wished_order = "clockwise"
         else:
             wished_order = None
-        return AreaBoundary(lon_sides, lat_sides, wished_order=wished_order)
+
+        if coordinates == "geographic" or self.crs.is_geographic:
+            return GeographicBoundary(lon_sides=x_sides,
+                                      lat_sides=y_sides,
+                                      wished_order=wished_order)
+        else:
+            return ProjectionBoundary(sides_x=x_sides,
+                                      sides_y=y_sides,
+                                      wished_order=wished_order)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1686,9 +1692,12 @@ class AreaDefinition(_ProjectionDefinition):
         if frequency is not None:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
+        warnings.warn("The `get_edge_bbox_in_projection_coordinates` method is pending deprecation."
+                      "Use `area.boundary(coordinates='projection').contour()` instead.",
+                      PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        x_sides, y_sides = self._get_boundary_sides(coordinates="projection", vertices_per_side=vertices_per_side)
-        return np.hstack(x_sides), np.hstack(y_sides)
+        x, y = self.boundary(coordinates="projection", vertices_per_side=vertices_per_side).contour(closed=True)
+        return x, y
 
     @property
     def area_extent(self):
