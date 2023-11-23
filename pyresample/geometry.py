@@ -358,7 +358,7 @@ class BaseDefinition:
         ]
         return sides
 
-    def _get_geostationary_boundary_sides(self, vertices_per_side=None):
+    def _get_geostationary_boundary_sides(self, vertices_per_side=None, coordinates="geographic"):
         """Retrieve the boundary sides list for geostationary projections."""
         # Define default frequency
         if vertices_per_side is None:
@@ -369,17 +369,19 @@ class BaseDefinition:
         # Ensure an even number of vertices for side creation
         if (vertices_per_side % 2) != 0:
             vertices_per_side = vertices_per_side + 1
-        lons, lats = _get_geostationary_bounding_box_in_lonlats(self, nb_points=vertices_per_side)
+        # Retrieve coordinates (x,y) or (lon, lat)
+        x, y = _get_geostationary_bounding_box(self, coordinates=coordinates, nb_points=vertices_per_side)
         # Ensure that a portion of the area is within the Earth disk.
-        if lons.shape[0] < 2:
+        if x.shape[0] < 2:
             raise ValueError("The geostationary projection area is entirely out of the Earth disk.")
         # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
         # - BUG: _get_geostationary_bounding_box_in_lonlats now does not return nb_points !
+        # --> BUG is in get_geostationary_bounding_box_in_proj_coords
         # step = int(vertices_per_side / 2) - 1 # old code
-        step = int(lons.shape[0] / 2) - 1
-        lon_sides = self._get_geostationary_fd_coordinate_sides(lons, step=step)
-        lat_sides = self._get_geostationary_fd_coordinate_sides(lats, step=step)
-        return lon_sides, lat_sides
+        step = int(x.shape[0] / 2) - 1  # patch
+        x_sides = self._get_geostationary_fd_coordinate_sides(x, step=step)
+        y_sides = self._get_geostationary_fd_coordinate_sides(y, step=step)
+        return x_sides, y_sides
 
     def _get_boundary_sides(self, coordinates="geographic", vertices_per_side: Optional[int] = None) -> tuple:
         """Return the boundary sides of the current area.
@@ -391,8 +393,10 @@ class BaseDefinition:
                 Projection coordinates are available only for AreaDefinition objects.
             vertices_per_side:
                 The number of points to provide for each side. By default (None)
-                the full width and height will be provided, except for geostationary
-                projections where by default only 50 points are selected.
+                the full width and height will be provided.
+                If any of the area corners is out of the Earth disk (i.e. full
+                disc geostationary area and hemispheric polar projections)
+                by default only 50 points are selected.
 
         Returns:
             The output structure is a tuple of two lists of four elements each.
@@ -403,12 +407,22 @@ class BaseDefinition:
         """
         if coordinates not in ("geographic", "projection"):
             raise ValueError(f"coordinates must be either 'geographic' or 'projection', got {coordinates}")
-        if self.is_geostationary:
-            if coordinates == "geographic":
-                return self._get_geostationary_boundary_sides(vertices_per_side)
-            # ELSE:
-            # NOT IMPLEMENTED --> Would change behaviour of get_edge_bbox_in_projection_coordinates
-            # Currently return the x,y coordinates of the full image border
+        is_swath = self.__class__.__name__ == "SwathDefinition"
+        if is_swath:
+            if coordinates not in ["geographic"]:
+                raise ValueError("'coordinates' must be 'geographic' for SwathDefinition")
+
+        if not is_swath and _is_any_corner_out_of_earth_disk(self):
+            if self.is_geostationary:
+                return self._get_geostationary_boundary_sides(vertices_per_side=vertices_per_side,
+                                                              coordinates=coordinates)
+                # ELSE:
+                #    NOT IMPLEMENTED --> Would change behaviour of get_edge_bbox_in_projection_coordinates
+                # Currently return the x,y coordinates of the full image border
+
+            # if self.is_polar_projection
+            #    self.is_robinson
+            #    raise NotImplementedError("Likely a polar projection.")
         if coordinates == "geographic":
             coord_fun = self.get_lonlats
         else:
@@ -514,7 +528,8 @@ class BaseDefinition:
         lons, lats = self.boundary(vertices_per_side=vertices_per_side).contour()
         return lons, lats
 
-    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
+    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None,
+                 coordinates="geographic"):
         """Retrieve the AreaBoundary object.
 
         Parameters
@@ -537,7 +552,7 @@ class BaseDefinition:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lon_sides, lat_sides = self._get_boundary_sides(coordinates="geographic",
+        lon_sides, lat_sides = self._get_boundary_sides(coordinates=coordinates,
                                                         vertices_per_side=vertices_per_side)
         # TODO: this could be changed but it would breaks backward compatibility
         # TODO: Implement code to return projection boundary !
@@ -602,7 +617,7 @@ class BaseDefinition:
 
     @property
     def corners(self):
-        """Return the corners of the current area."""
+        """Return the corners (pixel centroids) of the current area."""
         from pyresample.spherical_geometry import Coordinate
         return [Coordinate(*self.get_lonlat(0, 0)),
                 Coordinate(*self.get_lonlat(0, -1)),
@@ -2786,6 +2801,24 @@ def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     return x, y
 
 
+def _get_geostationary_bounding_box(geos_area, coordinates="geographic", nb_points=50):
+    """Get the bounding box coordinates of the valid pixels inside `geos_area`.
+
+    If coordinates='geographic', it returns the lat/lon coordinates.
+    If coordinates='projection', it returns the projection coordinates.
+
+    Args:
+      geos_area: Geostationary area definition to get the bounding box for.
+      coordinates: Whether to retrieve geographic or projection coordinates.
+      nb_points: Number of points on the polygon
+    """
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    if coordinates == "geographic":
+        lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
+        return lons, lats
+    return x, y
+
+
 def _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
@@ -2793,9 +2826,12 @@ def _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
       geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
-    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
-    lons, lats = Proj(geos_area.crs)(x, y, inverse=True)
-    return lons, lats
+    warnings.warn("'_get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
+                  "'_get_geostationary_bounding_box' instead.",
+                  DeprecationWarning, stacklevel=2)
+    return _get_geostationary_bounding_box(geos_area,
+                                           coordinates="geographic",
+                                           nb_points=nb_points)
 
 
 def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
@@ -2808,7 +2844,9 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     warnings.warn("'get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
                   "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
-    return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
+    return _get_geostationary_bounding_box(geos_area,
+                                           coordinates="geographic",
+                                           nb_points=nb_points)
 
 
 def get_geostationary_bounding_box(geos_area, nb_points=50):
@@ -2823,6 +2861,15 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
                   "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
+
+
+def _is_any_corner_out_of_earth_disk(area_def):
+    """Check if the area corners are out of the Earth disk."""
+    try:
+        _ = area_def.corners
+        return False
+    except Exception:
+        return True
 
 
 def combine_area_extents_vertical(area1, area2):

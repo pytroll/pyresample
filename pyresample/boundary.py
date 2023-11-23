@@ -208,6 +208,18 @@ class AreaBoundary(Boundary):
         else:
             return self._to_spherical_polygon()
 
+    def plot(self, ax=None, subplot_kw=None, **kwargs):
+        """Plot the the boundary."""
+        import cartopy.crs as ccrs
+
+        from pyresample.visualization.geometries import plot_geometries
+
+        geom = self.polygon(shapely=True)
+        crs = ccrs.Geodetic()
+        p = plot_geometries(geometries=[geom], crs=crs,
+                            ax=ax, subplot_kw=subplot_kw, **kwargs)
+        return p
+
     # For backward compatibility !
     @classmethod
     def from_lonlat_sides(cls, lon_sides, lat_sides):

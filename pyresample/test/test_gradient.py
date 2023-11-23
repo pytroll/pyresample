@@ -599,19 +599,16 @@ def test_check_overlap():
 
 def test__get_border_lonlats_geos():
     """Test that correct methods are called in _get_border_lonlats() with geos inputs."""
-    from pyresample.geometry import _get_geostationary_bounding_box_in_lonlats  # noqa
     from pyresample.gradient import _get_border_lonlats
-
-    lons_v = np.array([1, 2, 3, 4])
-    lats_v = np.array([1, 2, 3, 4])
+    lon_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    lat_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
-                             "+proj=geos +h=1234567", 2, 2,
-                             [1, 2, 3, 4])
-    with mock.patch("pyresample.geometry._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
-        get_geostationary_bounding_box.return_value = lons_v, lats_v
-        lons, lats = _get_border_lonlats(geo_def)
-    np.testing.assert_allclose(lons, np.array([1, 2, 3, 4, 1]))
-    np.testing.assert_allclose(lats, np.array([1, 2, 3, 4, 1]))
+                             "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
+    with mock.patch.object(geo_def, "_get_boundary_sides") as get_boundary_lonlats:
+        get_boundary_lonlats.return_value = lon_sides, lat_sides
+        lon_b, lat_b = _get_border_lonlats(geo_def)
+    np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
+    np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
 
 
 def test__get_border_lonlats():
