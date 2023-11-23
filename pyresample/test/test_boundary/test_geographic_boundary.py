@@ -28,27 +28,6 @@ from pyresample.boundary import GeographicBoundary
 class TestGeographicBoundary(unittest.TestCase):
     """Test 'GeographicBoundary' class."""
 
-    def test_creation_from_lonlat_sides(self):
-        """Test GeographicBoundary creation from sides."""
-        lon_sides = [np.array([1.0, 1.5, 2.0]),
-                     np.array([2.0, 3.0]),
-                     np.array([3.0, 3.5, 4.0]),
-                     np.array([4.0, 1.0])]
-        lat_sides = [np.array([6.0, 6.5, 7.0]),
-                     np.array([7.0, 8.0]),
-                     np.array([8.0, 8.5, 9.0]),
-                     np.array([9.0, 6.0])]
-
-        # Define GeographicBoundary
-        boundary = GeographicBoundary.from_lonlat_sides(lon_sides, lat_sides)
-
-        # Assert sides coincides
-        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
-            assert np.allclose(b_lon, src_lon)
-
-        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides):
-            assert np.allclose(b_lat, src_lat)
-
     def test_creation(self):
         """Test GeographicBoundary creation."""
         lon_sides = [np.array([1.0, 1.5, 2.0]),

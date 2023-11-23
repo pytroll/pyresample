@@ -11,7 +11,7 @@ import numpy as np
 # must be imported inside functions in the geometry modules if needed
 # to avoid circular dependencies
 from pyresample._caching import cache_to_json_if
-from pyresample.boundary import Boundary
+from pyresample.boundary import GeographicBoundary
 from pyresample.utils import check_slice_orientation
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ def _get_slice_starts_stops(src_area, area_to_cover):
     return xstart, xstop, ystart, ystop
 
 
-def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
+def _get_area_boundary(area_to_cover: AreaDefinition) -> GeographicBoundary:
     try:
         if area_to_cover.is_geostationary:
             vertices_per_side = None
