@@ -134,19 +134,19 @@ class TestOGradientResampler:
         poly = self.swath_resampler._get_src_poly(0, 40, 0, 40)
         assert poly is False
 
-    @mock.patch('pyresample.gradient.get_polygon')
-    def test_get_dst_poly(self, get_polygon):
+    @mock.patch('pyresample.gradient._get_polygon')
+    def test_get_dst_poly(self, _get_polygon):
         """Test defining destination chunk polygon."""
         chunks = (10, 10)
         self.resampler._get_projection_coordinates(chunks)
         self.resampler._get_gradients()
-        # First call should make a call to get_polygon()
+        # First call should make a call to _get_polygon()
         self.resampler._get_dst_poly('idx1', 0, 10, 0, 10)
-        assert get_polygon.call_count == 1
+        assert _get_polygon.call_count == 1
         assert 'idx1' in self.resampler.dst_polys
         # The second call to the same index should come from cache
         self.resampler._get_dst_poly('idx1', 0, 10, 0, 10)
-        assert get_polygon.call_count == 1
+        assert _get_polygon.call_count == 1
 
     def test_filter_data(self):
         """Test filtering chunks that do not overlap."""
@@ -597,10 +597,10 @@ def test_check_overlap():
     assert check_overlap(poly1, poly2) is False
 
 
-def test_get_border_lonlats_geos():
-    """Test that correct methods are called in get_border_lonlats() with geos inputs."""
+def test__get_border_lonlats_geos():
+    """Test that correct methods are called in _get_border_lonlats() with geos inputs."""
     from pyresample.geometry import _get_geostationary_bounding_box_in_lonlats  # noqa
-    from pyresample.gradient import get_border_lonlats
+    from pyresample.gradient import _get_border_lonlats
 
     lons_v = np.array([1, 2, 3, 4])
     lats_v = np.array([1, 2, 3, 4])
@@ -609,33 +609,33 @@ def test_get_border_lonlats_geos():
                              [1, 2, 3, 4])
     with mock.patch("pyresample.geometry._get_geostationary_bounding_box_in_lonlats") as get_geostationary_bounding_box:
         get_geostationary_bounding_box.return_value = lons_v, lats_v
-        lons, lats = get_border_lonlats(geo_def)
+        lons, lats = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lons, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lats, np.array([1, 2, 3, 4, 1]))
 
 
-def test_get_border_lonlats():
-    """Test that correct methods are called in get_border_lonlats()."""
-    from pyresample.gradient import get_border_lonlats
+def test__get_border_lonlats():
+    """Test that correct methods are called in _get_border_lonlats()."""
+    from pyresample.gradient import _get_border_lonlats
     lon_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     lat_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
     with mock.patch.object(geo_def, "_get_boundary_sides") as get_boundary_lonlats:
         get_boundary_lonlats.return_value = lon_sides, lat_sides
-        lon_b, lat_b = get_border_lonlats(geo_def)
+        lon_b, lat_b = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
 
 
 @mock.patch('pyresample.gradient.Polygon')
-@mock.patch('pyresample.gradient.get_border_lonlats')
-def test_get_polygon(get_border_lonlats, Polygon):
+@mock.patch('pyresample.gradient._get_border_lonlats')
+def test__get_polygon(_get_border_lonlats, Polygon):
     """Test polygon creation."""
-    from pyresample.gradient import get_polygon
+    from pyresample.gradient import _get_polygon
 
     # Valid polygon
-    get_border_lonlats.return_value = (1, 2)
+    _get_border_lonlats.return_value = (1, 2)
     geo_def = mock.MagicMock()
     prj = mock.MagicMock()
     x_borders = [0, 0, 1, 1]
@@ -644,7 +644,7 @@ def test_get_polygon(get_border_lonlats, Polygon):
     prj.return_value = (x_borders, y_borders)
     poly = mock.MagicMock(area=2.0)
     Polygon.return_value = poly
-    res = get_polygon(prj, geo_def)
+    res = _get_polygon(prj, geo_def)
     prj.assert_called_with(1, 2)
     Polygon.assert_called_with(boundary)
     assert res is poly
@@ -654,18 +654,18 @@ def test_get_polygon(get_border_lonlats, Polygon):
     y_borders = [-1, 0, np.nan, 1, 1, np.nan, -1]
     boundary = [(0, 0), (0, 1), (1, 1), (2, -1)]
     prj.return_value = (x_borders, y_borders)
-    res = get_polygon(prj, geo_def)
+    res = _get_polygon(prj, geo_def)
     Polygon.assert_called_with(boundary)
     assert res is poly
 
     # Polygon area is NaN
     poly.area = np.nan
-    res = get_polygon(prj, geo_def)
+    res = _get_polygon(prj, geo_def)
     assert res is None
 
     # Polygon area is 0.0
     poly.area = 0.0
-    res = get_polygon(prj, geo_def)
+    res = _get_polygon(prj, geo_def)
     assert res is None
 
 

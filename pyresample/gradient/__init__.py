@@ -129,13 +129,13 @@ class StackingGradientSearchResampler(BaseResampler):
                     src_prj=src_crs, dst_prj=dst_crs)
                 self.prj = pyproj.Proj(self.target_geo_def.crs)
 
-    def _get_polygon(self, geo_def):
+    def _get_prj_poly(self, geo_def):
         # - None if out of Earth Disk
         # - False is SwathDefinition
         if isinstance(geo_def, SwathDefinition):
             return False
         try:
-            poly = get_polygon(self.prj, geo_def)
+            poly = _get_polygon(self.prj, geo_def)
         except Exception:
             poly = None
         return poly
@@ -144,7 +144,7 @@ class StackingGradientSearchResampler(BaseResampler):
         """Get bounding polygon for source chunk."""
         geo_def = self.source_geo_def[src_y_start:src_y_end,
                                       src_x_start:src_x_end]
-        return self._get_polygon(geo_def)
+        return self._get_prj_poly(geo_def)
 
     def _get_dst_poly(self, idx, dst_x_start, dst_x_end,
                       dst_y_start, dst_y_end):
@@ -153,7 +153,7 @@ class StackingGradientSearchResampler(BaseResampler):
         if dst_poly is None:
             geo_def = self.target_geo_def[dst_y_start:dst_y_end,
                                           dst_x_start:dst_x_end]
-            dst_poly = self._get_polygon(geo_def)
+            dst_poly = self._get_prj_poly(geo_def)
             self.dst_polys[idx] = dst_poly
         return dst_poly
 
@@ -369,7 +369,7 @@ def _check_input_coordinates(dst_x, dst_y,
         raise ValueError("Target arrays should all have the same shape")
 
 
-def get_border_lonlats(geo_def: AreaDefinition, vertices_per_side=None):
+def _get_border_lonlats(geo_def: AreaDefinition, vertices_per_side=None):
     """Get the border x- and y-coordinates."""
     if geo_def.is_geostationary:
         vertices_per_side = 3600
@@ -377,9 +377,9 @@ def get_border_lonlats(geo_def: AreaDefinition, vertices_per_side=None):
     return lon_b, lat_b
 
 
-def get_polygon(prj, geo_def, vertices_per_side=None):
+def _get_polygon(prj, geo_def, vertices_per_side=None):
     """Get border polygon from area definition in projection *prj*."""
-    lon_b, lat_b = get_border_lonlats(geo_def, vertices_per_side=vertices_per_side)
+    lon_b, lat_b = _get_border_lonlats(geo_def, vertices_per_side=vertices_per_side)
     x_borders, y_borders = prj(lon_b, lat_b)
     boundary = [(x_borders[i], y_borders[i]) for i in range(len(x_borders))
                 if np.isfinite(x_borders[i]) and np.isfinite(y_borders[i])]
