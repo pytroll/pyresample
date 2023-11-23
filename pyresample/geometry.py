@@ -333,17 +333,17 @@ class BaseDefinition:
                           PendingDeprecationWarning, stacklevel=2)
 
         vertices_per_side = vertices_per_side or frequency
-        lon_sides, lat_sides = self._get_boundary_sides(coordinates="geographic",
-                                                        vertices_per_side=vertices_per_side)
+        sides_lons, sides_lats = self._get_boundary_sides(coordinates="geographic",
+                                                          vertices_per_side=vertices_per_side)
         warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.boundary().sides` instead",
                       PendingDeprecationWarning, stacklevel=2)
         if force_clockwise and not self._corner_is_clockwise(
-                lon_sides[0][-2], lat_sides[0][-2],
-                lon_sides[0][-1], lat_sides[0][-1],
-                lon_sides[1][1], lat_sides[1][1]):
+                sides_lons[0][-2], sides_lats[0][-2],
+                sides_lons[0][-1], sides_lats[0][-1],
+                sides_lons[1][1], sides_lats[1][1]):
             # going counter-clockwise
-            lon_sides, lat_sides = self._reverse_boundaries(lon_sides, lat_sides)
-        return lon_sides, lat_sides
+            sides_lons, sides_lats = self._reverse_boundaries(sides_lons, sides_lats)
+        return sides_lons, sides_lats
 
     def _get_geostationary_fd_coordinate_sides(self, arr, step):
         """Retrieve a 'dummy' boundary side list for a geostationary area with boundaries out of the Earth disk.
@@ -435,8 +435,8 @@ class BaseDefinition:
                            (s4_dim1.squeeze(), s4_dim2.squeeze())])
         if hasattr(dim1[0], 'compute') and da is not None:
             dim1, dim2 = da.compute(dim1, dim2)
-        lon_sides, lat_sides = self._filter_sides_nans(dim1, dim2)
-        return lon_sides, lat_sides
+        sides_lons, sides_lats = self._filter_sides_nans(dim1, dim2)
+        return sides_lons, sides_lats
 
     def _filter_sides_nans(
             self,
@@ -560,8 +560,8 @@ class BaseDefinition:
             wished_order = None
 
         if coordinates == "geographic" or self.crs.is_geographic:
-            return GeographicBoundary(lon_sides=x_sides,
-                                      lat_sides=y_sides,
+            return GeographicBoundary(sides_lons=x_sides,
+                                      sides_lats=y_sides,
                                       wished_order=wished_order)
         else:
             return ProjectionBoundary(sides_x=x_sides,

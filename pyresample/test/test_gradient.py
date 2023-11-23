@@ -600,12 +600,12 @@ def test_check_overlap():
 def test__get_border_lonlats_geos():
     """Test that correct methods are called in _get_border_lonlats() with geos inputs."""
     from pyresample.gradient import _get_border_lonlats
-    lon_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
-    lat_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    sides_lons = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    sides_lats = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
     with mock.patch.object(geo_def, "_get_boundary_sides") as get_boundary_lonlats:
-        get_boundary_lonlats.return_value = lon_sides, lat_sides
+        get_boundary_lonlats.return_value = sides_lons, sides_lats
         lon_b, lat_b = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
@@ -614,12 +614,12 @@ def test__get_border_lonlats_geos():
 def test__get_border_lonlats():
     """Test that correct methods are called in _get_border_lonlats()."""
     from pyresample.gradient import _get_border_lonlats
-    lon_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
-    lat_sides = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    sides_lons = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
+    sides_lats = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
     with mock.patch.object(geo_def, "_get_boundary_sides") as get_boundary_lonlats:
-        get_boundary_lonlats.return_value = lon_sides, lat_sides
+        get_boundary_lonlats.return_value = sides_lons, sides_lats
         lon_b, lat_b = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))

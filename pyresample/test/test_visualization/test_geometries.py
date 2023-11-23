@@ -18,14 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test cartopy plotting utilities."""
 
-import pytest
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-from shapely.geometry import Polygon 
+import matplotlib.pyplot as plt
+import pytest
+from shapely.geometry import Polygon
+
 from pyresample.visualization.geometries import (
-    _add_map_background, 
-    _check_subplot_kw, 
-    _initialize_plot, 
+    _add_map_background,
+    _check_subplot_kw,
+    _initialize_plot,
     plot_geometries,
 )
 
@@ -52,13 +53,13 @@ class TestPlotFunctions:
         """Test _check_subplot_kw with invalid input."""
         with pytest.raises(TypeError):
             _check_subplot_kw("invalid")
-        
+
         with pytest.raises(TypeError):
             _check_subplot_kw(2)
-        
+
         with pytest.raises(TypeError):
             _check_subplot_kw([2])
-            
+
         with pytest.raises(ValueError):
             _check_subplot_kw({})
 
@@ -68,20 +69,18 @@ class TestPlotFunctions:
         _, result_ax, initialized_here = _initialize_plot(ax=ax)
         assert result_ax == ax
         assert not initialized_here
-    
+
     @pytest.mark.parametrize("ax_provided", [True, False])
     def test_plot_geometries(self, ax_provided):
         """Test plot_geometries function returns the correct type based on ax_provided."""
-        vertices1 = [(0,0),(0,1), (1, 0)]
-        vertices2 = [(0,0),(0,2), (2, 0)]
+        vertices1 = [(0, 0), (0, 1), (1, 0)]
+        vertices2 = [(0, 0), (0, 2), (2, 0)]
         geometries = [Polygon(vertices1), Polygon(vertices2)]
         crs = ccrs.PlateCarree()
         ax = plt.axes(projection=crs) if ax_provided else None
         result = plot_geometries(geometries, crs, ax=ax)
-   
+
         if ax_provided:
             assert isinstance(result, plt.Axes)
         else:
             assert isinstance(result, plt.Figure)
-        
-        

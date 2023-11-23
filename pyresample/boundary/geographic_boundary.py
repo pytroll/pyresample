@@ -18,7 +18,6 @@
 """Define the GeographicBoundary class."""
 
 import logging
-import warnings
 
 import numpy as np
 
@@ -70,17 +69,17 @@ class GeographicBoundary():
     The inputs must be the list of longitude and latitude boundary sides.
     """
 
-    def __init__(self, lon_sides, lat_sides, wished_order=None):
+    def __init__(self, sides_lons, sides_lats, wished_order=None):
 
-        self.sides_lons = BoundarySides(lon_sides)
-        self.sides_lats = BoundarySides(lat_sides)
+        self.sides_lons = BoundarySides(sides_lons)
+        self.sides_lats = BoundarySides(sides_lats)
 
         # Old interface for compatibility to AreaBoundary
         self._contour_poly = None
 
         # Check if it is clockwise/counterclockwise
-        self.is_clockwise = _is_boundary_clockwise(sides_lons=lon_sides,
-                                                   sides_lats=lat_sides)
+        self.is_clockwise = _is_boundary_clockwise(sides_lons=sides_lons,
+                                                   sides_lats=sides_lats)
         self.is_counterclockwise = not self.is_clockwise
 
         # Define wished order
@@ -108,7 +107,7 @@ class GeographicBoundary():
 
     @property
     def sides(self):
-        """Return the boundary sides as a tuple of (lon_sides, lat_sides) arrays."""
+        """Return the boundary sides as a tuple of (sides_lons, sides_lats) arrays."""
         return self.sides_lons, self.sides_lats
 
     @property
@@ -182,22 +181,6 @@ class GeographicBoundary():
         return p
 
     # For backward compatibility !
-    @classmethod
-    def from_lonlat_sides(cls, lon_sides, lat_sides):
-        """Define AreaBoundary from list of lon_sides and lat_sides.
-
-        For an area of shape (m, n), the sides must adhere the format:
-
-        sides = [np.array([v00, v01, ..., v0n]),
-                 np.array([v0n, v1n, ..., vmn]),
-                 np.array([vmn, ..., vm1, vm0]),
-                 np.array([vm0, ... ,v10, v00])]
-        """
-        warnings.warn("Use `AreaBoundary(lon_sides, lat_sides)` instead of `from_lonlat_sides`",
-                      PendingDeprecationWarning, stacklevel=2)
-        boundary = cls(lon_sides=lon_sides, lat_sides=lat_sides)
-        return boundary
-
     def decimate(self, ratio):
         """Remove some points in the boundaries, but never the corners."""
         # TODO: to update --> used by AreaDefBoundary
