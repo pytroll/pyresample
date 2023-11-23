@@ -18,8 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the BoundarySides objects."""
 
-import pytest
 import numpy as np
+import pytest
+
 from pyresample.boundary.sides import BoundarySides
 
 
