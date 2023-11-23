@@ -33,13 +33,13 @@ class BoundarySides:
     which refers to the side position with respect to the coordinate array.
     The first row of the coordinate array correspond to the top side, the last row to the bottom side,
     the first column to the left side and the last column to the right side.
-    Please note that the last vertex of each side must be equal to the first vertex of the next side. 
+    Please note that the last vertex of each side must be equal to the first vertex of the next side.
     """
     __slots__ = ['_sides']
 
     def __init__(self, sides):
         """Initialize the BoundarySides object."""
-        if len(sides) != 4 or not all(isinstance(side, np.ndarray) for side in sides):
+        if len(sides) != 4 or not all(isinstance(side, np.ndarray) and side.ndim == 1 for side in sides):
             raise ValueError("Sides must be a list of four numpy arrays.")
 
         if not all(np.array_equal(sides[i][-1], sides[(i + 1) % 4][0]) for i in range(4)):

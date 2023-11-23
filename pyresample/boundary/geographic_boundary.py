@@ -22,8 +22,8 @@ import warnings
 
 import numpy as np
 
-from pyresample.spherical import SphPolygon
 from pyresample.boundary.sides import BoundarySides
+from pyresample.spherical import SphPolygon
 
 logger = logging.getLogger(__name__)
 
@@ -67,14 +67,14 @@ def _is_boundary_clockwise(sides_lons, sides_lats):
 class GeographicBoundary():
     """GeographicBoundary object.
 
-    The inputs must be the list of longitude and latitude boundary sides. 
+    The inputs must be the list of longitude and latitude boundary sides.
     """
 
     def __init__(self, lon_sides, lat_sides, wished_order=None):
-        
+
         self.sides_lons = BoundarySides(lon_sides)
         self.sides_lats = BoundarySides(lat_sides)
-        
+
         # Old interface for compatibility to AreaBoundary
         self._contour_poly = None
 

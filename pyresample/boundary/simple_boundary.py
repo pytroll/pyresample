@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """The deprecated SimpleBoundary class."""
 
-import logging 
+import logging
 
 logger = logging.getLogger(__name__)
 

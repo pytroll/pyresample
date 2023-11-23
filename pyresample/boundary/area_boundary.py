@@ -126,7 +126,6 @@ class AreaDefBoundary(AreaBoundary):
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
                       PendingDeprecationWarning, stacklevel=2)
-        AreaBoundary.__init__(self,
-                            *zip(lon_sides, lat_sides))
+        AreaBoundary.__init__(self, *zip(lon_sides, lat_sides))
         if frequency != 1:
             self.decimate(frequency)

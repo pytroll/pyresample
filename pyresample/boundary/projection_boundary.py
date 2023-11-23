@@ -36,7 +36,7 @@ class ProjectionBoundary():
     def __init__(self, sides_x, sides_y, wished_order=None, crs=None):
 
         self.crs = crs  # TODO needed to plot
-        
+
         self.sides_x = BoundarySides(sides_x)
         self.sides_y = BoundarySides(sides_y)
 
@@ -149,6 +149,3 @@ class ProjectionBoundary():
         p = plot_geometries(geometries=[geom], crs=crs,
                             ax=ax, subplot_kw=subplot_kw, **kwargs)
         return p
-
-
-

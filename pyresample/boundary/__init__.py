@@ -17,12 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """The Boundary classes."""
 
-from pyresample.boundary.simple_boundary import SimpleBoundary 
-from pyresample.boundary.area_boundary import AreaBoundary, AreaDefBoundary 
-from pyresample.boundary.geographic_boundary import GeographicBoundary 
-from pyresample.boundary.projection_boundary import ProjectionBoundary 
+from pyresample.boundary.area_boundary import AreaBoundary, AreaDefBoundary
+from pyresample.boundary.geographic_boundary import GeographicBoundary
+from pyresample.boundary.projection_boundary import ProjectionBoundary
+from pyresample.boundary.simple_boundary import SimpleBoundary
 
-__all__ = [ 
+__all__ = [
     "GeographicBoundary",
     "ProjectionBoundary",
     # Deprecated
