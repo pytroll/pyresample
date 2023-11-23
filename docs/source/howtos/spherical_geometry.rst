@@ -72,9 +72,8 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
 `area_def` is an :class:`~pyresample.geometry.AreaDefinition` object.
 
  >>> from pyresample.spherical_utils import GetNonOverlapUnions
- >>> from pyresample.boundary import AreaDefBoundary
 
- >>> area_boundary = AreaDefBoundary(area_def, frequency=100) # doctest: +SKIP
+ >>> area_boundary = area_def.boundary(vertices_per_side=100) # doctest: +SKIP
  >>> area_boundary = area_boundary.contour_poly # doctest: +SKIP
 
  >>> list_of_polygons = []

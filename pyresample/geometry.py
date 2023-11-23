@@ -331,9 +331,12 @@ class BaseDefinition:
         if frequency is not None:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
+
         vertices_per_side = vertices_per_side or frequency
         lon_sides, lat_sides = self._get_boundary_sides(coordinates="geographic",
                                                         vertices_per_side=vertices_per_side)
+        warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.boundary().sides` instead",
+                      PendingDeprecationWarning, stacklevel=2)
         if force_clockwise and not self._corner_is_clockwise(
                 lon_sides[0][-2], lat_sides[0][-2],
                 lon_sides[0][-1], lat_sides[0][-1],

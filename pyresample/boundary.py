@@ -146,6 +146,11 @@ class AreaBoundary(Boundary):
         return self
 
     @property
+    def sides(self):
+        """Return the boundary sides as a tuple of (lon_sides, lat_sides) arrays."""
+        return self.sides_lons, self.sides_lats
+
+    @property
     def lons(self):
         """Retrieve boundary longitude vertices."""
         lons = np.concatenate([lns[:-1] for lns in self.sides_lons])
@@ -251,7 +256,7 @@ class AreaDefBoundary(AreaBoundary):
     """Boundaries for area definitions (pyresample)."""
 
     def __init__(self, area, frequency=1):
-        lon_sides, lat_sides = area.get_bbox_lonlats()
+        lon_sides, lat_sides = area.boundary().sides
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
                       PendingDeprecationWarning, stacklevel=2)
