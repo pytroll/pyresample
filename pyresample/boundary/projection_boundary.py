@@ -33,7 +33,7 @@ class ProjectionBoundary():
     It expects the projection coordinates to be planar (i.e. metric, radians).
     """
 
-    def __init__(self, sides_x, sides_y, wished_order=None, crs=None):
+    def __init__(self, sides_x, sides_y, order=None, crs=None):
 
         self.crs = crs  # TODO needed to plot
 
@@ -50,12 +50,12 @@ class ProjectionBoundary():
         else:
             self._actual_order = "counterclockwise"
 
-        if wished_order is None:
+        if order is None:
             self._wished_order = self._actual_order
         else:
-            if wished_order not in ["clockwise", "counterclockwise"]:
-                raise ValueError("Valid order is 'clockwise' or 'counterclockwise'")
-            self._wished_order = wished_order
+            if order not in ["clockwise", "counterclockwise"]:
+                raise ValueError("Valid 'order' is 'clockwise' or 'counterclockwise'")
+            self._wished_order = order
 
     def _is_projection_boundary_clockwise(self):
         """Determine if the boundary is clockwise-defined in projection coordinates."""

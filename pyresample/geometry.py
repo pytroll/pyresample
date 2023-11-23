@@ -379,9 +379,9 @@ class BaseDefinition:
         # --> BUG is in get_geostationary_bounding_box_in_proj_coords
         # step = int(vertices_per_side / 2) - 1 # old code
         step = int(x.shape[0] / 2) - 1  # patch
-        x_sides = self._get_geostationary_fd_coordinate_sides(x, step=step)
-        y_sides = self._get_geostationary_fd_coordinate_sides(y, step=step)
-        return x_sides, y_sides
+        sides_x = self._get_geostationary_fd_coordinate_sides(x, step=step)
+        sides_y = self._get_geostationary_fd_coordinate_sides(y, step=step)
+        return sides_x, sides_y
 
     def _get_boundary_sides(self, coordinates="geographic", vertices_per_side: Optional[int] = None) -> tuple:
         """Return the boundary sides of the current area.
@@ -392,10 +392,10 @@ class BaseDefinition:
                 Either "geographic" or "projection".
                 Projection coordinates are available only for AreaDefinition objects.
             vertices_per_side:
-                The number of points to provide for each side. By default (None)
-                the full width and height will be provided.
-                If any of the area corners is out of the Earth disk (i.e. full
-                disc geostationary area and hemispheric polar projections)
+                The number of points to provide for each side.
+                By default (None) the full width and height will be provided.
+                If the area object is an AreaDefinition with any corner out of the Earth disk
+                (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
                 by default only 50 points are selected.
 
         Returns:
@@ -524,16 +524,17 @@ class BaseDefinition:
         lons, lats = self.boundary(vertices_per_side=vertices_per_side).contour()
         return lons, lats
 
-    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None,
-                 coordinates="geographic"):
+    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
 
         Parameters
         ----------
         vertices_per_side:
-             (formerly `frequency`) The number of points to provide for each side. By default (None)
-            the full width and height will be provided, except for geostationary
-            projection where by default only 50 points are selected.
+             (formerly `frequency`) The number of points to provide for each side.
+             By default (None) the full width and height will be provided.
+             If the area object is an AreaDefinition with any corner out of the Earth disk
+             (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
+             by default only 50 points are selected.
         force_clockwise:
             Perform minimal checks and reordering of coordinates to ensure
             that the returned coordinates follow a clockwise direction.
@@ -543,30 +544,44 @@ class BaseDefinition:
             operations assume that coordinates are clockwise.
             Default is False.
         """
-        from pyresample.boundary import GeographicBoundary, ProjectionBoundary
-
         if frequency is not None:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
+        warnings.warn("The `boundary` method is pending deprecation. Use `geographic_boundary` instead",
+                      PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        x_sides, y_sides = self._get_boundary_sides(coordinates=coordinates,
-                                                    vertices_per_side=vertices_per_side)
-
-        # TODO: I would suggest to deprecate force_clockwise
-        # --> And use order/wished_order argument (None take as it is)
         if force_clockwise:
-            wished_order = "clockwise"
+            order = "clockwise"
         else:
-            wished_order = None
+            order = None
+        return self.geographic_boundary(vertices_per_side=vertices_per_side, order=order)
 
-        if coordinates == "geographic" or self.crs.is_geographic:
-            return GeographicBoundary(sides_lons=x_sides,
-                                      sides_lats=y_sides,
-                                      wished_order=wished_order)
-        else:
-            return ProjectionBoundary(sides_x=x_sides,
-                                      sides_y=y_sides,
-                                      wished_order=wished_order)
+    def geographic_boundary(self, vertices_per_side=None, order=None):
+        """Retrieve the GeographicBoundary object.
+
+        Parameters
+        ----------
+        vertices_per_side:
+            The number of points to provide for each side.
+            By default (None) the full width and height will be provided.
+            If the area object is an AreaDefinition with any corner out of the Earth disk
+            (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
+            by default only 50 points are selected.
+        order:
+            Specify the desired order of the boundary polygon vertices in GeographicBoundary.
+            If order=None, the sides order is used.
+            If order="clockwise", the boundary polygon vertices are returned by
+            GeographicBoundary in clockwise order.
+            If order="counterclockwise", the boundary polygon vertices are returned by
+            GeographicBoundary in counterclockwise order.
+        """
+        from pyresample.boundary import GeographicBoundary
+
+        sides_x, sides_y = self._get_boundary_sides(coordinates="geographic",
+                                                    vertices_per_side=vertices_per_side)
+        return GeographicBoundary(sides_lons=sides_x,
+                                  sides_lats=sides_y,
+                                  order=order)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1686,6 +1701,34 @@ class AreaDefinition(_ProjectionDefinition):
             return False
         return 'geostationary' in coord_operation.method_name.lower()
 
+    def projection_boundary(self, vertices_per_side=None, order=None):
+        """Retrieve the ProjectionBoundary object.
+
+        Parameters
+        ----------
+        vertices_per_side:
+            The number of points to provide for each side.
+            By default (None) the full width and height will be provided.
+            If the area object is an AreaDefinition with any corner out of the Earth disk
+            (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
+            by default only 50 points are selected.
+        order:
+            Specify the desired order of the boundary polygon vertices in GeographicBoundary.
+            If order=None, the sides order is used.
+            If order="clockwise", the boundary polygon vertices are returned by
+            GeographicBoundary in clockwise order.
+            If order="counterclockwise", the boundary polygon vertices are returned by
+            GeographicBoundary in counterclockwise order.
+        """
+        from pyresample.boundary import ProjectionBoundary
+        if self.crs.is_geographic:
+            return self.geographic_boundary(vertices_per_side=vertices_per_side, order=order)
+        sides_x, sides_y = self._get_boundary_sides(coordinates="projection",
+                                                    vertices_per_side=vertices_per_side)
+        return ProjectionBoundary(sides_x=sides_x,
+                                  sides_y=sides_y,
+                                  order=order)
+
     def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
                                                 frequency: Optional[int] = None):
         """Return the bounding box in projection coordinates."""
@@ -1693,10 +1736,10 @@ class AreaDefinition(_ProjectionDefinition):
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
         warnings.warn("The `get_edge_bbox_in_projection_coordinates` method is pending deprecation."
-                      "Use `area.boundary(coordinates='projection').contour()` instead.",
+                      "Use `area.projection_boundary().contour()` instead.",
                       PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        x, y = self.boundary(coordinates="projection", vertices_per_side=vertices_per_side).contour(closed=True)
+        x, y = self.projection_boundary(vertices_per_side=vertices_per_side).contour(closed=True)
         return x, y
 
     @property
@@ -2851,7 +2894,7 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
       nb_points: Number of points on the polygon
     """
     warnings.warn("'get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
-                  "'area.boundary().contour()' instead.",
+                  "'area.geographic_boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box(geos_area,
                                            coordinates="geographic",

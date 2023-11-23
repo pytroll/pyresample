@@ -95,7 +95,7 @@ class SwathSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.boundary(coordinates="projection", vertices_per_side=10).contour(closed=True)
+        x, y = self.area_to_contain.projection_boundary(vertices_per_side=10).contour(closed=True)
         poly = Polygon(zip(*self._transformer.transform(x, y)))
         return poly
 
@@ -144,9 +144,9 @@ class AreaSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.boundary(coordinates="projection", vertices_per_side=10).contour(closed=True)
+        x, y = self.area_to_contain.projection_boundary(vertices_per_side=10).contour(closed=True)
         if self.area_to_crop.is_geostationary:
-            geo_boundary = self.area_to_crop.boundary(coordinates="projection", vertices_per_side=360)
+            geo_boundary = self.area_to_crop.projection_boundary(vertices_per_side=360)
             x_geos, y_geos = geo_boundary.contour(closed=True)
             x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos))
@@ -173,7 +173,7 @@ class AreaSlicer(Slicer):
         except ValueError as err:
             raise InvalidArea("Invalid area") from err
 
-        poly_to_crop = self.area_to_crop.boundary(coordinates="projection", vertices_per_side=10).polygon(shapely=True)
+        poly_to_crop = self.area_to_crop.projection_boundary(vertices_per_side=10).polygon(shapely=True)
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
         bounds = self._sanitize_polygon_bounds(bounds)

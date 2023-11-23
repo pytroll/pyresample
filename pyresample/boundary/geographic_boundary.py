@@ -69,7 +69,7 @@ class GeographicBoundary():
     The inputs must be the list of longitude and latitude boundary sides.
     """
 
-    def __init__(self, sides_lons, sides_lats, wished_order=None):
+    def __init__(self, sides_lons, sides_lats, order=None):
 
         self.sides_lons = BoundarySides(sides_lons)
         self.sides_lats = BoundarySides(sides_lats)
@@ -88,12 +88,12 @@ class GeographicBoundary():
         else:
             self._actual_order = "counterclockwise"
 
-        if wished_order is None:
+        if order is None:
             self._wished_order = self._actual_order
         else:
-            if wished_order not in ["clockwise", "counterclockwise"]:
-                raise ValueError("Valid order is 'clockwise' or 'counterclockwise'")
-            self._wished_order = wished_order
+            if order not in ["clockwise", "counterclockwise"]:
+                raise ValueError("Valid 'order' is 'clockwise' or 'counterclockwise'")
+            self._wished_order = order
 
     def set_clockwise(self):
         """Set clockwise order for vertices retrieval."""
