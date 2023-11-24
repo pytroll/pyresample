@@ -2097,13 +2097,13 @@ class TestBoundary:
         ("geos_conus_area", True),
         ("geos_mesoscale_area", False),
     ])
-    def test_get_boundary_sides_call_geostationary_utility(self, request, area_def_name, assert_is_called):
+    def test_get_geographic_sides_call_geostationary_utility(self, request, area_def_name, assert_is_called):
         area_def = request.getfixturevalue(area_def_name)
 
         with patch.object(area_def, '_get_geostationary_boundary_sides') as mock_get_geo:
 
             # Call the method that could trigger the geostationary _get_geostationary_boundary_sides
-            _ = area_def._get_boundary_sides(coordinates="geographic", vertices_per_side=None)
+            _ = area_def._get_geographic_sides(vertices_per_side=None)
             # Assert _get_geostationary_boundary_sides was not called
             if assert_is_called:
                 mock_get_geo.assert_called_once()

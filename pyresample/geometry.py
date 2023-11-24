@@ -336,8 +336,7 @@ class BaseDefinition:
                           PendingDeprecationWarning, stacklevel=2)
 
         vertices_per_side = vertices_per_side or frequency
-        sides_lons, sides_lats = self._get_boundary_sides(coordinates="geographic",
-                                                          vertices_per_side=vertices_per_side)
+        sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
         warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.geographic_boundary().sides` instead",
                       PendingDeprecationWarning, stacklevel=2)
         if force_clockwise and not self._corner_is_clockwise(
@@ -348,7 +347,7 @@ class BaseDefinition:
             sides_lons, sides_lats = self._reverse_boundaries(sides_lons, sides_lats)
         return sides_lons, sides_lats
 
-    def _get_geostationary_fd_coordinate_sides(self, arr, step):
+    def _get_geostationary_dummy_sides(self, arr, step):
         """Retrieve a 'dummy' boundary side list for a geostationary area with boundaries out of the Earth disk.
 
         The second and fourth sides are always of length 2.
@@ -382,18 +381,14 @@ class BaseDefinition:
         # --> BUG is in get_geostationary_bounding_box_in_proj_coords
         # step = int(vertices_per_side / 2) - 1 # old code
         step = int(x.shape[0] / 2) - 1  # patch
-        sides_x = self._get_geostationary_fd_coordinate_sides(x, step=step)
-        sides_y = self._get_geostationary_fd_coordinate_sides(y, step=step)
+        sides_x = self._get_geostationary_dummy_sides(x, step=step)
+        sides_y = self._get_geostationary_dummy_sides(y, step=step)
         return sides_x, sides_y
 
-    def _get_boundary_sides(self, coordinates="geographic", vertices_per_side: Optional[int] = None) -> tuple:
-        """Return the boundary sides of the current area.
+    def _get_geographic_sides(self, vertices_per_side: Optional[int] = None) -> tuple:
+        """Return the geographic boundary sides of the current area.
 
         Args:
-            coordinates:
-                The type of boundary coordinates to retrieve.
-                Either "geographic" or "projection".
-                Projection coordinates are available only for AreaDefinition objects.
             vertices_per_side:
                 The number of points to provide for each side.
                 By default (None) the full width and height will be provided.
@@ -403,49 +398,45 @@ class BaseDefinition:
 
         Returns:
             The output structure is a tuple of two lists of four elements each.
-            The first list contains the longitude or the projection x coordinates.
-            The second list contains the latitude or the projection y coordinates.
+            The first list contains the longitude coordinates.
+            The second list contains the latitude coordinates.
             Each list element is a numpy array representing a specific side of the geometry.
             The order of the sides are [top", "right", "bottom", "left"]
         """
-        if coordinates not in ("geographic", "projection"):
-            raise ValueError(f"coordinates must be either 'geographic' or 'projection', got {coordinates}")
         is_swath = self.__class__.__name__ == "SwathDefinition"
-        if is_swath:
-            if coordinates not in ["geographic"]:
-                raise ValueError("'coordinates' must be 'geographic' for SwathDefinition")
-
         if not is_swath and _is_any_corner_out_of_earth_disk(self):
             if self.is_geostationary:
                 return self._get_geostationary_boundary_sides(vertices_per_side=vertices_per_side,
-                                                              coordinates=coordinates)
+                                                              coordinates="geographic")
+            # TODO !
             # if self.is_polar_projection # BUG
             #    self.is_robinson
             #    raise NotImplementedError("Likely a polar projection.")
-        if coordinates == "geographic":
-            coord_fun = self.get_lonlats
-        else:
-            coord_fun = self.get_proj_coords  # AreaDefinition
+        sides_lons, sides_lats = self._get_sides(coord_fun=self.get_lonlats, vertices_per_side=vertices_per_side)
+        return sides_lons, sides_lats
 
-        s1_slice, s2_slice, s3_slice, s4_slice = self._get_bbox_slices(vertices_per_side)
-        s1_dim1, s1_dim2 = coord_fun(data_slice=s1_slice)
-        s2_dim1, s2_dim2 = coord_fun(data_slice=s2_slice)
-        s3_dim1, s3_dim2 = coord_fun(data_slice=s3_slice)
-        s4_dim1, s4_dim2 = coord_fun(data_slice=s4_slice)
-        dim1, dim2 = zip(*[(s1_dim1.squeeze(), s1_dim2.squeeze()),
-                           (s2_dim1.squeeze(), s2_dim2.squeeze()),
-                           (s3_dim1.squeeze(), s3_dim2.squeeze()),
-                           (s4_dim1.squeeze(), s4_dim2.squeeze())])
+    def _get_sides(self, coord_fun, vertices_per_side):
+        """Return the boundary sides."""
+        top_slice, right_slice, bottom_slice, left_slice = self._get_bbox_slices(vertices_per_side)
+        top_dim1, top_dim2 = coord_fun(data_slice=top_slice)
+        right_dim1, right_dim2 = coord_fun(data_slice=right_slice)
+        bottom_dim1, bottom_dim2 = coord_fun(data_slice=bottom_slice)
+        left_dim1, left_dim2 = coord_fun(data_slice=left_slice)
+        dim1, dim2 = zip(*[(top_dim1.squeeze(), top_dim2.squeeze()),
+                           (right_dim1.squeeze(), right_dim2.squeeze()),
+                           (bottom_dim1.squeeze(), bottom_dim2.squeeze()),
+                           (left_dim1.squeeze(), left_dim2.squeeze())])
         if hasattr(dim1[0], 'compute') and da is not None:
             dim1, dim2 = da.compute(dim1, dim2)
-        sides_lons, sides_lats = self._filter_sides_nans(dim1, dim2)
-        return sides_lons, sides_lats
+        sides_dim1, sides_dim2 = self._filter_sides_nans(dim1, dim2)
+        return sides_dim1, sides_dim2
 
     def _filter_sides_nans(
             self,
             dim1_sides: list[np.ndarray],
             dim2_sides: list[np.ndarray],
     ) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        """Remove nan values present in each side."""
         new_dim1_sides = []
         new_dim2_sides = []
         for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
@@ -473,11 +464,11 @@ class BaseDefinition:
         else:
             row_num = vertices_per_side
             col_num = vertices_per_side
-        s1_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
-        s2_slice = (np.linspace(0, height - 1, row_num, dtype=int), -1)
-        s3_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
-        s4_slice = (np.linspace(height - 1, 0, row_num, dtype=int), 0)
-        return s1_slice, s2_slice, s3_slice, s4_slice
+        top_slice = (0, np.linspace(0, width - 1, col_num, dtype=int))
+        right_slice = (np.linspace(0, height - 1, row_num, dtype=int), -1)
+        bottom_slice = (-1, np.linspace(width - 1, 0, col_num, dtype=int))
+        left_slice = (np.linspace(height - 1, 0, row_num, dtype=int), 0)
+        return top_slice, right_slice, bottom_slice, left_slice
 
     @staticmethod
     def _reverse_boundaries(sides_lons: list, sides_lats: list) -> tuple:
@@ -580,10 +571,9 @@ class BaseDefinition:
         """
         from pyresample.boundary import GeographicBoundary
 
-        sides_x, sides_y = self._get_boundary_sides(coordinates="geographic",
-                                                    vertices_per_side=vertices_per_side)
-        return GeographicBoundary(sides_lons=sides_x,
-                                  sides_lats=sides_y,
+        sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
+        return GeographicBoundary(sides_lons=sides_lons,
+                                  sides_lats=sides_lats,
                                   order=order)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
@@ -1704,6 +1694,31 @@ class AreaDefinition(_ProjectionDefinition):
             return False
         return 'geostationary' in coord_operation.method_name.lower()
 
+    def _get_projection_sides(self, vertices_per_side: Optional[int] = None) -> tuple:
+        """Return the projection boundary sides of the current area.
+
+        Args:
+            vertices_per_side:
+                The number of points to provide for each side.
+                By default (None) the full width and height will be provided.
+                If the area object is an AreaDefinition with any corner out of the Earth disk
+                (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
+                by default only 50 points are selected.
+
+        Returns:
+            The output structure is a tuple of two lists of four elements each.
+            The first list contains the projection x coordinates.
+            The second list contains the projection y coordinates.
+            Each list element is a numpy array representing a specific side of the geometry.
+            The order of the sides are [top", "right", "bottom", "left"]
+        """
+        if _is_any_corner_out_of_earth_disk(self):
+            if self.is_geostationary:
+                return self._get_geostationary_boundary_sides(vertices_per_side=vertices_per_side,
+                                                              coordinates="projection")
+        sides_lons, sides_lats = self._get_sides(coord_fun=self.get_proj_coords, vertices_per_side=vertices_per_side)
+        return sides_lons, sides_lats
+
     def projection_boundary(self, vertices_per_side=None, order=None):
         """Retrieve the ProjectionBoundary object.
 
@@ -1726,8 +1741,7 @@ class AreaDefinition(_ProjectionDefinition):
         from pyresample.boundary import ProjectionBoundary
         if self.crs.is_geographic:
             return self.geographic_boundary(vertices_per_side=vertices_per_side, order=order)
-        sides_x, sides_y = self._get_boundary_sides(coordinates="projection",
-                                                    vertices_per_side=vertices_per_side)
+        sides_x, sides_y = self._get_projection_sides(vertices_per_side=vertices_per_side)
         return ProjectionBoundary(sides_x=sides_x,
                                   sides_y=sides_y,
                                   order=order,

@@ -604,8 +604,8 @@ def test__get_border_lonlats_geos():
     sides_lats = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=geos +h=1234567", 2, 2, [1, 2, 3, 4])
-    with mock.patch.object(geo_def, "_get_boundary_sides") as mock_get_boundary_sides:
-        mock_get_boundary_sides.return_value = sides_lons, sides_lats
+    with mock.patch.object(geo_def, "_get_geographic_sides") as mock_get_geographic_sides:
+        mock_get_geographic_sides.return_value = sides_lons, sides_lats
         lon_b, lat_b = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
@@ -618,8 +618,8 @@ def test__get_border_lonlats():
     sides_lats = [np.array([1, 2]), np.array([2, 3]), np.array([3, 4]), np.array([4, 1])]
     geo_def = AreaDefinition("", "", "",
                              "+proj=lcc +lat_1=25 +lat_2=25", 2, 2, [1, 2, 3, 4])
-    with mock.patch.object(geo_def, "_get_boundary_sides") as mock_get_boundary_sides:
-        mock_get_boundary_sides.return_value = sides_lons, sides_lats
+    with mock.patch.object(geo_def, "_get_geographic_sides") as mock_get_geographic_sides:
+        mock_get_geographic_sides.return_value = sides_lons, sides_lats
         lon_b, lat_b = _get_border_lonlats(geo_def)
     np.testing.assert_allclose(lon_b, np.array([1, 2, 3, 4, 1]))
     np.testing.assert_allclose(lat_b, np.array([1, 2, 3, 4, 1]))
