@@ -162,6 +162,8 @@ class StackingGradientSearchResampler(BaseResampler):
         src_y_chunks, src_x_chunks = self.src_x.chunks
         dst_y_chunks, dst_x_chunks = self.dst_x.chunks
 
+        dst_is_swath = isinstance(self.target_geo_def, SwathDefinition)
+
         coverage_status = []
         src_slices, dst_slices = [], []
         dst_mosaic_locations = []
@@ -182,9 +184,18 @@ class StackingGradientSearchResampler(BaseResampler):
                     for y_step_number, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        dst_poly = self._get_dst_poly((x_step_number, y_step_number),
-                                                      dst_x_start, dst_x_end,
-                                                      dst_y_start, dst_y_end)
+                        # - Retrieve it only if source chunk poly is inside Earth Disk
+                        #   - Skips lot polygon creations when source is GEO FD
+                        # - Retrieve if dst area is swath -
+                        #   - Currently dst_poly will be False
+                        #   - check_overlap will return True
+                        if src_poly is not None or dst_is_swath:
+                            dst_poly = self._get_dst_poly((x_step_number, y_step_number),
+                                                          dst_x_start, dst_x_end,
+                                                          dst_y_start, dst_y_end)
+                        else:
+                            dst_poly = None
+
                         covers = check_overlap(src_poly, dst_poly)
 
                         coverage_status.append(covers)

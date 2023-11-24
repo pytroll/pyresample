@@ -148,6 +148,8 @@ class AreaSlicer(Slicer):
         if self.area_to_crop.is_geostationary:
             geo_boundary = self.area_to_crop.projection_boundary(vertices_per_side=360)
             x_geos, y_geos = geo_boundary.contour(closed=True)
+            # POSSIBLE BUG: Here I expect that some coordinates could be NaN !
+            # - if points of the geostationary disk are out of the CRS bounds of the area_to_contain
             x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos))
             poly = Polygon(zip(x, y))

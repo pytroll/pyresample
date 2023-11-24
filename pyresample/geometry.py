@@ -1728,7 +1728,8 @@ class AreaDefinition(_ProjectionDefinition):
                                                     vertices_per_side=vertices_per_side)
         return ProjectionBoundary(sides_x=sides_x,
                                   sides_y=sides_y,
-                                  order=order)
+                                  order=order,
+                                  crs=self.crs)
 
     def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
                                                 frequency: Optional[int] = None):
