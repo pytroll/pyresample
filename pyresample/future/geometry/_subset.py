@@ -103,7 +103,7 @@ def _get_area_boundary(area_to_cover: AreaDefinition) -> GeographicBoundary:
             vertices_per_side = None
         else:
             vertices_per_side = max(max(*area_to_cover.shape) // 100 + 1, 3)
-        return area_to_cover.boundary(vertices_per_side=vertices_per_side, force_clockwise=True)
+        return area_to_cover.geographic_boundary(vertices_per_side=vertices_per_side, order="clockwise")
     except ValueError as err:
         raise NotImplementedError("Can't determine boundary of area to cover") from err
 

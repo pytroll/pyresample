@@ -604,7 +604,7 @@ class TestSwathBoundary:
 
         # Define SwathDefinition and retrieve GeographicBoundary
         swath_def = create_test_swath(lons, lats)
-        boundary = swath_def.boundary(force_clockwise=False)
+        boundary = swath_def.geographic_boundary(order=None)
 
         # Check boundary shape
         height, width = swath_def.shape

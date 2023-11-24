@@ -292,7 +292,8 @@ class BaseDefinition:
         """Whether this geometry is in a geostationary satellite projection or not."""
         return False
 
-    def get_bbox_lonlats(self, vertices_per_side: Optional[int] = None, force_clockwise: bool = True,
+    def get_bbox_lonlats(self, vertices_per_side: Optional[int] = None,
+                         force_clockwise: bool = True,
                          frequency: Optional[int] = None) -> tuple:
         """Return the bounding box lons and lats sides.
 
@@ -335,7 +336,7 @@ class BaseDefinition:
         vertices_per_side = vertices_per_side or frequency
         sides_lons, sides_lats = self._get_boundary_sides(coordinates="geographic",
                                                           vertices_per_side=vertices_per_side)
-        warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.boundary().sides` instead",
+        warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.geographic_boundary().sides` instead",
                       PendingDeprecationWarning, stacklevel=2)
         if force_clockwise and not self._corner_is_clockwise(
                 sides_lons[0][-2], sides_lats[0][-2],
@@ -518,10 +519,10 @@ class BaseDefinition:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead.",
                           PendingDeprecationWarning, stacklevel=2)
         msg = "`get_edge_lonlats` is pending deprecation"
-        msg += "Use `area.boundary(vertices_per_side=vertices_per_side).contour()` instead."
+        msg += "Use `area.geographic_boundary(vertices_per_side=vertices_per_side).contour()` instead."
         warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lons, lats = self.boundary(vertices_per_side=vertices_per_side).contour()
+        lons, lats = self.geographic_boundary(vertices_per_side=vertices_per_side).contour()
         return lons, lats
 
     def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
@@ -1121,7 +1122,7 @@ class SwathDefinition(CoordinateDefinition):
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
-        lons, lats = self.boundary(vertices_per_side=None).contour()
+        lons, lats = self.geographic_boundary(vertices_per_side=None).contour()
         return area.freeze((lons, lats), shape=(height, width))
 
 
@@ -2910,7 +2911,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
-                  "'area.boundary().contour()' instead.",
+                  "'area.geographic_boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 
