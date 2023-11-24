@@ -73,14 +73,11 @@ class TestPlotFunctions:
     @pytest.mark.parametrize("ax_provided", [True, False])
     def test_plot_geometries(self, ax_provided):
         """Test plot_geometries function returns the correct type based on ax_provided."""
+        import cartopy
         vertices1 = [(0, 0), (0, 1), (1, 0)]
         vertices2 = [(0, 0), (0, 2), (2, 0)]
         geometries = [Polygon(vertices1), Polygon(vertices2)]
         crs = ccrs.PlateCarree()
         ax = plt.axes(projection=crs) if ax_provided else None
         result = plot_geometries(geometries, crs, ax=ax)
-
-        if ax_provided:
-            assert isinstance(result, plt.Axes)
-        else:
-            assert isinstance(result, plt.Figure)
+        assert isinstance(result, cartopy.mpl.feature_artist.FeatureArtist)

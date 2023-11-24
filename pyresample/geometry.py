@@ -572,9 +572,14 @@ class BaseDefinition:
         from pyresample.boundary import GeographicBoundary
 
         sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
+        if self.__class__.__name__ == "SwathDefinition":
+            crs = self.crs
+        else:
+            crs = None  # default to WGS84 for AreaDefinition
         return GeographicBoundary(sides_lons=sides_lons,
                                   sides_lats=sides_lats,
-                                  order=order)
+                                  order=order,
+                                  crs=crs)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1744,8 +1749,10 @@ class AreaDefinition(_ProjectionDefinition):
         sides_x, sides_y = self._get_projection_sides(vertices_per_side=vertices_per_side)
         return ProjectionBoundary(sides_x=sides_x,
                                   sides_y=sides_y,
+                                  crs=self.crs,
                                   order=order,
-                                  crs=self.crs)
+                                  cartopy_crs=self.to_cartopy_crs()
+                                  )
 
     def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
                                                 frequency: Optional[int] = None):

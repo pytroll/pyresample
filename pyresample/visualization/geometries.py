@@ -60,10 +60,6 @@ def plot_geometries(geometries, crs, ax=None, subplot_kw=None, **kwargs):
     # Add map background if ax not provided as input
     if initialized_here:
         ax = _add_map_background(ax)
-    # Add  geometries
-    ax.add_geometries(geometries, crs=crs, **kwargs)
-    # Return Figure / Axis
-    if initialized_here:
-        return fig
-    else:
-        return ax
+    # Add geometries
+    p = ax.add_geometries(geometries, crs=crs, **kwargs)
+    return p
