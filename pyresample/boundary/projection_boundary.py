@@ -34,8 +34,8 @@ class ProjectionBoundary():
     """
 
     def __init__(self, sides_x, sides_y, order=None, crs=None):
-
-        self.crs = crs  # TODO needed to plot
+        """Initialize the ProjectionBoundary object."""
+        self.crs = crs  # required for .plot() method
 
         self.sides_x = BoundarySides(sides_x)
         self.sides_y = BoundarySides(sides_y)
