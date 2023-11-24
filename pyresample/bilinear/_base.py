@@ -599,12 +599,11 @@ def get_valid_indices_from_lonlat_boundaries(
         target_geo_def, source_lons, source_lats, radius_of_influence):
     """Get valid indices from lonlat boundaries."""
     # Resampling from swath to grid or from grid to grid
-    lonlat_boundary = target_geo_def.get_boundary_lonlats()
+    sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
 
     # Combine reduced and legal values
     return data_reduce.get_valid_index_from_lonlat_boundaries(
-        lonlat_boundary[0],
-        lonlat_boundary[1],
+        sides_lons, sides_lats,
         source_lons, source_lats,
         radius_of_influence)
 

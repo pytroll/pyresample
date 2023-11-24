@@ -56,8 +56,13 @@ LegacySwathDefinition = SwathDefinition
 
 from .version import get_versions  # noqa
 
-__all__ = ['grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',
-           'load_area', 'create_area_def', 'get_area_def', 'parse_area_file', 'convert_def_to_yaml']
+_root_path = os.path.dirname(os.path.realpath(__file__))
+
+__all__ = [
+    'grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',
+    'load_area', 'create_area_def', 'get_area_def', 'parse_area_file', 'convert_def_to_yaml',
+    "_root_path",
+]
 
 __version__ = get_versions()['version']
 del get_versions

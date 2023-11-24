@@ -280,6 +280,8 @@ class BaseDefinition:
 
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
+        warnings.warn("'get_boundary_lonlats' is deprecated. Please use "
+                      "'area.geographic_boundary().sides'.", DeprecationWarning, stacklevel=2)
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
         s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
         s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
@@ -375,7 +377,7 @@ class BaseDefinition:
         # Ensure that a portion of the area is within the Earth disk.
         if x.shape[0] < 2:
             raise ValueError("The geostationary projection area is entirely out of the Earth disk.")
-        # Retrieve dummy sides for GEO (side1 and side3 always of length 2)
+        # Retrieve dummy sides for GEO (side right (1) and side left (3) are set to length 2)
         # - BUG: _get_geostationary_bounding_box_in_lonlats now does not return nb_points !
         # --> BUG is in get_geostationary_bounding_box_in_proj_coords
         # step = int(vertices_per_side / 2) - 1 # old code

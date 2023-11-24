@@ -146,7 +146,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.msg_area_resize)
         res = area_con.image_data
         cross_sum = res.sum()
-        expected = 2212023.0175830
+        expected = 2211981.7030199994
         self.assertAlmostEqual(cross_sum, expected)
 
     def test_nearest_neighbour_multi(self):

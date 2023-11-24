@@ -63,7 +63,7 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
 
     Parameters
     ----------
-    chart_grid : numpy array
+    cart_grid : numpy array
         Grid of area cartesian coordinates
     lons : numpy array
         Swath lons
@@ -103,7 +103,8 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
     return valid_index
 
 
-def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
+def swath_from_lonlat_grid(grid_lons, grid_lats,
+                           lons, lats, data,
                            radius_of_influence):
     """Make coarse data reduction of swath data by comparison with lon lat grid.
 
@@ -137,20 +138,21 @@ def swath_from_lonlat_grid(grid_lons, grid_lats, lons, lats, data,
     return lons, lats, data
 
 
-def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
+def swath_from_lonlat_boundaries(boundary_lons, boundary_lats,
+                                 lons, lats, data,
                                  radius_of_influence):
     """Make coarse data reduction of swath data by comparison with lon lat boundary.
 
     Parameters
     ----------
     boundary_lons : numpy array
-        Grid of area lons
+        Longitude BoundarySide object
     boundary_lats : numpy array
-        Grid of area lats
+        Latitude BoundarySide object
     lons : numpy array
-        Swath lons
+        Swath longitude
     lats : numpy array
-        Swath lats
+        Swath latitude
     data : numpy array
         Swath data
     radius_of_influence : float
@@ -162,7 +164,9 @@ def swath_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, data,
         Reduced swath data and coordinate set
     """
     valid_index = get_valid_index_from_lonlat_boundaries(boundary_lons,
-                                                         boundary_lats, lons, lats, radius_of_influence)
+                                                         boundary_lats,
+                                                         lons, lats,
+                                                         radius_of_influence)
 
     lons = lons[valid_index]
     lats = lats[valid_index]
@@ -212,10 +216,10 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
 
 def get_valid_index_from_lonlat_boundaries(boundary_lons, boundary_lats, lons, lats, radius_of_influence):
     """Find relevant indices from grid boundaries using the winding number theorem."""
-    valid_index = _get_valid_index(boundary_lons.side1, boundary_lons.side2,
-                                   boundary_lons.side3, boundary_lons.side4,
-                                   boundary_lats.side1, boundary_lats.side2,
-                                   boundary_lats.side3, boundary_lats.side4,
+    valid_index = _get_valid_index(boundary_lons.top, boundary_lons.right,
+                                   boundary_lons.bottom, boundary_lons.left,
+                                   boundary_lats.top, boundary_lats.right,
+                                   boundary_lats.bottom, boundary_lats.left,
                                    lons, lats, radius_of_influence)
 
     return valid_index

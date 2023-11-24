@@ -184,9 +184,10 @@ class StackingGradientSearchResampler(BaseResampler):
                     for y_step_number, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        # - Retrieve it only if source chunk poly is inside Earth Disk
+                        # - Retrieve if source chunk poly is inside Earth Disk
+                        #   - src_poly = None
                         #   - Skips lot polygon creations when source is GEO FD
-                        # - Retrieve if dst area is swath -
+                        # - Retrieve if dst area is swath
                         #   - Currently dst_poly will be False
                         #   - check_overlap will return True
                         if src_poly is not None or dst_is_swath:

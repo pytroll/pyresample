@@ -413,13 +413,13 @@ def _get_valid_input_index(source_geo_def,
         source_is_coord = isinstance(source_geo_def, geometry.CoordinateDefinition)
         if (source_is_coord or source_is_griddish) and target_is_griddish:
             # Resampling from swath to grid or from grid to grid
-            lonlat_boundary = target_geo_def.get_boundary_lonlats()
+            sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
 
             # Combine reduced and legal values
             valid_input_index &= \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
-                    lonlat_boundary[0],
-                    lonlat_boundary[1],
+                    sides_lons,
+                    sides_lats,
                     source_lons, source_lats,
                     radius_of_influence)
 
@@ -440,11 +440,11 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                                        geometry.AreaDefinition)) and \
                 isinstance(target_geo_def, geometry.CoordinateDefinition):
             # Resampling from grid to swath
-            lonlat_boundary = source_geo_def.get_boundary_lonlats()
+            sides_lons, sides_lats = source_geo_def.geographic_boundary().sides
             valid_output_index = \
                 data_reduce.get_valid_index_from_lonlat_boundaries(
-                    lonlat_boundary[0],
-                    lonlat_boundary[1],
+                    sides_lons,
+                    sides_lats,
                     target_lons,
                     target_lats,
                     radius_of_influence)
