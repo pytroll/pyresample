@@ -22,7 +22,9 @@ import unittest
 
 import numpy
 
-from pyresample import geometry, image, utils
+from pyresample import _root_path, geometry, image, utils
+
+TEST_FILES_PATH = os.path.join(_root_path, "test", 'test_files')
 
 
 class Test(unittest.TestCase):
@@ -108,8 +110,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
-                                               'test_files', 'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(TEST_FILES_PATH, 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected))
 
@@ -123,9 +124,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
-                                               'test_files',
-                                               'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(TEST_FILES_PATH, 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected))
 
