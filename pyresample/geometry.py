@@ -347,21 +347,47 @@ class BaseDefinition:
             sides_lons, sides_lats = self._reverse_boundaries(sides_lons, sides_lats)
         return sides_lons, sides_lats
 
-    def _get_geostationary_dummy_sides(self, arr, step):
+    def _get_geostationary_dummy_sides(self, arr, vertices_per_side):
         """Retrieve a 'dummy' boundary side list for a geostationary area with boundaries out of the Earth disk.
 
         The second and fourth sides are always of length 2.
         """
-        sides = [
-            arr[slice(0, step + 1)],
-            arr[slice(step, step + 2)],
-            arr[slice(step + 1, step * 2 + 2)],
-            np.append(arr[step * 2 + 1], arr[0])
-        ]
+        N = len(arr)
+        if vertices_per_side is None:
+            vertices_per_side = min(vertices_per_side, int(N / 2))
+            top_side = arr[slice(0, vertices_per_side)]
+            bottom_side = arr[slice(vertices_per_side, N)]
+        else:
+            # Sample vertices
+            # - Split the array into two halves
+            first_half = arr[:N // 2]
+            second_half = arr[N // 2:]
+            # - Adjust the number of vertices if necessary
+            vertices_per_side = min(vertices_per_side, len(first_half), len(second_half))
+            # - Sample points from each half
+            top_side_indices = np.round(np.linspace(0, len(first_half) - 1, vertices_per_side)).astype(int)
+            bottom_side_indices = np.round(np.linspace(0, len(second_half) - 1, vertices_per_side)).astype(int)
+            top_side = first_half[top_side_indices]
+            bottom_side = second_half[bottom_side_indices]
+        # - Create side object
+        sides = [top_side, np.array([top_side[-1], bottom_side[0]]),
+                 bottom_side, np.array([bottom_side[-1], top_side[0]])]
         return sides
 
     def _get_geostationary_boundary_sides(self, vertices_per_side=None, coordinates="geographic"):
-        """Retrieve the boundary sides list for geostationary projections."""
+        """Retrieve the boundary sides list for geostationary projections with out-of-Earth disk coordinates.
+
+        If vertices_per_side is too small, there is the risk to loose boundary side points
+        at the intersection corners between the CRS bounds polygon and the area
+        extent polygon (which could exclude relevant regions of the geos area).
+
+        The boundary sides right (1) and side left (3) are set to length 2.
+        """
+        # TODO:
+        # - Evaluate nb_points required for FULL DISC and CONUS area !
+        # - Maybe just use vertices_per_side for _get_geostationary_bounding_box and
+        #   then return all the returned vertices --> _get_geostationary_dummy_sides(x, None)
+
         # Define default frequency
         if vertices_per_side is None:
             vertices_per_side = 50
@@ -374,15 +400,12 @@ class BaseDefinition:
         # Retrieve coordinates (x,y) or (lon, lat)
         x, y = _get_geostationary_bounding_box(self, coordinates=coordinates, nb_points=vertices_per_side)
         # Ensure that a portion of the area is within the Earth disk.
-        if x.shape[0] < 2:
+        if x.shape[0] < 4:
             raise ValueError("The geostationary projection area is entirely out of the Earth disk.")
-        # Retrieve dummy sides for GEO (side right (1) and side left (3) are set to length 2)
-        # - BUG: _get_geostationary_bounding_box_in_lonlats now does not return nb_points !
-        # --> BUG is in get_geostationary_bounding_box_in_proj_coords
-        # step = int(vertices_per_side / 2) - 1 # old code
-        step = int(x.shape[0] / 2) - 1  # patch
-        sides_x = self._get_geostationary_dummy_sides(x, step=step)
-        sides_y = self._get_geostationary_dummy_sides(y, step=step)
+        # Retrieve dummy sides for GEO
+        # - _get_geostationary_bounding_box_in_lonlats does not guarantee to return nb_points and even points!
+        sides_x = self._get_geostationary_dummy_sides(x, vertices_per_side=vertices_per_side)
+        sides_y = self._get_geostationary_dummy_sides(y, vertices_per_side=vertices_per_side)
         return sides_x, sides_y
 
     def _get_geographic_sides(self, vertices_per_side: Optional[int] = None) -> tuple:
@@ -408,7 +431,7 @@ class BaseDefinition:
             if self.is_geostationary:
                 return self._get_geostationary_boundary_sides(vertices_per_side=vertices_per_side,
                                                               coordinates="geographic")
-            # TODO !
+            # Polar Projections, Global Planar Projections (Mollweide, Robinson)
             # if self.is_polar_projection # BUG
             #    self.is_robinson
             #    raise NotImplementedError("Likely a polar projection.")
@@ -422,13 +445,13 @@ class BaseDefinition:
         right_dim1, right_dim2 = coord_fun(data_slice=right_slice)
         bottom_dim1, bottom_dim2 = coord_fun(data_slice=bottom_slice)
         left_dim1, left_dim2 = coord_fun(data_slice=left_slice)
-        dim1, dim2 = zip(*[(top_dim1.squeeze(), top_dim2.squeeze()),
-                           (right_dim1.squeeze(), right_dim2.squeeze()),
-                           (bottom_dim1.squeeze(), bottom_dim2.squeeze()),
-                           (left_dim1.squeeze(), left_dim2.squeeze())])
-        if hasattr(dim1[0], 'compute') and da is not None:
-            dim1, dim2 = da.compute(dim1, dim2)
-        sides_dim1, sides_dim2 = self._filter_sides_nans(dim1, dim2)
+        sides_dim1, sides_dim2 = zip(*[(top_dim1.squeeze(), top_dim2.squeeze()),
+                                       (right_dim1.squeeze(), right_dim2.squeeze()),
+                                       (bottom_dim1.squeeze(), bottom_dim2.squeeze()),
+                                       (left_dim1.squeeze(), left_dim2.squeeze())])
+        if hasattr(sides_dim1[0], 'compute') and da is not None:
+            sides_dim1, sides_dim2 = da.compute(sides_dim1, sides_dim2)
+        sides_dim1, sides_dim2 = self._filter_sides_nans(sides_dim1, sides_dim2)
         return sides_dim1, sides_dim2
 
     def _filter_sides_nans(
@@ -436,13 +459,13 @@ class BaseDefinition:
             dim1_sides: list[np.ndarray],
             dim2_sides: list[np.ndarray],
     ) -> tuple[list[np.ndarray], list[np.ndarray]]:
-        """Remove nan values present in each side."""
+        """Remove nan and inf values present in each side."""
         new_dim1_sides = []
         new_dim2_sides = []
         for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
-            is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
+            is_valid_mask = ~(~np.isfinite(dim1_side) | ~np.isfinite(dim1_side))
             if not is_valid_mask.any():
-                raise ValueError("Can't compute swath bounding coordinates. At least one side is completely invalid.")
+                raise ValueError("Can't compute boundary coordinates. At least one side is completely invalid.")
             new_dim1_sides.append(dim1_side[is_valid_mask])
             new_dim2_sides.append(dim2_side[is_valid_mask])
         return new_dim1_sides, new_dim2_sides
@@ -2839,17 +2862,20 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
+    NOTE: The area_bbox must be defined with many vertices to avoid loosing
+    vertices at the corners later on in _get_geostationary_boundary_sides.
+
     Args:
       geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon.
 
     """
-    x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
-    ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
-
     from shapely.geometry import Polygon
+
+    x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+
     geo_bbox = Polygon(np.vstack((x, y)).T)
-    area_bbox = Polygon(((ll_x, ll_y), (ll_x, ur_y), (ur_x, ur_y), (ur_x, ll_y)))
+    area_bbox = _create_area_extent_polygon(geos_area.area_extent, nb_points=nb_points)
     intersection = area_bbox.intersection(geo_bbox)
     try:
         x, y = intersection.boundary.xy
@@ -2858,8 +2884,23 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
 
+def _create_area_extent_polygon(area_extent, nb_points=50):
+    """Create the area_extent polygon with nb_points vertices per side."""
+    from shapely.geometry import Polygon
+
+    # Generate points for each edge
+    ll_x, ll_y, ur_x, ur_y = area_extent
+    bottom = [(x, ll_y) for x in np.linspace(ll_x, ur_x, nb_points + 2)]
+    right = [(ur_x, y) for y in np.linspace(ll_y, ur_y, nb_points + 2)][1:]
+    top = [(x, ur_y) for x in np.linspace(ur_x, ll_x, nb_points + 2)][1:]
+    left = [(ll_x, y) for y in np.linspace(ur_y, ll_y, nb_points + 2)][1:-1]
+
+    # Combine points to form the area_extent polygon
+    return Polygon(bottom + right + top + left)
+
+
 def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
-    """Get the bbox in geos projection coordinates of the full disk in `geos_area` projection.
+    """Get the valid boundary geos projection coordinates of the full disk.
 
     Args:
       geos_area: Geostationary area definition to get the bounding box for.

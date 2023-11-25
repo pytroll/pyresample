@@ -599,13 +599,14 @@ def get_valid_indices_from_lonlat_boundaries(
         target_geo_def, source_lons, source_lats, radius_of_influence):
     """Get valid indices from lonlat boundaries."""
     # Resampling from swath to grid or from grid to grid
-    sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
-
-    # Combine reduced and legal values
-    return data_reduce.get_valid_index_from_lonlat_boundaries(
-        sides_lons, sides_lats,
-        source_lons, source_lats,
-        radius_of_influence)
+    try:
+        sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
+        valid_indices = data_reduce.get_valid_index_from_lonlat_boundaries(sides_lons, sides_lats,
+                                                                           source_lons, source_lats,
+                                                                           radius_of_influence)
+    except Exception:
+        valid_indices = np.ones(source_lons.size, dtype=bool)
+    return valid_indices
 
 
 def get_slicer(data):

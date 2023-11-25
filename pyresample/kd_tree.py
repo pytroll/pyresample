@@ -413,15 +413,18 @@ def _get_valid_input_index(source_geo_def,
         source_is_coord = isinstance(source_geo_def, geometry.CoordinateDefinition)
         if (source_is_coord or source_is_griddish) and target_is_griddish:
             # Resampling from swath to grid or from grid to grid
-            sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
-
-            # Combine reduced and legal values
-            valid_input_index &= \
-                data_reduce.get_valid_index_from_lonlat_boundaries(
-                    sides_lons,
-                    sides_lats,
-                    source_lons, source_lats,
-                    radius_of_influence)
+            # - If invalid sides, return np.ones
+            try:
+                sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
+                # Combine reduced and legal values
+                valid_input_index &= \
+                    data_reduce.get_valid_index_from_lonlat_boundaries(
+                        sides_lons,
+                        sides_lats,
+                        source_lons, source_lats,
+                        radius_of_influence)
+            except Exception:
+                valid_input_index = np.ones(source_lons.size, dtype=bool)
 
     if isinstance(valid_input_index, np.ma.core.MaskedArray):
         # Make sure valid_input_index is not a masked array
@@ -440,15 +443,19 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
                                        geometry.AreaDefinition)) and \
                 isinstance(target_geo_def, geometry.CoordinateDefinition):
             # Resampling from grid to swath
-            sides_lons, sides_lats = source_geo_def.geographic_boundary().sides
-            valid_output_index = \
-                data_reduce.get_valid_index_from_lonlat_boundaries(
-                    sides_lons,
-                    sides_lats,
-                    target_lons,
-                    target_lats,
-                    radius_of_influence)
-            valid_output_index = valid_output_index.astype(bool)
+            # - If invalid sides, return np.ones
+            try:
+                sides_lons, sides_lats = source_geo_def.geographic_boundary().sides
+                valid_output_index = \
+                    data_reduce.get_valid_index_from_lonlat_boundaries(
+                        sides_lons,
+                        sides_lats,
+                        target_lons,
+                        target_lats,
+                        radius_of_influence)
+                valid_output_index = valid_output_index.astype(bool)
+            except Exception:
+                valid_output_index = np.ones(target_lons.size, dtype=bool)
 
     # Remove illegal values
     valid_out = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))

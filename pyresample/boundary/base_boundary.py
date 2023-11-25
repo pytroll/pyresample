@@ -23,25 +23,27 @@ import numpy as np
 
 from pyresample.boundary.sides import BoundarySides
 
-
 logger = logging.getLogger(__name__)
 
 
 class BaseBoundary:
+    """Base class for boundary objects."""
     __slots__ = ["_sides_x", "_sides_y"]
-    
+
     def __init__(self, sides_x, sides_y, order=None):
         self._sides_x = BoundarySides(sides_x)
         self._sides_y = BoundarySides(sides_y)
-        
+
         self.is_clockwise = self._check_is_boundary_clockwise(sides_x, sides_y)
         self.is_counterclockwise = not self.is_clockwise
         self._set_order(order)
-                    
-    def _check_is_boundary_clockwise(self, sides_x, sides_y): 
+
+    def _check_is_boundary_clockwise(self, sides_x, sides_y):
+        """Check if the boundary is clockwise or counterclockwise."""
         raise NotImplementedError()
-    
+
     def _set_order(self, order):
+        """Set the order of the boundary vertices."""
         if self.is_clockwise:
             self._actual_order = "clockwise"
         else:
@@ -63,12 +65,12 @@ class BaseBoundary:
         """Set counterclockwise order for vertices retrieval."""
         self._wished_order = "counterclockwise"
         return self
-    
+
     @property
     def sides(self):
         """Return the boundary sides as a tuple of (sides_x, sides_y) arrays."""
         return self._sides_x, self._sides_y
-    
+
     @property
     def _x(self):
         """Retrieve boundary x vertices."""
@@ -93,7 +95,7 @@ class BaseBoundary:
         vertices = np.vstack((self._x, self._y)).T
         vertices = vertices.astype(np.float64, copy=False)  # Important for spherical ops.
         return vertices
-    
+
     def contour(self, closed=False):
         """Return the (x, y) tuple of the boundary object.
 
@@ -113,7 +115,6 @@ class BaseBoundary:
     def _to_shapely_polygon(self):
         """Define a Shapely Polygon."""
         from shapely.geometry import Polygon
-        self = self.set_counterclockwise() # FIXME: add exception for pole wrapping polygons
+        self = self.set_counterclockwise()  # FIXME: add exception for pole wrapping polygons
         x, y = self.contour(closed=True)
         return Polygon(zip(x, y))
-

@@ -123,7 +123,7 @@ class TestOGradientResampler:
         self.resampler._get_projection_coordinates(chunks)
         self.resampler._get_gradients()
         poly = self.resampler._get_src_poly(0, 40, 0, 40)
-        assert np.allclose(poly.area, 12364231944935.44)
+        assert np.allclose(poly.area, 12365352661227.719)
 
     def test_get_src_poly_swath(self):
         """Test defining source chunk polygon for SwathDefinition."""
