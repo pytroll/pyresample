@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utility to extract boundary mask and indices."""
-import numpy as np 
+import numpy as np
 
 
-def _find_boundary_mask(mask): 
+def _find_boundary_mask(mask):
     """Find boundary of a binary mask."""
     mask = mask.astype(int)
     # Pad with zeros (enable to detect Trues at mask boundaries)
@@ -32,10 +32,10 @@ def _find_boundary_mask(mask):
     shift_right = np.roll(padded_mask, 1, axis=1)
 
     # Find the boundary points
-    padded_boundary_mask = ((padded_mask != shift_up) | (padded_mask != shift_down) | 
-                   (padded_mask != shift_left) | (padded_mask != shift_right)) & padded_mask
+    padded_boundary_mask = ((padded_mask != shift_up) | (padded_mask != shift_down) |
+                            (padded_mask != shift_left) | (padded_mask != shift_right)) & padded_mask
 
-    boundary_mask = padded_boundary_mask[1:-1,1:-1]
+    boundary_mask = padded_boundary_mask[1:-1, 1:-1]
     return boundary_mask
 
 
@@ -43,17 +43,19 @@ def find_boundary_mask(lons, lats):
     """Find the boundary mask."""
     valid_mask = np.isfinite(lons) & np.isfinite(lats)
     return _find_boundary_mask(valid_mask)
-     
+
 
 def get_ordered_contour(contour_mask):
     """Return the ordered indices of a contour mask."""
-    # Count number of rows and columns 
+    # Count number of rows and columns
     rows, cols = contour_mask.shape
+
     # Function to find the next contour point
     def next_point(current, last, visited):
         for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1), (1, -1), (-1, -1), (1, 1), (-1, 1)]:
             next_pt = (current[0] + dx, current[1] + dy)
-            if next_pt != last and next_pt not in visited and 0 <= next_pt[0] < rows and 0 <= next_pt[1] < cols and contour_mask[next_pt]:
+            if (next_pt != last and next_pt not in visited and
+                    0 <= next_pt[0] < rows and 0 <= next_pt[1] < cols and contour_mask[next_pt]):
                 return next_pt
         return None
     # Initialize
@@ -81,4 +83,3 @@ def find_boundary_contour_indices(lons, lats):
     boundary_mask = find_boundary_mask(lons, lats)
     boundary_contour_idx = get_ordered_contour(boundary_mask)
     return boundary_contour_idx
-    
