@@ -345,12 +345,12 @@ class BaseDefinition:
 
     def _filter_bbox_nans(
             self,
-            dim1_sides: list[np.ndarray],
-            dim2_sides: list[np.ndarray],
+            dim1_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+            dim2_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
     ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         new_dim1_sides = []
         new_dim2_sides = []
-        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
+        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides, strict=True):
             is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
             if not is_valid_mask.any():
                 raise ValueError("Can't compute swath bounding coordinates. At least one side is completely invalid.")
