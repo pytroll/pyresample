@@ -43,6 +43,9 @@ class Boundary(object):
     @property
     def contour_poly(self):
         """Get the Spherical polygon corresponding to the Boundary."""
+        warnings.warn("'contour_poly' is deprecated." +
+                      "Use the 'boundary().polygon' property instead!.",
+                      PendingDeprecationWarning, stacklevel=2)
         if self._contour_poly is None:
             self._contour_poly = SphPolygon(
                 np.deg2rad(np.vstack(self.contour()).T))

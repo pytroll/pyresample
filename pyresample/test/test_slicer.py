@@ -146,7 +146,7 @@ class TestAreaSlicer(unittest.TestCase):
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
 
-    def test_slicing_an_area_with_infinite_bounds(self):
+    def test_slicing_with_dst_area_with_infinite_edges(self):
         """Test slicing an area with infinite bounds."""
         src_area = AreaDefinition('dst', 'dst area', None,
                                   {'ellps': 'WGS84', 'proj': 'merc'},
@@ -166,7 +166,14 @@ class TestAreaSlicer(unittest.TestCase):
 
         slicer = create_slicer(src_area, dst_area)
         with pytest.raises(IncompatibleAreas):
-            slicer.get_slices()
+            slice_x, slice_y = slicer.get_slices()
+
+        # Unreasonable slices if force_boundary_computations=True
+        # area_to_crop = src_area
+        # area_to_contain = dst_area
+        # slice_x, slice_y = slicer.get_slices()
+        # assert slice_x.start > 0 and slice_x.stop < 100
+        # assert slice_y.start > 0 and slice_y.stop >= 100
 
     def test_slicing_works_with_extents_of_different_units(self):
         """Test a problematic case."""

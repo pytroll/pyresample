@@ -34,7 +34,7 @@ import yaml
 from pyproj import Geod, Proj
 from pyproj.aoi import AreaOfUse
 
-from pyresample import CHUNK_SIZE
+from pyresample import CHUNK_SIZE, config
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
 from pyresample.boundary import SimpleBoundary
@@ -108,7 +108,7 @@ class BaseDefinition:
         self.ndim = None
         self.cartesian_coords = None
         self.hash = None
-        self._boundary_mask = None
+        self._boundary_contour_idx = None
 
     def __getitem__(self, key):
         """Slice a 2D geographic definition."""
@@ -251,7 +251,8 @@ class BaseDefinition:
             # lons/lats are xarray DataArray objects, use numpy/dask array underneath
             lons = lons.data
             lats = lats.data
-
+        # TODO
+        # --> if data_slice and chunks provided, why here first rechunk all array and then subset?
         if chunks is not None:
             import dask.array as da
             if isinstance(lons, da.Array):
@@ -411,10 +412,11 @@ class BaseDefinition:
 
     def _compute_boundary_mask(self):
         """Compute valid boundary mask for AreaDefinition(s) with sides out of the Earth disk."""
-        if self._boundary_mask is None:
+        from pyresample.boundary.utils import find_boundary_contour_indices
+        if self._boundary_contour_idx is None:
             lons, lats = self.get_lonlats()  # all in memory !
-            self._boundary_mask = find_boundary_mask(lons, lats)
-        return self._boundary_mask
+            self._boundary_contour_idx = find_boundary_contour_indices(lons, lats)
+        return self._boundary_contour_idx
 
     def _get_geographic_sides(self, vertices_per_side: Optional[int] = None) -> tuple:
         """Return the geographic boundary sides of the current area.
@@ -434,6 +436,8 @@ class BaseDefinition:
             Each list element is a numpy array representing a specific side of the geometry.
             The order of the sides are [top", "right", "bottom", "left"]
         """
+        if len(self.lons.shape) == 1:
+            raise ValueError("The area must have 2 dimensions to retrieve the boundary sides.")
         is_swath = self.__class__.__name__ == "SwathDefinition"
         if not is_swath and _is_any_corner_out_of_earth_disk(self):
             # Geostationary
@@ -442,14 +446,16 @@ class BaseDefinition:
                                                               coordinates="geographic")
             # Polar Projections, Global Planar Projections (Mollweide, Robinson)
             # - Retrieve dummy right and left sides
-            boundary_mask = self._compute_boundary_mask()
-            lons, lats = self.get_lonlats()
-            lons = lons[boundary_mask]
-            lats = lats[boundary_mask]
-            sides_lons = self._get_dummy_sides(lons, vertices_per_side=vertices_per_side)
-            sides_lats = self._get_dummy_sides(lats, vertices_per_side=vertices_per_side)
-        else:
-            sides_lons, sides_lats = self._get_sides(coord_fun=self.get_lonlats, vertices_per_side=vertices_per_side)
+            if config.get("force_boundary_computations", False):
+                boundary_contour_idx = self._compute_boundary_mask()
+                lons, lats = self.get_lonlats()
+                lons = lons[boundary_contour_idx[:, 0], boundary_contour_idx[:, 1]]
+                lats = lats[boundary_contour_idx[:, 0], boundary_contour_idx[:, 1]]
+                sides_lons = self._get_dummy_sides(lons, vertices_per_side=vertices_per_side)
+                sides_lats = self._get_dummy_sides(lats, vertices_per_side=vertices_per_side)
+                return sides_lons, sides_lats
+
+        sides_lons, sides_lats = self._get_sides(coord_fun=self.get_lonlats, vertices_per_side=vertices_per_side)
         return sides_lons, sides_lats
 
     def _get_sides(self, coord_fun, vertices_per_side):
@@ -567,7 +573,8 @@ class BaseDefinition:
              (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
              by default only 50 points are selected.
         force_clockwise:
-            Perform minimal checks and reordering of coordinates to ensure
+            DEPRECATED.
+            Performed minimal checks and reordering of coordinates to ensure
             that the returned coordinates follow a clockwise direction.
             This is important for compatibility with
             :class:`pyresample.spherical.SphPolygon` where operations depend
@@ -581,13 +588,9 @@ class BaseDefinition:
         warnings.warn("The `boundary` method is pending deprecation. Use `geographic_boundary` instead",
                       PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        if force_clockwise:
-            order = "clockwise"
-        else:
-            order = None
-        return self.geographic_boundary(vertices_per_side=vertices_per_side, order=order)
+        return self.geographic_boundary(vertices_per_side=vertices_per_side)
 
-    def geographic_boundary(self, vertices_per_side=None, order=None):
+    def geographic_boundary(self, vertices_per_side=None):
         """Retrieve the GeographicBoundary object.
 
         Parameters
@@ -598,25 +601,9 @@ class BaseDefinition:
             If the area object is an AreaDefinition with any corner out of the Earth disk
             (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
             by default only 50 points are selected.
-        order:
-            Specify the desired order of the boundary polygon vertices in GeographicBoundary.
-            If order=None, the sides order is used.
-            If order="clockwise", the boundary polygon vertices are returned by
-            GeographicBoundary in clockwise order.
-            If order="counterclockwise", the boundary polygon vertices are returned by
-            GeographicBoundary in counterclockwise order.
         """
         from pyresample.boundary import GeographicBoundary
-
-        sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
-        if self.__class__.__name__ == "SwathDefinition":
-            crs = self.crs
-        else:
-            crs = None  # default to WGS84 for AreaDefinition
-        return GeographicBoundary(sides_lons=sides_lons,
-                                  sides_lats=sides_lats,
-                                  order=order,
-                                  crs=crs)
+        return GeographicBoundary(area=self, vertices_per_side=vertices_per_side)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1761,18 +1748,20 @@ class AreaDefinition(_ProjectionDefinition):
                                                               coordinates="projection")
             # Polar Projections, Global Planar Projections (Mollweide, Robinson)
             # - Retrieve dummy right and left sides
-            boundary_mask = self._compute_boundary_mask()
-            x, y = self.get_proj_coords()
-            x = x[boundary_mask]
-            y = y[boundary_mask]
-            sides_x = self._get_dummy_sides(x, vertices_per_side=vertices_per_side)
-            sides_y = self._get_dummy_sides(y, vertices_per_side=vertices_per_side)
-        else:
-            sides_x, sides_y = self._get_sides(coord_fun=self.get_proj_coords,
-                                               vertices_per_side=vertices_per_side)
+            if config.get("force_boundary_computations", False):
+                boundary_contour_idx = self._compute_boundary_mask()
+                x, y = self.get_proj_coords()
+                x = x[boundary_contour_idx[:, 0], boundary_contour_idx[:, 1]]
+                y = y[boundary_contour_idx[:, 0], boundary_contour_idx[:, 1]]
+                sides_x = self._get_dummy_sides(x, vertices_per_side=vertices_per_side)
+                sides_y = self._get_dummy_sides(y, vertices_per_side=vertices_per_side)
+                return sides_x, sides_y
+
+        sides_x, sides_y = self._get_sides(coord_fun=self.get_proj_coords,
+                                           vertices_per_side=vertices_per_side)
         return sides_x, sides_y
 
-    def projection_boundary(self, vertices_per_side=None, order=None):
+    def projection_boundary(self, vertices_per_side=None):
         """Retrieve the ProjectionBoundary object.
 
         Parameters
@@ -1782,25 +1771,13 @@ class AreaDefinition(_ProjectionDefinition):
             By default (None) the full width and height will be provided.
             If the area object is an AreaDefinition with any corner out of the Earth disk
             (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
-            by default only 50 points are selected.
-        order:
-            Specify the desired order of the boundary polygon vertices in GeographicBoundary.
-            If order=None, the sides order is used.
-            If order="clockwise", the boundary polygon vertices are returned by
-            GeographicBoundary in clockwise order.
-            If order="counterclockwise", the boundary polygon vertices are returned by
-            GeographicBoundary in counterclockwise order.
+            by default only 50 points are selected..
         """
         from pyresample.boundary import ProjectionBoundary
         if self.crs.is_geographic:
-            return self.geographic_boundary(vertices_per_side=vertices_per_side, order=order)
-        sides_x, sides_y = self._get_projection_sides(vertices_per_side=vertices_per_side)
-        return ProjectionBoundary(sides_x=sides_x,
-                                  sides_y=sides_y,
-                                  crs=self.crs,
-                                  order=order,
-                                  cartopy_crs=self.to_cartopy_crs()
-                                  )
+            return self.geographic_boundary(vertices_per_side=vertices_per_side)
+        return ProjectionBoundary(area=self,
+                                  vertices_per_side=vertices_per_side)
 
     def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
                                                 frequency: Optional[int] = None):
@@ -2905,6 +2882,8 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     try:
         x, y = intersection.boundary.xy
     except NotImplementedError:
+        # geos_area is fully out of Earth disk
+        # --> FIXME: Why we do not raise an error here ?
         return np.array([]), np.array([])
     return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
@@ -3013,47 +2992,6 @@ def _is_any_corner_out_of_earth_disk(area_def):
         return False
     except Exception:
         return True
-
-
-def _find_boundary_indices(mask):
-    """Assume mask does not have any row/column with only False values."""
-    # For rows
-    first_valid_row = np.argmax(mask, axis=0)
-    last_valid_row = mask.shape[0] - 1 - np.argmax(mask[::-1], axis=0)
-    # For columns
-    first_valid_col = np.argmax(mask, axis=1)
-    last_valid_col = mask.shape[1] - 1 - np.argmax(mask[:, ::-1], axis=1)
-
-    return first_valid_row, last_valid_row, first_valid_col, last_valid_col
-
-
-def find_boundary_mask(lons, lats):
-    """Find the boundary mask."""
-    valid_mask = np.isfinite(lons) & np.isfinite(lats)
-
-    # Filter out rows and columns without valid values
-    valid_rows = np.any(valid_mask, axis=1)
-    valid_cols = np.any(valid_mask, axis=0)
-    filtered_mask = valid_mask[valid_rows][:, valid_cols]
-
-    # Find boundary indices
-    fvr, lvr, fvc, lvc = _find_boundary_indices(filtered_mask)
-
-    # Prepare row and column indices for gathering coordinates
-    col_indices = np.arange(filtered_mask.shape[1])
-    row_indices = np.arange(filtered_mask.shape[0])
-
-    # Gather coordinates using advanced indexing
-    filtered_boundary_mask = np.zeros_like(filtered_mask, dtype=bool)
-    filtered_boundary_mask[fvr, col_indices] = True
-    filtered_boundary_mask[lvr, col_indices] = True
-    filtered_boundary_mask[row_indices, fvc] = True
-    filtered_boundary_mask[row_indices, lvc] = True
-
-    # Reinsert the boundary mask into the original mask's shape
-    boundary_mask = np.zeros_like(valid_mask, dtype=bool)
-    boundary_mask[np.ix_(valid_rows, valid_cols)] = filtered_boundary_mask
-    return boundary_mask
 
 
 def combine_area_extents_vertical(area1, area2):

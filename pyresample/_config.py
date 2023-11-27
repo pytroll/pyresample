@@ -40,6 +40,7 @@ config = Config(
         "features": {
             "future_geometries": False,
         },
+        "force_boundary_computations": False,
     }],
     paths=_CONFIG_PATHS,
 )

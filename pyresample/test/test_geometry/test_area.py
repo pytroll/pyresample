@@ -29,10 +29,9 @@ import pyresample.geometry
 from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import (
-    _get_geostationary_bounding_box_in_lonlats,
+    _get_geostationary_bounding_box,
     get_full_geostationary_bounding_box_in_proj_coords,
     get_geostationary_angle_extent,
-    get_geostationary_bounding_box_in_proj_coords,
     ignore_pyproj_proj_warnings,
 )
 from pyresample.future.geometry.base import get_array_hashable
@@ -262,7 +261,7 @@ def geos_mesoscale_area():
 
 @pytest.fixture
 def truncated_geos_area():
-    """Create a truncated geostationary area."""
+    """Create a truncated geostationary area (SEVIRI above 30° lat)."""
     proj_dict = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
                  'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
     area_extent = (5567248.0742, 5570248.4773, -5570248.4773, 1393687.2705)
@@ -276,7 +275,7 @@ def truncated_geos_area():
 
 @pytest.fixture
 def truncated_geos_area_in_space():
-    """Create a truncated geostationary area."""
+    """Create a geostationary area entirely out of the Earth disk !."""
     proj_dict = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
                  'rf': '295.488065897014', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'}
     area_extent = (5575000, 5575000, 5570000, 5570000)
@@ -1669,43 +1668,41 @@ class TestGeostationaryTools:
 
     def test_get_geostationary_bbox_works_with_truncated_area(self, truncated_geos_area):
         """Ensure the geostationary bbox works when truncated."""
-        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
-        expected_lon = np.array(
-            [-64.24072434653284, -68.69662326361153, -65.92516214783112, -60.726360278290336,
-             -47.39851775032484, 9.500000000000018, 66.39851775032487, 79.72636027829033,
-             84.92516214783113, 87.69662326361151, 83.24072434653286])
-        expected_lat = np.array(
-            [14.554922655532085, 17.768795771961937, 35.34328897185421, 52.597860701318254, 69.00533141646078,
-             79.1481121862375, 69.00533141646076, 52.597860701318254, 35.34328897185421, 17.768795771961933,
-             14.554922655532085])
+        # NOTE: the results change if nb_points is changed
+        lon, lat = _get_geostationary_bounding_box(truncated_geos_area, coordinates="geographic", nb_points=5)
+        expected_lon = np.array([48.23903923, 27.09551769, 9.48612352, -8.12549639,
+                                 -29.28016639, -40.25837094, -47.39851775, 84.92516215,
+                                 58.87273432])
+        expected_lat = np.array([13.3415869, 12.89359038, 12.76978964, 12.89400717, 13.34272893,
+                                 13.67772269, 69.00533142, 35.34328897, 13.66502884])
         np.testing.assert_allclose(lon, expected_lon)
         np.testing.assert_allclose(lat, expected_lat)
 
     def test_get_geostationary_bbox_works_with_truncated_area_proj_coords(self, truncated_geos_area):
         """Ensure the geostationary bbox works when truncated."""
-        x, y = get_geostationary_bounding_box_in_proj_coords(truncated_geos_area, 20)
+        # NOTE: the results change if nb_points is changed
+        x, y = _get_geostationary_bounding_box(truncated_geos_area, coordinates="projection", nb_points=5)
 
-        expected_x = np.array(
-            [-5209128.302753595, -5164828.965702432, -4393465.934674804, -3192039.8468840676, -1678154.6586309497,
-             3.325297262895822e-10, 1678154.6586309501, 3192039.846884068, 4393465.934674805, 5164828.965702432,
-             5209128.302753594])
-        expected_y = np.array(
-            [1393687.2705, 1672427.7900638399, 3181146.6955466354, 4378472.798117005, 5147203.47659387,
-             5412090.016106332, 5147203.476593869, 4378472.798117005, 3181146.695546635, 1672427.7900638392,
-             1393687.2705])
+        expected_x = np.array([3.71099865e+06, 1.85474922e+06, -1.50020155e+03, -1.85774963e+06,
+                               -3.71399905e+06, -4.41458214e+06, -1.67815466e+06, 4.39346593e+06,
+                               4.39346593e+06])
+        expected_y = np.array([1393687.2705, 1393687.2705, 1393687.2705,
+                               1393687.2705, 1393687.2705, 1393687.2705, 5147203.47659387,
+                               3181146.69554663, 1393687.2705])
 
         np.testing.assert_allclose(x, expected_x)
         np.testing.assert_allclose(y, expected_y)
 
     def test_get_geostationary_bbox_does_not_contain_inf(self, truncated_geos_area):
         """Ensure the geostationary bbox does not contain np.inf."""
-        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area, 20)
+        lon, lat = _get_geostationary_bounding_box(truncated_geos_area, coordinates="geographic", nb_points=20)
         assert not any(np.isinf(lon))
         assert not any(np.isinf(lat))
 
     def test_get_geostationary_bbox_returns_empty_lonlats_in_space(self, truncated_geos_area_in_space):
         """Ensure the geostationary bbox is empty when in space."""
-        lon, lat = _get_geostationary_bounding_box_in_lonlats(truncated_geos_area_in_space, 20)
+        lon, lat = _get_geostationary_bounding_box(truncated_geos_area_in_space, coordinates="geographic",
+                                                   nb_points=20)
 
         assert len(lon) == 0
         assert len(lat) == 0
@@ -1722,7 +1719,7 @@ class TestGeostationaryTools:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = _get_geostationary_bounding_box_in_lonlats(geos_area, 20)
+        lon, lat = _get_geostationary_bounding_box(geos_area, coordinates="geographic", nb_points=20)
         expected_lon = np.array([-78.19662326, -75.42516215, -70.22636028,
                                  -56.89851775, 0., 56.89851775, 70.22636028,
                                  75.42516215, 78.19662326, 79.23372832, 78.19662326,
@@ -1747,7 +1744,7 @@ class TestGeostationaryTools:
         geos_area.crs = CRS(proj_dict)
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
-        lon, lat = _get_geostationary_bounding_box_in_lonlats(geos_area, 20)
+        lon, lat = _get_geostationary_bounding_box(geos_area, coordinates="geographic", nb_points=20)
         np.testing.assert_allclose(lon, expected_lon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
@@ -2113,7 +2110,7 @@ class TestBoundary:
     def test_polar_south_pole_projection(self, south_pole_area):
         """Test boundary for polar projection around the South Pole."""
         areadef = south_pole_area
-        boundary = areadef.geographic_boundary(order=None)
+        boundary = areadef.geographic_boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2131,7 +2128,7 @@ class TestBoundary:
         """Test boundary for polar projection around the North Pole."""
         areadef = north_pole_area
 
-        boundary = areadef.geographic_boundary(order=None)
+        boundary = areadef.geographic_boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2151,13 +2148,13 @@ class TestBoundary:
 
         # Check default boundary shape
         default_n_vertices = 50
-        boundary = areadef.geographic_boundary(vertices_per_side=None, order=None)
+        boundary = areadef.geographic_boundary(vertices_per_side=None, )
         assert boundary.vertices.shape == (default_n_vertices, 2)
 
         # Check minimum boundary vertices
         n_vertices = 3
         minimum_n_vertices = 4
-        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, order=None)
+        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, )
         assert boundary.vertices.shape == (minimum_n_vertices, 2)
 
         # Check odd number of vertices per side
@@ -2168,7 +2165,7 @@ class TestBoundary:
 
         # Check boundary vertices
         n_vertices = 10
-        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, order=None)
+        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, )
 
         # Check boundary vertices is in correct order
         expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],
@@ -2186,7 +2183,7 @@ class TestBoundary:
     def test_global_platee_caree_projection(self, global_platee_caree_area):
         """Test boundary for global platee caree projection."""
         areadef = global_platee_caree_area
-        boundary = areadef.geographic_boundary(order=None)
+        boundary = areadef.geographic_boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2211,7 +2208,7 @@ class TestBoundary:
     def test_minimal_global_platee_caree_projection(self, global_platee_caree_minimum_area):
         """Test boundary for global platee caree projection."""
         areadef = global_platee_caree_minimum_area
-        boundary = areadef.geographic_boundary(order=None)
+        boundary = areadef.geographic_boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2228,7 +2225,7 @@ class TestBoundary:
     def test_local_area_projection(self, local_meter_area):
         """Test local area projection in meter."""
         areadef = local_meter_area
-        boundary = areadef.geographic_boundary(order=None)
+        boundary = areadef.geographic_boundary()
 
         # Check boundary shape
         height, width = areadef.shape

@@ -45,17 +45,27 @@ class ProjectionBoundary(BaseBoundary):
     """
 
     @classmethod
-    def _check_is_boundary_clockwise(cls, sides_x, sides_y):
+    def _check_is_boundary_clockwise(cls, sides_x, sides_y, area=None):
         """GeographicBoundary specific implementation."""
         return _is_projection_boundary_clockwise(sides_x=sides_x, sides_y=sides_y)
 
-    def __init__(self, sides_x, sides_y, crs, order=None, cartopy_crs=None):
-        super().__init__(sides_x=sides_x, sides_y=sides_y, order=order)
+    @classmethod
+    def _compute_boundary_sides(cls, area, vertices_per_side):
+        sides_x, sides_y = area._get_projection_sides(vertices_per_side=vertices_per_side)
+        return sides_x, sides_y
+
+    def __init__(self, area, vertices_per_side=None):
+        super().__init__(area=area, vertices_per_side=vertices_per_side)
 
         self.sides_x = self._sides_x
         self.sides_y = self._sides_y
-        self.crs = crs
-        self.cartopy_crs = cartopy_crs
+        self.crs = self._area.crs
+        self.cartopy_crs = self._area.to_cartopy_crs()
+
+    @property
+    def _point_inside(self):
+        x, y = self._area.get_proj_coords(data_slice=(int(self.shape[0] / 2), int(self.shape[1] / 2)))
+        return x.squeeze(), y.squeeze()
 
     @property
     def x(self):
@@ -67,14 +77,7 @@ class ProjectionBoundary(BaseBoundary):
         """Retrieve boundary y vertices."""
         return self._y
 
-    def polygon(self, shapely=True):
-        """Return the boundary polygon."""
-        if shapely:
-            return self._to_shapely_polygon()
-        else:
-            raise NotImplementedError("Only shapely polygon available.")
-
-    def plot(self, ax=None, subplot_kw=None, crs=None, **kwargs):
+    def plot(self, ax=None, subplot_kw=None, crs=None, alpha=0.6, **kwargs):
         """Plot the the boundary. crs must be a Cartopy CRS !"""
         from pyresample.visualization.geometries import plot_geometries
 
@@ -82,8 +85,10 @@ class ProjectionBoundary(BaseBoundary):
             raise ValueError("Projection Cartopy 'crs' is required to display projection boundary.")
         if crs is None:
             crs = self.cartopy_crs
+        if subplot_kw is None:
+            subplot_kw = {"projection": crs}
 
-        geom = self.polygon(shapely=True)
+        geom = self.to_shapely_polygon()
         p = plot_geometries(geometries=[geom], crs=crs,
-                            ax=ax, subplot_kw=subplot_kw, **kwargs)
+                            ax=ax, subplot_kw=subplot_kw, alpha=alpha, **kwargs)
         return p

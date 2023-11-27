@@ -30,16 +30,23 @@ class BaseBoundary:
     """Base class for boundary objects."""
     __slots__ = ["_sides_x", "_sides_y"]
 
-    def __init__(self, sides_x, sides_y, order=None):
+    def __init__(self, area, vertices_per_side=None):
+
+        sides_x, sides_y = self._compute_boundary_sides(area, vertices_per_side)
         self._sides_x = BoundarySides(sides_x)
         self._sides_y = BoundarySides(sides_y)
+        self._area = area
 
-        self.is_clockwise = self._check_is_boundary_clockwise(sides_x, sides_y)
+        self.is_clockwise = self._check_is_boundary_clockwise(sides_x, sides_y, area)
         self.is_counterclockwise = not self.is_clockwise
-        self._set_order(order)
+        self._set_order(order=None)  # FIX !
 
-    def _check_is_boundary_clockwise(self, sides_x, sides_y):
+    def _check_is_boundary_clockwise(self, sides_x, sides_y, area):
         """Check if the boundary is clockwise or counterclockwise."""
+        raise NotImplementedError()
+
+    def _compute_boundary_sides(self, area, vertices_per_side):
+        """Compute boundary sides."""
         raise NotImplementedError()
 
     def _set_order(self, order):
@@ -112,9 +119,9 @@ class BaseBoundary:
             y = np.hstack((y, y[0]))
         return x, y
 
-    def _to_shapely_polygon(self):
+    def to_shapely_polygon(self):
         """Define a Shapely Polygon."""
         from shapely.geometry import Polygon
-        self = self.set_counterclockwise()  # FIXME: add exception for pole wrapping polygons
+        self = self.set_counterclockwise()
         x, y = self.contour(closed=True)
         return Polygon(zip(x, y))
