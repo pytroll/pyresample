@@ -341,6 +341,10 @@ class BaseDefinition:
         sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
         warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.boundary().sides` instead",
                       PendingDeprecationWarning, stacklevel=2)
+        # NOTE: This check is erroneous:
+        # - For SwathDefinition must be checked with respect to a local internal point.
+        # - For AreaDefinition, the order already defines the enclosing area !
+        # - For many AreaDefinition, this is failing (infinite edges ...)
         if force_clockwise and not self._corner_is_clockwise(
                 sides_lons[0][-2], sides_lats[0][-2],
                 sides_lons[0][-1], sides_lats[0][-1],
@@ -405,7 +409,7 @@ class BaseDefinition:
         if x.shape[0] < 4:
             raise ValueError("The geostationary projection area is entirely out of the Earth disk.")
         # Retrieve dummy sides for GEO
-        # - _get_geostationary_bounding_box_in_lonlats does not guarantee to return nb_points and even points!
+        # - _get_geostationary_bounding_box does not guarantee to return nb_points and even points!
         sides_x = self._get_dummy_sides(x, vertices_per_side=vertices_per_side)
         sides_y = self._get_dummy_sides(y, vertices_per_side=vertices_per_side)
         return sides_x, sides_y
@@ -1145,7 +1149,7 @@ class DynamicAreaDefinition(object):
     Note that if the provided projection is geographic (lon/lat degrees) and
     the provided longitude and latitude data crosses the anti-meridian
     (-180/180), the resulting area will be the smallest possible in order to
-    contain that data and boundaryspanning from -180 to 180
+    contain that data and boundary spanning from -180 to 180
     longitude. This means the resulting AreaDefinition will have a right-most
     X extent greater than 180 degrees. This does not apply to data crossing
     the north or south pole as there is no "smallest" area in this case.
@@ -2931,21 +2935,6 @@ def _get_geostationary_bounding_box(geos_area, coordinates="geographic", nb_poin
     return x, y
 
 
-def _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
-    """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
-
-    Args:
-      geos_area: Geostationary area definition to get the bounding box for.
-      nb_points: Number of points on the polygon
-    """
-    warnings.warn("'_get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
-                  "'_get_geostationary_bounding_box' instead.",
-                  DeprecationWarning, stacklevel=2)
-    return _get_geostationary_bounding_box(geos_area,
-                                           coordinates="geographic",
-                                           nb_points=nb_points)
-
-
 def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
@@ -2972,7 +2961,9 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
                   "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
-    return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
+    return get_geostationary_bounding_box(geos_area,
+                                          coordinates="geographic",
+                                          nb_points=nb_points)
 
 
 def _is_any_corner_out_of_earth_disk(area_def):
