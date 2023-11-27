@@ -415,7 +415,7 @@ def _get_valid_input_index(source_geo_def,
             # Resampling from swath to grid or from grid to grid
             # - If invalid sides, return np.ones
             try:
-                sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
+                sides_lons, sides_lats = target_geo_def.boundary().sides
                 # Combine reduced and legal values
                 valid_input_index &= \
                     data_reduce.get_valid_index_from_lonlat_boundaries(
@@ -445,7 +445,7 @@ def _get_valid_output_index(source_geo_def, target_geo_def, target_lons,
             # Resampling from grid to swath
             # - If invalid sides, return np.ones
             try:
-                sides_lons, sides_lats = source_geo_def.geographic_boundary().sides
+                sides_lons, sides_lats = source_geo_def.boundary().sides
                 valid_output_index = \
                     data_reduce.get_valid_index_from_lonlat_boundaries(
                         sides_lons,

@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Define the ProjectionBoundary class."""
+"""Define the PlanarBoundary class."""
 
 import logging
 
@@ -37,7 +37,7 @@ def _is_projection_boundary_clockwise(sides_x, sides_y):
     return not polygon.exterior.is_ccw
 
 
-class ProjectionBoundary(BaseBoundary):
+class PlanarBoundary(BaseBoundary):
     """Projection Boundary object.
 
     The inputs must be the x and y sides of the projection.
@@ -46,7 +46,7 @@ class ProjectionBoundary(BaseBoundary):
 
     @classmethod
     def _check_is_boundary_clockwise(cls, sides_x, sides_y, area=None):
-        """GeographicBoundary specific implementation."""
+        """SphericalBoundary specific implementation."""
         return _is_projection_boundary_clockwise(sides_x=sides_x, sides_y=sides_y)
 
     @classmethod

@@ -73,12 +73,12 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
 
  >>> from pyresample.spherical_utils import GetNonOverlapUnions
 
- >>> area_boundary = area_def.geographic_boundary(vertices_per_side=100) # doctest: +SKIP
+ >>> area_boundary = area_def.boundary(vertices_per_side=100) # doctest: +SKIP
  >>> area_boundary = area_boundary.polygon # doctest: +SKIP
 
  >>> list_of_polygons = []
  >>> for mypass in passes: # doctest: +SKIP
- >>>     list_of_polygons.append(mypass.geographic_boundary().polygon) # doctest: +SKIP
+ >>>     list_of_polygons.append(mypass.boundary().polygon) # doctest: +SKIP
 
  >>> non_overlaps = GetNonOverlapUnions(list_of_polygons) # doctest: +SKIP
  >>> non_overlaps.merge() # doctest: +SKIP

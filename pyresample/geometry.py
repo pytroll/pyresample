@@ -283,7 +283,7 @@ class BaseDefinition:
     def get_boundary_lonlats(self):
         """Return Boundary objects."""
         warnings.warn("'get_boundary_lonlats' is deprecated. Please use "
-                      "'area.geographic_boundary().sides'.", DeprecationWarning, stacklevel=2)
+                      "'area.boundary().sides'.", DeprecationWarning, stacklevel=2)
         s1_lon, s1_lat = self.get_lonlats(data_slice=(0, slice(None)))
         s2_lon, s2_lat = self.get_lonlats(data_slice=(slice(None), -1))
         s3_lon, s3_lat = self.get_lonlats(data_slice=(-1, slice(None, None, -1)))
@@ -339,7 +339,7 @@ class BaseDefinition:
 
         vertices_per_side = vertices_per_side or frequency
         sides_lons, sides_lats = self._get_geographic_sides(vertices_per_side=vertices_per_side)
-        warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.geographic_boundary().sides` instead",
+        warnings.warn("`get_bbox_lonlats` is pending deprecation. Use `area.boundary().sides` instead",
                       PendingDeprecationWarning, stacklevel=2)
         if force_clockwise and not self._corner_is_clockwise(
                 sides_lons[0][-2], sides_lats[0][-2],
@@ -436,8 +436,6 @@ class BaseDefinition:
             Each list element is a numpy array representing a specific side of the geometry.
             The order of the sides are [top", "right", "bottom", "left"]
         """
-        if len(self.lons.shape) == 1:
-            raise ValueError("The area must have 2 dimensions to retrieve the boundary sides.")
         is_swath = self.__class__.__name__ == "SwathDefinition"
         if not is_swath and _is_any_corner_out_of_earth_disk(self):
             # Geostationary
@@ -500,6 +498,8 @@ class BaseDefinition:
             The output structure is a tuple of four slices, one for each side.
             The order of the sides are [top", "right", "bottom", "left"]
         """
+        if len(self.shape) == 1:
+            raise ValueError("The area must have 2 dimensions to retrieve the boundary sides.")
         height, width = self.shape
         if vertices_per_side is None:
             row_num = height
@@ -555,13 +555,13 @@ class BaseDefinition:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead.",
                           PendingDeprecationWarning, stacklevel=2)
         msg = "`get_edge_lonlats` is pending deprecation"
-        msg += "Use `area.geographic_boundary(vertices_per_side=vertices_per_side).contour()` instead."
+        msg += "Use `area.boundary(vertices_per_side=vertices_per_side).contour()` instead."
         warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        lons, lats = self.geographic_boundary(vertices_per_side=vertices_per_side).contour()
+        lons, lats = self.boundary(vertices_per_side=vertices_per_side).contour()
         return lons, lats
 
-    def boundary(self, *, vertices_per_side=None, force_clockwise=False, frequency=None):
+    def boundary(self, *, vertices_per_side=None, force_clockwise=None, frequency=None):
         """Retrieve the AreaBoundary object.
 
         Parameters
@@ -573,7 +573,7 @@ class BaseDefinition:
              (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
              by default only 50 points are selected.
         force_clockwise:
-            DEPRECATED.
+            DEPRECATED. IS NOT USED ANYMORE !
             Performed minimal checks and reordering of coordinates to ensure
             that the returned coordinates follow a clockwise direction.
             This is important for compatibility with
@@ -582,28 +582,16 @@ class BaseDefinition:
             operations assume that coordinates are clockwise.
             Default is False.
         """
+        from pyresample.boundary import SphericalBoundary
         if frequency is not None:
             warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
                           PendingDeprecationWarning, stacklevel=2)
-        warnings.warn("The `boundary` method is pending deprecation. Use `geographic_boundary` instead",
-                      PendingDeprecationWarning, stacklevel=2)
+        if force_clockwise is not None:
+            warnings.warn("The `force_clockwise` argument is not used anymore. "
+                          "Please remove the argument from the boundary() call !!!",
+                          PendingDeprecationWarning, stacklevel=2)
         vertices_per_side = vertices_per_side or frequency
-        return self.geographic_boundary(vertices_per_side=vertices_per_side)
-
-    def geographic_boundary(self, vertices_per_side=None):
-        """Retrieve the GeographicBoundary object.
-
-        Parameters
-        ----------
-        vertices_per_side:
-            The number of points to provide for each side.
-            By default (None) the full width and height will be provided.
-            If the area object is an AreaDefinition with any corner out of the Earth disk
-            (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
-            by default only 50 points are selected.
-        """
-        from pyresample.boundary import GeographicBoundary
-        return GeographicBoundary(area=self, vertices_per_side=vertices_per_side)
+        return SphericalBoundary(area=self, vertices_per_side=vertices_per_side)
 
     def get_cartesian_coords(self, nprocs=None, data_slice=None, cache=False):
         """Retrieve cartesian coordinates of geometry definition.
@@ -1143,7 +1131,7 @@ class SwathDefinition(CoordinateDefinition):
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
-        lons, lats = self.geographic_boundary(vertices_per_side=None).contour()
+        lons, lats = self.boundary(vertices_per_side=None).contour()
         return area.freeze((lons, lats), shape=(height, width))
 
 
@@ -1157,7 +1145,7 @@ class DynamicAreaDefinition(object):
     Note that if the provided projection is geographic (lon/lat degrees) and
     the provided longitude and latitude data crosses the anti-meridian
     (-180/180), the resulting area will be the smallest possible in order to
-    contain that data and avoid a large area spanning from -180 to 180
+    contain that data and boundaryspanning from -180 to 180
     longitude. This means the resulting AreaDefinition will have a right-most
     X extent greater than 180 degrees. This does not apply to data crossing
     the north or south pole as there is no "smallest" area in this case.
@@ -1762,7 +1750,10 @@ class AreaDefinition(_ProjectionDefinition):
         return sides_x, sides_y
 
     def projection_boundary(self, vertices_per_side=None):
-        """Retrieve the ProjectionBoundary object.
+        """Retrieve the boundary object in projection coordinates.
+
+        If the CRS of the AreaDefinition is geographic, the returned boundary
+        object is a SphericalBoundary, otherwise a PlanarBoundary is returned.
 
         Parameters
         ----------
@@ -1773,11 +1764,10 @@ class AreaDefinition(_ProjectionDefinition):
             (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
             by default only 50 points are selected..
         """
-        from pyresample.boundary import ProjectionBoundary
+        from pyresample.boundary import PlanarBoundary
         if self.crs.is_geographic:
-            return self.geographic_boundary(vertices_per_side=vertices_per_side)
-        return ProjectionBoundary(area=self,
-                                  vertices_per_side=vertices_per_side)
+            return self.boundary(vertices_per_side=vertices_per_side)
+        return PlanarBoundary(area=self, vertices_per_side=vertices_per_side)
 
     def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
                                                 frequency: Optional[int] = None):
@@ -2964,7 +2954,7 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
       nb_points: Number of points on the polygon
     """
     warnings.warn("'get_geostationary_bounding_box_in_lonlats' is deprecated. Please call "
-                  "'area.geographic_boundary().contour()' instead.",
+                  "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box(geos_area,
                                            coordinates="geographic",
@@ -2980,7 +2970,7 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
 
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please call "
-                  "'area.geographic_boundary().contour()' instead.",
+                  "'area.boundary().contour()' instead.",
                   DeprecationWarning, stacklevel=2)
     return _get_geostationary_bounding_box_in_lonlats(geos_area, nb_points)
 

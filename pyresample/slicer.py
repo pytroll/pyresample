@@ -128,7 +128,7 @@ def _get_chunk_polygons_for_swath_to_crop(swath_to_crop):
         line_slice = expand_slice(line_slice)
         col_slice = expand_slice(col_slice)
         smaller_swath = swath_to_crop[line_slice, col_slice]
-        smaller_poly = smaller_swath.geographic_boundary(vertices_per_side=10).to_shapely_polygon()
+        smaller_poly = smaller_swath.boundary(vertices_per_side=10).to_shapely_polygon()
         res.append((smaller_poly, (line_slice, col_slice)))
     return res
 

@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
             lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
         lats = np.fromfunction(
             lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        sides_lons, sides_lats = self.area_def.geographic_boundary().sides
+        sides_lons, sides_lats = self.area_def.boundary().sides
         lons, lats, data = swath_from_lonlat_boundaries(sides_lons,
                                                         sides_lats,
                                                         lons, lats, data, 7000)

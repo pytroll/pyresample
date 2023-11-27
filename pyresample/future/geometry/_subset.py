@@ -11,7 +11,7 @@ import numpy as np
 # must be imported inside functions in the geometry modules if needed
 # to avoid circular dependencies
 from pyresample._caching import cache_to_json_if
-from pyresample.boundary import GeographicBoundary
+from pyresample.boundary import SphericalBoundary
 from pyresample.utils import check_slice_orientation
 
 if TYPE_CHECKING:
@@ -97,13 +97,13 @@ def _get_slice_starts_stops(src_area, area_to_cover):
     return xstart, xstop, ystart, ystop
 
 
-def _get_area_boundary(area_to_cover: AreaDefinition) -> GeographicBoundary:
+def _get_area_boundary(area_to_cover: AreaDefinition) -> SphericalBoundary:
     try:
         if area_to_cover.is_geostationary:
             vertices_per_side = None
         else:
             vertices_per_side = max(max(*area_to_cover.shape) // 100 + 1, 3)
-        return area_to_cover.geographic_boundary(vertices_per_side=vertices_per_side)
+        return area_to_cover.boundary(vertices_per_side=vertices_per_side)
     except ValueError as err:
         raise NotImplementedError("Can't determine boundary of area to cover") from err
 

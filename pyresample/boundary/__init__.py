@@ -18,13 +18,13 @@
 """The Boundary classes."""
 
 from pyresample.boundary.area_boundary import AreaBoundary, AreaDefBoundary
-from pyresample.boundary.geographic_boundary import GeographicBoundary
-from pyresample.boundary.projection_boundary import ProjectionBoundary
+from pyresample.boundary.planar_boundary import PlanarBoundary
 from pyresample.boundary.simple_boundary import SimpleBoundary
+from pyresample.boundary.spherical_boundary import SphericalBoundary
 
 __all__ = [
-    "GeographicBoundary",
-    "ProjectionBoundary",
+    "SphericalBoundary",
+    "PlanarBoundary",
     # Deprecated
     "SimpleBoundary",
     "AreaBoundary",

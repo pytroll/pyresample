@@ -2110,7 +2110,7 @@ class TestBoundary:
     def test_polar_south_pole_projection(self, south_pole_area):
         """Test boundary for polar projection around the South Pole."""
         areadef = south_pole_area
-        boundary = areadef.geographic_boundary()
+        boundary = areadef.boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2128,7 +2128,7 @@ class TestBoundary:
         """Test boundary for polar projection around the North Pole."""
         areadef = north_pole_area
 
-        boundary = areadef.geographic_boundary()
+        boundary = areadef.boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2148,24 +2148,24 @@ class TestBoundary:
 
         # Check default boundary shape
         default_n_vertices = 50
-        boundary = areadef.geographic_boundary(vertices_per_side=None, )
+        boundary = areadef.boundary(vertices_per_side=None, )
         assert boundary.vertices.shape == (default_n_vertices, 2)
 
         # Check minimum boundary vertices
         n_vertices = 3
         minimum_n_vertices = 4
-        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, )
+        boundary = areadef.boundary(vertices_per_side=n_vertices, )
         assert boundary.vertices.shape == (minimum_n_vertices, 2)
 
         # Check odd number of vertices per side
         # - Rounded to the sequent even number (to construct the sides)
         n_odd_vertices = 5
-        boundary = areadef.geographic_boundary(vertices_per_side=n_odd_vertices)
+        boundary = areadef.boundary(vertices_per_side=n_odd_vertices)
         assert boundary.vertices.shape == (n_odd_vertices + 1, 2)
 
         # Check boundary vertices
         n_vertices = 10
-        boundary = areadef.geographic_boundary(vertices_per_side=n_vertices, )
+        boundary = areadef.boundary(vertices_per_side=n_vertices, )
 
         # Check boundary vertices is in correct order
         expected_vertices = np.array([[-7.54251621e+01, 3.53432890e+01],
@@ -2183,7 +2183,7 @@ class TestBoundary:
     def test_global_platee_caree_projection(self, global_platee_caree_area):
         """Test boundary for global platee caree projection."""
         areadef = global_platee_caree_area
-        boundary = areadef.geographic_boundary()
+        boundary = areadef.boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2208,7 +2208,7 @@ class TestBoundary:
     def test_minimal_global_platee_caree_projection(self, global_platee_caree_minimum_area):
         """Test boundary for global platee caree projection."""
         areadef = global_platee_caree_minimum_area
-        boundary = areadef.geographic_boundary()
+        boundary = areadef.boundary()
 
         # Check boundary shape
         height, width = areadef.shape
@@ -2225,7 +2225,7 @@ class TestBoundary:
     def test_local_area_projection(self, local_meter_area):
         """Test local area projection in meter."""
         areadef = local_meter_area
-        boundary = areadef.geographic_boundary()
+        boundary = areadef.boundary()
 
         # Check boundary shape
         height, width = areadef.shape

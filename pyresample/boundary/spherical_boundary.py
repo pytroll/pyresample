@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Define the GeographicBoundary class."""
+"""Define the SphericalBoundary class."""
 
 import logging
 
@@ -106,8 +106,8 @@ def _check_is_clockwise(area, sides_x, sides_y):
             return True
 
 
-class GeographicBoundary(BaseBoundary, OldBoundary):
-    """GeographicBoundary object.
+class SphericalBoundary(BaseBoundary, OldBoundary):
+    """SphericalBoundary object.
 
     The inputs must be the list of longitude and latitude boundary sides.
     """
@@ -117,7 +117,7 @@ class GeographicBoundary(BaseBoundary, OldBoundary):
 
     @classmethod
     def _check_is_boundary_clockwise(cls, sides_x, sides_y, area):
-        """GeographicBoundary specific implementation."""
+        """SphericalBoundary specific implementation."""
         return _check_is_clockwise(area, sides_x, sides_y)
 
     @classmethod

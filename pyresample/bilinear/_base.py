@@ -600,7 +600,7 @@ def get_valid_indices_from_lonlat_boundaries(
     """Get valid indices from lonlat boundaries."""
     # Resampling from swath to grid or from grid to grid
     try:
-        sides_lons, sides_lats = target_geo_def.geographic_boundary().sides
+        sides_lons, sides_lats = target_geo_def.boundary().sides
         valid_indices = data_reduce.get_valid_index_from_lonlat_boundaries(sides_lons, sides_lats,
                                                                            source_lons, source_lats,
                                                                            radius_of_influence)

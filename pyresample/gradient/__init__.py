@@ -385,7 +385,7 @@ def _get_border_lonlats(geo_def: AreaDefinition, vertices_per_side=None):
     """Get the border x- and y-coordinates."""
     if geo_def.is_geostationary:
         vertices_per_side = 3600
-    lon_b, lat_b = geo_def.geographic_boundary(vertices_per_side=vertices_per_side).contour(closed=True)
+    lon_b, lat_b = geo_def.boundary(vertices_per_side=vertices_per_side).contour(closed=True)
     return lon_b, lat_b
 
 

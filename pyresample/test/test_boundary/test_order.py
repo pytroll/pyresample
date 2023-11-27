@@ -20,7 +20,7 @@
 
 import pytest
 
-from pyresample.boundary.geographic_boundary import _is_clockwise_order
+from pyresample.boundary.spherical_boundary import _is_clockwise_order
 
 
 class Test_Is_Clockwise_Order:

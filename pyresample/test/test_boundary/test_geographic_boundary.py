@@ -16,17 +16,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test the GeographicBoundary objects."""
+"""Test the SphericalBoundary objects."""
 
 import numpy as np
 import pytest
 
 from pyresample import SwathDefinition
-from pyresample.boundary import GeographicBoundary
+from pyresample.boundary import SphericalBoundary
 
 
-class TestSwathGeographicBoundary():
-    """Test 'GeographicBoundary' class for SwathDefinition."""
+class TestSwathSphericalBoundary():
+    """Test 'SphericalBoundary' class for SwathDefinition."""
 
     def setup_method(self):
         sides_lons = [np.array([1.0, 1.5, 2.0]),
@@ -50,9 +50,9 @@ class TestSwathGeographicBoundary():
         self.point_inside = (2.5, 7.5)
 
     def test_creation(self):
-        """Test GeographicBoundary creation."""
-        # Define GeographicBoundary
-        boundary = GeographicBoundary(self.area)
+        """Test SphericalBoundary creation."""
+        # Define SphericalBoundary
+        boundary = SphericalBoundary(self.area)
 
         # Assert sides coincides
         for b_lon, src_lon in zip(boundary.sides_lons, self.sides_lons):
@@ -65,12 +65,12 @@ class TestSwathGeographicBoundary():
         """Test swath has minimum 2 dimensions."""
         area = SwathDefinition(self.lons[0], self.lats[1])
         with pytest.raises(ValueError):
-            GeographicBoundary(area)
+            SphericalBoundary(area)
 
     def test_vertices_property(self):
-        """Test GeographicBoundary vertices property."""
-        # Define GeographicBoundary
-        boundary = GeographicBoundary(self.area)
+        """Test SphericalBoundary vertices property."""
+        # Define SphericalBoundary
+        boundary = SphericalBoundary(self.area)
         # Assert vertices
         expected_vertices = np.array([[1., 6.],
                                       [1.5, 6.5],
@@ -81,18 +81,18 @@ class TestSwathGeographicBoundary():
         assert np.allclose(boundary.vertices, expected_vertices)
 
     def test_contour(self):
-        """Test that GeographicBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
-        # Define GeographicBoundary
-        boundary = GeographicBoundary(self.area)
+        """Test that SphericalBoundary.contour(closed=False) returns the correct (lon,lat) tuple."""
+        # Define SphericalBoundary
+        boundary = SphericalBoundary(self.area)
         # Assert contour
         lons, lats = boundary.contour()
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9.]))
 
     def test_contour_closed(self):
-        """Test that GeographicBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
-        # Define GeographicBoundary
-        boundary = GeographicBoundary(self.area)
+        """Test that SphericalBoundary.contour(closed=True) returns the correct (lon,lat) tuple."""
+        # Define SphericalBoundary
+        boundary = SphericalBoundary(self.area)
         lons, lats = boundary.contour(closed=True)
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4., 1.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9., 6.]))
