@@ -345,8 +345,8 @@ class BaseDefinition:
 
     def _filter_bbox_nans(
             self,
-            dim1_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-            dim2_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+            dim1_sides: tuple[np.ndarray, ...],
+            dim2_sides: tuple[np.ndarray, ...],
     ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         new_dim1_sides = []
         new_dim2_sides = []
