@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""Test the boundary objects."""
+"""Test the AreaBoundary objects."""
 import unittest
 
 import numpy as np
@@ -30,22 +30,22 @@ class TestAreaBoundary(unittest.TestCase):
 
     def test_creation_from_lonlat_sides(self):
         """Test AreaBoundary creation from sides."""
-        lon_sides = [np.array([1.0, 1.5, 2.0]),
-                     np.array([2.0, 3.0]),
-                     np.array([3.0, 3.5, 4.0]),
-                     np.array([4.0, 1.0])]
-        lat_sides = [np.array([6.0, 6.5, 7.0]),
-                     np.array([7.0, 8.0]),
-                     np.array([8.0, 8.5, 9.0]),
-                     np.array([9.0, 6.0])]
+        sides_lons = [np.array([1.0, 1.5, 2.0]),
+                      np.array([2.0, 3.0]),
+                      np.array([3.0, 3.5, 4.0]),
+                      np.array([4.0, 1.0])]
+        sides_lats = [np.array([6.0, 6.5, 7.0]),
+                      np.array([7.0, 8.0]),
+                      np.array([8.0, 8.5, 9.0]),
+                      np.array([9.0, 6.0])]
         # Define AreaBoundary
-        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        boundary = AreaBoundary.from_lonlat_sides(sides_lons, sides_lats)
 
         # Assert sides coincides
-        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
+        for b_lon, src_lon in zip(boundary.sides_lons, sides_lons):
             assert np.allclose(b_lon, src_lon)
 
-        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides):
+        for b_lat, src_lat in zip(boundary.sides_lats, sides_lats):
             assert np.allclose(b_lat, src_lat)
 
     def test_creation(self):
@@ -54,17 +54,17 @@ class TestAreaBoundary(unittest.TestCase):
                       (np.array([2., 3.]), np.array([7., 8.])),
                       (np.array([3., 3.5, 4.]), np.array([8., 8.5, 9.])),
                       (np.array([4., 1.]), np.array([9., 6.]))]
-        lon_sides = [side[0]for side in list_sides]
-        lat_sides = [side[1]for side in list_sides]
+        sides_lons = [side[0]for side in list_sides]
+        sides_lats = [side[1]for side in list_sides]
 
         # Define AreaBoundary
         boundary = AreaBoundary(*list_sides)
 
         # Assert sides coincides
-        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
+        for b_lon, src_lon in zip(boundary.sides_lons, sides_lons):
             assert np.allclose(b_lon, src_lon)
 
-        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides):
+        for b_lat, src_lat in zip(boundary.sides_lats, sides_lats):
             assert np.allclose(b_lat, src_lat)
 
     def test_number_sides_required(self):
@@ -78,16 +78,16 @@ class TestAreaBoundary(unittest.TestCase):
 
     def test_vertices_property(self):
         """Test AreaBoundary vertices property."""
-        lon_sides = [np.array([1.0, 1.5, 2.0]),
-                     np.array([2.0, 3.0]),
-                     np.array([3.0, 3.5, 4.0]),
-                     np.array([4.0, 1.0])]
-        lat_sides = [np.array([6.0, 6.5, 7.0]),
-                     np.array([7.0, 8.0]),
-                     np.array([8.0, 8.5, 9.0]),
-                     np.array([9.0, 6.0])]
+        sides_lons = [np.array([1.0, 1.5, 2.0]),
+                      np.array([2.0, 3.0]),
+                      np.array([3.0, 3.5, 4.0]),
+                      np.array([4.0, 1.0])]
+        sides_lats = [np.array([6.0, 6.5, 7.0]),
+                      np.array([7.0, 8.0]),
+                      np.array([8.0, 8.5, 9.0]),
+                      np.array([9.0, 6.0])]
         # Define AreaBoundary
-        boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
+        boundary = AreaBoundary.from_lonlat_sides(sides_lons, sides_lats)
 
         # Assert vertices
         expected_vertices = np.array([[1., 6.],

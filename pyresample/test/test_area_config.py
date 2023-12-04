@@ -24,6 +24,10 @@ import unittest
 
 import numpy as np
 
+from pyresample import _root_path
+
+TEST_FILES_PATH = os.path.join(_root_path, "test", 'test_files')
+
 
 class TestLegacyAreaParser(unittest.TestCase):
     """Test legacy .cfg parsing."""
@@ -31,7 +35,7 @@ class TestLegacyAreaParser(unittest.TestCase):
     def test_area_parser_legacy(self):
         """Test legacy area parser."""
         from pyresample import parse_area_file
-        ease_nh, ease_sh = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'),
+        ease_nh, ease_sh = parse_area_file(os.path.join(TEST_FILES_PATH, 'areas.cfg'),
                                            'ease_nh', 'ease_sh')
 
         # pyproj 2.0+ adds some extra parameters
@@ -63,7 +67,7 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
 
     def test_load_area(self):
         from pyresample import load_area
-        ease_nh = load_area(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ease_nh')
+        ease_nh = load_area(os.path.join(TEST_FILES_PATH, 'areas.cfg'), 'ease_nh')
         # pyproj 2.0+ adds some extra parameters
         projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
                       "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
@@ -87,11 +91,11 @@ Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".forma
     def test_not_found_exception(self):
         from pyresample.area_config import AreaNotFound, parse_area_file
         self.assertRaises(AreaNotFound, parse_area_file,
-                          os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'no_area')
+                          os.path.join(TEST_FILES_PATH, 'areas.cfg'), 'no_area')
 
     def test_commented(self):
         from pyresample import parse_area_file
-        areas = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'))
+        areas = parse_area_file(os.path.join(TEST_FILES_PATH, 'areas.cfg'))
         self.assertNotIn('commented', [area.name for area in areas])
 
 
@@ -101,7 +105,7 @@ class TestYAMLAreaParser(unittest.TestCase):
     def test_area_parser_yaml(self):
         """Test YAML area parser."""
         from pyresample import parse_area_file
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         test_areas = parse_area_file(test_area_file, 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees',
                                      'test_latlong')
         ease_nh, ease_sh, test_m, test_deg, test_latlong = test_areas
@@ -158,7 +162,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         """Test YAML area parser on dynamic areas."""
         from pyresample import parse_area_file
         from pyresample.geometry import DynamicAreaDefinition
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         test_area = parse_area_file(test_area_file, 'test_dynamic_resolution')[0]
 
         self.assertIsInstance(test_area, DynamicAreaDefinition)
@@ -168,7 +172,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         # lat/lon
         from pyresample import parse_area_file
         from pyresample.geometry import DynamicAreaDefinition
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         test_area = parse_area_file(test_area_file, 'test_dynamic_resolution_ll')[0]
 
         self.assertIsInstance(test_area, DynamicAreaDefinition)
@@ -178,7 +182,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
     def test_dynamic_area_parser_passes_resolution(self):
         """Test that the resolution from the file is passed to a dynamic area."""
         from pyresample import parse_area_file
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         test_area = parse_area_file(test_area_file, 'omerc_bb_1000')[0]
         assert test_area.resolution == (1000, 1000)
 

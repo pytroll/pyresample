@@ -152,7 +152,7 @@ class TestSwathBboxLonLats:
 
     def test_swath_def_bbox_decimated(self, create_test_swath):
         swath_def = _gen_swath_def_numpy(create_test_swath)
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=None)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(vertices_per_side=None)
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         assert len(bbox_lons[0]) == 10
@@ -160,7 +160,7 @@ class TestSwathBboxLonLats:
         assert len(bbox_lons[2]) == 10
         assert len(bbox_lons[3]) == 50
 
-        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(frequency=5)
+        bbox_lons, bbox_lats = swath_def.get_bbox_lonlats(vertices_per_side=5)
         assert len(bbox_lons) == len(bbox_lats)
         assert len(bbox_lons) == 4
         assert len(bbox_lons[0]) == 5
@@ -403,14 +403,20 @@ class TestSwathDefinition:
                          [81.26400756835938, 29.672000885009766, 10.260000228881836]]).T
         area = create_test_swath(lons, lats)
         lons, lats = area.get_edge_lonlats()
-        np.testing.assert_allclose(lons, [-90.67900085, 79.11000061, 81.26400757,
-                                          81.26400757, 29.67200089, 10.26000023,
-                                          10.26000023, -5.10700035, -21.52500153,
-                                          -21.52500153, -21.56500053, -90.67900085])
-        np.testing.assert_allclose(lats, [85.23900604, 80.84000397, 67.07600403,
-                                          67.07600403, 54.14700317, 30.54700089,
-                                          30.54700089, 34.0850029, 35.58000183,
-                                          35.58000183, 62.25600433, 85.23900604])
+        expected_lons = [
+            -90.67900085, 79.11000061,  # 81.26400757,
+            81.26400757, 29.67200089,   # 10.26000023,
+            10.26000023, -5.10700035,  # -21.52500153,
+            -21.52500153, -21.56500053,  # -90.67900085,
+        ]
+        expected_lats = [
+            85.23900604, 80.84000397,  # 67.07600403,
+            67.07600403, 54.14700317,  # 30.54700089,
+            30.54700089, 34.0850029,  # 35.58000183,
+            35.58000183, 62.25600433,  # 85.23900604,
+        ]
+        np.testing.assert_allclose(lons, expected_lons)
+        np.testing.assert_allclose(lats, expected_lats)
 
         lats = np.array([[80., 80., 80.],
                          [80., 90., 80],
@@ -420,10 +426,20 @@ class TestSwathDefinition:
                          [-135., -180., 135.]]).T
         area = create_test_swath(lons, lats)
         lons, lats = area.get_edge_lonlats()
-        np.testing.assert_allclose(lons, [-45., -90., -135., -135., -180., 135.,
-                                          135., 90., 45., 45., 0., -45.])
-        np.testing.assert_allclose(lats, [80., 80., 80., 80., 80., 80., 80.,
-                                          80., 80., 80., 80., 80.])
+        expected_lons = [
+            -45., -90.,  # -135.,
+            -135., -180.,  # 135.,
+            135., 90.,  # 45.,
+            45., 0.,  # -45.
+        ]
+        expected_lats = [
+            80., 80.,  # 80.,
+            80., 80.,  # 80.,
+            80., 80.,  # 80.,
+            80., 80.,  # 80.
+        ]
+        np.testing.assert_allclose(lons, expected_lons)
+        np.testing.assert_allclose(lats, expected_lats)
 
     def test_compute_optimal_bb(self, create_test_swath):
         """Test computing the bb area."""
@@ -586,9 +602,9 @@ class TestSwathBoundary:
         lats = np.array([[65.9, 65.86, 65.82, 65.78],
                          [65.89, 65.86, 65.82, 65.78]])
 
-        # Define SwathDefinition and retrieve AreaBoundary
+        # Define SwathDefinition and retrieve SphericalBoundary
         swath_def = create_test_swath(lons, lats)
-        boundary = swath_def.boundary(force_clockwise=False)
+        boundary = swath_def.boundary()
 
         # Check boundary shape
         height, width = swath_def.shape

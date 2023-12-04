@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2014-2021 Pyresample developers
+# Copyright (c) 2014-2023 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""The Boundary classes."""
-
+"""Deprecated Boundary, AreaBoundary, AreaDefBoundary class."""
 import logging
 import warnings
 
@@ -44,6 +43,9 @@ class Boundary(object):
     @property
     def contour_poly(self):
         """Get the Spherical polygon corresponding to the Boundary."""
+        warnings.warn("'contour_poly' is deprecated." +
+                      "Use the 'boundary().polygon' property instead!.",
+                      PendingDeprecationWarning, stacklevel=2)
         if self._contour_poly is None:
             self._contour_poly = SphPolygon(
                 np.deg2rad(np.vstack(self.contour()).T))
@@ -62,6 +64,9 @@ class AreaBoundary(Boundary):
 
     def __init__(self, *sides):
         Boundary.__init__(self)
+        warnings.warn("'AreaBoundary' will be removed in the future. " +
+                      "Use the Swath/AreaDefinition 'boundary' method instead!.",
+                      PendingDeprecationWarning, stacklevel=2)
         # Check 4 sides are provided
         if len(sides) != 4:
             raise ValueError("AreaBoundary expects 4 sides.")
@@ -117,28 +122,13 @@ class AreaBoundary(Boundary):
 
 
 class AreaDefBoundary(AreaBoundary):
-    """Boundaries for area definitions (pyresample)."""
+    """Boundaries for a pyresample AreaDefinition."""
 
     def __init__(self, area, frequency=1):
-        lons, lats = area.get_bbox_lonlats()
+        sides_lons, sides_lats = area.boundary().sides
         warnings.warn("'AreaDefBoundary' will be removed in the future. " +
                       "Use the Swath/AreaDefinition 'boundary' method instead!.",
                       PendingDeprecationWarning, stacklevel=2)
-        AreaBoundary.__init__(self,
-                              *zip(lons, lats))
-
+        AreaBoundary.__init__(self, *zip(sides_lons, sides_lats))
         if frequency != 1:
             self.decimate(frequency)
-
-
-class SimpleBoundary(object):
-    """Container for geometry boundary.
-
-    Labelling starts in upper left corner and proceeds clockwise
-    """
-
-    def __init__(self, side1, side2, side3, side4):
-        self.side1 = side1
-        self.side2 = side2
-        self.side3 = side3
-        self.side4 = side4

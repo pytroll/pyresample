@@ -23,8 +23,10 @@ import warnings
 
 import numpy as np
 
-from pyresample import geometry, kd_tree
+from pyresample import _root_path, geometry, kd_tree
 from pyresample.test.utils import catch_warnings
+
+TEST_FILES_PATH = os.path.join(_root_path, "test", 'test_files')
 
 warnings.simplefilter("always")
 
@@ -32,8 +34,7 @@ warnings.simplefilter("always")
 class Test(unittest.TestCase):
     """Tests for swath definitions."""
 
-    filename = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                            'test_files', 'ssmis_swath.npz'))
+    filename = os.path.join(TEST_FILES_PATH, 'ssmis_swath.npz')
     data = np.load(filename)['data']
     lons = data[:, 0].astype(np.float64)
     lats = data[:, 1].astype(np.float64)

@@ -1,6 +1,7 @@
 """Functions and tools for subsetting a geometry object."""
 from __future__ import annotations
 
+import logging
 import math
 from typing import TYPE_CHECKING, Any
 
@@ -10,12 +11,13 @@ import numpy as np
 # must be imported inside functions in the geometry modules if needed
 # to avoid circular dependencies
 from pyresample._caching import cache_to_json_if
-from pyresample.boundary import Boundary
-from pyresample.geometry import get_geostationary_bounding_box_in_lonlats, logger
+from pyresample.boundary import SphericalBoundary
 from pyresample.utils import check_slice_orientation
 
 if TYPE_CHECKING:
     from pyresample import AreaDefinition
+
+logger = logging.getLogger(__name__)
 
 
 @cache_to_json_if("cache_geometry_slices")
@@ -47,8 +49,8 @@ def get_area_slices(
 
     data_boundary = _get_area_boundary(src_area)
     area_boundary = _get_area_boundary(area_to_cover)
-    intersection = data_boundary.contour_poly.intersection(
-        area_boundary.contour_poly)
+    intersection = data_boundary.polygon.intersection(
+        area_boundary.polygon)
     if intersection is None:
         logger.debug('Cannot determine appropriate slicing. '
                      "Data and projection area do not overlap.")
@@ -95,12 +97,13 @@ def _get_slice_starts_stops(src_area, area_to_cover):
     return xstart, xstop, ystart, ystop
 
 
-def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
+def _get_area_boundary(area_to_cover: AreaDefinition) -> SphericalBoundary:
     try:
         if area_to_cover.is_geostationary:
-            return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
-        boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
-        return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
+            vertices_per_side = None
+        else:
+            vertices_per_side = max(max(*area_to_cover.shape) // 100 + 1, 3)
+        return area_to_cover.boundary(vertices_per_side=vertices_per_side)
     except ValueError as err:
         raise NotImplementedError("Can't determine boundary of area to cover") from err
 

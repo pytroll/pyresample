@@ -73,9 +73,9 @@ class Test(unittest.TestCase):
             lambda y, x: -180 + (360.0 / 1000) * x, (1000, 1000))
         lats = np.fromfunction(
             lambda y, x: -90 + (180.0 / 1000) * y, (1000, 1000))
-        boundary_lonlats = self.area_def.get_boundary_lonlats()
-        lons, lats, data = swath_from_lonlat_boundaries(boundary_lonlats[0],
-                                                        boundary_lonlats[1],
+        sides_lons, sides_lats = self.area_def.boundary().sides
+        lons, lats, data = swath_from_lonlat_boundaries(sides_lons,
+                                                        sides_lats,
                                                         lons, lats, data, 7000)
         cross_sum = data.sum()
         expected = 20685125.0
