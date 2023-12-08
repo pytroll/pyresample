@@ -140,7 +140,7 @@ class StackingGradientSearchResampler(BaseResampler):
             return False
         try:
             poly = get_polygon(self.prj, geo_def)
-        except Exception:
+        except (NotImplementedError, ValueError):  # out-of-earth disk area or any valid projected boundary coordinates
             poly = None
         return poly
 
