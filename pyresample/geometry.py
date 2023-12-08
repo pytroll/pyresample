@@ -330,7 +330,7 @@ class BaseDefinition:
             lon_sides, lat_sides = self._reverse_boundaries(lon_sides, lat_sides)
         return lon_sides, lat_sides
 
-    def _get_sides(self, coord_fun, vertices_per_side) -> tuple:
+    def _get_sides(self, coord_fun, vertices_per_side) -> tuple[list[np.ndarray], list[np.ndarray]:
         """Return the boundary sides."""
         top_slice, right_slice, bottom_slice, left_slice = self._get_bbox_slices(vertices_per_side)
         top_dim1, top_dim2 = coord_fun(data_slice=top_slice)
