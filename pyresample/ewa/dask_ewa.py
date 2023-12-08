@@ -186,8 +186,8 @@ class DaskEWAResampler(BaseResampler):
     def __init__(self, source_geo_def, target_geo_def):
         """Initialize in-memory cache."""
         super(DaskEWAResampler, self).__init__(source_geo_def, target_geo_def)
-        assert isinstance(source_geo_def, SwathDefinition), \
-            "EWA resampling can only operate on SwathDefinitions"
+        if not isinstance(source_geo_def, SwathDefinition):
+            raise ValueError("EWA resampling can only operate on SwathDefinitions")
         self.cache = {}
 
     def _new_chunks(self, in_arr, rows_per_scan):

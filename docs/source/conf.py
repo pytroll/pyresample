@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 """Sphinx documentation configuration."""
+from __future__ import annotations
 
 import os
 import sys
@@ -111,7 +112,7 @@ release = __version__
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = []
+exclude_trees: list[str] = []
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None

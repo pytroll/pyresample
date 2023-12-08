@@ -117,6 +117,8 @@ class BaseResampler:
             mask_area (bool): Mask geolocation data where data values are
                               invalid. This should be used when data values
                               may affect what neighbors are considered valid.
+            kwargs: Keyword arguments to pass to both the ``precompute`` and
+                ``compute`` stages of the resampler.
 
         Returns (xarray.DataArray): Data resampled to the target area
 
@@ -213,6 +215,8 @@ def resample_blocks(func, src_area, src_arrays, dst_area,
             elements if the resulting array of func is to have a different number of dimensions (k) than the input
             array.
         dtype: the dtype the resulting array is going to have. Has to be provided.
+        name: Name prefix of the dask tasks to be generated
+        fill_value: Desired value for any invalid values in the output array
         kwargs: any other keyword arguments that will be passed on to func.
 
 

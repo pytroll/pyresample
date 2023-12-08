@@ -217,8 +217,8 @@ class XArrayBilinearResampler(BilinearBase):
             for val in BIL_COORDINATES:
                 cache = da.array(fid[val])
                 setattr(self, val, cache)
-        except ValueError:
-            raise IOError
+        except ValueError as err:
+            raise IOError("Invalid information loaded from resampling cache") from err
 
 
 def _get_output_xy(target_geo_def):

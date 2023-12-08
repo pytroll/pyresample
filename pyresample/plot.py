@@ -22,7 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Utility functions for quick and easy display."""
 
-from __future__ import absolute_import
+from __future__ import annotations
 
 import numpy as np
 
@@ -92,9 +92,9 @@ def ellps2axis(ellps_name):
         ellps_axis = ellps[ellps_name.lower()]
         a = ellps_axis['a']
         b = ellps_axis['b']
-    except KeyError:
-        raise ValueError(('Could not determine semi-major and semi-minor axis '
-                          'of specified ellipsis %s') % ellps_name)
+    except KeyError as err:
+        raise ValueError(f"Could not determine semi-major and semi-minor "
+                         f"axis of specified ellipsis {ellps_name}") from err
     return a, b
 
 
@@ -118,26 +118,31 @@ def area_def2basemap(area_def, **kwargs):
                   "documentation for more details.", DeprecationWarning, stacklevel=2)
 
     from mpl_toolkits.basemap import Basemap
+
+    # Add projection specific basemap args to args passed to function
+    basemap_args = kwargs
+    basemap_args['rsphere'] = _sphere_radii(area_def)
+    _add_area_info_to_basemap_args(area_def, basemap_args)
+    return Basemap(**basemap_args)
+
+
+def _sphere_radii(area_def) -> float | tuple[float, float]:
     try:
-        a, b = ellps2axis(area_def.proj_dict['ellps'])
-        rsphere = (a, b)
+        return ellps2axis(area_def.proj_dict['ellps'])
     except KeyError:
         try:
             a = float(area_def.proj_dict['a'])
             try:
                 b = float(area_def.proj_dict['b'])
-                rsphere = (a, b)
+                return a, b
             except KeyError:
-                rsphere = a
+                return a
         except KeyError:
             # Default to WGS84 ellipsoid
-            a, b = ellps2axis('wgs84')
-            rsphere = (a, b)
+            return ellps2axis('wgs84')
 
-    # Add projection specific basemap args to args passed to function
-    basemap_args = kwargs
-    basemap_args['rsphere'] = rsphere
 
+def _add_area_info_to_basemap_args(area_def, basemap_args):
     if area_def.proj_dict['proj'] in ('ortho', 'geos', 'nsper'):
         llcrnrx, llcrnry, urcrnrx, urcrnry = area_def.area_extent
         basemap_args['llcrnrx'] = llcrnrx
@@ -163,8 +168,7 @@ def area_def2basemap(area_def, **kwargs):
             basemap_args[key] = float(area_def.proj_dict[key])
         except KeyError:
             pass
-
-    return Basemap(**basemap_args)
+    return basemap_args
 
 
 def _basemap_get_quicklook(area_def, data, vmin=None, vmax=None,

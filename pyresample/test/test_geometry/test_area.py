@@ -15,6 +15,7 @@
 """Test AreaDefinition objects."""
 import io
 import sys
+from glob import glob
 from unittest.mock import patch
 
 import dask.array as da
@@ -828,41 +829,31 @@ class TestAreaDefinition:
         assert (x__.data == x_expects).all()
         assert (y__.data == y_expects).all()
 
-    def test_get_slice_starts_stops(self, create_test_area):
+    @pytest.mark.parametrize(
+        "src_extent",
+        [
+            # Source and target have the same orientation
+            (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745),
+            # Source is flipped in X direction
+            (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745),
+            # Source is flipped in Y direction
+            (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293),
+            # Source is flipped in both X and Y directions
+            (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293),
+        ]
+    )
+    def test_get_slice_starts_stops(self, create_test_area, src_extent):
         """Check area slice end-points."""
+        from pyresample.future.geometry._subset import _get_slice_starts_stops
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
         proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'h': 35785831.0,
                      'lon_0': 0.0, 'proj': 'geos', 'units': 'm'}
         target_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-
-        # Expected result is the same for all cases
-        expected = (3, 3709, 3, 3709)
-
-        # Source and target have the same orientation
-        area_extent = (-5580248.477339745, -5571247.267842293, 5577248.074173927, 5580248.477339745)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
-        assert res == expected
-
-        # Source is flipped in X direction
-        area_extent = (5577248.074173927, -5571247.267842293, -5580248.477339745, 5580248.477339745)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
-        assert res == expected
-
-        # Source is flipped in Y direction
-        area_extent = (-5580248.477339745, 5580248.477339745, 5577248.074173927, -5571247.267842293)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
-        assert res == expected
-
-        # Source is flipped in both X and Y directions
-        area_extent = (5577248.074173927, 5580248.477339745, -5580248.477339745, -5571247.267842293)
-        source_area = create_test_area(proj_dict, x_size, y_size, area_extent)
-        res = source_area._get_slice_starts_stops(target_area)
-        assert res == expected
+        source_area = create_test_area(proj_dict, x_size, y_size, src_extent)
+        res = _get_slice_starts_stops(source_area, target_area)
+        assert res == (3, 3709, 3, 3709)
 
     def test_proj_str(self, create_test_area):
         """Test the 'proj_str' property of AreaDefinition."""
@@ -1197,27 +1188,19 @@ class TestAreaDefinitionMetadata:
 class TestMakeSliceDivisible:
     """Test the _make_slice_divisible."""
 
-    def test_make_slice_divisible(self):
+    @pytest.mark.parametrize(
+        ("sli", "factor"),
+        [
+            (slice(10, 21), 2),
+            (slice(10, 23), 3),
+            (slice(10, 23), 5),
+        ]
+    )
+    def test_make_slice_divisible(self, sli, factor):
         """Test that making area shape divisible by a given factor works."""
-        from pyresample.geometry import _make_slice_divisible
+        from pyresample.future.geometry._subset import _make_slice_divisible
 
         # Divisible by 2
-        sli = slice(10, 21)
-        factor = 2
-        assert (sli.stop - sli.start) % factor != 0
-        res = _make_slice_divisible(sli, 1000, factor=factor)
-        assert (res.stop - res.start) % factor == 0
-
-        # Divisible by 3
-        sli = slice(10, 23)
-        factor = 3
-        assert (sli.stop - sli.start) % factor != 0
-        res = _make_slice_divisible(sli, 1000, factor=factor)
-        assert (res.stop - res.start) % factor == 0
-
-        # Divisible by 5
-        sli = slice(10, 23)
-        factor = 5
         assert (sli.stop - sli.start) % factor != 0
         res = _make_slice_divisible(sli, 1000, factor=factor)
         assert (res.stop - res.start) % factor == 0
@@ -1614,6 +1597,60 @@ class TestAreaDefGetAreaSlices:
             area_extent=(-18000000.0, -9000000.0, 18000000.0, 9000000.0))
         with pytest.raises(NotImplementedError):
             area_def.get_area_slices(area_to_cover)
+
+    @pytest.mark.parametrize("cache_slices", [False, True])
+    def test_area_slices_caching(self, create_test_area, tmp_path, cache_slices):
+        """Check that area slices can be cached."""
+        src_area = create_test_area(dict(proj="utm", zone=33),
+                                    10980, 10980,
+                                    (499980.0, 6490200.0, 609780.0, 6600000.0))
+        crop_area = create_test_area({'proj': 'latlong'},
+                                     100, 100,
+                                     (15.9689, 58.5284, 16.4346, 58.6995))
+        cache_glob = str(tmp_path / "geometry_slices_v1" / "*.json")
+        with pyresample.config.set(cache_dir=tmp_path, cache_geometry_slices=cache_slices):
+            assert len(glob(cache_glob)) == 0
+            slice_x, slice_y = src_area.get_area_slices(crop_area)
+            assert len(glob(cache_glob)) == int(cache_slices)
+        assert slice_x == slice(5630, 8339)
+        assert slice_y == slice(9261, 10980)
+
+        if cache_slices:
+            from pyresample.future.geometry._subset import get_area_slices
+            with pyresample.config.set(cache_dir=tmp_path):
+                get_area_slices.cache_clear()
+            assert len(glob(cache_glob)) == 0
+
+    def test_area_slices_caching_no_swaths(self, tmp_path, create_test_area, create_test_swath):
+        """Test that swath inputs produce a warning when tried to use in caching."""
+        from pyresample.future.geometry._subset import get_area_slices
+        from pyresample.test.utils import create_test_latitude, create_test_longitude
+        area = create_test_area(dict(proj="utm", zone=33),
+                                10980, 10980,
+                                (499980.0, 6490200.0, 609780.0, 6600000.0))
+        lons = create_test_longitude(-95.0, -75.0, shape=(1000, 500))
+        lats = create_test_latitude(25.0, 35.0, shape=(1000, 500))
+        swath = create_test_swath(lons, lats)
+
+        with pyresample.config.set(cache_dir=tmp_path, cache_geometry_slices=True), pytest.raises(NotImplementedError):
+            with pytest.warns(UserWarning, match="unhashable"):
+                get_area_slices(swath, area, None)
+
+    @pytest.mark.parametrize("swath_as_src", [False, True])
+    def test_unsupported_slice_inputs(self, create_test_area, create_test_swath, swath_as_src):
+        """Test that swath inputs produce an error."""
+        from pyresample.future.geometry._subset import get_area_slices
+        from pyresample.test.utils import create_test_latitude, create_test_longitude
+        area = create_test_area(dict(proj="utm", zone=33),
+                                10980, 10980,
+                                (499980.0, 6490200.0, 609780.0, 6600000.0))
+        lons = create_test_longitude(-95.0, -75.0, shape=(1000, 500))
+        lats = create_test_latitude(25.0, 35.0, shape=(1000, 500))
+        swath = create_test_swath(lons, lats)
+
+        with pytest.raises(NotImplementedError):
+            args = (swath, area) if swath_as_src else (area, swath)
+            get_area_slices(*args, None)
 
 
 def test_future_to_legacy_conversion():

@@ -111,7 +111,7 @@ class TestSwathBboxLonLats:
         assert len(bbox_lons[2]) == 5
         assert len(bbox_lons[3]) == 5
         assert bbox_lons[0][-1] == bbox_lons[1][0]
-        
+
 
 def _add_nans_if_necessary(lons, lats, nan_pattern):
     if nan_pattern == "scan":

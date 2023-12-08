@@ -18,9 +18,11 @@
 """Test AreaDefinition boundary related methods."""
 
 from unittest.mock import MagicMock
+
 import numpy as np
 import pytest
 from pyproj import CRS
+
 from pyresample.future.geometry.area import (
     get_full_geostationary_bounding_box_in_proj_coords,
     get_geostationary_angle_extent,
@@ -293,8 +295,6 @@ def truncated_geos_area_in_space(create_test_area):
         shape[1],
         area_extent,
     )
-
-
 
 
 class TestBoundary:
