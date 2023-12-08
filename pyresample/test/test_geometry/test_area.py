@@ -30,6 +30,11 @@ from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import ignore_pyproj_proj_warnings
 from pyresample.future.geometry.base import get_array_hashable
 from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
+from pyresample.test.test_geometry.areas import (  # noqa
+    geos_src_area,
+    laea_area,
+    stere_area,
+)
 from pyresample.test.utils import assert_future_geometry
 
 
