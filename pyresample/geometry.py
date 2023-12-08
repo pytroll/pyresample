@@ -422,16 +422,6 @@ class BaseDefinition:
         blats = np.ma.concatenate(lats)
         return blons, blats
 
-    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
-                                                frequency: Optional[int] = None):
-        """Return the bounding box in projection coordinates."""
-        if frequency is not None:
-            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
-                          PendingDeprecationWarning, stacklevel=2)
-        vertices_per_side = vertices_per_side or frequency
-        x, y = self._get_sides(self.get_proj_coords, vertices_per_side=vertices_per_side)
-        return np.hstack(x), np.hstack(y)
-
     def boundary(self, vertices_per_side=None, force_clockwise=False, frequency=None):
         """Retrieve the AreaBoundary object.
 
@@ -1652,6 +1642,16 @@ class AreaDefinition(_ProjectionDefinition):
             np.append(y[side02_step * 2 + 1], y[0])
         ]
         return sides_x, sides_y
+
+    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
+                                                frequency: Optional[int] = None):
+        """Return the bounding box in projection coordinates."""
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        vertices_per_side = vertices_per_side or frequency
+        x, y = self._get_sides(self.get_proj_coords, vertices_per_side=vertices_per_side)
+        return np.hstack(x), np.hstack(y)
 
     @property
     def area_extent(self):
