@@ -2861,7 +2861,7 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     try:
         x, y = intersection.boundary.xy
     except NotImplementedError:
-        return [], []
+        return np.array([]), np.array([])
     return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
 
