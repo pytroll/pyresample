@@ -330,7 +330,7 @@ class BaseDefinition:
             lon_sides, lat_sides = self._reverse_boundaries(lon_sides, lat_sides)
         return lon_sides, lat_sides
 
-    def _get_sides(self, coord_fun, vertices_per_side) -> tuple[list[np.ndarray], list[np.ndarray]:
+    def _get_sides(self, coord_fun, vertices_per_side) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """Return the boundary sides."""
         top_slice, right_slice, bottom_slice, left_slice = self._get_bbox_slices(vertices_per_side)
         top_dim1, top_dim2 = coord_fun(data_slice=top_slice)
@@ -343,8 +343,7 @@ class BaseDefinition:
                                        (left_dim1.squeeze(), left_dim2.squeeze())])
         if hasattr(sides_dim1[0], 'compute') and da is not None:
             sides_dim1, sides_dim2 = da.compute(sides_dim1, sides_dim2)
-        sides_dim1, sides_dim2 = self._filter_sides_nans(sides_dim1, sides_dim2)
-        return sides_dim1, sides_dim2
+        return self._filter_sides_nans(sides_dim1, sides_dim2)
 
     def _filter_sides_nans(
             self,
