@@ -17,4 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """The Boundary classes."""
 
-from pyresample.boundary.legacy_boundary import AreaBoundary, AreaDefBoundary, SimpleBoundary  # noqa
+from pyresample.boundary.legacy_boundary import (  # noqa
+    AreaBoundary,
+    AreaDefBoundary,
+    SimpleBoundary,
+)
