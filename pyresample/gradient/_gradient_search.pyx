@@ -223,7 +223,7 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
                                 DTYPE_t [:, :] dst_x,
                                 DTYPE_t [:, :] dst_y):
     """Gradient search, simple case variant, returning float indices.
-    
+
     This is appropriate for monotonous gradients only, i.e. not modis or viirs in satellite projection.
     """
 

@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Registry of resampler classes."""
-
 from __future__ import annotations
 
 import functools
@@ -106,7 +105,7 @@ def _load_entry_point_resamplers():
 
 
 @with_loaded_registry
-def list_resamplers() -> list[str, ...]:
+def list_resamplers() -> list[str]:
     """Get sorted list of registered resamplers."""
     resampler_names = sorted(RESAMPLER_REGISTRY.keys())
     return resampler_names
@@ -116,7 +115,7 @@ def list_resamplers() -> list[str, ...]:
 def create_resampler(
         src_geom,
         dst_geom,
-        resampler: str = None,
+        resampler: str | None = None,
         cache=None,
         **kwargs
 ) -> Resampler:

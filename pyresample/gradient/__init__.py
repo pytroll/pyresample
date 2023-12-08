@@ -116,9 +116,9 @@ class StackingGradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
                 dst_crs = self.target_geo_def.crs
-            except AttributeError:
+            except AttributeError as err:
                 if self.use_input_coords is False:
-                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
+                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.') from err
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
                 dst_crs = pyproj.CRS.from_string("+proj=longlat")
@@ -597,13 +597,13 @@ def _get_coordinates_in_same_projection(source_area, target_area):
     try:
         src_x, src_y = source_area.get_proj_coords()
         transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
-    except AttributeError:
-        raise NotImplementedError("Cannot resample from Swath for now.")
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample from Swath for now.") from err
 
     try:
         dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
-    except AttributeError:
-        raise NotImplementedError("Cannot resample to Swath for now.")
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample to Swath for now.") from err
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
     return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)

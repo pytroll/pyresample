@@ -38,7 +38,7 @@ class Projection(ccrs.Projection):
 
     def __init__(self,
                  crs: pyproj.CRS,
-                 bounds: list[float, float, float, float] = None,
+                 bounds: tuple[float, float, float, float] | None = None,
                  transform_bounds: bool = False):
         """Initialize CRS instance and compute bounds if possible."""
         # NOTE: Skip the base cartopy Projection class __init__

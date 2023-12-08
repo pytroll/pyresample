@@ -25,9 +25,10 @@ from collections import OrderedDict
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 import numpy as np
+import numpy.typing as npt
 import pyproj
 import yaml
 from pyproj import Geod, Proj
@@ -36,8 +37,8 @@ from pyproj.aoi import AreaOfUse
 from pyresample import CHUNK_SIZE
 from pyresample._spatial_mp import Cartesian, Cartesian_MP, Proj_MP
 from pyresample.area_config import create_area_def
-from pyresample.boundary import Boundary, SimpleBoundary
-from pyresample.utils import check_slice_orientation, load_cf_area
+from pyresample.boundary import SimpleBoundary
+from pyresample.utils import load_cf_area
 from pyresample.utils.proj4 import (
     get_geodetic_crs_with_no_datum_shift,
     get_geostationary_height,
@@ -60,7 +61,10 @@ from pyproj import CRS
 from pyproj.enums import TransformDirection
 
 logger = getLogger(__name__)
-HashType = hashlib._hashlib.HASH
+
+if TYPE_CHECKING:
+    # defined in typeshed to hide private C-level type
+    from hashlib import _Hash
 
 
 class DimensionError(ValueError):
@@ -120,10 +124,10 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update the hash."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(get_array_hashable(self.lons))
         existing_hash.update(get_array_hashable(self.lats))
         try:
@@ -139,24 +143,8 @@ class BaseDefinition:
             return True
         if not isinstance(other, BaseDefinition):
             return False
-        if other.lons is None or other.lats is None:
-            other_lons, other_lats = other.get_lonlats()
-        else:
-            other_lons = other.lons
-            other_lats = other.lats
-
-        if self.lons is None or self.lats is None:
-            self_lons, self_lats = self.get_lonlats()
-        else:
-            self_lons = self.lons
-            self_lats = self.lats
-
-        if isinstance(self_lons, DataArray) and np.ndarray is not DataArray:
-            self_lons = self_lons.data
-            self_lats = self_lats.data
-        if isinstance(other_lons, DataArray) and np.ndarray is not DataArray:
-            other_lons = other_lons.data
-            other_lats = other_lats.data
+        self_lons, self_lats = self._extract_lonlat_subarrays(self)
+        other_lons, other_lats = self._extract_lonlat_subarrays(other)
         if self_lons is other_lons and self_lats is other_lats:
             return True
 
@@ -176,6 +164,21 @@ class BaseDefinition:
             return lats_close
         except ValueError:
             return False
+
+    @staticmethod
+    def _extract_lonlat_subarrays(
+            geom_obj: BaseDefinition
+    ) -> tuple[npt.ArrayLike | da.Array, npt.ArrayLike | da.Array]:
+        if geom_obj.lons is None or geom_obj.lats is None:
+            lons, lats = geom_obj.get_lonlats()
+        else:
+            lons = geom_obj.lons
+            lats = geom_obj.lats
+
+        if isinstance(lons, DataArray) and np.ndarray is not DataArray:
+            lons = lons.data
+            lats = lats.data
+        return lons, lats
 
     def __ne__(self, other):
         """Test for approximate equality."""
@@ -345,8 +348,8 @@ class BaseDefinition:
 
     def _filter_sides_nans(
             self,
-            dim1_sides: list[np.ndarray],
-            dim2_sides: list[np.ndarray],
+            dim1_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+            dim2_sides: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
     ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """Remove nan and inf values present in each side."""
         new_dim1_sides = []
@@ -1159,7 +1162,7 @@ class DynamicAreaDefinition(object):
                            corners[1] - y_resolution / 2,
                            corners[2] + x_resolution / 2,
                            corners[3] + y_resolution / 2)
-        else:
+        elif resolution:
             x_resolution, y_resolution = resolution
             half_x = x_resolution / 2
             half_y = y_resolution / 2
@@ -1653,6 +1656,16 @@ class AreaDefinition(_ProjectionDefinition):
         x, y = self._get_sides(self.get_proj_coords, vertices_per_side=vertices_per_side)
         return np.hstack(x), np.hstack(y)
 
+    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
+                                                frequency: Optional[int] = None):
+        """Return the bounding box in projection coordinates."""
+        if frequency is not None:
+            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
+                          PendingDeprecationWarning, stacklevel=2)
+        vertices_per_side = vertices_per_side or frequency
+        x, y = self._get_bbox_elements(self.get_proj_coords, vertices_per_side)
+        return np.hstack(x), np.hstack(y)
+
     @property
     def area_extent(self):
         """Tuple of this area's extent (xmin, ymin, xmax, ymax)."""
@@ -2079,10 +2092,10 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for equality."""
         return not self.__eq__(other)
 
-    def update_hash(self, existing_hash: Optional[HashType] = None) -> HashType:
+    def update_hash(self, existing_hash: Optional[_Hash] = None) -> _Hash:
         """Update a hash, or return a new one if needed."""
         if existing_hash is None:
-            existing_hash = hashlib.sha1()
+            existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(self.crs_wkt.encode('utf-8'))
         existing_hash.update(np.array(self.shape))
         existing_hash.update(np.array(self.area_extent))
@@ -2600,70 +2613,10 @@ class AreaDefinition(_ProjectionDefinition):
                       "instead.", DeprecationWarning, stacklevel=2)
         return proj4_dict_to_str(self.proj_dict)
 
-    def _get_slice_starts_stops(self, area_to_cover):
-        """Get x and y start and stop points for slicing."""
-        llx, lly, urx, ury = area_to_cover.area_extent
-        x, y = self.get_array_coordinates_from_projection_coordinates([llx, urx], [lly, ury])
-
-        # we use `round` because we want the *exterior* of the pixels to contain the area_to_cover's area extent.
-        if (self.area_extent[0] > self.area_extent[2]) ^ (llx > urx):
-            xstart = max(0, round(x[1]))
-            xstop = min(self.width, round(x[0]) + 1)
-        else:
-            xstart = max(0, round(x[0]))
-            xstop = min(self.width, round(x[1]) + 1)
-        if (self.area_extent[1] > self.area_extent[3]) ^ (lly > ury):
-            ystart = max(0, round(y[0]))
-            ystop = min(self.height, round(y[1]) + 1)
-        else:
-            ystart = max(0, round(y[1]))
-            ystop = min(self.height, round(y[0]) + 1)
-
-        return xstart, xstop, ystart, ystop
-
     def get_area_slices(self, area_to_cover, shape_divisible_by=None):
         """Compute the slice to read based on an `area_to_cover`."""
-        if not isinstance(area_to_cover, AreaDefinition):
-            raise NotImplementedError('Only AreaDefinitions can be used')
-
-        # Intersection only required for two different projections
-        proj_def_to_cover = area_to_cover.crs
-        proj_def = self.crs
-        if proj_def_to_cover == proj_def:
-            logger.debug('Projections for data and slice areas are'
-                         ' identical: %s',
-                         proj_def_to_cover)
-            # Get slice parameters
-            xstart, xstop, ystart, ystop = self._get_slice_starts_stops(area_to_cover)
-
-            x_slice = check_slice_orientation(slice(xstart, xstop))
-            y_slice = check_slice_orientation(slice(ystart, ystop))
-            x_slice = _ensure_integer_slice(x_slice)
-            y_slice = _ensure_integer_slice(y_slice)
-            return x_slice, y_slice
-
-        data_boundary = _get_area_boundary(self)
-        area_boundary = _get_area_boundary(area_to_cover)
-        intersection = data_boundary.contour_poly.intersection(
-            area_boundary.contour_poly)
-        if intersection is None:
-            logger.debug('Cannot determine appropriate slicing. '
-                         "Data and projection area do not overlap.")
-            raise NotImplementedError
-        x, y = self.get_array_indices_from_lonlat(
-            np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
-        x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
-        y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
-        x_slice = _ensure_integer_slice(x_slice)
-        y_slice = _ensure_integer_slice(y_slice)
-        if shape_divisible_by is not None:
-            x_slice = _make_slice_divisible(x_slice, self.width,
-                                            factor=shape_divisible_by)
-            y_slice = _make_slice_divisible(y_slice, self.height,
-                                            factor=shape_divisible_by)
-
-        return (check_slice_orientation(x_slice),
-                check_slice_orientation(y_slice))
+        from .future.geometry._subset import get_area_slices
+        return get_area_slices(self, area_to_cover, shape_divisible_by)
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
@@ -2789,42 +2742,6 @@ class AreaDefinition(_ProjectionDefinition):
         return sides_x, sides_y
 
 
-def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
-    try:
-        if area_to_cover.is_geostationary:
-            return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
-        boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
-        return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
-    except ValueError:
-        raise NotImplementedError("Can't determine boundary of area to cover")
-
-
-def _make_slice_divisible(sli, max_size, factor=2):
-    """Make the given slice even in size."""
-    rem = (sli.stop - sli.start) % factor
-    if rem != 0:
-        adj = factor - rem
-        if sli.stop + 1 + rem < max_size:
-            sli = slice(sli.start, sli.stop + adj)
-        elif sli.start > 0:
-            sli = slice(sli.start - adj, sli.stop)
-        else:
-            sli = slice(sli.start, sli.stop - rem)
-
-    return sli
-
-
-def _ensure_integer_slice(sli):
-    start = sli.start
-    stop = sli.stop
-    step = sli.step
-    return slice(
-        math.floor(start) if start is not None else None,
-        math.ceil(stop) if stop is not None else None,
-        math.floor(step) if step is not None else None
-    )
-
-
 def get_geostationary_angle_extent(geos_area):
     """Get the max earth (vs space) viewing angles in x and y."""
     # get some projection parameters
@@ -2846,9 +2763,9 @@ def get_geostationary_angle_extent(geos_area):
 def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area`.
 
-    Parameters
-    ----------
-    nb_points : Number of points on the polygon.
+    Args:
+      geos_area: Geostationary area definition to get the bounding box for.
+      nb_points: Number of points on the polygon.
 
     """
     x, y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2869,6 +2786,7 @@ def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the valid boundary geos projection coordinates of the full disk.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x_max_angle, y_max_angle = get_geostationary_angle_extent(geos_area)
@@ -2888,6 +2806,7 @@ def get_geostationary_bounding_box_in_lonlats(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
     """
     x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
@@ -2899,7 +2818,9 @@ def get_geostationary_bounding_box(geos_area, nb_points=50):
     """Get the bbox in lon/lats of the valid pixels inside `geos_area`.
 
     Args:
+      geos_area: Geostationary area definition to get the bounding box for.
       nb_points: Number of points on the polygon
+
     """
     warnings.warn("'get_geostationary_bounding_box' is deprecated. Please use "
                   "'get_geostationary_bounding_box_in_lonlats' instead.",
