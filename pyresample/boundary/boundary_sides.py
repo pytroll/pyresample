@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class BoundarySides:
     """A class to represent the sides of an area boundary.
+
     The sides are stored as a tuple of 4 numpy arrays, each representing the
     coordinate (geographic or projected) of the vertices of the boundary side.
     The sides must be stored in the order (top, right, left, bottom),
@@ -69,6 +70,7 @@ class BoundarySides:
     @property
     def vertices(self):
         """Return the vertices of the concatenated sides.
+
         Note that the last element of each side is discarded to avoid duplicates.
         """
         return np.concatenate([side[:-1] for side in self._sides])
