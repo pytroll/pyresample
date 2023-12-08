@@ -1656,16 +1656,6 @@ class AreaDefinition(_ProjectionDefinition):
         x, y = self._get_sides(self.get_proj_coords, vertices_per_side=vertices_per_side)
         return np.hstack(x), np.hstack(y)
 
-    def get_edge_bbox_in_projection_coordinates(self, vertices_per_side: Optional[int] = None,
-                                                frequency: Optional[int] = None):
-        """Return the bounding box in projection coordinates."""
-        if frequency is not None:
-            warnings.warn("The `frequency` argument is pending deprecation, use `vertices_per_side` instead",
-                          PendingDeprecationWarning, stacklevel=2)
-        vertices_per_side = vertices_per_side or frequency
-        x, y = self._get_bbox_elements(self.get_proj_coords, vertices_per_side)
-        return np.hstack(x), np.hstack(y)
-
     @property
     def area_extent(self):
         """Tuple of this area's extent (xmin, ymin, xmax, ymax)."""
@@ -2726,6 +2716,7 @@ class AreaDefinition(_ProjectionDefinition):
                 If the area object is an AreaDefinition with any corner out of the Earth disk
                 (i.e. full disc geostationary area, Robinson projection, polar projections, ...)
                 by default only 50 points are selected.
+
         Returns:
             The output structure is a tuple of two lists of four elements each.
             The first list contains the projection x coordinates.
