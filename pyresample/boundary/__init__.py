@@ -20,5 +20,6 @@
 from pyresample.boundary.legacy_boundary import (  # noqa
     AreaBoundary,
     AreaDefBoundary,
+    Boundary,
     SimpleBoundary,
 )
