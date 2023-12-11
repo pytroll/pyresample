@@ -20,7 +20,6 @@
 from unittest.mock import MagicMock
 
 import numpy as np
-import pytest
 from pyproj import CRS
 
 from pyresample.future.geometry.area import (
