@@ -19,9 +19,13 @@
 
 import os
 
-from pyresample._config import config  # noqa, isort: skip <- import first so everything below has access
+# isort: off
+# avoid circular imports as config is likely imported by below modules
+from pyresample._config import config  # noqa
 
-CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))  # isort: skip <- imported by below modules
+# imported by below modules
+CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
+# isort: on
 
 # Backwards compatibility
 from pyresample import geometry  # noqa

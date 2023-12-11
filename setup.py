@@ -24,7 +24,7 @@ from setuptools import Extension, find_packages, setup
 import versioneer
 
 requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
-                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.21.0',
                 "shapely", "donfig", "platformdirs",
                 ]
 

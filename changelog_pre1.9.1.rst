@@ -1283,6 +1283,3 @@ Other
 - No commit message. [StorPipfugl]
 - Moved to Google Code under GPLv3 license. [StorPipfugl]
 - moved to Google Code. [StorPipfugl]
-
-
-

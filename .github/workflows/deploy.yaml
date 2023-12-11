@@ -62,7 +62,7 @@ jobs:
           platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.1
+        uses: pypa/cibuildwheel@v2.16.2
         env:
           CIBW_SKIP: "cp36-* cp37-* cp38-* pp* *i686 *-musllinux* cp312-*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
@@ -93,7 +93,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.10
+        uses: pypa/gh-action-pypi-publish@v1.8.11
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -115,7 +115,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.10
+        uses: pypa/gh-action-pypi-publish@v1.8.11
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}

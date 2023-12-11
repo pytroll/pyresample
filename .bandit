@@ -1,0 +1,3 @@
+[bandit]
+skips: B506
+exclude: pyresample/test,pyresample/version.py,versioneer.py
