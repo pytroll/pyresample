@@ -29,26 +29,6 @@ from pyresample.future.geometry.area import (
     get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
 )
-from pyresample.test.test_geometry.areas import (  # noqa
-    geos_conus_area,
-    geos_fd_area,
-    geos_half_out_disk_area,
-    geos_mesoscale_area,
-    geos_out_disk_area,
-    geos_src_area,
-    global_lonlat_antimeridian_centered_area,
-    global_platee_caree_area,
-    global_platee_caree_minimum_area,
-    laea_area,
-    local_lonlat_antimeridian_centered_area,
-    local_meter_area,
-    local_platee_caree_area,
-    north_pole_area,
-    south_pole_area,
-    stere_area,
-    truncated_geos_area,
-    truncated_geos_area_in_space,
-)
 
 
 class TestBoundary:
