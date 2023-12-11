@@ -21,6 +21,7 @@
 This mostly takes from astropy's method for checking collected_warnings during
 tests.
 """
+import os
 import sys
 import types
 import warnings
@@ -37,6 +38,9 @@ _deprecations_as_exceptions = False
 _include_astropy_deprecations = False
 AstropyDeprecationWarning = None
 AstropyPendingDeprecationWarning = None
+
+
+TEST_FILES_PATH = os.path.join(os.path.dirname(__file__), 'test_files')
 
 
 def treat_deprecations_as_exceptions():

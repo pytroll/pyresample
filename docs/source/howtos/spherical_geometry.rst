@@ -73,34 +73,34 @@ satellite passes. See trollschedule_ how to generate a list of satellite overpas
 
  >>> from pyresample.spherical_utils import GetNonOverlapUnions
  >>> from pyresample.boundary import AreaDefBoundary
-   
- >>> area_boundary = AreaDefBoundary(area_def, frequency=100) # doctest: +SKIP 
- >>> area_boundary = area_boundary.contour_poly # doctest: +SKIP 
+
+ >>> area_boundary = AreaDefBoundary(area_def, frequency=100) # doctest: +SKIP
+ >>> area_boundary = area_boundary.contour_poly # doctest: +SKIP
 
  >>> list_of_polygons = []
- >>> for mypass in passes: # doctest: +SKIP 
- >>>     list_of_polygons.append(mypass.boundary.contour_poly) # doctest: +SKIP 
+ >>> for mypass in passes: # doctest: +SKIP
+ >>>     list_of_polygons.append(mypass.boundary.contour_poly) # doctest: +SKIP
 
  >>> non_overlaps = GetNonOverlapUnions(list_of_polygons) # doctest: +SKIP
- >>> non_overlaps.merge() # doctest: +SKIP 
+ >>> non_overlaps.merge() # doctest: +SKIP
 
- >>> polygons = non_overlaps.get_polygons() # doctest: +SKIP 
+ >>> polygons = non_overlaps.get_polygons() # doctest: +SKIP
 
  >>> coverage = 0
- >>> for polygon in polygons: # doctest: +SKIP 
+ >>> for polygon in polygons: # doctest: +SKIP
  >>>     isect = polygon.intersection(area_boundary) # doctest: +SKIP
- >>>     if isect: # doctest: +SKIP 
- >>>         coverage = coverage + isect.area() # doctest: +SKIP 
+ >>>     if isect: # doctest: +SKIP
+ >>>         coverage = coverage + isect.area() # doctest: +SKIP
 
- >>> area_cov = coverage / area_boundary.area() # doctest: +SKIP 
+ >>> area_cov = coverage / area_boundary.area() # doctest: +SKIP
  >>> print("Area coverage = {0}".format(area_cov)) # doctest: +SKIP
  0.889317815
 
 .. image:: /_static/images/2_passes_between_202001051137_and_202001051156.png
-   
+
 In this case the relative area covered by the two passes (blue outlines) over
 the area of interest (red outlines) is 89%.
 
-           
+
 .. _Cartopy: http://scitools.org.uk/cartopy/
 .. _trollschedule: https://github.com/pytroll/pytroll-schedule.git

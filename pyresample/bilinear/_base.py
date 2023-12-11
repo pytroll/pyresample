@@ -51,8 +51,7 @@ class BilinearBase(object):
                  neighbours=32,
                  epsilon=0,
                  reduce_data=True):
-        """
-        Initialize resampler.
+        """Initialize resampler.
 
         Parameters
         ----------

@@ -53,11 +53,13 @@ class TestOGradientResampler:
                                        102, 102,
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
+        self.dst_swath = SwathDefinition(*self.dst_area.get_lonlats())
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=".*which is still EXPERIMENTAL.*", category=UserWarning)
             self.resampler = StackingGradientSearchResampler(self.src_area, self.dst_area)
             self.swath_resampler = StackingGradientSearchResampler(self.src_swath, self.dst_area)
+            self.area_to_swath_resampler = StackingGradientSearchResampler(self.src_area, self.dst_swath)
 
     def test_get_projection_coordinates_area_to_area(self):
         """Check that the coordinates are initialized, for area -> area."""
@@ -130,12 +132,12 @@ class TestOGradientResampler:
         chunks = (10, 10)
         self.swath_resampler._get_projection_coordinates(chunks)
         self.swath_resampler._get_gradients()
-        # Swath area defs can't be sliced, so False is returned
+        # SwathDefinition can't be sliced, so False is returned
         poly = self.swath_resampler._get_src_poly(0, 40, 0, 40)
         assert poly is False
 
     @mock.patch('pyresample.gradient.get_polygon')
-    def test_get_dst_poly(self, get_polygon):
+    def test_get_dst_poly_area(self, get_polygon):
         """Test defining destination chunk polygon."""
         chunks = (10, 10)
         self.resampler._get_projection_coordinates(chunks)
@@ -148,10 +150,14 @@ class TestOGradientResampler:
         self.resampler._get_dst_poly('idx1', 0, 10, 0, 10)
         assert get_polygon.call_count == 1
 
-        # Swath defs raise AttributeError, and False is returned
-        get_polygon.side_effect = AttributeError
-        self.resampler._get_dst_poly('idx2', 0, 10, 0, 10)
-        assert self.resampler.dst_polys['idx2'] is False
+    def test_get_dst_poly_swath(self):
+        """Test defining dst chunk polygon for SwathDefinition."""
+        chunks = (10, 10)
+        self.area_to_swath_resampler._get_projection_coordinates(chunks)
+        self.area_to_swath_resampler._get_gradients()
+        # SwathDefinition can't be sliced, so False is returned
+        self.area_to_swath_resampler._get_dst_poly('idx2', 0, 10, 0, 10)
+        assert self.area_to_swath_resampler.dst_polys['idx2'] is False
 
     def test_filter_data(self):
         """Test filtering chunks that do not overlap."""

@@ -48,6 +48,6 @@ try:
     )
 except ImportError:
     warnings.warn("XArray, dask, and/or zarr not found, XArrayBilinearResampler won't be available.", stacklevel=2)
-    XArrayBilinearResampler = None
-    CACHE_INDICES = None
-    XArrayResamplerBilinear = None
+    XArrayBilinearResampler = None  # type: ignore
+    CACHE_INDICES = None  # type: ignore
+    XArrayResamplerBilinear = None  # type: ignore
