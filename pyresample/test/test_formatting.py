@@ -48,7 +48,7 @@ def test_plot_area_def_w_area_def_show(stere_area):  # noqa F811
 
     with mock.patch('matplotlib.pyplot.show') as mock_show_plot:
         plot_area_def(area)
-        mock_show_plot.called_once()
+        mock_show_plot.assert_called_once()
 
 
 def test_plot_area_def_w_swath_def(create_test_swath):
