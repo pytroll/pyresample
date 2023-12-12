@@ -24,7 +24,7 @@ import math
 import os
 import pathlib
 import warnings
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, List, Union
 
 import numpy as np
 import yaml
@@ -887,7 +887,7 @@ def generate_area_def_rst_list(area_file: str) -> str:
     Returns:
         rst list formatted string.
     """
-    area_list = []
+    area_list: List[str] = []
 
     template = ("{area_name}\n"
                 "{n:^>{header_title_length}}\n\n"

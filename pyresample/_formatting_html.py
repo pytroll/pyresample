@@ -62,7 +62,7 @@ def _icon(icon_name):
     )
 
 
-def plot_area_def(area: Union['AreaDefinition', 'SwathDefinition'], # noqa F821
+def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
                   feature_res: Optional[str] = "110m",
                   fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
     """Plot area.
@@ -133,6 +133,7 @@ def plot_area_def(area: Union['AreaDefinition', 'SwathDefinition'], # noqa F821
 
     else:
         plt.show()
+        return None
 
 
 def collapsible_section(name: str, inline_details: Optional[str] = "", details: Optional[str] = "",
@@ -145,7 +146,7 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
       inline_details : Information to show when section is collapsed. Default nothing.
       details : Details to show when section is expanded.
       enabled : Is collapsing enabled. Default True.
-      collapsed  Is the section collapsed on first show. Default False.
+      collapsed:  Is the section collapsed on first show. Default False.
       icon : Icon to use for collapsible section.
 
     Returns:
@@ -155,8 +156,8 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
     # "unique" id to expand/collapse the section
     data_id = "section-" + str(uuid.uuid4())
 
-    enabled = "" if enabled else "disabled"
-    collapsed = "" if collapsed else "checked"
+    collapse_enabled = "" if enabled else "disabled"
+    is_collapsed = "" if collapsed else "checked"
     tip = " title='Expand/collapse section'" if enabled else ""
 
     if icon is None:
@@ -164,7 +165,7 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
 
     return ("<div class='pyresample-area-section-item'>"
             f"<input id='{data_id}' class='pyresample-area-section-in' "
-            f"type='checkbox' {enabled} {collapsed}>"
+            f"type='checkbox' {collapse_enabled} {is_collapsed}>"
             f"<label for='{data_id}' {tip}>{icon} {name}</label>"
             f"<div class='pyresample-area-section-preview'>{inline_details}</div>"
             f"<div class='pyresample-area-section-details'>{details}</div>"
@@ -172,7 +173,7 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
             )
 
 
-def map_section(area: Union['AreaDefinition', 'SwathDefinition']) -> str: # noqa F821
+def map_section(area: Union['geom.AreaDefinition', 'geom.SwathDefinition']) -> str: # noqa F821
     """Create html for map section.
 
     Args:
@@ -194,7 +195,7 @@ def map_section(area: Union['AreaDefinition', 'SwathDefinition']) -> str: # noqa
     return f"{coll}"
 
 
-def proj_area_attrs_section(area: 'AreaDefinition') -> str: # noqa F821
+def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
     """Create html for attribute section based on an area Area.
 
     Args:
@@ -228,7 +229,7 @@ def proj_area_attrs_section(area: 'AreaDefinition') -> str: # noqa F821
     return f"{coll}"
 
 
-def swath_area_attrs_section(area: 'SwathDefinition') -> str: # noqa F821
+def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
     """Create html for attribute section based on SwathDefinition.
 
     Args:
@@ -311,7 +312,7 @@ def swath_area_attrs_section(area: 'SwathDefinition') -> str: # noqa F821
     return f"{coll}"
 
 
-def area_repr(area: Union['AreaDefinition', 'SwathDefinition'], include_header: Optional[bool] = True, # noqa F821
+def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], include_header: Optional[bool] = True, # noqa F821
               include_static_files: Optional[bool] = True):
     """Return html repr of an AreaDefinition.
 
