@@ -37,7 +37,7 @@ class BoundarySides:
     """
     __slots__ = ['_sides']
 
-    def __init__(self, sides):
+    def __init__(self, sides: tuple[ArrayLike, ArrayLike, ArrayLike, ArrayLike]):
         """Initialize the BoundarySides object."""
         if len(sides) != 4 or not all(isinstance(side, np.ndarray) and side.ndim == 1 for side in sides):
             raise ValueError("Sides must be a list of four numpy arrays.")
