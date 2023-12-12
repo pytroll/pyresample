@@ -6,7 +6,7 @@
 ```
 #### Problem description
 
-[this should also explain **why** the current behaviour is a problem and why the 
+[this should also explain **why** the current behaviour is a problem and why the
 expected output is a better solution.]
 
 #### Expected Output

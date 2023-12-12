@@ -69,18 +69,18 @@ file that defines the :code:`ease_sh` area, or see
    >>> result = resample_nearest(swath_def, tb37v, area_def,
    ...                           radius_of_influence=20000, fill_value=None)
    >>> save_quicklook('tb37v_quick.png', area_def, result, label='Tb 37v (K)')
- 
+
 Assuming **lons**, **lats** and **tb37v** are initialized with real data (as in
 the above Satpy_ example) the result might look something like this:
 
   .. image:: /_static/images/tb37v_quick.png
-  
+
 The data passed to the functions is a 2D array matching the AreaDefinition.
 
 .. include:: plot_projections.rst
-.. include:: plot_cartopy_basemap.rst             
-             
-             
+.. include:: plot_cartopy_basemap.rst
+
+
 .. _Satpy: http://www.github.com/pytroll/satpy
 .. _zenodo: https://doi.org/10.5281/zenodo.3553696
 .. _`Cartopy gallery example`: http://scitools.org.uk/cartopy/docs/v0.16/gallery/geostationary.html

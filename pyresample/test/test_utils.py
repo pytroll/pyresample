@@ -24,11 +24,13 @@ from timeit import timeit
 from unittest import mock
 
 import numpy as np
+import pyproj
 import pytest
 from pyproj import CRS
 
 import pyresample
 from pyresample.test.utils import (
+    TEST_FILES_PATH,
     assert_future_geometry,
     create_test_latitude,
     create_test_longitude,
@@ -232,11 +234,12 @@ class TestMisc(unittest.TestCase):
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
         self.assertDictEqual(proj_dict, proj_dict2)
 
+    @pytest.mark.skipif(pyproj.__proj_version__ == "9.3.0", reason="Bug in PROJ causes inequality in EPSG comparison")
     def test_def2yaml_converter(self):
         import tempfile
 
         from pyresample import convert_def_to_yaml, parse_area_file
-        def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
+        def_file = os.path.join(TEST_FILES_PATH, 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
         os.close(filehandle)
         try:
@@ -458,12 +461,12 @@ class TestLoadCFAreaPublic:
     """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
 
     def test_load_cf_no_exist(self):
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
+        cf_file = os.path.join(TEST_FILES_PATH, 'does_not_exist.nc')
         with pytest.raises(FileNotFoundError):
             load_cf_area(cf_file)
 
     def test_load_cf_from_not_nc(self):
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
+        cf_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         with pytest.raises((ValueError, OSError)):
             load_cf_area(cf_file)
 

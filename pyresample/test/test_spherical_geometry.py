@@ -44,24 +44,23 @@ class TestOverlap(unittest.TestCase):
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(0, 0)
-
-        assert (point in area)
+        assert point in area
 
         point = Coordinate(0, 12)
-        assert not (point in area)
+        assert point not in area
 
         lons = np.array([[-179, 179], [-179, 179]])
         lats = np.array([[1, 1], [-1, -1]])
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(180, 0)
-        assert (point in area)
+        assert point in area
 
         point = Coordinate(180, 12)
-        assert not (point in area)
+        assert point not in area
 
         point = Coordinate(-180, 12)
-        assert not (point in area)
+        assert point not in area
 
         self.assert_raises(ValueError, Coordinate, 0, 192)
 
@@ -73,7 +72,7 @@ class TestOverlap(unittest.TestCase):
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(90, 90)
-        assert (point in area)
+        assert point in area
 
     def test_overlaps(self):
         """Test if two areas overlap."""

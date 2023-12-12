@@ -116,9 +116,9 @@ class StackingGradientSearchResampler(BaseResampler):
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
                 dst_crs = self.target_geo_def.crs
-            except AttributeError:
+            except AttributeError as err:
                 if self.use_input_coords is False:
-                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
+                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.') from err
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
                 dst_crs = pyproj.CRS.from_string("+proj=longlat")
@@ -133,32 +133,33 @@ class StackingGradientSearchResampler(BaseResampler):
                     src_prj=src_crs, dst_prj=dst_crs)
                 self.prj = pyproj.Proj(self.target_geo_def.crs)
 
+    def _get_prj_poly(self, geo_def):
+        # - None if out of Earth Disk
+        # - False is SwathDefinition
+        if isinstance(geo_def, SwathDefinition):
+            return False
+        try:
+            poly = get_polygon(self.prj, geo_def)
+        except (NotImplementedError, ValueError):  # out-of-earth disk area or any valid projected boundary coordinates
+            poly = None
+        return poly
+
     def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
         """Get bounding polygon for source chunk."""
         geo_def = self.source_geo_def[src_y_start:src_y_end,
                                       src_x_start:src_x_end]
-        try:
-            src_poly = get_polygon(self.prj, geo_def)
-        except AttributeError:
-            # Can't create polygons for SwathDefinition
-            src_poly = False
+        return self._get_prj_poly(geo_def)
 
-        return src_poly
-
-    def _get_dst_poly(self, idx, dst_x_start, dst_x_end,
+    def _get_dst_poly(self, idx,
+                      dst_x_start, dst_x_end,
                       dst_y_start, dst_y_end):
         """Get target chunk polygon."""
         dst_poly = self.dst_polys.get(idx, None)
         if dst_poly is None:
             geo_def = self.target_geo_def[dst_y_start:dst_y_end,
                                           dst_x_start:dst_x_end]
-            try:
-                dst_poly = get_polygon(self.prj, geo_def)
-            except AttributeError:
-                # Can't create polygons for SwathDefinition
-                dst_poly = False
+            dst_poly = self._get_prj_poly(geo_def)
             self.dst_polys[idx] = dst_poly
-
         return dst_poly
 
     def get_chunk_mappings(self):
@@ -294,19 +295,20 @@ class StackingGradientSearchResampler(BaseResampler):
             res = res.squeeze()
 
         res = xr.DataArray(res, dims=data_dims, coords=coords)
-
         return res
 
 
 def check_overlap(src_poly, dst_poly):
     """Check if the two polygons overlap."""
+    # swath definition case
     if dst_poly is False or src_poly is False:
         covers = True
+    # area / area case
     elif dst_poly is not None and src_poly is not None:
         covers = src_poly.intersects(dst_poly)
+    # out of earth disk case
     else:
         covers = False
-
     return covers
 
 
@@ -328,7 +330,6 @@ def _gradient_resample_data(src_data, src_x, src_y,
                                      src_gradient_yl, src_gradient_yp,
                                      dst_x, dst_y,
                                      method=method)
-
     return image
 
 
@@ -596,13 +597,13 @@ def _get_coordinates_in_same_projection(source_area, target_area):
     try:
         src_x, src_y = source_area.get_proj_coords()
         transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
-    except AttributeError:
-        raise NotImplementedError("Cannot resample from Swath for now.")
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample from Swath for now.") from err
 
     try:
         dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
-    except AttributeError:
-        raise NotImplementedError("Cannot resample to Swath for now.")
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample to Swath for now.") from err
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
     return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)
