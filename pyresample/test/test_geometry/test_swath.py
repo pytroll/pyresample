@@ -34,8 +34,8 @@ def _gen_swath_def_xarray_dask(create_test_swath):
     lons, lats = _gen_swath_lons_lats()
     lons_dask = da.from_array(lons)
     lats_dask = da.from_array(lats)
-    lons_xr = xr.DataArray(lons_dask, dims=('y', 'x'))
-    lats_xr = xr.DataArray(lats_dask, dims=('y', 'x'))
+    lons_xr = xr.DataArray(lons_dask, dims=('y', 'x'), attrs={'name': 'Longitude', 'resolution': 500, 'units': 'm'})
+    lats_xr = xr.DataArray(lats_dask, dims=('y', 'x'), attrs={'name': 'Latitude', 'resolution': 500, 'units': 'm'})
     return create_test_swath(lons_xr, lats_xr)
 
 

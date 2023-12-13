@@ -47,6 +47,8 @@ from pyresample.utils.proj4 import (
     proj4_radius_parameters,
 )
 
+from . import _formatting_html
+
 try:
     from xarray import DataArray
 except ImportError:
@@ -688,6 +690,8 @@ class CoordinateDefinition(BaseDefinition):
                                                     str(self.lons),
                                                     str(self.lats))
 
+    __repr__ = __str__
+
     def geocentric_resolution(self, ellps='WGS84', radius=None, nadir_factor=2):
         """Calculate maximum geocentric pixel resolution.
 
@@ -888,6 +892,10 @@ class SwathDefinition(CoordinateDefinition):
         if self.hash is None:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
+
+    def _repr_html_(self):
+        """Html representation."""
+        return _formatting_html.area_repr(self)
 
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
@@ -1973,6 +1981,9 @@ class AreaDefinition(_ProjectionDefinition):
                                            tuple(round(x, 4) for x in self.area_extent))
 
     __repr__ = __str__
+
+    def _repr_html_(self):
+        return _formatting_html.area_repr(self)
 
     def to_cartopy_crs(self):
         """Convert projection to cartopy CRS object."""

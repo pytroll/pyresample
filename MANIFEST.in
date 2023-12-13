@@ -6,5 +6,7 @@ include pyresample/ewa/_fornav_templates.*
 include pyresample/py.typed
 include versioneer.py
 include pyresample/version.py
+include pyresample/static/html/*
+include pyresample/static/css/*
 include README.md
 recursive-include pyresample *.pyx
