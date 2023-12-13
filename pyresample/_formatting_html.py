@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Functions for html representation of area definition."""
 
+from __future__ import annotations
+
 import uuid
 from functools import lru_cache
 from html import escape
