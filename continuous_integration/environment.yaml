@@ -27,3 +27,4 @@ dependencies:
   - pytest-lazy-fixture
   - importlib-metadata
   - sphinx-reredirects
+  - odc-geo

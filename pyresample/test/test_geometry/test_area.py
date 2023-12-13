@@ -404,6 +404,45 @@ class TestAreaDefinition:
         latlong_crs = area_def.to_cartopy_crs()
         np.testing.assert_allclose(latlong_crs.bounds, [-180, 180, -90, 90])
 
+    def test_to_odc_geobox_odc_missing(self, monkeypatch, stere_area):
+        """Test odc-geo not installed."""
+        area = stere_area
+
+        with monkeypatch.context() as m:
+            m.setattr(pyresample.geometry, "odc_geo", None)
+
+            with pytest.raises(ModuleNotFoundError):
+                area.to_odc_geobox()
+
+    def test_to_odc_geobox(self, stere_area, create_test_area):
+        """Test conversion from area definition to odc GeoBox."""
+        from odc.geo.geobox import GeoBox
+
+        europe = stere_area
+        seviri = create_test_area(
+            {
+                'proj': 'geos',
+                'lon_0': 0.0,
+                'a': 6378169.00,
+                'b': 6356583.80,
+                'h': 35785831.00,
+                'units': 'm'},
+            123,
+            123,
+            (-5500000, -5500000, 5500000, 5500000))
+
+        for area_def in [europe, seviri]:
+            geobox = area_def.to_odc_geobox()
+
+            assert isinstance(geobox, GeoBox)
+
+            # Affine coefficiants
+            af = geobox.affine
+            assert af.a == area_def.pixel_size_x
+            assert af.e == -area_def.pixel_size_y
+            assert af.xoff == area_def.area_extent[0]
+            assert af.yoff == area_def.area_extent[3]
+
     def test_dump(self, create_test_area):
         """Test exporting area defs."""
         from io import StringIO

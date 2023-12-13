@@ -32,7 +32,7 @@ if sys.version_info < (3, 10):
     requirements.append('importlib_metadata')
 
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixtures', 'shapely']
+                 'pytest-lazy-fixtures', 'shapely', 'odc-geo']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
@@ -40,7 +40,13 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr'],
+                  'odc-geo': ['odc-geo'],
                   'tests': test_requires}
+
+all_extras = []
+for extra_deps in extras_require.values():
+    all_extras.extend(extra_deps)
+extras_require['all'] = list(set(all_extras))
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
