@@ -71,7 +71,13 @@ _valid_cf_coordinate_standardnames['geostationary']['y'] = (
 
 def _convert_XY_CF_to_Proj(crs, axis_info):
     """Convert XY values from CF to PROJ convention. With CF =< 1.9 only affects geostationary projection."""
-    crs_dict = crs.to_dict()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore",
+                                message=r"You will likely lose important projection information",
+                                category=UserWarning)
+        crs_dict = crs.to_dict()
     axis_units = axis_info.get('unit') or 'radians'  # unit could be None
     if crs_dict['proj'] == 'geos' and axis_units == 'radians':
         # for geostationary projection, the values stored as x/y in CF are not directly
