@@ -26,13 +26,12 @@ from pyresample._formatting_html import (
     swath_area_attrs_section,
 )
 
-from .test_geometry.test_area import stere_area  # noqa F401
 from .test_geometry.test_swath import _gen_swath_def_numpy, _gen_swath_def_xarray_dask
 
 
-def test_plot_area_def_w_area_def(stere_area):  # noqa F811
+def test_plot_area_def_w_area_def(area_def_stere_source):  # noqa F811
     """Test AreaDefinition plotting as svg/png."""
-    area = stere_area
+    area = area_def_stere_source
 
     with mock.patch('matplotlib.pyplot.savefig') as mock_savefig:
         plot_area_def(area, fmt="svg")
@@ -42,9 +41,9 @@ def test_plot_area_def_w_area_def(stere_area):  # noqa F811
         mock_savefig.assert_called_with(ANY, format="png", bbox_inches="tight")
 
 
-def test_plot_area_def_w_area_def_show(stere_area):  # noqa F811
+def test_plot_area_def_w_area_def_show(area_def_stere_source):  # noqa F811
     """Test AreaDefinition plotting as svg/png."""
-    area = stere_area
+    area = area_def_stere_source
 
     with mock.patch('matplotlib.pyplot.show') as mock_show_plot:
         plot_area_def(area)
@@ -60,31 +59,31 @@ def test_plot_area_def_w_swath_def(create_test_swath):
         mock_savefig.assert_called_with(ANY, format="svg", bbox_inches="tight")
 
 
-def test_area_def_cartopy_missing(monkeypatch, stere_area):  # noqa F811
+def test_area_def_cartopy_missing(monkeypatch, area_def_stere_source):  # noqa F811
     """Test missing cartopy installation."""
     with monkeypatch.context() as m:
         m.setattr(pyresample._formatting_html, "cartopy", None)
 
-        area = stere_area
+        area = area_def_stere_source
         assert "Note: If cartopy is installed a display of the area can be seen here" in area._repr_html_()
 
 
-def test_area_def_cartopy_installed(stere_area):  # noqa F811
+def test_area_def_cartopy_installed(area_def_stere_source):  # noqa F811
     """Test cartopy installed."""
-    area = stere_area
+    area = area_def_stere_source
     assert "Note: If cartopy is installed a display of the area can be seen here" not in area._repr_html_()
 
 
-def test_area_repr_w_static_files(stere_area):  # noqa F811
+def test_area_repr_w_static_files(area_def_stere_source):  # noqa F811
     """Test area representation with static files (css/icons) included."""
-    area_def = stere_area
+    area_def = area_def_stere_source
     res = area_repr(area_def)
     assert "<style>" in res
 
 
-def test_area_repr_wo_static_files(stere_area):  # noqa F811
+def test_area_repr_wo_static_files(area_def_stere_source):  # noqa F811
     """Test area representation without static files (css/icons) included."""
-    area_def = stere_area
+    area_def = area_def_stere_source
     res = area_repr(area_def, include_static_files=False)
     assert "<style>" not in res
 
