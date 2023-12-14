@@ -51,8 +51,10 @@ def reset_pyresample_config(tmpdir):
         yield
 
 
-@pytest.fixture(params=[LegacySwathDefinition, SwathDefinition],
-                ids=["LegacySwathDefinition", "SwathDefinition"])
+@pytest.fixture(
+    scope="session",
+    params=[LegacySwathDefinition, SwathDefinition],
+    ids=["LegacySwathDefinition", "SwathDefinition"])
 def swath_class(request):
     """Get one of the currently active 'SwathDefinition' classes.
 
@@ -63,7 +65,7 @@ def swath_class(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def create_test_swath(swath_class):
     """Get a function for creating SwathDefinitions for testing.
 
@@ -78,8 +80,10 @@ def create_test_swath(swath_class):
     return _create_test_swath
 
 
-@pytest.fixture(params=[LegacyAreaDefinition, AreaDefinition],
-                ids=["LegacyAreaDefinition", "AreaDefinition"])
+@pytest.fixture(
+    scope="session",
+    params=[LegacyAreaDefinition, AreaDefinition],
+    ids=["LegacyAreaDefinition", "AreaDefinition"])
 def area_class(request):
     """Get one of the currently active 'AreaDefinition' classes.
 
@@ -90,7 +94,7 @@ def area_class(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def create_test_area(area_class):
     """Get a function for creating AreaDefinitions for testing.
 
