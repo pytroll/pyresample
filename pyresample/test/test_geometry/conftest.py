@@ -19,7 +19,7 @@
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def stere_area(create_test_area):
     """Create basic polar-stereographic area definition."""
     proj_dict = {
@@ -41,7 +41,7 @@ def stere_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_src_area(create_test_area):
     """Create basic geostationary area definition."""
     shape = (3712, 3712)
@@ -56,7 +56,7 @@ def geos_src_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def laea_area(create_test_area):
     """Create basic LAEA area definition."""
     shape = (10, 10)
@@ -65,7 +65,7 @@ def laea_area(create_test_area):
     return create_test_area(proj_dict, shape[0], shape[1], area_extent)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def global_lonlat_antimeridian_centered_area(create_test_area):
     """Create global lonlat projection area centered on the -180 antimeridian."""
     shape = (4, 4)
@@ -79,7 +79,7 @@ def global_lonlat_antimeridian_centered_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def global_platee_caree_area(create_test_area):
     """Create global platee projection area."""
     shape = (4, 4)
@@ -93,7 +93,7 @@ def global_platee_caree_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def global_platee_caree_minimum_area(create_test_area):
     """Create minimum size global platee caree projection area."""
     shape = (2, 2)
@@ -107,7 +107,7 @@ def global_platee_caree_minimum_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def local_platee_caree_area(create_test_area):
     """Create local platee caree projection area."""
     shape = (4, 4)
@@ -121,7 +121,7 @@ def local_platee_caree_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def local_lonlat_antimeridian_centered_area(create_test_area):
     """Create local lonlat projection area centered on the -180 antimeridian."""
     shape = (4, 4)
@@ -135,7 +135,7 @@ def local_lonlat_antimeridian_centered_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def local_meter_area(create_test_area):
     """Create local meter projection area."""
     shape = (2, 2)
@@ -149,7 +149,7 @@ def local_meter_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def south_pole_area(create_test_area):
     """Create projection area centered on south pole."""
     shape = (2, 2)
@@ -163,7 +163,7 @@ def south_pole_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def north_pole_area(create_test_area):
     """Create projection area centered on north pole."""
     shape = (2, 2)
@@ -177,7 +177,7 @@ def north_pole_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_fd_area(create_test_area):
     """Create full disc geostationary area definition."""
     shape = (100, 100)
@@ -192,7 +192,7 @@ def geos_fd_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_out_disk_area(create_test_area):
     """Create out of Earth diskc geostationary area definition."""
     shape = (10, 10)
@@ -207,7 +207,7 @@ def geos_out_disk_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_half_out_disk_area(create_test_area):
     """Create geostationary area definition with portion of boundary out of earth_disk."""
     shape = (100, 100)
@@ -222,7 +222,7 @@ def geos_half_out_disk_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_conus_area(create_test_area):
     """Create CONUS geostationary area definition (portion is out-of-Earth disk)."""
     shape = (30, 50)  # (3000, 5000) for GOES-R CONUS/PACUS
@@ -238,7 +238,7 @@ def geos_conus_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def geos_mesoscale_area(create_test_area):
     """Create CONUS geostationary area definition."""
     shape = (10, 10)  # (1000, 1000) for GOES-R mesoscale
@@ -254,7 +254,7 @@ def geos_mesoscale_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def truncated_geos_area(create_test_area):
     """Create a truncated geostationary area (SEVIRI above 30° lat)."""
     proj_dict = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
@@ -269,7 +269,7 @@ def truncated_geos_area(create_test_area):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def truncated_geos_area_in_space(create_test_area):
     """Create a geostationary area entirely out of the Earth disk !."""
     proj_dict = {'a': '6378169', 'h': '35785831', 'lon_0': '9.5', 'no_defs': 'None', 'proj': 'geos',
