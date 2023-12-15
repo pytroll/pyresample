@@ -35,12 +35,7 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from ._base import (
-    BilinearBase,
-    _resample,
-    find_indices_outside_min_and_max,
-    get_slicer
-)
+from ._base import BilinearBase, _resample, find_indices_outside_min_and_max, get_slicer
 
 
 def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
@@ -90,7 +85,7 @@ def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
     # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of resample_bilinear() is deprecated, please use NumpyResamplerBilinear class instead",
-        FutureWarning)
+        FutureWarning, stacklevel=2)
 
     resampler = NumpyBilinearResampler(
         source_geo_def,
@@ -135,7 +130,7 @@ def get_sample_from_bil_info(data, t__, s__, input_idxs, idx_arr,
     # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of get_sample_from_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
-        FutureWarning)
+        FutureWarning, stacklevel=2)
 
     # Reduce data
     new_data = data[input_idxs]
@@ -215,7 +210,7 @@ def get_bil_info(source_geo_def, target_area_def, radius=50e3, neighbours=32,
     # Deprecation warning is suppressed outside __main__ by default, so use FutureWarning
     warnings.warn(
         "Usage of get_bil_info() is deprecated, please use NumpyResamplerBilinear class instead",
-        FutureWarning)
+        FutureWarning, stacklevel=2)
 
     numpy_resampler = NumpyBilinearResampler(
         source_geo_def,
@@ -314,7 +309,7 @@ class NumpyResamplerBilinear(NumpyBilinearResampler):
                  radius_of_influence,
                  **kwargs):
         """Initialize resampler."""
-        warnings.warn("Use of NumpyResamplerBilinear is deprecated, use NumpyBilinearResampler instead")
+        warnings.warn("Use of NumpyResamplerBilinear is deprecated, use NumpyBilinearResampler instead", stacklevel=2)
 
         super(NumpyResamplerBilinear, self).__init__(
             source_geo_def,

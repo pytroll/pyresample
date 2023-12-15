@@ -20,6 +20,14 @@ pyresample.utils.cf module
    :undoc-members:
    :show-inheritance:
 
+pyresample.utils.errors module
+------------------------------
+
+.. automodule:: pyresample.utils.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyresample.utils.proj4 module
 -----------------------------
 
@@ -35,7 +43,6 @@ pyresample.utils.rasterio module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

@@ -1,9 +1,28 @@
-import numpy as np
-import unittest
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test spherical geometry operations."""
 import math
+import unittest
 
-from pyresample.spherical_geometry import Coordinate, Arc
+import numpy as np
+
 from pyresample import geometry
+from pyresample.spherical_geometry import Arc, Coordinate
 
 
 class TestOverlap(unittest.TestCase):
@@ -25,24 +44,23 @@ class TestOverlap(unittest.TestCase):
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(0, 0)
-
-        self.assertTrue(point in area)
+        assert point in area
 
         point = Coordinate(0, 12)
-        self.assertFalse(point in area)
+        assert point not in area
 
         lons = np.array([[-179, 179], [-179, 179]])
         lats = np.array([[1, 1], [-1, -1]])
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(180, 0)
-        self.assertTrue(point in area)
+        assert point in area
 
         point = Coordinate(180, 12)
-        self.assertFalse(point in area)
+        assert point not in area
 
         point = Coordinate(-180, 12)
-        self.assertFalse(point in area)
+        assert point not in area
 
         self.assert_raises(ValueError, Coordinate, 0, 192)
 
@@ -54,7 +72,7 @@ class TestOverlap(unittest.TestCase):
         area = geometry.SwathDefinition(lons, lats)
 
         point = Coordinate(90, 90)
-        self.assertTrue(point in area)
+        assert point in area
 
     def test_overlaps(self):
         """Test if two areas overlap."""
@@ -66,8 +84,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        self.assertTrue(area1.overlaps(area2))
-        self.assertTrue(area2.overlaps(area1))
+        assert area1.overlaps(area2)
+        assert area2.overlaps(area1)
 
         lons1 = np.array([[0, 45], [135, 90]])
         lats1 = np.array([[89, 89], [89, 89]])
@@ -77,8 +95,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[89, 89], [89, 89]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        self.assertFalse(area1.overlaps(area2))
-        self.assertFalse(area2.overlaps(area1))
+        assert not area1.overlaps(area2)
+        assert not area2.overlaps(area1)
 
         lons1 = np.array([[-1, 1], [-1, 1]])
         lats1 = np.array([[1, 1], [-1, -1]])
@@ -88,8 +106,8 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[0, 0], [2, 2]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        self.assertTrue(area1.overlaps(area2))
-        self.assertTrue(area2.overlaps(area1))
+        assert area1.overlaps(area2)
+        assert area2.overlaps(area1)
 
         lons1 = np.array([[-1, 0], [-1, 0]])
         lats1 = np.array([[1, 2], [-1, 0]])
@@ -99,12 +117,11 @@ class TestOverlap(unittest.TestCase):
         lats2 = np.array([[1, 2], [-1, 0]])
         area2 = geometry.SwathDefinition(lons2, lats2)
 
-        self.assertFalse(area1.overlaps(area2))
-        self.assertFalse(area2.overlaps(area1))
+        assert not area1.overlaps(area2)
+        assert not area2.overlaps(area1)
 
     def test_overlap_rate(self):
         """Test how much two areas overlap."""
-
         lons1 = np.array([[-1, 1], [-1, 1]])
         lats1 = np.array([[1, 1], [-1, -1]])
         area1 = geometry.SwathDefinition(lons1, lats1)
@@ -315,17 +332,17 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        self.assertTrue(arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        self.assertFalse(arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        self.assertTrue(arc35.intersects(arc24))
+        assert arc35.intersects(arc24)
 
         p0_ = Coordinate(180, 0)
         p1_ = Coordinate(180, 1)
@@ -349,17 +366,17 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        self.assertTrue(arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        self.assertFalse(arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        self.assertTrue(arc35.intersects(arc24))
+        assert arc35.intersects(arc24)
 
         # case of the north pole
 
@@ -385,14 +402,14 @@ class TestSphereGeometry(unittest.TestCase):
 
         arc35 = Arc(p3_, p5_)
 
-        self.assertTrue(arc13.intersects(arc24))
+        assert arc13.intersects(arc24)
 
-        self.assertFalse(arc32.intersects(arc41))
+        assert not arc32.intersects(arc41)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc56.intersects(arc40))
+        assert not arc56.intersects(arc40)
 
-        self.assertFalse(arc45.intersects(arc02))
+        assert not arc45.intersects(arc02)
 
-        self.assertTrue(arc35.intersects(arc24))
+        assert arc35.intersects(arc24)

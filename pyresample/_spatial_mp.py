@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2013, 2015  Esben S. Nielsen, Martin Raspaud
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -14,42 +15,44 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Multiprocessing versions of KDTree and Proj classes."""
 
 from __future__ import absolute_import
 
 import ctypes
+import multiprocessing as mp
 
 import numpy as np
 import pyproj
-import multiprocessing as mp
-
+from pyproj import CRS
+from pyproj.enums import TransformDirection
 
 try:
     import numexpr as ne
 except ImportError:
     ne = None
 
-from ._multi_proc import shmem_as_ndarray, Scheduler
+from ._multi_proc import Scheduler, shmem_as_ndarray
+from .utils.proj4 import get_geodetic_crs_with_no_datum_shift
 
 # Earth radius
 R = 6370997.0
 
 
 class cKDTree_MP(object):
-
     """Multiprocessing cKDTree subclass, shared memory."""
 
     def __init__(self, data, leafsize=10, nprocs=2, chunk=None,
                  schedule='guided'):
-        """Same as cKDTree.__init__ except that an internal copy of data to
-        shared memory is made.
+        """Prepare shared memory for KDTree operations.
+
+        Same as cKDTree.__init__ except that an internal copy of data to shared memory is made.
 
         Extra keyword arguments:
         chunk : Minimum chunk size for the load balancer.
         schedule: Strategy for balancing work load
         ('static', 'dynamic' or 'guided').
         """
-
         self.n, self.m = data.shape
         # Allocate shared memory for data
         self.shmem_data = mp.RawArray(ctypes.c_double, self.n * self.m)
@@ -58,7 +61,7 @@ class cKDTree_MP(object):
         # The RawArray objects have information about the dtype and
         # buffer size.
         _data = shmem_as_ndarray(self.shmem_data).reshape((self.n, self.m))
-        _data[:,:] = data
+        _data[:, :] = data
 
         # Initialize parent, we must do this last because
         # cKDTree stores a reference to the data array. We pass in
@@ -69,9 +72,7 @@ class cKDTree_MP(object):
         self._schedule = schedule
 
     def query(self, x, k=1, eps=0, p=2, distance_upper_bound=np.inf):
-        """Same as cKDTree.query except parallelized with multiple processes
-        and shared memory."""
-
+        """Query for points at index 'x' parallelized with multiple processes and shared memory."""
         # allocate shared memory for x and result
         nx = x.shape[0]
         shmem_x = mp.RawArray(ctypes.c_double, nx * self.m)
@@ -104,40 +105,16 @@ class cKDTree_MP(object):
         return _d.copy(), _i.copy()
 
 
-class BaseProj(pyproj.Proj):
-    """Helper class for easier backwards compatibility."""
-
-    def __init__(self, projparams=None, preserve_units=True, **kwargs):
-        # have to have this because pyproj uses __new__
-        # subclasses would fail when calling __init__ otherwise
-        super(BaseProj, self).__init__(projparams=projparams,
-                                       preserve_units=preserve_units,
-                                       **kwargs)
-
-
-class Proj(BaseProj):
-    """Helper class to skip transforming lon/lat projection coordinates."""
-
-    def __call__(self, data1, data2, inverse=False, radians=False,
-                 errcheck=False, nprocs=1):
-        if self.crs.is_geographic:
-            return data1, data2
-        return super(Proj, self).__call__(data1, data2, inverse=inverse,
-                                          radians=radians, errcheck=errcheck)
-
-
-class Proj_MP(BaseProj):
+class Proj_MP:
+    """Multi-processing version of the pyproj Proj class."""
 
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
-        super(Proj_MP, self).__init__(*args, **kwargs)
 
     def __call__(self, data1, data2, inverse=False, radians=False,
                  errcheck=False, nprocs=2, chunk=None, schedule='guided'):
-        if self.crs.is_geographic:
-            return data1, data2
-
+        """Transform coordinates to coordinates in the current coordinate system."""
         grid_shape = data1.shape
         n = data1.size
 
@@ -170,6 +147,7 @@ class Proj_MP(BaseProj):
 
 
 class Cartesian(object):
+    """Cartesian coordinates."""
 
     def __init__(self, *args, **kwargs):
         pass
@@ -177,7 +155,7 @@ class Cartesian(object):
     def transform_lonlats(self, lons, lats):
         """Transform longitudes and latitues to cartesian coordinates."""
         if np.issubdtype(lons.dtype, np.integer):
-            lons = lons.astype(np.float)
+            lons = lons.astype(np.float64)
         coords = np.zeros((lons.size, 3), dtype=lons.dtype)
         if ne:
             deg2rad = np.pi / 180  # noqa: F841
@@ -196,7 +174,6 @@ Cartesian_MP = Cartesian
 
 def _run_jobs(target, args, nprocs):
     """Run process pool."""
-
     # return status in shared memory
     # access to these values are serialized automatically
     ierr = mp.Value(ctypes.c_int, 0)
@@ -242,11 +219,11 @@ def _parallel_query(scheduler,  # scheduler for load balancing
         # from the load balancer.
         for s in scheduler:
             if k == 1:
-                _d[s], _i[s] = kdtree.query(_x[s,:], k=1, eps=eps, p=p,\
+                _d[s], _i[s] = kdtree.query(_x[s, :], k=1, eps=eps, p=p,
                                             distance_upper_bound=dub)
             else:
-                _d[s,:], _i[s,:] = kdtree.query(_x[s,:], k=k, eps=eps, p=p,\
-                                                distance_upper_bound=dub)
+                _d[s, :], _i[s, :] = kdtree.query(_x[s, :], k=k, eps=eps, p=p,
+                                                  distance_upper_bound=dub)
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.
     except Exception as e:
@@ -264,12 +241,16 @@ def _parallel_proj(scheduler, data1, data2, res1, res2, proj_args, proj_kwargs,
         _res2 = shmem_as_ndarray(res2)
 
         # Initialise pyproj
-        proj = pyproj.Proj(*proj_args, **proj_kwargs)
+        proj_def = proj_args[0] if proj_args else proj_kwargs
+        crs = CRS.from_user_input(proj_def)
+        gcrs = get_geodetic_crs_with_no_datum_shift(crs)
+        transformer = pyproj.Transformer.from_crs(gcrs, crs, always_xy=True)
+        trans_kwargs = {"radians": radians, "errcheck": errcheck,
+                        "direction": TransformDirection.INVERSE if inverse else TransformDirection.FORWARD}
 
         # Reproject data segment
         for s in scheduler:
-            _res1[s], _res2[s] = proj(_data1[s], _data2[s], inverse=inverse,
-                                      radians=radians, errcheck=errcheck)
+            _res1[s], _res2[s] = transformer.transform(_data1[s], _data2[s], **trans_kwargs)
 
     # An error occured, increment the return value ierr.
     # Access to ierr is serialized by multiprocessing.

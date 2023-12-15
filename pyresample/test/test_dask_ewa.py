@@ -20,12 +20,12 @@
 import logging
 from unittest import mock
 
-import pyresample.ewa
-
-import pytest
+import dask
 import numpy as np
-
+import pytest
 from pyproj import CRS
+
+import pyresample.ewa
 
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
@@ -54,12 +54,15 @@ def _get_test_array(input_shape, input_dtype, chunk_size):
                                  chunks=chunk_size, dtype=input_dtype)
     else:
         data = da.random.random(input_shape, chunks=chunk_size).astype(input_dtype)
+    fill_value = 127 if np.issubdtype(input_dtype, np.integer) else np.nan
+    if data.ndim in (2, 3):
+        data[..., int(data.shape[-2]) * 0.7, :] = fill_value
     return data
 
 
 def _get_test_swath_def(input_shape, chunk_size, geo_dims):
     from pyresample.geometry import SwathDefinition
-    from pyresample.test.utils import create_test_longitude, create_test_latitude
+    from pyresample.test.utils import create_test_latitude, create_test_longitude
     lon_arr = create_test_longitude(-95.0, -75.0, input_shape, dtype=np.float64)
     lat_arr = create_test_latitude(15.0, 30.0, input_shape, dtype=np.float64)
     lons = da.from_array(lon_arr, chunks=chunk_size)
@@ -72,7 +75,6 @@ def _get_test_swath_def(input_shape, chunk_size, geo_dims):
 
 def _get_test_target_area(output_shape, output_proj=None):
     from pyresample.geometry import AreaDefinition
-    from pyresample.utils import proj4_str_to_dict
     if output_proj is None:
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
                        '+lon_0=-95. +lat_0=25 +lat_1=25 +units=m +no_defs')
@@ -80,7 +82,7 @@ def _get_test_target_area(output_shape, output_proj=None):
         'test_target',
         'test_target',
         'test_target',
-        proj4_str_to_dict(output_proj),
+        output_proj,
         output_shape[1],  # width
         output_shape[0],  # height
         (-100000., -150000., 100000., 150000.),
@@ -143,7 +145,7 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
         assert 'bands' in new_data.coords
     assert 'crs' in new_data.coords
     assert isinstance(new_data.coords['crs'].item(), CRS)
-    assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+    assert "Lambert" in new_data.coords['crs'].item().coordinate_operation.method_name
     assert new_data.coords['y'].attrs['units'] == 'meter'
     assert new_data.coords['x'].attrs['units'] == 'meter'
     assert target_area.crs == new_data.coords['crs'].item()
@@ -202,9 +204,11 @@ class TestDaskEWAResampler:
         num_chunks = _get_num_chunks(source_swath, resampler_class, rows_per_scan)
 
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
-                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats, \
+                dask.config.set(scheduler='sync'):
             resampler = resampler_class(source_swath, target_area)
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
+                                          weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test', 'test')
@@ -216,6 +220,7 @@ class TestDaskEWAResampler:
             # resample a different dataset and make sure cache is used
             swath_data2 = _create_second_test_data(swath_data)
             new_data = resampler.resample(swath_data2, rows_per_scan=rows_per_scan,
+                                          weight_delta_max=40,
                                           maximum_weight_mode=maximum_weight_mode)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')
@@ -231,7 +236,11 @@ class TestDaskEWAResampler:
             # check how many valid pixels we have
             band_mult = 3 if 'bands' in result.dims else 1
             fill_mask = _fill_mask(result.values)
-            assert np.count_nonzero(~fill_mask) == 468 * band_mult
+            # without NaNs:
+            # exp_valid = 13939 if rows_per_scan == 10 else 14029
+            # with NaNs but no fix:
+            exp_valid = 13817 if rows_per_scan == 10 else 13913
+            assert np.count_nonzero(~fill_mask) == exp_valid * band_mult
 
     @pytest.mark.parametrize(
         ('input_chunks', 'input_shape', 'input_dims'),
@@ -294,6 +303,7 @@ class TestDaskEWAResampler:
 
         resampler = DaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                      weight_delta_max=40,
                                       maximum_weight_mode=maximum_weight_mode)
         assert new_data.shape == output_shape
         assert new_data.dtype == np.float32
@@ -301,7 +311,7 @@ class TestDaskEWAResampler:
 
         # check how many valid pixels we have
         band_mult = 3 if len(output_shape) == 3 else 1
-        assert np.count_nonzero(~np.isnan(new_data)) == 468 * band_mult
+        assert np.count_nonzero(~np.isnan(new_data)) == 13817 * band_mult
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'maximum_weight_mode'),
@@ -358,3 +368,20 @@ class TestDaskEWAResampler:
         exp_exc = ValueError if len(input_shape) != 4 else NotImplementedError
         with pytest.raises(exp_exc):
             resampler.resample(swath_data, rows_per_scan=10)
+
+    def test_multiple_targets(self):
+        """Test that multiple targets produce unique results."""
+        input_shape = (100, 50)
+        output_shape = (200, 100)
+        swath_data, source_swath, target_area1 = get_test_data(
+            input_shape=input_shape, output_shape=output_shape,
+        )
+        target_area2 = _get_test_target_area((250, 150))
+
+        resampler1 = DaskEWAResampler(source_swath, target_area1)
+        res1 = resampler1.resample(swath_data, rows_per_scan=10)
+        resampler2 = DaskEWAResampler(source_swath, target_area2)
+        res2 = resampler2.resample(swath_data, rows_per_scan=10)
+
+        assert res1.name != res2.name
+        assert res1.compute().shape != res2.compute().shape

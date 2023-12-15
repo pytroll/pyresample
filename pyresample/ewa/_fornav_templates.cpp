@@ -245,7 +245,7 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
+      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
         continue;
       }
 
@@ -292,13 +292,9 @@ int compute_ewa(size_t chan_count, int maximum_weight_mode,
               for (chan = 0; chan < chan_count; chan+=1) {
                 this_val = ((images[chan])[swath_offset]);
                 if (maximum_weight_mode) {
-                  if (weight > grid_weights[chan][grid_offset]) {
+                  if (weight > grid_weights[chan][grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
                     ((grid_weights[chan])[grid_offset]) = weight;
-                    if ((this_val == img_fill) || (__isnan(this_val))) {
-                      ((grid_accums[chan])[grid_offset]) = (accum_type)NPY_NANF;
-                    } else {
-                      ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
-                    }
+                    ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
                   }
                 } else {
                   if ((this_val != img_fill) && !(__isnan(this_val))) {
@@ -352,7 +348,6 @@ int compute_ewa_single(int maximum_weight_mode,
   IMAGE_TYPE this_val;
   unsigned int swath_offset;
   unsigned int grid_offset;
-  size_t chan;
 
   got_point = 0;
   for (row = 0, swath_offset=0; row < swath_rows; row+=1) {
@@ -360,7 +355,7 @@ int compute_ewa_single(int maximum_weight_mode,
       u0 = uimg[swath_offset];
       v0 = vimg[swath_offset];
 
-      if (u0 < 0.0 || v0 < 0.0 || __isnan(u0) || __isnan(v0)) {
+      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
         continue;
       }
 
@@ -406,13 +401,9 @@ int compute_ewa_single(int maximum_weight_mode,
 
               this_val = (image[swath_offset]);
               if (maximum_weight_mode) {
-                if (weight > grid_weight[grid_offset]) {
+                if (weight > grid_weight[grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
                   grid_weight[grid_offset] = weight;
-                  if ((this_val == img_fill) || (__isnan(this_val))) {
-                    grid_accum[grid_offset] = (accum_type)NPY_NANF;
-                  } else {
-                    grid_accum[grid_offset] = (accum_type)this_val;
-                  }
+                  grid_accum[grid_offset] = (accum_type)this_val;
                 }
               } else {
                 if ((this_val != img_fill) && !(__isnan(this_val))) {

@@ -1,14 +1,34 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test kd_tree operations."""
 import os
-import numpy as np
-
-from pyresample import geometry, kd_tree, utils
-from pyresample.test.utils import catch_warnings
-
 import unittest
 from unittest import mock
 
+import numpy as np
+import pytest
+
+from pyresample import geometry, kd_tree, utils
+from pyresample.test.utils import TEST_FILES_PATH, catch_warnings
+
 
 class Test(unittest.TestCase):
+    """Test nearest neighbor resampling on numpy arrays."""
 
     @classmethod
     def setUpClass(cls):
@@ -104,12 +124,24 @@ class Test(unittest.TestCase):
         expected = 15874591.0
         self.assertEqual(cross_sum, expected)
 
+    def test_nearest_complex(self):
+        data = np.fromfunction(lambda y, x: y + complex("j") * x, (50, 10), dtype=np.complex_)
+        lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
+        lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+        swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
+        res = kd_tree.resample_nearest(swath_def, data.ravel(),
+                                       self.area_def, 50000, segments=1)
+        assert np.issubdtype(res.dtype, np.complex_)
+        cross_sum = res.sum()
+        assert cross_sum.real == 3530219.0
+        assert cross_sum.imag == 688723.0
+
     def test_nearest_masked_swath_target(self):
         """Test that a masked array works as a target."""
         data = np.fromfunction(lambda y, x: y * x, (50, 10))
         lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
-        mask = np.ones_like(lons, dtype=np.bool)
+        mask = np.ones_like(lons, dtype=np.bool_)
         mask[::2, ::2] = False
         swath_def = geometry.SwathDefinition(
             lons=np.ma.masked_array(lons, mask=mask),
@@ -329,8 +361,7 @@ class Test(unittest.TestCase):
         expected_stddev = [0.44621800779801657, 0.44363137712896705,
                            0.43861019464274459]
         expected_counts = 4934802.0
-        self.assertTrue(res.shape == stddev.shape and stddev.shape ==
-                        counts.shape and counts.shape == (800, 800, 3))
+        self.assertTrue(res.shape == stddev.shape and stddev.shape == counts.shape and counts.shape == (800, 800, 3))
         self.assertAlmostEqual(cross_sum, expected)
 
         for i, e_stddev in enumerate(expected_stddev):
@@ -465,13 +496,9 @@ class Test(unittest.TestCase):
         masked_data = np.ma.array(data, mask=mask)
         res = kd_tree.resample_nearest(swath_def, masked_data.ravel(),
                                        self.area_def, 50000, segments=1)
-        expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                 'test_files',
-                                                 'mask_test_nearest_mask.dat'),
+        expected_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_nearest_mask.dat'),
                                     sep=' ').reshape((800, 800))
-        expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                 'test_files',
-                                                 'mask_test_nearest_data.dat'),
+        expected_data = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_nearest_data.dat'),
                                     sep=' ').reshape((800, 800))
         self.assertTrue(np.array_equal(expected_mask, res.mask))
         self.assertTrue(np.array_equal(expected_data, res.data))
@@ -500,13 +527,9 @@ class Test(unittest.TestCase):
         masked_data = np.ma.array(data, mask=mask)
         res = kd_tree.resample_gauss(swath_def, masked_data.ravel(),
                                      self.area_def, 50000, 25000, segments=1)
-        expected_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                 'test_files',
-                                                 'mask_test_mask.dat'),
+        expected_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_mask.dat'),
                                     sep=' ').reshape((800, 800))
-        expected_data = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                 'test_files',
-                                                 'mask_test_data.dat'),
+        expected_data = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_data.dat'),
                                     sep=' ').reshape((800, 800))
         expected = expected_data.sum()
         cross_sum = res.data.sum()
@@ -521,9 +544,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
-        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                      'test_files',
-                                                      'mask_test_fill_value.dat'),
+        expected_fill_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_fill_value.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -535,9 +556,7 @@ class Test(unittest.TestCase):
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, fill_value=None, segments=1)
-        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                      'test_files',
-                                                      'mask_test_fill_value.dat'),
+        expected_fill_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_fill_value.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -555,9 +574,7 @@ class Test(unittest.TestCase):
                                        masked_data.ravel(
                                        ), self.area_def, 50000,
                                        fill_value=None, segments=1)
-        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                      'test_files',
-                                                      'mask_test_full_fill.dat'),
+        expected_fill_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_full_fill.dat'),
                                          sep=' ').reshape((800, 800))
         fill_mask = res.mask
 
@@ -583,9 +600,7 @@ class Test(unittest.TestCase):
         res = kd_tree.resample_nearest(swath_def,
                                        masked_data, self.area_def, 50000,
                                        fill_value=None, segments=1)
-        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                      'test_files',
-                                                      'mask_test_full_fill_multi.dat'),
+        expected_fill_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_full_fill_multi.dat'),
                                          sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
         cross_sum = res.sum()
@@ -719,9 +734,7 @@ class Test(unittest.TestCase):
                                                      valid_input_index,
                                                      valid_output_index, index_array,
                                                      fill_value=None)
-        expected_fill_mask = np.fromfile(os.path.join(os.path.dirname(__file__),
-                                                      'test_files',
-                                                      'mask_test_full_fill_multi.dat'),
+        expected_fill_mask = np.fromfile(os.path.join(TEST_FILES_PATH, 'mask_test_full_fill_multi.dat'),
                                          sep=' ').reshape((800, 800, 3))
         fill_mask = res.mask
         self.assertTrue(np.array_equal(fill_mask, expected_fill_mask))
@@ -732,8 +745,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
         cls.area_def = geometry.AreaDefinition('areaD',
                                                'Europe (3km, HRV, VTC)',
                                                'areaD',
@@ -805,9 +818,10 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     def test_nearest_swath_1d_mask_to_grid_1n(self):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
                                       radius_of_influence=100000,
                                       neighbours=1)
@@ -830,9 +844,10 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     def test_nearest_type_preserve(self):
         """Test 1D swath definition to 2D grid definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
                                       radius_of_influence=100000,
                                       neighbours=1)
@@ -858,9 +873,10 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     def test_nearest_swath_2d_mask_to_area_1n(self):
         """Test 2D swath definition to 2D area definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         swath_def = self.swath_def_2d
         data = self.data_2d
         resampler = XArrayResamplerNN(swath_def, self.area_def,
@@ -880,23 +896,27 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     def test_nearest_area_2d_to_area_1n(self):
         """Test 2D area definition to 2D area definition; 1 neighbor."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
+        from pyresample.test.utils import assert_maximum_dask_computes
         data = self.data_2d
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       radius_of_influence=50000,
                                       neighbours=1)
-        ninfo = resampler.get_neighbour_info()
+        with assert_maximum_dask_computes(0):
+            ninfo = resampler.get_neighbour_info()
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
-        res = resampler.get_sample_from_neighbour_info(data)
+        with assert_maximum_dask_computes(0):
+            res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
         res = res.values
@@ -906,9 +926,10 @@ class TestXArrayResamplerNN(unittest.TestCase):
 
     def test_nearest_area_2d_to_area_1n_no_roi(self):
         """Test 2D area definition to 2D area definition; 1 neighbor, no radius of influence."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         data = self.data_2d
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       neighbours=1)
@@ -916,8 +937,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
@@ -946,11 +967,11 @@ class TestXArrayResamplerNN(unittest.TestCase):
             self.assertEqual(cross_sum, expected)
 
     def test_nearest_area_2d_to_area_1n_3d_data(self):
-        """Test 2D area definition to 2D area definition; 1 neighbor, 3d
-        data."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
+        """Test 2D area definition to 2D area definition; 1 neighbor, 3d data."""
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         data = self.data_3d
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       radius_of_influence=50000,
@@ -959,8 +980,8 @@ class TestXArrayResamplerNN(unittest.TestCase):
         for val in ninfo[:3]:
             # vii, ia, voi
             self.assertIsInstance(val, da.Array)
-        self.assertRaises(AssertionError,
-                          resampler.get_sample_from_neighbour_info, data)
+        with pytest.raises(ValueError):
+            resampler.get_sample_from_neighbour_info(data)
 
         # rename data dimensions to match the expected area dimensions
         data = data.rename({'my_dim_y': 'y', 'my_dim_x': 'x'})
@@ -976,9 +997,10 @@ class TestXArrayResamplerNN(unittest.TestCase):
     @unittest.skipIf(True, "Multiple neighbors not supported yet")
     def test_nearest_swath_1d_mask_to_grid_8n(self):
         """Test 1D swath definition to 2D grid definition; 8 neighbors."""
-        from pyresample.kd_tree import XArrayResamplerNN
-        import xarray as xr
         import dask.array as da
+        import xarray as xr
+
+        from pyresample.kd_tree import XArrayResamplerNN
         resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
                                       radius_of_influence=100000,
                                       neighbours=8)

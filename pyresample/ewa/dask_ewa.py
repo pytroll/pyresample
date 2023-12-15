@@ -28,21 +28,25 @@ them, this implementation should avoid unnecessary array creation and memory
 usage until necessary.
 
 """
-import math
 import logging
+import math
 from functools import partial
-
-from pyresample.geometry import SwathDefinition
-from pyresample.resampler import BaseResampler, update_resampled_coords
-from pyresample.ewa import ll2cr
-from pyresample.ewa._fornav import (fornav_weights_and_sums_wrapper,
-                                    write_grid_image_single)
 
 import dask
 import dask.array as da
+import numpy as np
 from dask.array.core import normalize_chunks
 from dask.highlevelgraph import HighLevelGraph
-import numpy as np
+
+from pyresample.ewa import ll2cr
+from pyresample.ewa._fornav import (
+    fornav_weights_and_sums_wrapper,
+    write_grid_image_single,
+)
+from pyresample.geometry import SwathDefinition
+from pyresample.resampler import BaseResampler
+
+from ..future.resamplers.resampler import update_resampled_coords
 
 try:
     import xarray as xr
@@ -65,6 +69,7 @@ def _call_ll2cr(lons, lats, target_geo_def):
 def _call_mapped_ll2cr(lons, lats, target_geo_def):
     res = da.map_blocks(_call_ll2cr, lons, lats,
                         target_geo_def,
+                        meta=np.array((), dtype=lons.dtype),
                         dtype=lons.dtype)
     return res
 
@@ -107,7 +112,7 @@ def _chunk_callable(x_chunk, axis, keepdims, **kwargs):
 
 def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
                     maximum_weight_mode=False):
-    if isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple):
+    if computing_meta or _is_empty_chunk(x_chunk):
         # single "empty" chunk
         return x_chunk
     if not isinstance(x_chunk, list):
@@ -136,6 +141,10 @@ def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
     # NOTE: We use the builtin "sum" function below because it does not copy
     #       the numpy arrays. Using numpy.sum would do that.
     return sum(weights), sum(accums)
+
+
+def _is_empty_chunk(x_chunk):
+    return isinstance(x_chunk, tuple) and len(x_chunk) == 2 and isinstance(x_chunk[0], tuple)
 
 
 def _average_fornav(x_chunk, axis, keepdims, computing_meta=False, dtype=None,
@@ -177,8 +186,8 @@ class DaskEWAResampler(BaseResampler):
     def __init__(self, source_geo_def, target_geo_def):
         """Initialize in-memory cache."""
         super(DaskEWAResampler, self).__init__(source_geo_def, target_geo_def)
-        assert isinstance(source_geo_def, SwathDefinition), \
-            "EWA resampling can only operate on SwathDefinitions"
+        if not isinstance(source_geo_def, SwathDefinition):
+            raise ValueError("EWA resampling can only operate on SwathDefinitions")
         self.cache = {}
 
     def _new_chunks(self, in_arr, rows_per_scan):
@@ -324,7 +333,7 @@ class DaskEWAResampler(BaseResampler):
                 x_end = x_start + out_chunks[1][out_col_idx]
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
-                for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
+                for z_idx, ((_, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
                     key = (task_name, z_idx, out_row_idx, out_col_idx)
                     output_stack[key] = (_delayed_fornav,
                                          ll2cr_block,
@@ -338,9 +347,9 @@ class DaskEWAResampler(BaseResampler):
         ll2cr_result = self.cache['ll2cr_result']
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
         ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
-        fornav_task_name = "fornav-{}".format(data.name)
-        maximum_weight_mode = kwargs.get('maximum_weight_mode', False)
-        weight_sum_min = kwargs.get('weight_sum_min', -1.0)
+        fornav_task_name = f"fornav-{data.name}-{ll2cr_result.name}"
+        maximum_weight_mode = kwargs.setdefault('maximum_weight_mode', False)
+        weight_sum_min = kwargs.setdefault('weight_sum_min', -1.0)
         output_stack = self._generate_fornav_dask_tasks(out_chunks,
                                                         ll2cr_blocks,
                                                         fornav_task_name,
@@ -368,7 +377,7 @@ class DaskEWAResampler(BaseResampler):
 
     def compute(self, data, cache_id=None, rows_per_scan=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                weight_delta_max=1.0, weight_sum_min=-1.0,
+                weight_delta_max=10.0, weight_sum_min=-1.0,
                 maximum_weight_mode=None, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
         # not used in this step
@@ -442,7 +451,7 @@ class DaskEWAResampler(BaseResampler):
     def resample(self, data, cache_dir=None, mask_area=None,
                  rows_per_scan=None, persist=False, chunks=None, fill_value=None,
                  weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                 weight_delta_max=1.0, weight_sum_min=-1.0,
+                 weight_delta_max=10.0, weight_sum_min=-1.0,
                  maximum_weight_mode=None):
         """Resample using an elliptical weighted averaging algorithm.
 

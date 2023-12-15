@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019 Pyresample developers
+# Copyright (C) 2019-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -15,12 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+"""Utilities for working with projection parameters."""
+import contextlib
 import math
+import warnings
 from collections import OrderedDict
 
 import numpy as np
-from pyproj import CRS, Transformer as PROJTransformer
+from pyproj import CRS
+from pyproj import Transformer as PROJTransformer
 
 
 def convert_proj_floats(proj_pairs):
@@ -62,7 +65,7 @@ def proj4_dict_to_str(proj4_dict, sort=False):
     params = []
     for key, val in items:
         key = str(key) if key.startswith('+') else '+' + str(key)
-        if key in ['+no_defs', '+no_off', '+no_rot']:
+        if key in ['+no_defs', '+no_off', '+no_rot'] or val is None:
             param = key
         else:
             param = '{}={}'.format(key, val)
@@ -89,6 +92,7 @@ def proj4_radius_parameters(proj4_dict):
 
 
 def get_geostationary_height(geos_area_crs):
+    """Get the height parameter from a geostationary CRS."""
     params = geos_area_crs.coordinate_operation.params
     h_param = [p for p in params if 'satellite height' in p.name.lower()][0]
     return h_param.value
@@ -102,7 +106,12 @@ def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs, transform_kwargs):
 
 
 class DaskFriendlyTransformer:
-    """Wrapper around the pyproj Transformer class that uses dask."""
+    """Wrapper around the pyproj Transformer class that uses dask.
+
+    If the provided arrays are not dask arrays, they are converted to numpy
+    arrays and pyproj will be called directly (dask is not used).
+
+    """
 
     def __init__(self, src_crs, dst_crs, **kwargs):
         """Initialize the transformer with CRS objects.
@@ -125,6 +134,12 @@ class DaskFriendlyTransformer:
         import dask.array as da
         crs_from = self.src_crs
         crs_to = self.dst_crs
+
+        if not hasattr(x, "compute"):
+            x = np.asarray(x)
+            y = np.asarray(y)
+            return self._transform_numpy(x, y, **kwargs)
+
         # CRS objects aren't thread-safe until pyproj 3.1+
         # convert to WKT strings to be safe
         result = da.map_blocks(_transform_dask_chunk, x, y,
@@ -136,3 +151,38 @@ class DaskFriendlyTransformer:
         x = result[..., 0]
         y = result[..., 1]
         return x, y
+
+    def _transform_numpy(self, x, y, **kwargs):
+        transformer = PROJTransformer.from_crs(self.src_crs, self.dst_crs, **self.kwargs)
+        return transformer.transform(x, y, **kwargs)
+
+
+@contextlib.contextmanager
+def ignore_pyproj_proj_warnings():
+    """Wrap operations that we know will produce a PROJ.4 precision warning.
+
+    Only to be used internally to Pyresample when we have no other choice but
+    to use PROJ.4 strings/dicts. For example, serialization to YAML or other
+    human-readable formats or testing the methods that produce the PROJ.4
+    versions of the CRS.
+
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            "You will likely lose important projection information",
+            UserWarning,
+        )
+        yield
+
+
+def get_geodetic_crs_with_no_datum_shift(crs: CRS) -> CRS:
+    """Get the geodetic CRS for the provided CRS but with no prime meridian shift."""
+    gcrs = crs.geodetic_crs
+    if gcrs.prime_meridian.longitude == 0:
+        return gcrs
+    with ignore_pyproj_proj_warnings():
+        gcrs_dict = gcrs.to_dict()
+    gcrs_dict.pop("pm", None)
+    gcrs_pm0 = CRS.from_dict(gcrs_dict)
+    return gcrs_pm0

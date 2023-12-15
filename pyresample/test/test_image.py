@@ -1,22 +1,33 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014-2021 Pyresample Developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test image interface."""
+
 import os
 import unittest
 
 import numpy
 
-from pyresample import image, geometry, utils
-
-
-def mask(f):
-    f.mask = True
-    return f
-
-
-def tmp(f):
-    f.tmp = True
-    return f
+from pyresample import geometry, image, utils
+from pyresample.test.utils import TEST_FILES_PATH
 
 
 class Test(unittest.TestCase):
+    """Test image interface."""
 
     area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)',
                                        'areaD',
@@ -63,7 +74,6 @@ class Test(unittest.TestCase):
                                                5568742.4000000004,
                                                5568742.4000000004])
 
-    @tmp
     def test_image(self):
         data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
         msg_con = image.ImageContainerQuick(data, self.msg_area, segments=1)
@@ -73,7 +83,6 @@ class Test(unittest.TestCase):
         expected = 399936.39392500359
         self.assertAlmostEqual(cross_sum, expected)
 
-    @tmp
     def test_image_segments(self):
         data = numpy.fromfunction(lambda y, x: y * x * 10 ** -6, (3712, 3712))
         msg_con = image.ImageContainerQuick(data, self.msg_area, segments=8)
@@ -90,7 +99,6 @@ class Test(unittest.TestCase):
         res = area_con.image_data
         self.assertTrue(data.dtype is res.dtype)
 
-    @mask
     def test_masked_image(self):
         data = numpy.zeros((3712, 3712))
         mask = numpy.zeros((3712, 3712))
@@ -101,12 +109,10 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
-                                               'test_files', 'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(TEST_FILES_PATH, 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected))
 
-    @mask
     def test_masked_image_fill(self):
         data = numpy.zeros((3712, 3712))
         mask = numpy.zeros((3712, 3712))
@@ -117,9 +123,7 @@ class Test(unittest.TestCase):
         area_con = msg_con.resample(self.area_def)
         res = area_con.image_data
         resampled_mask = res.mask.astype('int')
-        expected = numpy.fromfile(os.path.join(os.path.dirname(__file__),
-                                               'test_files',
-                                               'mask_grid.dat'),
+        expected = numpy.fromfile(os.path.join(TEST_FILES_PATH, 'mask_grid.dat'),
                                   sep=' ').reshape((800, 800))
         self.assertTrue(numpy.array_equal(resampled_mask, expected))
 

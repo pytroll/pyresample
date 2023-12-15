@@ -1,7 +1,26 @@
-import numpy as np
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Filters based on geolocation validity."""
 
-from . import _spatial_mp
-from . import geometry
+import numpy as np
+from pyproj import Proj
+
+from . import _spatial_mp, geometry
 
 
 class GridFilter(object):
@@ -29,26 +48,26 @@ class GridFilter(object):
         self.nprocs = nprocs
 
     def get_valid_index(self, geometry_def):
-        """Calculates valid_index array  based on lons and lats.
+        """Calculate valid_index array based on lons and lats.
 
         Args:
-            lons (numpy array): Longitude degrees array
-            lats (numpy array): Latitude degrees array
+            geometry_def: Geometry definition (ex. SwathDefinition)
 
         Returns:
             Boolean numpy array of same shape as lons and lats
         """
-
         lons = geometry_def.lons[:]
         lats = geometry_def.lats[:]
 
         # Get projection coords
+        proj_kwargs = {}
         if self.nprocs > 1:
-            proj = _spatial_mp.Proj_MP(**self.area_def.proj_dict)
+            proj = _spatial_mp.Proj_MP(self.area_def.crs)
+            proj_kwargs["nprocs"] = self.nprocs
         else:
-            proj = _spatial_mp.Proj(**self.area_def.proj_dict)
+            proj = Proj(self.area_def.crs)
 
-        x_coord, y_coord = proj(lons, lats, nprocs=self.nprocs)
+        x_coord, y_coord = proj(lons, lats, **proj_kwargs)
 
         # Find array indices of coordinates
         target_x = ((x_coord / self.area_def.pixel_size_x) +
@@ -73,6 +92,7 @@ class GridFilter(object):
         return filter
 
     def filter(self, geometry_def, data):
+        """Get coordinate definition and data where invalid lon/lats are removed."""
         lons = geometry_def.lons[:]
         lats = geometry_def.lats[:]
         valid_index = self.get_valid_index(geometry_def)

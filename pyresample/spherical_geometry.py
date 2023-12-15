@@ -1,6 +1,7 @@
-# pyresample, Resampling of remote sensing image data in python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010, 2015  Martin Raspaud
+# Copyright (C) 2010-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -14,23 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Classes for spherical geometry operations."""
 
 from __future__ import absolute_import
 
 import math
-import numpy as np
 import warnings
+
+import numpy as np
 
 warnings.warn("This module will be removed in pyresample 2.0, please use the "
               "`pyresample.spherical` module functions and class instead.",
-              DeprecationWarning)
-
-try:
-    range = xrange
-except NameError:
-    pass
+              DeprecationWarning, stacklevel=2)
 
 EPSILON = 0.0000001
 
@@ -38,8 +34,12 @@ EPSILON = 0.0000001
 
 
 class Coordinate(object):
+    """Point on earth in terms of lat and lon.
 
-    """Point on earth in terms of lat and lon."""
+    It expects lon,lat in degrees
+    But self.lat and self.lon are returned in radians !
+    """
+
     lat = None
     lon = None
     x__ = None
@@ -50,7 +50,7 @@ class Coordinate(object):
                  x__=None, y__=None, z__=None, R__=1):
         self.R__ = R__
         if lat is not None and lon is not None:
-            if not(-180 <= lon <= 180 and -90 <= lat <= 90):
+            if not (-180 <= lon <= 180 and -90 <= lat <= 90):
                 raise ValueError('Illegal (lon, lat) coordinates: (%s, %s)'
                                  % (lon, lat))
             self.lat = math.radians(lat)
@@ -64,36 +64,37 @@ class Coordinate(object):
 
     def _update_cart(self):
         """Convert lon/lat to cartesian coordinates."""
-
         self.x__ = math.cos(self.lat) * math.cos(self.lon)
         self.y__ = math.cos(self.lat) * math.sin(self.lon)
         self.z__ = math.sin(self.lat)
 
     def _update_lonlat(self):
         """Convert cartesian to lon/lat."""
-
         self.lat = math.degrees(math.asin(self.z__ / self.R__))
         self.lon = math.degrees(math.atan2(self.y__, self.x__))
 
     def __ne__(self, other):
-        if(abs(self.lat - other.lat) < EPSILON and
-           abs(self.lon - other.lon) < EPSILON):
+        """Check inequality."""
+        if (abs(self.lat - other.lat) < EPSILON and
+                abs(self.lon - other.lon) < EPSILON):
             return 0
         else:
             return 1
 
     def __eq__(self, other):
+        """Check equality."""
         return not self.__ne__(other)
 
     def __str__(self):
+        """Get simplified representation of lon/lats in degrees."""
         return str((math.degrees(self.lon), math.degrees(self.lat)))
 
     def __repr__(self):
+        """Get simplified representation of lon/lats in degrees."""
         return str((math.degrees(self.lon), math.degrees(self.lat)))
 
     def cross2cart(self, point):
-        """Compute the cross product, and convert to cartesian coordinates
-        (assuming radius 1)."""
+        """Compute the cross product, and convert to cartesian coordinates (assuming radius 1)."""
         lat1 = self.lat
         lon1 = self.lon
         lat2 = point.lat
@@ -111,7 +112,7 @@ class Coordinate(object):
         return res
 
     def distance(self, point):
-        """Vincenty formula."""
+        """Get distance using Vincenty formula."""
         dlambda = self.lon - point.lon
         num = ((math.cos(point.lat) * math.sin(dlambda)) ** 2 +
                (math.cos(self.lat) * math.sin(point.lat) -
@@ -127,8 +128,7 @@ class Coordinate(object):
         return math.sqrt(self.x__ ** 2 + self.y__ ** 2 + self.z__ ** 2)
 
     def normalize(self):
-        """normalize the vector."""
-
+        """Normalize the vector."""
         norm = self.norm()
         self.x__ /= norm
         self.y__ /= norm
@@ -137,7 +137,7 @@ class Coordinate(object):
         return self
 
     def cross(self, point):
-        """cross product with another vector."""
+        """Get cross product with another vector."""
         x__ = self.y__ * point.z__ - self.z__ * point.y__
         y__ = self.z__ * point.x__ - self.x__ * point.z__
         z__ = self.x__ * point.y__ - self.y__ * point.x__
@@ -145,23 +145,20 @@ class Coordinate(object):
         return Coordinate(x__=x__, y__=y__, z__=z__)
 
     def dot(self, point):
-        """dot product with another vector."""
+        """Get dot product with another vector."""
         return (self.x__ * point.x__ +
                 self.y__ * point.y__ +
                 self.z__ * point.z__)
 
 
 class Arc(object):
-
     """An arc of the great circle between two points."""
-    start = None
-    end = None
 
     def __init__(self, start, end):
         self.start, self.end = start, end
 
     def center_angle(self):
-        """Angle of an arc at the center of the sphere."""
+        """Get angle of an arc at the center of the sphere."""
         val = (math.cos(self.start.lat - self.end.lat) +
                math.cos(self.start.lon - self.end.lon) - 1)
 
@@ -173,18 +170,21 @@ class Arc(object):
         return math.acos(val)
 
     def __eq__(self, other):
-        if(self.start == other.start and self.end == other.end):
+        """Check equality."""
+        if self.start == other.start and self.end == other.end:
             return 1
         return 0
 
     def __ne__(self, other):
+        """Check inequality."""
         return not self.__eq__(other)
 
     def __str__(self):
+        """Get simplified representation."""
         return str((str(self.start), str(self.end)))
 
     def angle(self, other_arc, snap=True):
-        """Oriented angle between two arcs.
+        """Get oriented angle between two arcs.
 
         Parameters
         ----------
@@ -217,63 +217,63 @@ class Arc(object):
         ub_ = a__.cross(c__)
 
         val = ua_.dot(ub_) / (ua_.norm() * ub_.norm())
-        if snap:
-            if abs(val - 1) < EPSILON:
-                angle = 0
-            elif abs(val + 1) < EPSILON:
-                angle = math.pi
-            else:
-                angle = math.acos(val)
-        else:
-            if 0 <= val - 1 < EPSILON:
-                angle = 0
-            elif -EPSILON < val + 1 <= 0:
-                angle = math.pi
-            else:
-                angle = math.acos(val)
+        angle = self._convert_to_angle(val, snap_to_zero=snap)
 
         n__ = ua_.normalize()
-        if n__.dot(c__) > 0:
-            return -angle
+        return -angle if n__.dot(c__) > 0 else angle
+
+    @staticmethod
+    def _convert_to_angle(val: float, snap_to_zero: bool) -> float:
+        if snap_to_zero:
+            if abs(val - 1) < EPSILON:
+                return 0
+            elif abs(val + 1) < EPSILON:
+                return math.pi
         else:
-            return angle
+            if 0 <= val - 1 < EPSILON:
+                return 0
+            elif -EPSILON < val + 1 <= 0:
+                return math.pi
+        return math.acos(val)
 
     def intersections(self, other_arc):
-        """Gives the two intersections of the greats circles defined by the
-        current arc and *other_arc*."""
-        if self.end.lon - self.start.lon > math.pi:
-            self.end.lon -= 2 * math.pi
-        if other_arc.end.lon - other_arc.start.lon > math.pi:
-            other_arc.end.lon -= 2 * math.pi
-        if self.end.lon - self.start.lon < -math.pi:
-            self.end.lon += 2 * math.pi
-        if other_arc.end.lon - other_arc.start.lon < -math.pi:
-            other_arc.end.lon += 2 * math.pi
+        """Get the two intersections of the greats circles defined by the current arc and *other_arc*."""
+        end_lon = self.end.lon
+        other_end_lon = other_arc.end.lon
 
-        ea_ = self.start.cross2cart(self.end).normalize()
-        eb_ = other_arc.start.cross2cart(other_arc.end).normalize()
+        if self.end.lon - self.start.lon > math.pi:
+            end_lon -= 2 * math.pi
+        if other_arc.end.lon - other_arc.start.lon > math.pi:
+            other_end_lon -= 2 * math.pi
+        if self.end.lon - self.start.lon < -math.pi:
+            end_lon += 2 * math.pi
+        if other_arc.end.lon - other_arc.start.lon < -math.pi:
+            other_end_lon += 2 * math.pi
+
+        end_point = Coordinate(math.degrees(modpi(end_lon)), math.degrees(self.end.lat))
+        other_end_point = Coordinate(math.degrees(modpi(other_end_lon)), math.degrees(other_arc.end.lat))
+
+        ea_ = self.start.cross2cart(end_point).normalize()
+        eb_ = other_arc.start.cross2cart(other_end_point).normalize()
 
         cross = ea_.cross(eb_)
         lat = math.atan2(cross.z__, math.sqrt(cross.x__ ** 2 + cross.y__ ** 2))
         lon = math.atan2(-cross.y__, cross.x__)
 
         return (Coordinate(math.degrees(lon), math.degrees(lat)),
-                Coordinate(math.degrees(modpi(lon + math.pi)),
-                           math.degrees(-lat)))
+                Coordinate(math.degrees(modpi(lon + math.pi)), math.degrees(-lat)))
 
     def intersects(self, other_arc):
-        """Says if two arcs defined by the current arc and the *other_arc*
-        intersect.
+        """Determine if this arc and another arc intersect.
 
         An arc is defined as the shortest tracks between two points.
         """
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
-        """Says where, if two arcs defined by the current arc and the.
+        """Determine the intersection point between this arc and another.
 
-        *other_arc* intersect. An arc is defined as the shortest tracks between
-        two points.
+        An arc is defined as the shortest tracks between two points.
         """
         for i in self.intersections(other_arc):
             a__ = self.start
@@ -284,14 +284,14 @@ class Arc(object):
             ab_ = a__.distance(b__)
             cd_ = c__.distance(d__)
 
-            if(abs(a__.distance(i) + b__.distance(i) - ab_) < EPSILON and
-               abs(c__.distance(i) + d__.distance(i) - cd_) < EPSILON):
+            if (abs(a__.distance(i) + b__.distance(i) - ab_) < EPSILON and
+                    abs(c__.distance(i) + d__.distance(i) - cd_) < EPSILON):
                 return i
         return None
 
 
 def modpi(val):
-    """Puts *val* between -pi and pi."""
+    """Put *val* between -pi and pi."""
     return (val + math.pi) % (2 * math.pi) - math.pi
 
 
@@ -343,8 +343,7 @@ def get_first_intersection(b__, boundaries):
 
 
 def get_next_intersection(p__, b__, boundaries):
-    """Get the next intersection from the intersection of arcs *p__* and *b__*
-    along segment *b__* with *boundaries*."""
+    """Get the next intersection from the intersection of arcs *p__* and *b__* along segment *b__* with *boundaries*."""
     new_b = Arc(p__, b__.end)
     intersections, bounds = get_intersections(new_b, boundaries)
     dists = np.array([b__.start.distance(p2) for p2 in intersections])
@@ -357,7 +356,7 @@ def get_next_intersection(p__, b__, boundaries):
 
 
 def point_inside(point, corners):
-    """Is a point inside the 4 corners ?
+    """Determine if points are inside 4 corner points.
 
     This uses great circle arcs as area boundaries.
     """

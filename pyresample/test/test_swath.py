@@ -1,18 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014-2021 Pyresample developers
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""Test resampling swath definitions."""
+
 import os
-import sys
 import unittest
 import warnings
-warnings.simplefilter("always")
 
 import numpy as np
-from pyresample.test.utils import catch_warnings
-from pyresample import kd_tree, geometry
+
+from pyresample import geometry, kd_tree
+from pyresample.test.utils import TEST_FILES_PATH, catch_warnings
+
+warnings.simplefilter("always")
 
 
 class Test(unittest.TestCase):
+    """Tests for swath definitions."""
 
-    filename = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                            'test_files', 'ssmis_swath.npz'))
+    filename = os.path.abspath(os.path.join(TEST_FILES_PATH, 'ssmis_swath.npz'))
     data = np.load(filename)['data']
     lons = data[:, 0].astype(np.float64)
     lats = data[:, 1].astype(np.float64)
@@ -35,12 +55,10 @@ class Test(unittest.TestCase):
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
-        if sys.platform == 'darwin':
-            # OSX seems to get slightly different results for `_spatial_mp.Cartesian`
-            truth_value = 668848.144817
-        else:
-            truth_value = 668848.082208
-        self.assertAlmostEqual(res.sum() / 100., truth_value, 1,
+        # only compare the whole number as different OSes and versions of numpy
+        # can produce slightly different results
+        truth_value = 668848.0
+        self.assertAlmostEqual(res.sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath for 1 channel')
 
     def test_self_map_multi(self):
@@ -55,23 +73,10 @@ class Test(unittest.TestCase):
             self.assertFalse(('Possible more' not in str(
                 w[0].message)), 'Failed to create correct neighbour radius warning')
 
-        if sys.platform == 'darwin':
-            # OSX seems to get slightly different results for `_spatial_mp.Cartesian`
-            truth_value = 668848.144817
-        else:
-            truth_value = 668848.082208
-        self.assertAlmostEqual(res[:, 0].sum() / 100., truth_value, 1,
+        truth_value = 668848.0
+        self.assertAlmostEqual(res[:, 0].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 1')
-        self.assertAlmostEqual(res[:, 1].sum() / 100., truth_value, 1,
+        self.assertAlmostEqual(res[:, 1].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 2')
-        self.assertAlmostEqual(res[:, 2].sum() / 100., truth_value, 1,
+        self.assertAlmostEqual(res[:, 2].sum() / 100., truth_value, 0,
                                msg='Failed self mapping swath multi for channel 3')
-
-
-def suite():
-    """The test suite."""
-    loader = unittest.TestLoader()
-    mysuite = unittest.TestSuite()
-    mysuite.addTest(loader.loadTestsFromTestCase(Test))
-
-    return mysuite

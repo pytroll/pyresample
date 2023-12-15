@@ -22,38 +22,66 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Implementation of the gradient search algorithm as described by Trishchenko."""
+from __future__ import annotations
 
 import logging
+import warnings
+from functools import wraps
 
-import dask.array as da
 import dask
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
-from pyresample.gradient._gradient_search import one_step_gradient_search
-from pyresample.resampler import BaseResampler
-from pyresample.geometry import get_geostationary_bounding_box
+from pyresample.geometry import (
+    AreaDefinition,
+    SwathDefinition,
+    get_geostationary_bounding_box_in_lonlats,
+)
+from pyresample.gradient._gradient_search import (
+    one_step_gradient_indices,
+    one_step_gradient_search,
+)
+from pyresample.resampler import BaseResampler, resample_blocks
 
 logger = logging.getLogger(__name__)
+
+
+def GradientSearchResampler(source_geo_def, target_geo_def):
+    """Create a gradient search resampler."""
+    warnings.warn("`GradientSearchResampler` is deprecated, please use "
+                  "`create_gradient_search_resampler` instead.",
+                  DeprecationWarning, stacklevel=2)
+    return create_gradient_search_resampler(source_geo_def, target_geo_def)
+
+
+def create_gradient_search_resampler(source_geo_def, target_geo_def):
+    """Create a gradient search resampler."""
+    if isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition):
+        return ResampleBlocksGradientSearchResampler(source_geo_def, target_geo_def)
+    elif isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition):
+        return StackingGradientSearchResampler(source_geo_def, target_geo_def)
+    raise NotImplementedError
 
 
 @da.as_gufunc(signature='(),()->(),()')
 def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
     """Calculate projection coordinates."""
-    return pyproj.transform(src_prj, dst_prj, x_coords, y_coords)
+    transformer = pyproj.Transformer.from_crs(src_prj, dst_prj)
+    return transformer.transform(x_coords, y_coords)
 
 
-class GradientSearchResampler(BaseResampler):
-    """Resample using gradient search based bilinear interpolation."""
+class StackingGradientSearchResampler(BaseResampler):
+    """Resample using gradient search based bilinear interpolation, using stacking for dask processing."""
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
-        super(GradientSearchResampler, self).__init__(source_geo_def, target_geo_def)
+        super().__init__(source_geo_def, target_geo_def)
         import warnings
-        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.")
+        warnings.warn("You are using the Gradient Search Resampler, which is still EXPERIMENTAL.", stacklevel=2)
         self.use_input_coords = None
         self._src_dst_filtered = False
         self.prj = None
@@ -77,60 +105,61 @@ class GradientSearchResampler(BaseResampler):
             try:
                 self.src_x, self.src_y = self.source_geo_def.get_proj_coords(
                     chunks=datachunks)
-                src_prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                src_crs = self.source_geo_def.crs
                 self.use_input_coords = True
             except AttributeError:
                 self.src_x, self.src_y = self.source_geo_def.get_lonlats(
                     chunks=datachunks)
-                src_prj = pyproj.Proj("+proj=longlat")
+                src_crs = pyproj.CRS.from_string("+proj=longlat")
                 self.use_input_coords = False
             try:
                 self.dst_x, self.dst_y = self.target_geo_def.get_proj_coords(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj(**self.target_geo_def.proj_dict)
-            except AttributeError:
+                dst_crs = self.target_geo_def.crs
+            except AttributeError as err:
                 if self.use_input_coords is False:
-                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.')
+                    raise NotImplementedError('Cannot resample lon/lat to lon/lat with gradient search.') from err
                 self.dst_x, self.dst_y = self.target_geo_def.get_lonlats(
                     chunks=CHUNK_SIZE)
-                dst_prj = pyproj.Proj("+proj=longlat")
+                dst_crs = pyproj.CRS.from_string("+proj=longlat")
             if self.use_input_coords:
                 self.dst_x, self.dst_y = transform(
                     self.dst_x, self.dst_y,
-                    src_prj=dst_prj, dst_prj=src_prj)
-                self.prj = pyproj.Proj(**self.source_geo_def.proj_dict)
+                    src_prj=dst_crs, dst_prj=src_crs)
+                self.prj = pyproj.Proj(self.source_geo_def.crs)
             else:
                 self.src_x, self.src_y = transform(
                     self.src_x, self.src_y,
-                    src_prj=src_prj, dst_prj=dst_prj)
-                self.prj = pyproj.Proj(**self.target_geo_def.proj_dict)
+                    src_prj=src_crs, dst_prj=dst_crs)
+                self.prj = pyproj.Proj(self.target_geo_def.crs)
+
+    def _get_prj_poly(self, geo_def):
+        # - None if out of Earth Disk
+        # - False is SwathDefinition
+        if isinstance(geo_def, SwathDefinition):
+            return False
+        try:
+            poly = get_polygon(self.prj, geo_def)
+        except (NotImplementedError, ValueError):  # out-of-earth disk area or any valid projected boundary coordinates
+            poly = None
+        return poly
 
     def _get_src_poly(self, src_y_start, src_y_end, src_x_start, src_x_end):
         """Get bounding polygon for source chunk."""
         geo_def = self.source_geo_def[src_y_start:src_y_end,
                                       src_x_start:src_x_end]
-        try:
-            src_poly = get_polygon(self.prj, geo_def)
-        except AttributeError:
-            # Can't create polygons for SwathDefinition
-            src_poly = False
+        return self._get_prj_poly(geo_def)
 
-        return src_poly
-
-    def _get_dst_poly(self, idx, dst_x_start, dst_x_end,
+    def _get_dst_poly(self, idx,
+                      dst_x_start, dst_x_end,
                       dst_y_start, dst_y_end):
         """Get target chunk polygon."""
         dst_poly = self.dst_polys.get(idx, None)
         if dst_poly is None:
             geo_def = self.target_geo_def[dst_y_start:dst_y_end,
                                           dst_x_start:dst_x_end]
-            try:
-                dst_poly = get_polygon(self.prj, geo_def)
-            except AttributeError:
-                # Can't create polygons for SwathDefinition
-                dst_poly = False
+            dst_poly = self._get_prj_poly(geo_def)
             self.dst_polys[idx] = dst_poly
-
         return dst_poly
 
     def get_chunk_mappings(self):
@@ -153,13 +182,13 @@ class GradientSearchResampler(BaseResampler):
                                               src_x_start, src_x_end)
 
                 dst_x_start = 0
-                for k, dst_x_step in enumerate(dst_x_chunks):
+                for x_step_number, dst_x_step in enumerate(dst_x_chunks):
                     dst_x_end = dst_x_start + dst_x_step
                     dst_y_start = 0
-                    for l, dst_y_step in enumerate(dst_y_chunks):
+                    for y_step_number, dst_y_step in enumerate(dst_y_chunks):
                         dst_y_end = dst_y_start + dst_y_step
                         # Get destination chunk polygon
-                        dst_poly = self._get_dst_poly((k, l),
+                        dst_poly = self._get_dst_poly((x_step_number, y_step_number),
                                                       dst_x_start, dst_x_end,
                                                       dst_y_start, dst_y_end)
 
@@ -170,7 +199,7 @@ class GradientSearchResampler(BaseResampler):
                                            src_x_start, src_x_end))
                         dst_slices.append((dst_y_start, dst_y_end,
                                            dst_x_start, dst_x_end))
-                        dst_mosaic_locations.append((k, l))
+                        dst_mosaic_locations.append((x_step_number, y_step_number))
 
                         dst_y_start = dst_y_end
                     dst_x_start = dst_x_end
@@ -258,33 +287,28 @@ class GradientSearchResampler(BaseResampler):
                                        self.dst_slices,
                                        **kwargs)
 
-        # TODO: this will crash wen the target geo definition is a swath def.
-        x_coord, y_coord = self.target_geo_def.get_proj_vectors()
-        coords = []
-        for key in data_dims:
-            if key == 'x':
-                coords.append(x_coord)
-            elif key == 'y':
-                coords.append(y_coord)
-            else:
-                coords.append(data_coords[key])
+        coords = _fill_in_coords(self.target_geo_def, data_coords, data_dims)
 
         if fill_value is not None:
             res = da.where(np.isnan(res), fill_value, res)
-        res = xr.DataArray(res, dims=data_dims, coords=coords)
+        if res.ndim > len(data_dims):
+            res = res.squeeze()
 
+        res = xr.DataArray(res, dims=data_dims, coords=coords)
         return res
 
 
 def check_overlap(src_poly, dst_poly):
     """Check if the two polygons overlap."""
+    # swath definition case
     if dst_poly is False or src_poly is False:
         covers = True
+    # area / area case
     elif dst_poly is not None and src_poly is not None:
         covers = src_poly.intersects(dst_poly)
+    # out of earth disk case
     else:
         covers = False
-
     return covers
 
 
@@ -294,33 +318,66 @@ def _gradient_resample_data(src_data, src_x, src_y,
                             dst_x, dst_y,
                             method='bilinear'):
     """Resample using gradient search."""
-    assert src_data.ndim == 3
-    assert src_x.ndim == 2
-    assert src_y.ndim == 2
-    assert src_gradient_xl.ndim == 2
-    assert src_gradient_xp.ndim == 2
-    assert src_gradient_yl.ndim == 2
-    assert src_gradient_yp.ndim == 2
-    assert dst_x.ndim == 2
-    assert dst_y.ndim == 2
-    assert (src_data.shape[1:] == src_x.shape == src_y.shape ==
-            src_gradient_xl.shape == src_gradient_xp.shape ==
-            src_gradient_yl.shape == src_gradient_yp.shape)
-    assert dst_x.shape == dst_y.shape
+    _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y)
+    if src_data.ndim != 3 or src_data.shape[1:] != src_x.shape:
+        raise ValueError("Malformed input data.")
 
     image = one_step_gradient_search(src_data, src_x, src_y,
                                      src_gradient_xl, src_gradient_xp,
                                      src_gradient_yl, src_gradient_yp,
                                      dst_x, dst_y,
                                      method=method)
-
     return image
 
 
-def get_border_lonlats(geo_def):
+def _gradient_resample_indices(src_x, src_y,
+                               src_gradient_xl, src_gradient_xp,
+                               src_gradient_yl, src_gradient_yp,
+                               dst_x, dst_y):
+    """Return indices computed using gradient search."""
+    _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y)
+
+    indices_xy = one_step_gradient_indices(src_x, src_y,
+                                           src_gradient_xl, src_gradient_xp,
+                                           src_gradient_yl, src_gradient_yp,
+                                           dst_x, dst_y)
+    return indices_xy
+
+
+def _check_input_coordinates(dst_x, dst_y,
+                             src_gradient_xl, src_gradient_xp,
+                             src_gradient_yl, src_gradient_yp,
+                             src_x, src_y):
+    if (src_x.ndim != 2 or
+            src_y.ndim != 2 or
+            src_gradient_xl.ndim != 2 or
+            src_gradient_xp.ndim != 2 or
+            src_gradient_yl.ndim != 2 or
+            src_gradient_yp.ndim != 2 or
+            dst_x.ndim != 2 or
+            dst_y.ndim != 2):
+        raise ValueError("Wrong number of dimensions.")
+    source_shapes_equal = (src_x.shape == src_y.shape ==
+                           src_gradient_xl.shape == src_gradient_xp.shape ==
+                           src_gradient_yl.shape == src_gradient_yp.shape)
+    if not source_shapes_equal:
+        raise ValueError("Source arrays should all have the same shape")
+
+    target_shapes_equal = (dst_x.shape == dst_y.shape)
+    if not target_shapes_equal:
+        raise ValueError("Target arrays should all have the same shape")
+
+
+def get_border_lonlats(geo_def: AreaDefinition):
     """Get the border x- and y-coordinates."""
-    if geo_def.proj_dict['proj'] == 'geos':
-        lon_b, lat_b = get_geostationary_bounding_box(geo_def, 3600)
+    if geo_def.is_geostationary:
+        lon_b, lat_b = get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
     else:
         lons, lats = geo_def.get_boundary_lonlats()
         lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))
@@ -399,6 +456,198 @@ def _concatenate_chunks(chunks):
         prev_y = y
     res.append(da.concatenate(col, axis=1))
 
-    res = da.concatenate(res, axis=2).squeeze()
+    res = da.concatenate(res, axis=2)
 
     return res
+
+
+def _fill_in_coords(target_geo_def, data_coords, data_dims):
+    x_coord, y_coord = target_geo_def.get_proj_vectors()
+    coords = []
+    for key in data_dims:
+        if key == 'x':
+            coords.append(x_coord)
+        elif key == 'y':
+            coords.append(y_coord)
+        else:
+            coords.append(data_coords[key])
+    return coords
+
+
+def ensure_data_array(func):
+    """Ensure the data is an instance of an xarray.DataArray with correct dimensions."""
+    @wraps(func)
+    def wrapper(self, data, *args, **kwargs):
+        if not isinstance(data, xr.DataArray):
+            if data.ndim != 2:
+                raise TypeError("Use a xarray.DataArray to label the dimensions"
+                                " of arrays with other than two dimensions.")
+            else:
+                data = xr.DataArray(data, dims=["y", "x"])
+        dims = data.dims
+        data = data.transpose(..., "y", "x")
+        return func(self, data, *args, **kwargs).transpose(*dims)
+    return wrapper
+
+
+class ResampleBlocksGradientSearchResampler(BaseResampler):
+    """Resample using gradient search based bilinear interpolation, using `resample_blocks` for lazy processing."""
+
+    def __init__(self, source_geo_def, target_geo_def):
+        """Init GradientResampler."""
+        if isinstance(target_geo_def, SwathDefinition):
+            raise NotImplementedError("Cannot resample to a SwathDefinition.")
+        super().__init__(source_geo_def, target_geo_def)
+        logger.debug("/!\\ Instantiating an experimental GradientSearch resampler /!\\")
+        self.indices_xy = None
+
+    def precompute(self, **kwargs):
+        """Precompute resampling parameters."""
+        if self.indices_xy is None:
+            self.indices_xy = resample_blocks(gradient_resampler_indices_block,
+                                              self.source_geo_def, [], self.target_geo_def,
+                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
+
+    @ensure_data_array
+    def compute(self, data, method="bilinear", cache_id=None, **kwargs):
+        """Perform the resampling."""
+        if method == "bilinear":
+            fun = block_bilinear_interpolator
+        elif method in ["nearest_neighbour", "nn"]:
+            fun = block_nn_interpolator
+        else:
+            raise ValueError(f"Unrecognized interpolation method {method} for gradient resampling.")
+
+        chunks = list(data.shape[:-2]) + [CHUNK_SIZE, CHUNK_SIZE]
+
+        res = resample_blocks(fun, self.source_geo_def, [data.data], self.target_geo_def,
+                              dst_arrays=[self.indices_xy],
+                              chunk_size=chunks, dtype=data.dtype, **kwargs)
+
+        coords = _fill_in_coords(self.target_geo_def, data.coords, data.dims)
+
+        res = xr.DataArray(res, attrs=data.attrs.copy(), dims=data.dims, coords=coords)
+        res.attrs["area"] = self.target_geo_def
+        return res
+
+
+def ensure_3d_data(func):
+    """Ensure the data is in three dimensions."""
+    @wraps(func)
+    def wrapper(data, *args, **kwargs):
+        """Wrap around the original function."""
+        if data.ndim == 2:
+            data_3d = data[np.newaxis, :, :]
+        else:
+            data_3d = data
+
+        resampled = func(data_3d, *args, **kwargs)
+
+        if data.ndim == 2:
+            resampled = resampled.squeeze(0)
+        return resampled
+
+    wrapper.__doc__ += "\n\nThe input data can be 2d, or 3d with the two last axes being respectively `y` and `x`."
+    return wrapper
+
+
+@ensure_3d_data
+def gradient_resampler(data, source_area, target_area, method='bilinear'):
+    """Do the gradient search resampling."""
+    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
+    dst_x, dst_y = dst_coords
+    src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = src_gradients
+    src_x, src_y = src_coords
+
+    return _gradient_resample_data(data, src_x, src_y,
+                                   src_gradient_xl, src_gradient_xp,
+                                   src_gradient_yl, src_gradient_yp,
+                                   dst_x, dst_y,
+                                   method=method)
+
+
+def gradient_resampler_indices_block(block_info=None, **kwargs):
+    """Do the gradient search resampling using block_info for areas, returning the resulting indices."""
+    source_area = block_info[0]["area"]
+    target_area = block_info[None]["area"]
+    return gradient_resampler_indices(source_area, target_area, block_info, **kwargs)
+
+
+def gradient_resampler_indices(source_area, target_area, block_info=None, **kwargs):
+    """Do the gradient search resampling, returning the resulting indices."""
+    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
+    dst_x, dst_y = dst_coords
+    src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = src_gradients
+    src_x, src_y = src_coords
+
+    indices_xy = _gradient_resample_indices(src_x, src_y,
+                                            src_gradient_xl, src_gradient_xp,
+                                            src_gradient_yl, src_gradient_yp,
+                                            dst_x, dst_y)
+
+    if block_info:
+        y_slice, x_slice = block_info[0]["array-location"][-2:]
+        indices_xy[0, :, :] += x_slice.start
+        indices_xy[1, :, :] += y_slice.start
+
+    return indices_xy
+
+
+def _get_coordinates_in_same_projection(source_area, target_area):
+    try:
+        src_x, src_y = source_area.get_proj_coords()
+        transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample from Swath for now.") from err
+
+    try:
+        dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
+    except AttributeError as err:
+        raise NotImplementedError("Cannot resample to Swath for now.") from err
+    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
+    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+    return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)
+
+
+def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
+    """Bilinear interpolation implementation for resample_blocks."""
+    mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
+
+    weight_l, l_start = np.modf(y_indices.clip(0, data.shape[-2] - 1))
+    weight_p, p_start = np.modf(x_indices.clip(0, data.shape[-1] - 1))
+
+    l_start = l_start.astype(int)
+    p_start = p_start.astype(int)
+    l_end = np.clip(l_start + 1, 1, data.shape[-2] - 1)
+    p_end = np.clip(p_start + 1, 1, data.shape[-1] - 1)
+
+    res = ((1 - weight_l) * (1 - weight_p) * data[..., l_start, p_start] +
+           (1 - weight_l) * weight_p * data[..., l_start, p_end] +
+           weight_l * (1 - weight_p) * data[..., l_end, p_start] +
+           weight_l * weight_p * data[..., l_end, p_end])
+    res = np.where(mask, fill_value, res)
+    return res
+
+
+def block_nn_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
+    """Nearest neighbour 'interpolator' for resample_blocks."""
+    mask, x_indices, y_indices = _get_mask_and_adjusted_indices(indices_xy, block_info)
+
+    x_indices = np.clip(np.rint(x_indices), 0, data.shape[-1] - 1).astype(int)
+    y_indices = np.clip(np.rint(y_indices), 0, data.shape[-2] - 1).astype(int)
+
+    res = data[..., y_indices, x_indices]
+    return np.where(mask, fill_value, res)
+
+
+def _get_mask_and_adjusted_indices(indices_xy, block_info):
+    """Get a mask for valid data and adjusted x and y indices."""
+    x_indices, y_indices = indices_xy
+    if block_info:
+        y_slice, x_slice = block_info[0]["array-location"][-2:]
+        x_indices = x_indices - x_slice.start
+        y_indices = y_indices - y_slice.start
+    mask = np.isnan(y_indices)
+    x_indices = np.nan_to_num(x_indices, 0)
+    y_indices = np.nan_to_num(y_indices, 0)
+    return mask, x_indices, y_indices

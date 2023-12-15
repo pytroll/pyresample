@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2015-2020 Pyresample developers
+# Copyright (c) 2015-2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -19,18 +19,28 @@
 
 import os
 import unittest
-import io
-import pathlib
-from tempfile import NamedTemporaryFile
+import uuid
+from timeit import timeit
+from unittest import mock
 
 import numpy as np
+import pyproj
+import pytest
 from pyproj import CRS
-import uuid
 
-from pyresample.test.utils import create_test_longitude, create_test_latitude
+import pyresample
+from pyresample.test.utils import (
+    TEST_FILES_PATH,
+    assert_future_geometry,
+    create_test_latitude,
+    create_test_longitude,
+)
+from pyresample.utils import load_cf_area
+from pyresample.utils.row_appendable_array import RowAppendableArray
 
 
 def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
+    """Create a temporary in-memory TIFF file of all ones."""
     import rasterio
     array = np.ones((width, height)).astype(dtype)
     fname = '/vsimem/%s' % uuid.uuid4()
@@ -40,201 +50,11 @@ def tmptiff(width=100, height=100, transform=None, crs=None, dtype=np.uint8):
     return fname
 
 
-class TestLegacyAreaParser(unittest.TestCase):
-    def test_area_parser_legacy(self):
-        """Test legacy area parser."""
-        from pyresample import parse_area_file
-        ease_nh, ease_sh = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'),
-                                           'ease_nh', 'ease_sh')
-
-        # pyproj 2.0+ adds some extra parameters
-        projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
-                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        nh_str = """Area ID: ease_nh
-Description: Arctic EASE grid
-Projection ID: ease_nh
-Projection: {}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(ease_nh.__str__(), nh_str)
-        self.assertIsInstance(ease_nh.proj_dict['lat_0'], (int, float))
-
-        projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
-                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        sh_str = """Area ID: ease_sh
-Description: Antarctic EASE grid
-Projection ID: ease_sh
-Projection: {}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(ease_sh.__str__(), sh_str)
-        self.assertIsInstance(ease_sh.proj_dict['lat_0'], (int, float))
-
-    def test_load_area(self):
-        from pyresample import load_area
-        ease_nh = load_area(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'ease_nh')
-        # pyproj 2.0+ adds some extra parameters
-        projection = ("{'R': '6371228', 'lat_0': '90', 'lon_0': '0', "
-                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        nh_str = """Area ID: ease_nh
-Description: Arctic EASE grid
-Projection ID: ease_nh
-Projection: {}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(nh_str, ease_nh.__str__())
-
-    def test_area_file_not_found_exception(self):
-        from pyresample.area_config import load_area
-        self.assertRaises(FileNotFoundError, load_area,
-                          "/this/file/does/not/exist.yaml")
-        self.assertRaises(FileNotFoundError, load_area,
-                          pathlib.Path("/this/file/does/not/exist.yaml"))
-
-    def test_not_found_exception(self):
-        from pyresample.area_config import AreaNotFound, parse_area_file
-        self.assertRaises(AreaNotFound, parse_area_file,
-                          os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'), 'no_area')
-
-    def test_commented(self):
-        from pyresample import parse_area_file
-        areas = parse_area_file(os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg'))
-        self.assertNotIn('commented', [area.name for area in areas])
-
-
-class TestYAMLAreaParser(unittest.TestCase):
-    def test_area_parser_yaml(self):
-        """Test YAML area parser."""
-        from pyresample import parse_area_file
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
-        test_areas = parse_area_file(test_area_file, 'ease_nh', 'ease_sh', 'test_meters', 'test_degrees',
-                                     'test_latlong')
-        ease_nh, ease_sh, test_m, test_deg, test_latlong = test_areas
-
-        # pyproj 2.0+ adds some extra parameters
-        projection = ("{'R': '6371228', 'lat_0': '-90', 'lon_0': '0', "
-                      "'no_defs': 'None', 'proj': 'laea', 'type': 'crs', "
-                      "'units': 'm', 'x_0': '0', 'y_0': '0'}")
-        nh_str = """Area ID: ease_nh
-Description: Arctic EASE grid
-Projection: {}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(ease_nh.__str__(), nh_str)
-
-        sh_str = """Area ID: ease_sh
-Description: Antarctic EASE grid
-Projection: {}
-Number of columns: 425
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(ease_sh.__str__(), sh_str)
-
-        m_str = """Area ID: test_meters
-Description: test_meters
-Projection: {}
-Number of columns: 850
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(test_m.__str__(), m_str)
-
-        deg_str = """Area ID: test_degrees
-Description: test_degrees
-Projection: {}
-Number of columns: 850
-Number of rows: 425
-Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)""".format(projection)
-        self.assertEqual(test_deg.__str__(), deg_str)
-
-        # pyproj 2.0+ adds some extra parameters
-        projection = ("{'ellps': 'WGS84', 'no_defs': 'None', "
-                      "'pm': '-81.36', 'proj': 'longlat', "
-                      "'type': 'crs'}")
-        latlong_str = """Area ID: test_latlong
-Description: Basic latlong grid
-Projection: {}
-Number of columns: 3473
-Number of rows: 4058
-Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
-        self.assertEqual(test_latlong.__str__(), latlong_str)
-
-    def test_dynamic_area_parser_yaml(self):
-        """Test YAML area parser on dynamic areas."""
-        from pyresample import parse_area_file
-        from pyresample.geometry import DynamicAreaDefinition
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
-        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution')[0]
-
-        self.assertIsInstance(test_area, DynamicAreaDefinition)
-        self.assertTrue(hasattr(test_area, 'resolution'))
-        self.assertEqual(test_area.resolution, (1000.0, 1000.0))
-
-        # lat/lon
-        from pyresample import parse_area_file
-        from pyresample.geometry import DynamicAreaDefinition
-        test_area_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
-        test_area = parse_area_file(test_area_file, 'test_dynamic_resolution_ll')[0]
-
-        self.assertIsInstance(test_area, DynamicAreaDefinition)
-        self.assertTrue(hasattr(test_area, 'resolution'))
-        np.testing.assert_allclose(test_area.resolution, (1.0, 1.0))
-
-    def test_multiple_file_content(self):
-        from pyresample import parse_area_file
-        from pyresample.area_config import load_area_from_string
-        area_list = ["""ease_sh:
-  description: Antarctic EASE grid
-  projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
-    proj: laea
-    lat_0: -90
-  shape:
-    height: 425
-    width: 425
-  area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
-""",
-                     """ease_sh2:
-  description: Antarctic EASE grid
-  projection:
-    a: 6371228.0
-    units: m
-    lon_0: 0
-    proj: laea
-    lat_0: -90
-  shape:
-    height: 425
-    width: 425
-  area_extent:
-    lower_left_xy: [-5326849.0625, -5326849.0625]
-    upper_right_xy: [5326849.0625, 5326849.0625]
-    units: m
-"""]
-        with self.assertWarns(DeprecationWarning):
-            results = parse_area_file(area_list)
-        self.assertEqual(len(results), 2)
-        self.assertIn(results[0].area_id, ('ease_sh', 'ease_sh2'))
-        self.assertIn(results[1].area_id, ('ease_sh', 'ease_sh2'))
-        results2 = parse_area_file([io.StringIO(ar) for ar in area_list])
-        results3 = load_area_from_string(area_list)
-        self.assertEqual(results, results2)
-        self.assertEqual(results, results3)
-
-
 class TestPreprocessing(unittest.TestCase):
+    """Tests for index generating functions."""
+
     def test_nearest_neighbor_area_area(self):
-        from pyresample import utils, geometry
+        from pyresample import geometry, utils
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 5000, 1000. * 5000]
@@ -247,7 +67,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, area_def2, 12000.)
 
     def test_nearest_neighbor_area_grid(self):
-        from pyresample import utils, geometry
+        from pyresample import geometry, utils
         lon_arr = create_test_longitude(-94.9, -90.0, (50, 100), dtype=np.float64)
         lat_arr = create_test_latitude(25.1, 30.0, (50, 100), dtype=np.float64)
         grid = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
@@ -260,7 +80,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(area_def, grid, 12000.)
 
     def test_nearest_neighbor_grid_area(self):
-        from pyresample import utils, geometry
+        from pyresample import geometry, utils
         proj_str = "+proj=lcc +datum=WGS84 +ellps=WGS84 +lat_0=25 +lat_1=25 +lon_0=-95 +units=m +no_defs"
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         extents = [0, 0, 1000. * 2500., 1000. * 2000.]
@@ -273,7 +93,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(grid, area_def, 12000.)
 
     def test_nearest_neighbor_grid_grid(self):
-        from pyresample import utils, geometry
+        from pyresample import geometry, utils
         lon_arr = create_test_longitude(-95.0, -85.0, (40, 50), dtype=np.float64)
         lat_arr = create_test_latitude(25.0, 35.0, (40, 50), dtype=np.float64)
         grid_dst = geometry.GridDefinition(lons=lon_arr, lats=lat_arr)
@@ -285,6 +105,8 @@ class TestPreprocessing(unittest.TestCase):
 
 
 class TestMisc(unittest.TestCase):
+    """Test miscellaneous utilities."""
+
     def test_wrap_longitudes(self):
         # test that we indeed wrap to [-180:+180[
         from pyresample import utils
@@ -360,6 +182,7 @@ class TestMisc(unittest.TestCase):
 
     def test_convert_proj_floats(self):
         from collections import OrderedDict
+
         import pyresample.utils as utils
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
@@ -401,10 +224,22 @@ class TestMisc(unittest.TestCase):
         # EPSG to PROJ.4 can be lossy
         # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
 
+    def test_proj4_str_dict_conversion_with_valueless_parameter(self):
+        from pyresample import utils
+
+        # Value-less south parameter
+        proj_str = "+ellps=WGS84 +no_defs +proj=utm +south +type=crs +units=m +zone=54"
+        proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
+        proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
+        proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
+        self.assertDictEqual(proj_dict, proj_dict2)
+
+    @pytest.mark.skipif(pyproj.__proj_version__ == "9.3.0", reason="Bug in PROJ causes inequality in EPSG comparison")
     def test_def2yaml_converter(self):
-        from pyresample import parse_area_file, convert_def_to_yaml
         import tempfile
-        def_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.cfg')
+
+        from pyresample import convert_def_to_yaml, parse_area_file
+        def_file = os.path.join(TEST_FILES_PATH, 'areas.cfg')
         filehandle, yaml_file = tempfile.mkstemp()
         os.close(filehandle)
         try:
@@ -418,10 +253,15 @@ class TestMisc(unittest.TestCase):
         finally:
             os.remove(yaml_file)
 
+
+class TestFromRasterio:
+    """Test loading geometries from rasterio datasets."""
+
     def test_get_area_def_from_raster(self):
-        from pyresample import utils
-        from rasterio.crs import CRS as RCRS
         from affine import Affine
+        from rasterio.crs import CRS as RCRS
+
+        from pyresample import utils
         x_size = 791
         y_size = 718
         transform = Affine(300.0379266750948, 0.0, 101985.0,
@@ -433,17 +273,19 @@ class TestMisc(unittest.TestCase):
         description = 'name'
         area_def = utils.rasterio.get_area_def_from_raster(
             source, area_id=area_id, name=description, proj_id=proj_id)
-        self.assertEqual(area_def.area_id, area_id)
-        self.assertEqual(area_def.proj_id, proj_id)
-        self.assertEqual(area_def.description, description)
-        self.assertEqual(area_def.width, x_size)
-        self.assertEqual(area_def.height, y_size)
-        self.assertEqual(crs, area_def.crs)
-        self.assertTupleEqual(area_def.area_extent, (transform.c, transform.f + transform.e * y_size,
-                                                     transform.c + transform.a * x_size, transform.f))
+        assert area_def.area_id == area_id
+        assert area_def.proj_id == proj_id
+        assert area_def.description == description
+        assert area_def.width == x_size
+        assert area_def.height == y_size
+        assert crs == area_def.crs
+        assert area_def.area_extent == (
+            transform.c, transform.f + transform.e * y_size,
+            transform.c + transform.a * x_size, transform.f)
 
     def test_get_area_def_from_raster_extracts_proj_id(self):
         from rasterio.crs import CRS as RCRS
+
         from pyresample import utils
         crs = RCRS(init='epsg:3857')
         source = tmptiff(crs=crs)
@@ -452,128 +294,54 @@ class TestMisc(unittest.TestCase):
             'WGS_1984_Web_Mercator_Auxiliary_Sphere',  # gdal>=3.0 + proj>=6.0
             'WGS 84 / Pseudo-Mercator',                # proj<6.0
         )
-        self.assertIn(area_def.proj_id, epsg3857_names)
+        assert area_def.proj_id in epsg3857_names
 
-    def test_get_area_def_from_raster_rotated_value_err(self):
-        from pyresample import utils
+    @pytest.mark.parametrize("x_rotation", [0.0, 0.1])
+    def test_get_area_def_from_raster_non_georef_value_err(self, x_rotation):
         from affine import Affine
-        transform = Affine(300.0379266750948, 0.1, 101985.0,
+
+        from pyresample import utils
+        transform = Affine(300.0379266750948, x_rotation, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
+        with pytest.raises(ValueError):
+            utils.rasterio.get_area_def_from_raster(source)
 
-    def test_get_area_def_from_raster_non_georef_value_err(self):
-        from pyresample import utils
+    @pytest.mark.parametrize("future_geometries", [False, True])
+    def test_get_area_def_from_raster_non_georef_respects_proj_dict(
+            self,
+            future_geometries,
+            _mock_rasterio_with_importerror
+    ):
         from affine import Affine
+
+        from pyresample import utils
         transform = Affine(300.0379266750948, 0.0, 101985.0,
                            0.0, -300.041782729805, 2826915.0)
         source = tmptiff(transform=transform)
-        self.assertRaises(ValueError, utils.rasterio.get_area_def_from_raster, source)
-
-    def test_get_area_def_from_raster_non_georef_respects_proj_dict(self):
-        from pyresample import utils
-        from affine import Affine
-        transform = Affine(300.0379266750948, 0.0, 101985.0,
-                           0.0, -300.041782729805, 2826915.0)
-        source = tmptiff(transform=transform)
-        proj_dict = {'init': 'epsg:3857'}
-        area_def = utils.rasterio.get_area_def_from_raster(source, proj_dict=proj_dict)
-        self.assertEqual(area_def.crs, CRS(3857))
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
+            area_def = utils.rasterio.get_area_def_from_raster(source, projection="EPSG:3857")
+        assert_future_geometry(area_def, future_geometries)
+        assert area_def.crs == CRS(3857)
 
 
-class TestProjRotation(unittest.TestCase):
-    """Test loading areas with rotation specified."""
+@pytest.fixture(params=[False, True])
+def _mock_rasterio_with_importerror(request):
+    """Mock rasterio importing so it isn't available and GDAL is used."""
+    if not request.param:
+        yield None
+        return
+    try:
+        from osgeo import gdal
+    except ImportError:
+        # GDAL isn't available at all
+        pytest.skip("'gdal' not available for testing")
 
-    def test_rotation_legacy(self):
-        """Basic rotation in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        ROTATION:      -45
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_rotation_yaml(self):
-        """Basic rotation in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          rotation: -45
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, -45)
-        os.remove(f.name)
-
-    def test_norotation_legacy(self):
-        """No rotation specified in legacy format."""
-        from pyresample.area_config import load_area
-        legacyDef = """REGION: regionB {
-        NAME:          regionB
-        PCS_ID:        regionB
-        PCS_DEF:       proj=merc, lon_0=-34, k=1, x_0=0, y_0=0, a=6378137, b=6378137
-        XSIZE:         800
-        YSIZE:         548
-        AREA_EXTENT:   (-7761424.714818418, -4861746.639279127, 11136477.43264252, 8236799.845095873)
-        };"""
-        with NamedTemporaryFile(mode="w", suffix='.cfg', delete=False) as f:
-            f.write(legacyDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
-
-    def test_norotation_yaml(self):
-        """No rotation specified in yaml format."""
-        from pyresample.area_config import load_area
-        yamlDef = """regionB:
-          description: regionB
-          projection:
-            a: 6378137.0
-            b: 6378137.0
-            lon_0: -34
-            proj: merc
-            x_0: 0
-            y_0: 0
-            k_0: 1
-          shape:
-            height: 548
-            width: 800
-          area_extent:
-            lower_left_xy: [-7761424.714818418, -4861746.639279127]
-            upper_right_xy: [11136477.43264252, 8236799.845095873]
-          units: m"""
-        with NamedTemporaryFile(mode="w", suffix='.yaml', delete=False) as f:
-            f.write(yamlDef)
-        test_area = load_area(f.name, 'regionB')
-        self.assertEqual(test_area.rotation, 0)
-        os.remove(f.name)
+    with mock.patch("pyresample.utils.rasterio._import_raster_libs") as imp_func:
+        imp_func.return_value = (None, gdal)
+        yield imp_func
 
 
-# helper routines for the CF test cases
 def _prepare_cf_nh10km():
     import xarray as xr
     nx = 760
@@ -600,6 +368,55 @@ def _prepare_cf_nh10km():
     ds['Polar_Stereographic_Grid'].attrs['straight_vertical_longitude_from_pole'] = -45.
     ds['Polar_Stereographic_Grid'].attrs['latitude_of_projection_origin'] = 90.
     ds['Polar_Stereographic_Grid'].attrs['standard_parallel'] = 70.
+
+    return ds
+
+
+def _prepare_cf_goes():
+    import xarray as xr
+
+    from pyresample.geometry import AreaDefinition
+    area_id = 'GOES-East'
+    description = '2km at nadir'
+    proj_id = 'abi_fixed_grid'
+    h = 35786023
+    projection = {'ellps': 'GRS80', 'h': h, 'lon_0': '-75', 'no_defs': 'None',
+                  'proj': 'geos', 'sweep': 'x', 'type': 'crs',
+                  'units': 'm', 'x_0': '0', 'y_0': '0'}
+    width = 2500
+    height = 1500
+    area_extent = (-3627271.2913 / h, 1583173.6575 / h, 1382771.9287 / h, 4589199.5895 / h)
+    goes_area = AreaDefinition(area_id, description, proj_id, projection,
+                               width, height, area_extent)
+    x = np.linspace(goes_area.area_extent[0], goes_area.area_extent[2], goes_area.shape[1])
+    y = np.linspace(goes_area.area_extent[3], goes_area.area_extent[1], goes_area.shape[0])
+    ds = xr.Dataset({'C13': (('y', 'x'), np.ma.masked_all((height, width)),
+                             {'grid_mapping': 'GOES-East'})},
+                    coords={'y': y, 'x': x})
+
+    ds['x'].attrs['units'] = 'radians'
+    ds['x'].attrs['standard_name'] = 'projection_x_coordinate'
+    ds['y'].attrs['units'] = 'radians'
+    ds['y'].attrs['standard_name'] = 'projection_y_coordinate'
+
+    ds['GOES-East'] = 0
+    ds['GOES-East'].attrs['grid_mapping_name'] = 'geostationary'
+    ds['GOES-East'].attrs['false_easting'] = 0.0
+    ds['GOES-East'].attrs['false_northing'] = 0.0
+    ds['GOES-East'].attrs['semi_major_axis'] = 6378137.0
+    ds['GOES-East'].attrs['semi_minor_axis'] = 6356752.31414
+    ds['GOES-East'].attrs['geographic_crs_name'] = 'unknown'
+    ds['GOES-East'].attrs['horizontal_datum_name'] = 'unknown'
+    ds['GOES-East'].attrs['inverse_flattening'] = 298.257222096042
+    ds['GOES-East'].attrs['latitude_of_projection_origin'] = 0.0
+    ds['GOES-East'].attrs['long_name'] = 'GOES-East'
+    ds['GOES-East'].attrs['longitude_of_prime_meridian'] = 0.0
+    ds['GOES-East'].attrs['longitude_of_projection_origin'] = -75.0
+    ds['GOES-East'].attrs['perspective_point_height'] = 35786023.0
+    ds['GOES-East'].attrs['prime_meridian_name'] = 'Greenwich'
+    ds['GOES-East'].attrs['projected_crs_name'] = 'unknown'
+    ds['GOES-East'].attrs['reference_ellipsoid_name'] = 'GRS 1980'
+    ds['GOES-East'].attrs['sweep_angle_axis'] = 'x'
 
     return ds
 
@@ -640,159 +457,124 @@ def _prepare_cf_llnocrs():
     return ds
 
 
-class TestLoadCFArea_Public(unittest.TestCase):
+class TestLoadCFAreaPublic:
     """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
 
-    def test_load_cf_from_wrong_filepath(self):
-        from pyresample.utils import load_cf_area
+    def test_load_cf_no_exist(self):
+        cf_file = os.path.join(TEST_FILES_PATH, 'does_not_exist.nc')
+        with pytest.raises(FileNotFoundError):
+            load_cf_area(cf_file)
 
-        # wrong case #1: the path does not exist
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'does_not_exist.nc')
-        self.assertRaises(FileNotFoundError, load_cf_area, cf_file)
+    def test_load_cf_from_not_nc(self):
+        cf_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
+        with pytest.raises((ValueError, OSError)):
+            load_cf_area(cf_file)
 
-        # wrong case #2: the path exists, but is not a netCDF file
-        cf_file = os.path.join(os.path.dirname(__file__), 'test_files', 'areas.yaml')
-        self.assertRaises((ValueError, OSError), load_cf_area, cf_file)
-
-    def test_load_cf_parameters_errors(self):
-        from pyresample.utils import load_cf_area
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("exc_type", "kwargs"),
+        [
+            (KeyError, {"variable": "doesNotExist"}),
+            (ValueError, {"variable": "Polar_Stereographic_Grid"}),
+            (KeyError, {"variable": "Polar_Stereographic_Grid", "y": "doesNotExist", "x": "xc"}),
+            (ValueError, {"variable": "Polar_Stereographic_Grid", "y": "time", "x": "xc"}),
+            (ValueError, {"variable": "lat"}),
+        ]
+    )
+    def test_load_cf_parameters_errors(self, exc_type, kwargs):
         cf_file = _prepare_cf_nh10km()
+        with pytest.raises(exc_type):
+            load_cf_area(cf_file, **kwargs)
 
-        # try to load from a variable= that does not exist
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'doesNotExist')
-
-        # try to load from a variable= that is itself is a grid_mapping, but without y= or x=
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid',)
-
-        # try to load using a variable= that is a valid grid_mapping container, but use wrong x= and y=
-        self.assertRaises(KeyError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='doesNotExist', x='xc',)
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'Polar_Stereographic_Grid', y='time', x='xc',)
-
-        # try to load using a variable= that does not define a grid mapping
-        self.assertRaises(ValueError, load_cf_area, cf_file, 'lat',)
-
-    def test_load_cf_nh10km(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_nh10km_adef(adef):
-            self.assertEqual(adef.shape, (1120, 760))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -3845000.0, msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], xc[0] + 10000.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], 5845000.0, msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], yc[0] - 10000.0, msg="Wrong y axis (index 1)")
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"variable": "Polar_Stereographic_Grid", "y": "yc", "x": "xc"},
+            {"variable": "ice_conc"},
+            {},
+        ]
+    )
+    def test_load_cf_nh10km(self, kwargs):
         cf_file = _prepare_cf_nh10km()
+        adef, _ = load_cf_area(cf_file, **kwargs)
+        assert adef.shape == (1120, 760)
+        xc = adef.projection_x_coords
+        yc = adef.projection_y_coords
+        assert xc[0] == -3845000.0, "Wrong x axis (index 0)"
+        assert xc[1] == xc[0] + 10000.0, "Wrong x axis (index 1)"
+        assert yc[0] == 5845000.0, "Wrong y axis (index 0)"
+        assert yc[1] == yc[0] - 10000.0, "Wrong y axis (index 1)"
 
-        # load using a variable= that is a valid grid_mapping container
-        adef, _ = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc',)
-        validate_nh10km_adef(adef)
-
-        # load using a variable= that has a :grid_mapping attribute
-        adef, _ = load_cf_area(cf_file, 'ice_conc')
-        validate_nh10km_adef(adef)
-
-        # load without using a variable=
-        adef, _ = load_cf_area(cf_file)
-        validate_nh10km_adef(adef)
-
-    def test_load_cf_nh10km_cfinfo(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_nh10km_cfinfo(cfinfo, variable='ice_conc', lat='lat', lon='lon'):
-            # test some of the fields
-            self.assertEqual(cf_info['variable'], variable)
-            self.assertEqual(cf_info['grid_mapping_variable'], 'Polar_Stereographic_Grid')
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'polar_stereographic')
-            self.assertEqual(cf_info['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['x']['varname'], 'xc')
-            self.assertEqual(cf_info['x']['first'], -3845.0)
-            self.assertEqual(cf_info['y']['varname'], 'yc')
-            self.assertEqual(cf_info['y']['last'], -5345.0)
-
-        # prepare xarray Dataset
+    @pytest.mark.parametrize(
+        ("kwargs", "exp_var", "exp_lat", "exp_lon"),
+        [
+            ({"variable": "Polar_Stereographic_Grid", "y": "yc", "x": "xc"}, "Polar_Stereographic_Grid", None, None),
+            ({"variable": "ice_conc"}, "ice_conc", "lat", "lon"),
+            ({}, "ice_conc", "lat", "lon"),
+        ]
+    )
+    def test_load_cf_nh10km_cfinfo(self, kwargs, exp_var, exp_lat, exp_lon):
         cf_file = _prepare_cf_nh10km()
+        _, cf_info = load_cf_area(cf_file, **kwargs)
+        assert cf_info['variable'] == exp_var
+        assert cf_info['grid_mapping_variable'] == 'Polar_Stereographic_Grid'
+        assert cf_info['type_of_grid_mapping'] == 'polar_stereographic'
+        assert cf_info['lon'] == exp_lon
+        assert cf_info['lat'] == exp_lat
+        assert cf_info['x']['varname'] == 'xc'
+        assert cf_info['x']['first'] == -3845.0
+        assert cf_info['y']['varname'] == 'yc'
+        assert cf_info['y']['last'] == -5345.0
 
-        # load using a variable= that is a valid grid_mapping container
-        _, cf_info = load_cf_area(cf_file, 'Polar_Stereographic_Grid', y='yc', x='xc')
-        validate_nh10km_cfinfo(cf_info, variable='Polar_Stereographic_Grid', lat=None, lon=None)
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"variable": "C13"},
+            {},
+        ])
+    def test_load_cf_goes(self, kwargs):
+        cf_file = _prepare_cf_goes()
+        adef, cf_info = load_cf_area(cf_file, **kwargs)
+        assert cf_info['grid_mapping_variable'] == 'GOES-East'
+        assert cf_info['type_of_grid_mapping'] == 'geostationary'
+        assert cf_info['x']['varname'] == 'x'
+        assert cf_info['x']['first'] == -3627271.2913
+        assert cf_info['y']['varname'] == 'y'
+        assert cf_info['y']['last'] == 1583173.6575
 
-        # load using a variable= that has a :grid_mapping attribute
-        _, cf_info = load_cf_area(cf_file, 'ice_conc')
-        validate_nh10km_cfinfo(cf_info)
+    @pytest.mark.parametrize(
+        ("file_func", "kwargs", "exp_lat", "exp_lon"),
+        [
+            (_prepare_cf_llwgs84, {"variable": "crs", "y": "lat", "x": "lon"}, None, None),
+            (_prepare_cf_llwgs84, {"variable": "temp"}, "lat", "lon"),
+            (_prepare_cf_llwgs84, {}, "lat", "lon"),
+            (_prepare_cf_llnocrs, {"variable": "temp"}, "lat", "lon"),
+            (_prepare_cf_llnocrs, {}, "lat", "lon"),
+        ]
+    )
+    @pytest.mark.parametrize("future_geometries", [False, True])
+    def test_load_cf_latlon(self, file_func, kwargs, exp_lat, exp_lon, future_geometries):
+        cf_file = file_func()
+        with pyresample.config.set({"features.future_geometries": future_geometries}):
+            adef, cf_info = load_cf_area(cf_file, **kwargs)
+        _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
+        assert_future_geometry(adef, future_geometries)
 
-        # load without using a variable=
-        _, cf_info = load_cf_area(cf_file)
-        validate_nh10km_cfinfo(cf_info)
 
-    def test_load_cf_llwgs84(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_llwgs84(adef, cfinfo, lat='lat', lon='lon'):
-            self.assertEqual(adef.shape, (19, 37))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
-            self.assertEqual(cfinfo['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
-            self.assertEqual(cf_info['x']['varname'], 'lon')
-            self.assertEqual(cf_info['x']['first'], -180.)
-            self.assertEqual(cf_info['y']['varname'], 'lat')
-            self.assertEqual(cf_info['y']['first'], -90.)
-
-        # prepare xarray Dataset
-        cf_file = _prepare_cf_llwgs84()
-
-        # load using a variable= that is a valid grid_mapping container
-        adef, cf_info = load_cf_area(cf_file, 'crs', y='lat', x='lon')
-        validate_llwgs84(adef, cf_info, lat=None, lon=None)
-
-        # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp')
-        validate_llwgs84(adef, cf_info)
-
-        # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file)
-        validate_llwgs84(adef, cf_info)
-
-    def test_load_cf_llnocrs(self):
-        from pyresample.utils import load_cf_area
-
-        def validate_llnocrs(adef, cfinfo, lat='lat', lon='lon'):
-            self.assertEqual(adef.shape, (19, 37))
-            xc = adef.projection_x_coords
-            yc = adef.projection_y_coords
-            self.assertEqual(xc[0], -180., msg="Wrong x axis (index 0)")
-            self.assertEqual(xc[1], -180. + 10.0, msg="Wrong x axis (index 1)")
-            self.assertEqual(yc[0], -90., msg="Wrong y axis (index 0)")
-            self.assertEqual(yc[1], -90. + 10.0, msg="Wrong y axis (index 1)")
-            self.assertEqual(cfinfo['lon'], lon)
-            self.assertEqual(cf_info['lat'], lat)
-            self.assertEqual(cf_info['type_of_grid_mapping'], 'latitude_longitude')
-            self.assertEqual(cf_info['x']['varname'], 'lon')
-            self.assertEqual(cf_info['x']['first'], -180.)
-            self.assertEqual(cf_info['y']['varname'], 'lat')
-            self.assertEqual(cf_info['y']['first'], -90.)
-
-        # prepare xarray Dataset
-        cf_file = _prepare_cf_llnocrs()
-
-        # load using a variable=temp
-        adef, cf_info = load_cf_area(cf_file, 'temp')
-        validate_llnocrs(adef, cf_info)
-
-        # load using a variable=None
-        adef, cf_info = load_cf_area(cf_file)
-        validate_llnocrs(adef, cf_info)
+def _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat):
+    assert adef.shape == (19, 37)
+    xc = adef.projection_x_coords
+    yc = adef.projection_y_coords
+    assert xc[0] == -180., "Wrong x axis (index 0)"
+    assert xc[1] == -180. + 10.0, "Wrong x axis (index 1)"
+    assert yc[0] == -90., "Wrong y axis (index 0)"
+    assert yc[1] == -90. + 10.0, "Wrong y axis (index 1)"
+    assert cf_info['lon'] == exp_lon
+    assert cf_info['lat'] == exp_lat
+    assert cf_info['type_of_grid_mapping'] == 'latitude_longitude'
+    assert cf_info['x']['varname'] == 'lon'
+    assert cf_info['x']['first'] == -180.
+    assert cf_info['y']['varname'] == 'lat'
+    assert cf_info['y']['first'] == -90.
 
 
 class TestLoadCFArea_Private(unittest.TestCase):
@@ -838,8 +620,10 @@ class TestLoadCFArea_Private(unittest.TestCase):
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
     def test_cf_is_valid_coordinate_standardname(self):
-        from pyresample.utils.cf import _is_valid_coordinate_standardname
-        from pyresample.utils.cf import _valid_cf_type_of_grid_mapping
+        from pyresample.utils.cf import (
+            _is_valid_coordinate_standardname,
+            _valid_cf_type_of_grid_mapping,
+        )
 
         # nominal
         for proj_type in _valid_cf_type_of_grid_mapping:
@@ -927,3 +711,51 @@ def test_check_slice_orientation():
     slice_in = slice(start, stop, step)
     res = check_slice_orientation(slice_in)
     assert res == slice(start, stop, -1)
+
+
+class TestRowAppendableArray(unittest.TestCase):
+    """Test appending numpy arrays to possible pre-allocated buffer."""
+
+    def test_append_1d_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_and_trim_remaining_buffer(self):
+        appendable = RowAppendableArray(7)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_more_1d_arrays_than_expected(self):
+        appendable = RowAppendableArray(5)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_more_rows_of_nd_arrays_than_expected(self):
+        appendable = RowAppendableArray(2)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_append_1d_arrays_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros(3))
+        appendable.append_row(np.ones(3))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.array([0, 0, 0, 1, 1, 1])))
+
+    def test_append_rows_of_nd_arrays_to_pre_allocated_appendable_array(self):
+        appendable = RowAppendableArray(6)
+        appendable.append_row(np.zeros((3, 2)))
+        appendable.append_row(np.ones((3, 2)))
+        self.assertTrue(np.array_equal(appendable.to_array(), np.vstack([np.zeros((3, 2)), np.ones((3, 2))])))
+
+    def test_pre_allocation_can_double_appending_performance(self):
+        unallocated = RowAppendableArray(0)
+        pre_allocated = RowAppendableArray(10000)
+
+        unallocated_performance = timeit(lambda: unallocated.append_row(np.array([42])), number=10000)
+        pre_allocated_performance = timeit(lambda: pre_allocated.append_row(np.array([42])), number=10000)
+        self.assertGreater(unallocated_performance / pre_allocated_performance, 2)

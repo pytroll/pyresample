@@ -14,31 +14,39 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# workaround python bug: http://bugs.python.org/issue15881#msg170215
-# remove when python 2 support is dropped
 """The setup module."""
-import multiprocessing  # noqa: F401
-import versioneer
 import sys
+
 import numpy as np
-
-from setuptools import Extension, find_packages, setup
 from Cython.Build import cythonize
+from setuptools import Extension, find_packages, setup
 
-requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
-                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+import versioneer
+
+requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
+                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.21.0',
+                "shapely", "donfig", "platformdirs",
                 ]
+
+if sys.version_info < (3, 10):
+    requirements.append('importlib_metadata')
+
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixtures', 'shapely', 'odc-geo']
 extras_require = {'numexpr': ['numexpr'],
-                  'quicklook': ['matplotlib', 'cartopy', 'pillow'],
+                  'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
                   'dask': ['dask>=0.16.1'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
-                  'xarray_bilinear': ['xarray', 'dask', 'zarr']}
+                  'xarray_bilinear': ['xarray', 'dask', 'zarr'],
+                  'odc-geo': ['odc-geo'],
+                  'tests': test_requires}
 
-setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr']
+all_extras = []
+for extra_deps in extras_require.values():
+    all_extras.extend(extra_deps)
+extras_require['all'] = list(set(all_extras))
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
@@ -63,6 +71,12 @@ extensions = [
 
 cmdclass = versioneer.get_cmdclass()
 
+entry_points = {
+    "pyresample.resamplers": [
+        "nearest = pyresample.future.resamplers.nearest:KDTreeNearestXarrayResampler",
+    ],
+}
+
 if __name__ == "__main__":
     README = open('README.md', 'r').read()
     setup(name='pyresample',
@@ -77,17 +91,17 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
-          python_requires='>=3.4',
-          setup_requires=setup_requires,
+          python_requires='>=3.9',
           install_requires=requirements,
           extras_require=extras_require,
-          tests_require=test_requires,
           ext_modules=cythonize(extensions),
+          entry_points=entry_points,
           zip_safe=False,
           classifiers=[
               'Development Status :: 5 - Production/Stable',
               'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
               'Programming Language :: Python',
+              'Programming Language :: Cython',
               'Operating System :: OS Independent',
               'Intended Audience :: Science/Research',
               'Topic :: Scientific/Engineering'

@@ -1,6 +1,0 @@
-git+https://github.com/storpipfugl/pykdtree.git@master
-xarray
-toolz
-dask
-zarr
-numpy

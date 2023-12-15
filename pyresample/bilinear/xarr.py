@@ -26,25 +26,24 @@
 
 import warnings
 
-from xarray import DataArray, Dataset
 import dask.array as da
-from dask import delayed
 import numpy as np
 import zarr
+from dask import delayed
+from pyproj import Proj
+from xarray import DataArray, Dataset
 
-from pyresample._spatial_mp import Proj
 from pyresample import CHUNK_SIZE
 from pyresample.bilinear._base import (
     BilinearBase,
     array_slice_for_multiple_arrays,
     find_indices_outside_min_and_max,
-    mask_coordinates,
     get_slicer,
+    get_valid_indices_from_lonlat_boundaries,
     is_swath_to_grid_or_grid_to_grid,
-    lonlat2xyz,
-    get_valid_indices_from_lonlat_boundaries
+    mask_coordinates,
 )
-
+from pyresample.future.resamplers._transform_utils import lonlat2xyz
 
 CACHE_INDICES = ['bilinear_s',
                  'bilinear_t',
@@ -89,7 +88,10 @@ class XArrayBilinearResampler(BilinearBase):
                              self._valid_input_index, self._index_array)
 
     def _get_output_xy(self):
-        return _get_output_xy(self._target_geo_def)
+        out_x, out_y = _get_output_xy(self._target_geo_def)
+        out_x = out_x[self._valid_output_indices]
+        out_y = out_y[self._valid_output_indices]
+        return out_x, out_y
 
     def _limit_output_values_to_input(self, data, res, fill_value):
         epsilon = 1e-6
@@ -103,6 +105,19 @@ class XArrayBilinearResampler(BilinearBase):
         return da.where(np.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
+        if ndim == 3:
+            dim_multiplier = res.shape[0]
+        else:
+            dim_multiplier = 1
+            res = da.reshape(res, (1, res.size))
+        if res.size != dim_multiplier * self._target_geo_def.size:
+            out = []
+            for i in range(dim_multiplier):
+                tmp = da.full(self._target_geo_def.size, np.nan)
+                tmp[self._valid_output_indices] = res[i, :]
+                out.append(tmp)
+            res = da.stack(out)
+
         shp = self._target_geo_def.shape
         if ndim == 3:
             res = da.reshape(res, (res.shape[0], shp[0], shp[1]))
@@ -116,8 +131,9 @@ class XArrayBilinearResampler(BilinearBase):
         res = self._reshape_to_target_area(res, data.ndim)
 
         self._add_missing_coordinates(data)
+        dims = self._get_output_dims(data, res)
 
-        return DataArray(res, dims=data.dims, coords=self._out_coords)
+        return DataArray(res, dims=dims, coords=self._out_coords)
 
     def _add_missing_coordinates(self, data):
         self._add_x_and_y_coordinates()
@@ -139,10 +155,16 @@ class XArrayBilinearResampler(BilinearBase):
         elif 'bands' in self._out_coords:
             del self._out_coords['bands']
 
+    def _get_output_dims(self, data, res):
+        if data.ndim == res.ndim:
+            return data.dims
+        return list(self._out_coords.keys())
+
     def _slice_data(self, data, fill_value):
         def from_delayed(delayeds, shp):
             return [da.from_delayed(d, shp, np.float32) for d in delayeds]
 
+        data = _check_data_shape(data, self._source_geo_def.shape)
         if data.ndim == 2:
             shp = self.bilinear_s.shape
         else:
@@ -172,7 +194,7 @@ class XArrayBilinearResampler(BilinearBase):
                                    self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
-        input_coords = input_coords[valid_input_index, :].astype(np.float)
+        input_coords = input_coords[valid_input_index, :].astype(np.float64)
 
         return da.compute(valid_input_index, input_coords)
 
@@ -195,13 +217,13 @@ class XArrayBilinearResampler(BilinearBase):
             for val in BIL_COORDINATES:
                 cache = da.array(fid[val])
                 setattr(self, val, cache)
-        except ValueError:
-            raise IOError
+        except ValueError as err:
+            raise IOError("Invalid information loaded from resampling cache") from err
 
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords(chunks=CHUNK_SIZE)
-    return da.compute(np.ravel(out_x),  np.ravel(out_y))
+    return da.compute(np.ravel(out_x), np.ravel(out_y))
 
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
@@ -232,14 +254,28 @@ def _get_valid_input_index(source_geo_def,
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
     valid_input_index = da.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+        find_indices_outside_min_and_max(source_lons, -180., 180.) |
+        find_indices_outside_min_and_max(source_lats, -90., 90.))
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(
             target_geo_def, source_lons, source_lats, radius_of_influence)
 
     return valid_input_index, source_lons, source_lats
+
+
+def _check_data_shape(data, input_xy_shape):
+    """Check data shape and adjust if necessary."""
+    # Handle multiple datasets
+    if data.ndim > 2 and data.shape[0] * data.shape[1] == input_xy_shape[0]:
+        # Move the "channel" dimension first
+        data = da.moveaxis(data, -1, 0)
+
+    # Ensure two dimensions
+    if data.ndim == 1:
+        data = DataArray(da.map_blocks(np.expand_dims, data.data, 0, new_axis=[0]))
+
+    return data
 
 
 class XArrayResamplerBilinear(XArrayBilinearResampler):
@@ -250,7 +286,7 @@ class XArrayResamplerBilinear(XArrayBilinearResampler):
                  radius_of_influence,
                  **kwargs):
         """Initialize resampler."""
-        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead", stacklevel=2)
 
         super(XArrayResamplerBilinear, self).__init__(
             source_geo_def,

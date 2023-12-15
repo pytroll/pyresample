@@ -34,9 +34,11 @@ import warnings
 
 import numpy as np
 from pykdtree.kdtree import KDTree
+from pyproj import Proj
 
-from pyresample._spatial_mp import Proj
 from pyresample import data_reduce, geometry
+
+from ..future.resamplers._transform_utils import lonlat2xyz
 
 
 class BilinearBase(object):
@@ -49,8 +51,7 @@ class BilinearBase(object):
                  neighbours=32,
                  epsilon=0,
                  reduce_data=True):
-        """
-        Initialize resampler.
+        """Initialize resampler.
 
         Parameters
         ----------
@@ -100,7 +101,7 @@ class BilinearBase(object):
         """Calculate bilinear neighbour info."""
         if self._source_geo_def.size < self._neighbours:
             warnings.warn('Searching for %s neighbours in %s data points' %
-                          (self._neighbours, self._source_geo_def.size))
+                          (self._neighbours, self._source_geo_def.size), stacklevel=2)
 
         self._get_valid_input_index_and_kdtree(
             kdtree_class=kdtree_class,
@@ -141,13 +142,15 @@ class BilinearBase(object):
         self.mask_slices = self._index_array >= self._source_geo_def.size
 
     def _get_valid_output_indices(self):
-        return ((self._target_lons >= -180) & (self._target_lons <= 180) &
-                (self._target_lats <= 90) & (self._target_lats >= -90))
+        self._valid_output_indices = np.ravel(
+            (self._target_lons >= -180) & (self._target_lons <= 180) &
+            (self._target_lats <= 90) & (self._target_lats >= -90))
 
     def _get_index_array(self):
+        self._get_valid_output_indices()
         index_array = _query_no_distance(
             self._target_lons, self._target_lats,
-            self._get_valid_output_indices(), self._resample_kdtree,
+            self._valid_output_indices, self._resample_kdtree,
             self._neighbours, self._epsilon,
             self._radius_of_influence)
         self._index_array = self._reduce_index_array(index_array)
@@ -168,7 +171,10 @@ class BilinearBase(object):
             corner_points, out_x, out_y)
 
     def _get_output_xy(self):
-        return _get_output_xy(self._target_geo_def)
+        out_x, out_y = _get_output_xy(self._target_geo_def)
+        out_x = out_x[self._valid_output_indices]
+        out_y = out_y[self._valid_output_indices]
+        return out_x, out_y
 
     def _get_input_xy(self):
         return _get_input_xy(self._source_geo_def,
@@ -183,13 +189,17 @@ class BilinearBase(object):
 
     def _get_slices(self):
         shp = self._source_geo_def.shape
-        cols, lines = np.meshgrid(np.arange(shp[1]),
-                                  np.arange(shp[0]))
+        try:
+            cols, lines = np.meshgrid(np.arange(shp[1]),
+                                      np.arange(shp[0]))
+            data = (np.ravel(lines), np.ravel(cols))
+        except IndexError:
+            data = (np.zeros(shp[0], dtype=np.uint32), np.arange(shp[0]))
 
         valid_lines_and_columns = array_slice_for_multiple_arrays(
             self._valid_input_index,
-            (np.ravel(lines), np.ravel(cols))
-        )
+            data)
+
         self.slices_y, self.slices_x = array_slice_for_multiple_arrays(
             self._index_array,
             valid_lines_and_columns
@@ -215,7 +225,7 @@ class BilinearBase(object):
                                    self._radius_of_influence)
         input_coords = lonlat2xyz(source_lons, source_lats)
         valid_input_index = np.ravel(valid_input_index)
-        input_coords = input_coords[valid_input_index, :].astype(np.float)
+        input_coords = input_coords[valid_input_index, :].astype(np.float64)
 
         return valid_input_index, input_coords
 
@@ -264,7 +274,7 @@ def _check_fill_value(fill_value, dtype):
 
 def _get_output_xy(target_geo_def):
     out_x, out_y = target_geo_def.get_proj_coords()
-    return np.ravel(out_x),  np.ravel(out_y)
+    return np.ravel(out_x), np.ravel(out_y)
 
 
 def _get_input_xy(source_geo_def, proj, valid_input_index, index_array):
@@ -564,8 +574,8 @@ def _get_valid_input_index(source_geo_def,
     source_lons, source_lats = _get_raveled_lonlats(source_geo_def)
 
     valid_input_index = np.invert(
-        find_indices_outside_min_and_max(source_lons, -180., 180.)
-        | find_indices_outside_min_and_max(source_lats, -90., 90.))
+        find_indices_outside_min_and_max(source_lons, -180., 180.) |
+        find_indices_outside_min_and_max(source_lats, -90., 90.))
 
     if reduce_data and is_swath_to_grid_or_grid_to_grid(source_geo_def, target_geo_def):
         valid_input_index &= get_valid_indices_from_lonlat_boundaries(
@@ -597,20 +607,6 @@ def get_valid_indices_from_lonlat_boundaries(
         lonlat_boundary[1],
         source_lons, source_lats,
         radius_of_influence)
-
-
-def lonlat2xyz(lons, lats):
-    """Convert geographic coordinates to cartesian 3D coordinates."""
-    R = 6370997.0
-    lats = np.deg2rad(lats)
-    r_cos_lats = R * np.cos(lats)
-    lons = np.deg2rad(lons)
-    x_coords = r_cos_lats * np.cos(lons)
-    y_coords = r_cos_lats * np.sin(lons)
-    z_coords = R * np.sin(lats)
-
-    return np.stack(
-        (x_coords.ravel(), y_coords.ravel(), z_coords.ravel()), axis=-1)
 
 
 def get_slicer(data):
@@ -649,9 +645,8 @@ def _resample(corner_points, fractional_distances):
 def _query_no_distance(target_lons, target_lats,
                        valid_output_index, kdtree, neighbours, epsilon, radius):
     """Query the kdtree. No distances are returned."""
-    voir = np.ravel(valid_output_index)
-    target_lons_valid = np.ravel(target_lons)[voir]
-    target_lats_valid = np.ravel(target_lats)[voir]
+    target_lons_valid = np.ravel(target_lons)[valid_output_index]
+    target_lats_valid = np.ravel(target_lats)[valid_output_index]
 
     _, index_array = kdtree.query(
         lonlat2xyz(target_lons_valid, target_lats_valid),
