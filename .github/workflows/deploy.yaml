@@ -43,12 +43,16 @@ jobs:
         include:
           - os: windows-2019
             cibw_archs: "AMD64 ARM64"
+            artifact_name: "win"
           - os: macos-11
             cibw_archs: "x86_64 arm64"
+            artifact_name: "mac"
           - os: "ubuntu-20.04"
             cibw_archs: "aarch64"
+            artifact_name: "ubuntu-aarch"
           - os: "ubuntu-20.04"
             cibw_archs: "x86_64"
+            artifact_name: "ubuntu-x86_64"
 
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +76,7 @@ jobs:
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.artifact_name }}
           path: ./wheelhouse/*.whl
 
   upload_test_pypi:
@@ -86,10 +90,25 @@ jobs:
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact
+      - name: Download wheels artifact - win
         uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-win
+          path: dist
+      - name: Download wheels artifact - mac
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-mac
+          path: dist
+      - name: Download wheels artifact - ubuntu aarch
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-aarch
+          path: dist
+      - name: Download wheels artifact - ubuntu x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-x86_64
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
