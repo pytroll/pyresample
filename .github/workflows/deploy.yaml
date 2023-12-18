@@ -28,7 +28,7 @@ jobs:
           python -m build -s
 
       - name: Upload sdist to build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -43,12 +43,16 @@ jobs:
         include:
           - os: windows-2019
             cibw_archs: "AMD64 ARM64"
+            artifact_name: "win"
           - os: macos-11
             cibw_archs: "x86_64 arm64"
+            artifact_name: "mac"
           - os: "ubuntu-20.04"
             cibw_archs: "aarch64"
+            artifact_name: "ubuntu-aarch"
           - os: "ubuntu-20.04"
             cibw_archs: "x86_64"
+            artifact_name: "ubuntu-x86_64"
 
     steps:
       - uses: actions/checkout@v4
@@ -70,9 +74,9 @@ jobs:
           CIBW_TEST_SKIP: "*_arm64 *_universal2:arm64"
 
       - name: Upload wheel(s) as build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.artifact_name }}
           path: ./wheelhouse/*.whl
 
   upload_test_pypi:
@@ -82,14 +86,29 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - name: Download sdist artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact
-        uses: actions/download-artifact@v3
+      - name: Download wheels artifact - win
+        uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-win
+          path: dist
+      - name: Download wheels artifact - mac
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-mac
+          path: dist
+      - name: Download wheels artifact - ubuntu aarch
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-aarch
+          path: dist
+      - name: Download wheels artifact - ubuntu x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-x86_64
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
@@ -104,14 +123,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download sdist artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact
-        uses: actions/download-artifact@v3
+      - name: Download wheels artifact - win
+        uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-win
+          path: dist
+      - name: Download wheels artifact - mac
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-mac
+          path: dist
+      - name: Download wheels artifact - ubuntu aarch
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-aarch
+          path: dist
+      - name: Download wheels artifact - ubuntu x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-x86_64
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
