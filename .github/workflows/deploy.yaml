@@ -127,10 +127,25 @@ jobs:
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact
+      - name: Download wheels artifact - win
         uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-win
+          path: dist
+      - name: Download wheels artifact - mac
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-mac
+          path: dist
+      - name: Download wheels artifact - ubuntu aarch
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-aarch
+          path: dist
+      - name: Download wheels artifact - ubuntu x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-x86_64
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
