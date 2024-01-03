@@ -216,7 +216,25 @@ def _create_area_def_from_dict(area_name, params):
                                                                           'upper_right_xy', 'units'])
     params['resolution'] = _capture_subarguments(params, 'resolution', ['resolution', 'dx', 'dy', 'units'])
     params['radius'] = _capture_subarguments(params, 'radius', ['radius', 'dx', 'dy', 'units'])
-    area_def = create_area_def(**params)
+    area_id = params.pop("area_id", area_name)
+    kwargs = {}
+    if "description" in params:
+        kwargs["description"] = params.pop("description")
+    if "proj_id" in params:
+        kwargs["proj_id"] = params.pop("proj_id")
+    area_def = create_area_def(
+        area_id,
+        params.pop("projection"),
+        area_extent=params.pop("area_extent"),
+        shape=params.pop("shape"),
+        upper_left_extent=params.pop("upper_left_extent"),
+        center=params.pop("center"),
+        resolution=params.pop("resolution"),
+        radius=params.pop("radius"),
+        **kwargs,
+    )
+    if params:
+        warnings.warn(f"Unused/unexpected area definition parameter(s) for {area_id}: {params=}", stacklevel=4)
     return area_def
 
 
@@ -240,11 +258,12 @@ def _capture_subarguments(params: dict, arg_name: str, sub_arg_list: list[str]) 
     for sub_arg in sub_arg_list:
         sub_arg_value = argument.get(sub_arg)
         # Don't append units to the argument.
-        if sub_arg_value is not None:
-            if sub_arg in ('lower_left_xy', 'upper_right_xy') and isinstance(sub_arg_value, list):
-                list_of_values.extend(sub_arg_value)
-            else:
-                list_of_values.append(sub_arg_value)
+        if sub_arg_value is None:
+            continue
+        if sub_arg in ('lower_left_xy', 'upper_right_xy') and isinstance(sub_arg_value, list):
+            list_of_values.extend(sub_arg_value)
+        else:
+            list_of_values.append(sub_arg_value)
     # If units are provided, convert to xarray.
     if units is not None:
         return DataArray(list_of_values, attrs={'units': units})

@@ -23,6 +23,7 @@ import pathlib
 import unittest
 
 import numpy as np
+import pytest
 
 from pyresample.test.utils import TEST_FILES_PATH
 
@@ -278,3 +279,24 @@ australia:
         assert call_args[0][1]['include_static_files']
         # check that static files are not included for the second area
         assert not call_args[1][1]['include_static_files']
+
+
+def test_unused_params_warn():
+    """Test unused parameters produce a warning."""
+    from pyresample.area_config import load_area_from_string
+
+    yaml_str = """ease_sh2:
+  description: Antarctic EASE grid
+  projection:
+    a: 6371228.0
+    units: m
+    lon_0: 0
+    proj: laea
+    lat_0: -90
+  revolution: 1000
+  area_extent:
+    lower_left_xy: [-5326849.0625, -5326849.0625]
+    upper_right_xy: [5326849.0625, 5326849.0625]
+    units: m"""
+    with pytest.warns(UserWarning, match=r"Unused/unexpected area definition parameter.*revolution"):
+        load_area_from_string(yaml_str)
