@@ -462,3 +462,11 @@ def assert_np_dict_allclose(dict1, dict2):
             np.testing.assert_allclose(val, dict2[key])
         except TypeError:
             assert val == dict2[key]
+
+
+def test_future_swath_has_attrs():
+    """Test that future SwathDefinition has attrs."""
+    from pyresample.future.geometry import SwathDefinition
+    lons, lats = _gen_swath_lons_lats()
+    swath = SwathDefinition(lons, lats)
+    assert isinstance(swath.attrs, dict)

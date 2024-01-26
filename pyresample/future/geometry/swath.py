@@ -19,4 +19,38 @@
 
 from __future__ import annotations
 
-from pyresample.geometry import CoordinateDefinition, SwathDefinition  # noqa
+from pyresample.geometry import CoordinateDefinition  # noqa
+from pyresample.geometry import SwathDefinition as LegacySwathDefinition
+
+
+class SwathDefinition(LegacySwathDefinition):
+    """Swath defined by lons and lats.
+
+    Parameters
+    ----------
+    lons : numpy array
+    lats : numpy array
+    crs: pyproj.CRS,
+       The CRS to use. longlat on WGS84 by default.
+    attrs: dict,
+       A dictionary made to store metadata.
+
+    Attributes
+    ----------
+    shape : tuple
+        Swath shape
+    size : int
+        Number of elements in swath
+    ndims : int
+        Swath dimensions
+    lons : object
+        Swath lons
+    lats : object
+        Swath lats
+    cartesian_coords : object
+        Swath cartesian coordinates
+    """
+
+    def __init__(self, lons, lats, crs=None, attrs=None):
+        super().__init__(lons, lats, crs=crs)
+        self.attrs = attrs or {}
