@@ -2,12 +2,12 @@ exclude: '^$'
 fail_fast: false
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.1.9'
+  rev: 'v0.2.0'
   hooks:
   - id: ruff
 # once https://github.com/astral-sh/ruff/issues/2402 is fully resolved then we can get rid of flake8:
 - repo: https://github.com/pycqa/flake8
-  rev: 6.1.0
+  rev: 7.0.0
   hooks:
   - id: flake8
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -18,7 +18,7 @@ repos:
     - id: check-yaml
       args: [--unsafe]
 - repo: https://github.com/PyCQA/bandit
-  rev: '1.7.6' # Update me!
+  rev: '1.7.7' # Update me!
   hooks:
     - id: bandit
       args: [--ini, .bandit]
