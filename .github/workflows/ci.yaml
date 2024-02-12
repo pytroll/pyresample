@@ -62,7 +62,8 @@ jobs:
           git+https://github.com/mapbox/rasterio \
           git+https://github.com/pyproj4/pyproj \
           git+https://github.com/pydata/bottleneck \
-          git+https://github.com/pydata/xarray;
+          git+https://github.com/pydata/xarray \
+          git+https://github.com/shapely/shapely;
 
       - name: Install pyresample
         shell: bash -l {0}
