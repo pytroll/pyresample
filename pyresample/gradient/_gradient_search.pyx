@@ -30,6 +30,7 @@ ctypedef np.double_t DTYPE_t
 cimport cython
 from libc.math cimport fabs, isinf
 
+np.import_array()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -33,6 +33,7 @@ cimport cpython
 cimport cython
 cimport numpy
 
+numpy.import_array()
 
 cdef extern from "_fornav_templates.h":
     ctypedef float weight_type
