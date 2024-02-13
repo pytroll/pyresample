@@ -104,7 +104,7 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
                                DTYPE_t [:, :] yp,
                                DTYPE_t [:, :] dst_x,
                                DTYPE_t [:, :] dst_y,
-                               method='bilinear'):
+                               str method='bilinear'):
     """Gradient search, simple case variant."""
     cdef FN fun
     if method == 'bilinear':
