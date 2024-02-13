@@ -122,15 +122,13 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
     # output image array --> needs to be (lines, pixels) --> y,x
     image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
     cdef DTYPE_t [:, :, :] image_view = image
-    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
     with nogil:
         one_step_gradient_search_no_gil(data,
                                         src_x, src_y,
                                         xl, xp, yl, yp,
                                         dst_x, dst_y,
                                         x_size, y_size,
-                                        fun, image_view,
-                                        elements)
+                                        fun, image_view)
     # return the output image
     return image
 
@@ -149,8 +147,7 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
-                                          DTYPE_t[:, :, :] result_array,
-                                          size_t[:] elements) noexcept nogil:
+                                          DTYPE_t[:, :, :] result_array) noexcept nogil:
 
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = src_x.shape[1] - 1
@@ -165,12 +162,19 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
     cdef int l_a, l_b, p_a, p_b
     cdef size_t i, j, elt
     cdef double dx, dy, d, dl, dp
+    cdef int col_step = -1
     # number of iterations
     cdef int cnt = 0
     for i in range(y_size):
-        elements = elements[::-1]
-        for elt in range(x_size):
-            j = elements[elt]
+        # swap column iteration direction for every row
+        if col_step == -1:
+            j = 0
+            col_step = 1
+        else:
+            j = x_size - 1
+            col_step = -1
+
+        for _ in range(x_size):
             if isinf(dst_x[i, j]):
                 continue
             cnt = 0
@@ -212,7 +216,7 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                     # increment...
                     l0 = int(l0 + dl)
                     p0 = int(p0 + dp)
-
+            j += col_step
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -237,7 +241,6 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
     # output indices arrays --> needs to be (lines, pixels) --> y,x
     indices = np.full([2, y_size, x_size], np.nan, dtype=DTYPE)
     cdef DTYPE_t [:, :, :] indices_view = indices
-    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
 
     # fake_data is not going to be used anyway as we just fill in the indices
     cdef DTYPE_t [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=DTYPE)
@@ -248,6 +251,5 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
                                         xl, xp, yl, yp,
                                         dst_x, dst_y,
                                         x_size, y_size,
-                                        indices_xy, indices_view,
-                                        elements)
+                                        indices_xy, indices_view)
     return indices
