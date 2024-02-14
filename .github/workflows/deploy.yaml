@@ -72,6 +72,9 @@ jobs:
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
           CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
           CIBW_TEST_SKIP: "*_arm64 *_universal2:arm64"
+          # below only for building against unstable numpy
+          CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
+          CIBW_BEFORE_BUILD: "pip install --pre --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy cython setuptools versioneer"
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v4
