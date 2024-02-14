@@ -634,7 +634,7 @@ def _round_poles(center, units, p):
 
 def _distance_from_center_forward(
         var: tuple,
-        center: tuple,
+        center: tuple | None,
         p: Proj):
     """Convert distances in degrees to projection units."""
     # Interprets radius and resolution as distances between latitudes/longitudes.

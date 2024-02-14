@@ -18,8 +18,9 @@
 import sys
 
 import numpy as np
-from Cython.Build import cythonize
-from setuptools import Extension, find_packages, setup
+from Cython.Build import build_ext
+from Cython.Distutils import Extension
+from setuptools import find_packages, setup
 
 import versioneer
 
@@ -56,20 +57,29 @@ else:
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
               include_dirs=[np.get_include()],
-              extra_compile_args=extra_compile_args),
+              extra_compile_args=extra_compile_args,
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
     Extension("pyresample.ewa._fornav",
               sources=["pyresample/ewa/_fornav.pyx",
                        "pyresample/ewa/_fornav_templates.cpp"],
               include_dirs=[np.get_include()],
               language="c++", extra_compile_args=extra_compile_args,
-              depends=["pyresample/ewa/_fornav_templates.h"]),
+              depends=["pyresample/ewa/_fornav_templates.h"],
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
     Extension("pyresample.gradient._gradient_search",
               sources=["pyresample/gradient/_gradient_search.pyx"],
               include_dirs=[np.get_include()],
-              extra_compile_args=extra_compile_args),
+              extra_compile_args=extra_compile_args,
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
 ]
 
-cmdclass = versioneer.get_cmdclass()
+cmdclass = versioneer.get_cmdclass(cmdclass={"build_ext": build_ext})
 
 entry_points = {
     "pyresample.resamplers": [
@@ -94,7 +104,7 @@ if __name__ == "__main__":
           python_requires='>=3.9',
           install_requires=requirements,
           extras_require=extras_require,
-          ext_modules=cythonize(extensions),
+          ext_modules=extensions,
           entry_points=entry_points,
           zip_safe=False,
           classifiers=[

@@ -47,7 +47,7 @@ jobs:
         shell: bash -l {0}
         run: |
           python -m pip install \
-          -f https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com \
+          --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/ \
           --no-deps --pre --upgrade \
           matplotlib \
           numpy \
@@ -62,7 +62,8 @@ jobs:
           git+https://github.com/mapbox/rasterio \
           git+https://github.com/pyproj4/pyproj \
           git+https://github.com/pydata/bottleneck \
-          git+https://github.com/pydata/xarray;
+          git+https://github.com/pydata/xarray \
+          git+https://github.com/shapely/shapely;
 
       - name: Install pyresample
         shell: bash -l {0}

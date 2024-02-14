@@ -30,10 +30,11 @@ ctypedef np.double_t DTYPE_t
 cimport cython
 from libc.math cimport fabs, isinf
 
+np.import_array()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
+cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -53,7 +54,7 @@ cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, doub
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
+cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
     cdef int l_a, l_b, p_a, p_b
     cdef double w_l, w_p
     cdef size_t z_size = res.shape[0]
@@ -83,14 +84,14 @@ cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, dou
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void indices_xy(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil:
+cdef inline void indices_xy(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
     res[1] = dl + l0
     res[0] = dp + p0
 
-ctypedef void (*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) nogil
+ctypedef void (*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -103,7 +104,7 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
                                DTYPE_t [:, :] yp,
                                DTYPE_t [:, :] dst_x,
                                DTYPE_t [:, :] dst_y,
-                               method='bilinear'):
+                               str method='bilinear'):
     """Gradient search, simple case variant."""
     cdef FN fun
     if method == 'bilinear':
@@ -121,20 +122,19 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
     # output image array --> needs to be (lines, pixels) --> y,x
     image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
     cdef DTYPE_t [:, :, :] image_view = image
-    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
     with nogil:
         one_step_gradient_search_no_gil(data,
                                         src_x, src_y,
                                         xl, xp, yl, yp,
                                         dst_x, dst_y,
                                         x_size, y_size,
-                                        fun, image_view,
-                                        elements)
+                                        fun, image_view)
     # return the output image
     return image
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                                           const DTYPE_t[:, :] src_x,
                                           const DTYPE_t[:, :] src_y,
@@ -147,8 +147,7 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
-                                          DTYPE_t[:, :, :] result_array,
-                                          size_t[:] elements) nogil:
+                                          DTYPE_t[:, :, :] result_array) noexcept nogil:
 
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = src_x.shape[1] - 1
@@ -163,12 +162,19 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
     cdef int l_a, l_b, p_a, p_b
     cdef size_t i, j, elt
     cdef double dx, dy, d, dl, dp
+    cdef int col_step = -1
     # number of iterations
     cdef int cnt = 0
     for i in range(y_size):
-        elements = elements[::-1]
-        for elt in range(x_size):
-            j = elements[elt]
+        # swap column iteration direction for every row
+        if col_step == -1:
+            j = 0
+            col_step = 1
+        else:
+            j = x_size - 1
+            col_step = -1
+
+        for _ in range(x_size):
             if isinf(dst_x[i, j]):
                 continue
             cnt = 0
@@ -210,7 +216,7 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                     # increment...
                     l0 = int(l0 + dl)
                     p0 = int(p0 + dp)
-
+            j += col_step
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -235,7 +241,6 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
     # output indices arrays --> needs to be (lines, pixels) --> y,x
     indices = np.full([2, y_size, x_size], np.nan, dtype=DTYPE)
     cdef DTYPE_t [:, :, :] indices_view = indices
-    cdef size_t [:] elements = np.arange(x_size, dtype=np.uintp)
 
     # fake_data is not going to be used anyway as we just fill in the indices
     cdef DTYPE_t [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=DTYPE)
@@ -246,6 +251,5 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
                                         xl, xp, yl, yp,
                                         dst_x, dst_y,
                                         x_size, y_size,
-                                        indices_xy, indices_view,
-                                        elements)
+                                        indices_xy, indices_view)
     return indices

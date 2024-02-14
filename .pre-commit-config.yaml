@@ -32,7 +32,11 @@ repos:
         - types-PyYAML
         - types-requests
         - type_extensions
-      args: ["--python-version", "3.9", "--ignore-missing-imports"]
+        - types-setuptools
+        # Typed libraries
+        - numpy
+        - pytest
+      args: [ --warn-unused-configs ]
 - repo: https://github.com/pycqa/isort
   rev: 5.13.2
   hooks:

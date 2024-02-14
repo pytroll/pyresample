@@ -28,6 +28,8 @@ from pyproj import Proj
 cimport cython
 cimport numpy
 
+numpy.import_array()
+
 # column and rows can only be doubles for now until the PROJ.4 is linked directly so float->double casting can be done
 # inside the loop
 ctypedef fused cr_dtype:

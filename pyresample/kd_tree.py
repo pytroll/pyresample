@@ -653,7 +653,7 @@ def get_sample_from_neighbour_info(resample_type, output_shape, data,
 
 
 def _get_empty_sample(
-        data: npt.ArrayLike,
+        data: npt.NDArray,
         output_shape: tuple | list,
         is_multi_channel: bool,
         fill_value: float | None
@@ -671,7 +671,7 @@ def _get_empty_sample(
         return np.ones(output_shape, dtype=data.dtype) * fill_value
 
 
-def _validate_input_array(data: npt.ArrayLike, valid_input_index: npt.ArrayLike) -> None:
+def _validate_input_array(data: npt.NDArray, valid_input_index: npt.NDArray) -> None:
     if not isinstance(data, np.ndarray):
         raise TypeError('data must be numpy array')
     elif valid_input_index.ndim != 1:
