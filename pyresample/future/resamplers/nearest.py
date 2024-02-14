@@ -340,7 +340,7 @@ class KDTreeNearestXarrayResampler(Resampler):
             new_data, src_adims,
             vii_slices=vii_slices, ia_slices=ia_slices,
             fill_value=fill_value,
-            met=np.array((), dtype=new_data.dtype),
+            meta=np.array((), dtype=new_data.dtype),
             dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims,
                         attrs=deepcopy(data.attrs))
