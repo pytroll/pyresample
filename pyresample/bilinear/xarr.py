@@ -273,7 +273,12 @@ def _check_data_shape(data, input_xy_shape):
 
     # Ensure two dimensions
     if data.ndim == 1:
-        data = DataArray(da.map_blocks(np.expand_dims, data.data, 0, new_axis=[0]))
+        data = DataArray(da.map_blocks(np.expand_dims,
+                                       data.data,
+                                       0,
+                                       meta=np.array((), dtype=data.dtype),
+                                       dtype=data.dtype,
+                                       new_axis=[0]))
 
     return data
 
