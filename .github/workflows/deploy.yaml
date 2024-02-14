@@ -74,7 +74,7 @@ jobs:
           CIBW_TEST_SKIP: "*_arm64 *_universal2:arm64"
           # below only for building against unstable numpy
           CIBW_BUILD_FRONTEND: "pip; args: --no-build-isolation"
-          CIBW_BEFORE_BUILD: "pip install --pre --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy"
+          CIBW_BEFORE_BUILD: "pip install --pre --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy cython setuptools"
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v4
