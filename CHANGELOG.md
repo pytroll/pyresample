@@ -1,3 +1,61 @@
+## Version 1.28.0 (2024/02/14)
+
+### Issues Closed
+
+* [Issue 570](https://github.com/pytroll/pyresample/issues/570) - errors in area definition should not be silently ignored ([PR 577](https://github.com/pytroll/pyresample/pull/577) by [@djhoese](https://github.com/djhoese))
+* [Issue 547](https://github.com/pytroll/pyresample/issues/547) - How should this warning be addressed? ([PR 548](https://github.com/pytroll/pyresample/pull/548) by [@djhoese](https://github.com/djhoese))
+* [Issue 537](https://github.com/pytroll/pyresample/issues/537) - Upgrade to Cython 3.0 and check annotations ([PR 582](https://github.com/pytroll/pyresample/pull/582) by [@djhoese](https://github.com/djhoese))
+* [Issue 527](https://github.com/pytroll/pyresample/issues/527) - area definition for a rotated pole coordinate system ([PR 532](https://github.com/pytroll/pyresample/pull/532) by [@djhoese](https://github.com/djhoese))
+
+In this release 4 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 577](https://github.com/pytroll/pyresample/pull/577) - Fix area definition YAML not warning on typos ([570](https://github.com/pytroll/pyresample/issues/570))
+* [PR 573](https://github.com/pytroll/pyresample/pull/573) - Switch test area fixtures to session-scoped
+* [PR 556](https://github.com/pytroll/pyresample/pull/556) - Add missing meta keyword arguments on all dask map_blocks calls
+* [PR 551](https://github.com/pytroll/pyresample/pull/551) - Fix shortcut for prime meridian checks
+* [PR 536](https://github.com/pytroll/pyresample/pull/536) - Use pyproj TransformDirection enum for better performance
+* [PR 532](https://github.com/pytroll/pyresample/pull/532) - Migrate usages of pyproj Proj to pyproj Transformer ([527](https://github.com/pytroll/pyresample/issues/527))
+* [PR 526](https://github.com/pytroll/pyresample/pull/526) - Replace and deprecate frequency arg for bbox methods
+
+#### Features added
+
+* [PR 583](https://github.com/pytroll/pyresample/pull/583) - Build wheels against numpy 2
+* [PR 582](https://github.com/pytroll/pyresample/pull/582) - Fix Cython 3 and Numpy 2 compatibility ([537](https://github.com/pytroll/pyresample/issues/537))
+* [PR 572](https://github.com/pytroll/pyresample/pull/572) - Suppress PROJ4 warning about losing projection by using `to_cf()` instead of `to_dict()`
+* [PR 557](https://github.com/pytroll/pyresample/pull/557) - Add more pre-commit checks (mccabe, bandit, mypy, etc)
+* [PR 553](https://github.com/pytroll/pyresample/pull/553) - Add optional caching to AreaDefinition.get_area_slices
+* [PR 548](https://github.com/pytroll/pyresample/pull/548) - Remove unnecessary proj4 argument parsing from get_area_def ([547](https://github.com/pytroll/pyresample/issues/547))
+* [PR 545](https://github.com/pytroll/pyresample/pull/545) - Convert AreaDefinitions to odc geoboxes
+* [PR 542](https://github.com/pytroll/pyresample/pull/542) - Switch to cibuildwheel for wheel building
+* [PR 533](https://github.com/pytroll/pyresample/pull/533) - Replace width/height in future AreaDefinition with "shape" argument
+* [PR 522](https://github.com/pytroll/pyresample/pull/522) - Handle value-less parameters in `proj4_dict_to_str`
+* [PR 519](https://github.com/pytroll/pyresample/pull/519) - Add builtin 'config' object and 'features.future_geometry' toggle
+* [PR 516](https://github.com/pytroll/pyresample/pull/516) - Allow cropping non-geos areas
+* [PR 450](https://github.com/pytroll/pyresample/pull/450) - Area definition html representation for Jupyter notebooks
+
+#### Documentation changes
+
+* [PR 519](https://github.com/pytroll/pyresample/pull/519) - Add builtin 'config' object and 'features.future_geometry' toggle
+* [PR 450](https://github.com/pytroll/pyresample/pull/450) - Area definition html representation for Jupyter notebooks
+
+#### Backward incompatible changes
+
+* [PR 522](https://github.com/pytroll/pyresample/pull/522) - Handle value-less parameters in `proj4_dict_to_str`
+
+#### Refactoring
+
+* [PR 566](https://github.com/pytroll/pyresample/pull/566) - Refactor area boundary sides retrieval with `_geographic_sides` and `_projection_sides` methods
+* [PR 565](https://github.com/pytroll/pyresample/pull/565) - Move legacy boundary to boundary directory
+* [PR 564](https://github.com/pytroll/pyresample/pull/564) - Refactor ``test_area`` and move boundary related tests to ``test_area_boundary``
+* [PR 563](https://github.com/pytroll/pyresample/pull/563) - Remove `__file__` usage in test units for `test_files` path
+
+In this release 27 pull requests were closed.
+
+
 ## Version 1.27.1 (2023/06/21)
 
 ### Issues Closed
