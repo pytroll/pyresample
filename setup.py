@@ -80,7 +80,6 @@ extensions = [
 ]
 
 cmdclass = versioneer.get_cmdclass(cmdclass={"build_ext": build_ext})
-print(cmdclass)
 
 entry_points = {
     "pyresample.resamplers": [
