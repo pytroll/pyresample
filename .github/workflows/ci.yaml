@@ -46,6 +46,7 @@ jobs:
         if: matrix.experimental == true
         shell: bash -l {0}
         run: |
+          python -m pip install versioneer extension-helpers setuptools-scm configobj pkgconfig;
           python -m pip install \
           --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/ \
           --no-deps --pre --upgrade \
@@ -53,9 +54,10 @@ jobs:
           numpy \
           pandas \
           scipy; \
-          python -m pip install versioneer extension-helpers setuptools-scm configobj pkgconfig;
+          mamba remove --force-remove -y pykdtree
           python -m pip install \
           --no-deps --upgrade --pre --no-build-isolation \
+          git+https://github.com/storpipfugl/pykdtree \
           git+https://github.com/dask/dask \
           git+https://github.com/dask/distributed \
           git+https://github.com/zarr-developers/zarr \
