@@ -125,13 +125,13 @@ class Test(unittest.TestCase):
         self.assertEqual(cross_sum, expected)
 
     def test_nearest_complex(self):
-        data = np.fromfunction(lambda y, x: y + complex("j") * x, (50, 10), dtype=np.complex_)
+        data = np.fromfunction(lambda y, x: y + complex("j") * x, (50, 10), dtype=np.complex128)
         lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
         lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
         swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
         res = kd_tree.resample_nearest(swath_def, data.ravel(),
                                        self.area_def, 50000, segments=1)
-        assert np.issubdtype(res.dtype, np.complex_)
+        assert np.issubdtype(res.dtype, np.complex128)
         cross_sum = res.sum()
         assert cross_sum.real == 3530219.0
         assert cross_sum.imag == 688723.0
