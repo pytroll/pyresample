@@ -67,11 +67,12 @@ jobs:
           git+https://github.com/pydata/bottleneck \
           git+https://github.com/pydata/xarray \
           git+https://github.com/shapely/shapely;
+          python -m pip install -e . --no-deps --no-build-isolation;
 
       - name: Install pyresample
         shell: bash -l {0}
         run: |
-          pip install --no-deps -e .
+          python -m pip install --no-deps -e .
 
       - name: Run unit tests
         shell: bash -l {0}
