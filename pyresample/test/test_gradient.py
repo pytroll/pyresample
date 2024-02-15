@@ -100,7 +100,7 @@ class TestOGradientResampler:
     def test_get_chunk_mappings(self):
         """Test that chunk overlap, and source and target slices are correct."""
         chunks = (10, 10)
-        num_chunks = np.product(chunks)
+        num_chunks = np.prod(chunks)
         self.resampler._get_projection_coordinates(chunks)
         self.resampler._get_gradients()
         assert self.resampler.coverage_status is None
