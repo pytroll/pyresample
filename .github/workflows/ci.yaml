@@ -53,8 +53,9 @@ jobs:
           numpy \
           pandas \
           scipy; \
+          python -m pip install versioneer extension-helpers setuptools-scm configobj pkgconfig;
           python -m pip install \
-          --no-deps --upgrade \
+          --no-deps --upgrade --pre --no-build-isolation \
           git+https://github.com/dask/dask \
           git+https://github.com/dask/distributed \
           git+https://github.com/zarr-developers/zarr \
