@@ -848,14 +848,14 @@ def _calculate_uncertainty(neighbours, new_data, index_mask_list, weight_list,
             v2 = norm_sqr[new_valid_index, i]
             stddev[new_valid_index, i] = np.sqrt(
                 (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index, i])
-            stddev[~new_valid_index, i] = np.NaN
+            stddev[~new_valid_index, i] = np.nan
     else:
         # If given single input data array
         v1 = norm[new_valid_index]
         v2 = norm_sqr[new_valid_index]
         stddev[new_valid_index] = np.sqrt(
             (v1 / (v1 ** 2 - v2)) * stddev[new_valid_index])
-        stddev[~new_valid_index] = np.NaN
+        stddev[~new_valid_index] = np.nan
     return stddev, count
 
 
