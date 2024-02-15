@@ -70,6 +70,7 @@ jobs:
           python -m pip install -e . --no-deps --no-build-isolation;
 
       - name: Install pyresample
+        if: matrix.experimental != true
         shell: bash -l {0}
         run: |
           python -m pip install --no-deps -e .
