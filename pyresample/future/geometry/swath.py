@@ -32,6 +32,8 @@ class SwathDefinition(LegacySwathDefinition):
     lats : numpy array
     crs: pyproj.CRS,
        The CRS to use. longlat on WGS84 by default.
+    nprocs : int, optional
+        Number of processor cores to be used for calculations.
     attrs: dict,
        A dictionary made to store metadata.
 
@@ -51,6 +53,6 @@ class SwathDefinition(LegacySwathDefinition):
         Swath cartesian coordinates
     """
 
-    def __init__(self, lons, lats, crs=None, attrs=None):
-        super().__init__(lons, lats, crs=crs)
+    def __init__(self, lons, lats, crs=None, nprocs=1, attrs=None):
+        super().__init__(lons, lats, crs=crs, nprocs=nprocs)
         self.attrs = attrs or {}
