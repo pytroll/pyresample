@@ -223,6 +223,13 @@ omerc_bb_1000:
   optimize_projection: True
   resolution: 1000
 
+omerc_bb_nores:
+  description: Oblique Mercator Bounding Box for Polar Overpasses
+  projection:
+    ellps: sphere
+    proj: omerc
+  optimize_projection: True
+
 test_dynamic_resolution:
   description: Dynamic with resolution specified in meters
   projection:
