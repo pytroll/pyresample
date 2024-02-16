@@ -231,6 +231,7 @@ def _create_area_def_from_dict(area_name, params):
         center=params.pop("center"),
         resolution=params.pop("resolution"),
         radius=params.pop("radius"),
+        optimize_projection=params.pop("optimize_projection", False),
         **kwargs,
     )
     if params:
@@ -416,7 +417,7 @@ def _get_proj4_args(proj4_args):
 
 
 def create_area_def(area_id, projection, width=None, height=None, area_extent=None, shape=None, upper_left_extent=None,
-                    center=None, resolution=None, radius=None, units=None, **kwargs):
+                    center=None, resolution=None, radius=None, units=None, optimize_projection=False, **kwargs):
     """Create AreaDefinition from whatever information is known.
 
     Parameters
@@ -500,7 +501,8 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     except (RuntimeError, CRSError):
         # Assume that an invalid projection will be "fixed" by a dynamic area definition later
         return _make_area(area_id, description, proj_id, projection, shape, area_extent,
-                          resolution=resolution, **kwargs)
+                          resolution=resolution, optimize_projection=optimize_projection,
+                          **kwargs)
 
     # If no units are provided, try to get units used in proj_dict. If still none are provided, use meters.
     if units is None:
@@ -536,7 +538,8 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
                                      resolution, upper_left_extent, units,
                                      p, crs)
     return _make_area(area_id, description, proj_id, projection, shape,
-                      area_extent, resolution=resolution, **kwargs)
+                      area_extent, resolution=resolution, optimize_projection=optimize_projection,
+                      **kwargs)
 
 
 def _make_area(
@@ -546,14 +549,13 @@ def _make_area(
         projection: Union[dict, CRS],
         shape: tuple[int, ...] | None,
         area_extent: tuple[float, float, float, float] | None,
+        optimize_projection: bool = False,
+        resolution: tuple[float, float] | float | None = None,
         **kwargs):
     """Handle the creation of an area definition for create_area_def."""
     from pyresample.future.geometry import AreaDefinition
     from pyresample.geometry import DynamicAreaDefinition
 
-    # Remove arguments that are only for DynamicAreaDefinition.
-    optimize_projection = kwargs.pop('optimize_projection', False)
-    resolution = kwargs.pop('resolution', None)
     # If enough data is provided, create an AreaDefinition. If only shape or area_extent are found, make a
     # DynamicAreaDefinition. If not enough information was provided, raise a ValueError.
     if area_extent is not None and shape is not None:
@@ -562,6 +564,7 @@ def _make_area(
             "description": description,
             "proj_id": proj_id,
         }
+        # FUTURE: Don't add kwargs to attrs, switch to explicit "attrs"
         attrs.update(kwargs)
         area_def = AreaDefinition(projection, shape, area_extent, attrs=attrs)
         return area_def if pyresample.config.get("features.future_geometries", False) else area_def.to_legacy()

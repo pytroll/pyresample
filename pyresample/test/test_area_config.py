@@ -184,6 +184,18 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
         test_area = parse_area_file(test_area_file, 'omerc_bb_1000')[0]
         assert test_area.resolution == (1000, 1000)
+        assert test_area.optimize_projection
+
+    def test_dynamic_area_parser_opt_projection_nores(self):
+        """Test that a dynamic area definition can be frozen when no resolution is passed via YAML."""
+        from pyresample import SwathDefinition, parse_area_file
+        test_area_file = os.path.join(TEST_FILES_PATH, 'areas.yaml')
+        test_area = parse_area_file(test_area_file, 'omerc_bb_nores')[0]
+        assert test_area.resolution is None
+        assert test_area.optimize_projection
+        lons, lats = np.meshgrid(np.arange(10, 20), np.arange(10, 20))
+        swath_def = SwathDefinition(lons, lats)
+        test_area.freeze(swath_def)
 
     def test_multiple_file_content(self):
         from pyresample import parse_area_file
