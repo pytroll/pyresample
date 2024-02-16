@@ -1,3 +1,15 @@
+## Version 1.28.1 (2024/02/15)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 585](https://github.com/pytroll/pyresample/pull/585) - Fix optimize_projection handling in YAML parsing
+* [PR 584](https://github.com/pytroll/pyresample/pull/584) - Fix other numpy 2 incompatibilities
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.28.0 (2024/02/14)
 
 ### Issues Closed
