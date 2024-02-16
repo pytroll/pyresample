@@ -46,7 +46,7 @@ class RowAppendableArray:
             if len(next_array.shape) == 1:
                 self._data = np.append(self._data, next_array[remaining:])
             else:
-                self._data = np.row_stack((self._data, next_array[remaining:]))
+                self._data = np.vstack((self._data, next_array[remaining:]))
         else:
             self._data[self._cursor:cursor_end] = next_array
         self._cursor = cursor_end

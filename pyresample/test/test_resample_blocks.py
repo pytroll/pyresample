@@ -267,7 +267,7 @@ class TestResampleBlocksArea2Area:
             assert dst_area.shape == dst_array.shape
             return dst_array
 
-        dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
+        dst_array = da.arange(np.prod(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
         res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunk_size=40, dtype=float)
         res = res.compute()
         np.testing.assert_allclose(res[:, 40:], dst_array[:, 40:])
@@ -290,7 +290,7 @@ class TestResampleBlocksArea2Area:
             prev_block_info.append(block_info[0])
             return dst_array
 
-        dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
+        dst_array = da.arange(np.prod(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
         res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunk_size=40, dtype=float)
         _ = res.compute()
 
@@ -311,7 +311,7 @@ class TestResampleBlocksArea2Area:
             prev_block_info.append(block_info[None])
             return dst_array
 
-        dst_array = da.arange(np.product(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
+        dst_array = da.arange(np.prod(self.dst_area.shape)).reshape(self.dst_area.shape).rechunk(40)
         res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array], chunk_size=40, dtype=float)
         _ = res.compute()
 
@@ -325,7 +325,7 @@ class TestResampleBlocksArea2Area:
             assert dst_area.shape == dst_array.shape[1:]
             return dst_array[0, :, :]
 
-        dst_array = da.arange(np.product(self.dst_area.shape)).reshape((1, *self.dst_area.shape)).rechunk(40)
+        dst_array = da.arange(np.prod(self.dst_area.shape)).reshape((1, *self.dst_area.shape)).rechunk(40)
         res = resample_blocks(fun, self.src_area, [], self.dst_area, dst_arrays=[dst_array],
                               chunk_size=(40, 40), dtype=float)
         res = res.compute()
@@ -359,7 +359,7 @@ class TestResampleBlocksArea2Area:
             assert src_area.shape == src_array.shape[-2:]
             return np.full(src_array.shape[:-2] + dst_area.shape, 18)
 
-        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape)).rechunk(40)
+        src_array = da.arange(np.prod(self.src_area.shape) * 3).reshape((3, *self.src_area.shape)).rechunk(40)
         res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunk_size=(3, 40, 40), dtype=float)
         res = res.compute()
         assert res.ndim == 3
@@ -377,7 +377,7 @@ class TestResampleBlocksArea2Area:
             assert src_array.shape[0] == 3
             return np.full(src_array.shape[:-2] + dst_area.shape, 18)
 
-        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = da.arange(np.prod(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
         src_array = src_array.rechunk((1, 40, 40))
 
         res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunk_size=(3, 40, 40), dtype=float)
@@ -408,7 +408,7 @@ class TestResampleBlocksArea2Area:
             dst_area = block_info[None]["area"]
             return np.full(src_array.shape[:-2] + dst_area.shape, 18)
 
-        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = da.arange(np.prod(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
         src_array = src_array.rechunk((1, 40, 40))
 
         res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, chunk_size=(3, "auto", "auto"),
@@ -453,10 +453,10 @@ class TestResampleBlocksArea2Area:
             dst_area = block_info[None]["area"]
             return np.full(src_array.shape[:-2] + dst_area.shape, 18)
 
-        src_array = da.arange(np.product(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
+        src_array = da.arange(np.prod(self.src_area.shape) * 3).reshape((3, *self.src_area.shape))
         src_array = src_array.rechunk((1, 40, 40))
 
-        dst_array = da.arange(np.product(self.dst_area.shape) * 2).reshape((2, *self.dst_area.shape))
+        dst_array = da.arange(np.prod(self.dst_area.shape) * 2).reshape((2, *self.dst_area.shape))
         dst_array = src_array.rechunk((1, 40, 40))
 
         res = resample_blocks(fun, self.src_area, [src_array], self.dst_area, [dst_array],

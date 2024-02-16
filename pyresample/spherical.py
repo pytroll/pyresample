@@ -221,11 +221,11 @@ class SCoordinate(object):
 
     def __str__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
-        return str((np.rad2deg(self.lon), np.rad2deg(self.lat)))
+        return str((float(np.rad2deg(self.lon)), float(np.rad2deg(self.lat))))
 
     def __repr__(self):
         """Get simplified representation of lon/lat arrays in degrees."""
-        return str((np.rad2deg(self.lon), np.rad2deg(self.lat)))
+        return str((float(np.rad2deg(self.lon)), float(np.rad2deg(self.lat))))
 
     def __iter__(self):
         """Get iterator over lon/lat pairs."""
