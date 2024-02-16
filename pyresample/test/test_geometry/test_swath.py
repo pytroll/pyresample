@@ -468,5 +468,37 @@ def test_future_swath_has_attrs():
     """Test that future SwathDefinition has attrs."""
     from pyresample.future.geometry import SwathDefinition
     lons, lats = _gen_swath_lons_lats()
-    swath = SwathDefinition(lons, lats)
-    assert isinstance(swath.attrs, dict)
+    attrs = dict(meta="data")
+    swath = SwathDefinition(lons, lats, attrs=attrs)
+    assert swath.attrs == attrs
+
+
+def test_future_swath_slice_has_attrs():
+    """Test that future sliced SwathDefinition has attrs."""
+    from pyresample.future.geometry import SwathDefinition
+    lons, lats = _gen_swath_lons_lats()
+    attrs = dict(meta="data")
+    swath = SwathDefinition(lons, lats, attrs=attrs)[0:1, 0:1]
+    assert swath.attrs == attrs
+
+
+def test_future_swath_concat_has_attrs():
+    """Test that future concatenated SwathDefinition has attrs."""
+    from pyresample.future.geometry import SwathDefinition
+    lons, lats = _gen_swath_lons_lats()
+    attrs1 = dict(meta1="data")
+    swath1 = SwathDefinition(lons, lats, attrs=attrs1)
+    attrs2 = dict(meta2="data")
+    swath2 = SwathDefinition(lons, lats, attrs=attrs2)
+    swath = swath1.concatenate(swath2)
+    assert swath.attrs == dict(meta1="data", meta2="data")
+
+
+def test_future_swath_concat_fails_on_different_crs():
+    """Test that future concatenated SwathDefinition must have the same crs."""
+    from pyresample.future.geometry import SwathDefinition
+    lons, lats = _gen_swath_lons_lats()
+    swath1 = SwathDefinition(lons, lats, crs="mycrs")
+    swath2 = SwathDefinition(lons, lats, crs="myothercrs")
+    with pytest.raises(ValueError, match="Incompatible CRSs."):
+        _ = swath1.concatenate(swath2)

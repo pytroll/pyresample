@@ -76,6 +76,8 @@ def create_test_swath(swath_class):
 
     """
     def _create_test_swath(lons, lats, **kwargs):
+        if swath_class is SwathDefinition:
+            kwargs.pop("nproc", None)
         return swath_class(lons, lats, **kwargs)
     return _create_test_swath
 
