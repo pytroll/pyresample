@@ -1,3 +1,24 @@
+## Version 1.28.2 (2024/02/29)
+
+### Issues Closed
+
+* [Issue 539](https://github.com/pytroll/pyresample/issues/539) - Compatibility with libproj v9.3
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 586](https://github.com/pytroll/pyresample/pull/586) - Include package data
+
+#### Features added
+
+* [PR 578](https://github.com/pytroll/pyresample/pull/578) - Add attrs to future swath definition
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.28.1 (2024/02/15)
 
 ### Pull Requests Merged
