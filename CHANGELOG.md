@@ -1,3 +1,20 @@
+## Version 1.28.3 (2024/04/15)
+
+### Issues Closed
+
+* [Issue 587](https://github.com/pytroll/pyresample/issues/587) - Resampling GOES mesoscale data to my area gives blank data
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 594](https://github.com/pytroll/pyresample/pull/594) - Build against numpy 2.0rc1
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.28.2 (2024/02/29)
 
 ### Issues Closed
