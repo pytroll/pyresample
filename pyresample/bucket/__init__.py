@@ -202,20 +202,30 @@ class BucketResampler(object):
         target_shape = self.target_area.shape
         self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
 
-    def get_sum(self, data, skipna=True):
+    def get_sum(self, data, fill_value=np.nan, skipna=True,
+                set_empty_bucket_to=0):
         """Calculate sums for each bin with drop-in-a-bucket resampling.
 
         Parameters
         ----------
         data : Numpy or Dask array
             Data to be binned and summed.
+        fill_value : float
+            Fill value to mark missing/invalid values in the input data.
+            Default: np.nan
         skipna : boolean (optional)
-                If True, skips NaN values for the sum calculation
-                (similarly to Numpy's `nansum`). Buckets containing only NaN are set to zero.
-                If False, sets the bucket to NaN if one or more NaN values are present in the bucket
-                (similarly to Numpy's `sum`).
-                In both cases, empty buckets are set to 0.
-                Default: True
+            If True, skips missing values (as marked by NaN or `fill_value`) for the sum calculation
+            (similarly to Numpy's `nansum`). Buckets containing only missing values are set to `set_empty_bucket_to`.
+            If False, sets the bucket to fill_value if one or more missing values are present in the bucket
+            (similarly to Numpy's `sum`).
+            In both cases, empty buckets are set to `set_empty_bucket_to`.
+            Default: True
+        set_empty_bucket_to : float
+            Set empty buckets to the given value. Empty buckets are considered as the buckets with value 0.
+            Note that a bucket could become 0 as the result of a sum
+            of positive and negative values. If the user needs to identify these zero-buckets reliably,
+            `get_count()` can be used for this purpose.
+            Default: np.nan
 
         Returns
         -------
@@ -228,8 +238,11 @@ class BucketResampler(object):
             data = data.data
         data = data.ravel()
 
-        # Remove NaN values from the data when used as weights
-        weights = da.where(np.isnan(data), 0, data)
+        # Remove fill_values values from the data when used as weights
+        if np.isnan(fill_value):
+            weights = da.where(np.isnan(data), 0, data)
+        else:
+            weights = da.where(data == fill_value, 0, data)
 
         # Rechunk indices to match the data chunking
         if weights.chunks != self.idxs.chunks:
@@ -241,16 +254,20 @@ class BucketResampler(object):
                                weights=weights, density=False)
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
-        sums = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, sums)
+        sums = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, sums, fill_value)
+        sums = da.where(sums == 0, set_empty_bucket_to, sums)
 
         return sums.reshape(self.target_area.shape)
 
-    def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic):
+    def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic, fill_value):
         if not skipna:
-            nans = np.isnan(data)
-            nan_bins, _ = da.histogram(self.idxs[nans], bins=out_size,
-                                       range=(0, out_size))
-            statistic = da.where(nan_bins > 0, np.nan, statistic)
+            if np.isnan(fill_value):
+                missing_val = np.isnan(data)
+            else:
+                missing_val = data == fill_value
+            missing_val_bins, _ = da.histogram(self.idxs[missing_val], bins=out_size,
+                                               range=(0, out_size))
+            statistic = da.where(missing_val_bins > 0, fill_value, statistic)
         return statistic
 
     def _call_bin_statistic(self, statistic_method, data, fill_value=None, skipna=None):
