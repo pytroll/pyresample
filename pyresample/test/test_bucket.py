@@ -214,7 +214,7 @@ class Test(unittest.TestCase):
         # 5 is untouched in a single bin
         self.assertEqual(np.count_nonzero(result == 5.), 1)
         # all-nan and rest is 4095
-        self.assertEqual(np.count_nonzero(result == 4095), 2048*2560-2)
+        self.assertEqual(np.count_nonzero(result == 4095), 2048 * 2560 - 2)
         self.assertEqual(np.nanmin(result), 2)
 
     def test_nonzero_set_empty_bucket_to_npnan(self):
@@ -226,7 +226,7 @@ class Test(unittest.TestCase):
         # 5 is untouched in a single bin
         self.assertEqual(np.count_nonzero(result == 5.), 1)
         # all-nan and rest is np.nan
-        self.assertEqual(np.count_nonzero(np.isnan(result)), 2048*2560-2)
+        self.assertEqual(np.count_nonzero(np.isnan(result)), 2048 * 2560 - 2)
         self.assertEqual(np.nanmin(result), 2)
 
     def test_get_count(self):
