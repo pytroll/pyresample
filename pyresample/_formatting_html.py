@@ -65,15 +65,11 @@ def _icon(icon_name):
 
 
 def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
-                  feature_res: Optional[str] = "110m",
                   fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
     """Plot area.
 
     Args:
         area : Area/Swath to plot.
-        feature_res :
-            Resolution of the features added to the map. Argument is handed over
-            to `scale` parameter in cartopy.feature.
         fmt : Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg or png.
             If None (default) plot is just shown.
@@ -102,21 +98,10 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         bounds = poly.buffer(5).bounds
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
 
-    coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
-                                                     name="coastline",
-                                                     scale=feature_res,
-                                                     linewidth=1,
-                                                     facecolor="never")
-    borders = cartopy.feature.NaturalEarthFeature(category="cultural",
-                                                  name="admin_0_boundary_lines_land", # noqa E114
-                                                  scale=feature_res,
-                                                  edgecolor="black",
-                                                  facecolor="never") # noqa E1>
-    ocean = cartopy.feature.OCEAN
-
-    ax.add_feature(borders)
-    ax.add_feature(coastlines)
-    ax.add_feature(ocean, color="lightgrey")
+    ax.add_feature(cartopy.feature.OCEAN)
+    ax.add_feature(cartopy.feature.LAND)
+    ax.add_feature(cartopy.feature.COASTLINE)
+    ax.add_feature(cartopy.feature.BORDERS)
 
     plt.tight_layout(pad=0)
 
