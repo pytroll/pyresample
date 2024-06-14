@@ -33,9 +33,6 @@ except ImportError:
 import cartopy.crs as ccrs
 import shapely.geometry as sgeom
 
-WGS84_SEMIMAJOR_AXIS = 6378137.0
-WGS84_SEMIMINOR_AXIS = 6356752.3142
-
 
 class Projection(ccrs.Projection):
     """Flexible generic Projection with optionally specified bounds."""
@@ -81,8 +78,8 @@ class Projection(ccrs.Projection):
             satellite_height = 35785831
             false_easting = 0
             false_northing = 0
-            a = float(WGS84_SEMIMAJOR_AXIS)
-            b = float(WGS84_SEMIMINOR_AXIS)
+            a = float(ccrs.WGS84_SEMIMAJOR_AXIS)
+            b = float(ccrs.WGS84_SEMIMINOR_AXIS)
             h = float(satellite_height)
 
             # To find the bound we trace around where the line from the satellite
