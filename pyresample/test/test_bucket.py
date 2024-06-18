@@ -205,24 +205,24 @@ class Test(unittest.TestCase):
         self.assertEqual(np.count_nonzero(result == 255), 0)
         self.assertEqual(np.nanmin(result), 0)
 
-    def test_nonzero_set_empty_bucket_to_number(self):
-        """Test drop-in-a-bucket sum for non-zero set_empty_bucket_to np.nan."""
+    def test_nonzero_empty_bucket_value_number(self):
+        """Test drop-in-a-bucket sum for non-zero empty_bucket_value set as number."""
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 
-        result = self._get_sum_result(data, skipna=True, set_empty_bucket_to=4095)
+        result = self._get_sum_result(data, skipna=True, empty_bucket_value=4095)
         # 5 is untouched in a single bin
         self.assertEqual(np.count_nonzero(result == 5.), 1)
         # all-nan and rest is 4095
         self.assertEqual(np.count_nonzero(result == 4095), 2048 * 2560 - 2)
         self.assertEqual(np.nanmin(result), 2)
 
-    def test_nonzero_set_empty_bucket_to_npnan(self):
-        """Test drop-in-a-bucket sum for non-zero set_empty_bucket_to np.nan."""
+    def test_nonzero_empty_bucket_valueo_npnan(self):
+        """Test drop-in-a-bucket sum for non-zero empty_bucket_value set as np.nan."""
         data = da.from_array(np.array([[2., np.nan], [5., np.nan]]),
                              chunks=self.chunks)
 
-        result = self._get_sum_result(data, skipna=True, set_empty_bucket_to=np.nan)
+        result = self._get_sum_result(data, skipna=True, empty_bucket_value=np.nan)
         # 5 is untouched in a single bin
         self.assertEqual(np.count_nonzero(result == 5.), 1)
         # all-nan and rest is np.nan

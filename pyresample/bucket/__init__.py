@@ -202,8 +202,7 @@ class BucketResampler(object):
         target_shape = self.target_area.shape
         self.idxs = self.y_idxs * target_shape[1] + self.x_idxs
 
-    def get_sum(self, data, fill_value=np.nan, skipna=True,
-                set_empty_bucket_to=0):
+    def get_sum(self, data, fill_value=np.nan, skipna=True, empty_bucket_value=0):
         """Calculate sums for each bin with drop-in-a-bucket resampling.
 
         Parameters
@@ -215,12 +214,12 @@ class BucketResampler(object):
             Default: np.nan
         skipna : boolean (optional)
             If True, skips missing values (as marked by NaN or `fill_value`) for the sum calculation
-            (similarly to Numpy's `nansum`). Buckets containing only missing values are set to `set_empty_bucket_to`.
+            (similarly to Numpy's `nansum`). Buckets containing only missing values are set to `empty_bucket_value`.
             If False, sets the bucket to fill_value if one or more missing values are present in the bucket
             (similarly to Numpy's `sum`).
-            In both cases, empty buckets are set to `set_empty_bucket_to`.
+            In both cases, empty buckets are set to `empty_bucket_value`.
             Default: True
-        set_empty_bucket_to : float
+        empty_bucket_value : float
             Set empty buckets to the given value. Empty buckets are considered as the buckets with value 0.
             Note that a bucket could become 0 as the result of a sum
             of positive and negative values. If the user needs to identify these zero-buckets reliably,
@@ -255,7 +254,9 @@ class BucketResampler(object):
 
         # TODO remove following line in favour of weights = data when dask histogram bug (issue #6935) is fixed
         sums = self._mask_bins_with_nan_if_not_skipna(skipna, data, out_size, sums, fill_value)
-        sums = da.where(sums == 0, set_empty_bucket_to, sums)
+
+        if empty_bucket_value != 0:
+            sums = da.where(sums == 0, empty_bucket_value, sums)
 
         return sums.reshape(self.target_area.shape)
 
