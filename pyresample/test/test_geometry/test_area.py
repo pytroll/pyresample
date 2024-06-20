@@ -759,8 +759,20 @@ class TestAreaDefinition:
         actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
         np.testing.assert_allclose(actual, expected)
 
-    def test_get_array_indices_from_lonlat_mask_actual_values(self, create_test_area):
-        """Test that the masked values of get_array_indices_from_lonlat can be valid."""
+    @pytest.mark.parametrize(
+        ("lon", "lat", "exp_mask", "exp_col", "exp_row"),
+        [
+            # Choose a point outside the area
+            (33.5, -40.5, True, 0.0, 0.0),
+            # A point just barely outside the left extent (near floating point precision)
+            (-63.62135, 37.253807, False, 0, 5),
+            # A point just barely outside the right extent (near floating point precision)
+            (63.59189, 37.26574, False, 3711, 5),
+        ]
+    )
+    def test_get_array_indices_from_lonlat_mask_actual_values(
+            self, create_test_area, lon, lat, exp_mask, exp_col, exp_row):
+        """Test masking behavior of get_array_indices_from_lonlat edge cases."""
         x_size = 3712
         y_size = 3712
         area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
@@ -768,10 +780,15 @@ class TestAreaDefinition:
                      'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
         area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
 
-        # Choose a point just outside the area
-        x, y = area_def.get_array_indices_from_lonlat([33.5], [-40.5])
-        assert x.item() == 3723
-        assert y.item() == 3746
+        x, y = area_def.get_array_indices_from_lonlat([lon], [lat])
+        if exp_mask:
+            assert x.mask.all()
+            assert y.mask.all()
+        else:
+            assert not x.mask.any()
+            assert not y.mask.any()
+            assert x.item() == exp_col
+            assert y.item() == exp_row
 
     @pytest.mark.parametrize(
         ("lons", "lats", "exp_cols", "exp_rows"),
