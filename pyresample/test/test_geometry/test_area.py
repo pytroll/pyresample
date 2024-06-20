@@ -598,47 +598,6 @@ class TestAreaDefinition:
         assert lons[0, 0] == -179.5
         assert lats[0, 0] == 89.5
 
-    def test_get_array_indices_from_lonlat_mask_actual_values(self, create_test_area):
-        """Test that the masked values of get_array_indices_from_lonlat can be valid."""
-        x_size = 3712
-        y_size = 3712
-        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
-        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
-                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
-        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
-
-        # Choose a point just outside the area
-        x, y = area_def.get_array_indices_from_lonlat([33.5], [-40.5])
-        assert x.item() == 3723
-        assert y.item() == 3746
-
-    def test_lonlat2colrow(self, create_test_area):
-        """Test lonlat2colrow."""
-        x_size = 3712
-        y_size = 3712
-        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
-        proj_dict = {'a': '6378169.00',
-                     'b': '6356583.80',
-                     'h': '35785831.0',
-                     'lon_0': '0.0',
-                     'proj': 'geos'}
-        area = create_test_area(proj_dict, x_size, y_size, area_extent)
-
-        # Imatra, Wiesbaden
-        longitudes = np.array([28.75242, 8.24932])
-        latitudes = np.array([61.17185, 50.08258])
-        cols__, rows__ = area.get_array_indices_from_lonlat(longitudes, latitudes)
-
-        # test arrays
-        cols_expects = np.array([2304, 2040])
-        rows_expects = np.array([186, 341])
-        np.testing.assert_array_equal(cols__, cols_expects)
-        np.testing.assert_array_equal(rows__, rows_expects)
-
-        # test scalars
-        lon, lat = (-8.125547604568746, -14.345524111874646)
-        assert area.get_array_indices_from_lonlat(lon, lat) == (1567, 2375)
-
     def test_colrow2lonlat(self, create_test_area):
         """Test colrow2lonlat."""
         # test square, symmetric areadef
@@ -800,8 +759,69 @@ class TestAreaDefinition:
         actual = [(np.rad2deg(coord.lon), np.rad2deg(coord.lat)) for coord in area_def.corners]
         np.testing.assert_allclose(actual, expected)
 
+    @pytest.mark.parametrize(
+        ("lon", "lat", "exp_mask", "exp_col", "exp_row"),
+        [
+            # Choose a point outside the area
+            (33.5, -40.5, True, 0.0, 0.0),
+            # A point just barely outside the left extent (near floating point precision)
+            (-63.62135, 37.253807, False, 0, 5),
+            # A point just barely outside the right extent (near floating point precision)
+            (63.59189, 37.26574, False, 3711, 5),
+        ]
+    )
+    def test_get_array_indices_from_lonlat_mask_actual_values(
+            self, create_test_area, lon, lat, exp_mask, exp_col, exp_row):
+        """Test masking behavior of get_array_indices_from_lonlat edge cases."""
+        x_size = 3712
+        y_size = 3712
+        area_extent = (-5570248.477339745, -5561247.267842293, 5567248.074173927, 5570248.477339745)
+        proj_dict = {'a': 6378169.0, 'b': 6356583.8, 'lat_1': 25.,
+                     'lat_2': 25., 'lon_0': 0.0, 'proj': 'lcc', 'units': 'm'}
+        area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
+
+        x, y = area_def.get_array_indices_from_lonlat([lon], [lat])
+        if exp_mask:
+            assert x.mask.all()
+            assert y.mask.all()
+        else:
+            assert not x.mask.any()
+            assert not y.mask.any()
+            assert x.item() == exp_col
+            assert y.item() == exp_row
+
+    @pytest.mark.parametrize(
+        ("lons", "lats", "exp_cols", "exp_rows"),
+        [
+            # Imatra, Wiesbaden
+            (np.array([28.75242, 8.24932]), np.array([61.17185, 50.08258]),
+             np.array([2304, 2040]), np.array([186, 341])),
+            (-8.125547604568746, -14.345524111874646,
+             1567, 2375),
+        ]
+    )
+    def test_get_array_indices_from_lonlat_geos(self, create_test_area, lons, lats, exp_cols, exp_rows):
+        """Test get_array_indices_from_lonlat."""
+        x_size = 3712
+        y_size = 3712
+        area_extent = [-5570248.477339261, -5567248.074173444, 5567248.074173444, 5570248.477339261]
+        proj_dict = {'a': '6378169.00',
+                     'b': '6356583.80',
+                     'h': '35785831.0',
+                     'lon_0': '0.0',
+                     'proj': 'geos'}
+        area = create_test_area(proj_dict, x_size, y_size, area_extent)
+
+        cols__, rows__ = area.get_array_indices_from_lonlat(lons, lats)
+        if hasattr(exp_cols, "shape"):
+            np.testing.assert_array_equal(cols__, exp_cols)
+            np.testing.assert_array_equal(rows__, exp_rows)
+        else:
+            assert cols__ == exp_cols
+            assert rows__ == exp_rows
+
     def test_get_array_indices_from_lonlat(self, create_test_area):
-        """Test the function get_xy_from_lonlat."""
+        """Test the function get_array_indices_from_lonlat."""
         x_size = 2
         y_size = 2
         area_extent = [1000000, 0, 1050000, 50000]
