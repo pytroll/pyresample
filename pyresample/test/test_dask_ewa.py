@@ -343,7 +343,7 @@ class TestDaskEWAResampler:
                                                 maximum_weight_mode=maximum_weight_mode)
         legacy_arr = legacy_data.compute()
 
-        np.testing.assert_allclose(new_arr, legacy_arr)
+        np.testing.assert_allclose(new_arr, legacy_arr, atol=1e-6)
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'as_np'),

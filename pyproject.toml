@@ -3,20 +3,22 @@ requires = ["setuptools", "wheel", "numpy>=2.0.0rc1,<2.3", "Cython>=3", "version
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
-# See https://docs.astral.sh/ruff/rules/
-select = ["E", "W", "B", "D", "T10", "C90"]
-# Remove D416 when all docstrings have been converted to google-style
-ignore = ["D107", "D416"]
 line-length = 120
 exclude = ["versioneer.py", "pyresample/version.py"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules/
+select = ["E", "W", "B", "D", "T10", "C90", "NPY"]
+# Remove D416 when all docstrings have been converted to google-style
+ignore = ["D107", "D416"]
+
+[tool.ruff.lint.per-file-ignores]
 "pyresample/test/*.py" = ["D102", "S101"]  # assert allowed in tests
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 10
 
 [tool.mypy]
