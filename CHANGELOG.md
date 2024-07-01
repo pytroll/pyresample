@@ -1,3 +1,18 @@
+## Version 1.28.4 (2024/07/01)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 603](https://github.com/pytroll/pyresample/pull/603) - Add Python 3.12 wheels and bump pypa/gh-action-pypi-publish from 1.8.14 to 1.9.0
+
+#### Features added
+
+* [PR 598](https://github.com/pytroll/pyresample/pull/598) - Add NPY to ruff rules
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.28.3 (2024/04/15)
 
 ### Issues Closed
