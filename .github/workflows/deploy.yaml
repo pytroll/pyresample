@@ -66,7 +66,7 @@ jobs:
           platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.18.1
+        uses: pypa/cibuildwheel@v2.19.1
         env:
           CIBW_SKIP: "cp36-* cp37-* cp38-* pp* *i686 *-musllinux*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
