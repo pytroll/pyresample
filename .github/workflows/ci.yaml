@@ -60,7 +60,6 @@ jobs:
           git+https://github.com/storpipfugl/pykdtree \
           git+https://github.com/dask/dask \
           git+https://github.com/dask/distributed \
-          git+https://github.com/zarr-developers/zarr \
           git+https://github.com/Unidata/cftime \
           git+https://github.com/mapbox/rasterio \
           git+https://github.com/pyproj4/pyproj \
