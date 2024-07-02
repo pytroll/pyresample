@@ -224,7 +224,7 @@ class BucketResampler(object):
             Note that a bucket could become 0 as the result of a sum
             of positive and negative values. If the user needs to identify these zero-buckets reliably,
             `get_count()` can be used for this purpose.
-            Default: np.nan
+            Default: 0
 
         Returns
         -------
