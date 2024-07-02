@@ -238,10 +238,8 @@ class BucketResampler(object):
         data = data.ravel()
 
         # Remove fill_values values from the data when used as weights
-        if np.isnan(fill_value):
-            weights = da.where(np.isnan(data), 0, data)
-        else:
-            weights = da.where(data == fill_value, 0, data)
+        invalid_mask = get_invalid_mask(data, fill_value)
+        weights = da.where(invalid_mask, 0, data)
 
         # Rechunk indices to match the data chunking
         if weights.chunks != self.idxs.chunks:
@@ -262,10 +260,7 @@ class BucketResampler(object):
 
     def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic, fill_value):
         if not skipna:
-            if np.isnan(fill_value):
-                missing_val = np.isnan(data)
-            else:
-                missing_val = data == fill_value
+            missing_val = get_invalid_mask(data, fill_value)
             missing_val_bins, _ = da.histogram(self.idxs[missing_val], bins=out_size,
                                                range=(0, out_size))
             statistic = da.where(missing_val_bins > 0, fill_value, statistic)
@@ -472,6 +467,14 @@ class BucketResampler(object):
         LOG.disabled = False
 
         return results
+
+
+def get_invalid_mask(data, fill_value):
+    """Get a boolean array marking values equal to fill_value in data as True."""
+    if np.isnan(fill_value):
+        return np.isnan(data)
+    else:
+        return data == fill_value
 
 
 def round_to_resolution(arr, resolution):
