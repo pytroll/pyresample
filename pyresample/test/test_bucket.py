@@ -22,8 +22,9 @@ from unittest.mock import MagicMock, patch
 import dask
 import dask.array as da
 import numpy as np
-import xarray as xr
 import pytest
+import xarray as xr
+
 from pyresample import bucket, create_area_def
 from pyresample.bucket import get_invalid_mask
 from pyresample.geometry import AreaDefinition
@@ -36,6 +37,7 @@ HEIGHT = 2048
 
 @pytest.fixture(scope="module")
 def adef():
+    """Get AreaDefinition for tests."""
     return AreaDefinition('eurol',
                           'description',
                           '',
@@ -51,23 +53,26 @@ def adef():
 
 @pytest.fixture(scope="module")
 def lons():
+    """Get longitudes for tests."""
     return da.from_array(np.array([[25., 25.], [25., 25.]]), chunks=CHUNKS)
 
 
 @pytest.fixture(scope="module")
 def lats():
+    """Get latitudes for tests."""
     return da.from_array(np.array([[60., 60.00001], [60.2, 60.3]]), chunks=CHUNKS)
 
 
 @pytest.fixture(scope="module")
 def resampler(adef, lons, lats):
+    """Get initialised resampler for tests."""
     return bucket.BucketResampler(adef, lons, lats)
 
 
 @patch('pyresample.bucket.Proj')
 @patch('pyresample.bucket.BucketResampler._get_indices')
 def test_init(get_indices, prj, adef, lons, lats):
-    """Test the init method of the BucketResampler"""
+    """Test the init method of the BucketResampler."""
     resampler = bucket.BucketResampler(adef, lons, lats)
 
     get_indices.assert_called_once()
