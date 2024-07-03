@@ -68,7 +68,7 @@ def _expand_bin_statistics(bins, unique_bin, unique_idx, weights_sorted):
     # assign the valid index to array
     weight_idx[unique_bin[~unique_bin.mask].data] = unique_idx[~unique_bin.mask]
 
-    return weights_sorted[weight_idx]  # last value of weigths_sorted always nan
+    return weights_sorted[weight_idx]  # last value of weights_sorted always nan
 
 
 @dask.delayed(pure=True)
@@ -470,7 +470,7 @@ class BucketResampler(object):
 
 
 def get_invalid_mask(data, fill_value):
-    """Get a boolean array marking values equal to fill_value in data as True."""
+    """Get a boolean array where values equal to fill_value in data are True."""
     if np.isnan(fill_value):
         return np.isnan(data)
     else:
