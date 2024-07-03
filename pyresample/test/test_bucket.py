@@ -25,10 +25,14 @@ import numpy as np
 import xarray as xr
 import pytest
 from pyresample import bucket, create_area_def
+from pyresample.bucket import get_invalid_mask
 from pyresample.geometry import AreaDefinition
 from pyresample.test.utils import CustomScheduler
 
 CHUNKS = 2
+WIDTH = 2560
+HEIGHT = 2048
+
 
 @pytest.fixture(scope="module")
 def adef():
@@ -167,78 +171,48 @@ def test_get_sum_valid_data(resampler, adef):
     np.testing.assert_array_equal(result, _get_sum_result(resampler, data))
 
 
-def test_get_sum_nan_data_skipna_false(resampler):
-    """Test drop-in-a-bucket sum for data input with nan and skipna False."""
-    data = da.from_array(np.array([[2., np.nan], [5., np.nan]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=False)
-
-    # 2 + nan is nan, all-nan bin is nan
-    assert np.count_nonzero(np.isnan(result)) == 2
-    # rest is 0
-    assert np.nanmin(result) == 0
+def _equal_or_both_nan(val1, val2):
+    return val1 == val2 or (np.isnan(val1) and np.isnan(val2))
 
 
-def test_get_sum_nan_data_skipna_true(resampler):
-    """Test drop-in-a-bucket sum for data input with nan and skipna True."""
-    data = da.from_array(np.array([[2., np.nan], [5., np.nan]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=True)
+@pytest.mark.parametrize("skipna", [True, False])
+@pytest.mark.parametrize("fill_value", [np.nan, 255, -1])
+@pytest.mark.parametrize("empty_bucket_value", [0, 4095, np.nan, -1])
+def test_get_sum_skipna_fillvalue_empty_bucket_value(resampler, skipna, fill_value, empty_bucket_value):
+    """Test drop-in-a-bucket sum for invalid data input and according arguments."""
+    data = da.from_array(np.array([[2., fill_value], [5., fill_value]]), chunks=CHUNKS)
+    result = _get_sum_result(resampler, data,
+                             skipna=skipna,
+                             fill_value=fill_value,
+                             empty_bucket_value=empty_bucket_value)
+    n_target_bkt = WIDTH * HEIGHT
 
-    # 2 + nan is 2
-    assert np.count_nonzero(result == 2.) == 1
-    # 5 is untouched in a single bin
-    assert np.count_nonzero(result == 5.) == 1
-    # all-nan and rest is 0
-    assert np.count_nonzero(np.isnan(result)) == 0
-    assert np.nanmin(result) == 0
+    # 5 is untouched in a single bin, in any case
+    n_bkt_with_val_5 = 1
 
+    if skipna:
+        # 2 + fill_value is 2 (nansum)
+        n_bkt_with_val_2 = 1
+        # and fill_value+fill_value is empty_bucket_value,
+        # hence no fill_value bkt are left
+        n_bkt_with_val_fill_value = 0
+    else:
+        # 2 + fill_value is fill_value (sum)
+        n_bkt_with_val_2 = 0
+        # and fill_value + fill_value is fill_value, so
+        n_bkt_with_val_fill_value = 2
 
-def test_get_sum_non_default_fill_value_skipna_false(resampler):
-    """Test drop-in-a-bucket sum for data input with non-default fill_value and skipna=False."""
-    data = da.from_array(np.array([[2., 255], [5., 255]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=False, fill_value=255)
+    n_bkt_with_empty_value = n_target_bkt - n_bkt_with_val_fill_value - n_bkt_with_val_5 - n_bkt_with_val_2
 
-    # 2 + fill_value  is fill_value, all-fill_value is fill_value
-    assert np.count_nonzero(result == 255) == 2
-    # 5 is untouched in a single bin
-    assert np.count_nonzero(result == 5.) == 1
-    # rest is 0
-    assert np.nanmin(result) == 0
+    # special case
+    if _equal_or_both_nan(fill_value, empty_bucket_value):
+        # the fill and empty values are equal, so they should be added up
+        n_bkt_with_empty_value = n_bkt_with_val_fill_value = n_bkt_with_empty_value + n_bkt_with_val_fill_value
 
-
-def test_get_sum_non_default_fill_value_skipna_true(resampler):
-    """Test drop-in-a-bucket sum for data input with non-default fill_value and skipna=True."""
-    data = da.from_array(np.array([[2., 255], [5., 255]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=True, fill_value=255)
-
-    # 2 + fill_value  is 2
-    assert np.count_nonzero(result == 2.) == 1
-    # all-missing and rest is 0
-    assert np.count_nonzero(result == 255) == 0
-    assert np.nanmin(result) == 0
-
-
-def test_nonzero_empty_bucket_value_number(resampler):
-    """Test drop-in-a-bucket sum for non-zero empty_bucket_value set as number."""
-    data = da.from_array(np.array([[2., np.nan], [5., np.nan]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=True, empty_bucket_value=4095)
-
-    # 5 is untouched in a single bin
-    assert np.count_nonzero(result == 5.) == 1
-    # all-nan and rest is 4095
-    assert np.count_nonzero(result == 4095) == 2048 * 2560 - 2
-    assert np.nanmin(result) == 2
-
-
-def test_nonzero_empty_bucket_value_npnan(resampler):
-    """Test drop-in-a-bucket sum for non-zero empty_bucket_value set as np.nan."""
-    data = da.from_array(np.array([[2., np.nan], [5., np.nan]]), chunks=CHUNKS)
-    result = _get_sum_result(resampler, data, skipna=True, empty_bucket_value=np.nan)
-
-    # 5 is untouched in a single bin
-    assert np.count_nonzero(result == 5.) == 1
-    # all-nan and rest is np.nan
-    assert np.count_nonzero(np.isnan(result)) == 2048 * 2560 - 2
-    assert np.nanmin(result) == 2
+    assert np.count_nonzero(result == 5.) == n_bkt_with_val_5
+    assert np.count_nonzero(result == 2.) == n_bkt_with_val_2
+    assert np.count_nonzero(get_invalid_mask(result, fill_value)) == n_bkt_with_val_fill_value
+    assert np.count_nonzero(get_invalid_mask(result, empty_bucket_value)) == n_bkt_with_empty_value
 
 
 def test_get_count(resampler):
