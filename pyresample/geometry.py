@@ -1451,11 +1451,14 @@ def masked_ints(func):
         is_scalar = np.isscalar(xm) and np.isscalar(ym)
 
         x__, y__ = func(self, xm, ym)
+        epsilon = 0.02  # arbitrary buffer for floating point precision
+        x_mask = ((x__ < -0.5 - epsilon) | (x__ > self.width - 0.5 + epsilon))
+        y_mask = ((y__ < -0.5 - epsilon) | (y__ > self.height - 0.5 + epsilon))
+        x__ = np.clip(x__, 0, self.width - 1)
+        y__ = np.clip(y__, 0, self.height - 1)
         x__ = np.round(x__).astype(int)
         y__ = np.round(y__).astype(int)
 
-        x_mask = ((x__ < 0) | (x__ >= self.width))
-        y_mask = ((y__ < 0) | (y__ >= self.height))
         x_masked = np.ma.masked_array(x__, mask=x_mask, copy=False)
         y_masked = np.ma.masked_array(y__, mask=y_mask, copy=False)
         if is_scalar:
