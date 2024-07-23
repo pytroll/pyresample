@@ -26,7 +26,7 @@ import pytest
 import xarray as xr
 
 from pyresample import bucket, create_area_def
-from pyresample.bucket import get_invalid_mask
+from pyresample.bucket import _get_invalid_mask
 from pyresample.geometry import AreaDefinition
 from pyresample.test.utils import CustomScheduler
 
@@ -216,8 +216,8 @@ def test_get_sum_skipna_fillvalue_empty_bucket_value(resampler, skipna, fill_val
 
     assert np.count_nonzero(result == 5.) == n_bkt_with_val_5
     assert np.count_nonzero(result == 2.) == n_bkt_with_val_2
-    assert np.count_nonzero(get_invalid_mask(result, fill_value)) == n_bkt_with_val_fill_value
-    assert np.count_nonzero(get_invalid_mask(result, empty_bucket_value)) == n_bkt_with_empty_value
+    assert np.count_nonzero(_get_invalid_mask(result, fill_value)) == n_bkt_with_val_fill_value
+    assert np.count_nonzero(_get_invalid_mask(result, empty_bucket_value)) == n_bkt_with_empty_value
 
 
 def test_get_count(resampler):

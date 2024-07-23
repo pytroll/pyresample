@@ -238,7 +238,7 @@ class BucketResampler(object):
         data = data.ravel()
 
         # Remove fill_values values from the data when used as weights
-        invalid_mask = get_invalid_mask(data, fill_value)
+        invalid_mask = _get_invalid_mask(data, fill_value)
         weights = da.where(invalid_mask, 0, data)
 
         # Rechunk indices to match the data chunking
@@ -260,7 +260,7 @@ class BucketResampler(object):
 
     def _mask_bins_with_nan_if_not_skipna(self, skipna, data, out_size, statistic, fill_value):
         if not skipna:
-            missing_val = get_invalid_mask(data, fill_value)
+            missing_val = _get_invalid_mask(data, fill_value)
             missing_val_bins, _ = da.histogram(self.idxs[missing_val], bins=out_size,
                                                range=(0, out_size))
             statistic = da.where(missing_val_bins > 0, fill_value, statistic)
@@ -469,7 +469,7 @@ class BucketResampler(object):
         return results
 
 
-def get_invalid_mask(data, fill_value):
+def _get_invalid_mask(data, fill_value):
     """Get a boolean array where values equal to fill_value in data are True."""
     if np.isnan(fill_value):
         return np.isnan(data)
