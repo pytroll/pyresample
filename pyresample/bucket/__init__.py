@@ -210,7 +210,7 @@ class BucketResampler(object):
         data : Numpy or Dask array
             Data to be binned and summed.
         fill_value : float
-            Fill value to mark missing/invalid values in the input data.
+            Fill value of the input data marking missing/invalid values.
             Default: np.nan
         skipna : boolean (optional)
             If True, skips missing values (as marked by NaN or `fill_value`) for the sum calculation
