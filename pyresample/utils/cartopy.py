@@ -78,7 +78,8 @@ class Projection(ccrs.Projection):
         else:
             self._boundary = self._geos_boundary()
 
-    def _geos_boundary(self):
+    @staticmethod
+    def _geos_boundary():
         """Calculate full disk boundary.
 
         This code is copied over from the 'Geostationary' class in  'cartopy/lib/cartopy/crs.py'.
