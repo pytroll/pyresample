@@ -244,25 +244,30 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
         - Improve resolution estimation from lat/lon arrays. Maybe use CoordinateDefinition.geocentric_resolution?
 
     """
-    if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
-        # Calculate and estimated resolution from lats/lons in meter
-        area_name = "Arbitrary Swath"
-        resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
-        resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
-        resolution = np.mean(np.array([resolution_x, resolution_y]))
-        resolution = np.round(40075000 * resolution / 360, 1)
-        resolution_str = f"{resolution}/{resolution}"
-        area_units = "m"
+    if np.ndim(area.lons) == 1:
+        area_name = "1D Swath"
+        resolution_str = "{resolution}/{resolution}".format(resolution="Na")
+        height, width = "Na", "Na"
+        area_units = "Na"
     else:
-        lon_attrs = area.lons.attrs
-        lat_attrs = area.lats.attrs
+        if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
+            # Calculate and estimated resolution from lats/lons in meter
+            area_name = "Arbitrary Swath"
+            resolution_y = np.mean(area.lats[0:-1, :] - area.lats[1::, :])
+            resolution_x = np.mean(area.lons[:, 1::] - area.lons[:, 0:-1])
+            resolution = np.mean(np.array([resolution_x, resolution_y]))
+            resolution = np.round(40075000 * resolution / 360, 1)
+            resolution_str = f"{resolution}/{resolution}"
+        else:
+            lon_attrs = area.lons.attrs
+            lat_attrs = area.lats.attrs
 
-        # use resolution from lat/lons dataarray attributes -> are these always set? -> Maybe try/except?
-        area_name = f"{lon_attrs.get('sensor')} swath"
-        resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
+            # use resolution from lat/lons dataarray attributes -> are these always set? -> Maybe try/except?
+            area_name = f"{lon_attrs.get('sensor')} Swath"
+            resolution_str = "/".join([str(round(x.get("resolution"), 1)) for x in [lat_attrs, lon_attrs]])
+
         area_units = "m"
-
-    height, width = area.lons.shape
+        height, width = area.lons.shape
 
     attrs_icon = _icon("icon-file-text2")
 
