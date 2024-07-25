@@ -248,7 +248,7 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
         area_name = "1D Swath"
         resolution_str = "{resolution}/{resolution}".format(resolution="Na")
         height, width = "Na", "Na"
-        area_units = "Na"
+        area_units = "m"
     else:
         if isinstance(area.lons, np.ndarray) & isinstance(area.lats, np.ndarray):
             # Calculate and estimated resolution from lats/lons in meter
