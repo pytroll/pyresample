@@ -246,7 +246,7 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
     """
     if np.ndim(area.lons) == 1:
         area_name = "1D Swath"
-        resolution_str = "NA/NA"
+        resolution_str = "NAxNA"
         height, width = "NA", "NA"
         area_units = "m"
     else:
