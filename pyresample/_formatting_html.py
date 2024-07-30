@@ -25,6 +25,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 
 import pyresample.geometry as geom
+from pyresample.utils.proj4 import ignore_pyproj_proj_warnings
 
 try:
     import cartopy
@@ -193,7 +194,8 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
 
     """
     resolution_str = "/".join([str(round(x, 1)) for x in area.resolution])
-    proj_dict = area.proj_dict
+    with ignore_pyproj_proj_warnings():
+        proj_dict = area.proj_dict
     proj_str = "{{{}}}".format(", ".join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in
                                           sorted(proj_dict.keys())]))
     area_units = proj_dict.get("units", "")
@@ -207,7 +209,7 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
                   f"<dt>Width/Height</dt><dd>{area.width}/{area.height} Pixel</dd>"
                   f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt>"
-                  f"<dd>{tuple(round(x, 4) for x in area.area_extent)}</dd>"
+                  f"<dd>{tuple(round(float(x), 4) for x in area.area_extent)}</dd>"
                   "</dl>"
                   )
 
@@ -299,14 +301,15 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
     return f"{coll}"
 
 
-def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], include_header: Optional[bool] = True, # noqa F821
-              include_static_files: Optional[bool] = True):
+def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
+              include_header: bool = True,
+              include_static_files: bool = True):
     """Return html repr of an AreaDefinition.
 
     Args:
         area : Area definition.
         include_header : If true a header with object type will be included in
-            the html. This is mainly intented for display in Jupyter Notebooks. For the
+            the html. This is mainly intended for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
         include_static_files : Load and include css and html needed for representation.
