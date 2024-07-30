@@ -25,6 +25,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 
 import pyresample.geometry as geom
+from pyresample.utils.proj4 import ignore_pyproj_proj_warnings
 
 try:
     import cartopy
@@ -65,15 +66,11 @@ def _icon(icon_name):
 
 
 def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
-                  feature_res: Optional[str] = "110m",
                   fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
     """Plot area.
 
     Args:
         area : Area/Swath to plot.
-        feature_res :
-            Resolution of the features added to the map. Argument is handed over
-            to `scale` parameter in cartopy.feature.
         fmt : Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg or png.
             If None (default) plot is just shown.
@@ -102,21 +99,10 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         bounds = poly.buffer(5).bounds
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
 
-    coastlines = cartopy.feature.NaturalEarthFeature(category="physical",
-                                                     name="coastline",
-                                                     scale=feature_res,
-                                                     linewidth=1,
-                                                     facecolor="never")
-    borders = cartopy.feature.NaturalEarthFeature(category="cultural",
-                                                  name="admin_0_boundary_lines_land", # noqa E114
-                                                  scale=feature_res,
-                                                  edgecolor="black",
-                                                  facecolor="never") # noqa E1>
-    ocean = cartopy.feature.OCEAN
-
-    ax.add_feature(borders)
-    ax.add_feature(coastlines)
-    ax.add_feature(ocean, color="lightgrey")
+    ax.add_feature(cartopy.feature.OCEAN)
+    ax.add_feature(cartopy.feature.LAND)
+    ax.add_feature(cartopy.feature.COASTLINE)
+    ax.add_feature(cartopy.feature.BORDERS)
 
     plt.tight_layout(pad=0)
 
@@ -208,7 +194,8 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
 
     """
     resolution_str = "/".join([str(round(x, 1)) for x in area.resolution])
-    proj_dict = area.proj_dict
+    with ignore_pyproj_proj_warnings():
+        proj_dict = area.proj_dict
     proj_str = "{{{}}}".format(", ".join(["'%s': '%s'" % (str(k), str(proj_dict[k])) for k in
                                           sorted(proj_dict.keys())]))
     area_units = proj_dict.get("units", "")
@@ -222,7 +209,7 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
                   f"<dt>Width/Height</dt><dd>{area.width}/{area.height} Pixel</dd>"
                   f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
                   f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt>"
-                  f"<dd>{tuple(round(x, 4) for x in area.area_extent)}</dd>"
+                  f"<dd>{tuple(round(float(x), 4) for x in area.area_extent)}</dd>"
                   "</dl>"
                   )
 
@@ -319,14 +306,15 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
     return f"{coll}"
 
 
-def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], include_header: Optional[bool] = True, # noqa F821
-              include_static_files: Optional[bool] = True):
+def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
+              include_header: bool = True,
+              include_static_files: bool = True):
     """Return html repr of an AreaDefinition.
 
     Args:
         area : Area definition.
         include_header : If true a header with object type will be included in
-            the html. This is mainly intented for display in Jupyter Notebooks. For the
+            the html. This is mainly intended for display in Jupyter Notebooks. For the
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
         include_static_files : Load and include css and html needed for representation.
