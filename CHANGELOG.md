@@ -1,3 +1,27 @@
+## Version 1.29.0 (2024/07/31)
+
+### Issues Closed
+
+* [Issue 609](https://github.com/pytroll/pyresample/issues/609) - Error in SwathDefinition html representation if lon/lat arrays are dask arrays ([PR 610](https://github.com/pytroll/pyresample/pull/610) by [@BENR0](https://github.com/BENR0))
+* [Issue 354](https://github.com/pytroll/pyresample/issues/354) - `get_sum` not matched with `bucket_sum`
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 610](https://github.com/pytroll/pyresample/pull/610) - Fix SwathDefinition html representation error when lons/lats 1D ([609](https://github.com/pytroll/pyresample/issues/609))
+* [PR 601](https://github.com/pytroll/pyresample/pull/601) - Fix spill over of ocean/and features in cartopy plots in case of geostationary full disc plot.
+* [PR 596](https://github.com/pytroll/pyresample/pull/596) - Fix AreaDefinition array index methods mishandling outer edge values ([691](https://github.com/ssec/polar2grid/issues/691))
+
+#### Features added
+
+* [PR 602](https://github.com/pytroll/pyresample/pull/602) - Add support for `fill_value` and `set_empty_bucket_to` in BucketResampler `get_sum`
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.28.4 (2024/07/01)
 
 ### Pull Requests Merged
