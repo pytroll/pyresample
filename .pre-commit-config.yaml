@@ -28,7 +28,6 @@ repos:
     - id: mypy
       additional_dependencies:
         - types-docutils
-        - types-pkg-resources
         - types-PyYAML
         - types-requests
         - type_extensions
