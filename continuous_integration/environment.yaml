@@ -24,7 +24,7 @@ dependencies:
   - coverage
   - pytest <8.0.0
   - pytest-cov
-  - pytest-lazy-fixture
+  - pytest-lazy-fixtures
   - importlib-metadata
   - sphinx-reredirects
   - odc-geo
