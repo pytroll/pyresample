@@ -22,7 +22,7 @@ dependencies:
   - xarray
   - zarr
   - coverage
-  - pytest <8.0.0
+  - pytest
   - pytest-cov
   - pytest-lazy-fixtures
   - importlib-metadata
