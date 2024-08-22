@@ -24,7 +24,7 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf
 
 from pyresample.future.resamplers.resampler import Resampler
 from pyresample.geometry import AreaDefinition, SwathDefinition
@@ -57,16 +57,16 @@ class FakeResampler(Resampler):
 @pytest.mark.parametrize(
     "src",
     [
-        lazy_fixture("swath_def_2d_numpy"),
-        lazy_fixture("swath_def_2d_dask"),
-        lazy_fixture("swath_def_2d_xarray_numpy"),
-        lazy_fixture("swath_def_2d_xarray_dask"),
+        lf("swath_def_2d_numpy"),
+        lf("swath_def_2d_dask"),
+        lf("swath_def_2d_xarray_numpy"),
+        lf("swath_def_2d_xarray_dask"),
     ]
 )
 @pytest.mark.parametrize(
     "dst",
     [
-        lazy_fixture("area_def_lcc_conus_1km"),
+        lf("area_def_lcc_conus_1km"),
     ]
 )
 def test_resampler(src, dst):
