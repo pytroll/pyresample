@@ -2121,8 +2121,8 @@ class AreaDefinition(_ProjectionDefinition):
         if existing_hash is None:
             existing_hash = hashlib.sha1()  # nosec: B324
         existing_hash.update(self.crs_wkt.encode('utf-8'))
-        existing_hash.update(np.array(self.shape))
-        existing_hash.update(np.array(self.area_extent))
+        existing_hash.update(np.array(self.shape))  # type: ignore[arg-type]
+        existing_hash.update(np.array(self.area_extent))  # type: ignore[arg-type]
         return existing_hash
 
     @daskify_2in_2out
