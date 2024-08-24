@@ -1062,6 +1062,21 @@ class TestAreaDefinition:
         geo_res = area_def.geocentric_resolution()
         np.testing.assert_allclose(298.647232, geo_res, atol=1e-1)
 
+    def test_area_def_geocentric_resolution_close_dist(self, create_test_area):
+        """Test geocentric resolution when distance range isn't big enough for histogram bins.
+
+        The method currently uses `np.histogram_bin_edges`. Starting in numpy
+        2.1.0, if the number of bins requested (10 in this default case) can't
+        be created because the range of the data is too small, it will raise an
+        exception. This test makes sure that geocentric_resolution doesn't
+        error out when this case is encountered.
+
+        """
+        # this area is known to produce horizontal distances of ~999.9999989758
+        # and trigger the error in numpy 2.1.0
+        ar = create_test_area(4087, 5, 5, (-2500.0, -2500.0, 2500.0, 2500.0))
+        np.testing.assert_allclose(ar.geocentric_resolution(), 999.999999, atol=1e-2)
+
     def test_area_def_geocentric_resolution_latlong(self, create_test_area):
         """Test the AreaDefinition.geocentric_resolution method on a latlong projection."""
         area_extent = (-110.0, 45.0, -95.0, 55.0)

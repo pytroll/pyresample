@@ -2696,6 +2696,15 @@ class AreaDefinition(_ProjectionDefinition):
            edge averages.
 
         """
+        def _safe_bin_edges(arr):
+            try:
+                return np.histogram_bin_edges(arr, bins=10)[:2]
+            except ValueError:
+                # numpy 2.1.0+ produces a ValueError if it can't fill
+                # all bins due to a small data range
+                # we just arbitrarily use the first 2 elements as all elements
+                # should be within floating point precision for our use case
+                return arr[:2]
         from pyproj.transformer import Transformer
         rows, cols = self.shape
         mid_row = rows // 2
@@ -2726,9 +2735,9 @@ class AreaDefinition(_ProjectionDefinition):
         # Very useful near edge of disk geostationary areas.
         hor_res = vert_res = 0
         if hor_dist.size:
-            hor_res = np.mean(np.histogram_bin_edges(hor_dist)[:2])
+            hor_res = np.mean(_safe_bin_edges(hor_dist))
         if vert_dist.size:
-            vert_res = np.mean(np.histogram_bin_edges(vert_dist)[:2])
+            vert_res = np.mean(_safe_bin_edges(vert_dist))
         # Use the maximum distance between the two midlines instead of
         # binning both of them together. If we binned them together then
         # we are highly dependent on the shape of the area (more rows in
