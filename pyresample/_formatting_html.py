@@ -161,28 +161,6 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
             )
 
 
-def map_section(area: Union['geom.AreaDefinition', 'geom.SwathDefinition']) -> str: # noqa F821
-    """Create html for map section.
-
-    Args:
-        area : AreaDefinition or SwathDefinition.
-
-    Returns:
-        Html with collapsible section with a cartopy plot.
-
-    """
-    map_icon = _icon("icon-globe")
-
-    if cartopy:
-        coll = collapsible_section("Map", details=plot_area_def(area, fmt="svg"), collapsed=True, icon=map_icon)
-    else:
-        coll = collapsible_section("Map",
-                                   details="Note: If cartopy is installed a display of the area can be seen here",
-                                   collapsed=True, icon=map_icon)
-
-    return f"{coll}"
-
-
 def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
     """Create html for attribute section based on an area Area.
 
@@ -308,7 +286,9 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
 
 def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
               include_header: bool = True,
-              include_static_files: bool = True):
+              include_static_files: bool = True,
+              map_content: str | None = None,
+              ):
     """Return html repr of an AreaDefinition.
 
     Args:
@@ -318,6 +298,8 @@ def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
         include_static_files : Load and include css and html needed for representation.
+        map_content : Optionally override the map section contents. Can be any string
+            that is valid HTML between a "<div></div>" tag.
 
     Returns:
         Html.
@@ -347,7 +329,18 @@ def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
     html += "<div class='pyresample-area-sections'>"
     if isinstance(area, geom.AreaDefinition):
         html += proj_area_attrs_section(area)
-        html += map_section(area)
+        map_icon = _icon("icon-globe")
+        if map_content is None:
+            if cartopy:
+                map_content = plot_area_def(area, fmt="svg")
+            else:
+                map_content = "Note: If cartopy is installed a display of the area can be seen here"
+        coll = collapsible_section("Map",
+                                   details=map_content,
+                                   collapsed=True,
+                                   icon=map_icon)
+
+        html += str(coll)
     elif isinstance(area, geom.SwathDefinition):
         html += swath_area_attrs_section(area)
 
