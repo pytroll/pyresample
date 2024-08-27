@@ -79,12 +79,14 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
             If None (default) plot is just shown.
         features: Series of string names of cartopy features to add to the plot.
             Can be lowercase or uppercase names of the features, for example,
-            "land", "coastline", "borders", or any other feature available from
-            ``cartopy.feature``. If None (default), then land, coastline, borders,
-            and ocean are used.
+            "land", "coastline", "borders", "ocean", or any other feature
+            available from ``cartopy.feature``. If None (default), then land,
+            coastline, and borders are used.
 
     Returns:
-        svg or png image as string.
+        svg or png image as string or ``None`` when no format is provided
+        in which case the plot is shown interactively.
+
     """
     import base64
     from io import BytesIO, StringIO
@@ -110,7 +112,7 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         raise NotImplementedError("Only AreaDefinition and SwathDefinition objects can be plotted")
 
     if features is None:
-        features = ("ocean", "land", "coastline", "borders")
+        features = ("land", "coastline", "borders")
 
     for feat_name in features:
         feat_obj = getattr(cartopy.feature, feat_name.upper())
