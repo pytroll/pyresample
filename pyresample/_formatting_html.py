@@ -68,7 +68,7 @@ def _icon(icon_name):
 
 def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
                   fmt: Optional[Literal["svg", "png", None]] = None,
-                  features: Iterable[str] = ("ocean", "land", "coastline", "borders"),
+                  features: Optional[Iterable[str]] = None,
                   ) -> Union[str, None]:
     """Plot area.
 
@@ -80,7 +80,8 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         features: Series of string names of cartopy features to add to the plot.
             Can be lowercase or uppercase names of the features, for example,
             "land", "coastline", "borders", or any other feature available from
-            ``cartopy.feature``.
+            ``cartopy.feature``. If None (default), then land, coastline, borders,
+            and ocean are used.
 
     Returns:
         svg or png image as string.
@@ -107,6 +108,9 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
     else:
         raise NotImplementedError("Only AreaDefinition and SwathDefinition objects can be plotted")
+
+    if features is None:
+        features = ("ocean", "land", "coastline", "borders")
 
     for feat_name in features:
         feat_obj = getattr(cartopy.feature, feat_name.upper())

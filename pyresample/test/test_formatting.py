@@ -19,6 +19,8 @@
 import unittest.mock as mock
 from unittest.mock import ANY
 
+import pytest
+
 import pyresample
 from pyresample._formatting_html import (
     area_repr,
@@ -29,25 +31,21 @@ from pyresample._formatting_html import (
 from .test_geometry.test_swath import _gen_swath_def_numpy, _gen_swath_def_xarray_dask
 
 
-def test_plot_area_def_w_area_def(area_def_stere_source):  # noqa F811
+@pytest.mark.parametrize("format", ["svg", "png", None])
+@pytest.mark.parametrize("features", [None, ("coastline",)])
+def test_plot_area_def_w_area_def(area_def_stere_source, format, features):  # noqa F811
     """Test AreaDefinition plotting as svg/png."""
     area = area_def_stere_source
 
-    with mock.patch('matplotlib.pyplot.savefig') as mock_savefig:
-        plot_area_def(area, fmt="svg")
-        mock_savefig.asser_called_with(ANY, format="svg", bbox_inches="tight")
-        mock_savefig.reset_mock()
-        plot_area_def(area, fmt="png")
-        mock_savefig.assert_called_with(ANY, format="png", bbox_inches="tight")
-
-
-def test_plot_area_def_w_area_def_show(area_def_stere_source):  # noqa F811
-    """Test AreaDefinition plotting as svg/png."""
-    area = area_def_stere_source
-
-    with mock.patch('matplotlib.pyplot.show') as mock_show_plot:
-        plot_area_def(area)
-        mock_show_plot.assert_called_once()
+    with mock.patch('matplotlib.pyplot.savefig') as mock_savefig, \
+            mock.patch('matplotlib.pyplot.show') as mock_show_plot:
+        plot_area_def(area, fmt=format)
+        if format is None:
+            mock_show_plot.assert_called_once()
+            mock_savefig.assert_not_called()
+        else:
+            mock_show_plot.assert_not_called()
+            mock_savefig.asser_called_with(ANY, format=format, bbox_inches="tight")
 
 
 def test_plot_area_def_w_swath_def(create_test_swath):
@@ -72,6 +70,14 @@ def test_area_def_cartopy_installed(area_def_stere_source):  # noqa F811
     """Test cartopy installed."""
     area = area_def_stere_source
     assert "Note: If cartopy is installed a display of the area can be seen here" not in area._repr_html_()
+
+
+def test_area_repr_custom_map(area_def_stere_source):  # noqa F811
+    """Test custom map section of area repr."""
+    area = area_def_stere_source
+    res = area_repr(area, include_header=False, include_static_files=False,
+                    map_content="TEST")
+    assert "TEST" in res
 
 
 def test_area_repr_w_static_files(area_def_stere_source):  # noqa F811
