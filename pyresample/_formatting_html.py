@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterable
 from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
@@ -66,7 +67,9 @@ def _icon(icon_name):
 
 
 def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
-                  fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
+                  fmt: Optional[Literal["svg", "png", None]] = None,
+                  features: Iterable[str] = ("ocean", "land", "coastline", "borders"),
+                  ) -> Union[str, None]:
     """Plot area.
 
     Args:
@@ -74,6 +77,10 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         fmt : Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg or png.
             If None (default) plot is just shown.
+        features: Series of string names of cartopy features to add to the plot.
+            Can be lowercase or uppercase names of the features, for example,
+            "land", "coastline", "borders", or any other feature available from
+            ``cartopy.feature``.
 
     Returns:
         svg or png image as string.
@@ -98,11 +105,12 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         ax.add_geometries([poly], crs=cartopy.crs.CRS(area.crs), facecolor="none", edgecolor="red")
         bounds = poly.buffer(5).bounds
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
+    else:
+        raise NotImplementedError("Only AreaDefinition and SwathDefinition objects can be plotted")
 
-    ax.add_feature(cartopy.feature.OCEAN)
-    ax.add_feature(cartopy.feature.LAND)
-    ax.add_feature(cartopy.feature.COASTLINE)
-    ax.add_feature(cartopy.feature.BORDERS)
+    for feat_name in features:
+        feat_obj = getattr(cartopy.feature, feat_name.upper())
+        ax.add_feature(feat_obj)
 
     plt.tight_layout(pad=0)
 
@@ -111,14 +119,12 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         plt.savefig(svg_str, format="svg", bbox_inches="tight")
         plt.close()
         return svg_str.getvalue()
-
     elif fmt == "png":
         png_str = BytesIO()
         plt.savefig(png_str, format="png", bbox_inches="tight")
         img_str = f"<img src='data:image/png;base64, {base64.encodebytes(png_str.getvalue()).decode('utf-8')}'/>"
         plt.close()
         return img_str
-
     else:
         plt.show()
         return None
