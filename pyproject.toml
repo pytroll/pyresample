@@ -50,6 +50,7 @@ profile = "black"
 skip_gitignore = true
 default_section = "THIRDPARTY"
 known_first_party = "pyresample"
+line_length = 120
 
 [tool.coverage.run]
 relative_files = true
