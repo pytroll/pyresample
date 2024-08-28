@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterable
 from functools import lru_cache
 from html import escape
 from importlib.resources import read_binary
@@ -66,7 +67,9 @@ def _icon(icon_name):
 
 
 def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # noqa F821
-                  fmt: Optional[Literal["svg", "png", None]] = None) -> Union[str, None]:
+                  fmt: Optional[Literal["svg", "png", None]] = None,
+                  features: Optional[Iterable[str]] = None,
+                  ) -> Union[str, None]:
     """Plot area.
 
     Args:
@@ -74,9 +77,16 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         fmt : Output format of the plot. The output is the string representation of
             the respective format xml for svg and base64 for png. Either svg or png.
             If None (default) plot is just shown.
+        features: Series of string names of cartopy features to add to the plot.
+            Can be lowercase or uppercase names of the features, for example,
+            "land", "coastline", "borders", "ocean", or any other feature
+            available from ``cartopy.feature``. If None (default), then land,
+            coastline, and borders are used.
 
     Returns:
-        svg or png image as string.
+        svg or png image as string or ``None`` when no format is provided
+        in which case the plot is shown interactively.
+
     """
     import base64
     from io import BytesIO, StringIO
@@ -98,11 +108,15 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         ax.add_geometries([poly], crs=cartopy.crs.CRS(area.crs), facecolor="none", edgecolor="red")
         bounds = poly.buffer(5).bounds
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
+    else:
+        raise NotImplementedError("Only AreaDefinition and SwathDefinition objects can be plotted")
 
-    ax.add_feature(cartopy.feature.OCEAN)
-    ax.add_feature(cartopy.feature.LAND)
-    ax.add_feature(cartopy.feature.COASTLINE)
-    ax.add_feature(cartopy.feature.BORDERS)
+    if features is None:
+        features = ("land", "coastline", "borders")
+
+    for feat_name in features:
+        feat_obj = getattr(cartopy.feature, feat_name.upper())
+        ax.add_feature(feat_obj)
 
     plt.tight_layout(pad=0)
 
@@ -111,14 +125,12 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         plt.savefig(svg_str, format="svg", bbox_inches="tight")
         plt.close()
         return svg_str.getvalue()
-
     elif fmt == "png":
         png_str = BytesIO()
         plt.savefig(png_str, format="png", bbox_inches="tight")
         img_str = f"<img src='data:image/png;base64, {base64.encodebytes(png_str.getvalue()).decode('utf-8')}'/>"
         plt.close()
         return img_str
-
     else:
         plt.show()
         return None
@@ -159,28 +171,6 @@ def collapsible_section(name: str, inline_details: Optional[str] = "", details: 
             f"<div class='pyresample-area-section-details'>{details}</div>"
             "</div>"
             )
-
-
-def map_section(area: Union['geom.AreaDefinition', 'geom.SwathDefinition']) -> str: # noqa F821
-    """Create html for map section.
-
-    Args:
-        area : AreaDefinition or SwathDefinition.
-
-    Returns:
-        Html with collapsible section with a cartopy plot.
-
-    """
-    map_icon = _icon("icon-globe")
-
-    if cartopy:
-        coll = collapsible_section("Map", details=plot_area_def(area, fmt="svg"), collapsed=True, icon=map_icon)
-    else:
-        coll = collapsible_section("Map",
-                                   details="Note: If cartopy is installed a display of the area can be seen here",
-                                   collapsed=True, icon=map_icon)
-
-    return f"{coll}"
 
 
 def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
@@ -308,7 +298,9 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
 
 def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
               include_header: bool = True,
-              include_static_files: bool = True):
+              include_static_files: bool = True,
+              map_content: str | None = None,
+              ):
     """Return html repr of an AreaDefinition.
 
     Args:
@@ -318,6 +310,8 @@ def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
             display in the overview of area definitions for the Satpy documentation this
             should be set to false.
         include_static_files : Load and include css and html needed for representation.
+        map_content : Optionally override the map section contents. Can be any string
+            that is valid HTML between a "<div></div>" tag.
 
     Returns:
         Html.
@@ -347,7 +341,18 @@ def area_repr(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'],
     html += "<div class='pyresample-area-sections'>"
     if isinstance(area, geom.AreaDefinition):
         html += proj_area_attrs_section(area)
-        html += map_section(area)
+        map_icon = _icon("icon-globe")
+        if map_content is None:
+            if cartopy:
+                map_content = plot_area_def(area, fmt="svg")
+            else:
+                map_content = "Note: If cartopy is installed a display of the area can be seen here"
+        coll = collapsible_section("Map",
+                                   details=map_content,
+                                   collapsed=True,
+                                   icon=map_icon)
+
+        html += str(coll)
     elif isinstance(area, geom.SwathDefinition):
         html += swath_area_attrs_section(area)
 
