@@ -25,11 +25,7 @@ from pyproj import CRS
 
 import pyresample
 from pyresample import LegacyAreaDefinition, LegacySwathDefinition
-from pyresample.future.geometry import (
-    AreaDefinition,
-    CoordinateDefinition,
-    SwathDefinition,
-)
+from pyresample.future.geometry import AreaDefinition, CoordinateDefinition, SwathDefinition
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
 SRC_SWATH_2D_SHAPE = (50, 10)

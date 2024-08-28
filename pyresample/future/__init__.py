@@ -18,9 +18,4 @@
 """Future features that are backwards incompatible with current functionality."""
 
 from .resamplers import Resampler  # noqa
-from .resamplers import (  # noqa
-    create_resampler,
-    list_resamplers,
-    register_resampler,
-    unregister_resampler,
-)
+from .resamplers import create_resampler, list_resamplers, register_resampler, unregister_resampler  # noqa

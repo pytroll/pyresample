@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "numpy>=2.0.0rc1,<2.3", "Cython>=3", "versioneer"]
+requires = ["setuptools", "wheel", "numpy>=2.0.0rc1,<2.3", "Cython>=3", "versioneer[toml]"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -36,3 +36,22 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unreachable = true
 warn_unused_configs = true
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "pyresample/version.py"
+versionfile_build = "pyresample/version.py"
+tag_prefix = "v"
+
+[tool.isort]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+profile = "black"
+skip_gitignore = true
+default_section = "THIRDPARTY"
+known_first_party = "pyresample"
+line_length = 120
+
+[tool.coverage.run]
+relative_files = true
+omit = ["pyresample/version.py", "versioneer.py"]

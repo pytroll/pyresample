@@ -22,11 +22,7 @@ from unittest.mock import ANY
 import pytest
 
 import pyresample
-from pyresample._formatting_html import (
-    area_repr,
-    plot_area_def,
-    swath_area_attrs_section,
-)
+from pyresample._formatting_html import area_repr, plot_area_def, swath_area_attrs_section
 
 from .test_geometry.test_swath import _gen_swath_def_numpy, _gen_swath_def_xarray_dask
 

@@ -211,10 +211,7 @@ class TestResampleBlocksArea2Area:
 
     def test_resample_blocks_can_generate_gradient_indices(self):
         """Test resample blocks can generate gradient indices."""
-        from pyresample.gradient import (
-            gradient_resampler_indices,
-            gradient_resampler_indices_block,
-        )
+        from pyresample.gradient import gradient_resampler_indices, gradient_resampler_indices_block
         from pyresample.resampler import resample_blocks
 
         chunks = 40

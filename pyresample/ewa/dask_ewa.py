@@ -39,10 +39,7 @@ from dask.array.core import normalize_chunks
 from dask.highlevelgraph import HighLevelGraph
 
 from pyresample.ewa import ll2cr
-from pyresample.ewa._fornav import (
-    fornav_weights_and_sums_wrapper,
-    write_grid_image_single,
-)
+from pyresample.ewa._fornav import fornav_weights_and_sums_wrapper, write_grid_image_single
 from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler
 

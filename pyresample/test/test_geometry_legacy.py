@@ -31,11 +31,7 @@ import pytest
 import xarray as xr
 
 from pyresample import geometry
-from pyresample.geometry import (
-    IncompatibleAreas,
-    combine_area_extents_vertical,
-    concatenate_area_defs,
-)
+from pyresample.geometry import IncompatibleAreas, combine_area_extents_vertical, concatenate_area_defs
 from pyresample.test.utils import catch_warnings
 
 

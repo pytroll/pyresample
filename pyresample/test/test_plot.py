@@ -120,10 +120,7 @@ class Test(unittest.TestCase):
 
     def test_translate_coast_res(self):
         """Test the translation of coast resolution arguments from old basemap notation to cartopy."""
-        from pyresample.plot import (
-            BASEMAP_NOT_CARTOPY,
-            _translate_coast_resolution_to_cartopy,
-        )
+        from pyresample.plot import BASEMAP_NOT_CARTOPY, _translate_coast_resolution_to_cartopy
 
         with self.assertRaises(KeyError) as raises:
             if sys.version_info > (3,):

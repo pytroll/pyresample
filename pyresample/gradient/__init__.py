@@ -36,15 +36,8 @@ import xarray as xr
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
-from pyresample.geometry import (
-    AreaDefinition,
-    SwathDefinition,
-    get_geostationary_bounding_box_in_lonlats,
-)
-from pyresample.gradient._gradient_search import (
-    one_step_gradient_indices,
-    one_step_gradient_search,
-)
+from pyresample.geometry import AreaDefinition, SwathDefinition, get_geostationary_bounding_box_in_lonlats
+from pyresample.gradient._gradient_search import one_step_gradient_indices, one_step_gradient_search
 from pyresample.resampler import BaseResampler, resample_blocks
 
 logger = logging.getLogger(__name__)

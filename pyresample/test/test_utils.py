@@ -29,12 +29,7 @@ import pytest
 from pyproj import CRS
 
 import pyresample
-from pyresample.test.utils import (
-    TEST_FILES_PATH,
-    assert_future_geometry,
-    create_test_latitude,
-    create_test_longitude,
-)
+from pyresample.test.utils import TEST_FILES_PATH, assert_future_geometry, create_test_latitude, create_test_longitude
 from pyresample.utils import load_cf_area
 from pyresample.utils.row_appendable_array import RowAppendableArray
 
@@ -620,10 +615,7 @@ class TestLoadCFArea_Private(unittest.TestCase):
                           self.nc_handles['nh10km'], 'doesNotExist', 'x', 'polar_stereographic')
 
     def test_cf_is_valid_coordinate_standardname(self):
-        from pyresample.utils.cf import (
-            _is_valid_coordinate_standardname,
-            _valid_cf_type_of_grid_mapping,
-        )
+        from pyresample.utils.cf import _is_valid_coordinate_standardname, _valid_cf_type_of_grid_mapping
 
         # nominal
         for proj_type in _valid_cf_type_of_grid_mapping:
