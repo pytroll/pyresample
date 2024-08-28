@@ -51,3 +51,7 @@ skip_gitignore = true
 force_to_top = true
 default_section = "THIRDPARTY"
 known_first_party = "pyresample"
+
+[tool.coverage.run]
+relative_files = true
+omit = ["pyresample/version.py", "versioneer.py"]
