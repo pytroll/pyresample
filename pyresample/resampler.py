@@ -40,12 +40,7 @@ try:
 except ImportError:
     xr = None
 
-from pyresample.geometry import (
-    AreaDefinition,
-    CoordinateDefinition,
-    IncompatibleAreas,
-    SwathDefinition,
-)
+from pyresample.geometry import AreaDefinition, CoordinateDefinition, IncompatibleAreas, SwathDefinition
 
 from .future.resamplers.resampler import hash_dict
 

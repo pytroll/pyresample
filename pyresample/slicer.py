@@ -27,11 +27,7 @@ from pyproj import Transformer
 from pyproj.enums import TransformDirection
 
 from pyresample import AreaDefinition, SwathDefinition
-from pyresample.geometry import (
-    IncompatibleAreas,
-    InvalidArea,
-    get_geostationary_bounding_box_in_proj_coords,
-)
+from pyresample.geometry import IncompatibleAreas, InvalidArea, get_geostationary_bounding_box_in_proj_coords
 
 try:
     import dask.array as da

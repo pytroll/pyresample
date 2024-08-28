@@ -41,11 +41,7 @@ from ._numpy_resampler import (  # noqa: F401
 )
 
 try:
-    from .xarr import (  # noqa: F401
-        CACHE_INDICES,
-        XArrayBilinearResampler,
-        XArrayResamplerBilinear,
-    )
+    from .xarr import CACHE_INDICES, XArrayBilinearResampler, XArrayResamplerBilinear  # noqa: F401
 except ImportError:
     warnings.warn("XArray, dask, and/or zarr not found, XArrayBilinearResampler won't be available.", stacklevel=2)
     XArrayBilinearResampler = None  # type: ignore

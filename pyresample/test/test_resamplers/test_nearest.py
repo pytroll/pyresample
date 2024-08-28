@@ -28,11 +28,7 @@ from pytest_lazy_fixtures import lf
 
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.resamplers import KDTreeNearestXarrayResampler
-from pyresample.test.utils import (
-    assert_maximum_dask_computes,
-    assert_warnings_contain,
-    catch_warnings,
-)
+from pyresample.test.utils import assert_maximum_dask_computes, assert_warnings_contain, catch_warnings
 from pyresample.utils.errors import PerformanceWarning
 
 

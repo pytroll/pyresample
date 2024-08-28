@@ -25,12 +25,7 @@ from unittest import mock
 
 import pytest
 
-from pyresample.future import (
-    Resampler,
-    list_resamplers,
-    register_resampler,
-    unregister_resampler,
-)
+from pyresample.future import Resampler, list_resamplers, register_resampler, unregister_resampler
 from pyresample.test.utils import assert_warnings_contain
 
 

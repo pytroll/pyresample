@@ -156,9 +156,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import (
-            _get_fractional_distances_uprights_parallel,
-        )
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -237,11 +235,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear._base import (
-            _get_four_closest_corners,
-            _get_input_xy,
-            _get_output_xy,
-        )
+        from pyresample.bilinear._base import _get_four_closest_corners, _get_input_xy, _get_output_xy
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = _get_output_xy(self.target_def)
@@ -1040,9 +1034,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import (
-            _get_fractional_distances_uprights_parallel,
-        )
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
