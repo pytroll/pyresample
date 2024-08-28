@@ -1,3 +1,20 @@
+## Version 1.30.0 (2024/08/28)
+
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 614](https://github.com/pytroll/pyresample/pull/614) - Fix geocentric_resolution compatibility with numpy 2.1.0
+* [PR 613](https://github.com/pytroll/pyresample/pull/613) - Switch on pytest-lazy-fixtures
+
+#### Features added
+
+* [PR 615](https://github.com/pytroll/pyresample/pull/615) - Allow overriding area repr map section HTML
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.29.0 (2024/07/31)
 
 ### Issues Closed
