@@ -45,10 +45,9 @@ versionfile_build = "pyresample/version.py"
 tag_prefix = "v"
 
 [tool.isort]
-sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 profile = "black"
 skip_gitignore = true
-force_to_top = true
 default_section = "THIRDPARTY"
 known_first_party = "pyresample"
 
