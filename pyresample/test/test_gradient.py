@@ -496,7 +496,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
 
 class TestRBGradientSearchResamplerArea2Swath:
-    """Test RBGradientSearchResampler for the Swath to Area case."""
+    """Test RBGradientSearchResampler for the Area to Swath case."""
 
     def setup_method(self):
         """Set up the test case."""
