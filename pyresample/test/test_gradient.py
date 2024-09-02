@@ -249,25 +249,29 @@ class TestOGradientResampler:
         assert res.shape == (1, ) + self.dst_area.shape
         assert np.allclose(res[0, :, :], 1.0)
 
-    def test_resample_swath_to_area_2d(self):
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_swath_to_area_2d(self, input_dtype):
         """Resample swath to area, 2d."""
-        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=np.float64),
+        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=input_dtype),
                             dims=['y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
             res = self.swath_resampler.compute(
                 data, method='bil').compute(scheduler='single-threaded')
+        assert res.dtype == data.dtype
         assert res.shape == self.dst_area.shape
         assert not np.all(np.isnan(res))
 
-    def test_resample_swath_to_area_3d(self):
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_swath_to_area_3d(self, input_dtype):
         """Resample area to area, 3d."""
         data = xr.DataArray(da.ones((3, ) + self.src_swath.shape,
-                                    dtype=np.float64) *
+                                    dtype=input_dtype) *
                             np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
                             dims=['bands', 'y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
             res = self.swath_resampler.compute(
                 data, method='bil').compute(scheduler='single-threaded')
+        assert res.dtype == data.dtype
         assert res.shape == (3, ) + self.dst_area.shape
         for i in range(res.shape[0]):
             arr = np.ravel(res[i, :, :])
