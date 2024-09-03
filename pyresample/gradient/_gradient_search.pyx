@@ -27,22 +27,19 @@ cimport cython
 cimport numpy as np
 from libc.math cimport fabs, isinf
 
-ctypedef np.double_t DTYPE_t
-
 ctypedef fused data_type:
     double
     float
 
-ctypedef double float_index
-f_index_dtype = float
-ctypedef int i_index_type
-
+ctypedef fused float_index:
+    double
+    float
 
 np.import_array()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(const data_type[:, :, :] data, i_index_type l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
+cdef inline void nn(const data_type[:, :, :] data, int l0, int p0, float_index dl, float_index dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -62,9 +59,9 @@ cdef inline void nn(const data_type[:, :, :] data, i_index_type l0, int p0, doub
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
+cdef inline void bil(const data_type[:, :, :] data, int l0, int p0, float_index dl, float_index dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int l_a, l_b, p_a, p_b
-    cdef double w_l, w_p
+    cdef float_index w_l, w_p
     cdef size_t z_size = res.shape[0]
     cdef size_t i
     if dl < 0:
@@ -92,26 +89,28 @@ cdef inline void bil(const data_type[:, :, :] data, int l0, int p0, double dl, d
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void indices_xy(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
+cdef inline void indices_xy(const data_type[:, :, :] data, int l0, int p0, float_index dl, float_index dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
     res[1] = dl + l0
     res[0] = dp + p0
 
-ctypedef void (*FN)(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil
+
+ctypedef void (*FN)(const data_type[:, :, :] data, int l0, int p0, float_index dl, float_index dp, int lmax, int pmax, data_type[:] res) noexcept nogil
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef one_step_gradient_search(const data_type[:, :, :] data,
-                               DTYPE_t [:, :] src_x,
-                               DTYPE_t [:, :] src_y,
-                               DTYPE_t [:, :] xl,
-                               DTYPE_t [:, :] xp,
-                               DTYPE_t [:, :] yl,
-                               DTYPE_t [:, :] yp,
-                               DTYPE_t [:, :] dst_x,
-                               DTYPE_t [:, :] dst_y,
+                               float_index [:, :] src_x,
+                               float_index [:, :] src_y,
+                               float_index [:, :] xl,
+                               float_index [:, :] xp,
+                               float_index [:, :] yl,
+                               float_index [:, :] yp,
+                               float_index [:, :] dst_x,
+                               float_index [:, :] dst_y,
                                str method='bilinear'):
     """Gradient search, simple case variant."""
     cdef FN fun
@@ -144,18 +143,19 @@ cpdef one_step_gradient_search(const data_type[:, :, :] data,
     # return the output image
     return image
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
-                                          const DTYPE_t[:, :] src_x,
-                                          const DTYPE_t[:, :] src_y,
-                                          const DTYPE_t[:, :] xl,
-                                          const DTYPE_t[:, :] xp,
-                                          const DTYPE_t[:, :] yl,
-                                          const DTYPE_t[:, :] yp,
-                                          const DTYPE_t[:, :] dst_x,
-                                          const DTYPE_t[:, :] dst_y,
+                                          const float_index[:, :] src_x,
+                                          const float_index[:, :] src_y,
+                                          const float_index[:, :] xl,
+                                          const float_index[:, :] xp,
+                                          const float_index[:, :] yl,
+                                          const float_index[:, :] yp,
+                                          const float_index[:, :] dst_x,
+                                          const float_index[:, :] dst_y,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
@@ -173,7 +173,7 @@ cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
     # intermediate variables:
     cdef int l_a, l_b, p_a, p_b
     cdef size_t i, j, elt
-    cdef double dx, dy, d, dl, dp
+    cdef float_index dx, dy, d, dl, dp
     cdef int col_step = -1
     # number of iterations
     cdef int cnt = 0
@@ -230,16 +230,17 @@ cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
                     p0 = int(p0 + dp)
             j += col_step
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
-                                DTYPE_t [:, :] src_y,
-                                DTYPE_t [:, :] xl,
-                                DTYPE_t [:, :] xp,
-                                DTYPE_t [:, :] yl,
-                                DTYPE_t [:, :] yp,
-                                DTYPE_t [:, :] dst_x,
-                                DTYPE_t [:, :] dst_y):
+cpdef one_step_gradient_indices(float_index [:, :] src_x,
+                                float_index [:, :] src_y,
+                                float_index [:, :] xl,
+                                float_index [:, :] xp,
+                                float_index [:, :] yl,
+                                float_index [:, :] yp,
+                                float_index [:, :] dst_x,
+                                float_index [:, :] dst_y):
     """Gradient search, simple case variant, returning float indices.
 
     This is appropriate for monotonous gradients only, i.e. not modis or viirs in satellite projection.
@@ -250,18 +251,24 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
     cdef size_t y_size = dst_y.shape[0]
     cdef size_t x_size = dst_x.shape[1]
 
+
+    if float_index is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+
     # output indices arrays --> needs to be (lines, pixels) --> y,x
-    indices = np.full([2, y_size, x_size], np.nan, dtype=f_index_dtype)
+    indices = np.full([2, y_size, x_size], np.nan, dtype=dtype)
     cdef float_index [:, :, :] indices_view_result = indices
 
     # fake_data is not going to be used anyway as we just fill in the indices
-    cdef float_index [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=f_index_dtype)
+    cdef float_index [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=dtype)
 
     with nogil:
-        one_step_gradient_search_no_gil[float_index](fake_data,
-                                                     src_x, src_y,
-                                                     xl, xp, yl, yp,
-                                                     dst_x, dst_y,
-                                                     x_size, y_size,
-                                                     indices_xy, indices_view_result)
+        one_step_gradient_search_no_gil[float_index, float_index](fake_data,
+                                                                  src_x, src_y,
+                                                                  xl, xp, yl, yp,
+                                                                  dst_x, dst_y,
+                                                                  x_size, y_size,
+                                                                  indices_xy, indices_view_result)
     return indices
