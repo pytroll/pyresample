@@ -23,18 +23,26 @@
 
 import numpy as np
 
-cimport numpy as np
-
-DTYPE = np.double
-ctypedef np.double_t DTYPE_t
 cimport cython
+cimport numpy as np
 from libc.math cimport fabs, isinf
+
+ctypedef np.double_t DTYPE_t
+
+ctypedef fused data_type:
+    double
+    float
+
+ctypedef double float_index
+f_index_dtype = float
+ctypedef int i_index_type
+
 
 np.import_array()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
+cdef inline void nn(const data_type[:, :, :] data, i_index_type l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
@@ -54,7 +62,7 @@ cdef inline void nn(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, doub
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
+cdef inline void bil(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int l_a, l_b, p_a, p_b
     cdef double w_l, w_p
     cdef size_t z_size = res.shape[0]
@@ -84,18 +92,18 @@ cdef inline void bil(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, dou
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void indices_xy(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil:
+cdef inline void indices_xy(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil:
     cdef int nnl, nnp
     cdef size_t z_size = res.shape[0]
     cdef size_t i
     res[1] = dl + l0
     res[0] = dp + p0
 
-ctypedef void (*FN)(const DTYPE_t[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, DTYPE_t[:] res) noexcept nogil
+ctypedef void (*FN)(const data_type[:, :, :] data, int l0, int p0, double dl, double dp, int lmax, int pmax, data_type[:] res) noexcept nogil
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
+cpdef one_step_gradient_search(const data_type[:, :, :] data,
                                DTYPE_t [:, :] src_x,
                                DTYPE_t [:, :] src_y,
                                DTYPE_t [:, :] xl,
@@ -118,10 +126,14 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
     cdef size_t y_size = dst_y.shape[0]
     cdef size_t x_size = dst_x.shape[1]
 
+    if data_type is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
 
     # output image array --> needs to be (lines, pixels) --> y,x
-    image = np.full([z_size, y_size, x_size], np.nan, dtype=DTYPE)
-    cdef DTYPE_t [:, :, :] image_view = image
+    image = np.full([z_size, y_size, x_size], np.nan, dtype=dtype)
+    cdef data_type[:, :, :] image_view = image
     with nogil:
         one_step_gradient_search_no_gil(data,
                                         src_x, src_y,
@@ -135,7 +147,7 @@ cpdef one_step_gradient_search(const DTYPE_t [:, :, :] data,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
+cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
                                           const DTYPE_t[:, :] src_x,
                                           const DTYPE_t[:, :] src_y,
                                           const DTYPE_t[:, :] xl,
@@ -147,7 +159,7 @@ cdef void one_step_gradient_search_no_gil(const DTYPE_t[:, :, :] data,
                                           const size_t x_size,
                                           const size_t y_size,
                                           FN fun,
-                                          DTYPE_t[:, :, :] result_array) noexcept nogil:
+                                          data_type[:, :, :] result_array) noexcept nogil:
 
     # pixel max ---> data is expected in [lines, pixels]
     cdef int pmax = src_x.shape[1] - 1
@@ -239,17 +251,17 @@ cpdef one_step_gradient_indices(DTYPE_t [:, :] src_x,
     cdef size_t x_size = dst_x.shape[1]
 
     # output indices arrays --> needs to be (lines, pixels) --> y,x
-    indices = np.full([2, y_size, x_size], np.nan, dtype=DTYPE)
-    cdef DTYPE_t [:, :, :] indices_view = indices
+    indices = np.full([2, y_size, x_size], np.nan, dtype=f_index_dtype)
+    cdef float_index [:, :, :] indices_view_result = indices
 
     # fake_data is not going to be used anyway as we just fill in the indices
-    cdef DTYPE_t [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=DTYPE)
+    cdef float_index [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=f_index_dtype)
 
     with nogil:
-        one_step_gradient_search_no_gil(fake_data,
-                                        src_x, src_y,
-                                        xl, xp, yl, yp,
-                                        dst_x, dst_y,
-                                        x_size, y_size,
-                                        indices_xy, indices_view)
+        one_step_gradient_search_no_gil[float_index](fake_data,
+                                                     src_x, src_y,
+                                                     xl, xp, yl, yp,
+                                                     dst_x, dst_y,
+                                                     x_size, y_size,
+                                                     indices_xy, indices_view_result)
     return indices
