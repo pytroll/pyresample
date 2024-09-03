@@ -31,9 +31,8 @@ ctypedef fused data_type:
     double
     float
 
-ctypedef fused float_index:
-    double
-    float
+ctypedef double float_index
+float_index_dtype = np.float64
 
 np.import_array()
 
@@ -252,23 +251,18 @@ cpdef one_step_gradient_indices(float_index [:, :] src_x,
     cdef size_t x_size = dst_x.shape[1]
 
 
-    if float_index is double:
-        dtype = np.float64
-    else:
-        dtype = np.float32
-
     # output indices arrays --> needs to be (lines, pixels) --> y,x
-    indices = np.full([2, y_size, x_size], np.nan, dtype=dtype)
+    indices = np.full([2, y_size, x_size], np.nan, dtype=float_index_dtype)
     cdef float_index [:, :, :] indices_view_result = indices
 
     # fake_data is not going to be used anyway as we just fill in the indices
-    cdef float_index [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=dtype)
+    cdef float_index [:, :, :] fake_data = np.full([1, 1, 1], np.nan, dtype=float_index_dtype)
 
     with nogil:
-        one_step_gradient_search_no_gil[float_index, float_index](fake_data,
-                                                                  src_x, src_y,
-                                                                  xl, xp, yl, yp,
-                                                                  dst_x, dst_y,
-                                                                  x_size, y_size,
-                                                                  indices_xy, indices_view_result)
+        one_step_gradient_search_no_gil[float_index](fake_data,
+                                                     src_x, src_y,
+                                                     xl, xp, yl, yp,
+                                                     dst_x, dst_y,
+                                                     x_size, y_size,
+                                                     indices_xy, indices_view_result)
     return indices
