@@ -273,7 +273,7 @@ class TestOGradientResampler:
             res = self.swath_resampler.compute(
                 data, method='bil').compute(scheduler='single-threaded')
         assert res.dtype == data.dtype
-        assert res.values.dytpe == data.dtype
+        assert res.values.dtype == data.dtype
         assert res.shape == (3, ) + self.dst_area.shape
         for i in range(res.shape[0]):
             arr = np.ravel(res[i, :, :])
