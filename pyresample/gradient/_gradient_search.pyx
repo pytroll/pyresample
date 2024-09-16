@@ -31,7 +31,7 @@ ctypedef fused data_type:
     double
     float
 
-ctypedef double float_index
+ctypedef np.float64_t float_index
 float_index_dtype = np.float64
 
 np.import_array()
