@@ -28,8 +28,8 @@ cimport numpy as np
 from libc.math cimport fabs, isinf
 
 ctypedef fused data_type:
-    double
-    float
+    np.float64_t
+    np.float32_t
 
 ctypedef np.float64_t float_index
 float_index_dtype = np.float64
