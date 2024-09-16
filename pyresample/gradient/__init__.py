@@ -421,6 +421,7 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
                 dst_x[i], dst_y[i],
                 method=method)
             res = da.from_delayed(res, (num_bands, ) + dst_x[i].shape,
+                                  meta=np.array((), dtype=dtype),
                                   dtype=arr.dtype)
         if dst_mosaic_locations[i] in chunks:
             if not is_pad:
