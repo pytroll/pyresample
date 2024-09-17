@@ -255,13 +255,15 @@ class TestOGradientResampler:
         data = xr.DataArray(da.ones(self.src_swath.shape, dtype=input_dtype),
                             dims=['y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
-            res_dask = self.swath_resampler.compute(data, method='bil')
-            res_np = res_dask.compute(scheduler='single-threaded')
+            res_xr = self.swath_resampler.compute(data, method='bil')
+            res_np = res_xr.compute(scheduler='single-threaded')
 
-        assert res_dask.dtype == data.dtype
+        assert res_xr.dtype == data.dtype
         assert res_np.dtype == data.dtype
-        assert res_dask.shape == self.dst_area.shape
+        assert res_xr.shape == self.dst_area.shape
         assert res_np.shape == self.dst_area.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
         assert not np.all(np.isnan(res_np))
 
     @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
@@ -272,13 +274,15 @@ class TestOGradientResampler:
                             np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
                             dims=['bands', 'y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
-            res_dask = self.swath_resampler.compute(data, method='bil')
-            res_np = res_dask.compute(scheduler='single-threaded')
+            res_xr = self.swath_resampler.compute(data, method='bil')
+            res_np = res_xr.compute(scheduler='single-threaded')
 
-        assert res_dask.dtype == data.dtype
+        assert res_xr.dtype == data.dtype
         assert res_np.dtype == data.dtype
-        assert res_dask.shape == (3, ) + self.dst_area.shape
+        assert res_xr.shape == (3, ) + self.dst_area.shape
         assert res_np.shape == (3, ) + self.dst_area.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
         for i in range(res_np.shape[0]):
             arr = np.ravel(res_np[i, :, :])
             assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
