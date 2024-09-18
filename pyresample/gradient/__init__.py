@@ -414,14 +414,15 @@ def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
         else:
             is_pad = False
             res = dask.delayed(_gradient_resample_data)(
-                arr.astype(np.float64),
+                arr,
                 src_x[i], src_y[i],
                 src_gradient_xl[i], src_gradient_xp[i],
                 src_gradient_yl[i], src_gradient_yp[i],
                 dst_x[i], dst_y[i],
                 method=method)
             res = da.from_delayed(res, (num_bands, ) + dst_x[i].shape,
-                                  dtype=np.float64)
+                                  meta=np.array((), dtype=arr.dtype),
+                                  dtype=arr.dtype)
         if dst_mosaic_locations[i] in chunks:
             if not is_pad:
                 chunks[dst_mosaic_locations[i]].append(res)

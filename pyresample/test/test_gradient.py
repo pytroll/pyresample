@@ -249,28 +249,42 @@ class TestOGradientResampler:
         assert res.shape == (1, ) + self.dst_area.shape
         assert np.allclose(res[0, :, :], 1.0)
 
-    def test_resample_swath_to_area_2d(self):
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_swath_to_area_2d(self, input_dtype):
         """Resample swath to area, 2d."""
-        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=np.float64),
+        data = xr.DataArray(da.ones(self.src_swath.shape, dtype=input_dtype),
                             dims=['y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
-            res = self.swath_resampler.compute(
-                data, method='bil').compute(scheduler='single-threaded')
-        assert res.shape == self.dst_area.shape
-        assert not np.all(np.isnan(res))
+            res_xr = self.swath_resampler.compute(data, method='bil')
+            res_np = res_xr.compute(scheduler='single-threaded')
 
-    def test_resample_swath_to_area_3d(self):
+        assert res_xr.dtype == data.dtype
+        assert res_np.dtype == data.dtype
+        assert res_xr.shape == self.dst_area.shape
+        assert res_np.shape == self.dst_area.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
+        assert not np.all(np.isnan(res_np))
+
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_swath_to_area_3d(self, input_dtype):
         """Resample area to area, 3d."""
         data = xr.DataArray(da.ones((3, ) + self.src_swath.shape,
-                                    dtype=np.float64) *
+                                    dtype=input_dtype) *
                             np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
                             dims=['bands', 'y', 'x'])
         with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
-            res = self.swath_resampler.compute(
-                data, method='bil').compute(scheduler='single-threaded')
-        assert res.shape == (3, ) + self.dst_area.shape
-        for i in range(res.shape[0]):
-            arr = np.ravel(res[i, :, :])
+            res_xr = self.swath_resampler.compute(data, method='bil')
+            res_np = res_xr.compute(scheduler='single-threaded')
+
+        assert res_xr.dtype == data.dtype
+        assert res_np.dtype == data.dtype
+        assert res_xr.shape == (3, ) + self.dst_area.shape
+        assert res_np.shape == (3, ) + self.dst_area.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
+        for i in range(res_np.shape[0]):
+            arr = np.ravel(res_np[i, :, :])
             assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
 
@@ -496,7 +510,7 @@ class TestRBGradientSearchResamplerArea2Area:
 
 
 class TestRBGradientSearchResamplerArea2Swath:
-    """Test RBGradientSearchResampler for the Swath to Area case."""
+    """Test RBGradientSearchResampler for the Area to Swath case."""
 
     def setup_method(self):
         """Set up the test case."""
