@@ -1228,6 +1228,8 @@ class DynamicAreaDefinition(object):
         lonlats : SwathDefinition or tuple
           The geographical coordinates to contain in the resulting area.
           A tuple should be ``(lons, lats)``.
+          If a SwathDefinition is provided, and it has a "bounding_box" attribute, it will be used instead of the full
+          longitude and latitude to avoid potentially slow computations.
         resolution:
           the resolution of the resulting area.
         shape:
@@ -1317,7 +1319,10 @@ class DynamicAreaDefinition(object):
         try:
             lons, lats = lonslats
         except (TypeError, ValueError):
-            lons, lats = lonslats.get_lonlats()
+            try:
+                lons, lats = lonslats.attrs["bounding_box"]
+            except (AttributeError, KeyError):
+                lons, lats = lonslats.get_lonlats()
         return lons, lats
 
     def _compute_new_x_corners_for_antimeridian(self, xarr, antimeridian_mode):

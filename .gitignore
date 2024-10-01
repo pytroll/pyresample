@@ -62,3 +62,6 @@ nosetests.xml
 pyresample/ewa/_fornav.cpp
 pyresample/ewa/_ll2cr.c
 pyresample/gradient/_gradient_search.c
+
+# don't include doctest files
+docs/doctest/.doctrees/*
