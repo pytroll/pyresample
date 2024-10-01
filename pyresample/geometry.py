@@ -1228,6 +1228,8 @@ class DynamicAreaDefinition(object):
         lonlats : SwathDefinition or tuple
           The geographical coordinates to contain in the resulting area.
           A tuple should be ``(lons, lats)``.
+          If a SwathDefinition is provided, and it has a "bounding_box" attribute, it will be used instead of the full
+          longitude and latitude to avoid potentially slow computations.
         resolution:
           the resolution of the resulting area.
         shape:
