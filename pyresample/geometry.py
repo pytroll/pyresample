@@ -1317,7 +1317,10 @@ class DynamicAreaDefinition(object):
         try:
             lons, lats = lonslats
         except (TypeError, ValueError):
-            lons, lats = lonslats.get_lonlats()
+            try:
+                lons, lats = lonslats.attrs["bounding_box"]
+            except (AttributeError, KeyError):
+                lons, lats = lonslats.get_lonlats()
         return lons, lats
 
     def _compute_new_x_corners_for_antimeridian(self, xarr, antimeridian_mode):
