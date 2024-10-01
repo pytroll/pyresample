@@ -35,13 +35,12 @@ jobs:
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
           miniforge-version: latest
-          use-mamba: true
           mamba-version: "1.5.10"
           python-version: ${{ matrix.python-version }}
           environment-file: continuous_integration/environment.yaml
           activate-environment: test-environment
+          channels: conda-forge
 
       - name: Install unstable dependencies
         if: matrix.experimental == true
