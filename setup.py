@@ -24,7 +24,7 @@ from setuptools import find_packages, setup
 
 import versioneer
 
-requirements = ['setuptools>=3.2', 'pyproj>=3.0', 'configobj',
+requirements = ['pyproj>=3.0', 'configobj',
                 'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.21.0',
                 "shapely", "donfig", "platformdirs",
                 ]
@@ -103,6 +103,7 @@ if __name__ == "__main__":
           package_data={'pyresample.test': ['test_files/*']},
           include_package_data=True,
           python_requires='>=3.9',
+          setup_requires=['setuptools>=3.2'],
           install_requires=requirements,
           extras_require=extras_require,
           ext_modules=extensions,
