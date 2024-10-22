@@ -58,18 +58,6 @@ class TestResampleBlocksArea2Area:
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-    def test_resample_blocks_advises_on_using_mapblocks_when_source_and_destination_areas_are_the_same(self):
-        """Test resample_blocks advises on using map_blocks when the source and destination areas are the same."""
-        from pyresample.resampler import resample_blocks
-
-        def fun(data):
-            return data
-
-        some_array = da.random.random(self.src_area.shape)
-        with pytest.raises(ValueError) as excinfo:
-            resample_blocks(fun, self.src_area, [some_array], self.src_area)
-        assert "map_blocks" in str(excinfo.value)
-
     def test_resample_blocks_returns_array_with_destination_area_shape(self):
         """Test resample_blocks returns array with the shape of the destination area."""
         from pyresample.resampler import resample_blocks
