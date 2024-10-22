@@ -80,10 +80,10 @@ cdef inline void bil(const data_type[:, :, :] data, int l0, int p0, float_index 
         p_b = min(p0 + 1, pmax)
         w_p = dp
     for i in range(z_size):
-        res[i] = ((1 - w_l) * (1 - w_p) * data[i, l_a, p_a] +
-                  (1 - w_l) * w_p * data[i, l_a, p_b] +
-                  w_l * (1 - w_p) * data[i, l_b, p_a] +
-                  w_l * w_p * data[i, l_b, p_b])
+        res[i] = <data_type>((1 - w_l) * (1 - w_p) * data[i, l_a, p_a] +
+                             (1 - w_l) * w_p * data[i, l_a, p_b] +
+                             w_l * (1 - w_p) * data[i, l_b, p_a] +
+                             w_l * w_p * data[i, l_b, p_b])
 
 
 @cython.boundscheck(False)
