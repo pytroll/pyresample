@@ -59,27 +59,6 @@ def create_gradient_search_resampler(source_geo_def, target_geo_def):
     raise NotImplementedError
 
 
-@da.as_gufunc(signature='(),()->(),()')
-def transform(x_coords, y_coords, src_prj=None, dst_prj=None):
-    """Calculate projection coordinates."""
-    transformer = pyproj.Transformer.from_crs(src_prj, dst_prj, always_xy=True)
-    return transformer.transform(x_coords, y_coords)
-
-
-def check_overlap(src_poly, dst_poly):
-    """Check if the two polygons overlap."""
-    # swath definition case
-    if dst_poly is False or src_poly is False:
-        covers = True
-    # area / area case
-    elif dst_poly is not None and src_poly is not None:
-        covers = src_poly.intersects(dst_poly)
-    # out of earth disk case
-    else:
-        covers = False
-    return covers
-
-
 def _gradient_resample_data(src_data, src_x, src_y,
                             src_gradient_xl, src_gradient_xp,
                             src_gradient_yl, src_gradient_yp,
@@ -140,30 +119,6 @@ def _check_input_coordinates(dst_x, dst_y,
     target_shapes_equal = (dst_x.shape == dst_y.shape)
     if not target_shapes_equal:
         raise ValueError("Target arrays should all have the same shape")
-
-
-def get_border_lonlats(geo_def: AreaDefinition):
-    """Get the border x- and y-coordinates."""
-    if geo_def.is_geostationary:
-        lon_b, lat_b = get_geostationary_bounding_box_in_lonlats(geo_def, 3600)
-    else:
-        lons, lats = geo_def.get_boundary_lonlats()
-        lon_b = np.concatenate((lons.side1, lons.side2, lons.side3, lons.side4))
-        lat_b = np.concatenate((lats.side1, lats.side2, lats.side3, lats.side4))
-
-    return lon_b, lat_b
-
-
-def get_polygon(prj, geo_def):
-    """Get border polygon from area definition in projection *prj*."""
-    lon_b, lat_b = get_border_lonlats(geo_def)
-    x_borders, y_borders = prj(lon_b, lat_b)
-    boundary = [(x_borders[i], y_borders[i]) for i in range(len(x_borders))
-                if np.isfinite(x_borders[i]) and np.isfinite(y_borders[i])]
-    poly = Polygon(boundary)
-    if np.isfinite(poly.area) and poly.area > 0.0:
-        return poly
-    return None
 
 
 def parallel_gradient_search(data, src_x, src_y, dst_x, dst_y,
