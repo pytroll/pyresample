@@ -325,7 +325,12 @@ class TestRBGradientSearchResamplerArea2Swath:
 
     def setup_method(self):
         """Set up the test case."""
-        chunks = 20
+        lons, lats = np.meshgrid(np.linspace(0, 20, 100), np.linspace(45, 66, 100))
+        self.dst_swath = SwathDefinition(lons, lats, crs="WGS84")
+        lons, lats = self.dst_swath.get_lonlats(chunks=10)
+        lons = xr.DataArray(lons, dims=["y", "x"])
+        lats = xr.DataArray(lats, dims=["y", "x"])
+        self.dst_swath_dask = SwathDefinition(lons, lats)
 
         self.src_area = AreaDefinition('euro40', 'euro40', None,
                                        {'proj': 'stere', 'lon_0': 14.0,
@@ -335,34 +340,49 @@ class TestRBGradientSearchResamplerArea2Swath:
                                        (-2717181.7304994687, -5571048.14031214,
                                         1378818.2695005313, -1475048.1403121399))
 
-        self.dst_area = AreaDefinition(
-            'omerc_otf',
-            'On-the-fly omerc area',
-            None,
-            {'alpha': '8.99811271718795',
-             'ellps': 'sphere',
-             'gamma': '0',
-             'k': '1',
-             'lat_0': '0',
-             'lonc': '13.8096029486222',
-             'proj': 'omerc',
-             'units': 'm'},
-            50, 100,
-            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
-        )
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_area_to_swath_2d(self, input_dtype):
+        """Resample swath to area, 2d."""
+        swath_resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.dst_swath_dask)
 
-        self.lons, self.lats = self.dst_area.get_lonlats(chunks=chunks)
-        xrlons = xr.DataArray(self.lons.persist())
-        xrlats = xr.DataArray(self.lats.persist())
-        self.dst_swath = SwathDefinition(xrlons, xrlats)
+        data = xr.DataArray(da.ones(self.src_area.shape, dtype=input_dtype),
+                            dims=['y', 'x'])
+        with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
+            swath_resampler.precompute()
+            res_xr = swath_resampler.compute(data, method='bilinear')
+            res_np = res_xr.compute(scheduler='single-threaded')
 
-    def test_resampling_to_swath_is_not_implemented(self):
-        """Test that resampling to swath is not working yet."""
-        from pyresample.gradient import ResampleBlocksGradientSearchResampler
+        assert res_xr.dtype == data.dtype
+        assert res_np.dtype == data.dtype
+        assert res_xr.shape == self.dst_swath.shape
+        assert res_np.shape == self.dst_swath.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
+        assert not np.all(np.isnan(res_np))
 
-        with pytest.raises(NotImplementedError):
-            ResampleBlocksGradientSearchResampler(self.src_area,
-                                                  self.dst_swath)
+    @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
+    def test_resample_area_to_swath_3d(self, input_dtype):
+        """Resample area to area, 3d."""
+        swath_resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.dst_swath_dask)
+
+        data = xr.DataArray(da.ones((3, ) + self.src_area.shape,
+                                    dtype=input_dtype) *
+                            np.array([1, 2, 3])[:, np.newaxis, np.newaxis],
+                            dims=['bands', 'y', 'x'])
+        with np.errstate(invalid="ignore"):  # 'inf' space pixels cause runtime warnings
+            swath_resampler.precompute()
+            res_xr = swath_resampler.compute(data, method='bilinear')
+            res_np = res_xr.compute(scheduler='single-threaded')
+
+        assert res_xr.dtype == data.dtype
+        assert res_np.dtype == data.dtype
+        assert res_xr.shape == (3, ) + self.dst_swath.shape
+        assert res_np.shape == (3, ) + self.dst_swath.shape
+        assert type(res_xr) is type(data)
+        assert type(res_xr.data) is type(data.data)
+        for i in range(res_np.shape[0]):
+            arr = np.ravel(res_np[i, :, :])
+            assert np.allclose(arr[np.isfinite(arr)], float(i + 1))
 
 
 class TestEnsureDataArray(unittest.TestCase):

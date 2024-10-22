@@ -186,7 +186,10 @@ def _concatenate_chunks(chunks):
 
 
 def _fill_in_coords(target_geo_def, data_coords, data_dims):
-    x_coord, y_coord = target_geo_def.get_proj_vectors()
+    try:
+        x_coord, y_coord = target_geo_def.get_proj_vectors()
+    except AttributeError:
+        return None
     coords = []
     for key in data_dims:
         if key == 'x':
@@ -219,8 +222,6 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
 
     def __init__(self, source_geo_def, target_geo_def):
         """Init GradientResampler."""
-        if isinstance(target_geo_def, SwathDefinition):
-            raise NotImplementedError("Cannot resample to a SwathDefinition.")
         if isinstance(source_geo_def, SwathDefinition):
             source_geo_def.lons = source_geo_def.lons.persist()
             source_geo_def.lats = source_geo_def.lats.persist()
@@ -325,11 +326,13 @@ def _get_coordinates_in_same_projection(source_area, target_area):
     except AttributeError as err:
         lons, lats = source_area.get_lonlats()
         src_x, src_y = da.compute(lons, lats)
+    transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
     try:
-        transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
         dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
     except AttributeError as err:
-        raise NotImplementedError("Cannot resample to Swath for now.") from err
+        # target is a swath definition
+        lons, lats = target_area.get_lonlats()
+        dst_x, dst_y = transformer.transform(*da.compute(lons, lats))
     src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
     src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
     return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)
