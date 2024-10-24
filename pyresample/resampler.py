@@ -214,6 +214,9 @@ def resample_blocks(func, src_area, src_arrays, dst_area,
         fill_value: Desired value for any invalid values in the output array
         kwargs: any other keyword arguments that will be passed on to func.
 
+    Returns:
+        A dask array, chunked as dst_area, containing the resampled data.
+
 
     Principle of operations:
         Resample_blocks works by iterating over chunks on the dst_area domain. For each chunk, the corresponding slice
@@ -235,10 +238,6 @@ def resample_blocks(func, src_area, src_arrays, dst_area,
 
 
     """
-    if dst_area == src_area:
-        raise ValueError("Source and destination areas are identical."
-                         " Should you be running `map_blocks` instead of `resample_blocks`?")
-
     name = _create_dask_name(name, func,
                              src_area, src_arrays,
                              dst_area, dst_arrays,
