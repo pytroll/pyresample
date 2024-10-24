@@ -53,10 +53,26 @@ def GradientSearchResampler(source_geo_def, target_geo_def):
 
 def create_gradient_search_resampler(source_geo_def, target_geo_def):
     """Create a gradient search resampler."""
-    if ((isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition)) or
-        (isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition))):
+    if (is_area_to_area(source_geo_def, target_geo_def) or
+        is_swath_to_area(source_geo_def, target_geo_def) or
+        is_area_to_swath(source_geo_def, target_geo_def)):
         return ResampleBlocksGradientSearchResampler(source_geo_def, target_geo_def)
     raise NotImplementedError
+
+
+def is_area_to_area(source_geo_def, target_geo_def):
+    """Check if source is area and target is area."""
+    return isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, AreaDefinition)
+
+
+def is_swath_to_area(source_geo_def, target_geo_def):
+    """Check if source is swath and target is area."""
+    return isinstance(source_geo_def, SwathDefinition) and isinstance(target_geo_def, AreaDefinition)
+
+
+def is_area_to_swath(source_geo_def, target_geo_def):
+    """Check if source is area and targed is swath."""
+    return isinstance(source_geo_def, AreaDefinition) and isinstance(target_geo_def, SwathDefinition)
 
 
 def _gradient_resample_data(src_data, src_x, src_y,
@@ -323,13 +339,18 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
 def _get_coordinates_in_same_projection(source_area, target_area):
     try:
         src_x, src_y = source_area.get_proj_coords()
-    except AttributeError as err:
+        work_crs = source_area.crs
+    except AttributeError:
+        # source is a swath definition, use target crs instead
         lons, lats = source_area.get_lonlats()
         src_x, src_y = da.compute(lons, lats)
-    transformer = pyproj.Transformer.from_crs(target_area.crs, source_area.crs, always_xy=True)
+        trans = pyproj.Transformer.from_crs(source_area.crs, target_area.crs, always_xy=True)
+        src_x, src_y = trans.transform(src_x, src_y)
+        work_crs = target_area.crs
+    transformer = pyproj.Transformer.from_crs(target_area.crs, work_crs, always_xy=True)
     try:
         dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
-    except AttributeError as err:
+    except AttributeError:
         # target is a swath definition
         lons, lats = target_area.get_lonlats()
         dst_x, dst_y = transformer.transform(*da.compute(lons, lats))
@@ -345,6 +366,9 @@ def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=
     weight_l, l_start = np.modf(y_indices.clip(0, data.shape[-2] - 1))
     weight_p, p_start = np.modf(x_indices.clip(0, data.shape[-1] - 1))
 
+    weight_l = weight_l.astype(data.dtype)
+    weight_p = weight_p.astype(data.dtype)
+
     l_start = l_start.astype(int)
     p_start = p_start.astype(int)
     l_end = np.clip(l_start + 1, 1, data.shape[-2] - 1)
@@ -353,7 +377,7 @@ def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=
     res = ((1 - weight_l) * (1 - weight_p) * data[..., l_start, p_start] +
            (1 - weight_l) * weight_p * data[..., l_start, p_end] +
            weight_l * (1 - weight_p) * data[..., l_end, p_start] +
-           weight_l * weight_p * data[..., l_end, p_end]).astype(data.dtype)
+           weight_l * weight_p * data[..., l_end, p_end])
     res = np.where(mask, fill_value, res)
     return res
 

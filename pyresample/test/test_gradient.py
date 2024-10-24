@@ -32,7 +32,7 @@ import xarray as xr
 
 from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition, SwathDefinition
-from pyresample.gradient import ResampleBlocksGradientSearchResampler
+from pyresample.gradient import ResampleBlocksGradientSearchResampler, create_gradient_search_resampler
 
 
 class TestRBGradientSearchResamplerArea2Area:
@@ -343,7 +343,7 @@ class TestRBGradientSearchResamplerArea2Swath:
     @pytest.mark.parametrize("input_dtype", (np.float32, np.float64))
     def test_resample_area_to_swath_2d(self, input_dtype):
         """Resample swath to area, 2d."""
-        swath_resampler = ResampleBlocksGradientSearchResampler(self.src_area, self.dst_swath_dask)
+        swath_resampler = create_gradient_search_resampler(self.src_area, self.dst_swath_dask)
 
         data = xr.DataArray(da.ones(self.src_area.shape, dtype=input_dtype),
                             dims=['y', 'x'])
