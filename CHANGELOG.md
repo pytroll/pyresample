@@ -1,3 +1,26 @@
+## Version 1.31.0 (2024/10/25)
+
+### Issues Closed
+
+* [Issue 620](https://github.com/pytroll/pyresample/issues/620) - Gradient search resampling swath data gives transposed results ([PR 626](https://github.com/pytroll/pyresample/pull/626) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 624](https://github.com/pytroll/pyresample/pull/624) - Move setuptools to setup_requires
+
+#### Features added
+
+* [PR 626](https://github.com/pytroll/pyresample/pull/626) - Replace stacking gradient search with resample_blocks variant ([620](https://github.com/pytroll/pyresample/issues/620))
+* [PR 623](https://github.com/pytroll/pyresample/pull/623) - Make use of bounding_box for area freezing when available
+* [PR 618](https://github.com/pytroll/pyresample/pull/618) - Fix dtype for swath -> area resampling with gradient search
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.30.0 (2024/08/28)
 
 ### Pull Requests Merged
