@@ -23,15 +23,12 @@ Pyresample offers multiple resampling algorithms including:
 - Bilinear
 
 For nearest neighbor and bilinear interpolation pyresample uses a kd-tree
-approach by using the fast KDTree implementation provided by the 
+approach by using the fast KDTree implementation provided by the
 [pykdtree](https://github.com/storpipfugl/pykdtree) library.
 Pyresample works with numpy arrays and numpy masked arrays. Interfaces to
 XArray objects (including dask array support) are provided in separate
 Resampler class interfaces and are in active development.
 Utility functions are available to easily plot data using Cartopy.
-
-Pyresample is tested with Python 2.7 and 3.6, but should additionally work
-on Python 3.4+. Pyresample will drop Python 2.7 at the end of 2019.
 
 [Documentation](https://pyresample.readthedocs.org/en/latest/)
 
@@ -41,4 +38,3 @@ PyTroll group and related packages.
 Citation
 ----------
 Hoese, D., Raspaud, M., Lahtinen, P., Roberts, W., Lavergne, et al. (2020). pytroll/pyresample: Version 1.16.0. Zenodo. [https://doi.org/10.5281/zenodo.3372769](https://doi.org/10.5281/zenodo.3372769)
-

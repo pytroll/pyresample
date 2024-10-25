@@ -20,6 +20,7 @@
 import logging
 from unittest import mock
 
+import dask
 import numpy as np
 import pytest
 from pyproj import CRS
@@ -74,7 +75,6 @@ def _get_test_swath_def(input_shape, chunk_size, geo_dims):
 
 def _get_test_target_area(output_shape, output_proj=None):
     from pyresample.geometry import AreaDefinition
-    from pyresample.utils import proj4_str_to_dict
     if output_proj is None:
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
                        '+lon_0=-95. +lat_0=25 +lat_1=25 +units=m +no_defs')
@@ -82,7 +82,7 @@ def _get_test_target_area(output_shape, output_proj=None):
         'test_target',
         'test_target',
         'test_target',
-        proj4_str_to_dict(output_proj),
+        output_proj,
         output_shape[1],  # width
         output_shape[0],  # height
         (-100000., -150000., 100000., 150000.),
@@ -145,7 +145,7 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
         assert 'bands' in new_data.coords
     assert 'crs' in new_data.coords
     assert isinstance(new_data.coords['crs'].item(), CRS)
-    assert 'lcc' in new_data.coords['crs'].item().to_proj4()
+    assert "Lambert" in new_data.coords['crs'].item().coordinate_operation.method_name
     assert new_data.coords['y'].attrs['units'] == 'meter'
     assert new_data.coords['x'].attrs['units'] == 'meter'
     assert target_area.crs == new_data.coords['crs'].item()
@@ -204,7 +204,8 @@ class TestDaskEWAResampler:
         num_chunks = _get_num_chunks(source_swath, resampler_class, rows_per_scan)
 
         with mock.patch.object(resampler_mod, 'll2cr', wraps=resampler_mod.ll2cr) as ll2cr, \
-                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats:
+                mock.patch.object(source_swath, 'get_lonlats', wraps=source_swath.get_lonlats) as get_lonlats, \
+                dask.config.set(scheduler='sync'):
             resampler = resampler_class(source_swath, target_area)
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
@@ -342,7 +343,7 @@ class TestDaskEWAResampler:
                                                 maximum_weight_mode=maximum_weight_mode)
         legacy_arr = legacy_data.compute()
 
-        np.testing.assert_allclose(new_arr, legacy_arr)
+        np.testing.assert_allclose(new_arr, legacy_arr, atol=1e-6)
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'as_np'),

@@ -51,8 +51,7 @@ class GridFilter(object):
         """Calculate valid_index array based on lons and lats.
 
         Args:
-            lons (numpy array): Longitude degrees array
-            lats (numpy array): Latitude degrees array
+            geometry_def: Geometry definition (ex. SwathDefinition)
 
         Returns:
             Boolean numpy array of same shape as lons and lats
@@ -63,10 +62,10 @@ class GridFilter(object):
         # Get projection coords
         proj_kwargs = {}
         if self.nprocs > 1:
-            proj = _spatial_mp.Proj_MP(**self.area_def.proj_dict)
+            proj = _spatial_mp.Proj_MP(self.area_def.crs)
             proj_kwargs["nprocs"] = self.nprocs
         else:
-            proj = Proj(**self.area_def.proj_dict)
+            proj = Proj(self.area_def.crs)
 
         x_coord, y_coord = proj(lons, lats, **proj_kwargs)
 

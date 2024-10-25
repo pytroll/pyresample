@@ -39,10 +39,7 @@ from dask.array.core import normalize_chunks
 from dask.highlevelgraph import HighLevelGraph
 
 from pyresample.ewa import ll2cr
-from pyresample.ewa._fornav import (
-    fornav_weights_and_sums_wrapper,
-    write_grid_image_single,
-)
+from pyresample.ewa._fornav import fornav_weights_and_sums_wrapper, write_grid_image_single
 from pyresample.geometry import SwathDefinition
 from pyresample.resampler import BaseResampler
 
@@ -57,12 +54,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _call_ll2cr(lons, lats, target_geo_def, computing_meta=False):
+def _call_ll2cr(lons, lats, target_geo_def):
     """Wrap ll2cr() for handling dask delayed calls better."""
-    if computing_meta:
-        # produce a representative meta array in the best case
-        # avoids errors when we return our "empty" tuples below
-        return np.zeros((2, *lons.shape), dtype=lons.dtype)
     new_src = SwathDefinition(lons, lats)
     swath_points_in_grid, cols, rows = ll2cr(new_src, target_geo_def)
     if swath_points_in_grid == 0:
@@ -73,6 +66,7 @@ def _call_ll2cr(lons, lats, target_geo_def, computing_meta=False):
 def _call_mapped_ll2cr(lons, lats, target_geo_def):
     res = da.map_blocks(_call_ll2cr, lons, lats,
                         target_geo_def,
+                        meta=np.array((), dtype=lons.dtype),
                         dtype=lons.dtype)
     return res
 
@@ -189,8 +183,8 @@ class DaskEWAResampler(BaseResampler):
     def __init__(self, source_geo_def, target_geo_def):
         """Initialize in-memory cache."""
         super(DaskEWAResampler, self).__init__(source_geo_def, target_geo_def)
-        assert isinstance(source_geo_def, SwathDefinition), \
-            "EWA resampling can only operate on SwathDefinitions"
+        if not isinstance(source_geo_def, SwathDefinition):
+            raise ValueError("EWA resampling can only operate on SwathDefinitions")
         self.cache = {}
 
     def _new_chunks(self, in_arr, rows_per_scan):
@@ -380,7 +374,7 @@ class DaskEWAResampler(BaseResampler):
 
     def compute(self, data, cache_id=None, rows_per_scan=None, chunks=None, fill_value=None,
                 weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                weight_delta_max=1.0, weight_sum_min=-1.0,
+                weight_delta_max=10.0, weight_sum_min=-1.0,
                 maximum_weight_mode=None, **kwargs):
         """Resample the data according to the precomputed X/Y coordinates."""
         # not used in this step
@@ -454,7 +448,7 @@ class DaskEWAResampler(BaseResampler):
     def resample(self, data, cache_dir=None, mask_area=None,
                  rows_per_scan=None, persist=False, chunks=None, fill_value=None,
                  weight_count=10000, weight_min=0.01, weight_distance_max=1.0,
-                 weight_delta_max=1.0, weight_sum_min=-1.0,
+                 weight_delta_max=10.0, weight_sum_min=-1.0,
                  maximum_weight_mode=None):
         """Resample using an elliptical weighted averaging algorithm.
 

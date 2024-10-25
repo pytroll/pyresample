@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2021 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -16,7 +13,6 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Nearest neighbor resampler."""
-
 from __future__ import annotations
 
 import warnings
@@ -126,9 +122,9 @@ class KDTreeNearestXarrayResampler(Resampler):
         if DataArray is None:
             raise ImportError("Missing 'xarray' and 'dask' dependencies")
         super().__init__(source_geo_def, target_geo_def, cache=cache)
-        self._internal_cache = {}
-        assert (self.target_geo_def.ndim == 2), \
-            "Target area definition must be 2 dimensions"
+        self._internal_cache: dict[tuple, dict] = {}
+        if self.target_geo_def.ndim != 2:
+            raise ValueError("Target area definition must be 2 dimensions")
 
     @property
     def version(self) -> str:
@@ -193,6 +189,7 @@ class KDTreeNearestXarrayResampler(Resampler):
             valid_output_index, 'ji', *args, kdtree=resample_kdtree,
             neighbours=neighbors, epsilon=epsilon,
             radius=radius_of_influence, dtype=np.int64,
+            meta=np.array((), dtype=np.int64),
             new_axes={'k': neighbors}, concatenate=True)
         return res
 
@@ -207,7 +204,7 @@ class KDTreeNearestXarrayResampler(Resampler):
         """
         if self.source_geo_def.size < neighbors:
             warnings.warn('Searching for %s neighbors in %s data points' %
-                          (neighbors, self.source_geo_def.size))
+                          (neighbors, self.source_geo_def.size), stacklevel=3)
 
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE
@@ -218,8 +215,8 @@ class KDTreeNearestXarrayResampler(Resampler):
         valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))
 
         if mask is not None:
-            assert (mask.shape == self.source_geo_def.shape), \
-                "'mask' must be the same shape as the source geo definition"
+            if mask.shape != self.source_geo_def.shape:
+                raise ValueError("'mask' must be the same shape as the source geo definition")
             mask = mask.data
         index_arr = self._query_resample_kdtree(
             resample_kdtree, target_lons, target_lats, valid_input_idx,
@@ -252,6 +249,11 @@ class KDTreeNearestXarrayResampler(Resampler):
 
         Args:
             data (xarray.DataArray): Source data pixels to sample
+            valid_input_index (ArrayLike): Index array of valid pixels in
+                the input geolocation data.
+            index_array (ArrayLike): Index array of nearest neighbors.
+            neighbors (int): Number of neighbors to return for each
+                data pixel. Currently only 1 (the default) is supported.
             fill_value (float): Output fill value when no source data is
                 near the target pixel. When omitted, if the input data is an
                 integer array then the maximum value for that integer type is
@@ -338,6 +340,7 @@ class KDTreeNearestXarrayResampler(Resampler):
             new_data, src_adims,
             vii_slices=vii_slices, ia_slices=ia_slices,
             fill_value=fill_value,
+            meta=np.array((), dtype=new_data.dtype),
             dtype=new_data.dtype, concatenate=True)
         res = DataArray(res, dims=dst_dims,
                         attrs=deepcopy(data.attrs))
@@ -483,7 +486,7 @@ class KDTreeNearestXarrayResampler(Resampler):
                 "but a pure numpy array was provided. Data will be converted "
                 "to dask arrays for computation and then converted back. To "
                 "avoid this warning convert your numpy array before providing "
-                "it to the resampler.", PerformanceWarning)
+                "it to the resampler.", PerformanceWarning, stacklevel=3)
             data = data.copy()
             data.data = da.from_array(data.data, chunks="auto")
         return data

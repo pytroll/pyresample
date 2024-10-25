@@ -141,7 +141,6 @@ test_meters:
   radius:
     radius: 3309.9505528339496
     units: mi
-  rotation: 45
 
 test_degrees:
   projection:
@@ -169,9 +168,6 @@ test_degrees:
   radius:
     dx: 49.4217406986
     dy: 49.4217406986
-    units: degrees
-  rotation:
-    rotation: 45
     units: degrees
 
 ease_sh:
@@ -226,6 +222,13 @@ omerc_bb_1000:
     proj: omerc
   optimize_projection: True
   resolution: 1000
+
+omerc_bb_nores:
+  description: Oblique Mercator Bounding Box for Polar Overpasses
+  projection:
+    ellps: sphere
+    proj: omerc
+  optimize_projection: True
 
 test_dynamic_resolution:
   description: Dynamic with resolution specified in meters

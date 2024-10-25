@@ -217,8 +217,8 @@ class XArrayBilinearResampler(BilinearBase):
             for val in BIL_COORDINATES:
                 cache = da.array(fid[val])
                 setattr(self, val, cache)
-        except ValueError:
-            raise IOError
+        except ValueError as err:
+            raise IOError("Invalid information loaded from resampling cache") from err
 
 
 def _get_output_xy(target_geo_def):
@@ -273,7 +273,12 @@ def _check_data_shape(data, input_xy_shape):
 
     # Ensure two dimensions
     if data.ndim == 1:
-        data = DataArray(da.map_blocks(np.expand_dims, data.data, 0, new_axis=[0]))
+        data = DataArray(da.map_blocks(np.expand_dims,
+                                       data.data,
+                                       0,
+                                       meta=np.array((), dtype=data.dtype),
+                                       dtype=data.dtype,
+                                       new_axis=[0]))
 
     return data
 
@@ -286,7 +291,7 @@ class XArrayResamplerBilinear(XArrayBilinearResampler):
                  radius_of_influence,
                  **kwargs):
         """Initialize resampler."""
-        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead")
+        warnings.warn("Use of XArrayResamplerBilinear is deprecated, use XArrayBilinearResampler instead", stacklevel=2)
 
         super(XArrayResamplerBilinear, self).__init__(
             source_geo_def,

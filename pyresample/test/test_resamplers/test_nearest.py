@@ -24,15 +24,11 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-from pytest_lazyfixture import lazy_fixture
+from pytest_lazy_fixtures import lf
 
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.resamplers import KDTreeNearestXarrayResampler
-from pyresample.test.utils import (
-    assert_maximum_dask_computes,
-    assert_warnings_contain,
-    catch_warnings,
-)
+from pyresample.test.utils import assert_maximum_dask_computes, assert_warnings_contain, catch_warnings
 from pyresample.utils.errors import PerformanceWarning
 
 
@@ -183,9 +179,9 @@ class TestNearestNeighborResampler:
             assert res.shape == resampler.target_geo_def.shape
 
     @pytest.mark.parametrize("input_data", [
-        lazy_fixture("data_2d_float32_numpy"),
-        lazy_fixture("data_2d_float32_dask"),
-        lazy_fixture("data_2d_float32_xarray_numpy"),
+        lf("data_2d_float32_numpy"),
+        lf("data_2d_float32_dask"),
+        lf("data_2d_float32_xarray_numpy"),
     ])
     def test_object_type_with_warnings(
             self,
@@ -240,8 +236,8 @@ class TestInvalidUsageNearestNeighborResampler:
     @pytest.mark.parametrize(
         "input_data",
         [
-            lazy_fixture("data_2d_float32_xarray_dask"),
-            lazy_fixture("data_3d_float32_xarray_dask"),
+            lf("data_2d_float32_xarray_dask"),
+            lf("data_3d_float32_xarray_dask"),
         ]
     )
     def test_mismatch_geo_data_dims(
@@ -271,8 +267,8 @@ class TestInvalidUsageNearestNeighborResampler:
     @pytest.mark.parametrize(
         "src_geom",
         [
-            lazy_fixture("area_def_stere_source"),
-            lazy_fixture("swath_def_2d_xarray_dask")
+            lf("area_def_stere_source"),
+            lf("swath_def_2d_xarray_dask")
         ]
     )
     @pytest.mark.parametrize(
@@ -288,8 +284,10 @@ class TestInvalidUsageNearestNeighborResampler:
         # transpose the source geometries
         if isinstance(src_geom, AreaDefinition):
             src_geom = AreaDefinition(
-                src_geom.area_id, src_geom.description, src_geom.proj_id,
-                src_geom.crs, src_geom.height, src_geom.width, src_geom.area_extent,
+                src_geom.crs,
+                (src_geom.width, src_geom.height),
+                src_geom.area_extent,
+                attrs=src_geom.attrs.copy(),
             )
         else:
             src_geom = SwathDefinition(

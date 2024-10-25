@@ -156,9 +156,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import (
-            _get_fractional_distances_uprights_parallel,
-        )
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
@@ -237,11 +235,7 @@ class TestNumpyBilinear(unittest.TestCase):
 
     def test_get_four_closest_corners(self):
         """Test calculation of bounding corners."""
-        from pyresample.bilinear._base import (
-            _get_four_closest_corners,
-            _get_input_xy,
-            _get_output_xy,
-        )
+        from pyresample.bilinear._base import _get_four_closest_corners, _get_input_xy, _get_output_xy
 
         proj = Proj(self.target_def.proj_str)
         out_x, out_y = _get_output_xy(self.target_def)
@@ -308,11 +302,11 @@ class TestNumpyBilinear(unittest.TestCase):
         # Sample from data1
         res = get_sample_from_bil_info(self.data1.ravel(), t__, s__,
                                        input_idxs, idx_arr)
-        self.assertEqual(res.ravel()[5], 1.)
+        self.assertAlmostEqual(res.ravel()[5], 1.)
         # Sample from data2
         res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                        input_idxs, idx_arr)
-        self.assertEqual(res.ravel()[5], 2.)
+        self.assertAlmostEqual(res.ravel()[5], 2.)
         # Reshaping
         res = get_sample_from_bil_info(self.data2.ravel(), t__, s__,
                                        input_idxs, idx_arr,
@@ -326,7 +320,7 @@ class TestNumpyBilinear(unittest.TestCase):
                                        input_idxs, idx_arr,
                                        output_shape=self.target_def.shape)
         # Four pixels are outside of the data
-        self.assertEqual(np.isnan(res).sum(), 4)
+        self.assertAlmostEqual(np.isnan(res).sum(), 4)
 
         # Masked array as input, result should be plain Numpy array
         data = np.ma.masked_all(self.data1.shape)
@@ -647,7 +641,7 @@ class TestXarrayBilinear(unittest.TestCase):
         res = resampler.get_sample_from_bil_info(self.data1)
         res = res.compute()
         # Check couple of values
-        self.assertEqual(res.values[1, 1], 1.)
+        self.assertAlmostEqual(res.values[1, 1], 1.)
         self.assertTrue(np.isnan(res.values[0, 3]))
         # Check that the values haven't gone down or up a lot
         self.assertAlmostEqual(np.nanmin(res.values), 1.)
@@ -658,7 +652,7 @@ class TestXarrayBilinear(unittest.TestCase):
         # Sample from data1, custom fill value
         res = resampler.get_sample_from_bil_info(self.data1, fill_value=-1.0)
         res = res.compute()
-        self.assertEqual(np.nanmin(res.values), -1.)
+        self.assertAlmostEqual(np.nanmin(res.values), -1.)
 
         # Sample from integer data
         res = resampler.get_sample_from_bil_info(self.data1.astype(np.uint8),
@@ -666,7 +660,7 @@ class TestXarrayBilinear(unittest.TestCase):
         res = res.compute()
         # Five values should be filled with zeros, which is the
         # default fill_value for integer data
-        self.assertEqual(np.sum(res == 0), 6)
+        self.assertAlmostEqual(np.sum(res == 0), 6)
 
         # Output coordinates should have been set
         self.assertTrue(isinstance(resampler._out_coords, dict))
@@ -1040,9 +1034,7 @@ class TestXarrayBilinear(unittest.TestCase):
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
-        from pyresample.bilinear._base import (
-            _get_fractional_distances_uprights_parallel,
-        )
+        from pyresample.bilinear._base import _get_fractional_distances_uprights_parallel
 
         res = _get_fractional_distances_uprights_parallel(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)

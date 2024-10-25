@@ -1,3 +1,326 @@
+## Version 1.31.0 (2024/10/25)
+
+### Issues Closed
+
+* [Issue 620](https://github.com/pytroll/pyresample/issues/620) - Gradient search resampling swath data gives transposed results ([PR 626](https://github.com/pytroll/pyresample/pull/626) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 624](https://github.com/pytroll/pyresample/pull/624) - Move setuptools to setup_requires
+
+#### Features added
+
+* [PR 626](https://github.com/pytroll/pyresample/pull/626) - Replace stacking gradient search with resample_blocks variant ([620](https://github.com/pytroll/pyresample/issues/620))
+* [PR 623](https://github.com/pytroll/pyresample/pull/623) - Make use of bounding_box for area freezing when available
+* [PR 618](https://github.com/pytroll/pyresample/pull/618) - Fix dtype for swath -> area resampling with gradient search
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.30.0 (2024/08/28)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 616](https://github.com/pytroll/pyresample/pull/616) - Update cibuildwheel to fix setuptools 74.0.0 compatibility
+* [PR 614](https://github.com/pytroll/pyresample/pull/614) - Fix geocentric_resolution compatibility with numpy 2.1.0
+* [PR 613](https://github.com/pytroll/pyresample/pull/613) - Switch on pytest-lazy-fixtures
+
+#### Features added
+
+* [PR 616](https://github.com/pytroll/pyresample/pull/616) - Update cibuildwheel to fix setuptools 74.0.0 compatibility
+* [PR 615](https://github.com/pytroll/pyresample/pull/615) - Allow overriding area repr map section HTML
+
+In this release 5 pull requests were closed.
+
+
+## Version 1.29.0 (2024/07/31)
+
+### Issues Closed
+
+* [Issue 609](https://github.com/pytroll/pyresample/issues/609) - Error in SwathDefinition html representation if lon/lat arrays are dask arrays ([PR 610](https://github.com/pytroll/pyresample/pull/610) by [@BENR0](https://github.com/BENR0))
+* [Issue 354](https://github.com/pytroll/pyresample/issues/354) - `get_sum` not matched with `bucket_sum`
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 610](https://github.com/pytroll/pyresample/pull/610) - Fix SwathDefinition html representation error when lons/lats 1D ([609](https://github.com/pytroll/pyresample/issues/609))
+* [PR 601](https://github.com/pytroll/pyresample/pull/601) - Fix spill over of ocean/and features in cartopy plots in case of geostationary full disc plot.
+* [PR 596](https://github.com/pytroll/pyresample/pull/596) - Fix AreaDefinition array index methods mishandling outer edge values ([691](https://github.com/ssec/polar2grid/issues/691))
+
+#### Features added
+
+* [PR 602](https://github.com/pytroll/pyresample/pull/602) - Add support for `fill_value` and `set_empty_bucket_to` in BucketResampler `get_sum`
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.28.4 (2024/07/01)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 603](https://github.com/pytroll/pyresample/pull/603) - Add Python 3.12 wheels and bump pypa/gh-action-pypi-publish from 1.8.14 to 1.9.0
+
+#### Features added
+
+* [PR 598](https://github.com/pytroll/pyresample/pull/598) - Add NPY to ruff rules
+
+In this release 2 pull requests were closed.
+
+
+## Version 1.28.3 (2024/04/15)
+
+### Issues Closed
+
+* [Issue 587](https://github.com/pytroll/pyresample/issues/587) - Resampling GOES mesoscale data to my area gives blank data
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 594](https://github.com/pytroll/pyresample/pull/594) - Build against numpy 2.0rc1
+
+In this release 1 pull request was closed.
+
+
+## Version 1.28.2 (2024/02/29)
+
+### Issues Closed
+
+* [Issue 539](https://github.com/pytroll/pyresample/issues/539) - Compatibility with libproj v9.3
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 586](https://github.com/pytroll/pyresample/pull/586) - Include package data
+
+#### Features added
+
+* [PR 578](https://github.com/pytroll/pyresample/pull/578) - Add attrs to future swath definition
+
+In this release 2 pull requests were closed.
+
+
+## Version 1.28.1 (2024/02/15)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 585](https://github.com/pytroll/pyresample/pull/585) - Fix optimize_projection handling in YAML parsing
+* [PR 584](https://github.com/pytroll/pyresample/pull/584) - Fix other numpy 2 incompatibilities
+
+In this release 2 pull requests were closed.
+
+
+## Version 1.28.0 (2024/02/14)
+
+### Issues Closed
+
+* [Issue 570](https://github.com/pytroll/pyresample/issues/570) - errors in area definition should not be silently ignored ([PR 577](https://github.com/pytroll/pyresample/pull/577) by [@djhoese](https://github.com/djhoese))
+* [Issue 547](https://github.com/pytroll/pyresample/issues/547) - How should this warning be addressed? ([PR 548](https://github.com/pytroll/pyresample/pull/548) by [@djhoese](https://github.com/djhoese))
+* [Issue 537](https://github.com/pytroll/pyresample/issues/537) - Upgrade to Cython 3.0 and check annotations ([PR 582](https://github.com/pytroll/pyresample/pull/582) by [@djhoese](https://github.com/djhoese))
+* [Issue 527](https://github.com/pytroll/pyresample/issues/527) - area definition for a rotated pole coordinate system ([PR 532](https://github.com/pytroll/pyresample/pull/532) by [@djhoese](https://github.com/djhoese))
+
+In this release 4 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 577](https://github.com/pytroll/pyresample/pull/577) - Fix area definition YAML not warning on typos ([570](https://github.com/pytroll/pyresample/issues/570))
+* [PR 573](https://github.com/pytroll/pyresample/pull/573) - Switch test area fixtures to session-scoped
+* [PR 556](https://github.com/pytroll/pyresample/pull/556) - Add missing meta keyword arguments on all dask map_blocks calls
+* [PR 551](https://github.com/pytroll/pyresample/pull/551) - Fix shortcut for prime meridian checks
+* [PR 536](https://github.com/pytroll/pyresample/pull/536) - Use pyproj TransformDirection enum for better performance
+* [PR 532](https://github.com/pytroll/pyresample/pull/532) - Migrate usages of pyproj Proj to pyproj Transformer ([527](https://github.com/pytroll/pyresample/issues/527))
+* [PR 526](https://github.com/pytroll/pyresample/pull/526) - Replace and deprecate frequency arg for bbox methods
+
+#### Features added
+
+* [PR 583](https://github.com/pytroll/pyresample/pull/583) - Build wheels against numpy 2
+* [PR 582](https://github.com/pytroll/pyresample/pull/582) - Fix Cython 3 and Numpy 2 compatibility ([537](https://github.com/pytroll/pyresample/issues/537))
+* [PR 572](https://github.com/pytroll/pyresample/pull/572) - Suppress PROJ4 warning about losing projection by using `to_cf()` instead of `to_dict()`
+* [PR 557](https://github.com/pytroll/pyresample/pull/557) - Add more pre-commit checks (mccabe, bandit, mypy, etc)
+* [PR 553](https://github.com/pytroll/pyresample/pull/553) - Add optional caching to AreaDefinition.get_area_slices
+* [PR 548](https://github.com/pytroll/pyresample/pull/548) - Remove unnecessary proj4 argument parsing from get_area_def ([547](https://github.com/pytroll/pyresample/issues/547))
+* [PR 545](https://github.com/pytroll/pyresample/pull/545) - Convert AreaDefinitions to odc geoboxes
+* [PR 542](https://github.com/pytroll/pyresample/pull/542) - Switch to cibuildwheel for wheel building
+* [PR 533](https://github.com/pytroll/pyresample/pull/533) - Replace width/height in future AreaDefinition with "shape" argument
+* [PR 522](https://github.com/pytroll/pyresample/pull/522) - Handle value-less parameters in `proj4_dict_to_str`
+* [PR 519](https://github.com/pytroll/pyresample/pull/519) - Add builtin 'config' object and 'features.future_geometry' toggle
+* [PR 516](https://github.com/pytroll/pyresample/pull/516) - Allow cropping non-geos areas
+* [PR 450](https://github.com/pytroll/pyresample/pull/450) - Area definition html representation for Jupyter notebooks
+
+#### Documentation changes
+
+* [PR 519](https://github.com/pytroll/pyresample/pull/519) - Add builtin 'config' object and 'features.future_geometry' toggle
+* [PR 450](https://github.com/pytroll/pyresample/pull/450) - Area definition html representation for Jupyter notebooks
+
+#### Backward incompatible changes
+
+* [PR 522](https://github.com/pytroll/pyresample/pull/522) - Handle value-less parameters in `proj4_dict_to_str`
+
+#### Refactoring
+
+* [PR 566](https://github.com/pytroll/pyresample/pull/566) - Refactor area boundary sides retrieval with `_geographic_sides` and `_projection_sides` methods
+* [PR 565](https://github.com/pytroll/pyresample/pull/565) - Move legacy boundary to boundary directory
+* [PR 564](https://github.com/pytroll/pyresample/pull/564) - Refactor ``test_area`` and move boundary related tests to ``test_area_boundary``
+* [PR 563](https://github.com/pytroll/pyresample/pull/563) - Remove `__file__` usage in test units for `test_files` path
+
+In this release 27 pull requests were closed.
+
+
+## Version 1.27.1 (2023/06/21)
+
+### Issues Closed
+
+* [Issue 517](https://github.com/pytroll/pyresample/issues/517) - EWA resampling in 1.27 slows down four times than 1.26.1 ([PR 520](https://github.com/pytroll/pyresample/pull/520) by [@djhoese](https://github.com/djhoese))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 524](https://github.com/pytroll/pyresample/pull/524) - Preserve get_area_slices behavior when area to cover has an invalid boundary
+* [PR 523](https://github.com/pytroll/pyresample/pull/523) - Fix DynamicAreaDefinition not preserving user's requested resolution ([517](https://github.com/pytroll/pyresample/issues/517))
+* [PR 520](https://github.com/pytroll/pyresample/pull/520) - Fix performance regression in base resampler class when comparing geometries ([517](https://github.com/pytroll/pyresample/issues/517))
+
+#### Documentation changes
+
+* [PR 518](https://github.com/pytroll/pyresample/pull/518) - Add configuration for readthedocs to fail on warnings
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.27.0 (2023/05/17)
+
+### Issues Closed
+
+* [Issue 507](https://github.com/pytroll/pyresample/issues/507) - `gradient_search` fails when resampling Himawari data ([PR 508](https://github.com/pytroll/pyresample/pull/508) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 504](https://github.com/pytroll/pyresample/issues/504) - `get_neighbour_info` slows down significantly when working with large target rasters using many segments ([PR 505](https://github.com/pytroll/pyresample/pull/505) by [@SwamyDev](https://github.com/SwamyDev))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 513](https://github.com/pytroll/pyresample/pull/513) - Remove more warnings encountered during tests
+* [PR 512](https://github.com/pytroll/pyresample/pull/512) - Ignore pyproj to_proj4 warning when converting an AreaDefinition to a string
+* [PR 508](https://github.com/pytroll/pyresample/pull/508) - Fix gradient resampling to same area not working ([507](https://github.com/pytroll/pyresample/issues/507))
+* [PR 502](https://github.com/pytroll/pyresample/pull/502) - Add stacklevel to all pyresample warnings
+* [PR 498](https://github.com/pytroll/pyresample/pull/498) - Fix data type handling (complex) in nearest neighbor resampling
+
+#### Features added
+
+* [PR 505](https://github.com/pytroll/pyresample/pull/505) - Add pre-allocation option to `get_neighbour_info` to improve performance on large raster data ([504](https://github.com/pytroll/pyresample/issues/504))
+* [PR 499](https://github.com/pytroll/pyresample/pull/499) - Drop Python 3.8 support
+* [PR 496](https://github.com/pytroll/pyresample/pull/496) - Deprecate AreaDefinition 'rotation' argument
+* [PR 464](https://github.com/pytroll/pyresample/pull/464) - Add optional metadata to Pyresample 2.0 AreaDefinition
+
+#### Documentation changes
+
+* [PR 515](https://github.com/pytroll/pyresample/pull/515) - Remove python versions tested note in documentation
+* [PR 501](https://github.com/pytroll/pyresample/pull/501) - Couple of small typos found in documentation.
+* [PR 434](https://github.com/pytroll/pyresample/pull/434) - Add initial restructuring of sphinx docs
+
+#### Backward incompatible changes
+
+* [PR 499](https://github.com/pytroll/pyresample/pull/499) - Drop Python 3.8 support
+* [PR 496](https://github.com/pytroll/pyresample/pull/496) - Deprecate AreaDefinition 'rotation' argument
+
+In this release 14 pull requests were closed.
+
+
+## Version 1.26.1 (2023/02/07)
+
+### Issues Closed
+
+* [Issue 497](https://github.com/pytroll/pyresample/issues/497) - resampling fails with `ValueError` if not padding data
+* [Issue 492](https://github.com/pytroll/pyresample/issues/492) - Infinite values in geostationary bounding box crash intersection function ([PR 493](https://github.com/pytroll/pyresample/pull/493) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 486](https://github.com/pytroll/pyresample/issues/486) - BUG: Import fails due to misconfigured setup.py ([PR 487](https://github.com/pytroll/pyresample/pull/487) by [@bzah](https://github.com/bzah))
+* [Issue 484](https://github.com/pytroll/pyresample/issues/484) - Fails to build with Shapely 2.0 ([PR 485](https://github.com/pytroll/pyresample/pull/485) by [@sebastic](https://github.com/sebastic))
+* [Issue 481](https://github.com/pytroll/pyresample/issues/481) - Intermittent failures on 32bit architectures
+* [Issue 448](https://github.com/pytroll/pyresample/issues/448) - Release 1.25.1 missing usual GPG signature
+
+In this release 6 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 493](https://github.com/pytroll/pyresample/pull/493) - Fix geostationary bbox having inf values ([2368](https://github.com/pytroll/satpy/issues/2368), [492](https://github.com/pytroll/pyresample/issues/492))
+* [PR 487](https://github.com/pytroll/pyresample/pull/487) - FIX: Update pyproj min version to 3.0.0 ([486](https://github.com/pytroll/pyresample/issues/486))
+* [PR 485](https://github.com/pytroll/pyresample/pull/485) - Tune tolerance to fix test failures with PROJ 9.1.1. ([484](https://github.com/pytroll/pyresample/issues/484))
+* [PR 482](https://github.com/pytroll/pyresample/pull/482) - Fix intermittent EWA test failures
+
+In this release 4 pull requests were closed.
+
+
+## Version 1.26.0.post0 (2022/11/24)
+
+### Pull Requests Merged
+
+#### Features added
+
+* [PR 480](https://github.com/pytroll/pyresample/pull/480) - Add Python 3.11 to wheel building
+
+In this release 1 pull request was closed.
+
+
+## Version 1.26.0 (2022/11/24)
+
+### Issues Closed
+
+* [Issue 474](https://github.com/pytroll/pyresample/issues/474) - get_geostationary_bounding_box* contains duplicated vertices at the equator  ([PR 475](https://github.com/pytroll/pyresample/pull/475) by [@ghiggi](https://github.com/ghiggi))
+* [Issue 457](https://github.com/pytroll/pyresample/issues/457) - Pyresample 1.25.1 create_area_def return wrong lons with the .get_lonlats()
+* [Issue 453](https://github.com/pytroll/pyresample/issues/453) - Import Error using XArrayBilinearResampler missing failed import of dask ([PR 454](https://github.com/pytroll/pyresample/pull/454) by [@benjaminesse](https://github.com/benjaminesse))
+* [Issue 445](https://github.com/pytroll/pyresample/issues/445) - Release GIL in gradient search resampling ([PR 455](https://github.com/pytroll/pyresample/pull/455) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 439](https://github.com/pytroll/pyresample/issues/439) - SwathDefinition.update_hash() raise error after slicing the swath object ([PR 462](https://github.com/pytroll/pyresample/pull/462) by [@mraspaud](https://github.com/mraspaud))
+
+In this release 5 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 479](https://github.com/pytroll/pyresample/pull/479) - Fix bbox creation for SwathDefinitions with NaNs
+* [PR 475](https://github.com/pytroll/pyresample/pull/475) - Fix for duplicate coordinates in bbox_lonlats for geostationary area  ([474](https://github.com/pytroll/pyresample/issues/474), [474](https://github.com/pytroll/pyresample/issues/474))
+* [PR 463](https://github.com/pytroll/pyresample/pull/463) - Fix EWA default for 'weight_delta_max' to match docstring
+* [PR 462](https://github.com/pytroll/pyresample/pull/462) - Fix hashing of definitions for non contiguous arrays ([439](https://github.com/pytroll/pyresample/issues/439))
+* [PR 438](https://github.com/pytroll/pyresample/pull/438) - Fix using cached LUTs in bilinear resampler
+
+#### Features added
+
+* [PR 473](https://github.com/pytroll/pyresample/pull/473) - Add boundary method to AreaDefinition and SwathDefinition
+* [PR 465](https://github.com/pytroll/pyresample/pull/465) - [Future Spherical Class] Add SPoint and SMultiPoint
+* [PR 455](https://github.com/pytroll/pyresample/pull/455) - Use memoryviews and allow nogil in gradient search ([445](https://github.com/pytroll/pyresample/issues/445))
+* [PR 451](https://github.com/pytroll/pyresample/pull/451) - Refactor the area loading internal function
+
+#### Documentation changes
+
+* [PR 454](https://github.com/pytroll/pyresample/pull/454) - Fix import warning in bilinear resampler to mention dask ([453](https://github.com/pytroll/pyresample/issues/453))
+
+In this release 10 pull requests were closed.
+
+
 ## Version 1.25.1 (2022/08/02)
 
 ### Pull Requests Merged

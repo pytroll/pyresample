@@ -1,0 +1,123 @@
+/* CSS stylesheet for displaying area definition objects in jupyterlab.
+ *
+ */
+
+:root {
+  --pyresample-font-color0: var(--jp-content-font-color0, rgba(0, 0, 0, 1));
+  --pyresample-font-color2: var(--jp-content-font-color2, rgba(0, 0, 0, 0.54));
+  --pyresample-font-color3: var(--jp-content-font-color3, rgba(0, 0, 0, 0.38));
+  --pyresample-border-color: var(--jp-border-color2, #e0e0e0);
+  --pyresample-disabled-color: var(--jp-layout-color3, #bdbdbd);
+  --pyresample-background-color: var(--jp-layout-color0, white);
+  --pyresample-background-color-row-even: var(--jp-layout-color1, white);
+  --pyresample-background-color-row-odd: var(--jp-layout-color2, #eeeeee);
+}
+
+html[theme=dark],
+body[data-theme=dark],
+body.vscode-dark {
+  --pyresample-font-color0: rgba(255, 255, 255, 1);
+  --pyresample-font-color2: rgba(255, 255, 255, 0.54);
+  --pyresample-font-color3: rgba(255, 255, 255, 0.38);
+  --pyresample-border-color: #1F1F1F;
+  --pyresample-disabled-color: #515151;
+  --pyresample-background-color: #111111;
+  --pyresample-background-color-row-even: #111111;
+  --pyresample-background-color-row-odd: #313131;
+}
+
+.pyresample-wrap {
+  display: block !important;
+  min-width: 700px;
+  max-width: 1050px;
+}
+
+.pyresample-text-repr-fallback {
+  /* fallback to plain text repr when CSS is not injected (untrusted notebook) */
+  display: none;
+}
+
+.pyresample-header {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: solid 1px var(--pyresample-border-color);
+}
+
+.pyresample-header > div,
+.pyresample-header > ul {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.pyresample-obj-type,
+.pyresample-array-name {
+  margin-left: 2px;
+  margin-right: 10px;
+}
+
+.pyresample-obj-type {
+  color: var(--pyresample-font-color2);
+}
+
+.pyresample-area-section-item {
+  display: contents;
+}
+
+.pyresample-area-section-item input {
+  display: none;
+}
+
+.pyresample-area-section-item input:enabled + label {
+  cursor: pointer;
+}
+
+.pyresample-area-section-item-grid {
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+
+.pyresample-area-section-item-grid > label {
+  grid-column: 1;
+}
+
+/* attribute list formatting */
+.pyresample-area-section-details dt {
+  width: 190px;
+  float: left;
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+.pyresample-area-sections {
+  display: grid;
+  grid-template-columns: auto;
+}
+
+.pyresample-area-section-details {
+   padding: 0 25px;
+}
+
+.pyresample-area-section-details,
+.pyresample-area-section-in:checked ~ .pyresample-area-section-preview {
+  display: none;
+}
+
+.pyresample-area-section-in:checked ~ .pyresample-area-section-details,
+.pyresample-area-section-preview {
+  display: inline-block;
+}
+
+.pyresample-icon-satellite,
+.pyresample-icon-globe,
+.pyresample-icon-database,
+.pyresample-icon-file-text2 {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1.5em !important;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}

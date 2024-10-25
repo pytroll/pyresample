@@ -20,10 +20,5 @@
 from __future__ import annotations
 
 from .nearest import KDTreeNearestXarrayResampler  # noqa
-from .registry import (  # noqa
-    create_resampler,
-    list_resamplers,
-    register_resampler,
-    unregister_resampler,
-)
+from .registry import create_resampler, list_resamplers, register_resampler, unregister_resampler  # noqa
 from .resampler import Resampler  # noqa

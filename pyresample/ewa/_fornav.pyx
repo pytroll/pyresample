@@ -33,6 +33,7 @@ cimport cpython
 cimport cython
 cimport numpy
 
+numpy.import_array()
 
 cdef extern from "_fornav_templates.h":
     ctypedef float weight_type
@@ -60,28 +61,28 @@ cdef extern from "_fornav_templates.h":
         weight_type * wtab
 
     cdef int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type weight_min, weight_type weight_distance_max,
-                               weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight * ewaw) nogil
+                               weight_type weight_delta_max, weight_type weight_sum_min, ewa_weight * ewaw) noexcept nogil
     cdef void deinitialize_weight(ewa_weight * ewaw) nogil
-    cdef accum_type ** initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows) nogil
-    cdef weight_type ** initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows) nogil
-    cdef void deinitialize_grids(size_t chan_count, void ** grids) nogil
+    cdef accum_type ** initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows) noexcept nogil
+    cdef weight_type ** initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows) noexcept nogil
+    cdef void deinitialize_grids(size_t chan_count, void ** grids) noexcept nogil
 
     cdef int compute_ewa_parameters[CR_TYPE](size_t swath_cols, size_t swath_rows,
-                                             CR_TYPE * uimg, CR_TYPE * vimg, ewa_weight * ewaw, ewa_parameters * ewap) nogil
+                                             CR_TYPE * uimg, CR_TYPE * vimg, ewa_weight * ewaw, ewa_parameters * ewap) noexcept nogil
 
     cdef int compute_ewa[CR_TYPE, IMAGE_TYPE](
         size_t chan_count, bint maximum_weight_mode,
         size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
         CR_TYPE * uimg, CR_TYPE * vimg,
         IMAGE_TYPE ** images, IMAGE_TYPE img_fill, accum_type ** grid_accums, weight_type ** grid_weights,
-        ewa_weight * ewaw, ewa_parameters * ewap) nogil
+        ewa_weight * ewaw, ewa_parameters * ewap) noexcept nogil
 
     cdef int compute_ewa_single[CR_TYPE, IMAGE_TYPE](
         bint maximum_weight_mode,
         size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
         CR_TYPE * uimg, CR_TYPE * vimg,
         IMAGE_TYPE * image, IMAGE_TYPE img_fill, accum_type * grid_accum, weight_type * grid_weight,
-        ewa_weight * ewaw, ewa_parameters * ewap) nogil
+        ewa_weight * ewaw, ewa_parameters * ewap) noexcept nogil
 
     # For some reason cython can't deduce the type when using the template
     # cdef int write_grid_image[GRID_TYPE](GRID_TYPE *output_image, GRID_TYPE fill, size_t grid_cols, size_t grid_rows,
@@ -89,13 +90,13 @@ cdef extern from "_fornav_templates.h":
     #    int maximum_weight_mode, weight_type weight_sum_min)
     cdef unsigned int write_grid_image(numpy.float32_t * output_image, numpy.float32_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
+                                       int maximum_weight_mode, weight_type weight_sum_min) noexcept nogil
     cdef unsigned int write_grid_image(numpy.float64_t * output_image, numpy.float64_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
+                                       int maximum_weight_mode, weight_type weight_sum_min) noexcept nogil
     cdef unsigned int write_grid_image(numpy.int8_t * output_image, numpy.int8_t fill, size_t grid_cols, size_t grid_rows,
                                        accum_type * grid_accum, weight_type * grid_weights,
-                                       int maximum_weight_mode, weight_type weight_sum_min) nogil
+                                       int maximum_weight_mode, weight_type weight_sum_min) noexcept nogil
 
 ctypedef fused cr_dtype:
     numpy.float32_t

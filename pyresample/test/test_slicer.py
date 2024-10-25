@@ -223,15 +223,12 @@ class TestSwathSlicer(unittest.TestCase):
             (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
         )
 
-        self.lons, self.lats = self.src_area.get_lonlats(chunks=chunks)
-        xrlons = xr.DataArray(self.lons.persist())
-        xrlats = xr.DataArray(self.lats.persist())
-        self.src_swath = SwathDefinition(xrlons, xrlats)
+        self.src_swath = swath_from_area(self.src_area, chunks)
 
     def test_slicer_init(self):
         """Test slicer initialization."""
         slicer = create_slicer(self.src_swath, self.dst_area)
-        assert slicer.area_to_crop == self.src_area
+        assert slicer.area_to_crop == self.src_swath
         assert slicer.area_to_contain == self.dst_area
 
     def test_source_swath_slicing_does_not_return_full_dataset(self):
@@ -246,17 +243,61 @@ class TestSwathSlicer(unittest.TestCase):
 
     def test_source_area_slicing_does_not_return_full_dataset(self):
         """Test source area covers dest area."""
-        slicer = create_slicer(self.src_area, self.dst_area)
+        slicer = create_slicer(self.src_swath, self.dst_area)
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start == 0
-        assert x_slice.stop == 35
-        assert y_slice.start == 16
-        assert y_slice.stop == 94
+        assert x_slice.stop == 41
+        assert y_slice.start == 9
+        assert y_slice.stop == 91
+
+    def test_source_area_slicing_over_date_line(self):
+        src_area = AreaDefinition(
+            'omerc_otf',
+            'On-the-fly omerc area',
+            None,
+            {'alpha': '8.99811271718795',
+             'ellps': 'sphere',
+             'gamma': '0',
+             'k': '1',
+             'lat_0': '0',
+             'lonc': '179.8096029486222',
+             'proj': 'omerc',
+             'units': 'm'},
+            50, 100,
+            (-1461111.3603, 3440088.0459, 1534864.0322, 9598335.0457)
+        )
+        chunks = 10
+        src_swath = swath_from_area(src_area, chunks)
+
+        dst_area = AreaDefinition('somewhere in the pacific', 'somewhere', None,
+                                  {'proj': 'stere', 'lon_0': 180.0,
+                                   'lat_0': 90.0, 'lat_ts': 60.0,
+                                   'ellps': 'bessel'},
+                                  102, 102,
+                                  (-2717181.7304994687, -5571048.14031214,
+                                   1378818.2695005313, -1475048.1403121399))
+
+        slicer = create_slicer(src_swath, dst_area)
+        x_slice, y_slice = slicer.get_slices()
+        assert x_slice.start == 0
+        assert x_slice.stop == 41
+        assert y_slice.start == 9
+        assert y_slice.stop == 91
+
+    def test_source_area_slicing_with_custom_work_crs(self):
+        """Test source area covers dest area."""
+        from pyresample.slicer import SwathSlicer
+        slicer = SwathSlicer(self.src_swath, self.dst_area, work_crs=self.src_area.crs)
+        x_slice, y_slice = slicer.get_slices()
+        assert x_slice.start == 0
+        assert x_slice.stop == 41
+        assert y_slice.start == 9
+        assert y_slice.stop == 91
 
     def test_area_get_polygon_returns_a_polygon(self):
         """Test getting a polygon returns a polygon."""
         from shapely.geometry import Polygon
-        slicer = create_slicer(self.src_area, self.dst_area)
+        slicer = create_slicer(self.src_swath, self.dst_area)
         poly = slicer.get_polygon_to_contain()
         assert isinstance(poly, Polygon)
 
@@ -271,3 +312,11 @@ class TestSwathSlicer(unittest.TestCase):
         """Test that we cannot slice a string."""
         with pytest.raises(NotImplementedError):
             create_slicer("my_funky_area", self.dst_area)
+
+
+def swath_from_area(src_area, chunks):
+    """Create a SwathDefinition from an AreaDefinition."""
+    lons, lats = src_area.get_lonlats(chunks=chunks)
+    xrlons = xr.DataArray(lons.persist())
+    xrlats = xr.DataArray(lats.persist())
+    return SwathDefinition(xrlons, xrlats)

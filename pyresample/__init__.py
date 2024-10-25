@@ -19,7 +19,13 @@
 
 import os
 
+# isort: off
+# avoid circular imports as config is likely imported by below modules
+from pyresample._config import config  # noqa
+
+# imported by below modules
 CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
+# isort: on
 
 # Backwards compatibility
 from pyresample import geometry  # noqa
@@ -42,6 +48,11 @@ from pyresample.geometry import DynamicAreaDefinition  # noqa
 from pyresample.geometry import SwathDefinition  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
 from pyresample.plot import area_def2basemap, save_quicklook  # noqa
+
+# Pre-2.0 geometry aliases for convenience
+# To be removed in 2.0
+LegacyAreaDefinition = AreaDefinition
+LegacySwathDefinition = SwathDefinition
 
 from .version import get_versions  # noqa
 

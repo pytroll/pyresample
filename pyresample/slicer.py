@@ -24,13 +24,10 @@ from functools import lru_cache
 
 import numpy as np
 from pyproj import Transformer
+from pyproj.enums import TransformDirection
 
 from pyresample import AreaDefinition, SwathDefinition
-from pyresample.geometry import (
-    IncompatibleAreas,
-    InvalidArea,
-    get_geostationary_bounding_box_in_proj_coords,
-)
+from pyresample.geometry import IncompatibleAreas, InvalidArea, get_geostationary_bounding_box_in_proj_coords
 
 try:
     import dask.array as da
@@ -70,11 +67,13 @@ class Slicer(ABC):
 
     """
 
-    def __init__(self, area_to_crop, area_to_contain):
+    def __init__(self, area_to_crop, area_to_contain, work_crs):
         """Set up the Slicer."""
         self.area_to_crop = area_to_crop
         self.area_to_contain = area_to_contain
-        self._transformer = Transformer.from_crs(self.area_to_contain.crs, self.area_to_crop.crs, always_xy=True)
+
+        self._source_transformer = Transformer.from_crs(self.area_to_contain.crs, work_crs, always_xy=True)
+        self._target_transformer = Transformer.from_crs(self.area_to_crop.crs, work_crs, always_xy=True)
 
     def get_slices(self):
         """Get the slices to crop *area_to_crop* enclosing *area_to_contain*."""
@@ -95,17 +94,23 @@ class Slicer(ABC):
 class SwathSlicer(Slicer):
     """A Slicer for cropping SwathDefinitions."""
 
+    def __init__(self, area_to_crop, area_to_contain, work_crs=None):
+        """Set up the Slicer."""
+        if work_crs is None:
+            work_crs = area_to_contain.crs
+        super().__init__(area_to_crop, area_to_contain, work_crs)
+
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
         x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(10)
-        poly = Polygon(zip(*self._transformer.transform(x, y)))
+        poly = Polygon(zip(*self._source_transformer.transform(x, y)))
         return poly
 
     def get_slices_from_polygon(self, poly):
         """Get the slices based on the polygon."""
         intersecting_chunk_slices = []
-        for smaller_poly, slices in _get_chunk_polygons_for_swath_to_crop(self.area_to_crop):
+        for smaller_poly, slices in self._get_chunk_polygons_for_swath_to_crop(self.area_to_crop):
             if smaller_poly.intersects(poly):
                 intersecting_chunk_slices.append(slices)
         if not intersecting_chunk_slices:
@@ -121,12 +126,18 @@ class SwathSlicer(Slicer):
         slices = col_slice, line_slice
         return slices
 
+    def _get_chunk_polygons_for_swath_to_crop(self, swath_to_crop):
+        """Get the polygons for each chunk of the area_to_crop."""
+        from shapely.geometry import Polygon
+        for ((lons, lats), (line_slice, col_slice)) in _get_chunk_bboxes_for_swath_to_crop(swath_to_crop):
+            smaller_poly = Polygon(zip(*self._target_transformer.transform(lons, lats)))
+            yield (smaller_poly, (line_slice, col_slice))
+
 
 @lru_cache(maxsize=10)
-def _get_chunk_polygons_for_swath_to_crop(swath_to_crop):
-    """Get the polygons for each chunk of the area_to_crop."""
+def _get_chunk_bboxes_for_swath_to_crop(swath_to_crop):
+    """Get the lon/lat bouding boxes for each chunk of the area_to_crop."""
     res = []
-    from shapely.geometry import Polygon
     src_chunks = swath_to_crop.lons.chunks
     for _position, (line_slice, col_slice) in _enumerate_chunk_slices(src_chunks):
         line_slice = expand_slice(line_slice)
@@ -135,8 +146,7 @@ def _get_chunk_polygons_for_swath_to_crop(swath_to_crop):
         lons, lats = smaller_swath.get_edge_lonlats(10)
         lons = np.hstack(lons)
         lats = np.hstack(lats)
-        smaller_poly = Polygon(zip(lons, lats))
-        res.append((smaller_poly, (line_slice, col_slice)))
+        res.append(((lons, lats), (line_slice, col_slice)))
     return res
 
 
@@ -148,13 +158,21 @@ def expand_slice(small_slice):
 class AreaSlicer(Slicer):
     """A Slicer for cropping AreaDefinitions."""
 
+    def __init__(self, area_to_crop, area_to_contain):
+        """Set up the Slicer."""
+        work_crs = area_to_crop.crs
+        super().__init__(area_to_crop, area_to_contain, work_crs)
+
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
-        x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
+        try:
+            x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
+        except AttributeError:
+            x, y = self.area_to_contain.get_edge_lonlats(vertices_per_side=10)
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
-            x_geos, y_geos = self._transformer.transform(x_geos, y_geos, direction='INVERSE')
+            x_geos, y_geos = self._source_transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos))
             poly = Polygon(zip(x, y))
             poly = poly.intersection(geos_poly)
@@ -162,7 +180,7 @@ class AreaSlicer(Slicer):
                 raise IncompatibleAreas('No slice on area.')
             x, y = zip(*poly.exterior.coords)
 
-        return Polygon(zip(*self._transformer.transform(x, y)))
+        return Polygon(zip(*self._source_transformer.transform(x, y)))
 
     def get_slices_from_polygon(self, poly_to_contain):
         """Get the slices based on the polygon."""
@@ -177,7 +195,7 @@ class AreaSlicer(Slicer):
             buffered_poly = poly_to_contain.buffer(buffer_size)
             bounds = buffered_poly.bounds
         except ValueError as err:
-            raise InvalidArea(str(err))
+            raise InvalidArea("Invalid area") from err
         from shapely.geometry import Polygon
         poly_to_crop = Polygon(zip(*self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10)))
         if not poly_to_crop.intersects(buffered_poly):
@@ -190,8 +208,8 @@ class AreaSlicer(Slicer):
         """Reset the bounds within the shape of the area."""
         try:
             (minx, miny, maxx, maxy) = bounds
-        except ValueError:
-            raise IncompatibleAreas('No slice on area.')
+        except ValueError as err:
+            raise IncompatibleAreas('No slice on area.') from err
         x_bounds, y_bounds = self.area_to_crop.get_array_coordinates_from_projection_coordinates(np.array([minx, maxx]),
                                                                                                  np.array([miny, maxy]))
         y_size, x_size = self.area_to_crop.shape
@@ -208,8 +226,8 @@ class AreaSlicer(Slicer):
                             int(np.ceil(np.max(x_bounds))))
             slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
                             int(np.ceil(np.max(y_bounds))))
-        except OverflowError:
-            raise IncompatibleAreas("Area not within finite bounds.")
+        except OverflowError as err:
+            raise IncompatibleAreas("Area not within finite bounds.") from err
         return expand_slice(slice_x), expand_slice(slice_y)
 
 

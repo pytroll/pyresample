@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Registry of resampler classes."""
-
 from __future__ import annotations
 
 import functools
@@ -83,7 +82,7 @@ def with_loaded_registry(callable: Callable) -> Callable:
         if not RESAMPLER_REGISTRY:
             warnings.warn("No builtin resamplers found. This probably means you "
                           "installed pyresample in editable mode. Try reinstalling "
-                          "pyresample to ensure builtin resamplers are included.")
+                          "pyresample to ensure builtin resamplers are included.", stacklevel=2)
         return callable(*args, **kwargs)
     return functools.update_wrapper(_wrapper, callable)
 
@@ -100,13 +99,13 @@ def _load_entry_point_resamplers():
         try:
             loaded_resampler = entry_point.load()
         except ImportError:
-            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}")
+            warnings.warn(f"Unable to load resampler from plugin: {entry_point.name}", stacklevel=3)
         else:
             register_resampler(entry_point.name, loaded_resampler)
 
 
 @with_loaded_registry
-def list_resamplers() -> list[str, ...]:
+def list_resamplers() -> list[str]:
     """Get sorted list of registered resamplers."""
     resampler_names = sorted(RESAMPLER_REGISTRY.keys())
     return resampler_names
@@ -116,7 +115,7 @@ def list_resamplers() -> list[str, ...]:
 def create_resampler(
         src_geom,
         dst_geom,
-        resampler: str = None,
+        resampler: str | None = None,
         cache=None,
         **kwargs
 ) -> Resampler:

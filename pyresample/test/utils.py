@@ -21,6 +21,7 @@
 This mostly takes from astropy's method for checking collected_warnings during
 tests.
 """
+import os
 import sys
 import types
 import warnings
@@ -37,6 +38,9 @@ _deprecations_as_exceptions = False
 _include_astropy_deprecations = False
 AstropyDeprecationWarning = None
 AstropyPendingDeprecationWarning = None
+
+
+TEST_FILES_PATH = os.path.join(os.path.dirname(__file__), 'test_files')
 
 
 def treat_deprecations_as_exceptions():
@@ -278,3 +282,11 @@ def assert_warnings_contain(collected_warnings: list, message: str, count: int =
     msgs = [msg.message.args[0].lower() for msg in collected_warnings]
     msgs_with = [msg for msg in msgs if message in msg]
     assert len(msgs_with) == count
+
+
+def assert_future_geometry(area_def, expect_future_geometry):
+    """Check that the provided geometry is an instance of a pyresample 2.0 geometry class."""
+    # roundabout isinstance check since future area is currently a subclass of legacy area
+    from pyresample.future.geometry import AreaDefinition
+    is_new_area = isinstance(area_def, AreaDefinition)
+    assert is_new_area if expect_future_geometry else not is_new_area

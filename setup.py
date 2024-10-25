@@ -14,28 +14,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# workaround python bug: http://bugs.python.org/issue15881#msg170215
-# remove when python 2 support is dropped
 """The setup module."""
-import multiprocessing  # noqa: F401
 import sys
 
 import numpy as np
-from Cython.Build import cythonize
-from setuptools import Extension, find_packages, setup
+from Cython.Build import build_ext
+from Cython.Distutils import Extension
+from setuptools import find_packages, setup
 
 import versioneer
 
-requirements = ['setuptools>=3.2', 'pyproj>=2.2', 'configobj',
-                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.10.0',
+requirements = ['pyproj>=3.0', 'configobj',
+                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.21.0',
+                "shapely", "donfig", "platformdirs",
                 ]
 
 if sys.version_info < (3, 10):
     requirements.append('importlib_metadata')
 
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixtures']
+test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
+                 'pytest-lazy-fixtures', 'shapely', 'odc-geo']
 extras_require = {'numexpr': ['numexpr'],
                   'quicklook': ['matplotlib', 'cartopy>=0.20.0', 'pillow'],
                   'rasterio': ['rasterio'],
@@ -43,11 +41,13 @@ extras_require = {'numexpr': ['numexpr'],
                   'cf': ['xarray'],
                   'gradient_search': ['shapely'],
                   'xarray_bilinear': ['xarray', 'dask', 'zarr'],
+                  'odc-geo': ['odc-geo'],
                   'tests': test_requires}
 
-setup_requires = ['numpy>=1.10.0', 'cython']
-test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
-                 'pytest-lazy-fixture']
+all_extras = []
+for extra_deps in extras_require.values():
+    all_extras.extend(extra_deps)
+extras_require['all'] = list(set(all_extras))
 
 if sys.platform.startswith("win"):
     extra_compile_args = []
@@ -57,20 +57,29 @@ else:
 extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
               include_dirs=[np.get_include()],
-              extra_compile_args=extra_compile_args),
+              extra_compile_args=extra_compile_args,
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
     Extension("pyresample.ewa._fornav",
               sources=["pyresample/ewa/_fornav.pyx",
                        "pyresample/ewa/_fornav_templates.cpp"],
               include_dirs=[np.get_include()],
               language="c++", extra_compile_args=extra_compile_args,
-              depends=["pyresample/ewa/_fornav_templates.h"]),
+              depends=["pyresample/ewa/_fornav_templates.h"],
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
     Extension("pyresample.gradient._gradient_search",
               sources=["pyresample/gradient/_gradient_search.pyx"],
               include_dirs=[np.get_include()],
-              extra_compile_args=extra_compile_args),
+              extra_compile_args=extra_compile_args,
+              cython_directives={"language_level": 3},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              ),
 ]
 
-cmdclass = versioneer.get_cmdclass()
+cmdclass = versioneer.get_cmdclass(cmdclass={"build_ext": build_ext})
 
 entry_points = {
     "pyresample.resamplers": [
@@ -92,11 +101,12 @@ if __name__ == "__main__":
           package_dir={'pyresample': 'pyresample'},
           packages=find_packages(),
           package_data={'pyresample.test': ['test_files/*']},
-          python_requires='>=3.8',
-          setup_requires=setup_requires,
+          include_package_data=True,
+          python_requires='>=3.9',
+          setup_requires=['setuptools>=3.2'],
           install_requires=requirements,
           extras_require=extras_require,
-          ext_modules=cythonize(extensions),
+          ext_modules=extensions,
           entry_points=entry_points,
           zip_safe=False,
           classifiers=[
