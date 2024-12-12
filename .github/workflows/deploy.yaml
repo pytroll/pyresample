@@ -44,7 +44,7 @@ jobs:
           - os: windows-2019
             cibw_archs: "AMD64 ARM64"
             artifact_name: "win"
-          - os: macos-12
+          - os: macos-13
             cibw_archs: "x86_64 arm64"
             artifact_name: "mac"
           - os: "ubuntu-20.04"
