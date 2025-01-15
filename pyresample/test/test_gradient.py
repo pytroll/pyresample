@@ -32,7 +32,11 @@ import xarray as xr
 
 from pyresample.area_config import create_area_def
 from pyresample.geometry import AreaDefinition, SwathDefinition
-from pyresample.gradient import ResampleBlocksGradientSearchResampler, create_gradient_search_resampler
+from pyresample.gradient import (
+    ResampleBlocksGradientSearchResampler,
+    create_gradient_search_resampler,
+    gradient_resampler_indices,
+)
 
 
 class TestRBGradientSearchResamplerArea2Area:
@@ -624,3 +628,23 @@ class TestGradientCython():
                                                  self.dst_x, self.dst_y)
         np.testing.assert_allclose(res_x, expected_x)
         np.testing.assert_allclose(res_y, expected_y)
+
+
+def test_resampling_geos_edge_to_mercator():
+    """Test that projecting the edges of geos onto a mercator area does not produce unnecessary NaNs."""
+    source_area = AreaDefinition.from_extent(area_id="side",
+                                             projection={'ellps': 'WGS84', 'h': '35786400', 'lon_0': '0',
+                                                         'no_defs': 'None', 'proj': 'geos', 'type': 'crs',
+                                                         'units': 'm', 'x_0': '0', 'y_0': '0'},
+                                             area_extent=(-2483999.9974, 5121999.9947, -1739999.9982, 4809999.995),
+                                             shape=(156, 372))
+    dest_area = AreaDefinition.from_extent(area_id="dest",
+                                           projection={'a': '6378137', 'b': '6378137', 'k': '1', 'lat_ts': '0',
+                                                       'lon_0': '0', 'nadgrids': '@null', 'no_defs': 'None',
+                                                       'proj': 'merc', 'type': 'crs', 'units': 'm', 'wktext': 'None',
+                                                       'x_0': '0', 'y_0': '0'},
+                                           area_extent=(-7800000.0, 8595618.56, -6073037.8378, 10321713.92),
+                                           shape=(512, 512))
+
+    res = gradient_resampler_indices(source_area, dest_area, fill_value=np.nan)
+    assert not np.any(np.isnan(res[:, :, -1]))

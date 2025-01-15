@@ -309,7 +309,7 @@ def gradient_resampler(data, source_area, target_area, method='bilinear'):
                                    method=method)
 
 
-def gradient_resampler_indices_block(block_info=None, **kwargs):
+def gradient_resampler_indices_block(block_info, **kwargs):
     """Do the gradient search resampling using block_info for areas, returning the resulting indices."""
     source_area = block_info[0]["area"]
     target_area = block_info[None]["area"]
