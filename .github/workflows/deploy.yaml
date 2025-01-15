@@ -44,7 +44,7 @@ jobs:
           - os: windows-2019
             cibw_archs: "AMD64 ARM64"
             artifact_name: "win"
-          - os: macos-12
+          - os: macos-13
             cibw_archs: "x86_64 arm64"
             artifact_name: "mac"
           - os: "ubuntu-20.04"
@@ -66,7 +66,7 @@ jobs:
           platforms: all
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.20.0
+        uses: pypa/cibuildwheel@v2.22.0
         env:
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp313-* pp* *i686 *-musllinux*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
@@ -112,7 +112,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
-        uses: pypa/gh-action-pypi-publish@v1.10.0
+        uses: pypa/gh-action-pypi-publish@v1.12.2
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -149,7 +149,7 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.10.0
+        uses: pypa/gh-action-pypi-publish@v1.12.2
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}

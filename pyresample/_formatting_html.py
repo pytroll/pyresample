@@ -190,6 +190,10 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
                                           sorted(proj_dict.keys())]))
     area_units = proj_dict.get("units", "")
 
+    resolution_bp_name = "Resolution x/y"
+    if proj_dict.get("proj") == "geos":
+        resolution_bp_name += " (SSP)"
+
     attrs_icon = _icon("icon-file-text2")
 
     area_attrs = ("<dl>"
@@ -197,7 +201,7 @@ def proj_area_attrs_section(area: 'geom.AreaDefinition') -> str: # noqa F821
                   f"<dt>Description</dt><dd>{area.description}</dd>"
                   f"<dt>Projection</dt><dd>{proj_str}</dd>"
                   f"<dt>Width/Height</dt><dd>{area.width}/{area.height} Pixel</dd>"
-                  f"<dt>Resolution x/y (SSP)</dt><dd>{resolution_str} {area_units}</dd>"
+                  f"<dt>{resolution_bp_name}</dt><dd>{resolution_str} {area_units}</dd>"
                   f"<dt>Extent (ll_x, ll_y, ur_x, ur_y)</dt>"
                   f"<dd>{tuple(round(float(x), 4) for x in area.area_extent)}</dd>"
                   "</dl>"
