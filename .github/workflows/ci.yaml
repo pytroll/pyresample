@@ -36,11 +36,12 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          mamba-version: "1.5.10"
           python-version: ${{ matrix.python-version }}
           environment-file: continuous_integration/environment.yaml
           activate-environment: test-environment
           channels: conda-forge
+          conda-remove-defaults: true
+          channel-priority: strict
 
       - name: Install unstable dependencies
         if: matrix.experimental == true
