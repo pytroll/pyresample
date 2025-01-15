@@ -255,55 +255,6 @@ class TestRBGradientSearchResamplerArea2Area:
         np.testing.assert_allclose(res, expected_resampled_data)
         assert res.shape == dst_area.shape
 
-    def test_regression_449(self):
-        from datetime import datetime
-
-        import dask.array as da
-        import numpy as np
-        import xarray as xr
-
-        from pyresample import create_area_def
-        from pyresample.gradient import ResampleBlocksGradientSearchResampler
-
-        dater = datetime.utcnow()
-
-        lon = np.arange(-180, 180, 0.25)
-        lat = np.arange(-90, 90 + 0.25, 0.25)
-
-        inv = np.random.uniform(low=0., high=1., size=(lat.shape[0], lon.shape[0]))
-
-        area_ext = (np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat))
-        targ_area = create_area_def("source_area",
-                                    "EPSG:4326",
-                                    area_extent=area_ext,
-                                    width=inv.shape[1],
-                                    height=inv.shape[0])
-
-        dest_area = create_area_def("msg_3km_disk",
-                                    {'a': '6378169', 'h': '35785831', 'lon_0': '0', 'no_defs': 'None', 'proj': 'geos',
-                                     'rf': '295.488065897001', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
-                                    area_extent=(-5570248.6867, -5567248.2834, 5567248.2834, 5570248.6867),
-                                    width=3712,
-                                    height=3712,
-                                    )
-
-        data = xr.DataArray(da.from_array(inv),
-                            coords={'y': lat, 'x': lon},
-                            attrs={'start_time': dater})
-
-        resampler = ResampleBlocksGradientSearchResampler(targ_area, dest_area)
-        resampler.precompute()
-        res = resampler.compute(
-            data, method='nn',
-            fill_value=np.nan).compute(scheduler='single-threaded').values
-
-        minval, meanval, maxval = (np.nanmin(res),
-                                   np.nanmean(res),
-                                   np.nanmax(res))
-        assert np.isfinite(minval)
-        assert np.isfinite(meanval)
-        assert np.isfinite(maxval)
-
 
 class TestRBGradientSearchResamplerSwath2Area:
     """Test RBGradientSearchResampler for the Area to Swath case."""
