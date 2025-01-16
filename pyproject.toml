@@ -22,7 +22,7 @@ convention = "google"
 max-complexity = 10
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.12"
 # See https://github.com/python/mypy/issues/12286 for automatic multi-platform support
 platform = "linux"
 # platform = win32
