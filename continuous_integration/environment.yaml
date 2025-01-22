@@ -25,6 +25,5 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-lazy-fixtures
-  - importlib-metadata
   - sphinx-reredirects
   - odc-geo
