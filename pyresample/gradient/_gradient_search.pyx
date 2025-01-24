@@ -187,6 +187,7 @@ cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
 
         for _ in range(x_size):
             if isinf(dst_x[i, j]):
+                j += col_step
                 continue
             cnt = 0
             while True:

@@ -36,11 +36,12 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          mamba-version: "1.5.10"
           python-version: ${{ matrix.python-version }}
           environment-file: continuous_integration/environment.yaml
           activate-environment: test-environment
           channels: conda-forge
+          conda-remove-defaults: true
+          channel-priority: strict
 
       - name: Install unstable dependencies
         if: matrix.experimental == true
@@ -85,7 +86,7 @@ jobs:
           cd docs && mkdir doctest && sphinx-build -E -n -b doctest ./source ./doctest && cd ..
 
       - name: Upload unittest coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: unittests
           file: ./coverage.xml
