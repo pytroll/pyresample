@@ -65,7 +65,7 @@ jobs:
           CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* cp310-* pp* *i686 *-musllinux*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
           CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
-          CIBW_TEST_SKIP: "*-win_arm64 *-macosx_arm64"
+          CIBW_TEST_SKIP: "*-win_arm64"
           CIBW_BUILD_VERBOSITY: 1
 
       - name: Upload wheel(s) as build artifacts
