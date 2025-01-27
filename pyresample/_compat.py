@@ -17,15 +17,4 @@
 # satpy.  If not, see <http://www.gnu.org/licenses/>.
 """Backports and compatibility fixes for pyresample."""
 
-import sys
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points  # noqa
-else:
-    from importlib.metadata import entry_points  # noqa
-
-try:
-    from numpy.typing import ArrayLike  # noqa
-except ImportError:
-    # numpy <1.20
-    from numpy import ndarray as ArrayLike  # noqa
+from importlib.metadata import entry_points  # noqa

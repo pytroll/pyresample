@@ -16,12 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Miscellaneous utility functions for pyresample."""
-try:
-    from collections.abc import Mapping
-except ImportError:
-    from collections import Mapping
-
 import warnings
+from collections.abc import Mapping
 
 import numpy as np
 

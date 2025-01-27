@@ -42,41 +42,36 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            cibw_archs: "AMD64 ARM64"
-            artifact_name: "win"
+            cibw_archs: "AMD64"
+          - os: windows-2019
+            cibw_archs: "ARM64"
           - os: macos-13
-            cibw_archs: "x86_64 arm64"
-            artifact_name: "mac"
-          - os: "ubuntu-20.04"
-            cibw_archs: "aarch64"
-            artifact_name: "ubuntu-aarch"
-          - os: "ubuntu-20.04"
             cibw_archs: "x86_64"
-            artifact_name: "ubuntu-x86_64"
+          - os: macos-14
+            cibw_archs: "arm64"
+          - os: "ubuntu-24.04-arm"
+            cibw_archs: "aarch64"
+          - os: "ubuntu-22.04"
+            cibw_archs: "x86_64"
 
     steps:
       - uses: actions/checkout@v4
       - run: |
           git fetch --prune --unshallow
 
-      - name: Set up QEMU
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:
-          CIBW_SKIP: "cp36-* cp37-* cp38-* cp313-* pp* *i686 *-musllinux*"
+          CIBW_SKIP: "cp36-* cp37-* cp38-* cp39-* cp310-* pp* *i686 *-musllinux*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
           CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
-          CIBW_TEST_SKIP: "*_arm64 *_universal2:arm64"
+          CIBW_TEST_SKIP: "*-win_arm64"
+          CIBW_BUILD_VERBOSITY: 1
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.artifact_name }}
+          name: "wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}"
           path: ./wheelhouse/*.whl
 
   upload_test_pypi:
@@ -90,25 +85,11 @@ jobs:
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact - win
+      - name: Download wheels artifact
         uses: actions/download-artifact@v4
         with:
-          name: wheels-win
-          path: dist
-      - name: Download wheels artifact - mac
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-mac
-          path: dist
-      - name: Download wheels artifact - ubuntu aarch
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-ubuntu-aarch
-          path: dist
-      - name: Download wheels artifact - ubuntu x86_64
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-ubuntu-x86_64
+          pattern: wheels-*
+          merge-multiple: true
           path: dist
       - name: Publish package to PyPI
         if: github.event.action != 'published'
@@ -127,25 +108,11 @@ jobs:
         with:
           name: sdist
           path: dist
-      - name: Download wheels artifact - win
+      - name: Download wheels artifact
         uses: actions/download-artifact@v4
         with:
-          name: wheels-win
-          path: dist
-      - name: Download wheels artifact - mac
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-mac
-          path: dist
-      - name: Download wheels artifact - ubuntu aarch
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-ubuntu-aarch
-          path: dist
-      - name: Download wheels artifact - ubuntu x86_64
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-ubuntu-x86_64
+          pattern: wheels-*
+          merge-multiple: true
           path: dist
       - name: Publish package to PyPI
         if: github.event.action == 'published'
