@@ -973,6 +973,7 @@ class XArrayResamplerNN(object):
             chunks=chunks)
         valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) & (source_lats <= 90) & (source_lats >= -90))
         input_coords = lonlat2xyz(source_lons, source_lats)
+
         input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
