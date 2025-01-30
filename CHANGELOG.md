@@ -1,3 +1,30 @@
+## Version 1.32.0 (2025/01/29)
+
+### Issues Closed
+
+* [Issue 642](https://github.com/pytroll/pyresample/issues/642) - Gradient search skips some data when resampling from geos to mercator ([PR 643](https://github.com/pytroll/pyresample/pull/643) by [@mraspaud](https://github.com/mraspaud))
+* [Issue 638](https://github.com/pytroll/pyresample/issues/638) - Stored area documentation refers to SSP where this is not meaningful ([PR 639](https://github.com/pytroll/pyresample/pull/639) by [@BENR0](https://github.com/BENR0))
+
+In this release 2 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 643](https://github.com/pytroll/pyresample/pull/643) - Fix bug that would add spurious nan lines in gradient search ([642](https://github.com/pytroll/pyresample/issues/642), [642](https://github.com/pytroll/pyresample/issues/642))
+* [PR 639](https://github.com/pytroll/pyresample/pull/639) - Fix for resolution stating SSP in non geos cases ([638](https://github.com/pytroll/pyresample/issues/638))
+
+#### Features added
+
+* [PR 633](https://github.com/pytroll/pyresample/pull/633) - Drop support for Python <3.11
+
+#### Backward incompatible changes
+
+* [PR 633](https://github.com/pytroll/pyresample/pull/633) - Drop support for Python <3.11
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.31.0 (2024/10/25)
 
 ### Issues Closed
