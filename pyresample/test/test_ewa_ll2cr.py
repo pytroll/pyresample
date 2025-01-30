@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
 
@@ -70,14 +71,15 @@ class TestLL2CRStatic(unittest.TestCase):
         lat_arr = create_test_latitude(18.0, 40.0, (50, 100), dtype=np.float64)
         grid_info = static_lcc.copy()
         fill_in = np.nan
-        proj_str = grid_info["proj4_definition"]
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info["cell_width"]
         ch = grid_info["cell_height"]
         ox = grid_info["origin_x"]
         oy = grid_info["origin_y"]
         w = grid_info["width"]
         h = grid_info["height"]
-        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, lon_arr.size, "all these test points should fall in this grid")
 
@@ -92,14 +94,15 @@ class TestLL2CRStatic(unittest.TestCase):
 
         grid_info = static_geo_whole_earth.copy()
         fill_in = np.nan
-        proj_str = grid_info['proj4_definition']
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info['cell_width']
         ch = grid_info['cell_height']
         ox = grid_info['origin_x']
         oy = grid_info['origin_y']
         w = grid_info['width']
         h = grid_info['height']
-        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, lon_arr.size,
                          'all these test points should fall in this grid')
@@ -110,14 +113,15 @@ class TestLL2CRStatic(unittest.TestCase):
         lat_arr = create_test_latitude(18.0, 40.0, (50, 100), dtype=np.float64)
         grid_info = static_lcc.copy()
         fill_in = np.nan
-        proj_str = grid_info["proj4_definition"]
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info["cell_width"]
         ch = grid_info["cell_height"]
         ox = grid_info["origin_x"]
         oy = grid_info["origin_y"]
         w = grid_info["width"]
         h = grid_info["height"]
-        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, 0, "none of these test points should fall in this grid")
 
@@ -131,14 +135,16 @@ class TestLL2CRDynamic(unittest.TestCase):
         lat_arr = create_test_latitude(15.0, 30.0, (50, 100), dtype=np.float64)
         grid_info = dynamic_wgs84.copy()
         fill_in = np.nan
-        proj_str = grid_info["proj4_definition"]
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info["cell_width"]
         ch = grid_info["cell_height"]
         ox = grid_info["origin_x"]
         oy = grid_info["origin_y"]
         w = grid_info["width"]
         h = grid_info["height"]
-        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
+                                                                              src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
         self.assertIs(lon_arr, lon_res)
@@ -152,14 +158,16 @@ class TestLL2CRDynamic(unittest.TestCase):
         lat_arr = create_test_latitude(15.0, 30.0, (50, 100), twist_factor=-0.1, dtype=np.float64)
         grid_info = dynamic_wgs84.copy()
         fill_in = np.nan
-        proj_str = grid_info["proj4_definition"]
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info["cell_width"]
         ch = grid_info["cell_height"]
         ox = grid_info["origin_x"]
         oy = grid_info["origin_y"]
         w = grid_info["width"]
         h = grid_info["height"]
-        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
+                                                                              src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
         self.assertIs(lon_arr, lon_res)
@@ -173,14 +181,16 @@ class TestLL2CRDynamic(unittest.TestCase):
         lat_arr = create_test_latitude(15.0, 30.0, (50, 100), twist_factor=-0.1, dtype=np.float64)
         grid_info = dynamic_wgs84.copy()
         fill_in = np.nan
-        proj_str = grid_info["proj4_definition"]
+        src_crs = CRS.from_epsg(4326)
+        dst_crs = CRS.from_proj4(grid_info["proj4_definition"])
         cw = grid_info["cell_width"]
         ch = grid_info["cell_height"]
         ox = grid_info["origin_x"]
         oy = grid_info["origin_y"]
         w = grid_info["width"]
         h = grid_info["height"]
-        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in, proj_str,
+        points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
+                                                                              src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
         self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
         self.assertIs(lon_arr, lon_res)

@@ -23,10 +23,13 @@
 __docformat__ = "restructuredtext en"
 
 import numpy
-from pyproj import Proj
+from pyproj import Transformer
+from pyproj.enums import TransformDirection
 
 cimport cython
 cimport numpy
+
+from pyresample.utils.proj4 import get_geodetic_crs_with_no_datum_shift
 
 numpy.import_array()
 
@@ -40,18 +43,18 @@ cdef extern from "numpy/npy_math.h":
     bint npy_isnan(double x)
 
 
-def projection_circumference(p):
+def projection_circumference(t):
     """Return the projection circumference if the projection is cylindrical, None otherwise.
 
     Projections that are not cylindrical and centered on the globes axis
     can not easily have data cross the antimeridian of the projection.
     """
-    lon0, lat0 = p(0, 0, inverse=True)
+    lon0, lat0 = t.transform(0, 0, direction=TransformDirection.INVERSE)
     lon1 = lon0 + 180.0
     lat1 = lat0 + 5.0
-    x0, y0 = p(lon0, lat0)  # should result in zero or near zero
-    x1, y1 = p(lon1, lat0)
-    x2, y2 = p(lon1, lat1)
+    x0, y0 = t.transform(lon0, lat0)  # should result in zero or near zero
+    x1, y1 = t.transform(lon1, lat0)
+    x2, y2 = t.transform(lon1, lat1)
     if y0 != y1 or x1 != x2:
         return 0.0
     return abs(x1 - x0) * 2
@@ -61,7 +64,7 @@ def projection_circumference(p):
 @cython.wraparound(False)
 @cython.cdivision(True)
 def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype, ndim=2] lat_arr,
-                  cr_dtype fill_in, str proj4_definition,
+                  cr_dtype fill_in, object src_crs, object dst_crs,
                   double cell_width, double cell_height,
                   width=None, height=None,
                   origin_x=None, origin_y=None):
@@ -98,13 +101,13 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
     of limitations in pyproj.
     """
     # pure python stuff for now
-    p = Proj(proj4_definition)
+    t = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
-    cdef tuple projected_tuple = p(lon_arr, lat_arr)
+    cdef tuple projected_tuple = t.transform(lon_arr, lat_arr)
     cdef cr_dtype[:, ::1] rows_out = projected_tuple[1]
     cdef cr_dtype[:, ::1] cols_out = projected_tuple[0]
-    cdef double proj_circum = projection_circumference(p)
+    cdef double proj_circum = projection_circumference(t)
     cdef unsigned int w
     cdef unsigned int h
     cdef double ox
@@ -203,7 +206,7 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
 @cython.wraparound(False)
 @cython.cdivision(True)
 def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype, ndim=2] lat_arr,
-                 cr_dtype fill_in, str proj4_definition,
+                 cr_dtype fill_in, object src_crs, object dst_crs,
                  double cell_width, double cell_height,
                  unsigned int width, unsigned int height,
                  double origin_x, double origin_y):
@@ -229,11 +232,11 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     of limitations in pyproj.
     """
     # TODO: Rewrite so it is no GIL
-    # pure python stuff for now
-    p = Proj(proj4_definition)
+    #   pure python stuff for now
+    t = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
-    cdef tuple projected_tuple = p(lon_arr, lat_arr)
+    cdef tuple projected_tuple = t.transform(lon_arr, lat_arr)
     cdef cr_dtype[:, ::1] rows_out = projected_tuple[1]
     cdef cr_dtype[:, ::1] cols_out = projected_tuple[0]
     cdef cr_dtype[:, ::1] lons_view = lon_arr
