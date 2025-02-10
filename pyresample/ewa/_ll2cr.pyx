@@ -23,7 +23,7 @@
 __docformat__ = "restructuredtext en"
 
 import numpy
-from pyproj import CRS, Transformer
+from pyproj import Transformer
 from pyproj.enums import TransformDirection
 
 cimport cython
