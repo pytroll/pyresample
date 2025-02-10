@@ -24,6 +24,7 @@ __docformat__ = "restructuredtext en"
 
 import numpy
 from pyproj import CRS, Transformer
+from pyproj.enums import TransformDirection
 
 cimport cython
 cimport numpy
@@ -48,7 +49,7 @@ def projection_circumference(t):
     Projections that are not cylindrical and centered on the globes axis
     can not easily have data cross the antimeridian of the projection.
     """
-    lon0, lat0 = t.itransform(0, 0, inverse=True)
+    lon0, lat0 = t.transform(0, 0, direction=TransformDirection.INVERSE)
     lon1 = lon0 + 180.0
     lat1 = lat0 + 5.0
     x0, y0 = t.transform(lon0, lat0)  # should result in zero or near zero
@@ -100,7 +101,7 @@ def ll2cr_dynamic(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtyp
     of limitations in pyproj.
     """
     # pure python stuff for now
-    t = Transformer.from_crs(src_crs, dst_crs)
+    t = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = t.transform(lon_arr, lat_arr)
@@ -232,7 +233,7 @@ def ll2cr_static(numpy.ndarray[cr_dtype, ndim=2] lon_arr, numpy.ndarray[cr_dtype
     """
     # TODO: Rewrite so it is no GIL
     #   pure python stuff for now
-    t = Transformer.from_crs(src_crs, dst_crs)
+    t = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     # Pyproj currently makes a copy so we don't have to do anything special here
     cdef tuple projected_tuple = t.transform(lon_arr, lat_arr)
