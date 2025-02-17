@@ -1898,7 +1898,7 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
 
     class cmd_version(Command):
         description = "report generated version string"
-        user_options: List[Tuple[str, str, str]] = []
+        user_options: List[Tuple[str, str, str]] = []  # type: ignore
         boolean_options: List[str] = []
 
         def initialize_options(self) -> None:
@@ -1993,7 +1993,7 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
     cmds["build_ext"] = cmd_build_ext
 
     if "cx_Freeze" in sys.modules:  # cx_freeze enabled?
-        from cx_Freeze.dist import build_exe as _build_exe  # type: ignore
+        from cx_Freeze.dist import build_exe as _build_exe
 
         # nczeczulin reports that py2exe won't like the pep440-style string
         # as FILEVERSION, but it can be used for PRODUCTVERSION, e.g.
@@ -2027,9 +2027,9 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
 
     if 'py2exe' in sys.modules:  # py2exe enabled?
         try:
-            from py2exe.setuptools_buildexe import py2exe as _py2exe  # type: ignore
+            from py2exe.setuptools_buildexe import py2exe as _py2exe
         except ImportError:
-            from py2exe.distutils_buildexe import py2exe as _py2exe  # type: ignore
+            from py2exe.distutils_buildexe import py2exe as _py2exe
 
         class cmd_py2exe(_py2exe):
             def run(self) -> None:
