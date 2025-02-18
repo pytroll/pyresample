@@ -180,10 +180,11 @@ def ignore_pyproj_proj_warnings():
 def get_geodetic_crs_with_no_datum_shift(crs: CRS) -> CRS:
     """Get the geodetic CRS for the provided CRS but with no prime meridian shift."""
     gcrs = crs.geodetic_crs
-    if gcrs.prime_meridian.longitude == 0:
-        return gcrs
+    # if gcrs.prime_meridian.longitude == 0 and gcrs.lon:
+    #     return gcrs
     with ignore_pyproj_proj_warnings():
         gcrs_dict = gcrs.to_dict()
     gcrs_dict.pop("pm", None)
+    # gcrs_dict.pop("lon_wrap", None)
     gcrs_pm0 = CRS.from_dict(gcrs_dict)
     return gcrs_pm0
