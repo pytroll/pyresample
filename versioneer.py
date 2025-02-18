@@ -1898,7 +1898,7 @@ def get_cmdclass(cmdclass: Optional[Dict[str, Any]] = None):
 
     class cmd_version(Command):
         description = "report generated version string"
-        user_options: List[Tuple[str, str, str]] = []
+        user_options: List[Tuple[str, str, str]] = []  # type: ignore
         boolean_options: List[str] = []
 
         def initialize_options(self) -> None:
