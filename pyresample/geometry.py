@@ -1220,7 +1220,7 @@ class DynamicAreaDefinition(object):
         return aou
 
     def freeze(self, lonslats=None, resolution=None, shape=None, proj_info=None,
-               antimeridian_mode=None):
+               antimeridian_mode: str = "modify_extents") -> AreaDefinition:
         """Create an AreaDefinition from this area with help of some extra info.
 
         Parameters
@@ -1242,9 +1242,17 @@ class DynamicAreaDefinition(object):
             projections and data cases not covering the north or south pole.
             The possible options are:
 
-            * "modify_extents": Deprecated. Use "modify_crs".
+            * "modify_extents": Set the X bounds to the edges of the data, but
+                add 360 to the right-most bound. This has the effect of making
+                the area coordinates continuous from the left side to the
+                right side. However, this means that some coordinates will be
+                outside the coordinate space of the projection. Although most
+                PROJ and pyresample functionality can handle this there may be
+                some edge cases. This is the default mode.
             * "modify_crs": Modify the projection definition to wrap longitude
                 values so they are between 0 and 360 degrees (PROJ ``lon_wrap=180``).
+                This mode also includes the extent modifications of the
+                "modify_extents" mode.
                 This has the effect of putting the data on a continuous coordinate
                 system. However, this means that comparing data resampled to
                 this resulting area and an area not using this longitude
@@ -1258,11 +1266,13 @@ class DynamicAreaDefinition(object):
 
         Shape parameters are ignored if the instance is created
         with the `optimize_projection` flag set to True.
-        """
-        if antimeridian_mode == "modify_extents":
-            warnings.warn("Antimeridian mode 'modify_extents' is deprecated. Use 'modify_crs' instead.", stacklevel=2)
-            antimeridian_mode = "modify_crs"
 
+        .. versionchanged:: 1.33
+           The "modify_crs" mode was changed to use "+lon_wrap=180" instead of
+           "+pm=180" as the CRS modification. This means extents of this mode
+           are now equivalent to the extents in "modify_extents".
+
+        """
         with ignore_pyproj_proj_warnings():
             proj_dict = self._get_proj_dict()
         projection = self._projection
