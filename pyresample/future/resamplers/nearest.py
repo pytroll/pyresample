@@ -41,8 +41,8 @@ except ImportError:
     dask = None
 
 
-def query_no_distance(target_lons, target_lats, valid_output_index,
-                      mask=None, valid_input_index=None,
+def query_no_distance(target_lons, target_lats,
+                      mask=None,
                       neighbours=None, epsilon=None, radius=None,
                       kdtree=None):
     """Query the kdtree. No distances are returned.
@@ -50,15 +50,11 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     NOTE: Dask array arguments must always come before other keyword arguments
           for `da.blockwise` arguments to work.
     """
-    voi = valid_output_index
-    shape = voi.shape + (neighbours,)
-    voir = voi.ravel()
     if mask is not None:
-        mask = mask.ravel()[valid_input_index.ravel()]
-    target_lons_valid = target_lons.ravel()[voir]
-    target_lats_valid = target_lats.ravel()[voir]
+        mask = mask.ravel()
 
-    coords = lonlat2xyz(target_lons_valid, target_lats_valid)
+    # TODO: Convert between CRSes
+    coords = lonlat2xyz(target_lons.ravel(), target_lats.ravel())
     distance_array, index_array = kdtree.query(
         coords,
         k=neighbours,
@@ -72,28 +68,21 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
     # KDTree query returns out-of-bounds neighbors as `len(arr)`
     # which is an invalid index, we mask those out so -1 represents
     # invalid values
-    # voi is 2D (trows, tcols)
     # index_array is 2D (valid output pixels, neighbors)
-    # there are as many Trues in voi as rows in index_array
-    good_pixels = index_array < kdtree.n
-    res_ia = np.empty(shape, dtype=int)
-    mask = np.zeros(shape, dtype=bool)
-    mask[voi, :] = good_pixels
-    res_ia[mask] = index_array[good_pixels]
-    res_ia[~mask] = -1
-    return res_ia
+    res_ia = index_array.astype(int, copy=False)  # usually a copy since pykdtree creates uint32/64 indexes
+    res_ia[res_ia >= kdtree.n] = -1
+    return res_ia.reshape(target_lons.shape + (neighbours,))
 
 
-def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None,
-              fill_value=np.nan):
+def _my_index(index_arr, data_arr, ia_slices=None, fill_value=np.nan):
     """Wrap index logic for 'get_sample_from_neighbour_info' to be used inside dask map_blocks."""
-    vii_slices = tuple(
-        x if x is not None else vii.ravel() for x in vii_slices)
+    # vii_slices = tuple(
+    #     x if x is not None else vii.ravel() for x in vii_slices)
     mask_slices = tuple(
         x if x is not None else (index_arr == -1) for x in ia_slices)
     ia_slices = tuple(
         x if x is not None else index_arr for x in ia_slices)
-    res = data_arr[vii_slices][ia_slices]
+    res = data_arr[ia_slices]
     res[mask_slices] = fill_value
     return res
 
@@ -156,21 +145,17 @@ class KDTreeNearestXarrayResampler(Resampler):
         """Set up kd tree on input."""
         source_lons, source_lats = self.source_geo_def.get_lonlats(
             chunks=chunks)
-        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) & (source_lats <= 90) & (source_lats >= -90))
         input_coords = lonlat2xyz(source_lons, source_lats)
-        input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
-        input_coords = input_coords.astype(np.float64)
+        input_coords = input_coords.astype(np.float64, copy=False)
         delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
-        return valid_input_idx, delayed_kdtree
+        return delayed_kdtree
 
     def _query_resample_kdtree(self,
                                resample_kdtree,
                                tlons,
                                tlats,
-                               valid_input_index,
-                               valid_output_index,
                                mask,
                                neighbors,
                                radius_of_influence,
@@ -181,12 +166,12 @@ class KDTreeNearestXarrayResampler(Resampler):
         else:
             ndims = self.source_geo_def.ndim
             dims = 'mn'[:ndims]
-            args = (mask, dims, valid_input_index, dims)
+            args = (mask, dims, dims)
         # res.shape = rows, cols, neighbors
         # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
         res = da.blockwise(
             query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
-            valid_output_index, 'ji', *args, kdtree=resample_kdtree,
+            *args, kdtree=resample_kdtree,
             neighbours=neighbors, epsilon=epsilon,
             radius=radius_of_influence, dtype=np.int64,
             meta=np.array((), dtype=np.int64),
@@ -208,27 +193,25 @@ class KDTreeNearestXarrayResampler(Resampler):
 
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree(chunks=chunks)
+        resample_kdtree = self._create_resample_kdtree(chunks=chunks)
 
         # TODO: Add 'chunks' keyword argument to this method and use it
         target_lons, target_lats = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))
 
         if mask is not None:
             if mask.shape != self.source_geo_def.shape:
                 raise ValueError("'mask' must be the same shape as the source geo definition")
             mask = mask.data
         index_arr = self._query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_input_idx,
-            valid_output_idx, mask,
+            resample_kdtree, target_lons, target_lats,
+            mask,
             neighbors, radius_of_influence, epsilon)
 
-        return valid_input_idx, index_arr
+        return index_arr
 
     def get_sample_from_neighbor_info(
             self,
             data,
-            valid_input_index,
             index_array,
             neighbors=1,
             fill_value=np.nan):
@@ -278,7 +261,6 @@ class KDTreeNearestXarrayResampler(Resampler):
                                       "handle more than 1 neighbor yet.")
         # Convert from multiple neighbor shape to 1 neighbor
         ia = index_array[:, :, 0]
-        vii = valid_input_index
 
         src_geo_dims = self._get_src_geo_dims()
         dst_geo_dims = ('y', 'x')
@@ -287,7 +269,6 @@ class KDTreeNearestXarrayResampler(Resampler):
         # shape of the source data after we flatten the geo dimensions
         flat_src_shape = []
         # slice objects to index in to the source data
-        vii_slices = []
         ia_slices = []
         # whether we have seen the geo dims in our analysis
         geo_handled = False
@@ -302,7 +283,6 @@ class KDTreeNearestXarrayResampler(Resampler):
             src_dim_to_ind[dim] = i
             if dim in src_geo_dims and not geo_handled:
                 flat_src_shape.append(-1)
-                vii_slices.append(None)  # mark for replacement
                 ia_slices.append(None)  # mark for replacement
                 flat_adim.append(i)
                 src_adims.append(i)
@@ -310,7 +290,6 @@ class KDTreeNearestXarrayResampler(Resampler):
                 geo_handled = True
             elif dim not in src_geo_dims:
                 flat_src_shape.append(data.sizes[dim])
-                vii_slices.append(slice(None))
                 ia_slices.append(slice(None))
                 src_adims.append(i)
                 dst_dims.append(dim)
@@ -322,7 +301,6 @@ class KDTreeNearestXarrayResampler(Resampler):
         # neighbors_dim = i + 3
 
         new_data = data.data.reshape(flat_src_shape)
-        vii = vii.ravel()
         dst_adims = [dst_dim_to_ind[dim] for dim in dst_dims]
         ia_adims = [dst_dim_to_ind[dim] for dim in dst_geo_dims]
         # FUTURE: when we allow more than one neighbor add neighbors dimension
@@ -336,9 +314,8 @@ class KDTreeNearestXarrayResampler(Resampler):
         res = da.blockwise(
             _my_index, dst_adims,
             ia, ia_adims,
-            vii, flat_adim,
             new_data, src_adims,
-            vii_slices=vii_slices, ia_slices=ia_slices,
+            ia_slices=ia_slices,
             fill_value=fill_value,
             meta=np.array((), dtype=new_data.dtype),
             dtype=new_data.dtype, concatenate=True)
@@ -410,10 +387,9 @@ class KDTreeNearestXarrayResampler(Resampler):
         internal_cache_key = (mask_hash, neighbors, radius_of_influence, epsilon)
         in_int_cache = internal_cache_key in self._internal_cache
         if not in_int_cache:
-            valid_input_index, index_arr = self._get_neighbor_info(
+            index_arr = self._get_neighbor_info(
                 mask, neighbors, radius_of_influence, epsilon)
             item_to_cache = {
-                "valid_input_index": valid_input_index,
                 "index_array": index_arr,
             }
             self._internal_cache[internal_cache_key] = item_to_cache
@@ -465,7 +441,6 @@ class KDTreeNearestXarrayResampler(Resampler):
         precompute_dict = self._internal_cache[cache_key]
         result = self.get_sample_from_neighbor_info(
             new_data,
-            precompute_dict["valid_input_index"],
             precompute_dict["index_array"],
             fill_value=fill_value)
         return self._verify_result_object_type(result, data)
