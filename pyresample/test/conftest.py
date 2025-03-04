@@ -202,6 +202,26 @@ def area_def_lcc_conus_1km():
 
 
 @pytest.fixture(scope="session")
+def area_def_lonlat_pm180():
+    """Create an AreaDefinition with an lon/lat projection over the antimeridian with pm shift (1500, 2000)."""
+    proj_str = "+proj=longlat +pm=180 +datum=WGS84 +no_defs"
+    crs = CRS.from_string(proj_str)
+    area_def = AreaDefinition(crs, (SRC_AREA_SHAPE[0], SRC_AREA_SHAPE[1]),
+                              (-10, 15, 20, 30))
+    return area_def
+
+
+@pytest.fixture(scope="session")
+def area_def_lonlat_lonwrap180():
+    """Create an AreaDefinition with an lon/lat projection over the antimeridian (1500, 2000)."""
+    proj_str = "+proj=longlat +lon_wrap=180 +datum=WGS84 +no_defs"
+    crs = CRS.from_string(proj_str)
+    area_def = AreaDefinition(crs, (SRC_AREA_SHAPE[0], SRC_AREA_SHAPE[1]),
+                              (170, 15, 200, 30))
+    return area_def
+
+
+@pytest.fixture(scope="session")
 def area_def_stere_source():
     """Create an AreaDefinition with a polar-stereographic projection (10, 50).
 
