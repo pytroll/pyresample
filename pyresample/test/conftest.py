@@ -255,6 +255,20 @@ def area_def_lonlat_pm180_target():
 
 
 @pytest.fixture(scope="session")
+def area_def_lonlat_lonwrap180_target():
+    """Create an AreaDefinition with a geographic lon/lat projection wrapping around the antimeridian (800, 850)."""
+    return AreaDefinition(
+        {
+            'proj': 'longlat',
+            'lon_wrap': '180.0',
+            'datum': 'WGS84',
+            'no_defs': None,
+        },
+        (DST_AREA_SHAPE[0], DST_AREA_SHAPE[1]),
+        (160.0, 20.0, 200.0, 35.0)
+    )
+
+@pytest.fixture(scope="session")
 def coord_def_2d_float32_dask():
     """Create a 2D CoordinateDefinition of dask arrays (4, 3)."""
     chunks = 5
