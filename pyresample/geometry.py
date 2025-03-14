@@ -22,6 +22,7 @@ import hashlib
 import math
 import warnings
 from collections import OrderedDict
+from contextlib import suppress
 from functools import partial, wraps
 from logging import getLogger
 from pathlib import Path
@@ -66,6 +67,7 @@ except ModuleNotFoundError:
 
 from pyproj import CRS
 from pyproj.enums import TransformDirection
+from pyproj.exceptions import CRSError
 
 logger = getLogger(__name__)
 
@@ -1284,6 +1286,8 @@ class DynamicAreaDefinition(object):
         area_extent = self.area_extent
         if not area_extent or not width or not height:
             projection, corners = self._compute_bound_centers(proj_dict, lonslats, antimeridian_mode=antimeridian_mode)
+            with suppress(CRSError):
+                projection = CRS(CRS(projection).to_epsg())
             area_extent, width, height = self.compute_domain(corners, resolution, shape, projection)
         return AreaDefinition(self.area_id, self.description, '',
                               projection, width, height,
