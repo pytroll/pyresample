@@ -1,3 +1,23 @@
+## Version 1.33.0 (2025/03/18)
+
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 651](https://github.com/pytroll/pyresample/pull/651) - Fix dynamic area freezing not preserving epsg code
+
+#### Features added
+
+* [PR 648](https://github.com/pytroll/pyresample/pull/648) - Update EWA pyproj Proj usage to Transformer
+
+#### Backward incompatible changes
+
+* [PR 648](https://github.com/pytroll/pyresample/pull/648) - Update EWA pyproj Proj usage to Transformer
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.32.0 (2025/01/29)
 
 ### Issues Closed
