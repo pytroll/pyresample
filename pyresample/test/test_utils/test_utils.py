@@ -83,7 +83,7 @@ class TestPreprocessing(unittest.TestCase):
         rows, cols = utils.generate_nearest_neighbour_linesample_arrays(grid, grid_dst, 12000.)
 
 
-class TestMisc(unittest.TestCase):
+class TestMisc:
     """Test miscellaneous utilities."""
 
     def test_wrap_longitudes(self):
@@ -91,11 +91,9 @@ class TestMisc(unittest.TestCase):
         from pyresample import utils
         step = 60
         lons = np.arange(-360, 360 + step, step)
-        self.assertTrue(
-            (lons.min() < -180) and (lons.max() >= 180) and (+180 in lons))
+        assert (lons.min() < -180) and (lons.max() >= 180) and (+180 in lons)
         wlons = utils.wrap_longitudes(lons)
-        self.assertFalse(
-            (wlons.min() < -180) or (wlons.max() >= 180) or (+180 in wlons))
+        assert not ((wlons.min() < -180) or (wlons.max() >= 180) or (+180 in wlons))
 
     def test_wrap_and_check(self):
         from pyresample import utils
@@ -103,17 +101,18 @@ class TestMisc(unittest.TestCase):
         lons1 = np.arange(-135., +135, 50.)
         lats = np.ones_like(lons1) * 70.
         new_lons, new_lats = utils.check_and_wrap(lons1, lats)
-        self.assertIs(lats, new_lats)
-        self.assertTrue(np.isclose(lons1, new_lons).all())
+        assert lats is new_lats
+        np.testing.assert_allclose(lons1, new_lons)
 
         lons2 = np.where(lons1 < 0, lons1 + 360, lons1)
         new_lons, new_lats = utils.check_and_wrap(lons2, lats)
-        self.assertIs(lats, new_lats)
+        assert lats is new_lats
         # after wrapping lons2 should look like lons1
-        self.assertTrue(np.isclose(lons1, new_lons).all())
+        np.testing.assert_allclose(lons1, new_lons)
 
         lats2 = lats + 25.
-        self.assertRaises(ValueError, utils.check_and_wrap, lons1, lats2)
+        with pytest.raises(ValueError):
+            utils.check_and_wrap(lons1, lats2)
 
     def test_proj4_radius_parameters_provided(self):
         """Test proj4_radius_parameters with a/b."""
@@ -159,13 +158,13 @@ class TestMisc(unittest.TestCase):
 
         pairs = [('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', '-95'), ('no_defs', True)]
         expected = OrderedDict([('proj', 'lcc'), ('ellps', 'WGS84'), ('lon_0', -95.0), ('no_defs', True)])
-        self.assertDictEqual(utils.proj4.convert_proj_floats(pairs), expected)
+        assert utils.proj4.convert_proj_floats(pairs) == expected
 
         # EPSG
         pairs = [('init', 'EPSG:4326'), ('EPSG', 4326)]
         for pair in pairs:
             expected = OrderedDict([pair])
-            self.assertDictEqual(utils.proj4.convert_proj_floats([pair]), expected)
+            assert utils.proj4.convert_proj_floats([pair]) == expected
 
     def test_proj4_str_dict_conversion(self):
         from pyresample import utils
@@ -174,11 +173,11 @@ class TestMisc(unittest.TestCase):
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
-        self.assertDictEqual(proj_dict, proj_dict2)
-        self.assertIsInstance(proj_dict['lon_0'], (float, int))
-        self.assertIsInstance(proj_dict2['lon_0'], (float, int))
-        self.assertIsInstance(proj_dict['lat_1'], float)
-        self.assertIsInstance(proj_dict2['lat_1'], float)
+        assert proj_dict == proj_dict2
+        assert isinstance(proj_dict['lon_0'], (float, int))
+        assert isinstance(proj_dict2['lon_0'], (float, int))
+        assert isinstance(proj_dict['lat_1'], float)
+        assert isinstance(proj_dict2['lat_1'], float)
 
         # EPSG
         proj_str = '+init=EPSG:4326'
@@ -186,12 +185,12 @@ class TestMisc(unittest.TestCase):
         proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
         # pyproj usually expands EPSG definitions so we can only round trip
-        self.assertEqual(proj_dict, proj_dict2)
+        assert proj_dict == proj_dict2
 
         proj_str = 'EPSG:4326'
         proj_dict_exp2 = {'proj': 'longlat', 'datum': 'WGS84', 'no_defs': None, 'type': 'crs'}
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
-        self.assertEqual(proj_dict, proj_dict_exp2)
+        assert proj_dict == proj_dict_exp2
         # input != output for this style of EPSG code
         # EPSG to PROJ.4 can be lossy
         # self.assertEqual(utils._proj4.proj4_dict_to_str(proj_dict), proj_str)  # round-trip
@@ -204,7 +203,7 @@ class TestMisc(unittest.TestCase):
         proj_dict = utils.proj4.proj4_str_to_dict(proj_str)
         proj_str2 = utils.proj4.proj4_dict_to_str(proj_dict)
         proj_dict2 = utils.proj4.proj4_str_to_dict(proj_str2)
-        self.assertDictEqual(proj_dict, proj_dict2)
+        assert proj_dict == proj_dict2
 
     @pytest.mark.skipif(pyproj.__proj_version__ == "9.3.0", reason="Bug in PROJ causes inequality in EPSG comparison")
     def test_def2yaml_converter(self):
@@ -221,7 +220,7 @@ class TestMisc(unittest.TestCase):
             areas_old = set(areas)
             areas_new = {area.area_id: area for area in areas_new}
             areas_old = {area.area_id: area for area in areas_old}
-            self.assertEqual(areas_new, areas_old)
+            assert areas_new == areas_old
         finally:
             os.remove(yaml_file)
 
