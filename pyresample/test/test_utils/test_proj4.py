@@ -15,7 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Tests for pyproj/PROJ helpers."""
+
+import dask.array as da
 import numpy as np
+import pytest
+from pyproj import CRS
+
+from pyresample.test.utils import assert_maximum_dask_computes
 
 
 def test_proj4_radius_parameters_provided():
@@ -114,3 +120,40 @@ def test_convert_proj_floats():
     for pair in pairs:
         expected = OrderedDict([pair])
         assert utils.proj4.convert_proj_floats([pair]) == expected
+
+
+@pytest.mark.parametrize("use_dask", [False, True])
+@pytest.mark.parametrize("pass_z", [False, True, None])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_dask_transformer(use_dask, pass_z, dtype):
+    from pyresample.utils.proj4 import DaskFriendlyTransformer
+
+    crs1 = CRS.from_epsg(4326)
+    crs2 = CRS.from_epsg(4326)
+    x = np.array([1, 2, 3], dtype=dtype)
+    y = np.array([1, 2, 3], dtype=dtype)
+    extra_args = ()
+    if pass_z is None:
+        extra_args += (None,)
+    elif pass_z:
+        z = np.zeros_like(x)
+        if use_dask:
+            z = da.from_array(z, chunks=1)
+        extra_args += (z,)
+    if use_dask:
+        x = da.from_array(x, chunks=1)
+        y = da.from_array(y, chunks=1)
+
+    transformer = DaskFriendlyTransformer.from_crs(crs1, crs2, always_xy=True)
+    results = transformer.transform(x, y, *extra_args)
+    assert len(results) == (2 if pass_z in (False, None) else 3)
+
+    if use_dask:
+        for res in results:
+            assert isinstance(res, da.Array)
+            assert res.dtype == np.float64
+        results = da.compute(*results)
+
+    for res_arr in results:
+        assert isinstance(res_arr, np.ndarray)
+        assert res_arr.dtype == np.float64
