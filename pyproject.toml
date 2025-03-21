@@ -13,7 +13,7 @@ select = ["E", "W", "B", "D", "T10", "C90", "NPY"]
 ignore = ["D107", "D416"]
 
 [tool.ruff.lint.per-file-ignores]
-"pyresample/test/*.py" = ["D102", "S101"]  # assert allowed in tests
+"pyresample/test/*.py" = ["D102", "D103", "S101"]  # assert allowed in tests
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
