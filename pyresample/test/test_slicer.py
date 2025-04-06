@@ -193,6 +193,33 @@ class TestAreaSlicer(unittest.TestCase):
         assert 60 <= slice_x.stop < 65
         assert 50 <= slice_y.stop < 55
 
+    def test_regression_449(self):
+        import numpy as np
+
+        from pyresample import create_area_def
+
+        lon = np.arange(-180, 180, 0.25)
+        lat = np.arange(-90, 90 + 0.25, 0.25)
+
+        area_ext = (np.nanmin(lon), np.nanmin(lat), np.nanmax(lon), np.nanmax(lat))
+        src_area = create_area_def("source_area",
+                                   "EPSG:4326",
+                                   area_extent=area_ext,
+                                   width=len(lon),
+                                   height=len(lat))
+
+        dest_area = create_area_def("msg_3km_disk",
+                                    {'a': '6378169', 'h': '35785831', 'lon_0': '0', 'no_defs': 'None', 'proj': 'geos',
+                                     'rf': '295.488065897001', 'type': 'crs', 'units': 'm', 'x_0': '0', 'y_0': '0'},
+                                    area_extent=(-5570248.6867, -5567248.2834, 5567248.2834, 5570248.6867),
+                                    width=3712,
+                                    height=3712,
+                                    )
+
+        slicer = create_slicer(src_area, dest_area)
+        # Should not raise any error
+        slicer.get_slices()
+
 
 class TestSwathSlicer(unittest.TestCase):
     """Test the get_slice function when input is a swath."""
