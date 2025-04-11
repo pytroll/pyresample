@@ -98,11 +98,11 @@ def get_geostationary_height(geos_area_crs):
     return h_param.value
 
 
-def _transform_dask_chunk(x, y, crs_from, crs_to, kwargs, transform_kwargs):
+def _transform_dask_chunk(x, y, z, crs_from, crs_to, kwargs, transform_kwargs):
     crs_from = CRS(crs_from)
     crs_to = CRS(crs_to)
     transformer = PROJTransformer.from_crs(crs_from, crs_to, **kwargs)
-    return np.stack(transformer.transform(x, y, **transform_kwargs), axis=-1)
+    return np.stack(transformer.transform(x, y, z, **transform_kwargs), axis=-1)
 
 
 class DaskFriendlyTransformer:
@@ -129,7 +129,7 @@ class DaskFriendlyTransformer:
         """Create transformer object from two CRS objects."""
         return cls(crs_from, crs_to, **kwargs)
 
-    def transform(self, x, y, **kwargs):
+    def transform(self, x, y, z=None, **kwargs):
         """Transform coordinates."""
         import dask.array as da
         crs_from = self.src_crs
@@ -138,24 +138,30 @@ class DaskFriendlyTransformer:
         if not hasattr(x, "compute"):
             x = np.asarray(x)
             y = np.asarray(y)
-            return self._transform_numpy(x, y, **kwargs)
+            if z is not None:
+                z = np.asarray(z)
+            return self._transform_numpy(x, y, z, **kwargs)
 
         # CRS objects aren't thread-safe until pyproj 3.1+
         # convert to WKT strings to be safe
-        result = da.map_blocks(_transform_dask_chunk, x, y,
+        num_results = 2 if z is None else 3
+        # NOTE: pyproj always returns 64-bit floats
+        result = da.map_blocks(_transform_dask_chunk, x, y, z,
                                crs_from.to_wkt(), crs_to.to_wkt(),
-                               dtype=x.dtype, chunks=x.chunks + ((2,),),
-                               meta=np.array((), dtype=x.dtype),
+                               dtype=np.float64, chunks=x.chunks + ((num_results,),),
+                               meta=np.array((), dtype=np.float64),
+                               name="transform_coords",
                                kwargs=self.kwargs,
                                transform_kwargs=kwargs,
                                new_axis=x.ndim)
-        x = result[..., 0]
-        y = result[..., 1]
-        return x, y
+        ret_arrays = (result[..., 0], result[..., 1])
+        if z is not None:
+            ret_arrays += (result[..., 2],)
+        return ret_arrays
 
-    def _transform_numpy(self, x, y, **kwargs):
+    def _transform_numpy(self, x, y, z, **kwargs):
         transformer = PROJTransformer.from_crs(self.src_crs, self.dst_crs, **self.kwargs)
-        return transformer.transform(x, y, **kwargs)
+        return transformer.transform(x, y, z, **kwargs)
 
 
 @contextlib.contextmanager

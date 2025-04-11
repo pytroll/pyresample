@@ -23,12 +23,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Test bilinear interpolation."""
+import sys
 import unittest
 from unittest import mock
 
 import numpy as np
 from pyproj import Proj
 
+try:
+    import zarr
+    is_zarr3 = bool(zarr.__version__[0] == "3")
+except ImportError:
+    is_zarr3 = False
 
 class TestNumpyBilinear(unittest.TestCase):
     """Test Numpy-based bilinear interpolation."""
@@ -1176,6 +1182,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(np.sum(res), 12)
         self.assertEqual((res == 0).sum(), 4)
 
+    @unittest.skipIf(is_zarr3 and sys.byteorder == "big", "Zarr3 does not support BE")
     def test_save_and_load_bil_info(self):
         """Test saving and loading the resampling info."""
         import os
@@ -1207,6 +1214,7 @@ class TestXarrayBilinear(unittest.TestCase):
         finally:
             shutil.rmtree(tempdir, ignore_errors=True)
 
+    @unittest.skipIf(is_zarr3 and sys.byteorder == "big", "Zarr3 does not support BE")
     def test_get_sample_from_cached_bil_info(self):
         """Test getting data using pre-calculated resampling info."""
         import os

@@ -1763,3 +1763,12 @@ def test_dynamic_area_can_use_bounding_box_attribute():
     swath_def_to_freeze_on = SwathDefinition(None, None, attrs=dict(bounding_box=[[0, 20, 20, 0], [55, 55, 45, 45]]))
     res_area = area_def.freeze(swath_def_to_freeze_on)
     assert res_area.area_extent == (3533500, 2484500, 5108500, 3588500)
+    assert res_area.crs == CRS("epsg:3035")
+
+
+def test_dynamic_area_preserves_epsg_code():
+    """Test that area freezing preserves epsg code."""
+    area_def = DynamicAreaDefinition("test_area", "", "epsg:3035", resolution=500)
+    swath_def_to_freeze_on = SwathDefinition(None, None, attrs=dict(bounding_box=[[0, 20, 20, 0], [55, 55, 45, 45]]))
+    res_area = area_def.freeze(swath_def_to_freeze_on)
+    assert res_area.crs == CRS("epsg:3035")
