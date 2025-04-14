@@ -565,7 +565,7 @@ def test_concatenate_chunks():
     assert res.shape == (3, 8, 6)
 
 
-class TestGradientCython():
+class TestGradientCython:
     """Test the core gradient features."""
 
     def setup_method(self):
