@@ -193,6 +193,18 @@ class TestAreaSlicer(unittest.TestCase):
         assert 60 <= slice_x.stop < 65
         assert 50 <= slice_y.stop < 55
 
+    def test_dest_area_is_a_swath(self):
+        """Test dest area is a swath."""
+        src_area = AreaDefinition('dst', 'dst area', None,
+                                  {'ellps': 'WGS84', 'proj': 'latlong'},
+                                  100, 100,
+                                  (-20, 0, 20, 90))
+        dst_swath = swath_from_area(self.dst_area, 35)
+
+        slicer = create_slicer(src_area, dst_swath)
+        x_slice, y_slice = slicer.get_slices()
+        assert x_slice.start >= 0 and x_slice.stop <= 200
+        assert y_slice.start >= 0 and y_slice.stop <= 200
 
 class TestSwathSlicer(unittest.TestCase):
     """Test the get_slice function when input is a swath."""

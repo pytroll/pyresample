@@ -192,9 +192,7 @@ class AreaSlicer(Slicer):
         try:
             # We take a little margin around the polygon to ensure all needed pixels will be included.
             if self.area_to_crop.crs.axis_info[0].unit_name == self.area_to_contain.crs.axis_info[0].unit_name:
-                if isinstance(self.area_to_contain, SwathDefinition):
-                    self.area_to_contain.resolution = (1, 1)
-                buffer_size = np.max(self.area_to_contain.resolution)
+                buffer_size = np.max(getattr(self.area_to_contain, "resolution", (0, )))
             else:
                 buffer_size = 0
             buffered_poly = poly_to_contain.buffer(buffer_size)
