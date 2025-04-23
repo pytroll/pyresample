@@ -103,6 +103,7 @@ class SwathSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in lon/lat coordinates."""
         from shapely.geometry import Polygon
+
         x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(10)
         poly = Polygon(zip(*self._source_transformer.transform(x, y)))
         return poly
@@ -129,7 +130,8 @@ class SwathSlicer(Slicer):
     def _get_chunk_polygons_for_swath_to_crop(self, swath_to_crop):
         """Get the polygons for each chunk of the area_to_crop."""
         from shapely.geometry import Polygon
-        for ((lons, lats), (line_slice, col_slice)) in _get_chunk_bboxes_for_swath_to_crop(swath_to_crop):
+
+        for (lons, lats), (line_slice, col_slice) in _get_chunk_bboxes_for_swath_to_crop(swath_to_crop):
             smaller_poly = Polygon(zip(*self._target_transformer.transform(lons, lats)))
             yield (smaller_poly, (line_slice, col_slice))
 
@@ -166,6 +168,7 @@ class AreaSlicer(Slicer):
     def get_polygon_to_contain(self):
         """Get the shapely Polygon corresponding to *area_to_contain* in projection coordinates of *area_to_crop*."""
         from shapely.geometry import Polygon
+
         try:
             x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
         except AttributeError:
@@ -177,7 +180,7 @@ class AreaSlicer(Slicer):
             poly = Polygon(zip(x, y))
             poly = poly.intersection(geos_poly)
             if poly.is_empty:
-                raise IncompatibleAreas('No slice on area.')
+                raise IncompatibleAreas("No slice on area.")
             x, y = zip(*poly.exterior.coords)
 
         return Polygon(zip(*self._source_transformer.transform(x, y)))
@@ -189,7 +192,7 @@ class AreaSlicer(Slicer):
         try:
             # We take a little margin around the polygon to ensure all needed pixels will be included.
             if self.area_to_crop.crs.axis_info[0].unit_name == self.area_to_contain.crs.axis_info[0].unit_name:
-                buffer_size = np.max(self.area_to_contain.resolution)
+                buffer_size = np.max(getattr(self.area_to_contain, "resolution", (0, )))
             else:
                 buffer_size = 0
             buffered_poly = poly_to_contain.buffer(buffer_size)
@@ -197,6 +200,7 @@ class AreaSlicer(Slicer):
         except ValueError as err:
             raise InvalidArea("Invalid area") from err
         from shapely.geometry import Polygon
+
         poly_to_crop = Polygon(zip(*self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10)))
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
@@ -209,12 +213,13 @@ class AreaSlicer(Slicer):
         try:
             (minx, miny, maxx, maxy) = bounds
         except ValueError as err:
-            raise IncompatibleAreas('No slice on area.') from err
-        x_bounds, y_bounds = self.area_to_crop.get_array_coordinates_from_projection_coordinates(np.array([minx, maxx]),
-                                                                                                 np.array([miny, maxy]))
+            raise IncompatibleAreas("No slice on area.") from err
+        x_bounds, y_bounds = self.area_to_crop.get_array_coordinates_from_projection_coordinates(
+            np.array([minx, maxx]), np.array([miny, maxy])
+        )
         y_size, x_size = self.area_to_crop.shape
         if np.all(x_bounds < 0) or np.all(y_bounds < 0) or np.all(x_bounds >= x_size) or np.all(y_bounds >= y_size):
-            raise IncompatibleAreas('No slice on area.')
+            raise IncompatibleAreas("No slice on area.")
         return x_bounds, y_bounds
 
     @staticmethod
@@ -222,10 +227,8 @@ class AreaSlicer(Slicer):
         """Create slices from bounds."""
         x_bounds, y_bounds = bounds
         try:
-            slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))),
-                            int(np.ceil(np.max(x_bounds))))
-            slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))),
-                            int(np.ceil(np.max(y_bounds))))
+            slice_x = slice(int(np.floor(max(np.min(x_bounds), 0))), int(np.ceil(np.max(x_bounds))))
+            slice_y = slice(int(np.floor(max(np.min(y_bounds), 0))), int(np.ceil(np.max(y_bounds))))
         except OverflowError as err:
             raise IncompatibleAreas("Area not within finite bounds.") from err
         return expand_slice(slice_x), expand_slice(slice_y)
