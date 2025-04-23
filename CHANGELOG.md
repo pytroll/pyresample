@@ -1,3 +1,25 @@
+## Version 1.34.0 (2025/04/23)
+
+### Issues Closed
+
+* [Issue 653](https://github.com/pytroll/pyresample/issues/653) - Test failure on BigEndian architectures with zarr3 ([PR 654](https://github.com/pytroll/pyresample/pull/654) by [@avalentino](https://github.com/avalentino))
+
+In this release 1 issue was closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 654](https://github.com/pytroll/pyresample/pull/654) - Skip test using zarr3 on BE architectures ([653](https://github.com/pytroll/pyresample/issues/653))
+* [PR 650](https://github.com/pytroll/pyresample/pull/650) - Added resolution to SwathDefinition in slice.py
+
+#### Features added
+
+* [PR 652](https://github.com/pytroll/pyresample/pull/652) - Add the ability to pass Z to dask-friendly transformer
+
+In this release 3 pull requests were closed.
+
+
 ## Version 1.33.0 (2025/03/18)
 
 
