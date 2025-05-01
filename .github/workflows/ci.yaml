@@ -55,7 +55,7 @@ jobs:
           numpy \
           pandas \
           scipy; \
-          mamba remove --force-remove -y pykdtree
+          conda remove --force-remove -y pykdtree
           python -m pip install \
           --no-deps --upgrade --pre --no-build-isolation \
           git+https://github.com/storpipfugl/pykdtree \
