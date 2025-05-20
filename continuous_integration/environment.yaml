@@ -5,7 +5,7 @@ dependencies:
   - cartopy
   - configobj
   - Cython
-  - dask
+  - dask!=2025.5.0
   - distributed
   - donfig
   - matplotlib
