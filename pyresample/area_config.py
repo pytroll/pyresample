@@ -59,6 +59,9 @@ except ImportError:
             return len(self.data)
 
 
+logger = logging.getLogger(__name__)
+
+
 class AreaNotFound(KeyError):
     """Exception raised when specified are is no found in file."""
 
@@ -757,11 +760,11 @@ def _round_shape(shape, radius=None, resolution=None):
     if incorrect_shape:
         if radius is not None and resolution is not None:
             new_resolution = (2 * radius[0] / width, 2 * radius[1] / height)
-            logging.warning('shape found from radius and resolution does not contain only '
+            logger.warning('shape found from radius and resolution does not contain only '
                             'integers: {0}\nRounding shape to {1} and resolution from {2} meters to '
                             '{3} meters'.format(shape, (height, width), resolution, new_resolution))
         else:
-            logging.warning('shape provided does not contain only integers: {0}\n'
+            logger.warning('shape provided does not contain only integers: {0}\n'
                             'Rounding shape to {1}'.format(shape, (height, width)))
     return height, width
 
@@ -871,9 +874,9 @@ def _verify_list(name, var, length):
             var = DataArray(list(_format_list(var.data.tolist(), name)), attrs=var.attrs)
         elif isinstance(var, DataArray):
             if name == 'shape':
-                logging.warning("{0} is unitless, but was passed as a DataArray".format(name))
+                logger.warning("{0} is unitless, but was passed as a DataArray".format(name))
             else:
-                logging.warning("{0} is a DataArray but does not have the attribute 'units',"
+                logger.warning("{0} is a DataArray but does not have the attribute 'units',"
                                 "but instead has attribute(s): {1}".format(name, var.attrs))
             var = _format_list(var.data.tolist(), name)
         else:
