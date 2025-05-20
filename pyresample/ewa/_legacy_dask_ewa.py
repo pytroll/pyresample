@@ -169,9 +169,11 @@ class LegacyDaskEWAResampler(BaseResampler):
 
         return None
 
-    def _call_fornav(self, cols, rows, target_geo_def, data,
+    def _call_fornav(self, cols, rows, data, target_geo_def,
                      grid_coverage=0, **kwargs):
         """Wrap fornav() to run as a dask delayed."""
+        if not isinstance(data, tuple) and data.ndim == 3:
+            data = tuple(d for d in data)  # ex. (3, Y, X) -> (R, G, B)
         num_valid_points, res = fornav(cols, rows, target_geo_def,
                                        data, **kwargs)
 
@@ -233,19 +235,31 @@ class LegacyDaskEWAResampler(BaseResampler):
         rows_per_scan = self._get_rows_per_scan(kwargs, data)
         data_in = self._get_data_arr(data)
 
-        res = dask.delayed(self._call_fornav, pure=True)(
-            cols, rows, self.target_geo_def, data_in,
+        if isinstance(data_in, tuple):
+            data_in_arr = da.stack(data_in, axis=0)
+            data_in_arr = data_in_arr.rechunk(data_in_arr.shape)
+            in_dims = "bji"
+            out_dims = "byx"
+        else:
+            data_in_arr = data_in.rechunk(data_in.shape)
+            in_dims = "ji"
+            out_dims = "yx"
+        data_arr = da.blockwise(
+            self._call_fornav, out_dims,
+            cols.rechunk(cols.shape), "ji",
+            rows.rechunk(cols.shape), "ji",
+            data_in_arr, in_dims,
+            target_geo_def=self.target_geo_def,
             grid_coverage=grid_coverage,
             rows_per_scan=rows_per_scan, weight_count=weight_count,
             weight_min=weight_min, weight_distance_max=weight_distance_max,
             weight_delta_max=weight_delta_max, weight_sum_min=weight_sum_min,
-            maximum_weight_mode=maximum_weight_mode)
-        if isinstance(data_in, tuple):
-            new_shape = (len(data_in),) + self.target_geo_def.shape
-        else:
-            new_shape = self.target_geo_def.shape
-        data_arr = da.from_delayed(res, new_shape, dtype=data.dtype,
-                                   meta=np.array((), dtype=data.dtype))
+            maximum_weight_mode=maximum_weight_mode,
+            concatenate=True,
+            meta=np.array((), dtype=data.dtype),
+            dtype=data.dtype,
+            new_axes={"y": self.target_geo_def.shape[0], "x": self.target_geo_def.shape[1]},
+        )
         # from delayed creates one large chunk, break it up a bit if we can
         data_arr = data_arr.rechunk([chunks or CHUNK_SIZE] * data_arr.ndim)
         if data.ndim == 3 and data.dims[0] == 'bands':
