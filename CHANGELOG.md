@@ -1,3 +1,15 @@
+## Version 1.34.1 (2025/05/20)
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 662](https://github.com/pytroll/pyresample/pull/662) - Convert legacy EWA from delayed to blockwise
+* [PR 661](https://github.com/pytroll/pyresample/pull/661) - Fix area_config using root logger
+
+In this release 2 pull requests were closed.
+
+
 ## Version 1.34.0 (2025/04/23)
 
 ### Issues Closed
