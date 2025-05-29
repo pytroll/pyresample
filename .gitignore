@@ -65,3 +65,6 @@ pyresample/gradient/_gradient_search.c
 
 # don't include doctest files
 docs/doctest/.doctrees/*
+
+# don't include auto-generated API docs
+docs/source/api/*.rst

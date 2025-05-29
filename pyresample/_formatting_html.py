@@ -221,10 +221,8 @@ def swath_area_attrs_section(area: 'geom.SwathDefinition') -> str: # noqa F821
     Returns:
         Html with collapsible section of swath attributes.
 
-    Todo:
-        - Improve resolution estimation from lat/lon arrays. Maybe use CoordinateDefinition.geocentric_resolution?
-
     """
+    # TODO: Improve resolution estimation from lat/lon arrays. Maybe use CoordinateDefinition.geocentric_resolution?
     if np.ndim(area.lons) == 1:
         area_name = "1D Swath"
         resolution_str = "NAxNA"

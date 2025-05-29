@@ -24,11 +24,14 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 # -- General configuration -----------------------------------------------
 
+# sphinxcontrib.apidoc was added to sphinx in 8.2.0 as sphinx.etx.apidoc
+needs_sphinx = "8.2.0"
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.intersphinx',
-    'sphinx_reredirects', 'doi_role',
+    'sphinx.ext.apidoc', 'sphinx_reredirects', 'doi_role', "sphinx_autodoc_typehints",
 ]
 
 # DocTest Settings
@@ -51,6 +54,37 @@ try:
 except ImportError:
     Basemap = None
 '''
+
+# API docs
+apidoc_modules = [
+    {
+        "path": "../../pyresample",
+        "destination": "api/",
+        "exclude_patterns": [
+            # Prefer to not document test modules. Most users will look at
+            # source code if needed and we want to avoid documentation builds
+            # suffering from import-time test data creation. We want to keep
+            # things contributors might be interested in like satpy.tests.utils.
+            "../../pyresample/test/test_*.py",
+            "../../pyresample/test/**/test_*.py",
+        ],
+    },
+]
+apidoc_separate_modules = True
+apidoc_include_private = True
+
+autodoc_mock_imports = ["hashlib._Hash"]
+autodoc_type_aliases = {
+    "ArrayLike": "numpy.typing.ArrayLike",
+    "DTypeLike": "numpy.typing.DTypeLike",
+}
+autodoc_default_options = {
+    "special-members": "__init__, __reduce_ex__",
+}
+nitpick_ignore_regex: list[tuple[str, str]] = []
+autoclass_content = "both"  # append class __init__ docstring to the class docstring
+
+
 
 # Napoleon Settings (to support numpy style docs)
 napoleon_numpy_docstring = True
@@ -252,7 +286,7 @@ intersphinx_mapping = {
     'trollsift': ('https://trollsift.readthedocs.io/en/stable', None),
     'trollimage': ('https://trollimage.readthedocs.io/en/stable', None),
     'pyproj': ('https://pyproj4.github.io/pyproj/dev/', None),
-    'proj': ('https://proj.org', None),
+    'proj': ('https://proj.org/en/stable', None),
     'satpy': ('https://satpy.readthedocs.io/en/stable', None),
     'donfig': ('https://donfig.readthedocs.io/en/latest', None),
 }

@@ -25,8 +25,7 @@
 """Code for resampling using bilinear algorithm for irregular grids.
 
 The algorithm is taken from
-
-http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf
+`here <http://www.ahinson.com/algorithms_general/Sections/InterpolationRegression/InterpolationIrregularBilinear.pdf>`__.
 
 """
 
@@ -424,8 +423,8 @@ def _ensure_array(val):
 def _calc_abc(corner_points, out_y, out_x):
     """Calculate coefficients for quadratic equation.
 
-    In this order of arguments used for _get_fractional_distances_irregular() and
-    _get_fractional_distances_uprights().  For _get_fractional_distances_uprights switch order of pt_2 and
+    In this order of arguments used for ``_get_fractional_distances_irregular()`` and
+    ``_get_fractional_distances_uprights()``.  For ``_get_fractional_distances_uprights`` switch order of pt_2 and
     pt_3.
 
     """
@@ -451,9 +450,9 @@ def _calc_abc(corner_points, out_y, out_x):
 
 
 def _solve_another_fractional_distance(f__, y_corners, out_y):
-    """Solve parameter t__ from s__, or vice versa.
+    """Solve parameter ``t__`` from ``s__``, or vice versa.
 
-    For solving s__, switch order of y_2 and y_3.
+    For solving ``s__``, switch order of y_2 and y_3.
     """
     y_1, y_2, y_3, y_4 = y_corners
 

@@ -172,13 +172,10 @@ class XArrayBilinearResampler(BilinearBase):
 
         slicer = get_slicer(data)
 
-        return from_delayed(
-            self._delayed_slice_data(
-                slicer, data, fill_value), shp)
-
-    @delayed(nout=4)
-    def _delayed_slice_data(self, slicer, data, fill_value):
-        return slicer(data.values, self.slices_x, self.slices_y, self.mask_slices, fill_value)
+        delayed_slicer = delayed(slicer, pure=True, nout=4)
+        sliced_dask_arr = delayed_slicer(data.data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
+        # TODO: Replace with single-chunk 'blockwise' call for better dask graph optimization
+        return from_delayed(sliced_dask_arr, shp)
 
     def _get_target_proj_vectors(self):
         try:
