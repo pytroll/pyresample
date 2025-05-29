@@ -11,6 +11,6 @@ of how to use this information see the :doc:`/howtos/index`.
 .. toctree::
    :maxdepth: 1
 
-   API <api/pyresample>
+   API <api/modules>
    roadmap
    dev_guide/index

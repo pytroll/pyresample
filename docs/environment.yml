@@ -18,3 +18,4 @@ dependencies:
   - pykdtree
   - sphinx_rtd_theme
   - sphinx-reredirects
+  - sphinx-autodoc-typehints

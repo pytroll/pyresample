@@ -246,11 +246,15 @@ def _capture_subarguments(params: dict, arg_name: str, sub_arg_list: list[str]) 
     """Capture :func:`~pyresample.utils.create_area_def` sub-arguments (i.e. units, height, dx, etc) from a yaml file.
 
     Example:
-        resolution:
-          dx: 11
-          dy: 22
-          units: meters
-        # returns DataArray((11, 22), attrs={'units': 'meters})
+        Specify the units for the individual dx/dy values::
+
+            resolution:
+              dx: 11
+              dy: 22
+              units: meters
+
+        would return the equivalent of ``DataArray((11, 22), attrs={'units': 'meters})``.
+
     """
     # Check if argument is in yaml.
     argument = params.get(arg_name)
