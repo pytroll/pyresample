@@ -1,3 +1,14 @@
+## Version 1.34.2 (2025/05/29)
+
+### Pull Requests Merged
+
+#### Documentation changes
+
+* [PR 663](https://github.com/pytroll/pyresample/pull/663) - Update API documentation
+
+In this release 1 pull request was closed.
+
+
 ## Version 1.34.1 (2025/05/20)
 
 ### Pull Requests Merged
