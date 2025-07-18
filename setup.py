@@ -29,7 +29,6 @@ requirements = ['pyproj>=3.0', 'configobj',
                 "shapely", "donfig", "platformdirs",
                 ]
 
-
 test_requires = ['rasterio', 'dask', 'xarray', 'cartopy>=0.20.0', 'pillow', 'matplotlib', 'scipy', 'zarr',
                  'pytest-lazy-fixtures', 'shapely', 'odc-geo']
 extras_require = {'numexpr': ['numexpr'],
