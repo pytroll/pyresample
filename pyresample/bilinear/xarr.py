@@ -210,7 +210,7 @@ class XArrayBilinearResampler(BilinearBase):
     def load_resampling_info(self, filename):
         """Load bilinear resampling look-up tables and initialize the resampler."""
         try:
-            fid = zarr.open(filename, 'r')
+            fid = zarr.open(filename, mode='r')
             for val in BIL_COORDINATES:
                 cache = da.array(fid[val])
                 setattr(self, val, cache)
