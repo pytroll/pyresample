@@ -62,7 +62,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.2
         env:
-          CIBW_SKIP: "cp39-* cp310-* pp* *i686 *-musllinux*"
+          CIBW_SKIP: "cp39-* cp310-* *i686 *-musllinux*"
           CIBW_ARCHS: "${{ matrix.cibw_archs }}"
           CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
           CIBW_TEST_SKIP: "*-win_arm64"
