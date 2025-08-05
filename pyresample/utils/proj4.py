@@ -150,7 +150,7 @@ class DaskFriendlyTransformer:
                                crs_from.to_wkt(), crs_to.to_wkt(),
                                dtype=np.float64, chunks=x.chunks + ((num_results,),),
                                meta=np.array((), dtype=np.float64),
-                               name="transform_coords",
+                               token="transform_coords",  # nosec: B106
                                kwargs=self.kwargs,
                                transform_kwargs=kwargs,
                                new_axis=x.ndim)
