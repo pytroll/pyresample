@@ -145,7 +145,7 @@ class BucketResampler(object):
         self.target_area = target_area
         self.source_lons = source_lons
         self.source_lats = source_lats
-        self.prj = Proj(self.target_area.proj_dict)
+        self.prj = Proj(self.target_area.crs)
         self.x_idxs = None
         self.y_idxs = None
         self.idxs = None
