@@ -25,7 +25,7 @@ from setuptools import find_packages, setup
 import versioneer
 
 requirements = ['pyproj>=3.0', 'configobj',
-                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.21.0',
+                'pykdtree>=1.3.1', 'pyyaml', 'numpy>=1.25.0',
                 "shapely", "donfig", "platformdirs",
                 ]
 
@@ -55,8 +55,8 @@ extensions = [
     Extension("pyresample.ewa._ll2cr", sources=["pyresample/ewa/_ll2cr.pyx"],
               include_dirs=[np.get_include()],
               extra_compile_args=extra_compile_args,
-              cython_directives={"language_level": 3},
-              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              cython_directives={"language_level": 3, "freethreading_compatible": True},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_25_API_VERSION")],
               ),
     Extension("pyresample.ewa._fornav",
               sources=["pyresample/ewa/_fornav.pyx",
@@ -64,15 +64,15 @@ extensions = [
               include_dirs=[np.get_include()],
               language="c++", extra_compile_args=extra_compile_args,
               depends=["pyresample/ewa/_fornav_templates.h"],
-              cython_directives={"language_level": 3},
-              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              cython_directives={"language_level": 3, "freethreading_compatible": True},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_25_API_VERSION")],
               ),
     Extension("pyresample.gradient._gradient_search",
               sources=["pyresample/gradient/_gradient_search.pyx"],
               include_dirs=[np.get_include()],
               extra_compile_args=extra_compile_args,
-              cython_directives={"language_level": 3},
-              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+              cython_directives={"language_level": 3, "freethreading_compatible": True},
+              define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_25_API_VERSION")],
               ),
 ]
 
@@ -106,9 +106,10 @@ if __name__ == "__main__":
           ext_modules=extensions,
           entry_points=entry_points,
           zip_safe=False,
+          license="LGPL-3.0-or-later",
+          license_files=["LICENSE.txt"],
           classifiers=[
               'Development Status :: 5 - Production/Stable',
-              'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
               'Programming Language :: Python',
               'Programming Language :: Cython',
               'Operating System :: OS Independent',
