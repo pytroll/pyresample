@@ -899,7 +899,7 @@ def _prepare_result(result, output_shape, is_masked_data, use_masked_fill_value,
     return result
 
 
-class XArrayResamplerNN(object):
+class XArrayResamplerNN:
     """Resampler for Xarray DataArray objects with the nearest neighbor algorithm."""
 
     def __init__(self,
@@ -969,22 +969,19 @@ class XArrayResamplerNN(object):
 
     def _create_resample_kdtree(self, chunks=CHUNK_SIZE):
         """Set up kd tree on input."""
-        source_lons, source_lats = self.source_geo_def.get_lonlats(
-            chunks=chunks)
-        valid_input_idx = ((source_lons >= -180) & (source_lons <= 180) & (source_lats <= 90) & (source_lats >= -90))
+        source_lons, source_lats = self.source_geo_def.get_lonlats(chunks=chunks)
+        # TODO: Pass XY coordinates of input geometry along with CRS
         input_coords = lonlat2xyz(source_lons, source_lats)
-        input_coords = input_coords[valid_input_idx.ravel(), :]
 
         # Build kd-tree on input
-        input_coords = input_coords.astype(np.float64)
+        input_coords = input_coords.astype(np.float64, copy=False)
         delayed_kdtree = dask.delayed(KDTree, pure=True)(input_coords)
-        return valid_input_idx, delayed_kdtree
+        return delayed_kdtree
 
     def query_resample_kdtree(self,
                               resample_kdtree,
                               tlons,
                               tlats,
-                              valid_oi,
                               mask):
         """Query kd-tree on slice of target coordinates."""
         if mask is None:
@@ -992,11 +989,11 @@ class XArrayResamplerNN(object):
         else:
             ndims = self.source_geo_def.ndim
             dims = 'mn'[:ndims]
-            args = (mask, dims, self.valid_input_index, dims)
+            args = (mask, dims)
         # res.shape = rows, cols, neighbors
         # j=rows, i=cols, k=neighbors, m=source rows, n=source cols
         res = blockwise(query_no_distance, 'jik', tlons, 'ji', tlats, 'ji',
-                        valid_oi, 'ji', *args, kdtree=resample_kdtree,
+                        *args, kdtree=resample_kdtree,
                         neighbours=self.neighbours, epsilon=self.epsilon,
                         radius=self.radius_of_influence, dtype=np.int64,
                         meta=np.array((), dtype=np.int64),
@@ -1018,29 +1015,23 @@ class XArrayResamplerNN(object):
 
         # Create kd-tree
         chunks = mask.chunks if mask is not None else CHUNK_SIZE
-        valid_input_idx, resample_kdtree = self._create_resample_kdtree(
-            chunks=chunks)
-        self.valid_input_index = valid_input_idx
+        resample_kdtree = self._create_resample_kdtree(chunks=chunks)
         self.delayed_kdtree = resample_kdtree
 
         # TODO: Add 'chunks' keyword argument to this method and use it
+        # TODO: Use XY coordinates and pass CRS
         target_lons, target_lats = self.target_geo_def.get_lonlats(chunks=CHUNK_SIZE)
-        valid_output_idx = ((target_lons >= -180) & (target_lons <= 180) & (target_lats <= 90) & (target_lats >= -90))
 
         if mask is not None:
             if mask.shape != self.source_geo_def.shape:
                 raise ValueError("'mask' must be the same shape as the source geo definition")
             mask = mask.data
-        index_arr, distance_arr = self.query_resample_kdtree(
-            resample_kdtree, target_lons, target_lats, valid_output_idx, mask)
+        index_arr, distance_arr = self.query_resample_kdtree(resample_kdtree, target_lons, target_lats, mask)
 
-        self.valid_output_index, self.index_array = valid_output_idx, index_arr
+        self.index_array = index_arr
         self.distance_array = distance_arr
 
-        return (self.valid_input_index,
-                self.valid_output_index,
-                self.index_array,
-                self.distance_array)
+        return self.index_array, self.distance_array
 
     def get_sample_from_neighbour_info(self, data, fill_value=np.nan):
         """Get the pixels matching the target area.
@@ -1084,7 +1075,7 @@ class XArrayResamplerNN(object):
                                       "handle more than 1 neighbor yet.")
         # Convert from multiple neighbor shape to 1 neighbor
         ia = self.index_array[:, :, 0]
-        vii = self.valid_input_index
+        # vii = self.valid_input_index
         src_geo_dims, dst_geo_dims = self._get_valid_dims(data)
 
         # FIXME: Can't include coordinates whose dimensions depend on the geo dims either
@@ -1104,7 +1095,7 @@ class XArrayResamplerNN(object):
         # shape of the source data after we flatten the geo dimensions
         flat_src_shape = []
         # slice objects to index in to the source data
-        vii_slices = []
+        # vii_slices = []
         ia_slices = []
         # whether we have seen the geo dims in our analysis
         geo_handled = False
@@ -1119,7 +1110,7 @@ class XArrayResamplerNN(object):
             src_dim_to_ind[dim] = i
             if dim in src_geo_dims and not geo_handled:
                 flat_src_shape.append(-1)
-                vii_slices.append(None)  # mark for replacement
+                # vii_slices.append(None)  # mark for replacement
                 ia_slices.append(None)  # mark for replacement
                 flat_adim.append(i)
                 src_adims.append(i)
@@ -1127,7 +1118,7 @@ class XArrayResamplerNN(object):
                 geo_handled = True
             elif dim not in src_geo_dims:
                 flat_src_shape.append(data.sizes[dim])
-                vii_slices.append(slice(None))
+                # vii_slices.append(slice(None))
                 ia_slices.append(slice(None))
                 src_adims.append(i)
                 dst_dims.append(dim)
@@ -1139,7 +1130,7 @@ class XArrayResamplerNN(object):
         # neighbors_dim = i + 3
 
         new_data = data.data.reshape(flat_src_shape)
-        vii = vii.ravel()
+        # vii = vii.ravel()
         dst_adims = [dst_dim_to_ind[dim] for dim in dst_dims]
         ia_adims = [dst_dim_to_ind[dim] for dim in dst_geo_dims]
         # FUTURE: when we allow more than one neighbor add neighbors dimension
@@ -1152,9 +1143,8 @@ class XArrayResamplerNN(object):
         #         then we can avoid all of this complicated blockwise stuff
         res = blockwise(_my_index, dst_adims,
                         ia, ia_adims,
-                        vii, flat_adim,
                         new_data, src_adims,
-                        vii_slices=vii_slices, ia_slices=ia_slices,
+                        ia_slices=ia_slices,
                         fill_value=fill_value,
                         meta=np.array((), dtype=new_data.dtype),
                         dtype=new_data.dtype, concatenate=True)
