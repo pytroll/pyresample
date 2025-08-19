@@ -108,3 +108,25 @@ class TestAreaBoundary(unittest.TestCase):
         lons, lats = boundary.contour()
         assert np.allclose(lons, np.array([1., 1.5, 2., 3., 3.5, 4.]))
         assert np.allclose(lats, np.array([6., 6.5, 7., 8., 8.5, 9.]))
+
+    def test_countour_poly_north_pole(self):
+        """Test that a polygon can be made with 32-bit north pole coordinates.
+
+        In a real world case, 32-bit geolocation including a point at exactly the
+        north pole lead to a validity check failure because the radians value for
+        90N was just barely above pi / 2.
+
+        """
+        list_sides = [
+            (np.array([1., 1.5, 2.], dtype=np.float32), np.array([87.0, 87.5, 88.0], dtype=np.float32)),
+            (np.array([2., 3.], dtype=np.float32), np.array([88.0, 89.0], dtype=np.float32)),
+            (np.array([3., 3.5, 4.], dtype=np.float32), np.array([89., 89.5, 90.0], dtype=np.float32)),
+            (np.array([4., 1.], dtype=np.float32), np.array([90.0, 87.0], dtype=np.float32)),
+        ]
+        boundary = AreaBoundary(*list_sides)
+        poly = boundary.contour_poly
+        # validity checks happen here:
+        aedges = list(poly.aedges())
+        # ensure 90 degree latitude coordinate is retained
+        np.testing.assert_allclose(aedges[4].end.lat, np.radians(90.0))
+        np.testing.assert_allclose(aedges[5].start.lat, np.radians(90.0))

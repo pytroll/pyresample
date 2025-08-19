@@ -45,8 +45,9 @@ class Boundary(object):
     def contour_poly(self):
         """Get the Spherical polygon corresponding to the Boundary."""
         if self._contour_poly is None:
+            # force 64-bit for more accuracy
             self._contour_poly = SphPolygon(
-                np.deg2rad(np.vstack(self.contour()).T))
+                np.deg2rad(np.vstack(self.contour()).T, dtype=np.float64))
         return self._contour_poly
 
     def draw(self, mapper, options, **more_options):
