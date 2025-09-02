@@ -827,9 +827,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
                                       neighbours=1)
         data = self.tdata_1d
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
@@ -851,14 +849,11 @@ class TestXArrayResamplerNN(unittest.TestCase):
         resampler = XArrayResamplerNN(self.tswath_1d, self.tgrid,
                                       radius_of_influence=100000,
                                       neighbours=1)
-        data = self.tdata_1d
         data = xr.DataArray(da.from_array(np.array([1, 2, 3]),
                                           chunks=5),
                             dims=('my_dim1',))
         ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         res = resampler.get_sample_from_neighbour_info(data, fill_value=255)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
@@ -883,9 +878,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
                                       radius_of_influence=50000,
                                       neighbours=1)
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
@@ -907,9 +900,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
                                       neighbours=1)
         with assert_maximum_dask_computes(0):
             ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         with pytest.raises(ValueError):
             resampler.get_sample_from_neighbour_info(data)
 
@@ -934,9 +925,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
         resampler = XArrayResamplerNN(self.src_area_2d, self.area_def,
                                       neighbours=1)
         ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         with pytest.raises(ValueError):
             resampler.get_sample_from_neighbour_info(data)
 
@@ -977,9 +966,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
                                       radius_of_influence=50000,
                                       neighbours=1)
         ninfo = resampler.get_neighbour_info()
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         with pytest.raises(ValueError):
             resampler.get_sample_from_neighbour_info(data)
 
@@ -1006,9 +993,7 @@ class TestXArrayResamplerNN(unittest.TestCase):
                                       neighbours=8)
         data = self.tdata_1d
         ninfo = resampler.get_neighbour_info(mask=data.isnull())
-        for val in ninfo[:3]:
-            # vii, ia, voi
-            self.assertIsInstance(val, da.Array)
+        self.assertIsInstance(ninfo[0], da.Array)  # index array
         res = resampler.get_sample_from_neighbour_info(data)
         self.assertIsInstance(res, xr.DataArray)
         self.assertIsInstance(res.data, da.Array)
