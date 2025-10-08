@@ -2115,7 +2115,7 @@ class AreaDefinition(_ProjectionDefinition):
 
         Equality considers only the projection coordinates, not the description
         or projection ID.  In other words, areas are considered equal if they
-        produce (approximately) the same output when used for resampling.
+        produce the same output when used for resampling.
         """
         try:
             return ((np.allclose(self.area_extent, other.area_extent)) and
