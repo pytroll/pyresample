@@ -142,9 +142,10 @@ class BaseDefinition:
     def __eq__(self, other):
         """Test for approximate equality.
 
-        Equality considers only the projection coordinates, not the description
-        or projection ID.  In other words, areas are considered equal if they
-        produce (approximately) the same output when used for resampling.
+        Equality considers only the projection coordinates, not metadata such
+        as description or projection ID.  In other words, areas are considered
+        equal if they produce approximately the same output when used for
+        resampling, within floating point tolerances.
         """
         if self is other:
             return True
@@ -2113,9 +2114,9 @@ class AreaDefinition(_ProjectionDefinition):
     def __eq__(self, other):
         """Test for equality.
 
-        Equality considers only the projection coordinates, not the description
-        or projection ID.  In other words, areas are considered equal if they
-        produce the same output when used for resampling.
+        Equality considers only the projection coordinates, not metadata such
+        as description or projection ID.  In other words, areas are considered
+        equal if they produce the same output when used for resampling.
         """
         try:
             return ((np.allclose(self.area_extent, other.area_extent)) and
