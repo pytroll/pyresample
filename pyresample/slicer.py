@@ -105,7 +105,7 @@ class SwathSlicer(Slicer):
         from shapely.geometry import Polygon
 
         x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(10)
-        poly = Polygon(zip(*self._source_transformer.transform(x, y)))
+        poly = Polygon(zip(*self._source_transformer.transform(x, y), strict=True))
         return poly
 
     def get_slices_from_polygon(self, poly):
@@ -121,7 +121,7 @@ class SwathSlicer(Slicer):
     @staticmethod
     def _assemble_slices(chunk_slices):
         """Assemble slices to one slice per dimension."""
-        lines, cols = zip(*chunk_slices)
+        lines, cols = zip(*chunk_slices, strict=True)
         line_slice = slice(min(slc.start for slc in lines), max(slc.stop for slc in lines))
         col_slice = slice(min(slc.start for slc in cols), max(slc.stop for slc in cols))
         slices = col_slice, line_slice
@@ -132,7 +132,7 @@ class SwathSlicer(Slicer):
         from shapely.geometry import Polygon
 
         for (lons, lats), (line_slice, col_slice) in _get_chunk_bboxes_for_swath_to_crop(swath_to_crop):
-            smaller_poly = Polygon(zip(*self._target_transformer.transform(lons, lats)))
+            smaller_poly = Polygon(zip(*self._target_transformer.transform(lons, lats), strict=True))
             yield (smaller_poly, (line_slice, col_slice))
 
 
@@ -176,14 +176,14 @@ class AreaSlicer(Slicer):
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
             x_geos, y_geos = self._source_transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
-            geos_poly = Polygon(zip(x_geos, y_geos))
-            poly = Polygon(zip(x, y))
+            geos_poly = Polygon(zip(x_geos, y_geos, strict=True))
+            poly = Polygon(zip(x, y, strict=True))
             poly = poly.intersection(geos_poly)
             if poly.is_empty:
                 raise IncompatibleAreas("No slice on area.")
-            x, y = zip(*poly.exterior.coords)
+            x, y = zip(*poly.exterior.coords, strict=True)
 
-        return Polygon(zip(*self._source_transformer.transform(x, y)))
+        return Polygon(zip(*self._source_transformer.transform(x, y), strict=True))
 
     def get_slices_from_polygon(self, poly_to_contain):
         """Get the slices based on the polygon."""
@@ -201,7 +201,9 @@ class AreaSlicer(Slicer):
             raise InvalidArea("Invalid area") from err
         from shapely.geometry import Polygon
 
-        poly_to_crop = Polygon(zip(*self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10)))
+        poly_to_crop = Polygon(zip(
+            *self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10),
+            strict=True))
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
         bounds = self._sanitize_polygon_bounds(bounds)
@@ -238,7 +240,7 @@ def _enumerate_chunk_slices(chunks):
     """Enumerate chunks with slices."""
     for position in np.ndindex(tuple(map(len, (chunks)))):
         slices = []
-        for pos, chunk in zip(position, chunks):
+        for pos, chunk in zip(position, chunks, strict=True):
             chunk_size = chunk[pos]
             offset = sum(chunk[:pos])
             slices.append(slice(offset, offset + chunk_size))

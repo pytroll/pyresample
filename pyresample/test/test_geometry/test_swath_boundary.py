@@ -138,7 +138,7 @@ def _check_bbox_structure_and_values(bbox_lons, bbox_lats):
     assert not any(np.isnan(side_lat).any() for side_lat in bbox_lats)
     assert len(bbox_lons) == len(bbox_lats)
     assert len(bbox_lons) == 4
-    for side_lons, side_lats in zip(bbox_lons, bbox_lats):
+    for side_lons, side_lats in zip(bbox_lons, bbox_lats, strict=True):
         assert isinstance(side_lons, np.ndarray)
         assert isinstance(side_lats, np.ndarray)
         assert side_lons.shape == side_lats.shape
@@ -163,7 +163,7 @@ def _is_clockwise(lons, lats):
     # https://stackoverflow.com/a/1165943/433202
     prev_point = (lons[0], lats[0])
     edge_sum = 0
-    for point in zip(lons[1:], lats[1:]):
+    for point in zip(lons[1:], lats[1:], strict=True):
         xdiff = point[0] - prev_point[0]
         ysum = point[1] + prev_point[1]
         edge_sum += xdiff * ysum

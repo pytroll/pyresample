@@ -82,7 +82,7 @@ class GetNonOverlapUnionsBaseClass():
             return None
 
         for id_, komb_pair in zip(itertools.combinations(geoms.keys(), 2),
-                                  itertools.combinations(geoms.values(), 2)):
+                                  itertools.combinations(geoms.values(), 2), strict=True):
             if self._overlaps(komb_pair[0], komb_pair[1]):
                 return id_, komb_pair[0].union(komb_pair[1])
 
