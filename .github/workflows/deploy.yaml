@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Create sdist
         shell: bash -l {0}
@@ -55,7 +55,7 @@ jobs:
             cibw_archs: "x86_64"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: |
           git fetch --prune --unshallow
 
