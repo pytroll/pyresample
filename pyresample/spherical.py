@@ -229,7 +229,7 @@ class SCoordinate(object):
 
     def __iter__(self):
         """Get iterator over lon/lat pairs."""
-        return zip([self.lon, self.lat]).__iter__()
+        return zip([self.lon, self.lat], strict=True).__iter__()
 
     def plot(self, ax=None,
              projection_crs=None,

@@ -42,10 +42,10 @@ class TestAreaBoundary(unittest.TestCase):
         boundary = AreaBoundary.from_lonlat_sides(lon_sides, lat_sides)
 
         # Assert sides coincides
-        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
+        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides, strict=True):
             assert np.allclose(b_lon, src_lon)
 
-        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides):
+        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides, strict=True):
             assert np.allclose(b_lat, src_lat)
 
     def test_creation(self):
@@ -61,10 +61,10 @@ class TestAreaBoundary(unittest.TestCase):
         boundary = AreaBoundary(*list_sides)
 
         # Assert sides coincides
-        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides):
+        for b_lon, src_lon in zip(boundary.sides_lons, lon_sides, strict=True):
             assert np.allclose(b_lon, src_lon)
 
-        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides):
+        for b_lat, src_lat in zip(boundary.sides_lats, lat_sides, strict=True):
             assert np.allclose(b_lat, src_lat)
 
     def test_number_sides_required(self):

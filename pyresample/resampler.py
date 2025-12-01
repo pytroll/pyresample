@@ -355,7 +355,7 @@ def crop_source_area(source_geo_def, target_geo_def):
 def _enumerate_dst_area_chunks(dst_area, dst_chunks):
     """Enumerate the chunks in function of the dst_area."""
     for position, slices in _enumerate_chunk_slices(dst_chunks):
-        chunk_shape = tuple(chunk[pos] for pos, chunk in zip(position, dst_chunks))
+        chunk_shape = tuple(chunk[pos] for pos, chunk in zip(position, dst_chunks, strict=True))
         target_geo_def = dst_area[slices[-2:]]
         block_info = {"num-chunks": [len(chunk) for chunk in dst_chunks],
                       "chunk-location": position,

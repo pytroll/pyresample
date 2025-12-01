@@ -348,7 +348,8 @@ class BaseDefinition:
         sides_dim1, sides_dim2 = zip(*[(top_dim1.squeeze(), top_dim2.squeeze()),
                                        (right_dim1.squeeze(), right_dim2.squeeze()),
                                        (bottom_dim1.squeeze(), bottom_dim2.squeeze()),
-                                       (left_dim1.squeeze(), left_dim2.squeeze())])
+                                       (left_dim1.squeeze(), left_dim2.squeeze())],
+                                     strict=True)
         if hasattr(sides_dim1[0], 'compute') and da is not None:
             sides_dim1, sides_dim2 = da.compute(sides_dim1, sides_dim2)
         return self._filter_sides_nans(sides_dim1, sides_dim2)
@@ -361,7 +362,7 @@ class BaseDefinition:
         """Remove nan and inf values present in each side."""
         new_dim1_sides = []
         new_dim2_sides = []
-        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides):
+        for dim1_side, dim2_side in zip(dim1_sides, dim2_sides, strict=True):
             # FIXME: ~(~np.isfinite(dim1_side) | ~np.isfinite(dim1_side))
             is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
             if not is_valid_mask.any():

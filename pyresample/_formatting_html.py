@@ -104,7 +104,7 @@ def plot_area_def(area: Union['geom.AreaDefinition', 'geom.SwathDefinition'], # 
         crs = cartopy.crs.Mercator()
         fig, ax = plt.subplots(subplot_kw=dict(projection=crs))
 
-        poly = Polygon(list(zip(lx[::-1], ly[::-1])))  # make lat/lon counterclockwise for shapely
+        poly = Polygon(list(zip(lx[::-1], ly[::-1], strict=True)))  # make lat/lon counterclockwise for shapely
         ax.add_geometries([poly], crs=cartopy.crs.CRS(area.crs), facecolor="none", edgecolor="red")
         bounds = poly.buffer(5).bounds
         ax.set_extent([bounds[0], bounds[2], bounds[1], bounds[3]], crs=cartopy.crs.CRS(area.crs))
