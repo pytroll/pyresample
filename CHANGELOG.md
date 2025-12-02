@@ -1,3 +1,28 @@
+## Version 1.35.0 (2025/12/01)
+
+### Issues Closed
+
+* [Issue 684](https://github.com/pytroll/pyresample/issues/684) - areas with non-matching descriptions compare equal
+* [Issue 666](https://github.com/pytroll/pyresample/issues/666) - data_reduce doesn't work for VIIRS L1B data
+* [Issue 664](https://github.com/pytroll/pyresample/issues/664) - How we define the "same" AreaDefinition?
+
+In this release 3 issues were closed.
+
+### Pull Requests Merged
+
+#### Bugs fixed
+
+* [PR 677](https://github.com/pytroll/pyresample/pull/677) - Fix boundaries losing precision for accurate polygon calculations
+* [PR 675](https://github.com/pytroll/pyresample/pull/675) - Fix BucketResampler using area's proj_dict instead crs
+* [PR 674](https://github.com/pytroll/pyresample/pull/674) - Revert change of map_blocks name= kwarg in favor of token=
+
+#### Features added
+
+* [PR 676](https://github.com/pytroll/pyresample/pull/676) - Enable free-threading in cython extensions
+
+In this release 4 pull requests were closed.
+
+
 ## Version 1.34.2 (2025/05/29)
 
 ### Pull Requests Merged
