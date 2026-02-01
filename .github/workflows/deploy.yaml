@@ -60,7 +60,7 @@ jobs:
           git fetch --prune --unshallow
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.0
+        uses: pypa/cibuildwheel@v3.3.1
         env:
           CIBW_SKIP: "cp39-* cp310-* *i686 *-musllinux*"
           CIBW_ENABLE: cpython-freethreading
