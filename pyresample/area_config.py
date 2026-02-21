@@ -739,7 +739,7 @@ def _convert_coordinate_for_metered_units(var, units: str, src_crs: CRS, dst_crs
     return transformer.transform(*var)
 
 
-def _round_shape(shape, radius=None, resolution=None):
+def _round_shape(shape, radius=None, resolution=None, units="meters"):
     """Make sure shape is an integer.
 
     Rounds down if shape is less than .01 above nearest whole number to
@@ -765,8 +765,8 @@ def _round_shape(shape, radius=None, resolution=None):
         if radius is not None and resolution is not None:
             new_resolution = (2 * radius[0] / width, 2 * radius[1] / height)
             logger.warning('shape found from radius and resolution does not contain only '
-                            'integers: {0}\nRounding shape to {1} and resolution from {2} meters to '
-                            '{3} meters'.format(shape, (height, width), resolution, new_resolution))
+                            'integers: {0}\nRounding shape to {1} and resolution from {2} {3} to '
+                            '{4} {3}'.format(shape, (height, width), resolution, units, new_resolution))
         else:
             logger.warning('shape provided does not contain only integers: {0}\n'
                             'Rounding shape to {1}'.format(shape, (height, width)))
@@ -829,7 +829,7 @@ def _extrapolate_information(area_extent, shape, center, radius, resolution, upp
     if radius is not None and resolution is not None:
         # Function 2-A
         new_shape = _round_shape((2 * radius[1] / resolution[1], 2 * radius[0] / resolution[0]), radius=radius,
-                                 resolution=resolution)
+                                 resolution=resolution, units=units)
         shape = _validate_variable(shape, new_shape, 'shape', ['radius', 'resolution'])
     elif resolution is not None and shape is not None:
         # Function 2-B
