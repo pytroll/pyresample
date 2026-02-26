@@ -33,6 +33,7 @@ import xarray as xr
 from pyresample import geometry
 from pyresample.geometry import IncompatibleAreas, combine_area_extents_vertical, concatenate_area_defs
 from pyresample.test.utils import catch_warnings
+from pyresample.utils.proj4 import ignore_pyproj_proj_warnings
 
 
 class TestBaseDefinition:
@@ -453,10 +454,10 @@ class TestDynamicAreaDefinition:
             "exclude_proj_components"
         ),
         [
-            (None, (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+pm=180",)),
-            ("modify_extents", (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+pm=180",)),
-            ("modify_crs", (22, 60), (164.5 - 180.0, 24.5, 194.5 - 180.0, 35.5), ("+pm=180",), tuple()),
-            ("global_extents", (22, 720), (-180.0, 24.5, 180.0, 35.5), tuple(), ("+pm=180",)),
+            (None, (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+lon_wrap=180", "+pm=180",)),
+            ("modify_extents", (22, 60), (164.5, 24.5, 194.5, 35.5), tuple(), ("+lon_wrap=180", "+pm=180")),
+            ("modify_crs", (22, 60), (164.5, 24.5, 194.5, 35.5), ("+lon_wrap=180",), ("+pm=180",)),
+            ("global_extents", (22, 720), (-180.0, 24.5, 180.0, 35.5), tuple(), ("+lon_wrap=180", "+pm=180")),
         ],
     )
     @pytest.mark.parametrize("use_dask", [False, True])
@@ -471,7 +472,8 @@ class TestDynamicAreaDefinition:
         dyn_area = geometry.DynamicAreaDefinition('test_area', '', {'proj': 'longlat'})
         lons, lats = _get_fake_antimeridian_lonlats(use_dask)
         area = dyn_area.freeze(lonslats=(lons, lats), resolution=0.5, antimeridian_mode=antimeridian_mode)
-        proj_str = area.crs.to_proj4()
+        with ignore_pyproj_proj_warnings():
+            proj_str = area.crs.to_proj4()
 
         assert area.shape == expected_shape
         np.testing.assert_allclose(area.area_extent, expected_extents)

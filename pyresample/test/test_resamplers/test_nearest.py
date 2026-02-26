@@ -124,18 +124,42 @@ class TestNearestNeighborResampler:
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
-    def test_nearest_swath_2d_to_area_1n_pm180(self, swath_def_2d_xarray_dask_antimeridian, data_2d_float32_xarray_dask,
-                                               area_def_lonlat_pm180_target):
+    @pytest.mark.parametrize("dst_area", [lf("area_def_lonlat_pm180_target"), lf("area_def_lonlat_lonwrap180_target")])
+    def test_nearest_swath_2d_to_area_1n_pm180(
+            self,
+            swath_def_2d_xarray_dask_antimeridian,
+            data_2d_float32_xarray_dask,
+            dst_area,
+    ):
         """Test 2D swath definition to 2D area definition; 1 neighbor; output prime meridian at 180 degrees."""
-        resampler = KDTreeNearestXarrayResampler(
-            swath_def_2d_xarray_dask_antimeridian, area_def_lonlat_pm180_target)
+        resampler = KDTreeNearestXarrayResampler(swath_def_2d_xarray_dask_antimeridian, dst_area)
         res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
         assert isinstance(res, xr.DataArray)
         assert isinstance(res.data, da.Array)
-        _check_common_metadata(res, isinstance(area_def_lonlat_pm180_target, AreaDefinition))
+        _check_common_metadata(res, isinstance(dst_area, AreaDefinition))
         res = res.values
         cross_sum = float(np.nansum(res))
         expected = 115591.0
+        assert cross_sum == expected
+        assert res.shape == resampler.target_geo_def.shape
+
+    @pytest.mark.parametrize("src_area", [lf("area_def_lonlat_pm180"), lf("area_def_lonlat_lonwrap180")])
+    @pytest.mark.parametrize("dst_area", [lf("area_def_lonlat_pm180_target"), lf("area_def_lonlat_lonwrap180_target")])
+    def test_nearest_area_2d_to_area_1n_pm180(
+            self,
+            src_area,
+            data_2d_float32_xarray_dask,
+            dst_area,
+    ):
+        """Test 2D swath definition to 2D area definition; 1 neighbor; over the antimeridian."""
+        resampler = KDTreeNearestXarrayResampler(src_area, dst_area)
+        res = resampler.resample(data_2d_float32_xarray_dask, radius_of_influence=50000)
+        assert isinstance(res, xr.DataArray)
+        assert isinstance(res.data, da.Array)
+        _check_common_metadata(res, isinstance(dst_area, AreaDefinition))
+        res = res.values
+        cross_sum = float(np.nansum(res))
+        expected = 78499.0
         assert cross_sum == expected
         assert res.shape == resampler.target_geo_def.shape
 
