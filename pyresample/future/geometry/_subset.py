@@ -57,6 +57,11 @@ def get_area_slices(
         np.rad2deg(intersection.lon), np.rad2deg(intersection.lat))
     x_slice = slice(np.ma.min(x), np.ma.max(x) + 1)
     y_slice = slice(np.ma.min(y), np.ma.max(y) + 1)
+    if src_area.is_geostationary:
+        coverage_slices = _get_covered_source_slices(src_area, area_to_cover)
+        if coverage_slices is not None:
+            x_slice = _merge_slices(x_slice, coverage_slices[0])
+            y_slice = _merge_slices(y_slice, coverage_slices[1])
     x_slice = _ensure_integer_slice(x_slice)
     y_slice = _ensure_integer_slice(y_slice)
     if shape_divisible_by is not None:
@@ -103,6 +108,57 @@ def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
         return area_to_cover.boundary(frequency=boundary_shape, force_clockwise=True)
     except ValueError as err:
         raise NotImplementedError("Can't determine boundary of area to cover") from err
+
+
+def _get_covered_source_slices(src_area: AreaDefinition, area_to_cover: AreaDefinition) -> tuple[slice, slice] | None:
+    max_points_per_chunk = 600_000
+    row_block_size = max(1, max_points_per_chunk // area_to_cover.width)
+    min_col = None
+    max_col = None
+    min_row = None
+    max_row = None
+    try:
+        for row_start in range(0, area_to_cover.height, row_block_size):
+            row_stop = min(area_to_cover.height, row_start + row_block_size)
+            destination_lons, destination_lats = area_to_cover.get_lonlats(
+                data_slice=(slice(row_start, row_stop), slice(None)),
+                dtype=np.float32,
+            )
+            source_cols, source_rows = src_area.get_array_indices_from_lonlat(
+                destination_lons,
+                destination_lats,
+            )
+            valid = ~np.ma.getmaskarray(source_cols) & ~np.ma.getmaskarray(source_rows)
+            if not np.any(valid):
+                continue
+            source_cols = np.ma.array(source_cols, mask=~valid, copy=False)
+            source_rows = np.ma.array(source_rows, mask=~valid, copy=False)
+            chunk_min_col = int(np.ma.min(source_cols))
+            chunk_max_col = int(np.ma.max(source_cols))
+            chunk_min_row = int(np.ma.min(source_rows))
+            chunk_max_row = int(np.ma.max(source_rows))
+            min_col = chunk_min_col if min_col is None else min(min_col, chunk_min_col)
+            max_col = chunk_max_col if max_col is None else max(max_col, chunk_max_col)
+            min_row = chunk_min_row if min_row is None else min(min_row, chunk_min_row)
+            max_row = chunk_max_row if max_row is None else max(max_row, chunk_max_row)
+    except (RuntimeError, TypeError, ValueError):
+        return None
+    if min_col is None or min_row is None or max_col is None or max_row is None:
+        return None
+    col_start = max(0, min_col)
+    col_stop = min(src_area.width, max_col + 1)
+    row_start = max(0, min_row)
+    row_stop = min(src_area.height, max_row + 1)
+    if col_start >= col_stop or row_start >= row_stop:
+        return None
+    return slice(col_start, col_stop), slice(row_start, row_stop)
+
+
+def _merge_slices(base_slice: slice, other_slice: slice) -> slice:
+    return slice(
+        min(base_slice.start, other_slice.start),
+        max(base_slice.stop, other_slice.stop),
+    )
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
