@@ -28,10 +28,9 @@ import warnings
 
 import dask.array as da
 import numpy as np
-import zarr
 from dask import delayed
 from pyproj import Proj
-from xarray import DataArray, Dataset
+from xarray import DataArray, Dataset, open_zarr
 
 from pyresample import CHUNK_SIZE
 from pyresample.bilinear._base import (
@@ -210,11 +209,11 @@ class XArrayBilinearResampler(BilinearBase):
     def load_resampling_info(self, filename):
         """Load bilinear resampling look-up tables and initialize the resampler."""
         try:
-            fid = zarr.open(filename, mode='r')
+            fid = open_zarr(filename, chunks="auto", decode_cf=True)
             for val in BIL_COORDINATES:
-                cache = da.array(fid[val])
+                cache = fid[val].data
                 setattr(self, val, cache)
-        except ValueError as err:
+        except (FileNotFoundError, KeyError, OSError, ValueError) as err:
             raise IOError("Invalid information loaded from resampling cache") from err
 
 
