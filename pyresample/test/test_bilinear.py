@@ -1206,6 +1206,7 @@ class TestXarrayBilinear(unittest.TestCase):
             new_resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                                     self.radius)
             new_resampler.load_resampling_info(filename)
+            self.assertEqual(new_resampler.mask_slices.dtype, bool)
 
             for attr in CACHE_INDICES:
                 orig = getattr(resampler, attr)
