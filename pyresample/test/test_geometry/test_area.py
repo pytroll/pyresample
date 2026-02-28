@@ -1556,8 +1556,8 @@ class TestAreaDefGetAreaSlices:
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
         assert isinstance(slice_x.start, int)
         assert isinstance(slice_y.start, int)
-        assert slice(46, 3667, None) == slice_x
-        assert slice(56, 3659, None) == slice_y
+        assert slice(45, 3668, None) == slice_x
+        assert slice(51, 3664, None) == slice_y
 
     def test_get_area_slices_geos_stereographic(self, geos_src_area, create_test_area):
         """Test slicing with a geos area and polar stereographic area."""
@@ -1572,6 +1572,98 @@ class TestAreaDefGetAreaSlices:
         assert isinstance(slice_y.start, int)
         assert slice_x == slice(1610, 2343)
         assert slice_y == slice(158, 515, None)
+
+    def test_get_area_slices_geos_cross_projection_contains_destination_coverage(self):
+        """Test geos cross-projection slicing includes all destination-covered source pixels."""
+        from pyresample.geometry import AreaDefinition
+        source_area = AreaDefinition(
+            "src",
+            "src",
+            "src",
+            {
+                "proj": "geos",
+                "a": 6378169.0,
+                "b": 6356583.8,
+                "h": 35785831.0,
+                "lon_0": 0.0,
+                "units": "m",
+            },
+            3712,
+            1392,
+            (5568748.0, 5568748.0, -5568748.0, 1392187.0),
+        )
+        area_to_cover = AreaDefinition(
+            "dst",
+            "dst",
+            "dst",
+            {"proj": "latlong", "datum": "WGS84"},
+            768,
+            768,
+            (7.456086060029671, 43.98125198600542, 33.461915849571966, 59.24271064133026),
+        )
+        slice_x, slice_y = source_area.get_area_slices(area_to_cover)
+
+        destination_lons, destination_lats = area_to_cover.get_lonlats()
+        source_cols, source_rows = source_area.get_array_indices_from_lonlat(
+            destination_lons,
+            destination_lats,
+        )
+        valid = ~np.ma.getmaskarray(source_cols) & ~np.ma.getmaskarray(source_rows)
+        valid_cols = np.asarray(source_cols[valid], dtype=np.int64)
+        valid_rows = np.asarray(source_rows[valid], dtype=np.int64)
+        assert valid_cols.size > 0
+        assert valid_rows.size > 0
+        assert slice_x.start <= valid_cols.min()
+        assert slice_y.start <= valid_rows.min()
+        assert slice_x.stop > valid_cols.max()
+        assert slice_y.stop > valid_rows.max()
+
+    def test_get_area_slices_geos_cross_projection_shape_divisible(self):
+        """Test geos cross-projection shape-divisible slicing keeps coverage."""
+        from pyresample.geometry import AreaDefinition
+        source_area = AreaDefinition(
+            "src",
+            "src",
+            "src",
+            {
+                "proj": "geos",
+                "a": 6378169.0,
+                "b": 6356583.8,
+                "h": 35785831.0,
+                "lon_0": 0.0,
+                "units": "m",
+            },
+            3712,
+            1392,
+            (5568748.0, 5568748.0, -5568748.0, 1392187.0),
+        )
+        area_to_cover = AreaDefinition(
+            "dst",
+            "dst",
+            "dst",
+            {"proj": "latlong", "datum": "WGS84"},
+            768,
+            768,
+            (7.456086060029671, 43.98125198600542, 33.461915849571966, 59.24271064133026),
+        )
+        slice_x, slice_y = source_area.get_area_slices(area_to_cover, shape_divisible_by=2)
+
+        destination_lons, destination_lats = area_to_cover.get_lonlats()
+        source_cols, source_rows = source_area.get_array_indices_from_lonlat(
+            destination_lons,
+            destination_lats,
+        )
+        valid = ~np.ma.getmaskarray(source_cols) & ~np.ma.getmaskarray(source_rows)
+        valid_cols = np.asarray(source_cols[valid], dtype=np.int64)
+        valid_rows = np.asarray(source_rows[valid], dtype=np.int64)
+        assert valid_cols.size > 0
+        assert valid_rows.size > 0
+        assert slice_x.start <= valid_cols.min()
+        assert slice_y.start <= valid_rows.min()
+        assert slice_x.stop > valid_cols.max()
+        assert slice_y.stop > valid_rows.max()
+        assert (slice_x.stop - slice_x.start) % 2 == 0
+        assert (slice_y.stop - slice_y.start) % 2 == 0
 
     def test_get_area_slices_geos_flipped_xy(self, geos_src_area, create_test_area):
         """Test slicing with two geos areas but one has flipped x/y dimensions."""
@@ -1606,8 +1698,8 @@ class TestAreaDefGetAreaSlices:
             slice_x, slice_y = area_def.get_area_slices(area_to_cover)
             assert isinstance(slice_x.start, int)
             assert isinstance(slice_y.start, int)
-            assert slice_x == slice(46, 3667, None)
-            assert slice_y == slice(56, 3659, None)
+            assert slice_x == slice(45, 3668, None)
+            assert slice_y == slice(51, 3664, None)
 
     def test_get_area_slices_nongeos(self, create_test_area):
         """Check area slicing for non-geos projections."""
