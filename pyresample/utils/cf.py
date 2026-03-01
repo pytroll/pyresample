@@ -473,6 +473,6 @@ def _open_nc_file(nc_file: str | Path | xr.Dataset) -> xr.Dataset:
     if xr is None:
         raise ImportError("Xarray (pip install xarray) is required to load geometries from a NetCDF file.")
     if isinstance(nc_file, xr.Dataset):
-        return nc_file
+        return xr.decode_cf(nc_file)
 
     return xr.open_dataset(nc_file)

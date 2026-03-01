@@ -142,6 +142,35 @@ def _prepare_cf_llnocrs():
     return ds
 
 
+def _prepare_cf_projected_packed_xy():
+    import xarray as xr
+
+    axis_values = np.array([-100, 0, 100], dtype=np.int16)
+    ds = xr.Dataset({'temp': (('y', 'x'), np.ma.masked_all((3, 3)), {'grid_mapping': 'crs'})},
+                    coords={'x': ('x', axis_values),
+                            'y': ('y', axis_values[::-1])})
+    ds['x'].attrs['standard_name'] = 'projection_x_coordinate'
+    ds['x'].attrs['units'] = 'm'
+    ds['x'].attrs['scale_factor'] = 10.0
+    ds['x'].attrs['add_offset'] = 1000.0
+    ds['y'].attrs['standard_name'] = 'projection_y_coordinate'
+    ds['y'].attrs['units'] = 'm'
+    ds['y'].attrs['scale_factor'] = 10.0
+    ds['y'].attrs['add_offset'] = 1000.0
+
+    ds['crs'] = 0
+    ds['crs'].attrs['grid_mapping_name'] = "stereographic"
+    ds['crs'].attrs['false_easting'] = 0.
+    ds['crs'].attrs['false_northing'] = 0.
+    ds['crs'].attrs['semi_major_axis'] = 6378137.
+    ds['crs'].attrs['inverse_flattening'] = 298.257223563
+    ds['crs'].attrs['latitude_of_projection_origin'] = 90.
+    ds['crs'].attrs['straight_vertical_longitude_from_pole'] = 0.
+    ds['crs'].attrs['scale_factor_at_projection_origin'] = 1.
+
+    return ds
+
+
 class TestLoadCFAreaPublic:
     """Test public API load_cf_area() for loading an AreaDefinition from netCDF/CF files."""
 
@@ -244,6 +273,23 @@ class TestLoadCFAreaPublic:
         _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
         assert_future_geometry(adef, future_geometries)
 
+    def test_load_cf_dataset_input_decodes_cf_coordinates(self, tmp_path):
+        import xarray as xr
+
+        cf_file = _prepare_cf_projected_packed_xy()
+        file_path = tmp_path / "packed_xy.nc"
+        cf_file.to_netcdf(file_path)
+
+        expected_area, expected_info = load_cf_area(file_path, variable="temp")
+
+        with xr.open_dataset(file_path, decode_cf=False) as raw_ds:
+            area_from_dataset, info_from_dataset = load_cf_area(raw_ds, variable="temp")
+
+        np.testing.assert_allclose(area_from_dataset.area_extent, expected_area.area_extent)
+        assert info_from_dataset['x']['first'] == expected_info['x']['first']
+        assert info_from_dataset['x']['last'] == expected_info['x']['last']
+        assert info_from_dataset['y']['first'] == expected_info['y']['first']
+        assert info_from_dataset['y']['last'] == expected_info['y']['last']
 
 def _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat):
     assert adef.shape == (19, 37)
