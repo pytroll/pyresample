@@ -66,22 +66,32 @@ def query_no_distance(target_lons, target_lats, valid_output_index,
         distance_upper_bound=radius,
         mask=mask)
 
+    if neighbours == 1:
+        # Nearest-neighbor resampling only consumes one neighbor, so avoid
+        # building and masking the full (rows, cols, neighbours) array shape.
+        index_array = np.asarray(index_array, dtype=np.int64)
+        index_array[index_array >= kdtree.n] = -1
+        out = np.full(voi.size, -1, dtype=np.int64)
+        out[voir] = index_array
+        return out.reshape(voi.shape + (1,))
+
     if index_array.ndim == 1:
         index_array = index_array[:, None]
 
     # KDTree query returns out-of-bounds neighbors as `len(arr)`
     # which is an invalid index, we mask those out so -1 represents
     # invalid values
+    #
     # voi is 2D (trows, tcols)
     # index_array is 2D (valid output pixels, neighbors)
     # there are as many Trues in voi as rows in index_array
-    good_pixels = index_array < kdtree.n
-    res_ia = np.empty(shape, dtype=int)
-    mask = np.zeros(shape, dtype=bool)
-    mask[voi, :] = good_pixels
-    res_ia[mask] = index_array[good_pixels]
-    res_ia[~mask] = -1
-    return res_ia
+    #
+    # Write (valid_output_pixels, neighbours) index array into an output filled with
+    # -1 and then overwrite out-of-bounds values in-place.
+    out = np.full(shape, -1, dtype=np.int64)
+    out[voi, :] = index_array
+    out[out >= kdtree.n] = -1
+    return out
 
 
 def _my_index(index_arr, vii, data_arr, vii_slices=None, ia_slices=None,
@@ -144,7 +154,12 @@ class KDTreeNearestXarrayResampler(Resampler):
             logger.warning("Could not calculate destination definition "
                            "resolution")
             dst_res = np.nan
-        radius_of_influence = np.nanmax([src_res, dst_res])
+        if np.isnan(src_res):
+            radius_of_influence = dst_res
+        elif np.isnan(dst_res):
+            radius_of_influence = src_res
+        else:
+            radius_of_influence = max(src_res, dst_res)
         if np.isnan(radius_of_influence):
             logger.warning("Could not calculate radius_of_influence, falling "
                            "back to 10000 meters. This may produce lower "
@@ -487,7 +502,9 @@ class KDTreeNearestXarrayResampler(Resampler):
                 "to dask arrays for computation and then converted back. To "
                 "avoid this warning convert your numpy array before providing "
                 "it to the resampler.", PerformanceWarning, stacklevel=3)
-            data = data.copy()
+            # Avoid copying the underlying ndarray; we only need a new wrapper
+            # object so we can replace `.data` with a dask array.
+            data = data.copy(deep=False)
             data.data = da.from_array(data.data, chunks="auto")
         return data
 
