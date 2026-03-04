@@ -167,8 +167,7 @@ def _load_cf_axis_info(nc_handle, coord_varname):
         unit = None
 
     # some units that are valid in CF are not valid to pass to proj
-    if unit.startswith('rad') or \
-       unit.startswith('deg'):
+    if isinstance(unit, str) and unit.startswith(('rad', 'deg')):
         unit = None
 
     # return in a dictionnary structure
