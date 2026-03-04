@@ -154,6 +154,27 @@ def _coord_and_crs_checks(new_data, target_area, has_bands=False):
                                 ['R', 'G', 'B'])
 
 
+def _fornav_task_keys(output_stack):
+    return {
+        key
+        for key, task in output_stack.items()
+        if isinstance(task, tuple) and task and task[0] is dask_ewa._delayed_fornav
+    }
+
+
+def _fornav_task_count(output_stack):
+    return len(_fornav_task_keys(output_stack))
+
+
+OUT_CHUNKS_2X2 = ((2, 2), (2, 2))
+LL2CR_BLOCKS_2X2 = (
+    (("ll2cr", 0, 0), "b00"),
+    (("ll2cr", 0, 1), "b01"),
+    (("ll2cr", 1, 0), "b10"),
+    (("ll2cr", 1, 1), "b11"),
+)
+
+
 def _get_num_chunks(source_swath, resampler_class, rows_per_scan=10):
     if resampler_class is DaskEWAResampler:
         # ignore column-wise chunks because DaskEWA should rechunk to use whole scans
@@ -385,3 +406,192 @@ class TestDaskEWAResampler:
 
         assert res1.name != res2.name
         assert res1.compute().shape != res2.compute().shape
+
+    def test_xarray_ewa_persist_computes(self):
+        """Ensure persisted ll2cr path builds a computable graph."""
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=(100, 50), output_shape=(200, 100),
+            input_dims=('y', 'x'), input_dtype=np.float32,
+        )
+        resampler = DaskEWAResampler(source_swath, target_area)
+        with dask.config.set(scheduler='sync'):
+            new_data = resampler.resample(
+                swath_data,
+                rows_per_scan=10,
+                persist=True,
+                chunks=(50, 50),
+                weight_delta_max=40,
+            )
+            computed = new_data.compute()
+        assert computed.shape == (200, 100)
+        assert computed.dtype == np.float32
+
+
+def test_fill_block_cache_persist_uses_single_batched_compute():
+    """Persisted ll2cr chunks should be computed in one batched call."""
+    class FakeDelayed:
+        def __init__(self, key):
+            self.key = key
+
+    class FakeLl2CrResult:
+        name = "ll2cr-test"
+
+        def to_delayed(self):
+            return [
+                [FakeDelayed("00"), FakeDelayed("01")],
+                [FakeDelayed("10"), FakeDelayed("11")],
+            ]
+
+    fake_result = FakeLl2CrResult()
+    empty = (((), np.nan, np.float64), ((), np.nan, np.float64))
+    ll2cr_by_key = {
+        "00": empty,
+        "01": np.stack([np.array([[1.0, 2.0]]), np.array([[3.0, 4.0]])]),
+        "10": np.stack([np.array([[5.0, 6.0]]), np.array([[7.0, 8.0]])]),
+        "11": np.stack([np.array([[9.0, 10.0]]), np.array([[11.0, 12.0]])]),
+    }
+
+    def _persist(*args):
+        return args
+
+    def _delayed(func):
+        def _wrap(arg):
+            return FakeDelayed(("extent", arg.key))
+        return _wrap
+
+    def _compute(*args):
+        out = []
+        for d in args:
+            _, key = d.key
+            out.append(dask_ewa._ll2cr_block_extent(ll2cr_by_key[key]))
+        return tuple(out)
+
+    with mock.patch.object(dask_ewa.dask, "persist", side_effect=_persist), \
+            mock.patch.object(dask_ewa.dask, "delayed", side_effect=_delayed), \
+            mock.patch.object(dask_ewa.dask, "compute", side_effect=_compute) as compute_mock:
+        block_cache, block_extents, block_dependencies = DaskEWAResampler._fill_block_cache_with_ll2cr_results(
+            None, fake_result, persist=True)
+
+    assert compute_mock.call_count == 1
+    assert len(block_cache) == 3
+    assert ("ll2cr-test", 0, 0) not in block_cache
+    assert len(block_extents) == 3
+    assert len(block_dependencies) == 3
+
+
+def test_generate_fornav_dask_tasks_filters_non_overlapping_pairs():
+    """Only overlapping input/output chunk pairs should produce tasks."""
+    ll2cr_block_extents = {
+        ("ll2cr", 0, 0): (0.1, 1.8, 0.1, 1.8),
+        ("ll2cr", 0, 1): (0.1, 1.8, 2.1, 3.8),
+        ("ll2cr", 1, 0): (2.1, 3.8, 0.1, 1.8),
+        ("ll2cr", 1, 1): (2.1, 3.8, 2.1, 3.8),
+    }
+    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+        OUT_CHUNKS_2X2, LL2CR_BLOCKS_2X2, "fornav-test", "input", mock.Mock(), np.nan,
+        {"weight_delta_max": 0.0}, ll2cr_block_extents=ll2cr_block_extents)
+    assert len(output_stack) == 16
+    fornav_pairs = {(key[1], key[2], key[3]) for key in _fornav_task_keys(output_stack)}
+    assert fornav_pairs == {(0, 0, 0), (1, 0, 1), (2, 1, 0), (3, 1, 1)}
+
+
+def test_generate_fornav_dask_tasks_falls_back_to_cartesian_without_extents():
+    """Without ll2cr extents the previous cartesian behavior is preserved."""
+    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+        OUT_CHUNKS_2X2, LL2CR_BLOCKS_2X2, "fornav-test", "input", mock.Mock(), np.nan,
+        {"weight_delta_max": 0.0}, ll2cr_block_extents=None)
+    assert len(output_stack) == 16
+    assert _fornav_task_count(output_stack) == 16
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected_count"),
+    [
+        ({"weight_delta_max": 0.0}, 1),
+        ({"weight_delta_max": 1.0}, 4),
+        ({"weight_delta_max": 0.0, "weight_distance_max": 1.0}, 4),
+    ],
+    ids=("no-padding", "delta-padding", "distance-padding"),
+)
+def test_generate_fornav_overlap_padding(kwargs, expected_count):
+    """Overlap padding should expand to neighboring output chunks."""
+    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+        OUT_CHUNKS_2X2,
+        ((("ll2cr", 0, 0), "b00"),),
+        "fornav-test",
+        "input",
+        mock.Mock(),
+        np.nan,
+        kwargs,
+        ll2cr_block_extents={("ll2cr", 0, 0): (1.9, 1.9, 1.9, 1.9)})
+    assert _fornav_task_count(output_stack) == expected_count
+
+
+def test_ll2cr_block_extent_returns_none_for_all_non_finite():
+    ll2cr_block = np.stack(
+        [np.full((2, 2), np.nan, dtype=np.float64), np.full((2, 2), np.nan, dtype=np.float64)],
+        axis=0,
+    )
+    assert dask_ewa._ll2cr_block_extent(ll2cr_block) is None
+
+
+def test_sum_arrays_single_returns_input_object():
+    arr = np.ones((2, 2), dtype=np.float32)
+    out = dask_ewa._sum_arrays([arr])
+    assert out is arr
+
+
+def test_average_fornav_empty_keepdims_returns_fill():
+    empty = (((2, 2), 0, np.float32), ((2, 2), 0, np.float32))
+    out = dask_ewa._average_fornav([empty], axis=(0,), keepdims=True, dtype=np.float32, fill_value=np.nan)
+    assert out.shape == (2, 2)
+    assert np.all(np.isnan(out))
+
+
+def test_persisted_ll2cr_blocks_are_reused_between_resample_calls():
+    """Persisted ll2cr blocks should not be recomputed for subsequent calls."""
+    swath_data, source_swath, target_area = get_test_data(
+        input_shape=(100, 50), output_shape=(200, 100),
+        input_dims=('y', 'x'), input_dtype=np.float32,
+    )
+
+    with mock.patch.object(dask_ewa, 'll2cr', wraps=dask_ewa.ll2cr) as ll2cr_mock, \
+            dask.config.set(scheduler='sync'):
+        resampler = DaskEWAResampler(source_swath, target_area)
+
+        out1 = resampler.resample(
+            swath_data,
+            rows_per_scan=10,
+            persist=True,
+            chunks=(50, 50),
+            weight_delta_max=40,
+        )
+        out1.compute()
+        calls_after_first = ll2cr_mock.call_count
+
+        out2 = resampler.resample(
+            swath_data,
+            rows_per_scan=10,
+            persist=True,
+            chunks=(50, 50),
+            weight_delta_max=40,
+        )
+        out2.compute()
+        calls_after_second = ll2cr_mock.call_count
+
+    assert calls_after_first > 0
+    assert calls_after_second == calls_after_first
+
+
+def test_xarray_ewa_persist_empty_returns_fill():
+    """Persisted path should return full fill when all ll2cr blocks are empty."""
+    output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
+                   '+lon_0=-55. +lat_0=25 +lat_1=25 +units=m +no_defs')
+    swath_data, source_swath, target_area = get_test_data(
+        input_shape=(100, 50), output_shape=(200, 100),
+        input_dims=('y', 'x'), input_dtype=np.float32,
+        output_proj=output_proj,
+    )
+    resampler = DaskEWAResampler(source_swath, target_area)
+    with dask.config.set(scheduler='sync'):
+        assert np.all(np.isnan(resampler.resample(swath_data, rows_per_scan=10, persist=True).compute().values))
