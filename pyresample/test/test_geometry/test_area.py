@@ -1088,7 +1088,7 @@ class TestAreaDefinition:
     def test_from_epsg(self, area_class):
         """Test the from_epsg class method."""
         sweref = area_class.from_epsg('3006', 2000)
-        assert sweref.description == 'SWEREF99 TM'
+        assert sweref.description in ['SWEREF99 TM', 'ETRS89-SWE [SWEREF 99 TM]']
         with ignore_pyproj_proj_warnings():
             assert sweref.proj_dict == {'ellps': 'GRS80', 'no_defs': None,
                                         'proj': 'utm', 'type': 'crs', 'units': 'm',
