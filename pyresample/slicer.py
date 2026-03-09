@@ -202,7 +202,7 @@ class AreaSlicer(Slicer):
         from shapely.geometry import Polygon
 
         poly_to_crop = Polygon(zip(
-            *self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10),
+            *self.area_to_crop.get_edge_bbox_in_projection_coordinates(vertices_per_side=10),
             strict=True))
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
