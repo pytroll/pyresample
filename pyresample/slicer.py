@@ -170,7 +170,7 @@ class AreaSlicer(Slicer):
         from shapely.geometry import Polygon
 
         try:
-            x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(frequency=10)
+            x, y = self.area_to_contain.get_edge_bbox_in_projection_coordinates(vertices_per_side=10)
         except AttributeError:
             x, y = self.area_to_contain.get_edge_lonlats(vertices_per_side=10)
         if self.area_to_crop.is_geostationary:
@@ -202,7 +202,7 @@ class AreaSlicer(Slicer):
         from shapely.geometry import Polygon
 
         poly_to_crop = Polygon(zip(
-            *self.area_to_crop.get_edge_bbox_in_projection_coordinates(frequency=10),
+            *self.area_to_crop.get_edge_bbox_in_projection_coordinates(vertices_per_side=10),
             strict=True))
         if not poly_to_crop.intersects(buffered_poly):
             raise IncompatibleAreas("Areas not overlapping.")
