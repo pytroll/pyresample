@@ -71,6 +71,79 @@ def _call_mapped_ll2cr(lons, lats, target_geo_def):
     return res
 
 
+def _ll2cr_block_extent(ll2cr_block):
+    """Compute row/column bounds for a single ll2cr block.
+
+    Args:
+        ll2cr_block: ll2cr output block as ``(cols, rows)`` arrays, or the
+            empty sentinel returned by ``_call_ll2cr``.
+
+    Returns:
+        ``(row_min, row_max, col_min, col_max)`` as floats, or ``None`` when
+        the block contains no valid finite coordinates.
+    """
+    # Empty ll2cr results: ((shape, fill, dtype), (shape, fill, dtype))
+    if isinstance(ll2cr_block[0], tuple):
+        return None
+
+    cols = np.asarray(ll2cr_block[0])
+    rows = np.asarray(ll2cr_block[1])
+    valid = np.isfinite(cols) & np.isfinite(rows)
+    if not np.any(valid):
+        return None
+
+    valid_rows = rows[valid]
+    valid_cols = cols[valid]
+    row_min = float(valid_rows.min())
+    row_max = float(valid_rows.max())
+    col_min = float(valid_cols.min())
+    col_max = float(valid_cols.max())
+    return row_min, row_max, col_min, col_max
+
+
+def _pad_bounds(bounds, overlap_margin):
+    """Pad ll2cr bounds by a constant overlap margin.
+
+    Args:
+        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``,
+            or ``None``.
+        overlap_margin: Non-negative overlap margin in grid cells.
+
+    Returns:
+        Padded bounds tuple, or ``None`` when input bounds is ``None``.
+    """
+    if bounds is None:
+        return None
+    row_min, row_max, col_min, col_max = bounds
+    return (
+        row_min - overlap_margin,
+        row_max + overlap_margin,
+        col_min - overlap_margin,
+        col_max + overlap_margin,
+    )
+
+
+def _chunk_intersects_bounds(bounds, y_slice, x_slice):
+    """Check whether a target chunk overlaps pre-padded ll2cr bounds.
+
+    Args:
+        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``,
+            already padded for overlap, or ``None``.
+        y_slice: Output chunk row slice.
+        x_slice: Output chunk column slice.
+
+    Returns:
+        ``True`` if the chunk intersects the bounds.
+    """
+    if bounds is None:
+        return True
+    row_min, row_max, col_min, col_max = bounds
+    return (
+        y_slice.stop > row_min and y_slice.start <= row_max and
+        x_slice.stop > col_min and x_slice.start <= col_max
+    )
+
+
 def _delayed_fornav(ll2cr_result, target_geo_def, y_slice, x_slice, data, fill_value, kwargs):
     # Adjust cols and rows for this sub-area
     subdef = target_geo_def[y_slice, x_slice]
@@ -107,6 +180,23 @@ def _chunk_callable(x_chunk, axis, keepdims, **kwargs):
     return x_chunk
 
 
+def _sum_arrays(arrays):
+    """Sum arrays with one initial copy and in-place accumulation.
+
+    Args:
+        arrays: Non-empty sequence of NumPy arrays with compatible shapes.
+
+    Returns:
+        Element-wise sum as a NumPy array.
+    """
+    if len(arrays) == 1:
+        return arrays[0]
+    total = arrays[0].copy()
+    for arr in arrays[1:]:
+        total += arr
+    return total
+
+
 def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
                     maximum_weight_mode=False):
     if computing_meta or _is_empty_chunk(x_chunk):
@@ -126,6 +216,8 @@ def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
             # split step - return "empty" chunk placeholder
             return x_chunk[0]
         return np.full(*x_chunk[0][0]), np.full(*x_chunk[0][1])
+    if len(valid_chunks) == 1:
+        return valid_chunks[0]
     weights = [x[0] for x in valid_chunks]
     accums = [x[1] for x in valid_chunks]
     if maximum_weight_mode:
@@ -135,9 +227,7 @@ def _combine_fornav(x_chunk, axis, keepdims, computing_meta=False,
         weights = np.take_along_axis(weights, max_indexes, axis=0).squeeze(axis=0)
         accums = np.take_along_axis(accums, max_indexes, axis=0).squeeze(axis=0)
         return weights, accums
-    # NOTE: We use the builtin "sum" function below because it does not copy
-    #       the numpy arrays. Using numpy.sum would do that.
-    return sum(weights), sum(accums)
+    return _sum_arrays(weights), _sum_arrays(accums)
 
 
 def _is_empty_chunk(x_chunk):
@@ -224,28 +314,38 @@ class DaskEWAResampler(BaseResampler):
             rows_per_scan = self.source_geo_def.shape[0]
         return rows_per_scan
 
-    def _fill_block_cache_with_ll2cr_results(self, ll2cr_result,
-                                             num_row_blocks,
-                                             num_col_blocks,
-                                             persist):
-        if persist:
-            ll2cr_delayeds = ll2cr_result.to_delayed()
-            ll2cr_delayeds = dask.persist(*ll2cr_delayeds.tolist())
-
+    def _fill_block_cache_with_ll2cr_results(self, ll2cr_result, persist):
+        ll2cr_delayeds = ll2cr_result.to_delayed()
+        flat_delayeds = [
+            (in_row_idx, in_col_idx, delayed_block)
+            for in_row_idx, delayed_row in enumerate(ll2cr_delayeds)
+            for in_col_idx, delayed_block in enumerate(delayed_row)
+        ]
         block_cache = {}
-        for in_row_idx in range(num_row_blocks):
-            for in_col_idx in range(num_col_blocks):
+        block_extents = None
+        block_dependencies = None
+        if persist:
+            block_extents = {}
+            block_dependencies = []
+            persisted_delayeds = dask.persist(
+                *(delayed for _, _, delayed in flat_delayeds))
+            # Compute only per-block extents on workers to avoid materializing
+            # full ll2cr blocks in the client process.
+            extent_delayeds = [dask.delayed(_ll2cr_block_extent)(d) for d in persisted_delayeds]
+            computed_extents = dask.compute(*extent_delayeds)
+            for (in_row_idx, in_col_idx, _), persisted_delayed, extent in zip(
+                    flat_delayeds, persisted_delayeds, computed_extents, strict=True):
                 key = (ll2cr_result.name, in_row_idx, in_col_idx)
-                if persist:
-                    this_delayed = ll2cr_delayeds[in_row_idx][in_col_idx]
-                    result = dask.compute(this_delayed)[0]
-                    # XXX: Is this optimization lost because the persisted keys
-                    #  in `ll2cr_delayeds` are used in future computations?
-                    if not isinstance(result[0], tuple):
-                        block_cache[key] = this_delayed.key
-                else:
-                    block_cache[key] = key
-        return block_cache
+                if extent is None:
+                    continue
+                block_cache[key] = persisted_delayed.key
+                block_extents[key] = extent
+                block_dependencies.append(persisted_delayed)
+        else:
+            for in_row_idx, in_col_idx, _ in flat_delayeds:
+                key = (ll2cr_result.name, in_row_idx, in_col_idx)
+                block_cache[key] = key
+        return block_cache, block_extents, block_dependencies
 
     def precompute(self, cache_dir=None, rows_per_scan=None, persist=False,
                    **kwargs):
@@ -271,13 +371,15 @@ class DaskEWAResampler(BaseResampler):
         # if chunk does not overlap target area then None is returned
         # otherwise a 3D array (2, y, x) of cols, rows are returned
         ll2cr_result = _call_mapped_ll2cr(lons, lats, target_geo_def)
-        block_cache = self._fill_block_cache_with_ll2cr_results(
-            ll2cr_result, lons.numblocks[0], lons.numblocks[1], persist)
+        block_cache, block_extents, block_dependencies = self._fill_block_cache_with_ll2cr_results(
+            ll2cr_result, persist)
 
         # save the dask arrays in the class instance cache
         self.cache = {
             'll2cr_result': ll2cr_result,
             'll2cr_blocks': block_cache,
+            'll2cr_block_extents': block_extents,
+            'll2cr_block_dependencies': block_dependencies,
         }
         return None
 
@@ -320,9 +422,24 @@ class DaskEWAResampler(BaseResampler):
 
     @staticmethod
     def _generate_fornav_dask_tasks(out_chunks, ll2cr_blocks, task_name,
-                                    input_name, target_geo_def, fill_value, kwargs):
+                                    input_name, target_geo_def, fill_value, kwargs,
+                                    ll2cr_block_extents=None):
         y_start = 0
         output_stack = {}
+        overlap_margin = max(
+            float(kwargs.get("weight_delta_max", 0.0)),
+            float(kwargs.get("weight_distance_max", 0.0)),
+            0.0,
+        )
+        indexed_blocks = []
+        for z_idx, ((ll2cr_name, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
+            block_bounds = None
+            if ll2cr_block_extents is not None:
+                block_bounds = _pad_bounds(
+                    ll2cr_block_extents.get((ll2cr_name, in_row_idx, in_col_idx)),
+                    overlap_margin,
+                )
+            indexed_blocks.append((z_idx, in_row_idx, in_col_idx, ll2cr_block, block_bounds))
         for out_row_idx in range(len(out_chunks[0])):
             y_end = y_start + out_chunks[0][out_row_idx]
             x_start = 0
@@ -330,12 +447,19 @@ class DaskEWAResampler(BaseResampler):
                 x_end = x_start + out_chunks[1][out_col_idx]
                 y_slice = slice(y_start, y_end)
                 x_slice = slice(x_start, x_end)
-                for z_idx, ((_, in_row_idx, in_col_idx), ll2cr_block) in enumerate(ll2cr_blocks):
+                placeholder = (
+                    ((y_end - y_start, x_end - x_start), 0, np.float32),
+                    ((y_end - y_start, x_end - x_start), 0, np.float32),
+                )
+                for z_idx, in_row_idx, in_col_idx, ll2cr_block, block_bounds in indexed_blocks:
                     key = (task_name, z_idx, out_row_idx, out_col_idx)
-                    output_stack[key] = (_delayed_fornav,
-                                         ll2cr_block,
-                                         target_geo_def, y_slice, x_slice,
-                                         (input_name, in_row_idx, in_col_idx), fill_value, kwargs)
+                    if _chunk_intersects_bounds(block_bounds, y_slice, x_slice):
+                        output_stack[key] = (_delayed_fornav,
+                                             ll2cr_block,
+                                             target_geo_def, y_slice, x_slice,
+                                             (input_name, in_row_idx, in_col_idx), fill_value, kwargs)
+                    else:
+                        output_stack[key] = placeholder
                 x_start = x_end
             y_start = y_end
         return output_stack
@@ -343,7 +467,11 @@ class DaskEWAResampler(BaseResampler):
     def _run_fornav_single(self, data, out_chunks, target_geo_def, fill_value, **kwargs):
         ll2cr_result = self.cache['ll2cr_result']
         ll2cr_blocks = self.cache['ll2cr_blocks'].items()
-        ll2cr_numblocks = ll2cr_result.shape if isinstance(ll2cr_result, np.ndarray) else ll2cr_result.numblocks
+        ll2cr_block_extents = self.cache.get('ll2cr_block_extents')
+        ll2cr_block_dependencies = self.cache.get('ll2cr_block_dependencies')
+        if not ll2cr_blocks:
+            return da.full(target_geo_def.shape, fill_value, dtype=data.dtype,
+                           chunks=out_chunks)
         fornav_task_name = f"fornav-{data.name}-{ll2cr_result.name}"
         maximum_weight_mode = kwargs.setdefault('maximum_weight_mode', False)
         weight_sum_min = kwargs.setdefault('weight_sum_min', -1.0)
@@ -353,12 +481,17 @@ class DaskEWAResampler(BaseResampler):
                                                         data.name,
                                                         target_geo_def,
                                                         fill_value,
-                                                        kwargs)
+                                                        kwargs,
+                                                        ll2cr_block_extents=ll2cr_block_extents)
 
         dsk_graph = HighLevelGraph.from_collections(fornav_task_name,
                                                     output_stack,
-                                                    dependencies=[data, ll2cr_result])
-        stack_chunks = ((1,) * (ll2cr_numblocks[0] * ll2cr_numblocks[1]),) + out_chunks
+                                                    dependencies=(
+                                                        (data, ll2cr_result)
+                                                        if ll2cr_block_dependencies is None
+                                                        else (data, *ll2cr_block_dependencies)
+                                                    ))
+        stack_chunks = ((1,) * len(ll2cr_blocks),) + out_chunks
         out_stack = da.Array(dsk_graph, fornav_task_name, stack_chunks, data.dtype)
         combine_fornav_with_kwargs = partial(
             _combine_fornav, maximum_weight_mode=maximum_weight_mode)
