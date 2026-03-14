@@ -24,10 +24,13 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
+from pykdtree.kdtree import KDTree
 from pytest_lazy_fixtures import lf
 
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.resamplers import KDTreeNearestXarrayResampler
+from pyresample.future.resamplers._transform_utils import lonlat2xyz
+from pyresample.future.resamplers.nearest import query_no_distance
 from pyresample.test.utils import assert_maximum_dask_computes, assert_warnings_contain, catch_warnings
 from pyresample.utils.errors import PerformanceWarning
 
@@ -300,3 +303,69 @@ class TestInvalidUsageNearestNeighborResampler:
                 resampler.precompute(mask=data_2d_float32_xarray_dask.notnull())
             else:
                 resampler.resample(data_2d_float32_xarray_dask)
+
+
+class TestQueryNoDistance:
+    def test_unselected_and_oob_are_minus_one(self):
+        voi = np.array([[True, False], [True, False]])
+        tlons = np.array([[0.0, 0.0], [10.0, 0.0]], dtype=np.float64)
+        tlats = np.zeros_like(tlons)
+
+        src_lons = np.array([0.0], dtype=np.float64)
+        src_lats = np.array([0.0], dtype=np.float64)
+        src_xyz = lonlat2xyz(src_lons, src_lats).astype(np.float64, copy=False)
+        kdtree = KDTree(src_xyz)
+
+        res = query_no_distance(
+            tlons,
+            tlats,
+            voi,
+            neighbours=1,
+            epsilon=0.0,
+            radius=1.0,  # meters; only exact match is within this ROI
+            kdtree=kdtree,
+        )
+
+        np.testing.assert_array_equal(res[..., 0], np.array([[0, -1], [-1, -1]]))
+
+    def test_forwards_filtered_source_mask(self):
+        voi = np.array([[True]])
+
+        src_lons = np.array([[0.0, 0.0001], [0.0002, 0.0003]], dtype=np.float64)
+        src_lats = np.zeros_like(src_lons)
+        valid_input_index = np.array([[True, True], [True, False]])
+
+        src_xyz = lonlat2xyz(src_lons, src_lats).astype(np.float64, copy=False)
+        kdtree = KDTree(src_xyz[valid_input_index.ravel()])
+
+        target_lons = np.array([[0.0]], dtype=np.float64)
+        target_lats = np.array([[0.0]], dtype=np.float64)
+
+        res_unmasked = query_no_distance(
+            target_lons,
+            target_lats,
+            voi,
+            neighbours=1,
+            epsilon=0.0,
+            radius=1000.0,
+            kdtree=kdtree,
+        )
+
+        # Mask out the nearest source point (after valid_input_index filtering).
+        source_mask = np.array([[True, False], [False, True]])
+        res_masked = query_no_distance(
+            target_lons,
+            target_lats,
+            voi,
+            mask=source_mask,
+            valid_input_index=valid_input_index,
+            neighbours=1,
+            epsilon=0.0,
+            radius=1000.0,
+            kdtree=kdtree,
+        )
+
+        assert res_unmasked.shape == (1, 1, 1)
+        assert res_masked.shape == (1, 1, 1)
+        assert res_unmasked[0, 0, 0] == 0
+        assert res_masked[0, 0, 0] == 1
