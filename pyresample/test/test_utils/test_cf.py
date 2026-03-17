@@ -273,6 +273,26 @@ class TestLoadCFAreaPublic:
         _validate_lonlat_cf_area(adef, cf_info, exp_lon, exp_lat)
         assert_future_geometry(adef, future_geometries)
 
+    def test_load_cf_axis_without_units(self):
+        cf_file = _prepare_cf_nh10km()
+        del cf_file['xc'].attrs['units']
+        del cf_file['yc'].attrs['units']
+
+        _, cf_info = load_cf_area(cf_file, variable='ice_conc')
+
+        assert cf_info['x']['unit'] is None
+        assert cf_info['y']['unit'] is None
+
+    def test_load_cf_axis_with_non_string_units(self):
+        cf_file = _prepare_cf_nh10km()
+        cf_file['xc'].attrs['units'] = 1
+        cf_file['yc'].attrs['units'] = 1
+
+        _, cf_info = load_cf_area(cf_file, variable='ice_conc')
+
+        assert cf_info['x']['unit'] is None
+        assert cf_info['y']['unit'] is None
+
     def test_load_cf_dataset_input_decodes_cf_coordinates(self, tmp_path):
         import xarray as xr
 
