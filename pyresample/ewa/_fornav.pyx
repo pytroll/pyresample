@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# distutils: language = c++
+# distutils: sources = pyresample/ewa/_fornav_templates.cpp
+# distutils: depends = pyresample/ewa/_fornav_templates.h
 
 # Copyright (c) 2016
 

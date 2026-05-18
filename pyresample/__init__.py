@@ -18,6 +18,7 @@
 """Pyresample package for geographic data resampling and related utilities."""
 
 import os
+from importlib.metadata import version as _metadata_version
 
 # isort: off
 # avoid circular imports as config is likely imported by below modules
@@ -54,10 +55,8 @@ from pyresample.plot import area_def2basemap, save_quicklook  # noqa
 LegacyAreaDefinition = AreaDefinition
 LegacySwathDefinition = SwathDefinition
 
-from .version import get_versions  # noqa
-
 __all__ = ['grid', 'image', 'kd_tree', 'utils', 'plot', 'geo_filter', 'geometry', 'CHUNK_SIZE',
            'load_area', 'create_area_def', 'get_area_def', 'parse_area_file', 'convert_def_to_yaml']
 
-__version__ = get_versions()['version']
-del get_versions
+__version__ = _metadata_version("pyresample")
+del _metadata_version
