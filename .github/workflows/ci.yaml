@@ -47,7 +47,7 @@ jobs:
         if: matrix.experimental == true
         shell: bash -l {0}
         run: |
-          python -m pip install versioneer extension-helpers setuptools-scm configobj pkgconfig;
+          python -m pip install hatchling hatch-vcs hatch-cython Cython setuptools configobj pkgconfig;
           python -m pip install \
           --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/ \
           --no-deps --pre --upgrade \
