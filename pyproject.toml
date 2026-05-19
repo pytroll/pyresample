@@ -1,10 +1,105 @@
 [build-system]
-requires = ["setuptools", "wheel", "numpy>=2.0.0,<3", "Cython>=3.1", "versioneer[toml]"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs", "hatch-cython", "Cython>=3.1", "setuptools", "numpy>=2.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyresample"
+dynamic = ["version"]
+description = "Geospatial image resampling in Python"
+readme = "README.md"
+license = "LGPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
+authors = [
+  { name = "Thomas Lavergne", email = "t.lavergne@met.no" },
+]
+requires-python = ">=3.11"
+dependencies = [
+  "pyproj>=3.0",
+  "configobj",
+  "pykdtree>=1.3.1",
+  "pyyaml",
+  "numpy>=1.25.0",
+  "shapely",
+  "donfig",
+  "platformdirs",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python",
+  "Programming Language :: Cython",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Programming Language :: Python :: Free Threading :: 1 - Unstable",
+]
+
+[project.urls]
+Homepage = "https://github.com/pytroll/pyresample"
+
+[project.optional-dependencies]
+numexpr = ["numexpr"]
+quicklook = ["matplotlib", "cartopy>=0.20.0", "pillow"]
+rasterio = ["rasterio"]
+dask = ["dask>=0.16.1"]
+cf = ["xarray"]
+gradient_search = ["shapely"]
+xarray_bilinear = ["xarray", "dask", "zarr"]
+odc-geo = ["odc-geo"]
+tests = [
+  "rasterio",
+  "dask",
+  "xarray",
+  "cartopy>=0.20.0",
+  "pillow",
+  "matplotlib",
+  "scipy",
+  "zarr",
+  "pytest-lazy-fixtures",
+  "shapely",
+  "odc-geo",
+]
+all = [
+  "pyresample[numexpr,quicklook,rasterio,dask,cf,gradient_search,xarray_bilinear,odc-geo,tests]",
+]
+
+[project.entry-points."pyresample.resamplers"]
+nearest = "pyresample.future.resamplers.nearest:KDTreeNearestXarrayResampler"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "pyresample/",
+  "docs/",
+  "LICENSE.txt",
+  "README.md",
+  "CHANGELOG.md",
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyresample"]
+
+# Required by hatch-cython's internal use of setuptools build_ext
+[tool.setuptools]
+packages = ["pyresample"]
+
+[tool.hatch.build.targets.wheel.hooks.cython]
+dependencies = ["hatch-cython"]
+
+[tool.hatch.build.targets.wheel.hooks.cython.options]
+include_numpy = true
+compile_py = false
+directives = { language_level = 3, freethreading_compatible = true }
+define_macros = [["NPY_NO_DEPRECATED_API", "NPY_1_25_API_VERSION"]]
+compile_args = [
+  { platforms = ["linux", "darwin", "freebsd"], arg = "-O3" },
+  { platforms = ["linux", "darwin", "freebsd"], arg = "-Wno-unused-function" },
+]
 
 [tool.ruff]
 line-length = 120
-exclude = ["versioneer.py", "pyresample/version.py"]
 
 [tool.ruff.lint]
 # See https://docs.astral.sh/ruff/rules/
@@ -37,13 +132,6 @@ warn_unused_ignores = true
 warn_unreachable = true
 warn_unused_configs = true
 
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "pyresample/version.py"
-versionfile_build = "pyresample/version.py"
-tag_prefix = "v"
-
 [tool.isort]
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 profile = "black"
@@ -54,4 +142,8 @@ line_length = 120
 
 [tool.coverage.run]
 relative_files = true
-omit = ["pyresample/version.py", "versioneer.py"]
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
