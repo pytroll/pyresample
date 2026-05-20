@@ -18,6 +18,7 @@
 """Test the EWA ll2cr code."""
 
 import numpy as np
+import pytest
 from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
@@ -197,12 +198,21 @@ class TestLL2CRDynamic:
 class TestLL2CRWrapper:
     """Test ll2cr high-level python wrapper."""
 
-    def test_basic1(self):
+    @pytest.mark.parametrize("input_writable", [False, True])
+    @pytest.mark.parametrize("input_c_contig", [False, True])
+    def test_basic1(self, input_writable, input_c_contig):
         from pyresample.ewa import ll2cr
         from pyresample.geometry import AreaDefinition, SwathDefinition
         from pyresample.utils import proj4_str_to_dict
         lon_arr = create_test_longitude(-95.0, -75.0, (50, 100), dtype=np.float64)
         lat_arr = create_test_latitude(18.0, 40.0, (50, 100), dtype=np.float64)
+        if not input_c_contig:
+            lon_arr = lon_arr.copy("F")
+            lat_arr = lat_arr.copy("F")
+        if not input_writable:
+            lon_arr.flags["WRITEABLE"] = False
+            lat_arr.flags["WRITEABLE"] = False
+
         swath_def = SwathDefinition(lon_arr, lat_arr)
         grid_info = static_lcc.copy()
         cw = grid_info["cell_width"]
@@ -223,6 +233,11 @@ class TestLL2CRWrapper:
         points_in_grid, lon_res, lat_res, = ll2cr(swath_def, area,
                                                   fill=np.nan, copy=False)
         assert points_in_grid == lon_arr.size, "all points should be contained in a dynamic grid"
-        assert lon_arr is lon_res
-        assert lat_arr is lat_res
+        if input_writable and input_c_contig:
+            assert lon_arr is lon_res
+            assert lat_arr is lat_res
+        else:
+            # non-writeable inputs would be copied
+            assert lon_arr is not lon_res
+            assert lat_arr is not lat_res
         assert points_in_grid == lon_arr.size, "all these test points should fall in this grid"
