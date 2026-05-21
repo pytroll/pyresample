@@ -95,7 +95,7 @@ class BaseResampler:
         """
         raise NotImplementedError
 
-    def resample(self, data, cache_dir=None, mask_area=None, force=False,**kwargs):
+    def resample(self, data, cache_dir=None, mask_area=None, force=False, **kwargs):
         """Resample `data` by calling `precompute` and `compute` methods.
 
         Only certain resampling classes may use `cache_dir` and the `mask`
