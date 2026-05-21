@@ -53,21 +53,20 @@ def ll2cr(swath_def, area_def, fill=np.nan, copy=True):
 
         ll2cr uses the pyproj library which is limited to 64-bit float
         navigation arrays in order to not do additional copying or casting
-        of data types.
+        of data types. Additionally, this function requires input arrays to
+        be C-contiguous and writable. Therefore, to write results in-place
+        into the lons/lats of the provided SwathDefinition as an optimization,
+        the longitude and latitude array inputs must be C-contiguous 64-bit
+        floating point writable arrays.
 
     """
     lons, lats = swath_def.get_lonlats()
     # ll2cr requires 64-bit floats due to pyproj limitations
-    # also need a copy of lons, lats since they are written to in-place
-    try:
-        lons = lons.astype(np.float64, copy=copy)
-        lats = lats.astype(np.float64, copy=copy)
-    except TypeError:
-        lons = lons.astype(np.float64)
-        lats = lats.astype(np.float64)
+    # also need a contiguous writable copy of lons, lats since they are written to in-place
+    lons = np.require(lons.astype(np.float64, copy=copy, order="C"), requirements=["C", "W"])
+    lats = np.require(lats.astype(np.float64, copy=copy, order="C"), requirements=["C", "W"])
 
     # Break the input area up in to the expected parameters for ll2cr
-    p = area_def.crs_wkt if hasattr(area_def, 'crs_wkt') else area_def.proj_str
     cw = area_def.pixel_size_x
     # cell height must be negative for this to work as expected
     ch = -abs(area_def.pixel_size_y)

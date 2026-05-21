@@ -17,16 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Test the EWA ll2cr code."""
 
-import logging
-import unittest
-
 import numpy as np
+import pytest
 from pyproj import CRS
 
 from pyresample.test.utils import create_test_latitude, create_test_longitude
-
-LOG = logging.getLogger(__name__)
-
 
 dynamic_wgs84 = {
     "grid_name": "test_wgs84_fit",
@@ -62,7 +57,7 @@ static_geo_whole_earth = {
 }
 
 
-class TestLL2CRStatic(unittest.TestCase):
+class TestLL2CRStatic:
     """Test ll2cr when given a complete area definition."""
 
     def test_lcc_basic1(self):
@@ -81,7 +76,7 @@ class TestLL2CRStatic(unittest.TestCase):
         h = grid_info["height"]
         points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, lon_arr.size, "all these test points should fall in this grid")
+        assert points_in_grid == lon_arr.size, "all these test points should fall in this grid"
 
     def test_geo_antimeridian(self):
         """Ensure output for anti-meridian crossing input includes all points."""
@@ -104,8 +99,7 @@ class TestLL2CRStatic(unittest.TestCase):
         h = grid_info['height']
         points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, lon_arr.size,
-                         'all these test points should fall in this grid')
+        assert points_in_grid == lon_arr.size, "all these test points should fall in this grid"
 
     def test_lcc_fail1(self):
         from pyresample.ewa import _ll2cr
@@ -123,10 +117,10 @@ class TestLL2CRStatic(unittest.TestCase):
         h = grid_info["height"]
         points_in_grid = _ll2cr.ll2cr_static(lon_arr, lat_arr, fill_in, src_crs, dst_crs,
                                              cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, 0, "none of these test points should fall in this grid")
+        assert points_in_grid == 0, "none of these test points should fall in this grid"
 
 
-class TestLL2CRDynamic(unittest.TestCase):
+class TestLL2CRDynamic:
     """Test ll2cr when given partial area definition information."""
 
     def test_latlong_basic1(self):
@@ -146,11 +140,11 @@ class TestLL2CRDynamic(unittest.TestCase):
         points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
                                                                               src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
-        self.assertIs(lon_arr, lon_res)
-        self.assertIs(lat_arr, lat_res)
-        self.assertEqual(lon_arr[0, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
-        self.assertEqual(lat_arr[-1, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
+        assert points_in_grid == lon_arr.size, "all points should be contained in a dynamic grid"
+        assert lon_arr is lon_res
+        assert lat_arr is lat_res
+        assert lon_arr[0, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
+        assert lat_arr[-1, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
 
     def test_latlong_basic2(self):
         from pyresample.ewa import _ll2cr
@@ -169,11 +163,11 @@ class TestLL2CRDynamic(unittest.TestCase):
         points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
                                                                               src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
-        self.assertIs(lon_arr, lon_res)
-        self.assertIs(lat_arr, lat_res)
-        self.assertEqual(lon_arr[0, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
-        self.assertEqual(lat_arr[-1, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
+        assert points_in_grid == lon_arr.size, "all points should be contained in a dynamic grid"
+        assert lon_arr is lon_res
+        assert lat_arr is lat_res
+        assert lon_arr[0, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
+        assert lat_arr[-1, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
 
     def test_latlong_dateline1(self):
         from pyresample.ewa import _ll2cr
@@ -192,23 +186,33 @@ class TestLL2CRDynamic(unittest.TestCase):
         points_in_grid, lon_res, lat_res, ox, oy, w, h = _ll2cr.ll2cr_dynamic(lon_arr, lat_arr, fill_in,
                                                                               src_crs, dst_crs,
                                                                               cw, ch, w, h, ox, oy)
-        self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
-        self.assertIs(lon_arr, lon_res)
-        self.assertIs(lat_arr, lat_res)
-        self.assertEqual(lon_arr[0, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
-        self.assertEqual(lat_arr[-1, 0], 0, "ll2cr returned the wrong result for a dynamic latlong grid")
-        self.assertTrue(np.all(np.diff(lon_arr[0]) >= 0), "ll2cr didn't return monotonic columns over the dateline")
+        assert points_in_grid == lon_arr.size, "all points should be contained in a dynamic grid"
+        assert lon_arr is lon_res
+        assert lat_arr is lat_res
+        assert lon_arr[0, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
+        assert lat_arr[-1, 0] == 0, "ll2cr returned the wrong result for a dynamic latlong grid"
+        np.testing.assert_equal(np.diff(lon_arr[0]) >= 0, True,
+                                "ll2cr didn't return monotonic columns over the dateline")
 
 
-class TestLL2CRWrapper(unittest.TestCase):
+class TestLL2CRWrapper:
     """Test ll2cr high-level python wrapper."""
 
-    def test_basic1(self):
+    @pytest.mark.parametrize("input_writable", [False, True])
+    @pytest.mark.parametrize("input_c_contig", [False, True])
+    def test_basic1(self, input_writable, input_c_contig):
         from pyresample.ewa import ll2cr
         from pyresample.geometry import AreaDefinition, SwathDefinition
         from pyresample.utils import proj4_str_to_dict
         lon_arr = create_test_longitude(-95.0, -75.0, (50, 100), dtype=np.float64)
         lat_arr = create_test_latitude(18.0, 40.0, (50, 100), dtype=np.float64)
+        if not input_c_contig:
+            lon_arr = lon_arr.copy("F")
+            lat_arr = lat_arr.copy("F")
+        if not input_writable:
+            lon_arr.flags["WRITEABLE"] = False
+            lat_arr.flags["WRITEABLE"] = False
+
         swath_def = SwathDefinition(lon_arr, lat_arr)
         grid_info = static_lcc.copy()
         cw = grid_info["cell_width"]
@@ -228,7 +232,12 @@ class TestLL2CRWrapper(unittest.TestCase):
                               w, h, extents)
         points_in_grid, lon_res, lat_res, = ll2cr(swath_def, area,
                                                   fill=np.nan, copy=False)
-        self.assertEqual(points_in_grid, lon_arr.size, "all points should be contained in a dynamic grid")
-        self.assertIs(lon_arr, lon_res)
-        self.assertIs(lat_arr, lat_res)
-        self.assertEqual(points_in_grid, lon_arr.size, "all these test points should fall in this grid")
+        assert points_in_grid == lon_arr.size, "all points should be contained in a dynamic grid"
+        if input_writable and input_c_contig:
+            assert lon_arr is lon_res
+            assert lat_arr is lat_res
+        else:
+            # non-writeable inputs would be copied
+            assert lon_arr is not lon_res
+            assert lat_arr is not lat_res
+        assert points_in_grid == lon_arr.size, "all these test points should fall in this grid"
