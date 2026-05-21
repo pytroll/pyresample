@@ -942,12 +942,10 @@ class SwathDefinition(CoordinateDefinition):
             self.lats[[0, int(lines / 2), -1], int(cols / 2)])
         if any(np.isnan((lon1, lon2, lat1, lat, lat2))):
             thelons = self.lons[:, int(cols / 2)]
-            mask = thelons.notnull().compute()
-            thelons = thelons.where(mask, drop=True)
-
             thelats = self.lats[:, int(cols / 2)]
-            mask = thelats.notnull().compute()
-            thelats = thelats.where(mask, drop=True)
+            mask_lons, mask_lats = da.compute(thelons.notnull(), thelats.notnull())
+            thelons = thelons.where(mask_lons, drop=True)
+            thelats = thelats.where(mask_lats, drop=True)
 
             lon1, lon2 = np.asanyarray(thelons[[0, -1]])
             lines = len(thelats)
