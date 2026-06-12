@@ -95,7 +95,7 @@ class BaseResampler:
         """
         raise NotImplementedError
 
-    def resample(self, data, cache_dir=None, mask_area=None, **kwargs):
+    def resample(self, data, cache_dir=None, mask_area=None, force=False, **kwargs):
         """Resample `data` by calling `precompute` and `compute` methods.
 
         Only certain resampling classes may use `cache_dir` and the `mask`
@@ -112,13 +112,16 @@ class BaseResampler:
             mask_area (bool): Mask geolocation data where data values are
                               invalid. This should be used when data values
                               may affect what neighbors are considered valid.
+            force (bool): Force resampling by skipping the check for source
+                          and target geometries equality. Can be useful e.g. for
+                          gapfilling data.
             kwargs: Keyword arguments to pass to both the ``precompute`` and
                 ``compute`` stages of the resampler.
 
         Returns (xarray.DataArray): Data resampled to the target area
 
         """
-        if self._geometries_are_the_same():
+        if not force and self._geometries_are_the_same():
             return data
         # default is to mask areas for SwathDefinitions
         if mask_area is None and isinstance(

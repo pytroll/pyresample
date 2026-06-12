@@ -86,8 +86,9 @@ def test_resampler(src, dst):
         (True, "dask"),  # same dask tasks are equal
         (True, "swath_def"),  # same underlying arrays are equal
     ])
-def test_base_resampler_does_nothing_when_src_and_dst_areas_are_equal(_geos_area, use_swaths, copy_dst_swath):
-    """Test that the BaseResampler does nothing when the source and target areas are the same."""
+@pytest.mark.parametrize("force", [False, True])
+def test_base_resampler_does_nothing_when_src_and_dst_areas_are_equal(_geos_area, use_swaths, copy_dst_swath, force):
+    """Test that the BaseResampler does nothing when the source and target areas are the same, unless forced."""
     src_geom = _geos_area if not use_swaths else _xarray_swath_def_from_area(_geos_area)
     dst_geom = src_geom
     if copy_dst_swath == "dask":
@@ -97,7 +98,12 @@ def test_base_resampler_does_nothing_when_src_and_dst_areas_are_equal(_geos_area
 
     resampler = BaseResampler(src_geom, dst_geom)
     some_data = xr.DataArray(da.zeros(src_geom.shape, dtype=np.float64), dims=('y', 'x'))
-    assert resampler.resample(some_data) is some_data
+
+    if not force:
+        assert resampler.resample(some_data, force=force) is some_data
+    else:
+        with pytest.raises(NotImplementedError):
+            resampler.resample(some_data, force=force)
 
 
 @pytest.mark.parametrize(
