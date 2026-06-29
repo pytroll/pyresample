@@ -175,7 +175,18 @@ class AreaSlicer(Slicer):
             x, y = self.area_to_contain.get_edge_lonlats(vertices_per_side=10)
         if self.area_to_crop.is_geostationary:
             x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
-            x_geos, y_geos = self._source_transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
+            geos_poly = Polygon(zip(x_geos, y_geos, strict=True))
+            # Densify the polygon before reprojecting it to the destination crs.
+            # Clipping a partial disk (for example rapid scan or region of interest
+            # data) to its area extent introduces straight chord edges. Those chords
+            # are not straight in the destination crs, so without intermediate
+            # vertices the reprojected polygon cuts the corner and the computed slice
+            # is too small, leaving part of the destination without data.
+            segment_length = np.max(np.abs(self.area_to_crop.area_extent)) / 100
+            geos_poly = geos_poly.segmentize(segment_length)
+            x_geos, y_geos = geos_poly.exterior.coords.xy
+            x_geos, y_geos = self._source_transformer.transform(
+                np.asarray(x_geos), np.asarray(y_geos), direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos, strict=True))
             poly = Polygon(zip(x, y, strict=True))
             poly = poly.intersection(geos_poly)
