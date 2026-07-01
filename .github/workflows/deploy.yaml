@@ -67,6 +67,7 @@ jobs:
           CIBW_TEST_COMMAND: "python -c \"import pyresample; assert 'unknown' not in pyresample.__version__, 'incorrect version found'\""
           CIBW_TEST_SKIP: "*-win_arm64"
           CIBW_BUILD_VERBOSITY: 1
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: ""
 
       - name: Upload wheel(s) as build artifacts
         uses: actions/upload-artifact@v7
