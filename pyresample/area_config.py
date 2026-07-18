@@ -501,6 +501,7 @@ def create_area_def(area_id, projection, width=None, height=None, area_extent=No
     # (hold on to EPSG code as much as possible)
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
+    projection = _add_missing_spherical_axis(projection)
 
     try:
         crs = _get_proj_data(projection)
@@ -600,6 +601,20 @@ def _get_proj_data(projection: Any) -> CRS:
     if isinstance(projection, dict) and 'EPSG' in projection:
         projection = "EPSG:{}".format(projection['EPSG'])
     return CRS.from_user_input(projection)
+
+
+def _add_missing_spherical_axis(projection: Any) -> Any:
+    """Explicitly define a sphere when only its semi-major axis is provided."""
+    if not isinstance(projection, dict) or "a" not in projection:
+        return projection
+
+    ellipsoid_parameters = {"b", "R", "ellps", "datum", "rf", "f", "es", "e"}
+    if ellipsoid_parameters.intersection(projection):
+        return projection
+
+    projection = projection.copy()
+    projection["b"] = projection["a"]
+    return projection
 
 
 def _get_proj_units(crs):

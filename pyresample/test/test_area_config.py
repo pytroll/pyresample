@@ -312,3 +312,38 @@ def test_unused_params_warn():
     units: m"""
     with pytest.warns(UserWarning, match=r"Unused/unexpected area definition parameter.*revolution"):
         load_area_from_string(yaml_str)
+
+
+def test_projection_with_only_semi_major_axis_gets_explicit_spherical_axis():
+    """Test that an incomplete spherical projection gets an explicit semi-minor axis."""
+    from pyresample.area_config import _add_missing_spherical_axis
+
+    projection = {"proj": "laea", "a": 6371228.0}
+
+    normalized_projection = _add_missing_spherical_axis(projection)
+
+    assert normalized_projection == {"proj": "laea", "a": 6371228.0, "b": 6371228.0}
+    assert projection == {"proj": "laea", "a": 6371228.0}
+
+
+def test_create_area_def_passes_explicit_spherical_axis_to_geometry():
+    """Test that area creation passes the completed projection to geometry construction."""
+    from unittest import mock
+
+    from pyresample.area_config import create_area_def
+
+    projection = {"proj": "laea", "a": 6371228.0}
+    with mock.patch("pyresample.area_config._make_area") as make_area:
+        create_area_def("test", projection)
+
+    assert make_area.call_args.args[3] == {"proj": "laea", "a": 6371228.0, "b": 6371228.0}
+
+
+@pytest.mark.parametrize("ellipsoid_parameter", ["b", "R", "ellps", "datum", "rf", "f", "es", "e"])
+def test_projection_with_complete_ellipsoid_is_unchanged(ellipsoid_parameter):
+    """Test that existing ellipsoid definitions are preserved."""
+    from pyresample.area_config import _add_missing_spherical_axis
+
+    projection = {"proj": "laea", "a": 6371228.0, ellipsoid_parameter: "value"}
+
+    assert _add_missing_spherical_axis(projection) is projection
