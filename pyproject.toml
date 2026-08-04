@@ -12,7 +12,7 @@ license-files = ["LICENSE.txt"]
 authors = [
   { name = "Thomas Lavergne", email = "t.lavergne@met.no" },
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "pyproj>=3.0",
   "configobj",
@@ -117,7 +117,7 @@ convention = "google"
 max-complexity = 10
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 # See https://github.com/python/mypy/issues/12286 for automatic multi-platform support
 platform = "linux"
 # platform = win32
