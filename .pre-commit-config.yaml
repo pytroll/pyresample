@@ -28,7 +28,6 @@ repos:
         - type_extensions
         - types-setuptools
         # Typed libraries
-        - numpy
         - pytest
       args: [ --warn-unused-configs ]
 - repo: https://github.com/pycqa/isort
