@@ -3144,3 +3144,31 @@ def enclose_areas(*areas, area_id="joint-area"):
 
 def _numpy_values_to_native(values):
     return [n.item() if isinstance(n, np.number) else n for n in values]
+
+
+class GCPDefinition(SwathDefinition):
+    """Swath definition with added support for GCPs.
+
+    GCPs should contain longitudes and latitudes.
+    """
+
+    def __init__(self, lons, lats, gcps):
+        """Instantiate the GCPDefinition.
+
+        Arguments:
+            lons: longitudes
+            lats: latitudes
+            gcps: Array of ground control points
+        """
+        super().__init__(lons, lats)
+        self.gcps = gcps
+
+    def get_coarse_bbox_lonlats(self):
+        """Get a coarse bounding box from the gcps.
+
+        Assumes gcps are a 2d array.
+        """
+        return np.hstack((self.gcps[0, :-1],
+                          self.gcps[:-1, -1],
+                          self.gcps[-1, -1:0:-1],
+                          self.gcps[-1:0:-1, 0]))
