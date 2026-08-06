@@ -68,6 +68,8 @@ from pyproj.exceptions import CRSError
 
 logger = getLogger(__name__)
 
+DEFAULT_AREA_SLICE_SAMPLE_STEPS = 21
+
 
 class DimensionError(ValueError):
     """Wrap ValueError."""
@@ -619,7 +621,13 @@ class BaseDefinition:
         inter_area = get_polygon_area(self.intersection(other))
         return inter_area / other_area
 
-    def get_area_slices(self, area_to_cover):
+    def get_area_slices(
+            self,
+            area_to_cover,
+            shape_divisible_by=None,
+            sample_steps=DEFAULT_AREA_SLICE_SAMPLE_STEPS,
+            sample_grid=False,
+    ):
         """Compute the slice to read based on an `area_to_cover`."""
         raise NotImplementedError
 
@@ -2651,10 +2659,32 @@ class AreaDefinition(_ProjectionDefinition):
                       "instead.", DeprecationWarning, stacklevel=2)
         return proj4_dict_to_str(self.proj_dict)
 
-    def get_area_slices(self, area_to_cover, shape_divisible_by=None):
-        """Compute the slice to read based on an `area_to_cover`."""
+    def get_area_slices(
+            self,
+            area_to_cover,
+            shape_divisible_by=None,
+            sample_steps=DEFAULT_AREA_SLICE_SAMPLE_STEPS,
+            sample_grid=False,
+    ):
+        """Compute the slice to read based on an `area_to_cover`.
+
+        Args:
+            area_to_cover: Destination area to crop around.
+            shape_divisible_by: Optional factor to make the resulting shape divisible by.
+            sample_steps: Number of edge/grid samples used for geostationary cross-projection coverage checks.
+                Use ``None`` or ``<= 0`` for ``ALL`` mode: all edge points when ``sample_grid=False``
+                and all destination pixels when ``sample_grid=True``.
+            sample_grid: If ``True``, sample an interior grid with ``sample_steps`` density.
+                If ``False``, sample edge points only.
+        """
         from .future.geometry._subset import get_area_slices
-        return get_area_slices(self, area_to_cover, shape_divisible_by)
+        return get_area_slices(
+            self,
+            area_to_cover,
+            shape_divisible_by,
+            sample_steps,
+            sample_grid,
+        )
 
     def crop_around(self, other_area):
         """Crop this area around `other_area`."""
