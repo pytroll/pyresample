@@ -65,6 +65,13 @@ BIL_COORDINATES = {'bilinear_s': ('x1', ),
 class XArrayBilinearResampler(BilinearBase):
     """Bilinear interpolation using XArray."""
 
+    def __init__(self, source_geo_def, target_geo_def, radius_of_influence,
+                 neighbours=32, epsilon=0, reduce_data=True, limit_output=True):
+        """Initialize xarray bilinear resampler."""
+        super().__init__(source_geo_def, target_geo_def, radius_of_influence,
+                         neighbours=neighbours, epsilon=epsilon, reduce_data=reduce_data)
+        self._limit_output = limit_output
+
     def resample(self, data, fill_value=None, nprocs=1):
         """Resample the given data."""
         del nprocs
@@ -102,7 +109,7 @@ class XArrayBilinearResampler(BilinearBase):
             find_indices_outside_min_and_max(res, data_min, data_max),
             fill_value, res)
 
-        return da.where(np.isnan(res), fill_value, res)
+        return da.where(da.isnan(res), fill_value, res)
 
     def _reshape_to_target_area(self, res, ndim):
         if ndim == 3:
@@ -127,7 +134,10 @@ class XArrayBilinearResampler(BilinearBase):
         return res
 
     def _finalize_output_data(self, data, res, fill_value):
-        res = self._limit_output_values_to_input(data, res, fill_value)
+        if self._limit_output:
+            res = self._limit_output_values_to_input(data, res, fill_value)
+        else:
+            res = da.where(da.isnan(res), fill_value, res)
         res = self._reshape_to_target_area(res, data.ndim)
 
         self._add_missing_coordinates(data)
