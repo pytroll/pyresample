@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2025 Pyresample developers
+# Copyright (C) 2010-2026 Pyresample developers
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Lesser General Public License as published by the Free
@@ -362,6 +362,7 @@ class BaseDefinition:
         """Remove nan and inf values present in each side."""
         new_dim1_sides = []
         new_dim2_sides = []
+
         for dim1_side, dim2_side in zip(dim1_sides, dim2_sides, strict=True):
             # FIXME: ~(~np.isfinite(dim1_side) | ~np.isfinite(dim1_side))
             is_valid_mask = ~(np.isnan(dim1_side) | np.isnan(dim2_side))
@@ -850,6 +851,8 @@ class SwathDefinition(CoordinateDefinition):
             raise ValueError('Only 1 and 2 dimensional swaths are allowed')
         self.crs = crs or CRS(proj="longlat", ellps="WGS84")
 
+        self.bbox = None
+
     def copy(self):
         """Copy the current swath."""
         return SwathDefinition(self.lons, self.lats)
@@ -908,6 +911,29 @@ class SwathDefinition(CoordinateDefinition):
         """Html representation."""
         return _formatting_html.area_repr(self)
 
+    def _compute_omerc_parameters_from_metadata(self, ellipsoid, boundingbox):
+        """Compute the oblique mercator projection bouding box parameters."""
+        geod = Geod(ellps=ellipsoid)
+
+        lon1, lon2, lon3, lon4 = boundingbox['longitudes']
+        lat1, lat2, lat3, lat4 = boundingbox['latitudes']
+
+        # Interpolate to sub-satellite track points for first and last scanlines:
+        mid_first = geod.npts(lon1, lat1, lon2, lat2, 1)[0]
+        mid_last = geod.npts(lon3, lat3, lon4, lat4, 1)[0]
+
+        mid_lon, mid_lat = mid_first
+        mid_lon2, mid_lat2 = mid_last
+        _, lat0 = geod.npts(mid_lon, mid_lat, mid_lon2, mid_lat2, 1)[0]
+
+        proj_dict2points = {'proj': 'omerc', 'lat_0': lat0, 'ellps': ellipsoid,
+                            'lat_1': mid_lat, 'lon_1': mid_lon,
+                            'lat_2': mid_lat2, 'lon_2': mid_lon2,
+                            'no_rot': True
+                            }
+        corners = mid_lon, mid_lat, mid_lon2, mid_lat2
+        return self._get_alpha_based_omerc_for_geotiff_support(proj_dict2points, corners)
+
     def _compute_omerc_parameters(self, ellipsoid):
         """Compute the oblique mercator projection bouding box parameters."""
         lines, cols = self.lons.shape
@@ -916,9 +942,11 @@ class SwathDefinition(CoordinateDefinition):
             self.lats[[0, int(lines / 2), -1], int(cols / 2)])
         if any(np.isnan((lon1, lon2, lat1, lat, lat2))):
             thelons = self.lons[:, int(cols / 2)]
-            thelons = thelons.where(thelons.notnull(), drop=True)
             thelats = self.lats[:, int(cols / 2)]
-            thelats = thelats.where(thelats.notnull(), drop=True)
+            mask_lons, mask_lats = da.compute(thelons.notnull(), thelats.notnull())
+            thelons = thelons.where(mask_lons, drop=True)
+            thelats = thelats.where(mask_lats, drop=True)
+
             lon1, lon2 = np.asanyarray(thelons[[0, -1]])
             lines = len(thelats)
             lat1, lat, lat2 = np.asanyarray(thelats[[0, int(lines / 2), -1]])
@@ -929,6 +957,12 @@ class SwathDefinition(CoordinateDefinition):
                             'no_rot': True
                             }
 
+        corners = lon1, lat1, lon2, lat2
+        return self._get_alpha_based_omerc_for_geotiff_support(proj_dict2points, corners)
+
+    def _get_alpha_based_omerc_for_geotiff_support(self, proj_dict2points, corners):
+        """Get the alpha-based omerc for geotiff support."""
+        lon1, lat1, lon2, lat2 = corners
         # We need to compute alpha-based omerc for geotiff support
         lonc, lat0 = Proj(**proj_dict2points)(0, 0, inverse=True)
         az1, az2, _ = Geod(**proj_dict2points).inv(lonc, lat0, lon2, lat2)
@@ -946,7 +980,9 @@ class SwathDefinition(CoordinateDefinition):
         if abs(azimuth) > 90:
             azimuth = 180 + azimuth
 
-        prj_params = {'proj': 'omerc', 'alpha': float(azimuth), 'lat_0': float(lat0), 'lonc': float(lonc),
+        ellipsoid = proj_dict2points['ellps']
+        prj_params = {'proj': 'omerc', 'alpha': float(azimuth),
+                      'lat_0': float(lat0), 'lonc': float(lonc),
                       'gamma': 0,
                       'ellps': ellipsoid}
 
@@ -965,7 +1001,10 @@ class SwathDefinition(CoordinateDefinition):
         projection = proj_dict['proj']
         if projection == 'omerc':
             ellipsoid = proj_dict.get('ellps', 'sphere')
-            return self._compute_omerc_parameters(ellipsoid)
+            if self.bbox:
+                return self._compute_omerc_parameters_from_metadata(ellipsoid, self.bbox)
+            else:
+                return self._compute_omerc_parameters(ellipsoid)
         else:
             ellipsoid = proj_dict.get('ellps', 'WGS84')
             new_proj = self._compute_generic_parameters(projection, ellipsoid)
@@ -1036,7 +1075,12 @@ class SwathDefinition(CoordinateDefinition):
         proj_dict = self.compute_bb_proj_params(proj_dict)
 
         area = DynamicAreaDefinition(area_id, description, proj_dict)
-        lons, lats = self.get_edge_lonlats()
+        # Get the boundingbox:
+        if self.bbox:
+            lons = self.bbox['longitudes']
+            lats = self.bbox['latitudes']
+        else:
+            lons, lats = self.get_edge_lonlats()
         return area.freeze((lons, lats), shape=(height, width))
 
 
