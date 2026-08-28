@@ -713,7 +713,7 @@ class TestAreaDefinition:
         proj_dict = {"proj": 'laea',
                      'lat_0': '50',
                      'lon_0': '0',
-                     'a': '6371228.0', 'units': 'm'}
+                     'a': '6371228.0', 'b': '6371228.0', 'units': 'm'}
         area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         lat1, lon1 = 48.832222, 2.355556  # Paris, 13th arrondissement, France
         lat2, lon2 = 58.6, 16.2  # Norrköping, Sweden
@@ -737,7 +737,7 @@ class TestAreaDefinition:
         proj_dict = {"proj": 'laea',
                      'lat_0': '50',
                      'lon_0': '0',
-                     'a': '6371228.0', 'units': 'm'}
+                     'a': '6371228.0', 'b': '6371228.0', 'units': 'm'}
         area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         lons, lats = area_def.get_lonlats()
         x, y = np.meshgrid(np.arange(x_size), np.arange(y_size))
@@ -747,7 +747,7 @@ class TestAreaDefinition:
 
     def test_area_corners_around_south_pole(self, create_test_area):
         """Test corner values for the ease-sh area."""
-        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
         width = 425
         height = 425
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -829,7 +829,7 @@ class TestAreaDefinition:
         proj_dict = {"proj": 'laea',
                      'lat_0': '60',
                      'lon_0': '0',
-                     'a': '6371228.0', 'units': 'm'}
+                     'a': '6371228.0', 'b': '6371228.0', 'units': 'm'}
         area_def = create_test_area(proj_dict, x_size, y_size, area_extent)
         p__ = Proj(proj_dict)
         lon_ul, lat_ul = p__(1000000, 50000, inverse=True)
@@ -1311,8 +1311,8 @@ class TestCreateAreaDef:
     @pytest.mark.parametrize(
         'projection',
         [
-            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
-            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m',
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'},
+            '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m',
             '+init=EPSG:3409',
             'EPSG:3409',
         ])
@@ -1334,7 +1334,7 @@ class TestCreateAreaDef:
         shape = (425, 850)
         area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
         base_def = create_test_area(
-            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'},
             shape[1], shape[0], area_extent,
         )
 
@@ -1381,7 +1381,7 @@ class TestCreateAreaDef:
         """Test extra combinations of create_area_def parameters."""
         from pyresample import create_area_def as cad
 
-        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+        projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
         area_id = 'ease_sh'
         shape = (425, 850)
         upper_left_extent = (-5326849.0625, 5326849.0625)
@@ -1389,7 +1389,7 @@ class TestCreateAreaDef:
         resolution = (12533.7625, 25067.525)
         radius = [5326849.0625, 5326849.0625]
         base_def = create_test_area(
-            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'},
+            {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'},
             shape[1], shape[0], area_extent)
 
         # Tests that specifying units through xarrays works.
@@ -1438,7 +1438,7 @@ class TestCreateAreaDef:
         """Test that a non-pole center can be used."""
         from pyresample import create_area_def as cad
         from pyresample.geometry import AreaDefinition
-        area_def = cad('ease_sh', '+a=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
+        area_def = cad('ease_sh', '+a=6371228.0 +b=6371228.0 +units=m +lon_0=0 +proj=merc +lat_0=0',
                        center=(0, 0), radius=45,
                        resolution=(1, 0.9999291722135637),
                        units='degrees')
@@ -1478,7 +1478,7 @@ def test_enclose_areas(create_test_area):
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
                  'no_defs': None, 'type': 'crs'}
     proj_dict_alt = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0,
-                     'units': 'm'}
+                     'b': 6371228.0, 'units': 'm'}
 
     ar1 = create_test_area(
         proj_dict,

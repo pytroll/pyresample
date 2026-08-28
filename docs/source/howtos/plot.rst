@@ -39,7 +39,7 @@ set the three arrays :code:`lons`, :code:`lats` and :code:`tb37v` accordingly, e
    >>> area_id = 'ease_sh'
    >>> description = 'Antarctic EASE grid'
    >>> proj_id = 'ease_sh'
-   >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+   >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'}
    >>> width = 425
    >>> height = 425
    >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)

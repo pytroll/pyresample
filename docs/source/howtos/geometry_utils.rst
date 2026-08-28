@@ -49,7 +49,7 @@ and optional arguments:
 
  >>> from pyresample import create_area_def
  >>> area_id = 'ease_sh'
- >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = (5326849.0625, 5326849.0625)
  >>> resolution = (25067.525, 25067.525)
@@ -75,7 +75,7 @@ keyword arguments can be specified with one value if ``dx == dy``:
 
 .. doctest::
 
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
  >>> area_def = create_area_def(area_id, proj_string, center=center,
  ...                              radius=5326849.0625, resolution=25067.525)
  >>> print(area_def)
@@ -161,7 +161,7 @@ from_extent
 
  >>> from pyresample.geometry import AreaDefinition
  >>> area_id = 'ease_sh'
- >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> proj_string = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
  >>> shape = (425, 425)
  >>> area_def = AreaDefinition.from_extent(area_id, proj_string, shape, area_extent)
@@ -180,7 +180,7 @@ from_circle
 
 .. doctest::
 
- >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> proj_dict = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'}
  >>> center = (0, 0)
  >>> radius = 5326849.0625
  >>> area_def = AreaDefinition.from_circle(area_id, proj_dict, center, radius, shape=shape)
@@ -257,6 +257,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape: [425, 425]
    area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
@@ -269,6 +270,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape:
      height: 425
@@ -284,6 +286,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape: [425, 425]
    upper_left_extent: [-5326849.0625, 5326849.0625]
@@ -298,6 +301,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape: [425, 425]
    upper_left_extent:
@@ -315,6 +319,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    center: [0, 0]
    resolution: [25067.525, 25067.525]
@@ -328,6 +333,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    center:
      x: 0
@@ -348,6 +354,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape: [425, 425]
    center: [0, 0]
@@ -361,6 +368,7 @@ an area might be specified.
      lat_0: -90
      lon_0: 0
      a: 6371228.0
+     b: 6371228.0
      units: m
    shape: [425, 425]
    center:
@@ -441,7 +449,7 @@ Assuming the file **areas.cfg** exists with the following content
  REGION: ease_sh {
     NAME:           Antarctic EASE grid
     PCS_ID:         ease_sh
-        PCS_DEF:        proj=laea, lat_0=-90, lon_0=0, a=6371228.0, units=m
+        PCS_DEF:        proj=laea, lat_0=-90, lon_0=0, a=6371228.0, b=6371228.0, units=m
         XSIZE:          425
         YSIZE:          425
         AREA_EXTENT:    (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
@@ -450,7 +458,7 @@ Assuming the file **areas.cfg** exists with the following content
  REGION: ease_nh {
         NAME:           Arctic EASE grid
         PCS_ID:         ease_nh
-        PCS_DEF:        proj=laea, lat_0=90, lon_0=0, a=6371228.0, units=m
+        PCS_DEF:        proj=laea, lat_0=90, lon_0=0, a=6371228.0, b=6371228.0, units=m
         XSIZE:          425
         YSIZE:          425
         AREA_EXTENT:    (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)

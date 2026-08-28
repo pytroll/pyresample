@@ -6,6 +6,7 @@ boundary:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 425]
   area_extent: [-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625]
@@ -18,6 +19,7 @@ boundary_2:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape:
     height: 425
@@ -33,6 +35,7 @@ corner:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 425]
   upper_left_extent: [-5326849.0625, 5326849.0625]
@@ -47,6 +50,7 @@ corner_2:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 425]
   upper_left_extent:
@@ -64,6 +68,7 @@ circle:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   center: [0, 0]
   resolution: [25067.525, 25067.525]
@@ -77,6 +82,7 @@ circle_2:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   center:
     x: 0
@@ -97,6 +103,7 @@ area_of_interest:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 425]
   center: [0, 0]
@@ -110,6 +117,7 @@ area_of_interest_2:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 425]
   center:
@@ -126,6 +134,7 @@ test_meters:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape: [425, 850]
   upper_left_extent:
@@ -148,6 +157,7 @@ test_degrees:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   area_extent:
     lower_left_xy: [-135.0, -17.516001139327766]
@@ -177,6 +187,7 @@ ease_sh:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape:
     height: 425
@@ -193,6 +204,7 @@ ease_nh:
     lat_0: -90
     lon_0: 0
     a: 6371228.0
+    b: 6371228.0
     units: m
   shape:
     height: 425
@@ -271,6 +283,7 @@ ortho:
     lon_0: 40.
     lat_0: -40.
     a: 6370997.0
+    b: 6370997.0
   shape:
     height: 480
     width: 640

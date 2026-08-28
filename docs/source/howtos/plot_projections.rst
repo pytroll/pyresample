@@ -5,7 +5,7 @@
    area_id = 'ease_sh'
    description = 'Antarctic EASE grid'
    proj_id = 'ease_sh'
-   projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+   projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'}
    width = 425
    height = 425
    area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -96,6 +96,7 @@ should also work with these projections. Again assuming the area-config file
       lon_0: 40.
       lat_0: -40.
       a: 6370997.0
+      b: 6370997.0
     shape:
       height: 480
       width: 640
@@ -116,6 +117,7 @@ should also work with these projections. Again assuming the area-config file
        lon_0: 40.
        lat_0: -40.
        a: 6370997.0
+       b: 6370997.0
      shape:
        height: 480
        width: 640

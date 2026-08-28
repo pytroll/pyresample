@@ -61,7 +61,7 @@ Example:
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
- >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'units': 'm'}
+ >>> projection = {'proj': 'laea', 'lat_0': -90, 'lon_0': 0, 'a': 6371228.0, 'b': 6371228.0, 'units': 'm'}
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
@@ -76,11 +76,15 @@ Example:
  Number of rows: 425
  Area extent: (-5326849.0625, -5326849.0625, 5326849.0625, 5326849.0625)
 
+When specifying a custom ellipsoid, always define both ``a`` and ``b``
+(``b = a`` for a sphere). Projections that only define ``a`` are
+rejected by some stricter tools such as GDAL when writing geotiffs.
+
 You can also specify the projection using a PROJ.4 string
 
 .. doctest::
 
- >>> projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
  >>> area_def = AreaDefinition(area_id, description, proj_id, projection,
  ...                           width, height, area_extent)
 
@@ -178,7 +182,7 @@ Get longitude and latitude arrays:
  >>> area_id = 'ease_sh'
  >>> description = 'Antarctic EASE grid'
  >>> proj_id = 'ease_sh'
- >>> projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +units=m'
+ >>> projection = '+proj=laea +lat_0=-90 +lon_0=0 +a=6371228.0 +b=6371228.0 +units=m'
  >>> width = 425
  >>> height = 425
  >>> area_extent = (-5326849.0625,-5326849.0625,5326849.0625,5326849.0625)
