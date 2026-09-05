@@ -13,23 +13,23 @@ lifting for EWA and gradient search. LGPL-3.0-or-later, Python >= 3.12.
 
 ## Repo orientation
 
-| Path | Notes |
-| --- | --- |
-| `pyresample/geometry.py` | ~3150 lines. All the legacy geometry classes. The single most important file. |
+| Path | Notes                                                                                    |
+| --- |------------------------------------------------------------------------------------------|
+| `pyresample/geometry.py` | ~3150 lines. All the legacy geometry classes. The single most important file.            |
 | `pyresample/area_config.py` | `create_area_def`, `load_area`, `parse_area_file`, YAML + legacy `.cfg` parsing, `dump`. |
-| `pyresample/kd_tree.py` | Nearest-neighbour / gauss / custom resampling on pykdtree. |
-| `pyresample/bilinear/` | `XArrayBilinearResampler` (dask) and `NumpyBilinearResampler`. |
-| `pyresample/ewa/` | Elliptical Weighted Averaging + the `_ll2cr.pyx` / `_fornav.pyx` extensions. |
-| `pyresample/bucket/` | `BucketResampler` — per-target-pixel statistics. |
-| `pyresample/gradient/` | Gradient search + `_gradient_search.pyx`. |
-| `pyresample/resampler.py` | Legacy `BaseResampler` and `resample_blocks` (dask blockwise machinery). |
-| `pyresample/future/` | The 2.0 staging area. See below — parts of it are already load-bearing. |
-| `pyresample/slicer.py` | `create_slicer` / `AreaSlicer` / `SwathSlicer` — crop one geometry to another. |
-| `pyresample/utils/` | `proj4.py`, `cf.py` (CF/netCDF areas), `cartopy.py`, `rasterio.py`, `errors.py`. |
-| `pyresample/spherical.py` | Current spherical geometry primitives (`SPoint`, `SArc`, `SphPolygon`). |
-| `pyresample/_config.py` | The donfig `config` object. |
-| `pyresample/_caching.py` | On-disk JSON caching for geometry slices. |
-| `pyresample/test/` | ~1180 tests. Subpackages `test_geometry/`, `test_utils/`, `test_resamplers/`. |
+| `pyresample/kd_tree.py` | Nearest-neighbour / gauss / custom resampling on pykdtree.                               |
+| `pyresample/bilinear/` | `XArrayBilinearResampler` (dask) and `NumpyBilinearResampler`.                           |
+| `pyresample/ewa/` | Elliptical Weighted Averaging + the `_ll2cr.pyx` / `_fornav.pyx` extensions.             |
+| `pyresample/bucket/` | `BucketResampler` — per-target-pixel statistics.                                         |
+| `pyresample/gradient/` | Gradient search + `_gradient_search.pyx`.                                                |
+| `pyresample/resampler.py` | Legacy `BaseResampler` and `resample_blocks` (dask blockwise machinery).                 |
+| `pyresample/future/` | The 2.0 staging area. See below — parts of it are already load-bearing.                  |
+| `pyresample/slicer.py` | `create_slicer` / `AreaSlicer` / `SwathSlicer` — crop one geometry to another.           |
+| `pyresample/utils/` | `proj4.py`, `cf.py` (CF/netCDF areas), `cartopy.py`, `rasterio.py`, `errors.py`.         |
+| `pyresample/spherical.py` | Current spherical geometry primitives (`SCoordinate`, `CCordinate`, `Arc`, `SphPolygon`). |
+| `pyresample/_config.py` | The donfig `config` object.                                                              |
+| `pyresample/_caching.py` | On-disk JSON caching for geometry slices.                                                |
+| `pyresample/test/` | ~1180 tests. Subpackages `test_geometry/`, `test_utils/`, `test_resamplers/`.            |
 
 Legacy or effectively unmaintained, listed so you don't build on them: `image.py`,
 `grid.py`, `spherical_geometry.py`, `geo_filter.py`, `_spatial_mp.py`, `_multi_proc.py`,
