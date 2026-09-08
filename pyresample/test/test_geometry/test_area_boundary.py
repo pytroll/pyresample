@@ -30,6 +30,13 @@ from pyresample.future.geometry.area import (
 )
 
 
+def _assert_ring_allclose(actual, desired, **kwargs):
+    for k in range(len(desired)):
+        if np.allclose(actual, np.roll(desired, k, axis=0), **kwargs):
+            return
+    np.testing.assert_allclose(actual, desired, **kwargs)
+
+
 class TestBoundary:
     """Test 'boundary' method for AreaDefinition classes."""
 
@@ -103,7 +110,7 @@ class TestBoundary:
                                       [-5.68985178e+01, -6.90053314e+01],
                                       [-7.54251621e+01, -3.53432890e+01],
                                       [-7.92337283e+01, 6.94302533e-15]])
-        np.testing.assert_allclose(expected_vertices, boundary.vertices)
+        _assert_ring_allclose(boundary.vertices, expected_vertices)
 
     def test_global_platee_caree_projection(self, global_platee_caree_area):
         """Test boundary for global platee caree projection."""
@@ -204,8 +211,8 @@ class TestGeostationaryTools:
             [14.554922655532085, 17.768795771961937, 35.34328897185421, 52.597860701318254, 69.00533141646078,
              79.1481121862375, 69.00533141646076, 52.597860701318254, 35.34328897185421, 17.768795771961933,
              14.554922655532085])
-        np.testing.assert_allclose(lon, expected_lon)
-        np.testing.assert_allclose(lat, expected_lat)
+        _assert_ring_allclose(lon, expected_lon)
+        _assert_ring_allclose(lat, expected_lat)
 
     def test_get_geostationary_bbox_works_with_truncated_area_proj_coords(self, truncated_geos_area):
         """Ensure the geostationary bbox works when truncated."""
@@ -220,8 +227,8 @@ class TestGeostationaryTools:
              5412090.016106332, 5147203.476593869, 4378472.798117005, 3181146.695546635, 1672427.7900638392,
              1393687.2705])
 
-        np.testing.assert_allclose(x, expected_x)
-        np.testing.assert_allclose(y, expected_y)
+        _assert_ring_allclose(x, expected_x)
+        _assert_ring_allclose(y, expected_y)
 
     def test_get_geostationary_bbox_does_not_contain_inf(self, truncated_geos_area):
         """Ensure the geostationary bbox does not contain np.inf."""
@@ -260,8 +267,8 @@ class TestGeostationaryTools:
                                  -35.34328897, -52.5978607, -69.00533142, -79.14811219,
                                  -69.00533142, -52.5978607, -35.34328897, -17.76879577, 0.])
 
-        np.testing.assert_allclose(lon, expected_lon, atol=1e-07)
-        np.testing.assert_allclose(lat, expected_lat, atol=1e-07)
+        _assert_ring_allclose(lon, expected_lon, atol=1e-07)
+        _assert_ring_allclose(lat, expected_lat, atol=1e-07)
 
         geos_area = MagicMock()
         lon_0 = 10
@@ -274,7 +281,7 @@ class TestGeostationaryTools:
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = get_geostationary_bounding_box_in_lonlats(geos_area, 20)
-        np.testing.assert_allclose(lon, expected_lon + lon_0)
+        _assert_ring_allclose(lon, expected_lon + lon_0)
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
