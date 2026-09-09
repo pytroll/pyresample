@@ -30,11 +30,32 @@ from pyresample.future.geometry.area import (
 )
 
 
+def _rotate_ring_to_canonical_start(ring):
+    """Rotate a ring of ``(N, 2)`` vertices to start at its lexicographically smallest vertex."""
+    start = np.lexsort((ring[:, 1], ring[:, 0]))[0]
+    return np.roll(ring, -start, axis=0)
+
+
 def _assert_ring_allclose(actual, desired, **kwargs):
-    for k in range(len(desired)):
-        if np.allclose(actual, np.roll(desired, k, axis=0), **kwargs):
-            return
-    np.testing.assert_allclose(actual, desired, **kwargs)
+    """Assert that two rings of ``(N, 2)`` vertices match, ignoring which vertex they start at.
+
+    The rings produced by the geostationary bounding box helpers come from a shapely (GEOS)
+    intersection, and the vertex that GEOS starts the resulting ring at is version dependent:
+    GEOS <= 3.14 rotated overlay output rings by one vertex, which GEOS 3.15 no longer does
+    (see https://github.com/libgeos/geos/pull/1412). Both rings are therefore rotated to a
+    canonical starting vertex before being compared. Vertex order, the pairing of the two
+    coordinates and the winding direction all remain checked.
+    """
+    if actual.shape != desired.shape:
+        np.testing.assert_allclose(actual, desired, **kwargs)
+    np.testing.assert_allclose(_rotate_ring_to_canonical_start(actual),
+                               _rotate_ring_to_canonical_start(desired), **kwargs)
+
+
+def _assert_coords_ring_allclose(actual_x, actual_y, desired_x, desired_y, **kwargs):
+    """Assert that two rings given as separate coordinate arrays match, ignoring the starting vertex."""
+    _assert_ring_allclose(np.stack([actual_x, actual_y], axis=-1),
+                          np.stack([desired_x, desired_y], axis=-1), **kwargs)
 
 
 class TestBoundary:
@@ -211,8 +232,7 @@ class TestGeostationaryTools:
             [14.554922655532085, 17.768795771961937, 35.34328897185421, 52.597860701318254, 69.00533141646078,
              79.1481121862375, 69.00533141646076, 52.597860701318254, 35.34328897185421, 17.768795771961933,
              14.554922655532085])
-        _assert_ring_allclose(lon, expected_lon)
-        _assert_ring_allclose(lat, expected_lat)
+        _assert_coords_ring_allclose(lon, lat, expected_lon, expected_lat)
 
     def test_get_geostationary_bbox_works_with_truncated_area_proj_coords(self, truncated_geos_area):
         """Ensure the geostationary bbox works when truncated."""
@@ -227,8 +247,7 @@ class TestGeostationaryTools:
              5412090.016106332, 5147203.476593869, 4378472.798117005, 3181146.695546635, 1672427.7900638392,
              1393687.2705])
 
-        _assert_ring_allclose(x, expected_x)
-        _assert_ring_allclose(y, expected_y)
+        _assert_coords_ring_allclose(x, y, expected_x, expected_y)
 
     def test_get_geostationary_bbox_does_not_contain_inf(self, truncated_geos_area):
         """Ensure the geostationary bbox does not contain np.inf."""
@@ -267,8 +286,7 @@ class TestGeostationaryTools:
                                  -35.34328897, -52.5978607, -69.00533142, -79.14811219,
                                  -69.00533142, -52.5978607, -35.34328897, -17.76879577, 0.])
 
-        _assert_ring_allclose(lon, expected_lon, atol=1e-07)
-        _assert_ring_allclose(lat, expected_lat, atol=1e-07)
+        _assert_coords_ring_allclose(lon, lat, expected_lon, expected_lat, atol=1e-07)
 
         geos_area = MagicMock()
         lon_0 = 10
@@ -281,7 +299,7 @@ class TestGeostationaryTools:
         geos_area.area_extent = [-5500000., -5500000., 5500000., 5500000.]
 
         lon, lat = get_geostationary_bounding_box_in_lonlats(geos_area, 20)
-        _assert_ring_allclose(lon, expected_lon + lon_0)
+        _assert_coords_ring_allclose(lon, lat, expected_lon + lon_0, expected_lat, atol=1e-07)
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
