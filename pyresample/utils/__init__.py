@@ -199,16 +199,16 @@ def wrap_longitudes(lons):
     return (lons + 180) % 360 - 180
 
 
-def check_and_wrap(lons, lats):
+def check_and_wrap(lons: np.ndarray, lats: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Wrap longitude to [-180:+180[ and check latitude for validity.
 
     Args:
-        lons (ndarray): Longitude degrees
-        lats (ndarray): Latitude degrees
+        lons: Longitude degrees
+        lats: Latitude degrees
 
     Returns:
-        lons, lats: Longitude degrees in the range [-180:180[ and the original
-                    latitude array
+        ``(lons, lats)`` with longitude degrees wrapped to the range
+        [-180, 180) and the original latitude array
 
     Raises:
         ValueError: If latitude array is not between -90 and 90

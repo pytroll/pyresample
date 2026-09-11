@@ -192,34 +192,6 @@ class BaseDefinition:
         """Test for approximate inequality."""
         return not self.__eq__(other)
 
-    def get_area_extent_for_subset(self, row_LR, col_LR, row_UL, col_UL):
-        """Calculate extent for a subdomain of this area.
-
-        Rows are counted from upper left to lower left and columns are
-        counted from upper left to upper right.
-
-        Args:
-            row_LR (int): row of the lower right pixel
-            col_LR (int): col of the lower right pixel
-            row_UL (int): row of the upper left pixel
-            col_UL (int): col of the upper left pixel
-
-        Returns:
-            area_extent (tuple):
-                Area extent (LL_x, LL_y, UR_x, UR_y) of the subset
-
-        Author:
-            Ulrich Hamann
-        """
-        (a, b) = self.get_proj_coords(data_slice=(row_LR, col_LR))
-        a = a - 0.5 * self.pixel_size_x
-        b = b - 0.5 * self.pixel_size_y
-        (c, d) = self.get_proj_coords(data_slice=(row_UL, col_UL))
-        c = c + 0.5 * self.pixel_size_x
-        d = d + 0.5 * self.pixel_size_y
-
-        return a, b, c, d
-
     def get_lonlat(self, row, col):
         """Retrieve lon and lat of single pixel.
 
@@ -1371,9 +1343,14 @@ def _generate_2d_coords(pixel_size_x, pixel_size_y, pixel_upper_left_x, pixel_up
     return res
 
 
-def _generate_1d_proj_vectors(col_range, row_range,
-                              pixel_size_xy, offset_xy,
-                              dtype, chunks=None):
+def _generate_1d_proj_vectors(
+        col_range: tuple[float | int, float | int],
+        row_range: tuple[float | int, float | int],
+        pixel_size_xy: tuple[float, float],
+        offset_xy: tuple[float, float],
+        dtype: np.dtype,
+        chunks: tuple | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     x_kwargs, y_kwargs, arange = _get_vector_arange_args(dtype, chunks)
     x = arange(*col_range, **x_kwargs) * pixel_size_xy[0] + offset_xy[0]
     y = arange(*row_range, **y_kwargs) * -pixel_size_xy[1] + offset_xy[1]
@@ -2379,6 +2356,43 @@ class AreaDefinition(_ProjectionDefinition):
                       stacklevel=2)
 
         return self.get_array_indices_from_projection_coordinates(self, xm, ym)
+
+    def get_area_extent_for_subset(
+            self,
+            row_LR: int,
+            col_LR: int,
+            row_UL: int,
+            col_UL: int,
+    ) -> tuple[float, float, float, float]:
+        """Calculate extent for a subdomain of this area.
+
+        Rows are counted from upper left to lower left and columns are
+        counted from upper left to upper right.
+
+        .. deprecated:: 1.36.0
+
+            This method will be removed in Pyresample 2.0. Slice the area
+            definition and use its ``area_extent`` instead::
+
+                area_def[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent
+
+        Args:
+            row_LR: row of the lower right pixel
+            col_LR: col of the lower right pixel
+            row_UL: row of the upper left pixel
+            col_UL: col of the upper left pixel
+
+        Returns:
+            Area extent (LL_x, LL_y, UR_x, UR_y) of the subset
+
+        """
+        warnings.warn(
+            "'get_area_extent_for_subset' is deprecated and will be removed in Pyresample 2.0. "
+            "Use 'area_def[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+        return self[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat values of single point in area grid.
