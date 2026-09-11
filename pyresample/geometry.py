@@ -2359,10 +2359,10 @@ class AreaDefinition(_ProjectionDefinition):
 
     def get_area_extent_for_subset(
             self,
-            row_LR: int,
-            col_LR: int,
-            row_UL: int,
-            col_UL: int,
+            row_lr: int,
+            col_lr: int,
+            row_ul: int,
+            col_ul: int,
     ) -> tuple[float, float, float, float]:
         """Calculate extent for a subdomain of this area.
 
@@ -2374,13 +2374,13 @@ class AreaDefinition(_ProjectionDefinition):
             This method will be removed in Pyresample 2.0. Slice the area
             definition and use its ``area_extent`` instead::
 
-                area_def[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent
+                area_def[row_ul:row_lr + 1, col_ul:col_lr + 1].area_extent
 
         Args:
-            row_LR: row of the lower right pixel
-            col_LR: col of the lower right pixel
-            row_UL: row of the upper left pixel
-            col_UL: col of the upper left pixel
+            row_lr: row of the lower right pixel
+            col_lr: col of the lower right pixel
+            row_ul: row of the upper left pixel
+            col_ul: col of the upper left pixel
 
         Returns:
             Area extent (LL_x, LL_y, UR_x, UR_y) of the subset
@@ -2388,11 +2388,11 @@ class AreaDefinition(_ProjectionDefinition):
         """
         warnings.warn(
             "'get_area_extent_for_subset' is deprecated and will be removed in Pyresample 2.0. "
-            "Use 'area_def[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent' instead.",
+            "Use 'area_def[row_ul:row_lr + 1, col_ul:col_lr + 1].area_extent' instead.",
             UserWarning,
             stacklevel=2,
         )
-        return self[row_UL:row_LR + 1, col_UL:col_LR + 1].area_extent
+        return self[row_ul:row_lr + 1, col_ul:col_lr + 1].area_extent
 
     def get_lonlat(self, row, col):
         """Retrieve lon and lat values of single point in area grid.
