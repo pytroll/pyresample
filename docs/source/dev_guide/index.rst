@@ -7,13 +7,14 @@ to Pyresample.
 Writing documentation
 ---------------------
 
-The pyresample sphinx documentation is structured following the information
-described in this presentation by Daniele Procida:
+The pyresample sphinx documentation is structured following the Diátaxis
+documentation framework, originally described in this presentation by
+Daniele Procida:
 https://youtu.be/t4vKPhjcMZg
 
 For more details on this scheme see:
 
-https://documentation.divio.com/
+https://diataxis.fr/
 
 The documentation is split into 4 main groups:
 
