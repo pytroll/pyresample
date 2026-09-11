@@ -80,6 +80,7 @@ autodoc_type_aliases = {
 }
 autodoc_default_options = {
     "special-members": "__init__, __reduce_ex__",
+    "exclude-members": "DataArray",
 }
 nitpick_ignore_regex: list[tuple[str, str]] = []
 autoclass_content = "both"  # append class __init__ docstring to the class docstring
