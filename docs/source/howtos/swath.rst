@@ -17,12 +17,16 @@ Resampling can be done using nearest neighbour method, Guassian weighting, weigh
 
 pyresample.image
 ----------------
-The ImageContainerNearest and ImageContanerBilinear classes can be used for resampling of swaths as well as grids.  Below is an example using nearest neighbour resampling.
+The :class:`~pyresample.future.resamplers.KDTreeNearestXarrayResampler` class can be used for
+resampling of swaths as well as grids.  Below is an example using nearest neighbour resampling.
 
 .. doctest::
 
  >>> import numpy as np
- >>> from pyresample import image, geometry
+ >>> import dask.array as da
+ >>> import xarray as xr
+ >>> from pyresample import geometry
+ >>> from pyresample.future.resamplers import KDTreeNearestXarrayResampler
  >>> area_def = geometry.AreaDefinition('areaD', 'Europe (3km, HRV, VTC)', 'areaD',
  ...                                {'a': '6378144.0', 'b': '6356759.0',
  ...                                 'lat_0': '50.00', 'lat_ts': '50.00',
@@ -30,13 +34,14 @@ The ImageContainerNearest and ImageContanerBilinear classes can be used for resa
  ...                                800, 800,
  ...                                [-1370912.72, -909968.64,
  ...                                 1029087.28, 1490031.36])
- >>> data = np.fromfunction(lambda y, x: y*x, (50, 10))
- >>> lons = np.fromfunction(lambda y, x: 3 + x, (50, 10))
- >>> lats = np.fromfunction(lambda y, x: 75 - y, (50, 10))
+ >>> data = da.from_array(np.fromfunction(lambda y, x: y*x, (50, 10)))
+ >>> lons = xr.DataArray(da.from_array(np.fromfunction(lambda y, x: 3 + x, (50, 10))), dims=('y', 'x'))
+ >>> lats = xr.DataArray(da.from_array(np.fromfunction(lambda y, x: 75 - y, (50, 10))), dims=('y', 'x'))
  >>> swath_def = geometry.SwathDefinition(lons=lons, lats=lats)
- >>> swath_con = image.ImageContainerNearest(data, swath_def, radius_of_influence=5000)
- >>> area_con = swath_con.resample(area_def)
- >>> result = area_con.image_data
+ >>> resampler = KDTreeNearestXarrayResampler(swath_def, area_def)
+ >>> result = resampler.resample(xr.DataArray(data, dims=('y', 'x')), radius_of_influence=5000)
+ >>> result.shape
+ (800, 800)
 
 For other resampling types or splitting the process in two steps use e.g. the functions in **pyresample.kd_tree** described below.
 
@@ -110,7 +115,7 @@ with the channels along the last axis e.g. (rows, cols, channels). Note: the con
  >>> result = kd_tree.resample_nearest(swath_def, data,
  ... area_def, radius_of_influence=50000)
 
-For nearest neighbour resampling the class **image.ImageContainerNearest** can be used as well as **kd_tree.resample_nearest**
+For nearest neighbour resampling the class **pyresample.future.resamplers.KDTreeNearestXarrayResampler** can be used as well as **kd_tree.resample_nearest**
 
 resample_gauss
 **************

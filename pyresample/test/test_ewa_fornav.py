@@ -191,3 +191,40 @@ class TestFornavWrapper(unittest.TestCase):
         # output except outside the swath
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
                         msg="Unexpected interpolation values were returned")
+
+    def test_fornav_integer_swath_with_fill(self):
+        """Integer swath data resamples when a fill value is given (#689)."""
+        from pyresample.ewa import fornav
+        rows = np.empty((1600, 3200), dtype=np.float32)
+        rows[:] = np.linspace(-500, 2500, 1600)[:, None]
+        cols = np.empty((1600, 3200), dtype=np.float32)
+        cols[:] = np.linspace(-2500, 500, 3200)
+        data = np.ones((1600, 3200), dtype=np.int8)
+        out = np.empty((1000, 1000), dtype=np.int8)
+
+        grid_points_covered, out_res = fornav(cols, rows, None, data,
+                                              rows_per_scan=16, fill=0, out=out)
+
+        self.assertIs(out, out_res)
+        self.assertGreater(grid_points_covered, 0)
+        self.assertTrue(((out == 1) | (out == 0)).all(),
+                        msg="Integer output should only contain data and fill values")
+        self.assertGreater((out == 0).sum(), 0,
+                           msg="Uncovered pixels should contain the fill value")
+
+    def test_fornav_fill_value_used_in_output(self):
+        """A user-supplied fill value is written to uncovered pixels (#689)."""
+        from pyresample.ewa import fornav
+        rows = np.empty((1600, 3200), dtype=np.float32)
+        rows[:] = np.linspace(-500, 2500, 1600)[:, None]
+        cols = np.empty((1600, 3200), dtype=np.float32)
+        cols[:] = np.linspace(-2500, 500, 3200)
+        data = np.ones((1600, 3200), dtype=np.float32)
+        out = np.empty((1000, 1000), dtype=np.float32)
+
+        _, out_res = fornav(cols, rows, None, data,
+                            rows_per_scan=16, fill=0.0, out=out)
+
+        self.assertFalse(np.isnan(out).any(),
+                         msg="Uncovered pixels should contain the fill value, not NaN")
+        self.assertTrue(((out == 1) | (out == 0)).all())
