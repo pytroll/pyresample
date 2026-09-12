@@ -167,7 +167,7 @@ def fornav(cols, rows, area_def, data_in,
     rows_per_scan = rows_per_scan or data_in[0].shape[0]
 
     results = _fornav.fornav_wrapper(cols, rows, data_in, out,
-                                     np.nan, np.nan, rows_per_scan,
+                                     fill, fill, rows_per_scan,
                                      weight_count=weight_count,
                                      weight_min=weight_min,
                                      weight_distance_max=weight_distance_max,
