@@ -427,58 +427,35 @@ class TestDaskEWAResampler:
         assert computed.dtype == np.float32
 
 
-def test_get_ll2cr_blocks_persist_uses_single_batched_compute():
-    """Persisted ll2cr chunks should be computed in one batched call."""
-    class FakeDelayed:
-        def __init__(self, key):
-            self.key = key
+def test_get_ll2cr_blocks_persist_drops_empty_blocks():
+    """Persisted ll2cr blocks that do not overlap the target area are dropped."""
+    from itertools import product
 
-    class FakeLl2CrResult:
-        name = "ll2cr-test"
+    swath_data, source_swath, target_area = get_test_data(
+        input_shape=(100, 50), output_shape=(200, 100),
+        input_dims=('y', 'x'), input_dtype=np.float32,
+    )
+    margin = 10.0
+    resampler = DaskEWAResampler(source_swath, target_area)
+    with dask.config.set(scheduler='sync'):
+        resampler.precompute(rows_per_scan=10, persist=True, weight_delta_max=margin)
 
-        def to_delayed(self):
-            return [
-                [FakeDelayed("00"), FakeDelayed("01")],
-                [FakeDelayed("10"), FakeDelayed("11")],
-            ]
-
-    fake_result = FakeLl2CrResult()
-    empty = (((), np.nan, np.float64), ((), np.nan, np.float64))
-    ll2cr_by_key = {
-        "00": empty,
-        "01": np.stack([np.array([[1.0, 2.0]]), np.array([[3.0, 4.0]])]),
-        "10": np.stack([np.array([[5.0, 6.0]]), np.array([[7.0, 8.0]])]),
-        "11": np.stack([np.array([[9.0, 10.0]]), np.array([[11.0, 12.0]])]),
-    }
-
-    def _persist(*args):
-        return args
-
-    def _delayed(func):
-        def _wrap(arg):
-            return FakeDelayed(("extent", arg.key))
-        return _wrap
-
-    def _compute(*args):
-        out = []
-        for d in args:
-            _, key = d.key
-            out.append(dask_ewa._ll2cr_block_extent(ll2cr_by_key[key]))
-        return tuple(out)
-
-    with mock.patch.object(dask_ewa.dask, "persist", side_effect=_persist), \
-            mock.patch.object(dask_ewa.dask, "delayed", side_effect=_delayed), \
-            mock.patch.object(dask_ewa.dask, "compute", side_effect=_compute) as compute_mock:
-        ll2cr_blocks, block_dependencies = DaskEWAResampler._get_ll2cr_blocks(
-            None, fake_result, persist=True)
-
-    assert compute_mock.call_count == 1
-    assert ll2cr_blocks == [
-        (0, 1, "01", (3.0, 4.0, 1.0, 2.0)),
-        (1, 0, "10", (7.0, 8.0, 5.0, 6.0)),
-        (1, 1, "11", (11.0, 12.0, 9.0, 10.0)),
-    ]
-    assert len(block_dependencies) == 3
+    assert resampler.cache['extent_margin'] == margin
+    ll2cr_blocks = resampler.cache['ll2cr_blocks']
+    num_row_blocks, num_col_blocks = resampler.cache['ll2cr_result'].numblocks
+    all_block_indexes = set(product(range(num_row_blocks), range(num_col_blocks)))
+    block_indexes = {(in_row_idx, in_col_idx) for in_row_idx, in_col_idx, _, _ in ll2cr_blocks}
+    assert block_indexes
+    assert block_indexes < all_block_indexes
+    assert len(resampler.cache['ll2cr_block_dependencies']) == len(ll2cr_blocks)
+    grid_rows, grid_cols = target_area.shape
+    for _, _, _, extent in ll2cr_blocks:
+        assert len(extent) == 4
+        row_min, row_max, col_min, col_max = extent
+        assert row_min <= row_max
+        assert col_min <= col_max
+        assert -margin <= row_min and row_max <= grid_rows + margin
+        assert -margin <= col_min and col_max <= grid_cols + margin
 
 
 def test_get_ll2cr_blocks_without_persist_uses_numblocks_only():
@@ -491,7 +468,7 @@ def test_get_ll2cr_blocks_without_persist_uses_numblocks_only():
             raise AssertionError("to_delayed should not be used when persist=False")
 
     ll2cr_blocks, block_dependencies = DaskEWAResampler._get_ll2cr_blocks(
-        None, FakeLl2CrResult(), persist=False)
+        None, FakeLl2CrResult(), persist=False, extent_margin=10.0)
 
     assert block_dependencies is None
     assert ll2cr_blocks == [
@@ -512,7 +489,7 @@ def test_generate_fornav_dask_tasks_filters_non_overlapping_pairs():
         (1, 0, "b10", (2.1, 3.8, 0.1, 1.8)),
         (1, 1, "b11", (2.1, 3.8, 2.1, 3.8)),
     )
-    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+    output_stack = dask_ewa._generate_fornav_dask_tasks(
         OUT_CHUNKS_2X2, ll2cr_blocks, "fornav-test", "input", mock.Mock(), np.nan,
         {"weight_delta_max": 0.0})
     assert len(output_stack) == 16
@@ -522,7 +499,7 @@ def test_generate_fornav_dask_tasks_filters_non_overlapping_pairs():
 
 def test_generate_fornav_dask_tasks_falls_back_to_cartesian_without_extents():
     """Without ll2cr extents the previous cartesian behavior is preserved."""
-    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+    output_stack = dask_ewa._generate_fornav_dask_tasks(
         OUT_CHUNKS_2X2, LL2CR_BLOCKS_2X2, "fornav-test", "input", mock.Mock(), np.nan,
         {"weight_delta_max": 0.0})
     assert len(output_stack) == 16
@@ -540,7 +517,7 @@ def test_generate_fornav_dask_tasks_falls_back_to_cartesian_without_extents():
 )
 def test_generate_fornav_overlap_padding(kwargs, expected_count):
     """Overlap padding should expand to neighboring output chunks."""
-    output_stack = DaskEWAResampler._generate_fornav_dask_tasks(
+    output_stack = dask_ewa._generate_fornav_dask_tasks(
         OUT_CHUNKS_2X2,
         ((0, 0, "b00", (1.9, 1.9, 1.9, 1.9)),),
         "fornav-test",
@@ -556,7 +533,34 @@ def test_ll2cr_block_extent_returns_none_for_all_non_finite():
         [np.full((2, 2), np.nan, dtype=np.float64), np.full((2, 2), np.nan, dtype=np.float64)],
         axis=0,
     )
-    assert dask_ewa._ll2cr_block_extent(ll2cr_block) is None
+    assert dask_ewa._ll2cr_block_extent(ll2cr_block, (200, 100), 10.0) is None
+
+
+def test_ll2cr_block_extent_returns_none_for_empty_sentinel():
+    empty = (((2, 2), np.nan, np.float64), ((2, 2), np.nan, np.float64))
+    assert dask_ewa._ll2cr_block_extent(empty, (200, 100), 10.0) is None
+
+
+@pytest.mark.parametrize(
+    ("cols", "rows", "margin", "expected"),
+    [
+        # far-off points on both sides are excluded, -0.5 is inside [-10, 110]
+        ([-5000.0, -0.5, 3.0, 250.0], [10.0, 10.0, 10.0, 10.0], 10.0, (10.0, 10.0, -0.5, 3.0)),
+        # all points outside the padded grid
+        ([-50.0, -50.0], [10.0, 10.0], 10.0, None),
+        # points past the grid edge but within the margin are kept
+        ([105.0, 106.0], [10.0, 20.0], 10.0, (10.0, 20.0, 105.0, 106.0)),
+        # rows are clipped the same way as columns
+        ([10.0, 10.0, 10.0], [-11.0, 5.0, 210.5], 10.0, (5.0, 5.0, 10.0, 10.0)),
+        # NaNs are ignored
+        ([np.nan, 3.0], [10.0, 10.0], 10.0, (10.0, 10.0, 3.0, 3.0)),
+    ],
+    ids=("far-off-cols", "all-outside", "inside-margin", "far-off-rows", "nan"),
+)
+def test_ll2cr_block_extent_clips_to_padded_grid(cols, rows, margin, expected):
+    """Extents only consider points that can reach the target grid."""
+    ll2cr_block = np.stack([np.array([cols]), np.array([rows])], axis=0)
+    assert dask_ewa._ll2cr_block_extent(ll2cr_block, (200, 100), margin) == expected
 
 
 def test_average_fornav_empty_keepdims_returns_fill():
@@ -612,8 +616,12 @@ def test_persisted_ll2cr_blocks_are_reused_between_resample_calls():
             {"rows_per_scan": 10, "persist": False},
             {"rows_per_scan": 10, "persist": True},
         ),
+        (
+            {"rows_per_scan": 10, "persist": True, "weight_delta_max": 10},
+            {"rows_per_scan": 10, "persist": True, "weight_delta_max": 40},
+        ),
     ],
-    ids=("rows-per-scan-change", "persist-change"),
+    ids=("rows-per-scan-change", "persist-change", "margin-change"),
 )
 def test_ll2cr_cache_recomputes_when_precompute_mode_changes(first_kwargs, second_kwargs):
     """Changing precompute mode should invalidate the cached ll2cr block layout."""
@@ -629,7 +637,6 @@ def test_ll2cr_cache_recomputes_when_precompute_mode_changes(first_kwargs, secon
         resampler.resample(
             swath_data,
             chunks=(50, 50),
-            weight_delta_max=40,
             **first_kwargs,
         ).compute()
         calls_after_first = get_lonlats_mock.call_count
@@ -637,7 +644,6 @@ def test_ll2cr_cache_recomputes_when_precompute_mode_changes(first_kwargs, secon
         resampler.resample(
             swath_data,
             chunks=(50, 50),
-            weight_delta_max=40,
             **second_kwargs,
         ).compute()
         calls_after_second = get_lonlats_mock.call_count
