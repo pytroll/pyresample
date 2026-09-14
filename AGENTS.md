@@ -60,7 +60,7 @@ The short version:
 - **`GridDefinition`** — lon/lat arrays that happen to be evenly spaced. It is a special
   case of `AreaDefinition`, is far more expensive in memory and CPU, and is slated for
   deprecation. Don't build anything new on it.
-- **`StackedAreaDefinition`** — vertically stacked areas that share a CRS.
+- **`StackedAreaDefinition`** — areas stacked along the y dimension that share a CRS.
 - **`CoordinateDefinition`** — base class for lon/lat-only geometries; shows up in resampler
   type hints as the non-area geometry type.
 
