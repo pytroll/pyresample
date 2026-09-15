@@ -95,6 +95,8 @@ directives = { language_level = 3, freethreading_compatible = true }
 define_macros = [["NPY_NO_DEPRECATED_API", "NPY_1_25_API_VERSION"]]
 compile_args = [
   { platforms = ["linux", "darwin", "freebsd"], arg = "-O3" },
+  # Let sqrt()/exp() inline without the errno bookkeeping; results are unchanged.
+  { platforms = ["linux", "darwin", "freebsd"], arg = "-fno-math-errno" },
   { platforms = ["linux", "darwin", "freebsd"], arg = "-Wno-unused-function" },
 ]
 

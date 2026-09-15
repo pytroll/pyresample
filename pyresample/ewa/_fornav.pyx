@@ -188,6 +188,8 @@ cdef int fornav(unsigned int * valid_list, size_t chan_count, size_t swath_cols,
                                         swath_cols, rows_per_scan, grid_cols, grid_rows,
                                         tmp_cols_pointer, tmp_rows_pointer,
                                         input_images, input_fill, grid_accums, grid_weights, & ewaw, ewap)
+            if tmp_got_point < 0:
+                raise MemoryError("Unable to allocate per-channel EWA buffers")
 
             got_point = got_point or tmp_got_point
 
