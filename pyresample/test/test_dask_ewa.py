@@ -203,9 +203,10 @@ class TestDaskEWAResampler:
     @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
     @pytest.mark.parametrize('rows_per_scan', [10, 0, 100])
+    @pytest.mark.parametrize('persist', [False, True])
     def test_xarray_basic_ewa(self, resampler_class, resampler_mod,
                               input_shape, input_dims, input_dtype,
-                              maximum_weight_mode, rows_per_scan):
+                              maximum_weight_mode, rows_per_scan, persist):
         """Test EWA with basic xarray DataArrays."""
         is_legacy = resampler_class is LegacyDaskEWAResampler
         is_int = np.issubdtype(input_dtype, np.integer)
@@ -215,6 +216,10 @@ class TestDaskEWAResampler:
         if is_legacy and rows_per_scan == 0:
             pytest.skip("Legacy dask resampler does not support rows_per_scan "
                         "of 0.")
+        if is_legacy and persist:
+            pytest.skip("Legacy dask resampler does not support persist.")
+        # small output chunks so the persisted path prunes input/output chunk pairs
+        extra_kwargs = {} if is_legacy else {"persist": persist, "chunks": (50, 50)}
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
@@ -230,7 +235,8 @@ class TestDaskEWAResampler:
             resampler = resampler_class(source_swath, target_area)
             new_data = resampler.resample(swath_data, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
-                                          maximum_weight_mode=maximum_weight_mode)
+                                          maximum_weight_mode=maximum_weight_mode,
+                                          **extra_kwargs)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test', 'test')
             # make sure we can actually compute everything
@@ -242,7 +248,8 @@ class TestDaskEWAResampler:
             swath_data2 = _create_second_test_data(swath_data)
             new_data = resampler.resample(swath_data2, rows_per_scan=rows_per_scan,
                                           weight_delta_max=40,
-                                          maximum_weight_mode=maximum_weight_mode)
+                                          maximum_weight_mode=maximum_weight_mode,
+                                          **extra_kwargs)
             _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                       'test2', 'test2')
             _coord_and_crs_checks(new_data, target_area,
@@ -250,7 +257,8 @@ class TestDaskEWAResampler:
             result = new_data.compute()
 
             # ll2cr will be called once more because of the computation
-            assert ll2cr.call_count == ll2cr_calls + num_chunks
+            # unless the persisted ll2cr result is reused
+            assert ll2cr.call_count == ll2cr_calls + (0 if persist else num_chunks)
             # but we should already have taken the lonlats from the SwathDefinition
             assert get_lonlats.call_count == lonlat_calls
 
@@ -273,8 +281,9 @@ class TestDaskEWAResampler:
     )
     @pytest.mark.parametrize('input_dtype', [np.float32, np.float64, np.int8])
     @pytest.mark.parametrize('maximum_weight_mode', [False, True])
+    @pytest.mark.parametrize('persist', [False, True])
     def test_xarray_ewa_empty(self, input_chunks, input_shape, input_dims,
-                              input_dtype, maximum_weight_mode):
+                              input_dtype, maximum_weight_mode, persist):
         """Test EWA with xarray DataArrays where the result is all fills."""
         # projection that should result in no output pixels
         output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
@@ -292,7 +301,8 @@ class TestDaskEWAResampler:
 
         resampler = DaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data, rows_per_scan=10,
-                                      maximum_weight_mode=maximum_weight_mode)
+                                      maximum_weight_mode=maximum_weight_mode,
+                                      persist=persist)
         _data_attrs_coords_checks(new_data, output_shape, input_dtype, target_area,
                                   'test', 'test')
         # make sure we can actually compute everything
@@ -309,8 +319,9 @@ class TestDaskEWAResampler:
             # ((3, 100, 50), ('bands', 'y', 'x'), True),
         ]
     )
-    def test_numpy_basic_ewa(self, input_shape, input_dims, maximum_weight_mode):
-        """Test EWA with basic xarray DataArrays."""
+    @pytest.mark.parametrize('persist', [False, True])
+    def test_numpy_basic_ewa(self, input_shape, input_dims, maximum_weight_mode, persist):
+        """Test EWA with basic numpy arrays."""
         from pyresample.geometry import SwathDefinition
         output_shape = (200, 100)
         if len(input_shape) == 3:
@@ -325,7 +336,8 @@ class TestDaskEWAResampler:
         resampler = DaskEWAResampler(source_swath, target_area)
         new_data = resampler.resample(swath_data, rows_per_scan=10,
                                       weight_delta_max=40,
-                                      maximum_weight_mode=maximum_weight_mode)
+                                      maximum_weight_mode=maximum_weight_mode,
+                                      persist=persist, chunks=(50, 50))
         assert new_data.shape == output_shape
         assert new_data.dtype == np.float32
         assert isinstance(new_data, np.ndarray)
@@ -343,8 +355,15 @@ class TestDaskEWAResampler:
             ((3, 100, 50), ('bands', 'y', 'x'), True),
         ]
     )
-    def test_compare_to_legacy(self, input_shape, input_dims, maximum_weight_mode):
-        """Make sure new and legacy EWA algorithms produce the same results."""
+    @pytest.mark.parametrize('persist', [False, True])
+    def test_compare_to_legacy(self, input_shape, input_dims, maximum_weight_mode, persist):
+        """Make sure new and legacy EWA algorithms produce the same results.
+
+        The default ``weight_delta_max`` of 10 with 25x25 output chunks on
+        a 200x100 target area means that the persisted path prunes
+        input/output chunk pairs that cannot overlap.
+
+        """
         output_shape = (200, 100)
         if len(input_shape) == 3:
             output_shape = (input_shape[0], output_shape[0], output_shape[1])
@@ -353,18 +372,49 @@ class TestDaskEWAResampler:
             input_dims=input_dims,
         )
         swath_data.data = swath_data.data.astype(np.float32)
+        out_chunks = (25, 25)
 
         resampler = DaskEWAResampler(source_swath, target_area)
-        new_data = resampler.resample(swath_data, rows_per_scan=10,
-                                      maximum_weight_mode=maximum_weight_mode)
-        new_arr = new_data.compute()
+        with mock.patch.object(dask_ewa, '_delayed_fornav', wraps=dask_ewa._delayed_fornav) as fornav_mock:
+            new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                          maximum_weight_mode=maximum_weight_mode,
+                                          persist=persist, chunks=out_chunks)
+            new_arr = new_data.compute()
+        num_bands = 1 if len(input_shape) == 2 else input_shape[0]
+        num_out_chunks = (output_shape[-2] // out_chunks[0]) * (output_shape[-1] // out_chunks[1])
+        num_in_blocks = len(resampler.cache['ll2cr_blocks'])
+        max_fornav_calls = num_bands * num_in_blocks * num_out_chunks
+        assert fornav_mock.call_count > 0
+        if persist:
+            # some input/output chunk pairs were pruned
+            assert fornav_mock.call_count < max_fornav_calls
+        else:
+            assert fornav_mock.call_count == max_fornav_calls
 
         legacy_resampler = LegacyDaskEWAResampler(source_swath, target_area)
         legacy_data = legacy_resampler.resample(swath_data, rows_per_scan=10,
                                                 maximum_weight_mode=maximum_weight_mode)
         legacy_arr = legacy_data.compute()
 
-        np.testing.assert_allclose(new_arr, legacy_arr, atol=1e-6)
+        # small output chunks cause float32 rounding differences near chunk
+        # boundaries compared to the legacy single-chunk fornav
+        np.testing.assert_allclose(new_arr, legacy_arr, atol=1e-4)
+
+    @pytest.mark.parametrize('maximum_weight_mode', [False, True])
+    def test_persist_matches_non_persist(self, maximum_weight_mode):
+        """Pruning input/output chunk pairs must not change the result."""
+        swath_data, source_swath, target_area = get_test_data(
+            input_shape=(100, 50), output_shape=(200, 100),
+            input_dtype=np.float32,
+        )
+        results = []
+        for persist in (False, True):
+            resampler = DaskEWAResampler(source_swath, target_area)
+            new_data = resampler.resample(swath_data, rows_per_scan=10,
+                                          maximum_weight_mode=maximum_weight_mode,
+                                          persist=persist, chunks=(25, 25))
+            results.append(new_data.compute().values)
+        np.testing.assert_array_equal(results[0], results[1])
 
     @pytest.mark.parametrize(
         ('input_shape', 'input_dims', 'as_np'),
@@ -650,17 +700,3 @@ def test_ll2cr_cache_recomputes_when_precompute_mode_changes(first_kwargs, secon
 
     assert calls_after_first > 0
     assert calls_after_second > calls_after_first
-
-
-def test_xarray_ewa_persist_empty_returns_fill():
-    """Persisted path should return full fill when all ll2cr blocks are empty."""
-    output_proj = ('+proj=lcc +datum=WGS84 +ellps=WGS84 '
-                   '+lon_0=-55. +lat_0=25 +lat_1=25 +units=m +no_defs')
-    swath_data, source_swath, target_area = get_test_data(
-        input_shape=(100, 50), output_shape=(200, 100),
-        input_dims=('y', 'x'), input_dtype=np.float32,
-        output_proj=output_proj,
-    )
-    resampler = DaskEWAResampler(source_swath, target_area)
-    with dask.config.set(scheduler='sync'):
-        assert np.all(np.isnan(resampler.resample(swath_data, rows_per_scan=10, persist=True).compute().values))
