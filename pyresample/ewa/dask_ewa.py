@@ -124,21 +124,21 @@ def _ll2cr_block_extent(
     if not np.any(valid):
         return None
 
-    valid_rows = rows[valid]
-    valid_cols = cols[valid]
-    row_min = float(valid_rows.min())
-    row_max = float(valid_rows.max())
-    col_min = float(valid_cols.min())
-    col_max = float(valid_cols.max())
+    # 'where' avoids copying the valid points out of the block
+    row_min = float(rows.min(where=valid, initial=np.inf))
+    row_max = float(rows.max(where=valid, initial=-np.inf))
+    col_min = float(cols.min(where=valid, initial=np.inf))
+    col_max = float(cols.max(where=valid, initial=-np.inf))
     return row_min, row_max, col_min, col_max
 
 
-def _pad_bounds(bounds, overlap_margin):
+def _pad_bounds(bounds: Extent | None, overlap_margin: float) -> Extent | None:
     """Pad ll2cr bounds by a constant overlap margin.
 
     Args:
-        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``,
-            or ``None``.
+        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``
+            in continuous grid-cell coordinates as returned by ``ll2cr``,
+            or ``None`` when the bounds are unknown.
         overlap_margin: Non-negative overlap margin in grid cells.
 
     Returns:
@@ -155,14 +155,17 @@ def _pad_bounds(bounds, overlap_margin):
     )
 
 
-def _chunk_intersects_bounds(bounds, y_slice, x_slice):
+def _chunk_intersects_bounds(bounds: Extent | None, y_slice: slice, x_slice: slice) -> bool:
     """Check whether a target chunk overlaps pre-padded ll2cr bounds.
 
     Args:
-        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``,
-            already padded for overlap, or ``None``.
-        y_slice: Output chunk row slice.
-        x_slice: Output chunk column slice.
+        bounds: ll2cr bounds tuple ``(row_min, row_max, col_min, col_max)``
+            in continuous grid-cell coordinates, already padded for overlap,
+            or ``None`` when the bounds are unknown (always intersects).
+        y_slice: Output chunk rows as a ``[start, stop)`` slice in integer
+            grid cells.
+        x_slice: Output chunk columns as a ``[start, stop)`` slice in integer
+            grid cells.
 
     Returns:
         ``True`` if the chunk intersects the bounds.
@@ -645,11 +648,16 @@ class DaskEWAResampler(BaseResampler):
                 the total number of rows being used.
             persist (bool): Whether to persist (as in dask) the computations
                 during precompute or compute them on the fly during compute.
-                Persisting allows the resampler to determine which input
-                chunks will overlap with the target area. This can greatly
-                reduce the number of tasks and checks that will need to be
-                computed in cases where it is known that only a small amount
-                of input data will fall into the output area.
+                When ``True`` the ll2cr result is computed once during
+                ``precompute`` and reused by every later ``compute``. Input
+                chunks that do not overlap the target area are dropped and
+                input/output chunk pairs that cannot overlap are skipped.
+                This can greatly reduce the number of tasks and checks that
+                will need to be computed in cases where it is known that
+                only a small amount of input data will fall into the output
+                area. The persisted result is invalidated (recomputed) if a
+                later call uses different ``rows_per_scan``,
+                ``weight_delta_max``, or ``weight_distance_max`` values.
             chunks (tuple, int, dict, string): Chunk size of resulting dask
                 array. See :func:`~dask.array.core.normalize_chunks` for more
                 information.
