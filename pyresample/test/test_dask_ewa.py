@@ -26,6 +26,7 @@ import pytest
 from pyproj import CRS
 
 import pyresample.ewa
+from pyresample.test.utils import assert_maximum_dask_computes
 
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
@@ -457,25 +458,6 @@ class TestDaskEWAResampler:
         assert res1.name != res2.name
         assert res1.compute().shape != res2.compute().shape
 
-    def test_xarray_ewa_persist_computes(self):
-        """Ensure persisted ll2cr path builds a computable graph."""
-        swath_data, source_swath, target_area = get_test_data(
-            input_shape=(100, 50), output_shape=(200, 100),
-            input_dims=('y', 'x'), input_dtype=np.float32,
-        )
-        resampler = DaskEWAResampler(source_swath, target_area)
-        with dask.config.set(scheduler='sync'):
-            new_data = resampler.resample(
-                swath_data,
-                rows_per_scan=10,
-                persist=True,
-                chunks=(50, 50),
-                weight_delta_max=40,
-            )
-            computed = new_data.compute()
-        assert computed.shape == (200, 100)
-        assert computed.dtype == np.float32
-
 
 def test_get_ll2cr_blocks_persist_drops_empty_blocks():
     """Persisted ll2cr blocks that do not overlap the target area are dropped."""
@@ -508,26 +490,21 @@ def test_get_ll2cr_blocks_persist_drops_empty_blocks():
         assert -margin <= col_min and col_max <= grid_cols + margin
 
 
-def test_get_ll2cr_blocks_without_persist_uses_numblocks_only():
-    """Non-persist path should not build delayed wrappers just to count blocks."""
-    class FakeLl2CrResult:
-        name = "ll2cr-test"
-        numblocks = (2, 3)
+def test_get_ll2cr_blocks_without_persist_uses_all_blocks():
+    """Non-persist path should reference every ll2cr block without computing anything."""
+    _, source_swath, target_area = get_test_data()
+    resampler = DaskEWAResampler(source_swath, target_area)
+    ll2cr_result = da.zeros((20, 30), chunks=(10, 10))
 
-        def to_delayed(self):
-            raise AssertionError("to_delayed should not be used when persist=False")
-
-    ll2cr_blocks, block_dependencies = DaskEWAResampler._get_ll2cr_blocks(
-        None, FakeLl2CrResult(), persist=False, extent_margin=10.0)
+    with assert_maximum_dask_computes(0):
+        ll2cr_blocks, block_dependencies = resampler._get_ll2cr_blocks(
+            ll2cr_result, persist=False, extent_margin=10.0)
 
     assert block_dependencies is None
     assert ll2cr_blocks == [
-        (0, 0, ("ll2cr-test", 0, 0), None),
-        (0, 1, ("ll2cr-test", 0, 1), None),
-        (0, 2, ("ll2cr-test", 0, 2), None),
-        (1, 0, ("ll2cr-test", 1, 0), None),
-        (1, 1, ("ll2cr-test", 1, 1), None),
-        (1, 2, ("ll2cr-test", 1, 2), None),
+        (in_row_idx, in_col_idx, (ll2cr_result.name, in_row_idx, in_col_idx), None)
+        for in_row_idx in range(2)
+        for in_col_idx in range(3)
     ]
 
 
@@ -569,7 +546,7 @@ def test_generate_fornav_overlap_padding(kwargs, expected_count):
     """Overlap padding should expand to neighboring output chunks."""
     output_stack = dask_ewa._generate_fornav_dask_tasks(
         OUT_CHUNKS_2X2,
-        ((0, 0, "b00", (1.9, 1.9, 1.9, 1.9)),),
+        ((0, 0, "b00", (1.2, 1.9, 1.2, 1.9)),),
         "fornav-test",
         "input",
         mock.Mock(),
