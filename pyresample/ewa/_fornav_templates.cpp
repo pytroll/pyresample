@@ -36,7 +36,11 @@ int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type 
     return -1;
   }
 
-  ewaw->wtab = (weight_type *)calloc(weight_count, sizeof(weight_type));
+  // The table has one entry more than weight_count so compute_ewa*() can index it with
+  // `wtab[(int)(q * qfactor)]` and no bounds check. With q < qmax and qfactor = count / qmax
+  // the index is at most `count`, and only reaches it through float rounding; that last entry
+  // is a copy of the entry before it.
+  ewaw->wtab = (weight_type *)calloc(weight_count + 1, sizeof(weight_type));
   if (!ewaw->wtab) {
     return -1;
   }
@@ -53,6 +57,7 @@ int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type 
   for (idx=0; idx < weight_count; idx++) {
     wptr[idx] = exp(-ewaw->alpha * ewaw->qmax * idx / (ewaw->count - 1));
   }
+  wptr[weight_count] = wptr[weight_count - 1];
 
   ewaw->qfactor = ewaw->count / ewaw->qmax;
   return 0;
@@ -146,7 +151,7 @@ int compute_ewa_parameters(size_t swath_cols, size_t swath_rows, CR_TYPE *uimg, 
     vy = ((vimg[col + rowsm1 * swath_cols] - vimg[col]) / rowsm1) * distance_max;
 
     // Handle geolocation being bad with a little bit of grace
-    if (__isnan(ux) | __isnan(vx) | __isnan(uy) || __isnan(vy)) {
+    if (__isnan(ux) || __isnan(vx) || __isnan(uy) || __isnan(vy)) {
         this_ewap->a = 0;
         this_ewap->b = 0;
         this_ewap->c = 0;
@@ -193,237 +198,282 @@ int compute_ewa_parameters(size_t swath_cols, size_t swath_rows, CR_TYPE *uimg, 
   return 0;
 }
 
-template<typename CR_TYPE, typename IMAGE_TYPE>
-int compute_ewa(size_t chan_count, int maximum_weight_mode,
-        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows, CR_TYPE *uimg, CR_TYPE *vimg,
-        IMAGE_TYPE **images, IMAGE_TYPE img_fill, accum_type **grid_accums, weight_type **grid_weights, ewa_weight *ewaw, ewa_parameters *ewap) {
-  // This was originally copied from a cython C file for 32-bit float inputs (that explains some of the weird parens and other syntax
-  int got_point;
+// Bounding box of grid cells (inclusive) that a swath pixel at (u0, v0) can touch:
+// [u0 - u_del, u0 + u_del] x [v0 - v_del, v0 + v_del], truncated to ints and clamped to the
+// grid. Returns 0 without touching the outputs if that box cannot overlap the grid at all.
+//
+// The overlap test is done on the floating point bounds rather than on the clamped ints
+// because most swath pixels fail it: in the dask path every source block is offered to every
+// target chunk it might overlap, so a large share of coordinates land far outside this
+// chunk's grid. Those pixels then cost four comparisons and nothing else. Writing the test
+// as a positive condition also makes NaN coordinates fail it without an explicit isnan(),
+// and keeps huge values away from the float->int cast, whose result would be undefined.
+template<typename CR_TYPE>
+static inline int compute_bbox(CR_TYPE u0, CR_TYPE v0, ewa_param_type u_del, ewa_param_type v_del,
+        CR_TYPE grid_cols_f, CR_TYPE grid_rows_f, size_t grid_cols, size_t grid_rows,
+        int *iu1, int *iu2, int *iv1, int *iv2) {
+  const CR_TYPE u_lo = u0 - u_del;
+  const CR_TYPE v_lo = v0 - v_del;
+  if (!(u0 >= -u_del && v0 >= -v_del && u_lo < grid_cols_f && v_lo < grid_rows_f)) {
+    return 0;
+  }
+  // Because u0 >= -u_del, u0 + u_del >= 0, and because u_lo < grid_cols, (int)u_lo < grid_cols
+  // (same for v), so after clamping the box is a non-empty range of grid cells.
+  *iu1 = (int)u_lo;
+  *iu2 = (int)(u0 + u_del);
+  *iv1 = (int)v_lo;
+  *iv2 = (int)(v0 + v_del);
+  if (*iu1 < 0) {
+    *iu1 = 0;
+  }
+  if (*iu2 >= (int)grid_cols) {
+    *iu2 = (int)grid_cols - 1;
+  }
+  if (*iv1 < 0) {
+    *iv1 = 0;
+  }
+  if (*iv2 >= (int)grid_rows) {
+    *iv2 = (int)grid_rows - 1;
+  }
+  return 1;
+}
+
+template<typename IMAGE_TYPE>
+static inline int is_valid_pixel(IMAGE_TYPE this_val, IMAGE_TYPE img_fill) {
+  return !(this_val == img_fill || __isnan(this_val));
+}
+
+// compute_ewa*() below: for every swath pixel, walk the grid cells in its bounding box and
+// add the pixel's value, scaled by the elliptical weight `wtab[q * qfactor]` of the cell,
+// into grid_accum, and the weight itself into grid_weight (or, in maximum weight mode, keep
+// the value with the single largest weight). write_grid_image() turns the two grids into
+// the output image afterwards.
+//
+// Notes on how the loops are written, since this is the hot path of EWA resampling:
+//
+// - The ellipse parameters `a`, `b`, `c`, `f` and the weight table fields are float, and so
+//   are the grid arrays the loops store into. Under C++ aliasing rules a store through a
+//   `float *` may modify any other float, so if the loops read those parameters through the
+//   struct pointers the compiler has to reload them from memory after every grid store.
+//   They are therefore copied into local variables before the loops, and the pointer
+//   arguments are declared FORNAV_RESTRICT, which promises that the grid arrays, the image
+//   and the coordinate arrays do not overlap.
+// - Whether a pixel's value is valid (not the fill value, not NaN) does not depend on the
+//   grid cell, so it is checked once per swath pixel, before the bounding box loops.
+// - maximum_weight_mode is a template parameter so each mode gets its own specialised inner
+//   loop instead of a runtime branch per grid cell.
+
+template<bool MAX_WEIGHT_MODE, typename CR_TYPE, typename IMAGE_TYPE>
+static int compute_ewa_impl(size_t chan_count,
+        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
+        const CR_TYPE *FORNAV_RESTRICT uimg, const CR_TYPE *FORNAV_RESTRICT vimg,
+        IMAGE_TYPE **images, IMAGE_TYPE img_fill, accum_type **grid_accums, weight_type **grid_weights,
+        const ewa_weight *ewaw, const ewa_parameters *ewap) {
+  const weight_type qfactor = ewaw->qfactor;
+  const weight_type *FORNAV_RESTRICT wtab = ewaw->wtab;
+  const CR_TYPE grid_cols_f = (CR_TYPE)grid_cols;
+  const CR_TYPE grid_rows_f = (CR_TYPE)grid_rows;
+  int got_point = 0;
   unsigned int row;
   unsigned int col;
-  ewa_parameters *this_ewap;
+  unsigned int swath_offset;
+  size_t chan;
+  size_t n_valid;
   int iu1;
   int iu2;
   int iv1;
   int iv2;
   int iu;
   int iv;
-  CR_TYPE u0;
-  CR_TYPE v0;
-  weight_type ddq;
-  weight_type dq;
-  weight_type q;
-  weight_type u;
-  weight_type v;
-  weight_type a2up1;
-  weight_type au2;
-  weight_type bu;
-  weight_type weight;
 
-  // Test: This is how the original fornav did its calculations
-//  double u0;
-//  double v0;
-//  double ddq;
-//  double dq;
-//  double q;
-//  double u;
-//  double v;
-//  double a2up1;
-//  double au2;
-//  double bu;
-//  double weight;
-//  double qfactor;
+  // Filled per swath pixel with the channels whose value is valid (not fill, not NaN) and
+  // those values, so the inner loop only visits channels that contribute.
+  size_t *valid_chans = (size_t *)malloc(chan_count * sizeof(size_t));
+  accum_type *valid_vals = (accum_type *)malloc(chan_count * sizeof(accum_type));
+  if (!valid_chans || !valid_vals) {
+    free(valid_chans);
+    free(valid_vals);
+    return -1;
+  }
 
-  int iw;
-  IMAGE_TYPE this_val;
-  unsigned int swath_offset;
-  unsigned int grid_offset;
-  size_t chan;
+  for (row = 0, swath_offset = 0; row < swath_rows; row++) {
+    const ewa_parameters *this_ewap = ewap;
+    for (col = 0; col < swath_cols; col++, this_ewap++, swath_offset++) {
+      const CR_TYPE u0 = uimg[swath_offset];
+      const CR_TYPE v0 = vimg[swath_offset];
 
-  got_point = 0;
-  for (row = 0, swath_offset=0; row < swath_rows; row+=1) {
-    for (col = 0, this_ewap = ewap; col < swath_cols; col++, this_ewap++, swath_offset++) {
-      u0 = uimg[swath_offset];
-      v0 = vimg[swath_offset];
+      if (!compute_bbox(u0, v0, this_ewap->u_del, this_ewap->v_del, grid_cols_f, grid_rows_f,
+                        grid_cols, grid_rows, &iu1, &iu2, &iv1, &iv2)) {
+        continue;
+      }
+      got_point = 1;
 
-      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
+      n_valid = 0;
+      for (chan = 0; chan < chan_count; chan++) {
+        const IMAGE_TYPE this_val = images[chan][swath_offset];
+        if (is_valid_pixel(this_val, img_fill)) {
+          valid_chans[n_valid] = chan;
+          valid_vals[n_valid] = (accum_type)this_val;
+          n_valid++;
+        }
+      }
+      if (n_valid == 0) {
         continue;
       }
 
-      iu1 = ((int)(u0 - this_ewap->u_del));
-      iu2 = ((int)(u0 + this_ewap->u_del));
-      iv1 = ((int)(v0 - this_ewap->v_del));
-      iv2 = ((int)(v0 + this_ewap->v_del));
+      const ewa_param_type a = this_ewap->a;
+      const ewa_param_type b = this_ewap->b;
+      const ewa_param_type c = this_ewap->c;
+      const ewa_param_type f = this_ewap->f;
+      const weight_type ddq = 2.0 * a;
+      const weight_type u = (iu1 - u0);
+      const weight_type a2up1 = (a * ((2.0 * u) + 1.0));
+      const weight_type bu = b * u;
+      const weight_type au2 = a * u * u;
 
-      if (iu1 < 0) {
-        iu1 = 0;
-      }
-      if (iu2 >= grid_cols) {
-        iu2 = (grid_cols - 1);
-      }
-      if (iv1 < 0) {
-        iv1 = 0;
-      }
-      if (iv2 >= grid_rows) {
-        iv2 = (grid_rows - 1);
-      }
+      for (iv = iv1; iv <= iv2; iv++) {
+        const weight_type v = (iv - v0);
+        const size_t row_offset = (size_t)iv * grid_cols;
+        weight_type dq = (a2up1 + (b * v));
+        weight_type q = ((((c * v) + bu) * v) + au2);
+        for (iu = iu1; iu <= iu2; iu++) {
+          if ((q >= 0.0) && (q < f)) {
+            const weight_type weight = wtab[(int)(q * qfactor)];
+            const size_t grid_offset = row_offset + iu;
 
-      if (iu1 < grid_cols && iu2 >= 0 && iv1 < grid_rows && iv2 >= 0) {
-        got_point = 1;
-        ddq = 2.0 * this_ewap->a;
-
-        u = (iu1 - u0);
-        a2up1 = (this_ewap->a * ((2.0 * u) + 1.0));
-        bu = this_ewap->b * u;
-        au2 = this_ewap->a * u * u;
-
-        for (iv = iv1; iv <= iv2; iv++) {
-          v = (iv - v0);
-          dq = (a2up1 + (this_ewap->b * v));
-          q = ((((this_ewap->c * v) + bu) * v) + au2);
-          for (iu = iu1; iu <= iu2; iu++) {
-            if ((q >= 0.0) && (q < this_ewap->f)) {
-              iw = ((int)(q * ewaw->qfactor));
-              if (iw >= ewaw->count) {
-                iw = (ewaw->count - 1);
-              }
-              weight = (ewaw->wtab[iw]);
-              grid_offset = ((iv * grid_cols) + iu);
-
-              for (chan = 0; chan < chan_count; chan+=1) {
-                this_val = ((images[chan])[swath_offset]);
-                if (maximum_weight_mode) {
-                  if (weight > grid_weights[chan][grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
-                    ((grid_weights[chan])[grid_offset]) = weight;
-                    ((grid_accums[chan])[grid_offset]) = (accum_type)this_val;
-                  }
-                } else {
-                  if ((this_val != img_fill) && !(__isnan(this_val))) {
-                    ((grid_weights[chan])[grid_offset]) += weight;
-                    ((grid_accums[chan])[grid_offset]) += (accum_type)this_val * weight;
-                  }
+            for (chan = 0; chan < n_valid; chan++) {
+              weight_type *FORNAV_RESTRICT grid_weight = grid_weights[valid_chans[chan]];
+              accum_type *FORNAV_RESTRICT grid_accum = grid_accums[valid_chans[chan]];
+              const accum_type val = valid_vals[chan];
+              if (MAX_WEIGHT_MODE) {
+                if (weight > grid_weight[grid_offset]) {
+                  grid_weight[grid_offset] = weight;
+                  grid_accum[grid_offset] = val;
                 }
+              } else {
+                grid_weight[grid_offset] += weight;
+                grid_accum[grid_offset] += val * weight;
               }
             }
-            q += dq;
-            dq += ddq;
           }
+          q += dq;
+          dq += ddq;
         }
       }
     }
   }
 
-  /* function exit code */
+  free(valid_chans);
+  free(valid_vals);
   return got_point;
 }
 
+template<typename CR_TYPE, typename IMAGE_TYPE>
+int compute_ewa(size_t chan_count, int maximum_weight_mode,
+        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows, CR_TYPE *uimg, CR_TYPE *vimg,
+        IMAGE_TYPE **images, IMAGE_TYPE img_fill, accum_type **grid_accums, weight_type **grid_weights, ewa_weight *ewaw, ewa_parameters *ewap) {
+  if (maximum_weight_mode) {
+    return compute_ewa_impl<true, CR_TYPE, IMAGE_TYPE>(chan_count, swath_cols, swath_rows, grid_cols, grid_rows,
+        uimg, vimg, images, img_fill, grid_accums, grid_weights, ewaw, ewap);
+  }
+  return compute_ewa_impl<false, CR_TYPE, IMAGE_TYPE>(chan_count, swath_cols, swath_rows, grid_cols, grid_rows,
+      uimg, vimg, images, img_fill, grid_accums, grid_weights, ewaw, ewap);
+}
+
+
+template<bool MAX_WEIGHT_MODE, typename CR_TYPE, typename IMAGE_TYPE>
+static int compute_ewa_single_impl(
+        size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows,
+        const CR_TYPE *FORNAV_RESTRICT uimg, const CR_TYPE *FORNAV_RESTRICT vimg,
+        const IMAGE_TYPE *FORNAV_RESTRICT image, IMAGE_TYPE img_fill,
+        accum_type *FORNAV_RESTRICT grid_accum, weight_type *FORNAV_RESTRICT grid_weight,
+        const ewa_weight *ewaw, const ewa_parameters *ewap) {
+  const weight_type qfactor = ewaw->qfactor;
+  const weight_type *FORNAV_RESTRICT wtab = ewaw->wtab;
+  const CR_TYPE grid_cols_f = (CR_TYPE)grid_cols;
+  const CR_TYPE grid_rows_f = (CR_TYPE)grid_rows;
+  int got_point = 0;
+  unsigned int row;
+  unsigned int col;
+  unsigned int swath_offset;
+  int iu1;
+  int iu2;
+  int iv1;
+  int iv2;
+  int iu;
+  int iv;
+
+  for (row = 0, swath_offset = 0; row < swath_rows; row++) {
+    const ewa_parameters *this_ewap = ewap;
+    for (col = 0; col < swath_cols; col++, this_ewap++, swath_offset++) {
+      const CR_TYPE u0 = uimg[swath_offset];
+      const CR_TYPE v0 = vimg[swath_offset];
+
+      if (!compute_bbox(u0, v0, this_ewap->u_del, this_ewap->v_del, grid_cols_f, grid_rows_f,
+                        grid_cols, grid_rows, &iu1, &iu2, &iv1, &iv2)) {
+        continue;
+      }
+      got_point = 1;
+
+      const IMAGE_TYPE this_val = image[swath_offset];
+      if (!is_valid_pixel(this_val, img_fill)) {
+        continue;
+      }
+
+      const accum_type val = (accum_type)this_val;
+      const ewa_param_type a = this_ewap->a;
+      const ewa_param_type b = this_ewap->b;
+      const ewa_param_type c = this_ewap->c;
+      const ewa_param_type f = this_ewap->f;
+      const weight_type ddq = 2.0 * a;
+      const weight_type u = (iu1 - u0);
+      const weight_type a2up1 = (a * ((2.0 * u) + 1.0));
+      const weight_type bu = b * u;
+      const weight_type au2 = a * u * u;
+
+      for (iv = iv1; iv <= iv2; iv++) {
+        const weight_type v = (iv - v0);
+        const size_t row_offset = (size_t)iv * grid_cols;
+        weight_type dq = (a2up1 + (b * v));
+        weight_type q = ((((c * v) + bu) * v) + au2);
+        for (iu = iu1; iu <= iu2; iu++) {
+          if ((q >= 0.0) && (q < f)) {
+            const weight_type weight = wtab[(int)(q * qfactor)];
+            const size_t grid_offset = row_offset + iu;
+
+            if (MAX_WEIGHT_MODE) {
+              if (weight > grid_weight[grid_offset]) {
+                grid_weight[grid_offset] = weight;
+                grid_accum[grid_offset] = val;
+              }
+            } else {
+              grid_weight[grid_offset] += weight;
+              grid_accum[grid_offset] += val * weight;
+            }
+          }
+          q += dq;
+          dq += ddq;
+        }
+      }
+    }
+  }
+
+  return got_point;
+}
 
 template<typename CR_TYPE, typename IMAGE_TYPE>
 int compute_ewa_single(int maximum_weight_mode,
         size_t swath_cols, size_t swath_rows, size_t grid_cols, size_t grid_rows, CR_TYPE *uimg, CR_TYPE *vimg,
         IMAGE_TYPE *image, IMAGE_TYPE img_fill, accum_type *grid_accum, weight_type *grid_weight, ewa_weight *ewaw, ewa_parameters *ewap) {
-  // This was originally copied from a cython C file for 32-bit float inputs (that explains some of the weird parens and other syntax
-  int got_point;
-  unsigned int row;
-  unsigned int col;
-  ewa_parameters *this_ewap;
-  int iu1;
-  int iu2;
-  int iv1;
-  int iv2;
-  int iu;
-  int iv;
-  CR_TYPE u0;
-  CR_TYPE v0;
-  weight_type ddq;
-  weight_type dq;
-  weight_type q;
-  weight_type u;
-  weight_type v;
-  weight_type a2up1;
-  weight_type au2;
-  weight_type bu;
-  weight_type weight;
-
-  int iw;
-  IMAGE_TYPE this_val;
-  unsigned int swath_offset;
-  unsigned int grid_offset;
-
-  got_point = 0;
-  for (row = 0, swath_offset=0; row < swath_rows; row+=1) {
-    for (col = 0, this_ewap = ewap; col < swath_cols; col++, this_ewap++, swath_offset++) {
-      u0 = uimg[swath_offset];
-      v0 = vimg[swath_offset];
-
-      if (u0 < -this_ewap->u_del || v0 < -this_ewap->v_del || __isnan(u0) || __isnan(v0)) {
-        continue;
-      }
-
-      iu1 = ((int)(u0 - this_ewap->u_del));
-      iu2 = ((int)(u0 + this_ewap->u_del));
-      iv1 = ((int)(v0 - this_ewap->v_del));
-      iv2 = ((int)(v0 + this_ewap->v_del));
-
-      if (iu1 < 0) {
-        iu1 = 0;
-      }
-      if (iu2 >= grid_cols) {
-        iu2 = (grid_cols - 1);
-      }
-      if (iv1 < 0) {
-        iv1 = 0;
-      }
-      if (iv2 >= grid_rows) {
-        iv2 = (grid_rows - 1);
-      }
-
-      if (iu1 < grid_cols && iu2 >= 0 && iv1 < grid_rows && iv2 >= 0) {
-        got_point = 1;
-        ddq = 2.0 * this_ewap->a;
-
-        u = (iu1 - u0);
-        a2up1 = (this_ewap->a * ((2.0 * u) + 1.0));
-        bu = this_ewap->b * u;
-        au2 = this_ewap->a * u * u;
-
-        for (iv = iv1; iv <= iv2; iv++) {
-          v = (iv - v0);
-          dq = (a2up1 + (this_ewap->b * v));
-          q = ((((this_ewap->c * v) + bu) * v) + au2);
-          for (iu = iu1; iu <= iu2; iu++) {
-            if ((q >= 0.0) && (q < this_ewap->f)) {
-              iw = ((int)(q * ewaw->qfactor));
-              if (iw >= ewaw->count) {
-                iw = (ewaw->count - 1);
-              }
-              weight = (ewaw->wtab[iw]);
-              grid_offset = ((iv * grid_cols) + iu);
-
-              this_val = (image[swath_offset]);
-              if (maximum_weight_mode) {
-                if (weight > grid_weight[grid_offset] & !((this_val == img_fill) || (__isnan(this_val)))) {
-                  grid_weight[grid_offset] = weight;
-                  grid_accum[grid_offset] = (accum_type)this_val;
-                }
-              } else {
-                if ((this_val != img_fill) && !(__isnan(this_val))) {
-                  grid_weight[grid_offset] += weight;
-                  grid_accum[grid_offset] += (accum_type)this_val * weight;
-                }
-              }
-            }
-            q += dq;
-            dq += ddq;
-          }
-        }
-      }
-    }
+  if (maximum_weight_mode) {
+    return compute_ewa_single_impl<true, CR_TYPE, IMAGE_TYPE>(swath_cols, swath_rows, grid_cols, grid_rows,
+        uimg, vimg, image, img_fill, grid_accum, grid_weight, ewaw, ewap);
   }
-
-  /* function exit code */
-  return got_point;
+  return compute_ewa_single_impl<false, CR_TYPE, IMAGE_TYPE>(swath_cols, swath_rows, grid_cols, grid_rows,
+      uimg, vimg, image, img_fill, grid_accum, grid_weight, ewaw, ewap);
 }
+
+
 // Overloaded functions for specific types for `write_grid_image`
 //static void write_grid_pixel(npy_uint8 *output_image, accum_type chanf) {
 //  if (chanf < 0.0) {

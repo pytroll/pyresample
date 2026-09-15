@@ -13,6 +13,15 @@ typedef float accum_type;
 //const weight_type EPSILON = 1e-8;
 #define EPSILON (1e-8)
 
+// Pointer arguments that never alias each other (see compute_ewa*() in the .cpp)
+#if defined(__GNUC__) || defined(__clang__)
+#define FORNAV_RESTRICT __restrict__
+#elif defined(_MSC_VER)
+#define FORNAV_RESTRICT __restrict
+#else
+#define FORNAV_RESTRICT
+#endif
+
 typedef struct {
     ewa_param_type a;
     ewa_param_type b;
