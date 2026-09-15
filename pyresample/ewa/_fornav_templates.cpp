@@ -20,16 +20,8 @@ int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type 
   unsigned int idx;
   weight_type *wptr;
 
-  ewaw->wtab = (weight_type *)calloc(weight_count, sizeof(weight_type));
-  if (!ewaw->wtab) {
-    return -1;
-  }
-
-  ewaw->count = weight_count;
-  ewaw->min = weight_min;
-  ewaw->distance_max = weight_distance_max;
-  ewaw->delta_max = weight_delta_max;
-  ewaw->sum_min = weight_sum_min;
+  // Always leave the struct in a state that deinitialize_weight() can handle
+  ewaw->wtab = NULL;
 
   if (weight_count < 2) {
     // must be at least 2
@@ -43,6 +35,17 @@ int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type 
     // must be greater than 0
     return -1;
   }
+
+  ewaw->wtab = (weight_type *)calloc(weight_count, sizeof(weight_type));
+  if (!ewaw->wtab) {
+    return -1;
+  }
+
+  ewaw->count = weight_count;
+  ewaw->min = weight_min;
+  ewaw->distance_max = weight_distance_max;
+  ewaw->delta_max = weight_delta_max;
+  ewaw->sum_min = weight_sum_min;
 
   ewaw->qmax = ewaw->distance_max * ewaw->distance_max;
   ewaw->alpha = -log(ewaw->min) / ewaw->qmax;
@@ -58,51 +61,49 @@ int initialize_weight(size_t chan_count, unsigned int weight_count, weight_type 
 void deinitialize_weight(ewa_weight *ewaw) {
   if (ewaw->wtab) {
     free(ewaw->wtab);
+    ewaw->wtab = NULL;
   }
-}
-
-accum_type **initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows) {
-  accum_type **grid_accums = (accum_type **)malloc(chan_count * sizeof(accum_type *));
-  unsigned int i;
-
-  if (!grid_accums) {
-    return NULL;
-  }
-  for (i=0; i < chan_count; i++) {
-    grid_accums[i] = (accum_type *)calloc(grid_cols * grid_rows, sizeof(accum_type));
-    if (!grid_accums[i]) {
-      return NULL;
-    }
-  }
-
-  return grid_accums;
-}
-
-weight_type **initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows) {
-  weight_type **grid_weights = (weight_type **)malloc(chan_count * sizeof(weight_type *));
-  unsigned int i;
-
-  if (!grid_weights) {
-    return NULL;
-  }
-  for (i=0; i<chan_count; i++) {
-    grid_weights[i] = (weight_type *)calloc(grid_cols * grid_rows, sizeof(weight_type));
-    if (!grid_weights[i]) {
-      return NULL;
-    }
-  }
-
-  return grid_weights;
 }
 
 void deinitialize_grids(size_t chan_count, void **grids) {
   unsigned int i;
+  if (!grids) {
+    return;
+  }
   for (i = 0; i < chan_count; i++) {
     if (grids[i]) {
       free(grids[i]);
     }
   }
   free(grids);
+}
+
+// Allocate chan_count zeroed grids of elem_size * grid_cols * grid_rows bytes.
+// On any failure everything allocated so far is released and NULL is returned.
+static void **initialize_grids(size_t chan_count, size_t grid_cols, size_t grid_rows, size_t elem_size) {
+  void **grids = (void **)calloc(chan_count, sizeof(void *));
+  unsigned int i;
+
+  if (!grids) {
+    return NULL;
+  }
+  for (i=0; i < chan_count; i++) {
+    grids[i] = calloc(grid_cols * grid_rows, elem_size);
+    if (!grids[i]) {
+      deinitialize_grids(chan_count, grids);
+      return NULL;
+    }
+  }
+
+  return grids;
+}
+
+accum_type **initialize_grid_accums(size_t chan_count, size_t grid_cols, size_t grid_rows) {
+  return (accum_type **)initialize_grids(chan_count, grid_cols, grid_rows, sizeof(accum_type));
+}
+
+weight_type **initialize_grid_weights(size_t chan_count, size_t grid_cols, size_t grid_rows) {
+  return (weight_type **)initialize_grids(chan_count, grid_cols, grid_rows, sizeof(weight_type));
 }
 
 template <typename CR_TYPE>

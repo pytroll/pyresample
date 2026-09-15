@@ -132,76 +132,79 @@ cdef int fornav(unsigned int * valid_list, size_t chan_count, size_t swath_cols,
     cdef int func_result
     cdef cr_dtype * tmp_cols_pointer
     cdef cr_dtype * tmp_rows_pointer
-    cdef image_dtype ** input_images
+    cdef image_dtype ** input_images = NULL
     cdef ewa_weight ewaw
-    cdef ewa_parameters * ewap
+    cdef ewa_parameters * ewap = NULL
+    cdef accum_type ** grid_accums = NULL
+    cdef weight_type ** grid_weights = NULL
 
     # other defaults
     if weight_sum_min == -1.0:
         weight_sum_min = weight_min
 
-    func_result = initialize_weight(chan_count, weight_count, weight_min, weight_distance_max, weight_delta_max,
-                                    weight_sum_min, & ewaw)
-    if func_result < 0:
-        raise RuntimeError("Could not initialize weight structure for EWA resampling")
-
-    # Allocate location for storing the sum of all of the pixels involved in each grid cell
-    # XXX: Do these need to be initialized to a fill value?
-    cdef accum_type ** grid_accums = initialize_grid_accums(chan_count, grid_cols, grid_rows)
-    if grid_accums is NULL:
-        raise MemoryError()
-    cdef weight_type ** grid_weights = initialize_grid_weights(chan_count, grid_cols, grid_rows)
-    if grid_weights is NULL:
-        raise MemoryError()
-    # Allocate memory for the parameters specific to each column
-    ewap = <ewa_parameters * >malloc(swath_cols * sizeof(ewa_parameters))
-    if ewap is NULL:
-        raise MemoryError()
-    # Allocate pointers to the correct portion of the data arrays that we will use
-    input_images = <image_dtype ** >malloc(chan_count * sizeof(image_dtype *))
-    if input_images is NULL:
-        raise MemoryError()
-
-    # NOTE: Have to use old school pyrex for loop because cython only supports compile-time known steps
-    for row_idx from 0 <= row_idx < swath_rows by rows_per_scan:
-        tmp_cols_pointer = &cols_pointer[row_idx * swath_cols]
-        tmp_rows_pointer = &rows_pointer[row_idx * swath_cols]
-        # print "Current cols pointer: %d" % (<int>tmp_cols_pointer,)
-
-        # Assign the python/numpy array objects to a pointer location for the rest of the functions
-        for idx in range(chan_count):
-            input_images[idx] = &input_arrays[idx][row_idx * swath_cols]
-        # print "Current input 0 pointer: %d" % (<int>input_images[idx],)
-
-        # Calculate EWA parameters for each column index
-        func_result = compute_ewa_parameters(swath_cols, rows_per_scan, tmp_cols_pointer, tmp_rows_pointer, & ewaw, ewap)
+    # Every allocation below is released in the ``finally`` block, including
+    # on the RuntimeError paths (no overlap between swath and grid is a normal
+    # occurrence, not a programming error).
+    ewaw.wtab = NULL
+    try:
+        func_result = initialize_weight(chan_count, weight_count, weight_min, weight_distance_max, weight_delta_max,
+                                        weight_sum_min, & ewaw)
         if func_result < 0:
-            got_point = got_point or 0
-            # raise RuntimeError("Could compute EWA parameters for EWA resampling")
-            continue
+            raise RuntimeError("Could not initialize weight structure for EWA resampling")
 
-        # NOTE: In the C version this is where the image array data is loaded
-        tmp_got_point = compute_ewa(chan_count, maximum_weight_mode,
-                                    swath_cols, rows_per_scan, grid_cols, grid_rows,
-                                    tmp_cols_pointer, tmp_rows_pointer,
-                                    input_images, input_fill, grid_accums, grid_weights, & ewaw, ewap)
+        # Allocate location for storing the sum of all of the pixels involved in each grid cell
+        # Zero-initialized: sums start at 0 and untouched cells fall below weight_sum_min (-> fill)
+        grid_accums = initialize_grid_accums(chan_count, grid_cols, grid_rows)
+        if grid_accums is NULL:
+            raise MemoryError()
+        grid_weights = initialize_grid_weights(chan_count, grid_cols, grid_rows)
+        if grid_weights is NULL:
+            raise MemoryError()
+        # Allocate memory for the parameters specific to each column
+        ewap = <ewa_parameters * >malloc(swath_cols * sizeof(ewa_parameters))
+        if ewap is NULL:
+            raise MemoryError()
+        # Allocate pointers to the correct portion of the data arrays that we will use
+        input_images = <image_dtype ** >malloc(chan_count * sizeof(image_dtype *))
+        if input_images is NULL:
+            raise MemoryError()
 
-        got_point = got_point or tmp_got_point
+        # NOTE: Have to use old school pyrex for loop because cython only supports compile-time known steps
+        for row_idx from 0 <= row_idx < swath_rows by rows_per_scan:
+            tmp_cols_pointer = &cols_pointer[row_idx * swath_cols]
+            tmp_rows_pointer = &rows_pointer[row_idx * swath_cols]
 
-    free(input_images)
-    free(ewap)
+            # Assign the python/numpy array objects to a pointer location for the rest of the functions
+            for idx in range(chan_count):
+                input_images[idx] = &input_arrays[idx][row_idx * swath_cols]
 
-    if not got_point:
-        raise RuntimeError("EWA Resampling: No swath pixels found inside grid to be resampled")
+            # Calculate EWA parameters for each column index
+            func_result = compute_ewa_parameters(swath_cols, rows_per_scan, tmp_cols_pointer, tmp_rows_pointer, & ewaw, ewap)
+            if func_result < 0:
+                continue
 
-    for idx in range(chan_count):
-        valid_list[idx] = write_grid_image(output_arrays[idx], output_fill, grid_cols, grid_rows,
-                                           grid_accums[idx], grid_weights[idx], maximum_weight_mode, weight_sum_min)
+            # NOTE: In the C version this is where the image array data is loaded
+            tmp_got_point = compute_ewa(chan_count, maximum_weight_mode,
+                                        swath_cols, rows_per_scan, grid_cols, grid_rows,
+                                        tmp_cols_pointer, tmp_rows_pointer,
+                                        input_images, input_fill, grid_accums, grid_weights, & ewaw, ewap)
 
-    # free(grid_accums)
-    deinitialize_weight(& ewaw)
-    deinitialize_grids(chan_count, < void ** >grid_accums)
-    deinitialize_grids(chan_count, < void ** >grid_weights)
+            got_point = got_point or tmp_got_point
+
+        if not got_point:
+            raise RuntimeError("EWA Resampling: No swath pixels found inside grid to be resampled")
+
+        for idx in range(chan_count):
+            valid_list[idx] = write_grid_image(output_arrays[idx], output_fill, grid_cols, grid_rows,
+                                               grid_accums[idx], grid_weights[idx], maximum_weight_mode, weight_sum_min)
+    finally:
+        free(input_images)
+        free(ewap)
+        deinitialize_weight(& ewaw)
+        if grid_accums is not NULL:
+            deinitialize_grids(chan_count, < void ** >grid_accums)
+        if grid_weights is not NULL:
+            deinitialize_grids(chan_count, < void ** >grid_weights)
 
     return 0
 
@@ -279,13 +282,9 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
     if not all(output_array.dtype == out_type for output_array in output_arrays):
         raise ValueError("Input arrays must all be of the same data type")
 
-    cdef void** input_pointer = <void ** >malloc(num_items * sizeof(void * ))
-    if not input_pointer:
-        raise MemoryError()
-    cdef void** output_pointer = <void ** >malloc(num_items * sizeof(void * ))
-    if not output_pointer:
-        raise MemoryError()
-    cdef unsigned int * valid_arr = <unsigned int * >malloc(num_items * sizeof(unsigned int))
+    cdef void** input_pointer = NULL
+    cdef void** output_pointer = NULL
+    cdef unsigned int * valid_arr = NULL
     valid_list = []
     cdef cr_dtype * cols_pointer = &cols_array[0, 0]
     cdef cr_dtype * rows_pointer = &rows_array[0, 0]
@@ -302,59 +301,67 @@ def fornav_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] cols_array,
     cdef numpy.ndarray[numpy.int8_t, ndim= 2] tmp_arr_i8
     cdef cr_dtype[:, ::1] tmp_arr
 
-    if in_type == numpy.float32:
-        input_fill_f32 = <numpy.float32_t>input_fill
-        output_fill_f32 = <numpy.float32_t>output_fill
-        for i in range(num_items):
-            tmp_arr_f32 = input_arrays[i]
-            input_pointer[i] = &tmp_arr_f32[0, 0]
-            tmp_arr_f32 = output_arrays[i]
-            output_pointer[i] = &tmp_arr_f32[0, 0]
-        with nogil:
-            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
-                                 cols_pointer, rows_pointer,
-                                 < numpy.float32_t ** >input_pointer, < numpy.float32_t ** >output_pointer,
-                                 output_fill_f32, output_fill_f32, rows_per_scan,
-                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                                 mwm)
-    elif in_type == numpy.float64:
-        input_fill_f64 = <numpy.float64_t>input_fill
-        output_fill_f64 = <numpy.float64_t>output_fill
-        for i in range(num_items):
-            tmp_arr_f64 = input_arrays[i]
-            input_pointer[i] = &tmp_arr_f64[0, 0]
-            tmp_arr_f64 = output_arrays[i]
-            output_pointer[i] = &tmp_arr_f64[0, 0]
-        with nogil:
-            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
-                                 cols_pointer, rows_pointer,
-                                 < numpy.float64_t ** >input_pointer, < numpy.float64_t ** >output_pointer,
-                                 input_fill_f64, output_fill_f64, rows_per_scan,
-                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                                 mwm)
-    elif in_type == numpy.int8:
-        input_fill_i8 = <numpy.int8_t>input_fill
-        output_fill_i8 = <numpy.int8_t>output_fill
-        for i in range(num_items):
-            tmp_arr_i8 = input_arrays[i]
-            input_pointer[i] = &tmp_arr_i8[0, 0]
-            tmp_arr_i8 = output_arrays[i]
-            output_pointer[i] = &tmp_arr_i8[0, 0]
-        with nogil:
-            func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
-                                 cols_pointer, rows_pointer,
-                                 < numpy.int8_t ** >input_pointer, < numpy.int8_t ** >output_pointer,
-                                 input_fill_i8, output_fill_i8, rows_per_scan,
-                                 weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
-                                 mwm)
-    else:
-        raise ValueError("Unknown input and output data type")
+    try:
+        input_pointer = <void ** >malloc(num_items * sizeof(void * ))
+        output_pointer = <void ** >malloc(num_items * sizeof(void * ))
+        valid_arr = <unsigned int * >malloc(num_items * sizeof(unsigned int))
+        if not input_pointer or not output_pointer or not valid_arr:
+            raise MemoryError()
 
-    for i in range(num_items):
-        valid_list.append(valid_arr[i])
+        if in_type == numpy.float32:
+            input_fill_f32 = <numpy.float32_t>input_fill
+            output_fill_f32 = <numpy.float32_t>output_fill
+            for i in range(num_items):
+                tmp_arr_f32 = input_arrays[i]
+                input_pointer[i] = &tmp_arr_f32[0, 0]
+                tmp_arr_f32 = output_arrays[i]
+                output_pointer[i] = &tmp_arr_f32[0, 0]
+            with nogil:
+                func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                     cols_pointer, rows_pointer,
+                                     < numpy.float32_t ** >input_pointer, < numpy.float32_t ** >output_pointer,
+                                     input_fill_f32, output_fill_f32, rows_per_scan,
+                                     weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                     mwm)
+        elif in_type == numpy.float64:
+            input_fill_f64 = <numpy.float64_t>input_fill
+            output_fill_f64 = <numpy.float64_t>output_fill
+            for i in range(num_items):
+                tmp_arr_f64 = input_arrays[i]
+                input_pointer[i] = &tmp_arr_f64[0, 0]
+                tmp_arr_f64 = output_arrays[i]
+                output_pointer[i] = &tmp_arr_f64[0, 0]
+            with nogil:
+                func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                     cols_pointer, rows_pointer,
+                                     < numpy.float64_t ** >input_pointer, < numpy.float64_t ** >output_pointer,
+                                     input_fill_f64, output_fill_f64, rows_per_scan,
+                                     weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                     mwm)
+        elif in_type == numpy.int8:
+            input_fill_i8 = <numpy.int8_t>input_fill
+            output_fill_i8 = <numpy.int8_t>output_fill
+            for i in range(num_items):
+                tmp_arr_i8 = input_arrays[i]
+                input_pointer[i] = &tmp_arr_i8[0, 0]
+                tmp_arr_i8 = output_arrays[i]
+                output_pointer[i] = &tmp_arr_i8[0, 0]
+            with nogil:
+                func_result = fornav(valid_arr, num_items, swath_cols, swath_rows, grid_cols, grid_rows,
+                                     cols_pointer, rows_pointer,
+                                     < numpy.int8_t ** >input_pointer, < numpy.int8_t ** >output_pointer,
+                                     input_fill_i8, output_fill_i8, rows_per_scan,
+                                     weight_count, weight_min, weight_distance_max, weight_delta_max, weight_sum_min,
+                                     mwm)
+        else:
+            raise ValueError("Unknown input and output data type")
 
-    free(input_pointer)
-    free(output_pointer)
+        for i in range(num_items):
+            valid_list.append(valid_arr[i])
+    finally:
+        free(input_pointer)
+        free(output_pointer)
+        free(valid_arr)
 
     return valid_list
 
@@ -387,47 +394,47 @@ cdef int fornav_weights_and_sums(
     cdef cr_dtype * tmp_rows_pointer
     cdef image_dtype * tmp_img_pointer
     cdef ewa_weight ewaw
-    cdef ewa_parameters * ewap
+    cdef ewa_parameters * ewap = NULL
 
     # other defaults
     if weight_sum_min == -1.0:
         weight_sum_min = weight_min
 
-    func_result = initialize_weight(1, weight_count, weight_min, weight_distance_max, weight_delta_max,
-                                    weight_sum_min, & ewaw)
-    if func_result < 0:
-        raise RuntimeError("Could not initialize weight structure for EWA resampling")
-
-    # Allocate memory for the parameters specific to each column
-    ewap = <ewa_parameters * >malloc(swath_cols * sizeof(ewa_parameters))
-    if ewap is NULL:
-        raise MemoryError()
-
-    # NOTE: Have to use old school pyrex for loop because cython only supports compile-time known steps
-    for row_idx from 0 <= row_idx < swath_rows by rows_per_scan:
-        tmp_cols_pointer = &cols_pointer[row_idx * swath_cols]
-        tmp_rows_pointer = &rows_pointer[row_idx * swath_cols]
-        tmp_img_pointer = &input_array[row_idx * swath_cols]
-        # print "Current cols pointer: %d" % (<int>tmp_cols_pointer,)
-
-        # Calculate EWA parameters for each column index
-        func_result = compute_ewa_parameters(swath_cols, rows_per_scan, tmp_cols_pointer, tmp_rows_pointer, & ewaw, ewap)
+    ewaw.wtab = NULL
+    try:
+        func_result = initialize_weight(1, weight_count, weight_min, weight_distance_max, weight_delta_max,
+                                        weight_sum_min, & ewaw)
         if func_result < 0:
-            got_point = got_point or 0
-            # raise RuntimeError("Could compute EWA parameters for EWA resampling")
-            continue
+            raise RuntimeError("Could not initialize weight structure for EWA resampling")
 
-        # NOTE: In the C version this is where the image array data is loaded
-        tmp_got_point = compute_ewa_single(
-            maximum_weight_mode,
-            swath_cols, rows_per_scan, grid_cols, grid_rows,
-            tmp_cols_pointer, tmp_rows_pointer,
-            tmp_img_pointer, input_fill, grid_accums, grid_weights, & ewaw, ewap)
+        # Allocate memory for the parameters specific to each column
+        ewap = <ewa_parameters * >malloc(swath_cols * sizeof(ewa_parameters))
+        if ewap is NULL:
+            raise MemoryError()
 
-        got_point = got_point or tmp_got_point
+        # NOTE: Have to use old school pyrex for loop because cython only supports compile-time known steps
+        for row_idx from 0 <= row_idx < swath_rows by rows_per_scan:
+            tmp_cols_pointer = &cols_pointer[row_idx * swath_cols]
+            tmp_rows_pointer = &rows_pointer[row_idx * swath_cols]
+            tmp_img_pointer = &input_array[row_idx * swath_cols]
 
-    free(ewap)
-    deinitialize_weight(& ewaw)
+            # Calculate EWA parameters for each column index
+            func_result = compute_ewa_parameters(swath_cols, rows_per_scan, tmp_cols_pointer, tmp_rows_pointer, & ewaw, ewap)
+            if func_result < 0:
+                continue
+
+            # NOTE: In the C version this is where the image array data is loaded
+            tmp_got_point = compute_ewa_single(
+                maximum_weight_mode,
+                swath_cols, rows_per_scan, grid_cols, grid_rows,
+                tmp_cols_pointer, tmp_rows_pointer,
+                tmp_img_pointer, input_fill, grid_accums, grid_weights, & ewaw, ewap)
+
+            got_point = got_point or tmp_got_point
+    finally:
+        free(ewap)
+        deinitialize_weight(& ewaw)
+
     if not got_point:
         raise RuntimeError("EWA Resampling: No swath pixels found inside grid to be resampled")
     # -1 is raised on exception, 0 otherwise
@@ -501,7 +508,6 @@ def fornav_weights_and_sums_wrapper(numpy.ndarray[cr_dtype, ndim=2, mode='c'] co
     cdef image_dtype * input_pointer = &input_array[0, 0]
     cdef weight_type * weights_pointer = &grid_weights[0, 0]
     cdef accum_type * accums_pointer = &grid_accums[0, 0]
-    cdef int got_point
     cdef bint mwm = maximum_weight_mode
 
     with nogil:

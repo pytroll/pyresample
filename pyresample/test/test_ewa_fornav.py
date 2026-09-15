@@ -20,6 +20,7 @@ import logging
 import unittest
 
 import numpy as np
+import pytest
 
 LOG = logging.getLogger(__name__)
 
@@ -191,3 +192,33 @@ class TestFornavWrapper(unittest.TestCase):
         # output except outside the swath
         self.assertTrue(((out == 1) | np.isnan(out)).all(),
                         msg="Unexpected interpolation values were returned")
+
+
+@pytest.mark.parametrize(
+    ("dtype", "input_fill", "output_fill"),
+    [
+        (np.float32, -999.0, np.nan),
+        (np.float64, -999.0, np.nan),
+        (np.int8, -100, -128),
+    ],
+)
+def test_fornav_input_fill_differs_from_output_fill(dtype, input_fill, output_fill):
+    """Test that input fill pixels are excluded when input and output fill differ."""
+    from pyresample.ewa import _fornav
+    swath_shape = (400, 800)
+    rows_per_scan = 16
+    rows = np.empty(swath_shape, dtype=np.float32)
+    rows[:] = np.linspace(-50, 350, swath_shape[0])[:, None]
+    cols = np.empty(swath_shape, dtype=np.float32)
+    cols[:] = np.linspace(-100, 500, swath_shape[1])
+    data = np.ones(swath_shape, dtype=dtype)
+    data[100:120, 200:260] = input_fill
+
+    out = np.empty((300, 300), dtype=dtype)
+    _fornav.fornav_wrapper(cols, rows, (data,), (out,), input_fill, output_fill, rows_per_scan)
+
+    # The input fill pixels must not be averaged into the output: every grid
+    # cell is either the swath value (1) or the output fill
+    is_fill = np.isnan(out) if np.isnan(output_fill) else out == output_fill
+    assert ((out == 1) | is_fill).all(), "Input fill was used as valid data"
+    assert is_fill.any(), "Expected some output fill cells"
