@@ -3,6 +3,10 @@
 Preprocessing of grids
 ======================
 
+.. note::
+   The pyresample.image module is deprecated.  Please use `pyresample.kd_tree` or `pyresample.bilinear`
+   instead.
+
 When resampling is performed repeatedly to the same grid significant execution time can be save by
 preprocessing grid information.
 
