@@ -211,15 +211,18 @@ def _partial_coverage_swath(dtype):
 
 
 @pytest.mark.parametrize(
-    ("dtype", "fill"),
+    ("dtype", "fill", "expected_fill"),
     [
-        (np.int8, 0),
-        (np.float32, 0.0),
-        (np.float64, -999.0),
+        (np.int8, 0, 0),
+        (np.int8, None, 127),
+        (np.float32, 0.0, 0.0),
+        (np.float32, None, np.nan),
+        (np.float64, -999.0, -999.0),
+        (np.float64, np.nan, np.nan),
     ],
 )
-def test_fornav_user_fill_used_in_output(dtype, fill):
-    """Test that a user-supplied fill value is passed through and written to uncovered pixels (#689)."""
+def test_fornav_fill_used_in_output(dtype, fill, expected_fill):
+    """Test that the user-supplied or default fill value is written to uncovered pixels (#689)."""
     from pyresample.ewa import fornav
     cols, rows, data, out = _partial_coverage_swath(dtype)
 
@@ -229,10 +232,9 @@ def test_fornav_user_fill_used_in_output(dtype, fill):
     assert out is out_res
     assert grid_points_covered > 0
     # The swath was all 1s so every grid cell is either data or the fill value
-    assert ((out == 1) | (out == fill)).all(), "Output should only contain data and fill values"
-    assert (out == fill).any(), "Uncovered pixels should contain the fill value"
-    if np.issubdtype(dtype, np.floating):
-        assert not np.isnan(out).any(), "Uncovered pixels should contain the fill value, not NaN"
+    is_fill = np.isnan(out) if np.isnan(expected_fill) else out == expected_fill
+    assert ((out == 1) | is_fill).all(), "Output should only contain data and fill values"
+    assert is_fill.any(), "Uncovered pixels should contain the fill value"
 
 
 @pytest.mark.parametrize(
