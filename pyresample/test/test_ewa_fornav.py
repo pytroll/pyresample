@@ -194,6 +194,49 @@ class TestFornavWrapper(unittest.TestCase):
                         msg="Unexpected interpolation values were returned")
 
 
+def _partial_coverage_swath(dtype):
+    """Create an all-ones swath that covers only part of a 1000x1000 grid.
+
+    The right side of the grid is left uncovered so the output is guaranteed
+    to contain fill pixels as well as data pixels.
+    """
+    swath_shape = (1600, 3200)
+    rows = np.empty(swath_shape, dtype=np.float32)
+    rows[:] = np.linspace(-500, 2500, swath_shape[0])[:, None]
+    cols = np.empty(swath_shape, dtype=np.float32)
+    cols[:] = np.linspace(-2500, 500, swath_shape[1])
+    data = np.ones(swath_shape, dtype=dtype)
+    out = np.empty((1000, 1000), dtype=dtype)
+    return cols, rows, data, out
+
+
+@pytest.mark.parametrize(
+    ("dtype", "fill", "expected_fill"),
+    [
+        (np.int8, 0, 0),
+        (np.int8, None, 127),
+        (np.float32, 0.0, 0.0),
+        (np.float32, None, np.nan),
+        (np.float64, -999.0, -999.0),
+        (np.float64, np.nan, np.nan),
+    ],
+)
+def test_fornav_fill_used_in_output(dtype, fill, expected_fill):
+    """Test that the user-supplied or default fill value is written to uncovered pixels (#689)."""
+    from pyresample.ewa import fornav
+    cols, rows, data, out = _partial_coverage_swath(dtype)
+
+    grid_points_covered, out_res = fornav(cols, rows, None, data,
+                                          rows_per_scan=16, fill=fill, out=out)
+
+    assert out is out_res
+    assert grid_points_covered > 0
+    # The swath was all 1s so every grid cell is either data or the fill value
+    is_fill = np.isnan(out) if np.isnan(expected_fill) else out == expected_fill
+    assert ((out == 1) | is_fill).all(), "Output should only contain data and fill values"
+    assert is_fill.any(), "Uncovered pixels should contain the fill value"
+
+
 @pytest.mark.parametrize(
     ("dtype", "input_fill", "output_fill"),
     [

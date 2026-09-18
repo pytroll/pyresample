@@ -108,7 +108,8 @@ def fornav(cols, rows, area_def, data_in,
         If `data_in` is made of numpy arrays then this represents the fill
         value used to mark invalid data pixels. This value will also be
         used in the output array(s). If None, then np.nan will be used
-        for float arrays and -999 will be used for integer arrays.
+        for float arrays and the maximum value of the data type will be
+        used for integer arrays (ex. 127 for int8).
     out : numpy array or tuple of numpy arrays, optional
         Specify a numpy array to be written to for each input array. This can
         be used as an optimization by providing `np.memmap` arrays or other
@@ -167,7 +168,7 @@ def fornav(cols, rows, area_def, data_in,
     rows_per_scan = rows_per_scan or data_in[0].shape[0]
 
     results = _fornav.fornav_wrapper(cols, rows, data_in, out,
-                                     np.nan, np.nan, rows_per_scan,
+                                     fill, fill, rows_per_scan,
                                      weight_count=weight_count,
                                      weight_min=weight_min,
                                      weight_distance_max=weight_distance_max,
@@ -208,7 +209,7 @@ def _data_in_as_masked_arrays(
         if np.issubdtype(data_in[0].dtype, np.floating):
             fill = np.nan
         elif np.issubdtype(data_in[0].dtype, np.integer):
-            fill = -999
+            fill = np.iinfo(data_in[0].dtype).max
         else:
             raise ValueError(
                 "Unsupported input data type for EWA Resampling: {}".format(data_in[0].dtype))
