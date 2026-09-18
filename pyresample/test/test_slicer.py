@@ -64,6 +64,25 @@ class TestAreaSlicer(unittest.TestCase):
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
 
+    def test_partial_geostationary_disk_covering_dest_area_is_not_truncated(self):
+        """Test that a partial geostationary disk covering the destination is not truncated.
+
+        The southern boundary of a partial disk is a straight chord in the source
+        projection. It has to be densified before being reprojected to the
+        destination crs, otherwise the computed source slice stops short and part
+        of the destination is left without data.
+        """
+        src_area = AreaDefinition('rss', 'rss area', None,
+                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos', 'lon_0': 9.5},
+                                  3712, 1392,
+                                  (5550000.0, 5550000.0, -5550000.0, 2000000.0))
+        slicer = create_slicer(src_area, self.dst_area)
+        x_slice, y_slice = slicer.get_slices()
+        # The whole destination falls inside the strip; its southern edge maps to
+        # source row 584, so the slice must reach well below the strip top rows.
+        assert y_slice.start < 700
+        assert y_slice.stop >= 1328
+
     def test_source_area_does_not_cover_dest_area_at_all(self):
         """Test source area does not cover dest area at all."""
         src_area = AreaDefinition('dst', 'dst area', None,
