@@ -102,14 +102,14 @@ ctypedef void (*FN)(const data_type[:, :, :] data, int l0, int p0, float_index d
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef one_step_gradient_search(const data_type[:, :, :] data,
-                               float_index [:, :] src_x,
-                               float_index [:, :] src_y,
-                               float_index [:, :] xl,
-                               float_index [:, :] xp,
-                               float_index [:, :] yl,
-                               float_index [:, :] yp,
-                               float_index [:, :] dst_x,
-                               float_index [:, :] dst_y,
+                               const float_index[:, :] src_x,
+                               const float_index[:, :] src_y,
+                               const float_index[:, :] xl,
+                               const float_index[:, :] xp,
+                               const float_index[:, :] yl,
+                               const float_index[:, :] yp,
+                               const float_index[:, :] dst_x,
+                               const float_index[:, :] dst_y,
                                str method='bilinear'):
     """Gradient search, simple case variant."""
     cdef FN fun
@@ -233,14 +233,14 @@ cdef void one_step_gradient_search_no_gil(const data_type[:, :, :] data,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef one_step_gradient_indices(float_index [:, :] src_x,
-                                float_index [:, :] src_y,
-                                float_index [:, :] xl,
-                                float_index [:, :] xp,
-                                float_index [:, :] yl,
-                                float_index [:, :] yp,
-                                float_index [:, :] dst_x,
-                                float_index [:, :] dst_y):
+cpdef one_step_gradient_indices(const float_index[:, :] src_x,
+                                const float_index[:, :] src_y,
+                                const float_index[:, :] xl,
+                                const float_index[:, :] xp,
+                                const float_index[:, :] yl,
+                                const float_index[:, :] yp,
+                                const float_index[:, :] dst_x,
+                                const float_index[:, :] dst_y):
     """Gradient search, simple case variant, returning float indices.
 
     This is appropriate for monotonous gradients only, i.e. not modis or viirs in satellite projection.

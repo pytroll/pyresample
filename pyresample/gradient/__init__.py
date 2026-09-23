@@ -337,26 +337,47 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
 
 
 def _get_coordinates_in_same_projection(source_area, target_area):
+    target_crs = target_area.crs
     try:
-        src_x, src_y = source_area.get_proj_coords()
+        src_coords, src_gradients = _get_area_coordinates_and_gradients(source_area)
         work_crs = source_area.crs
     except AttributeError:
         # source is a swath definition, use target crs instead
         lons, lats = source_area.get_lonlats()
         src_x, src_y = da.compute(lons, lats)
-        trans = pyproj.Transformer.from_crs(source_area.crs, target_area.crs, always_xy=True)
+        trans = pyproj.Transformer.from_crs(source_area.crs, target_crs, always_xy=True)
         src_x, src_y = trans.transform(src_x, src_y)
-        work_crs = target_area.crs
-    transformer = pyproj.Transformer.from_crs(target_area.crs, work_crs, always_xy=True)
+        work_crs = target_crs
+        src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
+        src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
+        src_coords = (src_x, src_y)
+        src_gradients = (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp)
+    transformer = pyproj.Transformer.from_crs(target_crs, work_crs, always_xy=True)
     try:
         dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
     except AttributeError:
         # target is a swath definition
         lons, lats = target_area.get_lonlats()
         dst_x, dst_y = transformer.transform(*da.compute(lons, lats))
-    src_gradient_xl, src_gradient_xp = np.gradient(src_x, axis=[0, 1])
-    src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
-    return (dst_x, dst_y), (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp), (src_x, src_y)
+    return (dst_x, dst_y), src_gradients, src_coords
+
+
+def _get_area_coordinates_and_gradients(source_area):
+    """Get the projection coordinates and their gradients for an area source.
+
+    The coordinates of an area are an outer product of two 1D vectors, so the gradients along lines of x and along
+    pixels of y are zero, and the other two only vary along one axis. Everything is therefore computed in 1D and
+    returned as read-only broadcast views of the full 2D shape, which is identical to, but much cheaper than,
+    calling ``np.gradient`` on the full ``get_proj_coords()`` arrays.
+    """
+    x_vec, y_vec = source_area.get_proj_vectors()
+    shape = (y_vec.size, x_vec.size)
+    src_x = np.broadcast_to(x_vec[np.newaxis, :], shape)
+    src_y = np.broadcast_to(y_vec[:, np.newaxis], shape)
+    zeros = np.broadcast_to(np.zeros((), dtype=x_vec.dtype), shape)
+    src_gradient_xp = np.broadcast_to(np.gradient(x_vec)[np.newaxis, :], shape)
+    src_gradient_yl = np.broadcast_to(np.gradient(y_vec)[:, np.newaxis], shape)
+    return (src_x, src_y), (zeros, src_gradient_xp, src_gradient_yl, zeros)
 
 
 def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):

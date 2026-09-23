@@ -629,6 +629,42 @@ class TestGradientCython():
         np.testing.assert_allclose(res_x, expected_x)
         np.testing.assert_allclose(res_y, expected_y)
 
+    def test_index_search_accepts_read_only_broadcast_arrays(self):
+        """Test that index search accepts read-only arrays with zero strides."""
+        from pyresample.gradient._gradient_search import one_step_gradient_indices
+        shape = self.src_x.shape
+        src_x = np.broadcast_to(np.arange(10.0)[np.newaxis, :], shape)
+        src_y = np.broadcast_to(np.arange(10.0)[:, np.newaxis], shape)
+        zeros = np.broadcast_to(0.0, shape)
+        ones = np.broadcast_to(1.0, shape)
+        dst_x = self.dst_x.copy()
+        dst_y = self.dst_y.copy()
+        dst_x.flags.writeable = False
+        dst_y.flags.writeable = False
+        res_x, res_y = one_step_gradient_indices(src_x, src_y, zeros, ones, ones, zeros, dst_x, dst_y)
+        np.testing.assert_allclose(res_x, self.dst_x)
+        np.testing.assert_allclose(res_y, self.dst_y)
+
+
+def test_area_source_coordinates_and_gradients_are_not_computed_in_2d(create_test_area):
+    """Test that area source coordinates and gradients are identical to the full 2D computation, but not in 2D."""
+    from pyresample.gradient import _get_coordinates_in_same_projection
+    src_area = create_test_area({'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                50, 40, (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+    dst_area = create_test_area({'proj': 'stere', 'lon_0': 14.0, 'lat_0': 90.0, 'lat_ts': 60.0, 'ellps': 'bessel'},
+                                20, 30, (-2717181.7304994687, -5571048.14031214,
+                                         1378818.2695005313, -1475048.1403121399))
+
+    _, src_gradients, src_coords = _get_coordinates_in_same_projection(src_area, dst_area)
+
+    expected_x, expected_y = src_area.get_proj_coords()
+    expected_xl, expected_xp = np.gradient(expected_x, axis=[0, 1])
+    expected_yl, expected_yp = np.gradient(expected_y, axis=[0, 1])
+    expected = (expected_x, expected_y, expected_xl, expected_xp, expected_yl, expected_yp)
+    for res, exp in zip(src_coords + src_gradients, expected, strict=True):
+        np.testing.assert_array_equal(res, exp)
+        assert res.strides[0] == 0 or res.strides[1] == 0
+
 
 def test_resampling_geos_edge_to_mercator():
     """Test that projecting the edges of geos onto a mercator area does not produce unnecessary NaNs."""
