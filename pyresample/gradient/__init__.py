@@ -244,12 +244,26 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         super().__init__(source_geo_def, target_geo_def)
         self.indices_xy = None
 
-    def precompute(self, **kwargs):
-        """Precompute resampling parameters."""
+    def precompute(self, transform_step=None, transform_tolerance=0.01, **kwargs):
+        """Precompute resampling parameters.
+
+        Args:
+            transform_step: When the source and the target are both areas, transform only every
+                ``transform_step``-th target row and column to the source projection and interpolate the rest.
+                ``None`` (the default) transforms every target pixel exactly.
+            transform_tolerance: Maximum accepted interpolation error, in source pixels, when ``transform_step``
+                is used. Parts of the target where the error is larger, or which are close to invalid
+                coordinates, are transformed exactly.
+            kwargs: Ignored, accepted for compatibility with the other resamplers.
+
+        The indices are computed only once, so the arguments of the first call are the ones that are used.
+        """
         if self.indices_xy is None:
             self.indices_xy = resample_blocks(gradient_resampler_indices_block,
                                               self.source_geo_def, [], self.target_geo_def,
-                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
+                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float,
+                                              transform_step=transform_step,
+                                              transform_tolerance=transform_tolerance)
 
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
@@ -316,9 +330,11 @@ def gradient_resampler_indices_block(block_info, **kwargs):
     return gradient_resampler_indices(source_area, target_area, block_info, **kwargs)
 
 
-def gradient_resampler_indices(source_area, target_area, block_info=None, **kwargs):
+def gradient_resampler_indices(source_area, target_area, block_info=None, transform_step=None,
+                               transform_tolerance=0.01, **kwargs):
     """Do the gradient search resampling, returning the resulting indices."""
-    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
+    dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(
+        source_area, target_area, transform_step=transform_step, transform_tolerance=transform_tolerance)
     dst_x, dst_y = dst_coords
     src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp = src_gradients
     src_x, src_y = src_coords
@@ -336,11 +352,14 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
     return indices_xy
 
 
-def _get_coordinates_in_same_projection(source_area, target_area):
+def _get_coordinates_in_same_projection(source_area, target_area, transform_step=None, transform_tolerance=0.01):
     target_crs = target_area.crs
     try:
         src_coords, src_gradients = _get_area_coordinates_and_gradients(source_area)
         work_crs = source_area.crs
+        # the target coordinates are transformed to the source projection, so the error can be given in source pixels
+        abs_tolerance = (transform_tolerance * abs(source_area.resolution[0]),
+                         transform_tolerance * abs(source_area.resolution[1]))
     except AttributeError:
         # source is a swath definition, use target crs instead
         lons, lats = source_area.get_lonlats()
@@ -352,9 +371,15 @@ def _get_coordinates_in_same_projection(source_area, target_area):
         src_gradient_yl, src_gradient_yp = np.gradient(src_y, axis=[0, 1])
         src_coords = (src_x, src_y)
         src_gradients = (src_gradient_xl, src_gradient_xp, src_gradient_yl, src_gradient_yp)
+        # the work crs is the target crs, the target coordinates don't need an expensive transform
+        transform_step = None
     transformer = pyproj.Transformer.from_crs(target_crs, work_crs, always_xy=True)
     try:
-        dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
+        if transform_step is not None and transform_step > 1:
+            dst_x, dst_y = _transform_area_coordinates_coarsely(transformer, target_area, transform_step,
+                                                                abs_tolerance)
+        else:
+            dst_x, dst_y = transformer.transform(*target_area.get_proj_coords())
     except AttributeError:
         # target is a swath definition
         lons, lats = target_area.get_lonlats()
@@ -378,6 +403,159 @@ def _get_area_coordinates_and_gradients(source_area):
     src_gradient_xp = np.broadcast_to(np.gradient(x_vec)[np.newaxis, :], shape)
     src_gradient_yl = np.broadcast_to(np.gradient(y_vec)[:, np.newaxis], shape)
     return (src_x, src_y), (zeros, src_gradient_xp, src_gradient_yl, zeros)
+
+
+def _transform_area_coordinates_coarsely(transformer, target_area, step, abs_tolerance):
+    """Transform the projection coordinates of an area on a coarse grid and interpolate the rest.
+
+    Every ``step``-th row and column (and the last ones) are transformed exactly, and the other pixels are
+    bilinearly interpolated from them. The coarse grid splits the area in cells. The pixels of a cell are
+    interpolated when all four corners of the cell are valid and the interpolated coordinates at the middle of the
+    cell differ from the exactly transformed ones by at most ``abs_tolerance`` (x, y), in units of the destination
+    projection of ``transformer``. The pixels of a cell are set to ``inf`` when none of its corners, nor any corner
+    of its eight neighbours, is valid. All other cells are retried with half the step, down to a step of 1 where
+    the remaining pixels are transformed exactly.
+    """
+    x_vec, y_vec = target_area.get_proj_vectors()
+    if x_vec.size < 2 or y_vec.size < 2:
+        return transformer.transform(*np.meshgrid(x_vec, y_vec))
+    dst_x = np.empty((y_vec.size, x_vec.size))
+    dst_y = np.empty((y_vec.size, x_vec.size))
+    pending = None
+    while step > 1:
+        pending = _interpolate_coarse_level(transformer, x_vec, y_vec, step, abs_tolerance, dst_x, dst_y, pending)
+        if not pending.any():
+            return dst_x, dst_y
+        step //= 2
+    rows, cols = np.nonzero(pending)
+    dst_x[rows, cols], dst_y[rows, cols] = transformer.transform(x_vec[cols], y_vec[rows])
+    return dst_x, dst_y
+
+
+def _interpolate_coarse_level(transformer, x_vec, y_vec, step, abs_tolerance, dst_x, dst_y, pending):
+    """Fill in the pending pixels that can be resolved with the given step, and return the ones still pending.
+
+    ``pending`` is a boolean mask of the pixels to resolve, ``None`` meaning all of them.
+    """
+    x_axis = _get_coarse_cells(x_vec.size, step)
+    y_axis = _get_coarse_cells(y_vec.size, step)
+    x_cells, x_weights, x_corners = x_axis
+    y_cells, y_weights, y_corners = y_axis
+    if pending is None:
+        needed = np.ones((y_corners.size - 1, x_corners.size - 1), dtype=bool)
+    else:
+        needed = np.logical_or.reduceat(np.logical_or.reduceat(pending, y_corners[:-1], axis=0),
+                                        x_corners[:-1], axis=1)
+
+    coarse_x, coarse_y = _transform_needed_corners(transformer, x_vec[x_corners], y_vec[y_corners], _dilate(needed))
+    valid_corners = np.isfinite(coarse_x) & np.isfinite(coarse_y)
+    num_valid_corners = (valid_corners[:-1, :-1].astype(int) + valid_corners[1:, :-1] +
+                         valid_corners[:-1, 1:] + valid_corners[1:, 1:])
+    accepted = needed & (num_valid_corners == 4)
+    accepted[accepted] = _is_accurate_at_middles(transformer, x_vec, y_vec, coarse_x, coarse_y, abs_tolerance,
+                                                 np.nonzero(accepted), x_axis, y_axis)
+    invalid = needed & ~_dilate(num_valid_corners > 0)
+
+    def to_pixels(cell_mask):
+        return _expand_cells_to_pixels(cell_mask, x_corners, y_corners, dst_x.shape)
+
+    interpolated = to_pixels(accepted)
+    invalid_pixels = to_pixels(invalid)
+    if pending is not None:
+        interpolated &= pending
+        invalid_pixels &= pending
+    num_interpolated = np.count_nonzero(interpolated)
+    if num_interpolated > dst_x.size // 4:
+        with np.errstate(invalid="ignore"):
+            for coarse, dst in ((coarse_x, dst_x), (coarse_y, dst_y)):
+                full = _interpolate_separably(coarse, x_cells, x_weights, y_cells, y_weights)
+                if pending is None:
+                    dst[:] = full
+                else:
+                    dst[interpolated] = full[interpolated]
+    elif num_interpolated:
+        rows, cols = np.nonzero(interpolated)
+        cell_rows, cell_cols = y_cells[rows], x_cells[cols]
+        wy, wx = y_weights[rows], x_weights[cols]
+        for coarse, dst in ((coarse_x, dst_x), (coarse_y, dst_y)):
+            dst[rows, cols] = _interpolate_in_cells(coarse, cell_rows, cell_cols, wy, wx)
+    dst_x[invalid_pixels] = np.inf
+    dst_y[invalid_pixels] = np.inf
+    still_pending = ~(interpolated | invalid_pixels)
+    if pending is not None:
+        still_pending &= pending
+    return still_pending
+
+
+def _expand_cells_to_pixels(cell_mask, x_corners, y_corners, shape):
+    """Expand a mask of coarse cells to a mask of the pixels in them."""
+    y_counts = np.diff(np.r_[y_corners[:-1], shape[0]])
+    x_counts = np.diff(np.r_[x_corners[:-1], shape[1]])
+    return np.repeat(np.repeat(cell_mask, y_counts, axis=0), x_counts, axis=1)
+
+
+def _interpolate_in_cells(coarse, cell_rows, cell_cols, wy, wx):
+    """Bilinearly interpolate within the given cells of a coarse grid."""
+    return ((1 - wy) * ((1 - wx) * coarse[cell_rows, cell_cols] + wx * coarse[cell_rows, cell_cols + 1]) +
+            wy * ((1 - wx) * coarse[cell_rows + 1, cell_cols] + wx * coarse[cell_rows + 1, cell_cols + 1]))
+
+
+def _transform_needed_corners(transformer, x_corner_vec, y_corner_vec, cells):
+    """Transform the corners of the given cells, leaving the other corners as NaN."""
+    corners = np.zeros((y_corner_vec.size, x_corner_vec.size), dtype=bool)
+    corners[:-1, :-1] |= cells
+    corners[1:, :-1] |= cells
+    corners[:-1, 1:] |= cells
+    corners[1:, 1:] |= cells
+    coarse_x = np.full(corners.shape, np.nan)
+    coarse_y = np.full(corners.shape, np.nan)
+    corner_rows, corner_cols = np.nonzero(corners)
+    coarse_x[corners], coarse_y[corners] = transformer.transform(x_corner_vec[corner_cols], y_corner_vec[corner_rows])
+    return coarse_x, coarse_y
+
+
+def _is_accurate_at_middles(transformer, x_vec, y_vec, coarse_x, coarse_y, abs_tolerance, cells, x_axis, y_axis):
+    """Check if the interpolation at the middle pixel of each cell is within the tolerance of the exact value."""
+    cell_rows, cell_cols = cells
+    _, x_weights, x_corners = x_axis
+    _, y_weights, y_corners = y_axis
+    middle_cols = (x_corners[cell_cols] + x_corners[cell_cols + 1]) // 2
+    middle_rows = (y_corners[cell_rows] + y_corners[cell_rows + 1]) // 2
+    exact_x, exact_y = transformer.transform(x_vec[middle_cols], y_vec[middle_rows])
+    wx, wy = x_weights[middle_cols], y_weights[middle_rows]
+    accurate = np.ones(cell_rows.shape, dtype=bool)
+    for coarse, exact, tolerance in ((coarse_x, exact_x, abs_tolerance[0]), (coarse_y, exact_y, abs_tolerance[1])):
+        interpolated = _interpolate_in_cells(coarse, cell_rows, cell_cols, wy, wx)
+        with np.errstate(invalid="ignore"):
+            accurate &= np.abs(interpolated - exact) <= tolerance
+    return accurate
+
+
+def _get_coarse_cells(size, step):
+    """Get the coarse corner indices, and the cell index and interpolation weight of every pixel along one axis."""
+    corners = np.r_[np.arange(0, size - 1, step), size - 1]
+    pixels = np.arange(size)
+    cells = np.minimum(pixels // step, corners.size - 2)
+    weights = (pixels - corners[cells]) / (corners[cells + 1] - corners[cells])
+    return cells, weights, corners
+
+
+def _interpolate_separably(coarse, x_cells, x_weights, y_cells, y_weights):
+    """Bilinearly interpolate a coarse grid to full resolution, first along x and then along y."""
+    along_x = coarse[:, x_cells] * (1 - x_weights) + coarse[:, x_cells + 1] * x_weights
+    return (along_x[y_cells, :] * (1 - y_weights)[:, np.newaxis] +
+            along_x[y_cells + 1, :] * y_weights[:, np.newaxis])
+
+
+def _dilate(mask):
+    """Grow a 2D boolean mask by one element in all eight directions."""
+    padded = np.pad(mask, 1)
+    rows, cols = mask.shape
+    res = np.zeros_like(mask)
+    for dy in range(3):
+        for dx in range(3):
+            res |= padded[dy:dy + rows, dx:dx + cols]
+    return res
 
 
 def block_bilinear_interpolator(data, indices_xy, fill_value=np.nan, block_info=None, **kwargs):
