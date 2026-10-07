@@ -182,7 +182,8 @@ class AreaSlicer(Slicer):
             # are not straight in the destination crs, so without intermediate
             # vertices the reprojected polygon cuts the corner and the computed slice
             # is too small, leaving part of the destination without data.
-            segment_length = np.max(np.abs(self.area_to_crop.area_extent)) / 100
+            atc_extent = self.area_to_crop.area_extent
+            segment_length = max(abs(atc_extent[2] - atc_extent[0]), abs(atc_extent[3] - atc_extent[1])) / 100
             geos_poly = geos_poly.segmentize(segment_length)
             x_geos, y_geos = geos_poly.exterior.coords.xy
             x_geos, y_geos = self._source_transformer.transform(
