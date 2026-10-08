@@ -80,8 +80,10 @@ class TestAreaSlicer(unittest.TestCase):
         x_slice, y_slice = slicer.get_slices()
         # The whole destination falls inside the strip; its southern edge maps to
         # source row 584, so the slice must reach well below the strip top rows.
-        assert y_slice.start < 700
-        assert y_slice.stop >= 1328
+        assert y_slice.start <= 584
+        assert y_slice.stop >= 1329
+        assert x_slice.start <= 1357
+        assert x_slice.stop >= 2620
 
     def test_source_area_does_not_cover_dest_area_at_all(self):
         """Test source area does not cover dest area at all."""
