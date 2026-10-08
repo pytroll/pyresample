@@ -2844,6 +2844,36 @@ def get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     return np.asanyarray(x[:-1]), np.asanyarray(y[:-1])
 
 
+def _get_densified_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
+    """Get the bbox in geos projection coordinates of the valid pixels inside `geos_area` with clipped edges densified.
+
+    Clipping the Earth disk to the area extent of a partial disk (rapid scan
+    strips, area-of-interest crops, etc) leaves each clipped edge as a straight
+    line with only two vertices. That edge is only straight in the
+    geostationary projection, so once the polygon is reprojected or used as a
+    spherical polygon it cuts across the area and part of it is lost. The
+    clipped edges are split into segments no longer than the spacing of the
+    limb vertices, which leaves the limb itself untouched.
+
+    Args:
+      geos_area: Geostationary area definition to get the bounding box for.
+      nb_points: Number of points on the full disk polygon, which also sets
+        the vertex spacing of the densified edges.
+
+    """
+    from shapely.geometry import Polygon
+
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    # A polygon needs at least 3 points. The bbox is empty when the area is entirely off the Earth disk.
+    if x.size >= 3:
+        full_x, full_y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+        max_limb_segment = np.hypot(np.diff(full_x, append=full_x[0]), np.diff(full_y, append=full_y[0])).max()
+        bbox_poly = Polygon(zip(x, y, strict=True)).segmentize(max_limb_segment)
+        # drop the closing vertex like get_geostationary_bounding_box_in_proj_coords does
+        x, y = (np.asarray(coords)[:-1] for coords in bbox_poly.exterior.coords.xy)
+    return x, y
+
+
 def get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points=50):
     """Get the valid boundary geos projection coordinates of the full disk.
 
