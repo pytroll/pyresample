@@ -243,7 +243,7 @@ Area extent: (-0.0812, 0.4039, 0.0812, 0.5428)""".format(projection)
         self.assertEqual(results, results3)
 
 
-def test_area_def_rst_list():
+def test_area_def_rst_list(tmp_path):
     """Test output of rst generation from area list."""
     import unittest.mock as mock
 
@@ -280,11 +280,12 @@ australia:
     lower_left_xy: [-2504688.5428486555, -5591295.9185533915]
     upper_right_xy: [2504688.5428486555, -1111475.102852225]"""
 
-    with open("test_areas.yaml", "w") as file:
+    area_file = tmp_path / "test_areas.yaml"
+    with open(area_file, "w") as file:
         file.write(areas)
 
     with mock.patch('pyresample.area_config.area_repr') as mock_area_repr:
-        generate_area_def_rst_list("test_areas.yaml")
+        generate_area_def_rst_list(str(area_file))
         assert mock_area_repr.call_count == 2
         call_args = mock_area_repr.call_args_list
         # check that static files are included for the first area
