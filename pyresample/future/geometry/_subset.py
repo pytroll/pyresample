@@ -5,14 +5,21 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from pyproj import Transformer
+from shapely.geometry import Polygon
 
 # this caching module imports the geometries so this subset module
 # must be imported inside functions in the geometry modules if needed
 # to avoid circular dependencies
 from pyresample._caching import cache_to_json_if
 from pyresample.boundary import Boundary
-from pyresample.geometry import get_geostationary_bounding_box_in_lonlats, logger
+from pyresample.geometry import (
+    get_full_geostationary_bounding_box_in_proj_coords,
+    get_geostationary_bounding_box_in_proj_coords,
+    logger,
+)
 from pyresample.utils import check_slice_orientation
+from pyresample.utils.proj4 import get_geodetic_crs_with_no_datum_shift
 
 if TYPE_CHECKING:
     from pyresample import AreaDefinition
@@ -98,11 +105,35 @@ def _get_slice_starts_stops(src_area, area_to_cover):
 def _get_area_boundary(area_to_cover: AreaDefinition) -> Boundary:
     try:
         if area_to_cover.is_geostationary:
-            return Boundary(*get_geostationary_bounding_box_in_lonlats(area_to_cover))
+            return Boundary(*_get_densified_geostationary_bounding_box_in_lonlats(area_to_cover))
         boundary_shape = max(max(*area_to_cover.shape) // 100 + 1, 3)
         return area_to_cover.boundary(vertices_per_side=boundary_shape, force_clockwise=True)
     except ValueError as err:
         raise NotImplementedError("Can't determine boundary of area to cover") from err
+
+
+def _get_densified_geostationary_bounding_box_in_lonlats(geos_area: AreaDefinition, nb_points: int = 50):
+    """Get the lon/lat bounding box of the valid pixels of a geos area with its straight edges densified.
+
+    Clipping the Earth disk to the area extent of a partial disk (rapid scan
+    strips, area-of-interest crops, etc) leaves each clipped edge as a straight
+    line with only two vertices. In the spherical intersection that edge
+    becomes a single great circle arc that bends away from the real edge,
+    so part of the area is lost. Splitting the straight edges into segments
+    no longer than the spacing of the limb vertices avoids this.
+
+    """
+    x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+    # A polygon needs at least 3 points. The bbox is empty when the area is entirely off the Earth disk.
+    if x.size >= 3:
+        full_x, full_y = get_full_geostationary_bounding_box_in_proj_coords(geos_area, nb_points)
+        max_limb_segment = np.hypot(np.diff(full_x, append=full_x[0]), np.diff(full_y, append=full_y[0])).max()
+        bbox_poly = Polygon(zip(x, y, strict=True)).segmentize(max_limb_segment)
+        # drop the closing vertex like get_geostationary_bounding_box_in_proj_coords does
+        x, y = (np.asarray(coords)[:-1] for coords in bbox_poly.exterior.coords.xy)
+    crs = geos_area.crs
+    transformer = Transformer.from_crs(crs, get_geodetic_crs_with_no_datum_shift(crs), always_xy=True)
+    return transformer.transform(x, y)
 
 
 def _make_slice_divisible(sli, max_size, factor=2):
