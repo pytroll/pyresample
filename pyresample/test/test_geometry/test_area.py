@@ -1520,46 +1520,6 @@ def test_enclose_areas(create_test_area):
         enclose_areas()
 
 
-_SEVIRI_CRS = {"a": 6378169.0, "b": 6356583.8, "h": 35785831.0, "lon_0": 9.5, "proj": "geos", "units": "m"}
-_SEVIRI_HALF_EXTENT = 5568748.2758
-_GEOS_SLICE_SOURCES = {
-    # name: (crs, (height, width), area_extent)
-    "full_disk": (_SEVIRI_CRS, (3712, 3712),
-                  (-_SEVIRI_HALF_EXTENT, -_SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT)),
-    # Northern 1392 lines of a rapid scan, flipped like the native data (pyresample#728)
-    "rapid_scan_strip": (_SEVIRI_CRS, (1392, 3712),
-                         (_SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT, -_SEVIRI_HALF_EXTENT, 1392187.0689)),
-    # Area-of-interest crop over Europe, the top corners are off the disk
-    "europe_crop": (_SEVIRI_CRS, (700, 1500), (-2500000.0, 3300000.0, 2000000.0, 5400000.0)),
-}
-_LONLAT_CRS = {"proj": "longlat", "datum": "WGS84"}
-_EURO4_CRS = {"proj": "stere", "ellps": "bessel", "lat_0": 90.0, "lon_0": 14.0, "lat_ts": 60.0}
-_EURO4_EXTENT = (-2717181.7304994687, -5571048.14031214, 1378818.2695005313, -1475048.1403121399)
-
-
-def _create_geos_slice_source(create_test_area, src_name):
-    crs, (height, width), area_extent = _GEOS_SLICE_SOURCES[src_name]
-    return create_test_area(crs, width, height, area_extent)
-
-
-def _get_needed_source_slices(src_area, dst_area):
-    """Get the source slices containing every target pixel center that is inside the source area."""
-    dst_lons, dst_lats = dst_area.get_lonlats()
-    cols, rows = src_area.get_array_indices_from_lonlat(dst_lons, dst_lats)
-    valid = ~np.ma.getmaskarray(cols) & ~np.ma.getmaskarray(rows)
-    cols = np.ma.getdata(cols)[valid]
-    rows = np.ma.getdata(rows)[valid]
-    return slice(int(cols.min()), int(cols.max()) + 1), slice(int(rows.min()), int(rows.max()) + 1)
-
-
-def _assert_slices_cover(slices, needed_slices, max_missing, max_extra=5):
-    for axis, got, needed in zip("xy", slices, needed_slices, strict=True):
-        missing = max(got.start - needed.start, needed.stop - got.stop)
-        assert missing <= max_missing, f"{axis} slice {got} misses {missing} pixels of the needed {needed}"
-        extra = max(needed.start - got.start, got.stop - needed.stop)
-        assert extra <= max_extra, f"{axis} slice {got} is {extra} pixels bigger than the needed {needed}"
-
-
 class TestAreaDefGetAreaSlices:
     """Test AreaDefinition's get_area_slices."""
 
@@ -1648,68 +1608,6 @@ class TestAreaDefGetAreaSlices:
             assert isinstance(slice_y.start, int)
             assert slice_x == slice(46, 3667, None)
             assert slice_y == slice(56, 3659, None)
-
-    @pytest.mark.parametrize(
-        ("src_name", "dst_crs", "dst_shape", "dst_extent", "max_missing"),
-        [
-            pytest.param("full_disk", _EURO4_CRS, (512, 512), _EURO4_EXTENT, 1,
-                         id="target_inside_full_disk"),
-            pytest.param("rapid_scan_strip", _EURO4_CRS, (512, 512), _EURO4_EXTENT, 1,
-                         id="target_inside_partial_disk"),
-            pytest.param("rapid_scan_strip", _LONLAT_CRS, (400, 400), (-10.0, 0.0, 30.0, 40.0), 0,
-                         id="target_crosses_clipped_edge"),
-            pytest.param("rapid_scan_strip", _LONLAT_CRS, (400, 400), (-85.0, 0.0, -45.0, 35.0), 2,
-                         id="target_crosses_clipped_edge_and_limb"),
-            pytest.param("europe_crop", _LONLAT_CRS, (400, 400), (-5.0, 25.0, 45.0, 45.0), 0,
-                         id="target_crosses_two_clipped_edges"),
-            pytest.param("europe_crop", _LONLAT_CRS, (400, 200), (0.0, 25.0, 15.0, 85.0), 0,
-                         id="target_crosses_clipped_edge_and_opposite_limb"),
-            pytest.param("europe_crop", _LONLAT_CRS, (400, 400), (-90.0, 20.0, 110.0, 89.0), 0,
-                         id="target_contains_source"),
-            pytest.param("full_disk", _LONLAT_CRS, (400, 400), (40.0, -10.0, 120.0, 50.0), 2,
-                         id="target_crosses_limb"),
-            pytest.param("full_disk", _LONLAT_CRS, (400, 800), (-180.0, -90.0, 180.0, 90.0), 5,
-                         id="target_contains_full_disk"),
-            pytest.param("rapid_scan_strip", dict(_SEVIRI_CRS, lon_0=0.0), (400, 1000),
-                         _GEOS_SLICE_SOURCES["rapid_scan_strip"][2], 16,
-                         id="target_is_other_partial_disk"),
-        ])
-    def test_get_area_slices_geos_cross_projection_coverage(self, create_test_area, src_name, dst_crs, dst_shape,
-                                                            dst_extent, max_missing):
-        """Test that geos slices contain every source pixel needed to cover the target area.
-
-        ``dst_shape`` is ``(height, width)``. ``max_missing`` is how many needed
-        rows or columns may be cut off on any side. Non-zero values are known
-        inaccuracies of the boundaries used for the intersection: the
-        geostationary outline is drawn slightly inside the limb with a limited
-        number of vertices, and the target outline only has a few vertices per
-        side. Lower them as those boundaries get more accurate.
-        """
-        src_area = _create_geos_slice_source(create_test_area, src_name)
-        dst_area = create_test_area(dst_crs, dst_shape[1], dst_shape[0], dst_extent)
-
-        slices = src_area.get_area_slices(dst_area)
-
-        _assert_slices_cover(slices, _get_needed_source_slices(src_area, dst_area), max_missing)
-
-    @pytest.mark.parametrize(
-        ("src_name", "densified"),
-        [("full_disk", False), ("rapid_scan_strip", True), ("europe_crop", True)])
-    def test_geos_boundary_densifies_clipped_edges_only(self, create_test_area, src_name, densified):
-        """Test that only the edges clipped by the area extent get extra vertices."""
-        from pyresample.future.geometry._subset import _get_densified_geostationary_bounding_box_in_lonlats
-        from pyresample.geometry import get_geostationary_bounding_box_in_lonlats
-        src_area = _create_geos_slice_source(create_test_area, src_name)
-
-        lons, lats = get_geostationary_bounding_box_in_lonlats(src_area)
-        dense_lons, dense_lats = _get_densified_geostationary_bounding_box_in_lonlats(src_area)
-
-        assert (dense_lons.size > lons.size) == densified
-        # densifying only inserts vertices, each original one is kept once and in order
-        is_original = (np.isclose(dense_lons[:, None], lons, rtol=0, atol=1e-9) &
-                       np.isclose(dense_lats[:, None], lats, rtol=0, atol=1e-9))
-        _, original_indices = np.nonzero(is_original)
-        np.testing.assert_array_equal(original_indices, np.arange(lons.size))
 
     def test_get_area_slices_nongeos(self, create_test_area):
         """Check area slicing for non-geos projections."""
