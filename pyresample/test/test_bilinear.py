@@ -539,6 +539,7 @@ class TestXarrayBilinear(unittest.TestCase):
         self.assertEqual(resampler._neighbours, 32)
         self.assertEqual(resampler._epsilon, 0)
         self.assertTrue(resampler._reduce_data)
+        self.assertTrue(resampler._limit_output)
         # These should be None
         self.assertIsNone(resampler._valid_input_index)
         self.assertIsNone(resampler._index_array)
@@ -557,10 +558,12 @@ class TestXarrayBilinear(unittest.TestCase):
         # Override defaults
         resampler = XArrayBilinearResampler(self.source_def, self.target_def,
                                             self.radius, neighbours=16,
-                                            epsilon=0.1, reduce_data=False)
+                                            epsilon=0.1, reduce_data=False,
+                                            limit_output=False)
         self.assertEqual(resampler._neighbours, 16)
         self.assertEqual(resampler._epsilon, 0.1)
         self.assertFalse(resampler._reduce_data)
+        self.assertFalse(resampler._limit_output)
 
     def test_get_bil_info(self):
         """Test calculation of bilinear info."""
@@ -679,6 +682,46 @@ class TestXarrayBilinear(unittest.TestCase):
         res = resampler.get_sample_from_bil_info(data)
         assert res.shape == (2,) + self.target_def.shape
         assert res.dims == data.dims
+
+    def test_get_sample_from_bil_info_without_output_limiting(self):
+        """Test disabling output value limiting."""
+        import dask.array as da
+        from xarray import DataArray
+
+        from pyresample.bilinear import XArrayBilinearResampler
+
+        pattern = ((np.indices(self.source_def.shape).sum(axis=0) % 2) + 1).astype(np.float32)
+        data = DataArray(da.from_array(pattern, chunks=pattern.shape), dims=("y", "x"))
+        data_min = float(np.nanmin(pattern))
+        data_max = float(np.nanmax(pattern))
+        def _compute_values(limit_output):
+            resampler = XArrayBilinearResampler(
+                self.source_def,
+                self.target_def,
+                self.radius,
+                limit_output=limit_output,
+            )
+            resampler.get_bil_info()
+            bilinear_s = np.asarray(resampler.bilinear_s).copy()
+            bilinear_t = np.asarray(resampler.bilinear_t).copy()
+            valid = np.isfinite(bilinear_s) & np.isfinite(bilinear_t)
+            bilinear_s[valid] = 2.0
+            resampler.bilinear_s = da.from_array(bilinear_s, chunks=bilinear_s.shape)
+            resampler.bilinear_t = da.from_array(bilinear_t, chunks=bilinear_t.shape)
+            return resampler.get_sample_from_bil_info(data, fill_value=-999.0).compute().values
+
+        def _outside_mask(values):
+            valid = np.isfinite(values) & (values != -999.0)
+            return valid & ((values < data_min - 1e-6) | (values > data_max + 1e-6))
+
+        no_limit_values = _compute_values(limit_output=False)
+        limited_values = _compute_values(limit_output=True)
+
+        assert np.any(_outside_mask(no_limit_values))
+        assert not np.any(_outside_mask(limited_values))
+        assert np.count_nonzero(limited_values == -999.0) > np.count_nonzero(
+            no_limit_values == -999.0
+        )
 
     def test_add_missing_coordinates(self):
         """Test coordinate updating."""
