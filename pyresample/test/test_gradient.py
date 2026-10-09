@@ -629,6 +629,42 @@ class TestGradientCython():
         np.testing.assert_allclose(res_x, expected_x)
         np.testing.assert_allclose(res_y, expected_y)
 
+    def test_index_search_accepts_read_only_broadcast_arrays(self):
+        """Test that index search accepts read-only arrays with zero strides."""
+        from pyresample.gradient._gradient_search import one_step_gradient_indices
+        shape = self.src_x.shape
+        src_x = np.broadcast_to(np.arange(10.0)[np.newaxis, :], shape)
+        src_y = np.broadcast_to(np.arange(10.0)[:, np.newaxis], shape)
+        zeros = np.broadcast_to(0.0, shape)
+        ones = np.broadcast_to(1.0, shape)
+        dst_x = self.dst_x.copy()
+        dst_y = self.dst_y.copy()
+        dst_x.flags.writeable = False
+        dst_y.flags.writeable = False
+        res_x, res_y = one_step_gradient_indices(src_x, src_y, zeros, ones, ones, zeros, dst_x, dst_y)
+        np.testing.assert_allclose(res_x, self.dst_x)
+        np.testing.assert_allclose(res_y, self.dst_y)
+
+
+def test_area_source_coordinates_and_gradients_are_not_computed_in_2d(create_test_area):
+    """Test that area source coordinates and gradients are identical to the full 2D computation, but not in 2D."""
+    from pyresample.gradient import _get_coordinates_in_same_projection
+    src_area = create_test_area({'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                50, 40, (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+    dst_area = create_test_area({'proj': 'stere', 'lon_0': 14.0, 'lat_0': 90.0, 'lat_ts': 60.0, 'ellps': 'bessel'},
+                                20, 30, (-2717181.7304994687, -5571048.14031214,
+                                         1378818.2695005313, -1475048.1403121399))
+
+    _, src_gradients, src_coords = _get_coordinates_in_same_projection(src_area, dst_area)
+
+    expected_x, expected_y = src_area.get_proj_coords()
+    expected_xl, expected_xp = np.gradient(expected_x, axis=[0, 1])
+    expected_yl, expected_yp = np.gradient(expected_y, axis=[0, 1])
+    expected = (expected_x, expected_y, expected_xl, expected_xp, expected_yl, expected_yp)
+    for res, exp in zip(src_coords + src_gradients, expected, strict=True):
+        np.testing.assert_array_equal(res, exp)
+        assert res.strides[0] == 0 or res.strides[1] == 0
+
 
 def test_resampling_geos_edge_to_mercator():
     """Test that projecting the edges of geos onto a mercator area does not produce unnecessary NaNs."""
@@ -648,3 +684,84 @@ def test_resampling_geos_edge_to_mercator():
 
     res = gradient_resampler_indices(source_area, dest_area, fill_value=np.nan)
     assert not np.any(np.isnan(res[:, :, -1]))
+
+
+class TestCoarseTargetTransform:
+    """Test transforming the target coordinates on a coarse grid."""
+
+    def setup_method(self):
+        """Set up the test case."""
+        self.src_area = AreaDefinition.from_extent(
+            "seviri", {"proj": "geos", "lon_0": 0.0, "h": 35785831.0, "a": 6378169.0, "b": 6356583.8},
+            (371, 371), (-5570248.686685662, -5567248.28340708, 5567248.28340708, 5570248.686685662))
+        self.resolution = np.abs(self.src_area.resolution)
+        self.tolerance = 0.01
+
+    def _transform(self, dst_area, step):
+        import pyproj
+
+        from pyresample.gradient import _transform_area_coordinates_coarsely
+        transformer = pyproj.Transformer.from_crs(dst_area.crs, self.src_area.crs, always_xy=True)
+        expected = transformer.transform(*dst_area.get_proj_coords())
+        res = _transform_area_coordinates_coarsely(transformer, dst_area, step, tuple(self.tolerance * self.resolution))
+        return res, expected
+
+    def _assert_close_to_exact(self, res, expected):
+        valid = np.isfinite(expected[0]) & np.isfinite(expected[1])
+        np.testing.assert_array_equal(np.isfinite(res[0]), valid)
+        np.testing.assert_array_equal(np.isfinite(res[1]), valid)
+        np.testing.assert_array_equal(res[0][~valid], np.inf)
+        for res_coord, expected_coord, resolution in zip(res, expected, self.resolution, strict=True):
+            error = np.abs(res_coord[valid] - expected_coord[valid]) / resolution
+            # the error is checked in the middle of each cell only, so allow some margin
+            assert error.max() < 2 * self.tolerance
+
+    @pytest.mark.parametrize("step", [2, 7, 16])
+    def test_fully_valid_target(self, step):
+        dst_area = create_area_def("euro", "EPSG:3035", width=300, height=200,
+                                   area_extent=(2000000, 1500000, 6500000, 5500000))
+        res, expected = self._transform(dst_area, step)
+        assert np.all(np.isfinite(expected[0]))
+        self._assert_close_to_exact(res, expected)
+
+    @pytest.mark.parametrize("step", [4, 16, 64])
+    def test_target_beyond_the_edge_of_the_disc(self, step):
+        dst_area = create_area_def("globe", "EPSG:4326", width=360, height=180, area_extent=(-180, -90, 180, 90))
+        res, expected = self._transform(dst_area, step)
+        assert not np.all(np.isfinite(expected[0]))
+        self._assert_close_to_exact(res, expected)
+
+    @pytest.mark.parametrize(("width", "height"), [(1, 50), (50, 1), (3, 3)])
+    def test_small_target(self, width, height):
+        dst_area = create_area_def("euro", "EPSG:3035", width=width, height=height,
+                                   area_extent=(2000000, 1500000, 6500000, 5500000))
+        res, expected = self._transform(dst_area, 16)
+        self._assert_close_to_exact(res, expected)
+
+    def test_indices_without_step_are_unchanged(self):
+        dst_area = create_area_def("globe", "EPSG:4326", width=90, height=45, area_extent=(-180, -90, 180, 90))
+        with mock.patch("pyresample.gradient._transform_area_coordinates_coarsely") as coarse:
+            gradient_resampler_indices(self.src_area, dst_area, transform_step=None)
+            gradient_resampler_indices(self.src_area, dst_area, transform_step=1)
+        coarse.assert_not_called()
+
+    def test_precompute_with_step_is_close_to_exact(self):
+        dst_area = create_area_def("globe", "EPSG:4326", width=360, height=180, area_extent=(-180, -90, 180, 90))
+        exact = create_gradient_search_resampler(self.src_area, dst_area)
+        exact.precompute()
+        coarse = create_gradient_search_resampler(self.src_area, dst_area)
+        coarse.precompute(transform_step=16, transform_tolerance=self.tolerance)
+        exact_indices = exact.indices_xy.compute()
+        coarse_indices = coarse.indices_xy.compute()
+        np.testing.assert_array_equal(np.isnan(coarse_indices), np.isnan(exact_indices))
+        np.testing.assert_allclose(coarse_indices, exact_indices, atol=2 * self.tolerance)
+
+    def test_swath_source_ignores_step(self):
+        lons, lats = create_area_def("globe", "EPSG:4326", width=40, height=30,
+                                     area_extent=(-30, 20, 30, 60)).get_lonlats()
+        src_swath = SwathDefinition(lons, lats)
+        dst_area = create_area_def("euro", "EPSG:3035", width=30, height=20,
+                                   area_extent=(2000000, 1500000, 6500000, 5500000))
+        with mock.patch("pyresample.gradient._transform_area_coordinates_coarsely") as coarse:
+            gradient_resampler_indices(src_swath, dst_area, transform_step=16)
+        coarse.assert_not_called()
