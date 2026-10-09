@@ -29,6 +29,7 @@ from pyresample import geo_filter, parse_area_file
 from pyresample.future.geometry import AreaDefinition, SwathDefinition
 from pyresample.future.geometry.area import ignore_pyproj_proj_warnings
 from pyresample.future.geometry.base import get_array_hashable
+from pyresample.geometry import DEFAULT_AREA_SLICE_SAMPLE_STEPS
 from pyresample.geometry import AreaDefinition as LegacyAreaDefinition
 from pyresample.geometry import DynamicAreaDefinition
 from pyresample.test.utils import assert_future_geometry
@@ -1520,6 +1521,92 @@ def test_enclose_areas(create_test_area):
         enclose_areas()
 
 
+def _assert_slice_contains_destination_coverage(slice_x, slice_y, valid_cols, valid_rows):
+    assert valid_cols.size > 0
+    assert valid_rows.size > 0
+    assert slice_x.start <= valid_cols.min()
+    assert slice_y.start <= valid_rows.min()
+    assert slice_x.stop > valid_cols.max()
+    assert slice_y.stop > valid_rows.max()
+
+
+def _assert_default_matches_edge_sampling(source_area, area_to_cover):
+    default_slice = source_area.get_area_slices(area_to_cover)
+    edge_slice = source_area.get_area_slices(
+        area_to_cover,
+        sample_steps=DEFAULT_AREA_SLICE_SAMPLE_STEPS,
+        sample_grid=False,
+    )
+    assert default_slice == edge_slice
+    return default_slice
+
+
+def _assert_default_matches_edge_and_is_within_dense(source_area, area_to_cover):
+    default_slice = _assert_default_matches_edge_sampling(source_area, area_to_cover)
+    dense_slice = source_area.get_area_slices(
+        area_to_cover,
+        sample_steps=None,
+        sample_grid=True,
+    )
+    edge_all_slice = source_area.get_area_slices(
+        area_to_cover,
+        sample_steps=None,
+        sample_grid=False,
+    )
+    assert default_slice[0].start >= edge_all_slice[0].start
+    assert default_slice[0].stop <= edge_all_slice[0].stop
+    assert default_slice[1].start >= edge_all_slice[1].start
+    assert default_slice[1].stop <= edge_all_slice[1].stop
+    assert edge_all_slice[0].start >= dense_slice[0].start
+    assert edge_all_slice[0].stop <= dense_slice[0].stop
+    assert edge_all_slice[1].start >= dense_slice[1].start
+    assert edge_all_slice[1].stop <= dense_slice[1].stop
+
+
+@pytest.fixture
+def geos_cross_projection_areas():
+    source_area = LegacyAreaDefinition(
+        "src",
+        "src",
+        "src",
+        {
+            "proj": "geos",
+            "a": 6378169.0,
+            "b": 6356583.8,
+            "h": 35785831.0,
+            "lon_0": 0.0,
+            "units": "m",
+        },
+        3712,
+        1392,
+        (5568748.0, 5568748.0, -5568748.0, 1392187.0),
+    )
+    area_to_cover = LegacyAreaDefinition(
+        "dst",
+        "dst",
+        "dst",
+        {"proj": "latlong", "datum": "WGS84"},
+        768,
+        768,
+        (7.456086060029671, 43.98125198600542, 33.461915849571966, 59.24271064133026),
+    )
+    return source_area, area_to_cover
+
+
+@pytest.fixture
+def geos_cross_projection_valid_indices(geos_cross_projection_areas):
+    source_area, area_to_cover = geos_cross_projection_areas
+    destination_lons, destination_lats = area_to_cover.get_lonlats()
+    source_cols, source_rows = source_area.get_array_indices_from_lonlat(
+        destination_lons,
+        destination_lats,
+    )
+    valid = ~np.ma.getmaskarray(source_cols) & ~np.ma.getmaskarray(source_rows)
+    valid_cols = np.asarray(source_cols[valid], dtype=np.int64)
+    valid_rows = np.asarray(source_rows[valid], dtype=np.int64)
+    return valid_cols, valid_rows
+
+
 class TestAreaDefGetAreaSlices:
     """Test AreaDefinition's get_area_slices."""
 
@@ -1535,8 +1622,6 @@ class TestAreaDefGetAreaSlices:
                          area_def.area_extent[2] - 10000,
                          area_def.area_extent[3] - 10000))
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        assert isinstance(slice_x.start, int)
-        assert isinstance(slice_y.start, int)
         assert slice(3, 3709, None) == slice_x
         assert slice(3, 3709, None) == slice_y
 
@@ -1554,10 +1639,8 @@ class TestAreaDefGetAreaSlices:
             y_size,
             area_extent)
         slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-        assert isinstance(slice_x.start, int)
-        assert isinstance(slice_y.start, int)
         assert slice(46, 3667, None) == slice_x
-        assert slice(56, 3659, None) == slice_y
+        assert slice(52, 3663, None) == slice_y
 
     def test_get_area_slices_geos_stereographic(self, geos_src_area, create_test_area):
         """Test slicing with a geos area and polar stereographic area."""
@@ -1572,6 +1655,157 @@ class TestAreaDefGetAreaSlices:
         assert isinstance(slice_y.start, int)
         assert slice_x == slice(1610, 2343)
         assert slice_y == slice(158, 515, None)
+
+    def test_get_area_slices_geos_cross_projection_contains_destination_coverage(
+            self,
+            geos_cross_projection_areas,
+            geos_cross_projection_valid_indices,
+    ):
+        """Test geos cross-projection slicing includes all destination-covered source pixels in dense mode."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        valid_cols, valid_rows = geos_cross_projection_valid_indices
+        slice_x, slice_y = source_area.get_area_slices(area_to_cover, sample_steps=None, sample_grid=True)
+
+        _assert_slice_contains_destination_coverage(slice_x, slice_y, valid_cols, valid_rows)
+
+    def test_get_area_slices_geos_cross_projection_shape_divisible(
+            self,
+            geos_cross_projection_areas,
+            geos_cross_projection_valid_indices,
+    ):
+        """Test geos cross-projection shape-divisible slicing keeps coverage in dense mode."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        valid_cols, valid_rows = geos_cross_projection_valid_indices
+        slice_x, slice_y = source_area.get_area_slices(
+            area_to_cover,
+            shape_divisible_by=2,
+            sample_steps=None,
+            sample_grid=True,
+        )
+
+        _assert_slice_contains_destination_coverage(slice_x, slice_y, valid_cols, valid_rows)
+        assert (slice_x.stop - slice_x.start) % 2 == 0
+        assert (slice_y.stop - slice_y.start) % 2 == 0
+
+    def test_get_area_slices_geos_cross_projection_default_matches_edge_sampling(
+            self,
+            geos_cross_projection_areas,
+    ):
+        """Test default slicing uses edge-only sampling with default step count."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        _assert_default_matches_edge_sampling(source_area, area_to_cover)
+
+    def test_get_area_slices_geos_cross_projection_sample_grid_expands_or_matches_edge(
+            self,
+            geos_cross_projection_areas,
+    ):
+        """Test interior grid sampling is a superset of edge-only sampling."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        edge_slice_x, edge_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=DEFAULT_AREA_SLICE_SAMPLE_STEPS,
+            sample_grid=False,
+        )
+        grid_slice_x, grid_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=DEFAULT_AREA_SLICE_SAMPLE_STEPS,
+            sample_grid=True,
+        )
+
+        assert grid_slice_x.start <= edge_slice_x.start
+        assert grid_slice_x.stop >= edge_slice_x.stop
+        assert grid_slice_y.start <= edge_slice_y.start
+        assert grid_slice_y.stop >= edge_slice_y.stop
+
+    @pytest.mark.parametrize("sample_steps", [None, 0, -1, False])
+    def test_get_area_slices_geos_cross_projection_non_positive_steps_match_all_edge_mode(
+            self,
+            geos_cross_projection_areas,
+            sample_steps,
+    ):
+        """Test non-positive step values mean ALL edge points when grid sampling is disabled."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        edge_all_slice_x, edge_all_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=None,
+            sample_grid=False,
+        )
+        mode_slice_x, mode_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=sample_steps,
+            sample_grid=False,
+        )
+
+        assert (mode_slice_x, mode_slice_y) == (edge_all_slice_x, edge_all_slice_y)
+
+    @pytest.mark.parametrize("sample_steps", [None, 0, -1, False])
+    def test_get_area_slices_geos_cross_projection_non_positive_steps_match_dense_grid_mode(
+            self,
+            geos_cross_projection_areas,
+            sample_steps,
+    ):
+        """Test non-positive step values mean dense sampling when grid sampling is enabled."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        dense_slice_x, dense_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=None,
+            sample_grid=True,
+        )
+        mode_slice_x, mode_slice_y = source_area.get_area_slices(
+            area_to_cover,
+            sample_steps=sample_steps,
+            sample_grid=True,
+        )
+
+        assert (mode_slice_x, mode_slice_y) == (dense_slice_x, dense_slice_y)
+
+    def test_get_area_slices_geos_cross_projection_step_1_raises_value_error(self, geos_cross_projection_areas):
+        """Test ``sample_steps=1`` is rejected as an invalid sampled-mode value."""
+        source_area, area_to_cover = geos_cross_projection_areas
+        with pytest.raises(ValueError, match="sample_steps=1 is not supported"):
+            source_area.get_area_slices(
+                area_to_cover,
+                sample_steps=1,
+                sample_grid=False,
+            )
+
+    def test_get_area_slices_geos_cross_projection_short_circuits_boundary_when_coverage_exists(
+            self,
+            geos_cross_projection_areas,
+            monkeypatch,
+    ):
+        """Test geos cross-projection slicing returns from sampled coverage before boundary fallback."""
+        from pyresample.future.geometry import _subset
+        source_area, area_to_cover = geos_cross_projection_areas
+
+        def _fail_if_called(_):
+            raise AssertionError("Boundary fallback should not run when sampled coverage exists.")
+
+        monkeypatch.setattr(_subset, "_get_area_boundary", _fail_if_called)
+        source_area.get_area_slices(area_to_cover)
+
+    def test_get_area_slices_geos_cross_projection_falls_back_to_boundary_when_coverage_missing(
+            self,
+            geos_cross_projection_areas,
+            monkeypatch,
+    ):
+        """Test geos cross-projection slicing can still use boundary fallback."""
+        from pyresample.future.geometry import _subset
+        source_area, area_to_cover = geos_cross_projection_areas
+
+        boundary_calls = 0
+        orig_boundary = _subset._get_area_boundary
+
+        def _boundary_spy(area):
+            nonlocal boundary_calls
+            boundary_calls += 1
+            return orig_boundary(area)
+
+        monkeypatch.setattr(_subset, "_get_covered_source_slices", lambda *args, **kwargs: None)
+        monkeypatch.setattr(_subset, "_get_area_boundary", _boundary_spy)
+        source_area.get_area_slices(area_to_cover)
+
+        assert boundary_calls >= 2
 
     def test_get_area_slices_geos_flipped_xy(self, geos_src_area, create_test_area):
         """Test slicing with two geos areas but one has flipped x/y dimensions."""
@@ -1602,12 +1836,7 @@ class TestAreaDefGetAreaSlices:
                 8192,
                 4096,
                 (-180.0, -90.0, 180.0, 90.0))
-
-            slice_x, slice_y = area_def.get_area_slices(area_to_cover)
-            assert isinstance(slice_x.start, int)
-            assert isinstance(slice_y.start, int)
-            assert slice_x == slice(46, 3667, None)
-            assert slice_y == slice(56, 3659, None)
+            _assert_default_matches_edge_sampling(area_def, area_to_cover)
 
     def test_get_area_slices_nongeos(self, create_test_area):
         """Check area slicing for non-geos projections."""
@@ -1663,15 +1892,14 @@ class TestAreaDefGetAreaSlices:
         assert slice_y == slice(9261, 10980)
 
     def test_area_to_cover_all_nan_bounds(self, geos_src_area, create_test_area):
-        """Check area slicing when the target doesn't have a valid boundary."""
+        """Check dense slicing still works when target boundary extraction is problematic."""
         area_def = geos_src_area
         # An area that is a subset of the original one
         area_to_cover = create_test_area(
             {"proj": "moll"},
             1000, 1000,
             area_extent=(-18000000.0, -9000000.0, 18000000.0, 9000000.0))
-        with pytest.raises(NotImplementedError):
-            area_def.get_area_slices(area_to_cover)
+        _assert_default_matches_edge_and_is_within_dense(area_def, area_to_cover)
 
     @pytest.mark.parametrize("cache_slices", [False, True])
     def test_area_slices_caching(self, create_test_area, tmp_path, cache_slices):
