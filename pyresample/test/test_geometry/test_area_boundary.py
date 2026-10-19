@@ -20,6 +20,7 @@
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 from pyproj import CRS
 
 from pyresample.future.geometry.area import (
@@ -28,6 +29,7 @@ from pyresample.future.geometry.area import (
     get_geostationary_bounding_box_in_lonlats,
     get_geostationary_bounding_box_in_proj_coords,
 )
+from pyresample.geometry import _get_densified_geostationary_bounding_box_in_proj_coords
 
 
 def _rotate_ring_to_canonical_start(ring):
@@ -300,6 +302,39 @@ class TestGeostationaryTools:
 
         lon, lat = get_geostationary_bounding_box_in_lonlats(geos_area, 20)
         _assert_coords_ring_allclose(lon, lat, expected_lon + lon_0, expected_lat, atol=1e-07)
+
+    @pytest.mark.parametrize(
+        ("area_name", "densified"),
+        [
+            ("full_disk", False),
+            ("partial_disk", True),
+            ("conus", True),
+            ("off_disk", False),
+        ])
+    def test_densified_geostationary_bbox_only_densifies_clipped_edges(
+            self, geos_fd_area, truncated_geos_area, geos_conus_area, geos_out_disk_area, area_name, densified):
+        """Test that only the edges clipped by the area extent get extra vertices."""
+        geos_area = {
+            "full_disk": geos_fd_area,
+            "partial_disk": truncated_geos_area,
+            "conus": geos_conus_area,
+            "off_disk": geos_out_disk_area,
+        }[area_name]
+        x, y = get_geostationary_bounding_box_in_proj_coords(geos_area, 50)
+
+        dense_x, dense_y = _get_densified_geostationary_bounding_box_in_proj_coords(geos_area, 50)
+
+        assert (dense_x.size > x.size) == densified
+        # every original vertex is kept, once and in order
+        dense_indices, original_indices = np.nonzero((dense_x[:, None] == x) & (dense_y[:, None] == y))
+        np.testing.assert_array_equal(original_indices, np.arange(x.size))
+        # and every added vertex lies on the area extent, not on the limb
+        new_x = np.delete(dense_x, dense_indices)
+        new_y = np.delete(dense_y, dense_indices)
+        ll_x, ll_y, ur_x, ur_y = geos_area.area_extent
+        on_extent = (np.isclose(new_x, ll_x, rtol=0) | np.isclose(new_x, ur_x, rtol=0) |
+                     np.isclose(new_y, ll_y, rtol=0) | np.isclose(new_y, ur_y, rtol=0))
+        assert on_extent.all()
 
     def test_get_geostationary_angle_extent(self):
         """Get max geostationary angles."""
