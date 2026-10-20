@@ -120,7 +120,7 @@ anything. Known divergences:
   `load_resampling_info`, and `pyresample.config["cache_dir"]`, which is used only by
   `_caching.py`: for geometry slices (`cache_geometry_slices`, JSON) and for resampling
   LUTs (`cache_resampling_luts`, `ZarrCache`). `ZarrCache` is the one meant to grow:
-  today only gradient search uses it (area-to-area target coordinates in the source CRS),
+  today only gradient search uses it (area-to-area `indices_xy`, keyed by both areas),
   but it is designed so the kd-tree nearest/bilinear index caches can move onto it from
   Satpy, each under its own namespace. Gradient search ignores the `cache_dir=` kwarg.
 - Only `nearest` is registered in the `pyresample.resamplers` entry point group, so

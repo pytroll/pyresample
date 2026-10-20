@@ -150,17 +150,18 @@ arrays a resampler computes from the source and target geometries alone, are
 cached to disk as Zarr. At the time of writing this is only done by the
 gradient search resampler
 (:func:`~pyresample.gradient.create_gradient_search_resampler`) when
-resampling from an area to an area: the target area projection coordinates
-transformed to the projection of the source area are cached, so they only need
-to be computed once for each target area and source projection. They are
-reused for all source areas sharing that projection, for example different
-sub-areas or resolutions of the same geostationary satellite.
+resampling from an area to an area: the source pixel indices of each target
+pixel are cached, so the search is only done once for each pair of source and
+target areas. Source areas differing in resolution or extent, like the
+channels of different resolution of geostationary imagers, each get their own
+cache entry. The chunk size used (``PYTROLL_CHUNK_SIZE``) is also part of the
+cache key.
 
 The LUTs are stored in the ``resampling_luts`` subdirectory of ``cache_dir``
 (see above), in a separate subdirectory for each resampler and cache format
 version. The first time a LUT is needed, it is computed for the whole target
 area and written to disk during the resampler's ``precompute`` step. Later
-uses read it lazily. The cached gradient search coordinates take up to 16 bytes
+uses read it lazily. The cached gradient search indices take up to 16 bytes
 per target pixel.
 
 When setting this as an environment variable, this should be set with the

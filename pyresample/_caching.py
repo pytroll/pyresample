@@ -138,8 +138,8 @@ class ZarrCache:
 
     This is meant for the expensive, reusable look-up tables (LUTs) that
     resamplers compute from their source and target geometries alone, for
-    example target coordinates transformed to the source projection or
-    neighbour indices. Each cache entry is a Zarr group holding one or more
+    example the gradient search indices or the kd-tree neighbour
+    indices. Each cache entry is a Zarr group holding one or more
     named arrays and is identified by a hexadecimal key, typically created with
     :func:`hash_cache_key` from everything the arrays depend on. Entries are
     stored in ``<cache_dir>/resampling_luts/<namespace>_v<version>/<key>.zarr``

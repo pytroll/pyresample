@@ -686,8 +686,8 @@ def test_resampling_geos_edge_to_mercator():
     assert not np.any(np.isnan(res[:, :, -1]))
 
 
-class TestTargetCoordinateCaching:
-    """Test the on-disk caching of the target coordinates in the source projection."""
+class TestIndicesCaching:
+    """Test the on-disk caching of the gradient search indices."""
 
     @pytest.fixture(autouse=True)
     def _small_chunks(self, monkeypatch):
@@ -715,7 +715,7 @@ class TestTargetCoordinateCaching:
 
     @staticmethod
     def _cache_entries(cache_dir):
-        return sorted(cache_dir.glob("resampling_luts/gradient_search_dst_coords_v*/*.zarr"))
+        return sorted(cache_dir.glob("resampling_luts/gradient_search_indices_v*/*.zarr"))
 
     @staticmethod
     def _resample(src_area, dst_area, data, **kwargs):
@@ -740,12 +740,11 @@ class TestTargetCoordinateCaching:
             assert len(self._cache_entries(tmp_path)) == 1
             warm = self._resample(src_area, dst_area, data, method=method)
 
-        # The target coordinates are generated for the whole area instead of per block, which can differ in the last bit
         assert not np.all(np.isnan(expected))
-        np.testing.assert_allclose(cold, expected, rtol=1e-12)
-        np.testing.assert_array_equal(warm, cold)
+        np.testing.assert_array_equal(cold, expected)
+        np.testing.assert_array_equal(warm, expected)
 
-    def test_cached_coordinates_are_chunked_like_the_indices(self, src_area, dst_area, tmp_path):
+    def test_cached_indices_are_chunked_like_uncached(self, src_area, dst_area, tmp_path):
         import pyresample
 
         with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
@@ -754,36 +753,40 @@ class TestTargetCoordinateCaching:
 
         assert resampler.indices_xy.chunks == ((2,), (40, 40, 17), (40, 40, 22))
 
-    def test_warm_cache_is_read_lazily_without_recomputing(self, src_area, dst_area, tmp_path):
+    def test_warm_cache_is_read_lazily_without_searching(self, src_area, dst_area, tmp_path):
         import pyresample
         from pyresample.test.utils import assert_maximum_dask_computes
 
         with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
             create_gradient_search_resampler(src_area, dst_area).precompute()
             resampler = create_gradient_search_resampler(src_area, dst_area)
-            with mock.patch("pyresample.gradient._get_dst_coords_in_crs") as get_coords, \
+            with mock.patch("pyresample.gradient.gradient_resampler_indices") as search, \
                     assert_maximum_dask_computes(0):
                 resampler.precompute()
+            resampler.indices_xy.compute()
 
-        get_coords.assert_not_called()
+        search.assert_not_called()
 
-    def test_cache_is_shared_by_sources_with_the_same_projection(self, src_area, dst_area, tmp_path):
+    def test_each_source_resolution_and_extent_has_its_own_cache(self, src_area, dst_area, create_test_area,
+                                                                  tmp_path):
         import pyresample
 
+        high_res_src_area = create_test_area(src_area.crs, 200, 200, src_area.area_extent)
         with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
             create_gradient_search_resampler(src_area, dst_area).precompute()
+            create_gradient_search_resampler(high_res_src_area, dst_area).precompute()
             create_gradient_search_resampler(src_area[10:60, 20:80], dst_area).precompute()
+            create_gradient_search_resampler(src_area, dst_area).precompute()
 
-        assert len(self._cache_entries(tmp_path)) == 1
+        assert len(self._cache_entries(tmp_path)) == 3
 
-    def test_cache_depends_on_source_projection(self, src_area, dst_area, create_test_area, tmp_path):
+    def test_cache_depends_on_chunk_size(self, src_area, dst_area, tmp_path, monkeypatch):
         import pyresample
 
-        other_src_area = create_test_area({'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos', 'lon_0': 9.5},
-                                          100, 100, (5550000.0, 5550000.0, -5550000.0, -5550000.0))
         with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
             create_gradient_search_resampler(src_area, dst_area).precompute()
-            create_gradient_search_resampler(other_src_area, dst_area).precompute()
+            monkeypatch.setattr("pyresample.gradient.CHUNK_SIZE", 50)
+            create_gradient_search_resampler(src_area, dst_area).precompute()
 
         assert len(self._cache_entries(tmp_path)) == 2
 
