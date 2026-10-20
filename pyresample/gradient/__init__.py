@@ -36,11 +36,15 @@ import xarray as xr
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
+from pyresample._caching import ZarrCache, hash_cache_key
 from pyresample.geometry import AreaDefinition, SwathDefinition, get_geostationary_bounding_box_in_lonlats
 from pyresample.gradient._gradient_search import one_step_gradient_indices, one_step_gradient_search
-from pyresample.resampler import BaseResampler, resample_blocks
+from pyresample.resampler import BaseResampler, _normalize_chunks_for_area, resample_blocks
 
 logger = logging.getLogger(__name__)
+
+# Bump the version whenever the content or layout of the cached target coordinates changes
+_DST_COORDS_CACHE = ZarrCache("gradient_search_dst_coords", version=1)
 
 
 def GradientSearchResampler(source_geo_def, target_geo_def):
@@ -245,11 +249,49 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         self.indices_xy = None
 
     def precompute(self, **kwargs):
-        """Precompute resampling parameters."""
+        """Precompute resampling parameters.
+
+        If the ``cache_resampling_luts`` configuration option is set and both the source and
+        the target are areas, the target projection coordinates transformed to the source
+        projection are read from, or on first use computed and written to, an on-disk Zarr
+        cache in ``cache_dir``. Note that this ``cache_dir`` is the one in ``pyresample.config``,
+        the ``cache_dir`` keyword argument is ignored.
+        """
         if self.indices_xy is None:
-            self.indices_xy = resample_blocks(gradient_resampler_indices_block,
-                                              self.source_geo_def, [], self.target_geo_def,
-                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
+            chunk_size = (2, CHUNK_SIZE, CHUNK_SIZE)
+            dst_coords = self._get_cached_dst_coords(chunk_size)
+            if dst_coords is None:
+                self.indices_xy = resample_blocks(gradient_resampler_indices_block,
+                                                  self.source_geo_def, [], self.target_geo_def,
+                                                  chunk_size=chunk_size, dtype=float)
+            else:
+                self.indices_xy = resample_blocks(_gradient_resampler_indices_block_from_dst_coords,
+                                                  self.source_geo_def, [], self.target_geo_def,
+                                                  dst_arrays=[dst_coords],
+                                                  chunk_size=chunk_size, dtype=float)
+
+    def _get_cached_dst_coords(self, chunk_size):
+        """Get the target coordinates in the source projection from the on-disk cache.
+
+        Returns ``None`` if caching is disabled or not applicable. Only area-to-area resampling is
+        cached: for swath sources the search happens in the target projection, so there is nothing
+        to transform, and swath targets can't be identified cheaply.
+        """
+        if not ZarrCache.is_enabled():
+            return None
+        if not is_area_to_area(self.source_geo_def, self.target_geo_def):
+            return None
+        src_crs_wkt = self.source_geo_def.crs_wkt
+        chunks, _ = _normalize_chunks_for_area(self.target_geo_def, chunk_size, float)
+        key = hash_cache_key(self.target_geo_def, src_crs_wkt)
+        cached = _DST_COORDS_CACHE.load(key, chunks={"dst_xy": chunks})
+        if cached is None:
+            logger.info("Computing and caching target coordinates in the source projection to %s",
+                        _DST_COORDS_CACHE.get_path(key))
+            dst_xy = _get_dst_coords_in_crs(self.target_geo_def, src_crs_wkt, chunks)
+            _DST_COORDS_CACHE.save(key, {"dst_xy": dst_xy})
+            cached = _DST_COORDS_CACHE.load(key, chunks={"dst_xy": chunks})
+        return cached["dst_xy"]
 
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
@@ -316,6 +358,29 @@ def gradient_resampler_indices_block(block_info, **kwargs):
     return gradient_resampler_indices(source_area, target_area, block_info, **kwargs)
 
 
+def _gradient_resampler_indices_block_from_dst_coords(dst_xy, block_info, **kwargs):
+    """Do the gradient search for an area source, using target coordinates already in the source projection."""
+    source_area = block_info[0]["area"]
+    src_coords, src_gradients = _get_area_coordinates_and_gradients(source_area)
+    indices_xy = _gradient_resample_indices(*src_coords, *src_gradients, dst_xy[0], dst_xy[1])
+    _offset_indices_to_full_source(indices_xy, block_info)
+    return indices_xy
+
+
+def _get_dst_coords_in_crs(target_area, crs_wkt, chunks):
+    """Get the projection coordinates of the target area transformed to *crs_wkt*, stacked as a lazy (2, y, x) array."""
+    dst_x, dst_y = target_area.get_proj_coords(chunks=chunks[-2:])
+    return da.map_blocks(_transform_coords_block, dst_x, dst_y,
+                         src_crs_wkt=target_area.crs_wkt, dst_crs_wkt=crs_wkt,
+                         new_axis=0, chunks=((2,),) + tuple(chunks[-2:]), dtype=float,
+                         meta=np.array((), dtype=float))
+
+
+def _transform_coords_block(x, y, src_crs_wkt, dst_crs_wkt):
+    transformer = pyproj.Transformer.from_crs(src_crs_wkt, dst_crs_wkt, always_xy=True)
+    return np.stack(transformer.transform(x, y))
+
+
 def gradient_resampler_indices(source_area, target_area, block_info=None, **kwargs):
     """Do the gradient search resampling, returning the resulting indices."""
     dst_coords, src_gradients, src_coords = _get_coordinates_in_same_projection(source_area, target_area)
@@ -328,12 +393,16 @@ def gradient_resampler_indices(source_area, target_area, block_info=None, **kwar
                                             src_gradient_yl, src_gradient_yp,
                                             dst_x, dst_y)
 
+    _offset_indices_to_full_source(indices_xy, block_info)
+    return indices_xy
+
+
+def _offset_indices_to_full_source(indices_xy, block_info):
+    """Shift indices relative to the cropped source to be relative to the full source, in place."""
     if block_info:
         y_slice, x_slice = block_info[0]["array-location"][-2:]
         indices_xy[0, :, :] += x_slice.start
         indices_xy[1, :, :] += y_slice.start
-
-    return indices_xy
 
 
 def _get_coordinates_in_same_projection(source_area, target_area):

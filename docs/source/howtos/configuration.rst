@@ -94,7 +94,8 @@ the `platformdirs <https://github.com/platformdirs/platformdirs#example-output>`
 
    Some resampling algorithms provide caching functionality when the user
    provides a directory to cache to. These resamplers do not currently use this
-   configuration option.
+   configuration option. Resamplers that support the
+   ``cache_resampling_luts`` option (see below) do use it.
 
 .. _config_cache_sensor_angles_setting:
 
@@ -127,6 +128,40 @@ overlap of the target area. This can be done before or during resampling as
 part of the algorithm or as part of a third-party resampling interface
 (ex. Satpy). In the future as optimizations are made to the polygon
 intersection logic this caching option should hopefully not be needed.
+
+When setting this as an environment variable, this should be set with the
+string equivalent of the Python boolean values ``="True"`` or ``="False"``.
+
+.. warning::
+
+    This caching does not limit the number of entries nor does it expire old
+    entries. It is up to the user to manage the contents of the cache
+    directory.
+
+Cache Resampling LUTs
+^^^^^^^^^^^^^^^^^^^^^
+
+* **Environment variable**: ``PYRESAMPLE_CACHE_RESAMPLING_LUTS``
+* **YAML/Config Key**: ``cache_resampling_luts``
+* **Default**: ``False``
+
+Whether or not resampling look-up tables (LUTs), the expensive intermediate
+arrays a resampler computes from the source and target geometries alone, are
+cached to disk as Zarr. At the time of writing this is only done by the
+gradient search resampler
+(:func:`~pyresample.gradient.create_gradient_search_resampler`) when
+resampling from an area to an area: the target area projection coordinates
+transformed to the projection of the source area are cached, so they only need
+to be computed once for each target area and source projection. They are
+reused for all source areas sharing that projection, for example different
+sub-areas or resolutions of the same geostationary satellite.
+
+The LUTs are stored in the ``resampling_luts`` subdirectory of ``cache_dir``
+(see above), in a separate subdirectory for each resampler and cache format
+version. The first time a LUT is needed, it is computed for the whole target
+area and written to disk during the resampler's ``precompute`` step. Later
+uses read it lazily. The cached gradient search coordinates take up to 16 bytes
+per target pixel.
 
 When setting this as an environment variable, this should be set with the
 string equivalent of the Python boolean values ``="True"`` or ``="False"``.
