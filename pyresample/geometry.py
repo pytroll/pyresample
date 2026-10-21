@@ -47,6 +47,9 @@ from pyresample.utils.proj4 import (
 
 from . import _formatting_html
 
+if TYPE_CHECKING:
+    from _hashlib import HASH
+
 try:
     from xarray import DataArray
 except ImportError:
@@ -126,7 +129,7 @@ class BaseDefinition:
             self.hash = int(self.update_hash().hexdigest(), 16)
         return self.hash
 
-    def update_hash(self, existing_hash: Optional[hashlib._Hash] = None) -> hashlib._Hash:
+    def update_hash(self, existing_hash: Optional[HASH] = None) -> HASH:
         """Update the hash."""
         if existing_hash is None:
             existing_hash = hashlib.sha1()  # nosec: B324
@@ -2107,7 +2110,7 @@ class AreaDefinition(_ProjectionDefinition):
         """Test for inequality."""
         return not self.__eq__(other)
 
-    def update_hash(self, existing_hash: Optional[hashlib._Hash] = None) -> hashlib._Hash:
+    def update_hash(self, existing_hash: Optional[HASH] = None) -> HASH:
         """Update a hash, or return a new one if needed."""
         if existing_hash is None:
             existing_hash = hashlib.sha1()  # nosec: B324
