@@ -118,7 +118,11 @@ anything. Known divergences:
   `BaseResampler` (only bilinear really uses it; `DaskEWAResampler.precompute` accepts it
   and warns that it is ignored), bilinear's own zarr `save_resampling_info`/
   `load_resampling_info`, and `pyresample.config["cache_dir"]`, which is used only by
-  `_caching.py` for geometry slices.
+  `_caching.py`: for geometry slices (`cache_geometry_slices`, JSON) and for resampling
+  LUTs (`cache_resampling_luts`, `ZarrCache`). `ZarrCache` is the one meant to grow:
+  today only gradient search uses it (area-to-area `indices_xy`, keyed by both areas),
+  but it is designed so the kd-tree nearest/bilinear index caches can move onto it from
+  Satpy, each under its own namespace. Gradient search ignores the `cache_dir=` kwarg.
 - Only `nearest` is registered in the `pyresample.resamplers` entry point group, so
   `future.list_resamplers()` does not see bilinear, EWA, gradient or bucket.
 
@@ -158,8 +162,9 @@ path from the old one; if that isn't possible, say so rather than extending the 
 `pyresample.config` is a [donfig](https://donfig.readthedocs.io/) object defined in
 `pyresample/_config.py`. Keys and defaults:
 
-- `cache_dir` — platformdirs user cache dir; used only for geometry-slice caching.
+- `cache_dir` — platformdirs user cache dir; used only by `_caching.py`.
 - `cache_geometry_slices` — `False`.
+- `cache_resampling_luts` — `False`.
 - `features.future_geometries` — `False`.
 
 Environment variables are `PYRESAMPLE_` prefixed with `__` for nesting

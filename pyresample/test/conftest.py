@@ -39,6 +39,7 @@ def reset_pyresample_config(tmpdir):
     """Set pyresample config to logical defaults for tests."""
     test_config = {
         "cache_geometry_slices": False,
+        "cache_resampling_luts": False,
         "features": {
             "future_geometries": False,
         },

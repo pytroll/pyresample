@@ -684,3 +684,121 @@ def test_resampling_geos_edge_to_mercator():
 
     res = gradient_resampler_indices(source_area, dest_area, fill_value=np.nan)
     assert not np.any(np.isnan(res[:, :, -1]))
+
+
+class TestIndicesCaching:
+    """Test the on-disk caching of the gradient search indices."""
+
+    @pytest.fixture(autouse=True)
+    def _small_chunks(self, monkeypatch):
+        """Use small chunks so that the target is split in several blocks."""
+        monkeypatch.setattr("pyresample.gradient.CHUNK_SIZE", 40)
+
+    @pytest.fixture
+    def src_area(self, create_test_area):
+        """Create a geostationary source area."""
+        return create_test_area({'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'},
+                                100, 100, (5550000.0, 5550000.0, -5550000.0, -5550000.0))
+
+    @pytest.fixture
+    def dst_area(self, create_test_area):
+        """Create a stereographic target area."""
+        return create_test_area({'proj': 'stere', 'lon_0': 14.0, 'lat_0': 90.0, 'lat_ts': 60.0, 'ellps': 'bessel'},
+                                102, 97, (-2717181.7304994687, -5571048.14031214,
+                                          1378818.2695005313, -1475048.1403121399))
+
+    @pytest.fixture
+    def data(self, src_area):
+        """Create source data."""
+        return xr.DataArray(da.from_array(np.arange(np.prod(src_area.shape), dtype=np.float64).reshape(src_area.shape),
+                                          chunks=40), dims=("y", "x"))
+
+    @staticmethod
+    def _cache_entries(cache_dir):
+        return sorted(cache_dir.glob("resampling_luts/gradient_search_indices_v*/*.zarr"))
+
+    @staticmethod
+    def _resample(src_area, dst_area, data, **kwargs):
+        resampler = create_gradient_search_resampler(src_area, dst_area)
+        return resampler.resample(data, **kwargs).values
+
+    def test_caching_is_disabled_by_default(self, src_area, dst_area, data, tmp_path):
+        import pyresample
+
+        with pyresample.config.set(cache_dir=tmp_path):
+            self._resample(src_area, dst_area, data)
+
+        assert not self._cache_entries(tmp_path)
+
+    @pytest.mark.parametrize("method", ["bilinear", "nn"])
+    def test_cached_results_equal_uncached(self, src_area, dst_area, data, tmp_path, method):
+        import pyresample
+
+        expected = self._resample(src_area, dst_area, data, method=method)
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            cold = self._resample(src_area, dst_area, data, method=method)
+            assert len(self._cache_entries(tmp_path)) == 1
+            warm = self._resample(src_area, dst_area, data, method=method)
+
+        assert not np.all(np.isnan(expected))
+        np.testing.assert_array_equal(cold, expected)
+        np.testing.assert_array_equal(warm, expected)
+
+    def test_cached_indices_are_chunked_like_uncached(self, src_area, dst_area, tmp_path):
+        import pyresample
+
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            resampler = create_gradient_search_resampler(src_area, dst_area)
+            resampler.precompute()
+
+        assert resampler.indices_xy.chunks == ((2,), (40, 40, 17), (40, 40, 22))
+
+    def test_warm_cache_is_read_lazily_without_searching(self, src_area, dst_area, tmp_path):
+        import pyresample
+        from pyresample.test.utils import assert_maximum_dask_computes
+
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+            resampler = create_gradient_search_resampler(src_area, dst_area)
+            with mock.patch("pyresample.gradient.gradient_resampler_indices") as search, \
+                    assert_maximum_dask_computes(0):
+                resampler.precompute()
+            resampler.indices_xy.compute()
+
+        search.assert_not_called()
+
+    def test_each_source_resolution_and_extent_has_its_own_cache(self, src_area, dst_area, create_test_area,
+                                                                  tmp_path):
+        import pyresample
+
+        high_res_src_area = create_test_area(src_area.crs, 200, 200, src_area.area_extent)
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+            create_gradient_search_resampler(high_res_src_area, dst_area).precompute()
+            create_gradient_search_resampler(src_area[10:60, 20:80], dst_area).precompute()
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+
+        assert len(self._cache_entries(tmp_path)) == 3
+
+    def test_cache_depends_on_chunk_size(self, src_area, dst_area, tmp_path, monkeypatch):
+        import pyresample
+
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+            monkeypatch.setattr("pyresample.gradient.CHUNK_SIZE", 50)
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+
+        assert len(self._cache_entries(tmp_path)) == 2
+
+    def test_swath_source_is_not_cached(self, dst_area, tmp_path):
+        import pyresample
+
+        lons, lats = np.meshgrid(np.linspace(0, 20, 50), np.linspace(45, 66, 50))
+        lons = xr.DataArray(da.from_array(lons, chunks=25), dims=["y", "x"])
+        lats = xr.DataArray(da.from_array(lats, chunks=25), dims=["y", "x"])
+        src_swath = SwathDefinition(lons, lats)
+        data = xr.DataArray(da.ones(src_swath.shape, chunks=25), dims=["y", "x"])
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path), np.errstate(invalid="ignore"):
+            self._resample(src_swath, dst_area, data)
+
+        assert not self._cache_entries(tmp_path)

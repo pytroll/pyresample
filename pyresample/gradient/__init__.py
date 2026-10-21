@@ -36,11 +36,15 @@ import xarray as xr
 from shapely.geometry import Polygon
 
 from pyresample import CHUNK_SIZE
+from pyresample._caching import ZarrCache, hash_cache_key
 from pyresample.geometry import AreaDefinition, SwathDefinition, get_geostationary_bounding_box_in_lonlats
 from pyresample.gradient._gradient_search import one_step_gradient_indices, one_step_gradient_search
-from pyresample.resampler import BaseResampler, resample_blocks
+from pyresample.resampler import BaseResampler, _normalize_chunks_for_area, resample_blocks
 
 logger = logging.getLogger(__name__)
+
+# Bump the version whenever the gradient search or the layout of the cached indices changes
+_INDICES_CACHE = ZarrCache("gradient_search_indices", version=1)
 
 
 def GradientSearchResampler(source_geo_def, target_geo_def):
@@ -245,11 +249,40 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         self.indices_xy = None
 
     def precompute(self, **kwargs):
-        """Precompute resampling parameters."""
+        """Precompute resampling parameters.
+
+        If the ``cache_resampling_luts`` configuration option is set and both the source and
+        the target are areas, the indices are read from, or on first use computed and written to,
+        an on-disk Zarr cache in ``cache_dir``. Note that this ``cache_dir`` is the one in
+        ``pyresample.config``, the ``cache_dir`` keyword argument is ignored.
+        """
         if self.indices_xy is None:
-            self.indices_xy = resample_blocks(gradient_resampler_indices_block,
-                                              self.source_geo_def, [], self.target_geo_def,
-                                              chunk_size=(2, CHUNK_SIZE, CHUNK_SIZE), dtype=float)
+            chunk_size = (2, CHUNK_SIZE, CHUNK_SIZE)
+            if ZarrCache.is_enabled() and is_area_to_area(self.source_geo_def, self.target_geo_def):
+                self.indices_xy = self._get_cached_indices(chunk_size)
+            else:
+                self.indices_xy = self._get_indices(chunk_size)
+
+    def _get_indices(self, chunk_size):
+        return resample_blocks(gradient_resampler_indices_block,
+                               self.source_geo_def, [], self.target_geo_def,
+                               chunk_size=chunk_size, dtype=float)
+
+    def _get_cached_indices(self, chunk_size):
+        """Get the indices from the on-disk cache, computing and caching them first if needed.
+
+        Only area-to-area resampling is cached, as swath geometries usually change from one
+        dataset to the next. The source is cropped per target block, so the block layout is
+        part of the key too, which keeps the cached indices identical to uncached ones.
+        """
+        chunks, _ = _normalize_chunks_for_area(self.target_geo_def, chunk_size, float)
+        key = hash_cache_key(self.source_geo_def, self.target_geo_def, chunks)
+        cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
+        if cached is None:
+            logger.info("Computing and caching gradient search indices to %s", _INDICES_CACHE.get_path(key))
+            _INDICES_CACHE.save(key, {"indices_xy": self._get_indices(chunk_size)})
+            cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
+        return cached["indices_xy"]
 
     @ensure_data_array
     def compute(self, data, method="bilinear", cache_id=None, **kwargs):
