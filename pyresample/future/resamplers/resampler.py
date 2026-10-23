@@ -32,12 +32,12 @@ except ImportError:
 from pyresample.geometry import AreaDefinition, CoordinateDefinition
 
 if TYPE_CHECKING:
-    from _hashlib import HASH
+    import hashlib
 
 logger = logging.getLogger(__name__)
 
 
-def hash_dict(the_dict: dict, existing_hash: Optional[HASH] = None) -> HASH:
+def hash_dict(the_dict: dict, existing_hash: Optional[hashlib._Hash] = None) -> hashlib._Hash:
     """Calculate a hash for a dictionary and optionally update an existing hash."""
     if existing_hash is None:
         existing_hash = hashlib.sha1()  # nosec: B324
