@@ -32,7 +32,7 @@ except ImportError:
 from pyresample.geometry import AreaDefinition, CoordinateDefinition
 
 if TYPE_CHECKING:
-    import hashlib
+    import hashlib._Hash
 
 logger = logging.getLogger(__name__)
 

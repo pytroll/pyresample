@@ -48,7 +48,7 @@ from pyresample.utils.proj4 import (
 from . import _formatting_html
 
 if TYPE_CHECKING:
-    import hashlib
+    import hashlib._Hash
 
 try:
     from xarray import DataArray
