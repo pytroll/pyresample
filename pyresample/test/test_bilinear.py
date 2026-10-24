@@ -415,6 +415,23 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
 
+    def test_integer_masked_and_nan_output(self):
+        """Integer corner data must accept masked and NaN output fills."""
+        from pyresample.bilinear import NumpyBilinearResampler
+
+        resampler = NumpyBilinearResampler(self.source_def, self.target_def, 50e5)
+        for dtype in [np.int16, np.uint16]:
+            for bands in [1, 2]:
+                data = self.data1.astype(dtype)
+                if bands == 2:
+                    data = np.dstack((data, data * 2))
+                for fill_value in [None, np.nan]:
+                    with self.subTest(dtype=dtype, bands=bands, fill_value=fill_value):
+                        expected = resampler.resample(data.astype(float), fill_value=fill_value)
+                        result = resampler.resample(data, fill_value=fill_value)
+                        np.testing.assert_array_equal(np.ma.getmaskarray(result), np.ma.getmaskarray(expected))
+                        np.testing.assert_allclose(np.ma.filled(result, np.nan), np.ma.filled(expected, np.nan))
+
     def test_create_empty_bil_info(self):
         """Test creation of empty bilinear info."""
         from pyresample.bilinear import NumpyBilinearResampler
