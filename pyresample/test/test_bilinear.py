@@ -385,6 +385,17 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(shp[0:2], self.target_def.shape)
         self.assertEqual(shp[-1], 2)
 
+    def test_resample_1d_swath(self):
+        """A point list must sample the same pixels as its structured swath."""
+        from pyresample.bilinear import NumpyBilinearResampler
+
+        data = np.arange(self.source_def.size, dtype=float).reshape(self.source_def.shape)
+        structured = NumpyBilinearResampler(self.source_def, self.target_def, 50e5)
+        points = NumpyBilinearResampler(self.source_def_1d, self.target_def, 50e5)
+        expected = structured.resample(data)
+        np.testing.assert_allclose(points.resample(data.ravel()), expected)
+        np.testing.assert_allclose(points.get_sample_from_bil_info(data.ravel() * 2, fill_value=0), expected * 2)
+
     def test_class_resample_method(self):
         """Test the 'resampler.resample()' method."""
         from pyresample.bilinear import NumpyBilinearResampler
