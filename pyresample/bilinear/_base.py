@@ -371,10 +371,10 @@ def _get_fractional_distances_irregular(corner_points, out_y, out_x):
         *_calc_abc(corner_points, out_y, out_x),
         min_val=0., max_val=1.)
 
-    # Calculate parameter s
+    # Solve s from x: horizontal edges can make the y equation singular.
     pt_1, pt_2, pt_3, pt_4 = corner_points
-    y_corners = (pt_1[:, 1], pt_3[:, 1], pt_2[:, 1], pt_4[:, 1])
-    s__ = _solve_another_fractional_distance(t__, y_corners, out_y)
+    x_corners = (pt_1[:, 0], pt_3[:, 0], pt_2[:, 0], pt_4[:, 0])
+    s__ = _solve_another_fractional_distance(t__, x_corners, out_x)
 
     return t__, s__
 
