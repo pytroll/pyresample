@@ -35,7 +35,7 @@ import warnings
 import numpy as np
 from pykdtree.kdtree import KDTree
 
-from ._base import BilinearBase, _resample, find_indices_outside_min_and_max, get_slicer
+from ._base import BilinearBase, _check_fill_value, _resample, find_indices_outside_min_and_max, get_slicer
 
 
 def resample_bilinear(data, source_geo_def, target_area_def, radius=50e3,
@@ -256,6 +256,7 @@ class NumpyBilinearResampler(BilinearBase):
         return self._finalize_output_data(data, res, fill_value)
 
     def _slice_data(self, data, fill_value):
+        fill_value = _check_fill_value(fill_value, data.dtype)
         data = _check_data_shape(data, self._valid_input_index)
         res = get_slicer(data)(data, self.slices_x, self.slices_y, self.mask_slices, fill_value)
 
