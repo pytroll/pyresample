@@ -158,7 +158,7 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertEqual(res[1], 0.5)
         res = _get_fractional_distances_irregular(self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
-        self.assertTrue(np.isnan(res[1]))
+        self.assertEqual(res[1], 0.5)
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
@@ -191,6 +191,25 @@ class TestNumpyBilinear(unittest.TestCase):
         res = _get_fractional_distances(self.pts_vert_parallel, out_x, out_y)
         self.assertEqual(res[0], 0.5)
         self.assertEqual(res[1], 0.5)
+
+    def test_resample_affine_field_horizontal_edges(self):
+        """Horizontal corner edges must preserve an affine field after projection."""
+        from pyresample import create_area_def
+        from pyresample.bilinear import NumpyBilinearResampler
+        from pyresample.geometry import SwathDefinition
+
+        lons, lats = np.meshgrid(np.linspace(-3, 3, 13), np.linspace(53, 47, 13))
+        source = SwathDefinition(lons=lons, lats=lats)
+        target = create_area_def("affine", "EPSG:4326", shape=(7, 9),
+                                 area_extent=(-2.9, 47.1, 2.9, 52.9))
+        data = 100 + 4 * lons + 2 * (lats - 50)
+        out_lons, out_lats = target.get_lonlats()
+        expected = 100 + 4 * out_lons + 2 * (out_lats - 50)
+        resampler = NumpyBilinearResampler(source, target, 400e3, reduce_data=False)
+
+        result = resampler.resample(data, fill_value=np.nan)
+
+        np.testing.assert_allclose(result, expected, rtol=1e-12, atol=1e-10)
 
     def test_get_fractional_distances_division_by_zero(self):
         """Test that the correct result is found even when there's a division by zero when solving t and s."""
@@ -1036,7 +1055,7 @@ class TestXarrayBilinear(unittest.TestCase):
         res = _get_fractional_distances_irregular(
             self.pts_vert_parallel, 0., 0.)
         self.assertEqual(res[0], 0.5)
-        self.assertTrue(np.isnan(res[1]))
+        self.assertEqual(res[1], 0.5)
 
     def test_get_fractional_distances_uprights_parallel(self):
         """Test calculation when uprights are parallel."""
