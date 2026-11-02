@@ -33,9 +33,9 @@ class Boundary(object):
     def __init__(self, lons=None, lats=None, frequency=1):
         self._contour_poly = None
         if lons is not None:
-            self.lons = lons[::frequency]
+            self.lons = np.ravel(lons)[::frequency]
         if lats is not None:
-            self.lats = lats[::frequency]
+            self.lats = np.ravel(lats)[::frequency]
 
     def contour(self):
         """Get lon/lats of the contour."""

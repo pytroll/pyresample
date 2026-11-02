@@ -22,7 +22,18 @@ import unittest
 import numpy as np
 import pytest
 
-from pyresample.boundary import AreaBoundary
+from pyresample.boundary import AreaBoundary, Boundary
+
+
+def test_boundary_flattens_coordinates_before_decimation():
+    """Test 2D coordinates are flattened before frequency sampling."""
+    lons = np.arange(6).reshape(2, 3)
+    lats = lons + 10
+
+    contour_lons, contour_lats = Boundary(lons, lats, frequency=2).contour()
+
+    np.testing.assert_array_equal(contour_lons, [0, 2, 4])
+    np.testing.assert_array_equal(contour_lats, [10, 12, 14])
 
 
 class TestAreaBoundary(unittest.TestCase):
