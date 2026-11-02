@@ -349,12 +349,17 @@ class CCoordinate(object):
         """Multiply."""
         return self.__mul__(other)
 
-    def to_spherical(self):
+    def to_spherical(self, future=False):
         """Convert to SPoint/SMultiPoint object."""
         # TODO: this in future should point to SPoint or SMultiPoint
+        from pyresample.future.spherical.point import create_spherical_point
+
         lon = np.arctan2(self.cart[..., 1], self.cart[..., 0])
         lat = np.arcsin(self.cart[..., 2])
-        return SCoordinate(lon, lat)
+        if not future:
+            return SCoordinate(lon, lat)
+        else:
+            return create_spherical_point(lon, lat)
 
 
 class Arc(object):
@@ -365,20 +370,18 @@ class Arc(object):
 
     def __eq__(self, other):
         """Check equality."""
-        if self.start == other.start and self.end == other.end:
-            return 1
-        return 0
+        return self.start == other.start and self.end == other.end
 
     def __ne__(self, other):
         """Check not equal comparison."""
         return not self.__eq__(other)
 
     def __str__(self):
-        """Get simplified representation."""
+        """Get simplified string representation."""
         return str(self.start) + " -> " + str(self.end)
 
     def __repr__(self):
-        """Get simplified representation."""
+        """Get simplified repr representation."""
         return str(self.start) + " -> " + str(self.end)
 
     def angle(self, other_arc):
@@ -427,9 +430,9 @@ class Arc(object):
             return angle
 
     def intersections(self, other_arc):
-        """Give the two intersections of the greats circles defined by the current arc and *other_arc*.
+        """Compute the intersections points of the great circles over which the arcs lies.
 
-        From http://williams.best.vwh.net/intersect.htm
+        A great circle divides the sphere in two equal hemispheres.
         """
         end_lon = self.end.lon
         other_end_lon = other_arc.end.lon
@@ -465,23 +468,23 @@ class Arc(object):
         return bool(self.intersection(other_arc))
 
     def intersection(self, other_arc):
-        """Return where, if the current arc and the *other_arc* intersect.
+        """Compute the intersection point between two arcs.
 
-        None is returned if there is not intersection. An arc is defined
-        as the shortest tracks between two points.
+        If arc and *other_arc* intersect, it returns the intersection SPoint.
+        If arc and *other_arc* does not intersect, it returns None.
         """
         if self == other_arc:
             return None
 
+        a__ = self.start
+        b__ = self.end
+        c__ = other_arc.start
+        d__ = other_arc.end
+
+        ab_ = a__.hdistance(b__)
+        cd_ = c__.hdistance(d__)
+
         for i in self.intersections(other_arc):
-            a__ = self.start
-            b__ = self.end
-            c__ = other_arc.start
-            d__ = other_arc.end
-
-            ab_ = a__.hdistance(b__)
-            cd_ = c__.hdistance(d__)
-
             if (((i in (a__, b__)) or
                 (abs(a__.hdistance(i) + b__.hdistance(i) - ab_) < EPSILON)) and
                 ((i in (c__, d__)) or
@@ -490,7 +493,11 @@ class Arc(object):
         return None
 
     def get_next_intersection(self, arcs, known_inter=None):
-        """Get the next intersection between the current arc and *arcs*."""
+        """Get the next intersection between the current arc and *arcs*.
+
+        It return a tuple with the intersecting point and the arc within *arcs*
+        that intersect the self arc.
+        """
         res = []
         for arc in arcs:
             inter = self.intersection(arc)
