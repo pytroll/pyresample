@@ -296,7 +296,7 @@ def _check_data_shape(data, input_idxs):
 
     # Ensure two dimensions
     if data.ndim == 1:
-        data = np.expand_dims(data, 1)
+        data = np.expand_dims(data, 0)
 
     return data
 
