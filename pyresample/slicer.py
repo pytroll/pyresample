@@ -27,7 +27,11 @@ from pyproj import Transformer
 from pyproj.enums import TransformDirection
 
 from pyresample import AreaDefinition, SwathDefinition
-from pyresample.geometry import IncompatibleAreas, InvalidArea, get_geostationary_bounding_box_in_proj_coords
+from pyresample.geometry import (
+    IncompatibleAreas,
+    InvalidArea,
+    _get_densified_geostationary_bounding_box_in_proj_coords,
+)
 
 try:
     import dask.array as da
@@ -174,20 +178,9 @@ class AreaSlicer(Slicer):
         except AttributeError:
             x, y = self.area_to_contain.get_edge_lonlats(vertices_per_side=10)
         if self.area_to_crop.is_geostationary:
-            x_geos, y_geos = get_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
-            geos_poly = Polygon(zip(x_geos, y_geos, strict=True))
-            # Densify the polygon before reprojecting it to the destination crs.
-            # Clipping a partial disk (for example rapid scan or region of interest
-            # data) to its area extent introduces straight chord edges. Those chords
-            # are not straight in the destination crs, so without intermediate
-            # vertices the reprojected polygon cuts the corner and the computed slice
-            # is too small, leaving part of the destination without data.
-            atc_extent = self.area_to_crop.area_extent
-            segment_length = max(abs(atc_extent[2] - atc_extent[0]), abs(atc_extent[3] - atc_extent[1])) / 100
-            geos_poly = geos_poly.segmentize(segment_length)
-            x_geos, y_geos = geos_poly.exterior.coords.xy
-            x_geos, y_geos = self._source_transformer.transform(
-                np.asarray(x_geos), np.asarray(y_geos), direction=TransformDirection.INVERSE)
+            # Densified so the edges clipped by a partial disk's extent follow the real edge in the destination crs
+            x_geos, y_geos = _get_densified_geostationary_bounding_box_in_proj_coords(self.area_to_crop, 360)
+            x_geos, y_geos = self._source_transformer.transform(x_geos, y_geos, direction=TransformDirection.INVERSE)
             geos_poly = Polygon(zip(x_geos, y_geos, strict=True))
             poly = Polygon(zip(x, y, strict=True))
             poly = poly.intersection(geos_poly)
