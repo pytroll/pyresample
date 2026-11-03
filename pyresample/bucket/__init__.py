@@ -36,7 +36,9 @@ def _sort_weights(statistic_method, weights):
     """
     order = np.argsort(weights)
     if statistic_method == 'max':
-        return order[::-1]
+        # Keep NaNs last so they cannot hide a valid maximum in the same bin.
+        valid = ~np.isnan(weights[order])
+        return np.concatenate((order[valid][::-1], order[~valid]))
     return order
 
 
@@ -283,7 +285,9 @@ class BucketResampler(object):
             shape=out_shape,
             dtype=np.float64)
 
-        return statistics
+        statistics = self._mask_bins_with_nan_if_not_skipna(
+            skipna, data, self.target_area.size, statistics.ravel(), np.nan)
+        return statistics.reshape(out_shape)
 
     def get_min(self, data, fill_value=np.nan, skipna=True):
         """Calculate minimums for each bin with drop-in-a-bucket resampling.

@@ -288,6 +288,29 @@ def test_get_abs_max(resampler):
     assert np.count_nonzero(~np.isnan(result)) == 2
 
 
+@pytest.mark.parametrize("method, expected", [("min", -7.), ("max", 3.), ("abs_max", -7.)])
+@pytest.mark.parametrize("skipna", [True, False])
+@pytest.mark.parametrize("chunks", [1, 2, 6])
+@pytest.mark.parametrize("use_xarray", [False, True])
+def test_get_extrema_skipna(method, expected, skipna, chunks, use_xarray):
+    """Test mixed, all-NaN, empty and valid buckets without eager computation."""
+    area = create_area_def('test', {'proj': 'latlong'}, width=2, height=2,
+                           center=(0, 0), resolution=10)
+    lons = da.from_array(np.array([1., 2., 3., -1., -1., 20.]), chunks=2)
+    lats = da.from_array(np.array([1., 2., 3., 1., -1., 20.]), chunks=2)
+    resampler = bucket.BucketResampler(area, lons, lats)
+    # Three samples share a bucket; the last NaN is outside the target area.
+    data = da.from_array(np.array([np.nan, -7., 3., 5., np.nan, np.nan]), chunks=chunks)
+    if use_xarray:
+        data = xr.DataArray(data)
+
+    with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
+        result = getattr(resampler, 'get_' + method)(data, skipna=skipna)
+
+    expected = np.array([[5., expected if skipna else np.nan], [np.nan, np.nan]])
+    np.testing.assert_equal(result.compute(), expected)
+
+
 def _get_average_result(resampler, data, **kwargs):
     """Compute the bucket average with kwargs and check that no dask computation is performed."""
     with dask.config.set(scheduler=CustomScheduler(max_computes=0)):
