@@ -28,6 +28,7 @@ import unittest
 from unittest import mock
 
 import numpy as np
+import pytest
 from pyproj import Proj
 
 try:
@@ -429,6 +430,28 @@ class TestNumpyBilinear(unittest.TestCase):
         self.assertTrue(resampler._index_array.dtype == np.int32)
         self.assertEqual(resampler._valid_input_index.shape, (self.source_def.size,))
         self.assertTrue(resampler._valid_input_index.dtype == bool)
+
+
+@pytest.mark.parametrize("dtype", [np.int16, np.uint16])
+@pytest.mark.parametrize("bands", [1, 2])
+@pytest.mark.parametrize("fill_value", [None, np.nan], ids=["masked", "nan"])
+def test_integer_masked_and_nan_output(dtype, bands, fill_value, create_test_swath, create_test_area):
+    """Integer corner data must accept masked and NaN output fills."""
+    from pyresample.bilinear import NumpyBilinearResampler
+
+    lons, lats = np.meshgrid(np.linspace(-25., 40., 100), np.linspace(45., 75., 100))
+    source_def = create_test_swath(lons, lats)
+    target_def = create_test_area(
+        {"a": 6378144.0, "b": 6356759.0, "lat_0": 50., "lat_ts": 50., "lon_0": 8., "proj": "stere"},
+        4, 4, [-1370912.72, -909968.64, 1029087.28, 1490031.36])
+    resampler = NumpyBilinearResampler(source_def, target_def, 50e5)
+    data = np.ones(lons.shape, dtype=dtype)
+    if bands == 2:
+        data = np.dstack((data, data * 2))
+    expected = resampler.resample(data.astype(float), fill_value=fill_value)
+    result = resampler.get_sample_from_bil_info(data, fill_value=fill_value)
+    np.testing.assert_array_equal(np.ma.getmaskarray(result), np.ma.getmaskarray(expected))
+    np.testing.assert_allclose(np.ma.filled(result, np.nan), np.ma.filled(expected, np.nan))
 
 
 class TestXarrayBilinear(unittest.TestCase):
