@@ -1202,7 +1202,7 @@ class DynamicAreaDefinition(object):
 
         Parameters
         ----------
-        lonlats : SwathDefinition or tuple
+        lonslats : SwathDefinition or tuple
           The geographical coordinates to contain in the resulting area.
           A tuple should be ``(lons, lats)``.
           If a SwathDefinition is provided, and it has a "bounding_box" attribute, it will be used instead of the full
@@ -1918,7 +1918,7 @@ class AreaDefinition(_ProjectionDefinition):
 
         Parameters
         ----------
-        nc_file : string or object
+        cf_file : string or object
             path to a netCDF/CF file, or opened xarray.Dataset object
         variable : string, optional
             name of the variable to load the AreaDefinition from
