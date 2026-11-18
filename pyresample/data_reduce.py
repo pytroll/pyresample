@@ -31,7 +31,7 @@ def swath_from_cartesian_grid(cart_grid, lons, lats, data,
 
     Parameters
     ----------
-    chart_grid : numpy array
+    cart_grid : numpy array
         Grid of area cartesian coordinates
     lons : numpy array
         Swath lons
@@ -63,14 +63,12 @@ def get_valid_index_from_cartesian_grid(cart_grid, lons, lats,
 
     Parameters
     ----------
-    chart_grid : numpy array
+    cart_grid : numpy array
         Grid of area cartesian coordinates
     lons : numpy array
         Swath lons
     lats : numpy array
         Swath lats
-    data : numpy array
-        Swath data
     radius_of_influence : float
         Cut off distance in meters
 
@@ -176,14 +174,14 @@ def get_valid_index_from_lonlat_grid(grid_lons, grid_lats, lons, lats, radius_of
 
     Parameters
     ----------
-    chart_grid : numpy array
-        Grid of area cartesian coordinates
+    grid_lons : numpy array
+        Grid of area lons
+    grid_lats : numpy array
+        Grid of area lats
     lons : numpy array
         Swath lons
     lats : numpy array
         Swath lats
-    data : numpy array
-        Swath data
     radius_of_influence : float
         Cut off distance in meters
 
