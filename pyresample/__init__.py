@@ -29,12 +29,7 @@ CHUNK_SIZE = int(os.getenv('PYTROLL_CHUNK_SIZE', 4096))
 # isort: on
 
 # Backwards compatibility
-from pyresample import geometry  # noqa
-from pyresample import grid  # noqa
-from pyresample import image  # noqa
-from pyresample import kd_tree  # noqa
-from pyresample import plot  # noqa
-from pyresample import utils  # noqa
+from pyresample import geometry, grid, image, kd_tree, plot, utils  # noqa
 from pyresample.area_config import (  # noqa
     convert_def_to_yaml,
     create_area_def,
@@ -44,9 +39,7 @@ from pyresample.area_config import (  # noqa
 )
 
 # Easy access
-from pyresample.geometry import AreaDefinition  # noqa
-from pyresample.geometry import DynamicAreaDefinition  # noqa
-from pyresample.geometry import SwathDefinition  # noqa
+from pyresample.geometry import AreaDefinition, DynamicAreaDefinition, SwathDefinition  # noqa
 from pyresample.kd_tree import XArrayResamplerNN  # noqa
 from pyresample.plot import area_def2basemap, save_quicklook  # noqa
 

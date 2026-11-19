@@ -73,7 +73,6 @@ apidoc_modules = [
 apidoc_separate_modules = True
 apidoc_include_private = True
 
-autodoc_mock_imports = ["hashlib._Hash"]
 autodoc_type_aliases = {
     "ArrayLike": "numpy.typing.ArrayLike",
     "DTypeLike": "numpy.typing.DTypeLike",

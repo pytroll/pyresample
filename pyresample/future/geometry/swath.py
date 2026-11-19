@@ -21,8 +21,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pyresample.geometry import _get_highest_level_class  # noqa
-from pyresample.geometry import CoordinateDefinition, DimensionError  # noqa
+from pyresample.geometry import CoordinateDefinition, DimensionError, _get_highest_level_class  # noqa
 from pyresample.geometry import SwathDefinition as LegacySwathDefinition
 
 
