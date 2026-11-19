@@ -54,7 +54,8 @@ jobs:
           matplotlib \
           numpy \
           pandas \
-          scipy; \
+          scipy \
+          shapely
           conda remove --force-remove -y pykdtree
           python -m pip install \
           --no-deps --upgrade --pre --no-build-isolation \
@@ -65,8 +66,7 @@ jobs:
           git+https://github.com/mapbox/rasterio \
           git+https://github.com/pyproj4/pyproj \
           git+https://github.com/pydata/bottleneck \
-          git+https://github.com/pydata/xarray \
-          git+https://github.com/shapely/shapely;
+          git+https://github.com/pydata/xarray
           python -m pip install -e . --no-deps --no-build-isolation;
 
       - name: Install pyresample
