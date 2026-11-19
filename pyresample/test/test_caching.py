@@ -15,6 +15,7 @@
 """Tests for the on-disk Zarr cache."""
 
 import os
+import shutil
 from unittest import mock
 
 import dask.array as da
@@ -68,6 +69,57 @@ def test_save_and_load_roundtrip(cache):
     assert loaded["indices"].dtype == indices.dtype
     np.testing.assert_array_equal(loaded["indices"].compute(), indices)
     np.testing.assert_array_equal(loaded["distances"].compute(), distances.compute())
+
+
+def test_save_stores_attributes(cache):
+    cache.save("key", {"arr": np.zeros(3)}, description={"source": "somewhere", "shape": [3]})
+
+    assert cache.get_attrs("key") == {
+        "namespace": "test_luts",
+        "version": 3,
+        "pyresample_version": pyresample.__version__,
+        "description": {"source": "somewhere", "shape": [3]},
+    }
+
+
+def test_get_attrs_of_missing_entry_is_none(cache):
+    assert cache.get_attrs("missing") is None
+
+
+@pytest.mark.parametrize(("namespace", "version"), [("test_luts", 2), ("other_luts", 3)])
+def test_incompatible_entry_is_ignored_and_replaced(cache, tmp_path, namespace, version):
+    """Test that an entry copied over from another namespace or version is not used."""
+    other_cache = ZarrCache(namespace, version=version, cache_dir=tmp_path)
+    other_cache.save("key", {"arr": np.ones(3)})
+    cache.directory.mkdir(parents=True)
+    shutil.copytree(other_cache.get_path("key"), cache.get_path("key"))
+
+    assert cache.load("key") is None
+    cache.save("key", {"arr": np.zeros(3)})
+
+    np.testing.assert_array_equal(cache.load("key")["arr"].compute(), np.zeros(3))
+    assert cache.get_attrs("key")["version"] == 3
+    assert os.listdir(cache.directory) == ["key.zarr"]
+
+
+def test_entry_without_attributes_is_ignored_and_replaced(cache):
+    cache.directory.mkdir(parents=True)
+    da.to_zarr(da.ones(3), str(cache.get_path("key")), component="arr")
+
+    assert cache.get_attrs("key") is None
+    assert cache.load("key") is None
+    cache.save("key", {"arr": np.zeros(3)})
+
+    np.testing.assert_array_equal(cache.load("key")["arr"].compute(), np.zeros(3))
+
+
+def test_unreadable_entry_is_ignored_and_replaced(cache):
+    cache.get_path("key").mkdir(parents=True)
+
+    assert cache.load("key") is None
+    cache.save("key", {"arr": np.zeros(3)})
+
+    np.testing.assert_array_equal(cache.load("key")["arr"].compute(), np.zeros(3))
 
 
 def test_save_does_not_overwrite_existing_entry(cache):

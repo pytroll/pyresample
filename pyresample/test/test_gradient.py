@@ -790,6 +790,61 @@ class TestIndicesCaching:
 
         assert len(self._cache_entries(tmp_path)) == 2
 
+    def test_cache_entry_describes_its_inputs(self, src_area, dst_area, tmp_path):
+        import pyresample
+        from pyresample.gradient import _INDICES_CACHE
+
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=tmp_path):
+            create_gradient_search_resampler(src_area, dst_area).precompute()
+            key = self._cache_entries(tmp_path)[0].stem
+            attrs = _INDICES_CACHE.get_attrs(key)
+
+        assert attrs["namespace"] == "gradient_search_indices"
+        assert attrs["version"] == _INDICES_CACHE.version
+        assert attrs["pyresample_version"] == pyresample.__version__
+        description = attrs["description"]
+        assert description["source_area"]["shape"] == [100, 100]
+        assert description["source_area"]["area_extent"] == list(src_area.area_extent)
+        assert description["source_area"]["crs"] == src_area.crs.to_string()
+        assert description["target_area"]["shape"] == [97, 102]
+        assert description["target_area"]["crs"] == dst_area.crs.to_string()
+        assert description["chunks"] == [[2], [40, 40, 17], [40, 40, 22]]
+
+    def test_indices_are_pinned_to_cache_version(self, monkeypatch):
+        """Test that the gradient search indices haven't changed without bumping the cache version.
+
+        Cached indices are only invalidated by bumping the version of ``_INDICES_CACHE`` in
+        ``pyresample/gradient/__init__.py``. If this test fails because the gradient search now
+        gives different indices, bump that version and add the new expected indices under the new
+        version below. Otherwise stale indices would be used from existing caches.
+        """
+        from pyresample import create_area_def
+        from pyresample.gradient import _INDICES_CACHE
+
+        expected_indices_per_version = {
+            1: np.array([[[12.3748194529, 11.1028309224, np.nan, np.nan, 7.1510063214],
+                          [11.944121804, 10.678033514, 9.3687647848, 8.053810989, 6.7713737086],
+                          [11.493450681, 10.2511344912, 8.9715568874, 7.690574342, 6.4444497933],
+                          [11.0427163576, 9.8401339011, 8.6065743979, 7.3753976172, 6.1801066105]],
+                         [[18.4953867523, 18.8665297443, np.nan, np.nan, 18.892921385],
+                          [18.0612871937, 18.4206117821, 18.608960181, 18.617187393, 18.4464114872],
+                          [17.3830060182, 17.7219722328, 17.8999937032, 17.9086966039, 17.7491561407],
+                          [16.5037174865, 16.8158806745, 16.9805534164, 16.9903349505, 16.8461785165]]]),
+        }
+        monkeypatch.setattr("pyresample.gradient.CHUNK_SIZE", 1024)
+        src_area = create_area_def("src", {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos'}, shape=(20, 20),
+                                   area_extent=(5550000.0, 5550000.0, -5550000.0, -5550000.0))
+        dst_area = create_area_def("dst", {'proj': 'stere', 'lon_0': 14.0, 'lat_0': 90.0, 'lat_ts': 60.0,
+                                           'ellps': 'bessel'},
+                                   shape=(4, 5), area_extent=(-2717181.73, -5571048.14, 1378818.27, -1475048.14))
+        resampler = create_gradient_search_resampler(src_area, dst_area)
+        resampler.precompute()
+
+        assert _INDICES_CACHE.version in expected_indices_per_version, \
+            "Add the expected indices for the new cache version"
+        np.testing.assert_allclose(resampler.indices_xy.compute(),
+                                   expected_indices_per_version[_INDICES_CACHE.version], rtol=1e-6)
+
     def test_swath_source_is_not_cached(self, dst_area, tmp_path):
         import pyresample
 

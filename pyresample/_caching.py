@@ -148,6 +148,13 @@ class ZarrCache:
     increase its ``version`` whenever the content or layout of what it stores
     changes, so that stale entries are never read.
 
+    Each entry is self-describing: the attributes of its Zarr group record the
+    namespace and version of the cache, the Pyresample version that wrote it and
+    an optional, human readable description of the inputs the key was made from.
+    An entry whose recorded namespace or version does not match the cache, for
+    example because a cache directory was copied or renamed, is treated as
+    missing and is replaced on the next save.
+
     Entries are written to a temporary directory first and then renamed into
     place, so a partially written entry is never visible to readers and
     concurrent writers of the same entry do not corrupt each other.
@@ -160,11 +167,22 @@ class ZarrCache:
     """
 
     config_key = "cache_resampling_luts"
+    attrs_key = "pyresample_cache"
 
     def __init__(self, namespace: str, version: int = 1, cache_dir: str | os.PathLike | None = None):
         self._namespace = namespace
         self._version = version
         self._cache_dir = cache_dir
+
+    @property
+    def namespace(self) -> str:
+        """Get the namespace of this cache."""
+        return self._namespace
+
+    @property
+    def version(self) -> int:
+        """Get the version of the format of the entries in this cache."""
+        return self._version
 
     @classmethod
     def is_enabled(cls) -> bool:
@@ -194,7 +212,7 @@ class ZarrCache:
 
         Returns:
             Mapping of array names to dask arrays, or ``None`` if the entry
-            does not exist.
+            does not exist or was written for another namespace or version.
         """
         import dask.array as da
         import zarr
@@ -202,27 +220,60 @@ class ZarrCache:
         path = self.get_path(key)
         if not path.is_dir():
             return None
-        chunks = chunks or {}
+        if not self._is_compatible(self.get_attrs(key)):
+            logger.warning("Ignoring incompatible cached resampling LUTs in %s", path)
+            return None
         group = zarr.open_group(str(path), mode="r")
+        chunks = chunks or {}
         logger.debug("Loading cached resampling LUTs from %s", path)
         return {name: da.from_zarr(group[name], chunks=chunks.get(name, None), inline_array=True)
                 for name in sorted(group.array_keys())}
 
-    def save(self, key: str, arrays: Mapping[str, Any]) -> None:
+    def _is_compatible(self, attrs: Mapping[str, Any] | None) -> bool:
+        return (attrs is not None and
+                attrs.get("namespace") == self._namespace and
+                attrs.get("version") == self._version)
+
+    def get_attrs(self, key: str) -> dict[str, Any] | None:
+        """Get the attributes describing the cache entry *key*.
+
+        Returns:
+            The attributes, with the keys ``namespace``, ``version``,
+            ``pyresample_version`` and ``description``, or ``None`` if the
+            entry does not exist, can't be read or has no such attributes.
+        """
+        import zarr
+
+        path = self.get_path(key)
+        if not path.is_dir():
+            return None
+        try:
+            attrs = zarr.open_group(str(path), mode="r").attrs.get(self.attrs_key)
+        except Exception:
+            logger.debug("Can't read cached resampling LUTs in %s", path, exc_info=True)
+            return None
+        return dict(attrs) if isinstance(attrs, Mapping) else None
+
+    def save(self, key: str, arrays: Mapping[str, Any], description: Mapping[str, Any] | None = None) -> None:
         """Compute and store arrays as a cache entry.
 
-        Dask arrays are computed, in parallel, while being written. If the
-        entry already exists it is left untouched.
+        Dask arrays are computed, in parallel, while being written. If a valid
+        entry already exists it is left untouched, while an entry written with
+        an incompatible namespace or version is replaced.
 
         Args:
             key: Key of the cache entry.
             arrays: Mapping of array names to numpy or dask arrays.
+            description: JSON serializable, human readable description of the
+                inputs the key was made from. It is stored with the entry for
+                inspecting the cache and is not used when loading.
         """
         import dask
         import dask.array as da
+        import zarr
 
         path = self.get_path(key)
-        if path.is_dir():
+        if self._is_compatible(self.get_attrs(key)):
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = Path(tempfile.mkdtemp(prefix=f".{key}-", suffix=".tmp", dir=path.parent))
@@ -230,7 +281,16 @@ class ZarrCache:
             writes = [da.to_zarr(da.asarray(arr), str(tmp_path), component=name, compute=False)
                       for name, arr in arrays.items()]
             dask.compute(*writes)
+            zarr.open_group(str(tmp_path), mode="r+").attrs[self.attrs_key] = {
+                "namespace": self._namespace,
+                "version": self._version,
+                "pyresample_version": pyresample.__version__,
+                "description": dict(description or {}),
+            }
             logger.debug("Saving resampling LUTs to %s", path)
+            if path.is_dir():
+                logger.info("Replacing incompatible cached resampling LUTs in %s", path)
+                shutil.rmtree(path, ignore_errors=True)
             os.rename(tmp_path, path)
         except OSError:
             if not path.is_dir():

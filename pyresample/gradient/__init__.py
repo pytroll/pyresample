@@ -43,7 +43,8 @@ from pyresample.resampler import BaseResampler, _normalize_chunks_for_area, resa
 
 logger = logging.getLogger(__name__)
 
-# Bump the version whenever the gradient search or the layout of the cached indices changes
+# Bump the version whenever the gradient search or the layout of the cached indices changes.
+# test_gradient.py::TestIndicesCaching::test_indices_are_pinned_to_cache_version enforces this.
 _INDICES_CACHE = ZarrCache("gradient_search_indices", version=1)
 
 
@@ -237,6 +238,16 @@ def ensure_data_array(func):
     return wrapper
 
 
+def _describe_area(area):
+    """Describe the values of an area that the cache key depends on, in a human readable form.
+
+    The CRS is given as an authority code, like ``EPSG:4326``, when it has one and as WKT otherwise.
+    """
+    return {"crs": area.crs.to_string(),
+            "shape": list(area.shape),
+            "area_extent": [float(coord) for coord in area.area_extent]}
+
+
 class ResampleBlocksGradientSearchResampler(BaseResampler):
     """Resample using gradient search based bilinear interpolation, using `resample_blocks` for lazy processing."""
 
@@ -280,7 +291,10 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
         if cached is None:
             logger.info("Computing and caching gradient search indices to %s", _INDICES_CACHE.get_path(key))
-            _INDICES_CACHE.save(key, {"indices_xy": self._get_indices(chunk_size)})
+            description = {"source_area": _describe_area(self.source_geo_def),
+                           "target_area": _describe_area(self.target_geo_def),
+                           "chunks": [list(dim_chunks) for dim_chunks in chunks]}
+            _INDICES_CACHE.save(key, {"indices_xy": self._get_indices(chunk_size)}, description=description)
             cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
         return cached["indices_xy"]
 

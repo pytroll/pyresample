@@ -164,6 +164,13 @@ area and written to disk during the resampler's ``precompute`` step. Later
 uses read it lazily. The cached gradient search indices take up to 16 bytes
 per target pixel.
 
+Each cache entry is a Zarr group whose ``pyresample_cache`` attribute records
+the cache format version, the Pyresample version that wrote it and a readable
+description of the inputs, such as the CRS, shape and extent of the source and
+target areas. An entry with a cache format version that doesn't match the
+running Pyresample, for example one copied over from another cache directory,
+is ignored and recomputed.
+
 When setting this as an environment variable, this should be set with the
 string equivalent of the Python boolean values ``="True"`` or ``="False"``.
 
