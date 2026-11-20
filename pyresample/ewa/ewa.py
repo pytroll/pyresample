@@ -167,6 +167,12 @@ def fornav(cols, rows, area_def, data_in,
     # otherwise, use the entire swath as one "scanline"
     rows_per_scan = rows_per_scan or data_in[0].shape[0]
 
+    # the Cython wrapper requires C-contiguous arrays in the native byte
+    # order, so normalize here: big-endian coordinate arrays (ex. loaded
+    # from big-endian files) would otherwise raise a raw buffer error
+    cols = _native_contiguous_array(cols)
+    rows = _native_contiguous_array(rows)
+
     results = _fornav.fornav_wrapper(cols, rows, data_in, out,
                                      fill, fill, rows_per_scan,
                                      weight_count=weight_count,
@@ -186,6 +192,22 @@ def fornav(cols, rows, area_def, data_in,
         results = results[0]
 
     return results, out
+
+
+def _native_contiguous_array(arr):
+    """Return ``arr`` as a C-contiguous array in the native byte order.
+
+    The Cython ``fornav`` wrapper takes typed C-contiguous buffers, so
+    non-native byte order (ex. big-endian arrays from big-endian files)
+    raises a raw ``ValueError``. The dtype is preserved, so float32
+    inputs keep using the float32 kernel; only the byte order and the
+    memory layout are normalized. Arrays that are already C-contiguous
+    in the native byte order are returned unchanged.
+    """
+    arr = np.asarray(arr)
+    if arr.dtype.byteorder not in ("=", "|"):
+        return np.ascontiguousarray(arr, dtype=arr.dtype.newbyteorder("="))
+    return np.ascontiguousarray(arr)
 
 
 def _data_in_as_masked_arrays(

@@ -265,3 +265,78 @@ def test_fornav_input_fill_differs_from_output_fill(dtype, input_fill, output_fi
     is_fill = np.isnan(out) if np.isnan(output_fill) else out == output_fill
     assert ((out == 1) | is_fill).all(), "Input fill was used as valid data"
     assert is_fill.any(), "Expected some output fill cells"
+
+
+@pytest.mark.parametrize("coord_dtype", [">f4", ">f8"])
+def test_fornav_big_endian_coords(coord_dtype):
+    """Test that big-endian cols/rows resample identically to native-order ones (#772)."""
+    from pyresample.ewa import fornav
+    big_dtype = np.dtype(coord_dtype)
+    native_dtype = big_dtype.newbyteorder("=")
+    swath_shape = (400, 800)
+    rows = np.empty(swath_shape, dtype=native_dtype)
+    rows[:] = np.linspace(-50, 350, swath_shape[0])[:, None]
+    cols = np.empty(swath_shape, dtype=native_dtype)
+    cols[:] = np.linspace(-100, 500, swath_shape[1])
+    # Non-constant data so output equality pins the coordinate mapping,
+    # not just grid coverage
+    data = np.arange(swath_shape[0] * swath_shape[1], dtype=np.float32).reshape(swath_shape)
+    out_shape = (300, 300)
+
+    points_native, out_native = fornav(cols, rows, None, data,
+                                        rows_per_scan=16,
+                                        out=np.empty(out_shape, dtype=np.float32))
+    points_big_cols, out_big_cols = fornav(cols.astype(big_dtype), rows, None, data,
+                                            rows_per_scan=16,
+                                            out=np.empty(out_shape, dtype=np.float32))
+    points_big_rows, out_big_rows = fornav(cols, rows.astype(big_dtype), None, data,
+                                            rows_per_scan=16,
+                                            out=np.empty(out_shape, dtype=np.float32))
+    points_big_both, out_big_both = fornav(cols.astype(big_dtype), rows.astype(big_dtype),
+                                            None, data, rows_per_scan=16,
+                                            out=np.empty(out_shape, dtype=np.float32))
+
+    assert points_big_cols == points_native
+    assert points_big_rows == points_native
+    assert points_big_both == points_native
+    np.testing.assert_array_equal(out_big_cols, out_native)
+    np.testing.assert_array_equal(out_big_rows, out_native)
+    np.testing.assert_array_equal(out_big_both, out_native)
+
+
+def test_fornav_noncontiguous_coords():
+    """Test that non-contiguous native-order cols/rows resample like contiguous ones (#772)."""
+    from pyresample.ewa import fornav
+    swath_shape = (400, 800)
+    rows = np.empty(swath_shape, dtype=np.float64)
+    rows[:] = np.linspace(-50, 350, swath_shape[0])[:, None]
+    cols = np.empty(swath_shape, dtype=np.float64)
+    cols[:] = np.linspace(-100, 500, swath_shape[1])
+    # Non-constant data so output equality pins the coordinate mapping,
+    # not just grid coverage
+    data = np.arange(swath_shape[0] * swath_shape[1], dtype=np.float32).reshape(swath_shape)
+    out_shape = (300, 300)
+
+    points_native, out_native = fornav(cols, rows, None, data,
+                                        rows_per_scan=16,
+                                        out=np.empty(out_shape, dtype=np.float32))
+    points_fortran, out_fortran = fornav(np.asfortranarray(cols), np.asfortranarray(rows),
+                                          None, data, rows_per_scan=16,
+                                          out=np.empty(out_shape, dtype=np.float32))
+
+    assert points_fortran == points_native
+    np.testing.assert_array_equal(out_fortran, out_native)
+
+
+def test_native_contiguous_array_preserves_dtype_and_identity():
+    """Test that the fornav coordinate normalization is a no-op for native C-contiguous arrays."""
+    from pyresample.ewa.ewa import _native_contiguous_array
+    for dtype in (np.float32, np.float64):
+        arr = np.arange(6, dtype=dtype).reshape(2, 3)
+        assert _native_contiguous_array(arr) is arr
+        big_endian = arr.astype(arr.dtype.newbyteorder(">"))
+        converted = _native_contiguous_array(big_endian)
+        assert converted.dtype == arr.dtype
+        assert converted.flags["C_CONTIGUOUS"]
+        np.testing.assert_array_equal(converted, arr)
+        assert _native_contiguous_array(np.asfortranarray(arr)).flags["C_CONTIGUOUS"]
