@@ -18,6 +18,14 @@ Constraint (AGENTS.md): legacy interfaces are feature-frozen. So nearest caching
 follow-up. Bilinear caching goes on `bilinear.XArrayBilinearResampler`, which is the supported interface and which
 Satpy already uses.
 
+## Cache location rule (same as gradient search)
+A `cache_dir` passed to `precompute`/`resample` (as Satpy does with `scn.resample(..., cache_dir=...)`) enables
+caching under that directory and overrides both `cache_resampling_luts` and `pyresample.config["cache_dir"]`.
+Without it, the config/env settings decide. Reuse the gradient helper pattern (`_get_indices_cache(cache_dir)` in
+`pyresample/gradient/__init__.py`). For bilinear, `get_bil_info()` has no `cache_dir` today, so thread it in from
+`resample(..., cache_dir=None)`. The converter helpers below take the destination the same way: an optional
+`dest_cache_dir`, falling back to the config.
+
 ## 1. Cache formats, defined next to their consumers
 Follow the gradient pattern (`pyresample/gradient/__init__.py`: `_INDICES_CACHE`, `_describe_area`,
 `_get_cached_indices`). Only area-to-area pairs are cached (reuse `is_area_to_area`), and only when
@@ -64,7 +72,9 @@ Follow the gradient pattern (`pyresample/gradient/__init__.py`: `_INDICES_CACHE`
   - Returns a small dataclass: `converted: list[(old_path, new_path, resampler, kwargs)]` and
     `unmatched: list[Path]`, the leftover legacy files (e.g. from swaths, other kwargs, or areas not listed).
   - `area_pairs` is an iterable of `(source, target)` geometries; users get them from `load_area` etc.
-- Both functions use `pyresample.config["cache_dir"]` as the destination, the same as the resamplers.
+- Both functions take an optional `dest_cache_dir` (default: `pyresample.config["cache_dir"]`), the same rule as
+  the resamplers. `cache_dir` is where the legacy files are read from; it is often the same directory for Satpy
+  users, which is fine since the new entries live under `resampling_luts/`.
 
 ## 3. Tests
 - `pyresample/test/test_resamplers/test_nearest.py`, `pyresample/test/test_bilinear.py`: cache disabled by
