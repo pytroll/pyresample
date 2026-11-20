@@ -206,7 +206,7 @@ def _native_contiguous_array(arr):
     """
     arr = np.asarray(arr)
     if arr.dtype.byteorder not in ("=", "|"):
-        arr = arr.astype(arr.dtype.newbyteorder("="), copy=False)
+        return np.ascontiguousarray(arr, dtype=arr.dtype.newbyteorder("="))
     return np.ascontiguousarray(arr)
 
 
