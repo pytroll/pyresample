@@ -19,6 +19,7 @@
 
 import unittest
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -63,27 +64,6 @@ class TestAreaSlicer(unittest.TestCase):
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start > 0 and x_slice.stop < 100
         assert y_slice.start > 0 and y_slice.stop >= 100
-
-    def test_partial_geostationary_disk_covering_dest_area_is_not_truncated(self):
-        """Test that a partial geostationary disk covering the destination is not truncated.
-
-        The southern boundary of a partial disk is a straight chord in the source
-        projection. It has to be densified before being reprojected to the
-        destination crs, otherwise the computed source slice stops short and part
-        of the destination is left without data.
-        """
-        src_area = AreaDefinition('rss', 'rss area', None,
-                                  {'ellps': 'WGS84', 'h': '35785831', 'proj': 'geos', 'lon_0': 9.5},
-                                  3712, 1392,
-                                  (5550000.0, 5550000.0, -5550000.0, 2000000.0))
-        slicer = create_slicer(src_area, self.dst_area)
-        x_slice, y_slice = slicer.get_slices()
-        # The whole destination falls inside the strip; its southern edge maps to
-        # source row 584, so the slice must reach well below the strip top rows.
-        assert y_slice.start <= 584
-        assert y_slice.stop >= 1329
-        assert x_slice.start <= 1357
-        assert x_slice.stop >= 2620
 
     def test_source_area_does_not_cover_dest_area_at_all(self):
         """Test source area does not cover dest area at all."""
@@ -226,6 +206,102 @@ class TestAreaSlicer(unittest.TestCase):
         x_slice, y_slice = slicer.get_slices()
         assert x_slice.start >= 0 and x_slice.stop <= 200
         assert y_slice.start >= 0 and y_slice.stop <= 200
+
+
+_SEVIRI_CRS = {"a": 6378169.0, "b": 6356583.8, "h": 35785831.0, "lon_0": 9.5, "proj": "geos", "units": "m"}
+_SEVIRI_HALF_EXTENT = 5568748.2758
+_GEOS_SOURCES = {
+    # name: (crs, (height, width), area_extent)
+    "full_disk": (_SEVIRI_CRS, (3712, 3712),
+                  (-_SEVIRI_HALF_EXTENT, -_SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT)),
+    # Northern 1392 lines of a rapid scan, flipped like the native data (pyresample#728)
+    "rapid_scan_strip": (_SEVIRI_CRS, (1392, 3712),
+                         (_SEVIRI_HALF_EXTENT, _SEVIRI_HALF_EXTENT, -_SEVIRI_HALF_EXTENT, 1392187.0689)),
+    # Area-of-interest crop over Europe, the top corners are off the disk
+    "europe_crop": (_SEVIRI_CRS, (700, 1500), (-2500000.0, 3300000.0, 2000000.0, 5400000.0)),
+}
+_LONLAT_CRS = {"proj": "longlat", "datum": "WGS84"}
+_EURO4_CRS = {"proj": "stere", "ellps": "bessel", "lat_0": 90.0, "lon_0": 14.0, "lat_ts": 60.0}
+_EURO4_EXTENT = (-2717181.7304994687, -5571048.14031214, 1378818.2695005313, -1475048.1403121399)
+
+
+def _slice_with_get_area_slices(src_area, dst_area):
+    return src_area.get_area_slices(dst_area)
+
+
+def _slice_with_area_slicer(src_area, dst_area):
+    return create_slicer(src_area, dst_area).get_slices()
+
+
+def _get_needed_source_slices(src_area, dst_area):
+    """Get the source slices containing every target pixel center that is inside the source area."""
+    dst_lons, dst_lats = dst_area.get_lonlats()
+    cols, rows = src_area.get_array_indices_from_lonlat(dst_lons, dst_lats)
+    valid = ~np.ma.getmaskarray(cols) & ~np.ma.getmaskarray(rows)
+    cols = np.ma.getdata(cols)[valid]
+    rows = np.ma.getdata(rows)[valid]
+    return slice(int(cols.min()), int(cols.max()) + 1), slice(int(rows.min()), int(rows.max()) + 1)
+
+
+def _assert_slices_cover(slices, needed_slices, max_missing, max_extra=5):
+    for axis, got, needed in zip("xy", slices, needed_slices, strict=True):
+        missing = max(got.start - needed.start, needed.stop - got.stop)
+        assert missing <= max_missing, f"{axis} slice {got} misses {missing} pixels of the needed {needed}"
+        extra = max(needed.start - got.start, got.stop - needed.stop)
+        assert extra <= max_extra, f"{axis} slice {got} is {extra} pixels bigger than the needed {needed}"
+
+
+@pytest.mark.parametrize(
+    "get_slices", [_slice_with_get_area_slices, _slice_with_area_slicer], ids=["get_area_slices", "AreaSlicer"])
+@pytest.mark.parametrize(
+    ("src_name", "dst_crs", "dst_shape", "dst_extent", "max_missing"),
+    [
+        pytest.param("full_disk", _EURO4_CRS, (512, 512), _EURO4_EXTENT, 1,
+                     id="target_inside_full_disk"),
+        pytest.param("rapid_scan_strip", _EURO4_CRS, (512, 512), _EURO4_EXTENT, 1,
+                     id="target_inside_partial_disk"),
+        pytest.param("rapid_scan_strip", _LONLAT_CRS, (400, 400), (-10.0, 0.0, 30.0, 40.0), 0,
+                     id="target_crosses_clipped_edge"),
+        pytest.param("rapid_scan_strip", _LONLAT_CRS, (400, 400), (-85.0, 0.0, -45.0, 35.0), 2,
+                     id="target_crosses_clipped_edge_and_limb"),
+        pytest.param("europe_crop", _LONLAT_CRS, (400, 400), (-5.0, 25.0, 45.0, 45.0), 0,
+                     id="target_crosses_two_clipped_edges"),
+        pytest.param("europe_crop", _LONLAT_CRS, (400, 200), (0.0, 25.0, 15.0, 85.0), 0,
+                     id="target_crosses_clipped_edge_and_opposite_limb"),
+        pytest.param("europe_crop", _LONLAT_CRS, (400, 400), (-90.0, 20.0, 110.0, 89.0), 0,
+                     id="target_contains_source"),
+        pytest.param("full_disk", _LONLAT_CRS, (400, 400), (40.0, -10.0, 120.0, 50.0), 2,
+                     id="target_crosses_limb"),
+        pytest.param("full_disk", _LONLAT_CRS, (400, 800), (-180.0, -90.0, 180.0, 90.0), 5,
+                     id="target_contains_full_disk"),
+        pytest.param("rapid_scan_strip", dict(_SEVIRI_CRS, lon_0=0.0), (400, 1000),
+                     _GEOS_SOURCES["rapid_scan_strip"][2], 16,
+                     id="target_is_other_partial_disk"),
+    ])
+def test_geos_slices_cover_target_area(request, create_test_area, get_slices, src_name, dst_crs, dst_shape,
+                                       dst_extent, max_missing):
+    """Test that both ways of slicing a geos area keep every source pixel needed to cover the target area.
+
+    ``dst_shape`` is ``(height, width)``. ``max_missing`` is how many needed
+    rows or columns either method may cut off on any side. Non-zero values are
+    known inaccuracies of the boundaries used for the intersection: the
+    geostationary outline is drawn slightly inside the limb with a limited
+    number of vertices, and the target outline only has a few vertices per
+    side. Lower them as those boundaries get more accurate.
+    """
+    if get_slices is _slice_with_area_slicer and dst_crs["proj"] == "geos":
+        # Part of the source disk isn't visible from the target satellite, so its outline
+        # becomes inf when AreaSlicer reprojects it to the target's projection.
+        request.applymarker(pytest.mark.xfail(raises=IncompatibleAreas, strict=True,
+                                              reason="AreaSlicer can't crop a geos area to another geos projection"))
+    crs, (height, width), area_extent = _GEOS_SOURCES[src_name]
+    src_area = create_test_area(crs, width, height, area_extent)
+    dst_area = create_test_area(dst_crs, dst_shape[1], dst_shape[0], dst_extent)
+
+    slices = get_slices(src_area, dst_area)
+
+    _assert_slices_cover(slices, _get_needed_source_slices(src_area, dst_area), max_missing)
+
 
 class TestSwathSlicer(unittest.TestCase):
     """Test the get_slice function when input is a swath."""
