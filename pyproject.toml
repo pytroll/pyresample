@@ -43,6 +43,7 @@ rasterio = ["rasterio"]
 dask = ["dask>=0.16.1"]
 cf = ["xarray"]
 gradient_search = ["shapely"]
+caching = ["dask", "zarr"]
 xarray_bilinear = ["xarray", "dask", "zarr"]
 odc-geo = ["odc-geo"]
 tests = [
@@ -59,7 +60,7 @@ tests = [
   "odc-geo",
 ]
 all = [
-  "pyresample[numexpr,quicklook,rasterio,dask,cf,gradient_search,xarray_bilinear,odc-geo,tests]",
+  "pyresample[numexpr,quicklook,rasterio,dask,cf,gradient_search,caching,xarray_bilinear,odc-geo,tests]",
 ]
 
 [project.entry-points."pyresample.resamplers"]
