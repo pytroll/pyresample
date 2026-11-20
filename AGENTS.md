@@ -122,7 +122,9 @@ anything. Known divergences:
   LUTs (`cache_resampling_luts`, `ZarrCache`). `ZarrCache` is the one meant to grow:
   today only gradient search uses it (area-to-area `indices_xy`, keyed by both areas),
   but it is designed so the kd-tree nearest/bilinear index caches can move onto it from
-  Satpy, each under its own namespace. Gradient search ignores the `cache_dir=` kwarg.
+  Satpy, each under its own namespace. Gradient search treats a `cache_dir=` kwarg as
+  "cache to `ZarrCache` under this directory", overriding `cache_resampling_luts` and the
+  configured `cache_dir`.
 - Only `nearest` is registered in the `pyresample.resamplers` entry point group, so
   `future.list_resamplers()` does not see bilinear, EWA, gradient or bucket.
 

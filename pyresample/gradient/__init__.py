@@ -238,6 +238,18 @@ def ensure_data_array(func):
     return wrapper
 
 
+def _get_indices_cache(cache_dir=None):
+    """Get the cache for the indices, or ``None`` if the indices should not be cached.
+
+    A given *cache_dir* enables caching to that directory regardless of the configuration.
+    """
+    if cache_dir:
+        return ZarrCache(_INDICES_CACHE.namespace, version=_INDICES_CACHE.version, cache_dir=cache_dir)
+    if ZarrCache.is_enabled():
+        return _INDICES_CACHE
+    return None
+
+
 def _describe_area(area):
     """Describe the values of an area that the cache key depends on, in a human readable form.
 
@@ -259,18 +271,26 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         super().__init__(source_geo_def, target_geo_def)
         self.indices_xy = None
 
-    def precompute(self, **kwargs):
+    def precompute(self, cache_dir=None, **kwargs):
         """Precompute resampling parameters.
 
-        If the ``cache_resampling_luts`` configuration option is set and both the source and
-        the target are areas, the indices are read from, or on first use computed and written to,
-        an on-disk Zarr cache in ``cache_dir``. Note that this ``cache_dir`` is the one in
-        ``pyresample.config``, the ``cache_dir`` keyword argument is ignored.
+        When both the source and the target are areas, the indices can be cached on disk as
+        Zarr: they are read from the cache, or on first use computed and written to it. Caching
+        is done if the ``cache_dir`` keyword argument is given, in which case the cache is stored
+        under that directory regardless of the configuration, or otherwise if the
+        ``cache_resampling_luts`` configuration option is set, in which case the ``cache_dir`` of
+        ``pyresample.config`` is used.
+
+        Args:
+            cache_dir: Directory to cache the indices in. Overrides the ``cache_resampling_luts``
+                and ``cache_dir`` configuration options.
+            kwargs: Ignored.
         """
         if self.indices_xy is None:
             chunk_size = (2, CHUNK_SIZE, CHUNK_SIZE)
-            if ZarrCache.is_enabled() and is_area_to_area(self.source_geo_def, self.target_geo_def):
-                self.indices_xy = self._get_cached_indices(chunk_size)
+            cache = _get_indices_cache(cache_dir)
+            if cache is not None and is_area_to_area(self.source_geo_def, self.target_geo_def):
+                self.indices_xy = self._get_cached_indices(cache, chunk_size)
             else:
                 self.indices_xy = self._get_indices(chunk_size)
 
@@ -279,7 +299,7 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
                                self.source_geo_def, [], self.target_geo_def,
                                chunk_size=chunk_size, dtype=float)
 
-    def _get_cached_indices(self, chunk_size):
+    def _get_cached_indices(self, cache, chunk_size):
         """Get the indices from the on-disk cache, computing and caching them first if needed.
 
         Only area-to-area resampling is cached, as swath geometries usually change from one
@@ -288,14 +308,14 @@ class ResampleBlocksGradientSearchResampler(BaseResampler):
         """
         chunks, _ = _normalize_chunks_for_area(self.target_geo_def, chunk_size, float)
         key = hash_cache_key(self.source_geo_def, self.target_geo_def, chunks)
-        cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
+        cached = cache.load(key, chunks={"indices_xy": chunks})
         if cached is None:
-            logger.info("Computing and caching gradient search indices to %s", _INDICES_CACHE.get_path(key))
+            logger.info("Computing and caching gradient search indices to %s", cache.get_path(key))
             description = {"source_area": _describe_area(self.source_geo_def),
                            "target_area": _describe_area(self.target_geo_def),
                            "chunks": [list(dim_chunks) for dim_chunks in chunks]}
-            _INDICES_CACHE.save(key, {"indices_xy": self._get_indices(chunk_size)}, description=description)
-            cached = _INDICES_CACHE.load(key, chunks={"indices_xy": chunks})
+            cache.save(key, {"indices_xy": self._get_indices(chunk_size)}, description=description)
+            cached = cache.load(key, chunks={"indices_xy": chunks})
         return cached["indices_xy"]
 
     @ensure_data_array

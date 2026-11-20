@@ -95,7 +95,8 @@ the `platformdirs <https://github.com/platformdirs/platformdirs#example-output>`
    Some resampling algorithms provide caching functionality when the user
    provides a directory to cache to. These resamplers do not currently use this
    configuration option. Resamplers that support the
-   ``cache_resampling_luts`` option (see below) do use it.
+   ``cache_resampling_luts`` option (see below) do use it, unless a
+   ``cache_dir`` is passed to the resampler directly.
 
 .. _config_cache_sensor_angles_setting:
 
@@ -163,6 +164,12 @@ version. The first time a LUT is needed, it is computed for the whole target
 area and written to disk during the resampler's ``precompute`` step. Later
 uses read it lazily. The cached gradient search indices take up to 16 bytes
 per target pixel.
+
+Passing ``cache_dir`` to the gradient search resampler's ``resample`` or
+``precompute`` method, as Satpy does with ``scn.resample(..., cache_dir=...)``,
+overrides this option and the configured ``cache_dir``: the LUTs are then
+cached in the ``resampling_luts`` subdirectory of the given directory even if
+``cache_resampling_luts`` is ``False``.
 
 Each cache entry is a Zarr group whose ``pyresample_cache`` attribute records
 the cache format version, the Pyresample version that wrote it and a readable

@@ -790,6 +790,36 @@ class TestIndicesCaching:
 
         assert len(self._cache_entries(tmp_path)) == 2
 
+    def test_cache_dir_kwarg_enables_caching(self, src_area, dst_area, data, tmp_path):
+        expected = self._resample(src_area, dst_area, data)
+        cold = self._resample(src_area, dst_area, data, cache_dir=tmp_path)
+        assert len(self._cache_entries(tmp_path)) == 1
+        warm = self._resample(src_area, dst_area, data, cache_dir=tmp_path)
+
+        np.testing.assert_array_equal(cold, expected)
+        np.testing.assert_array_equal(warm, expected)
+
+    def test_cache_dir_kwarg_overrides_config(self, src_area, dst_area, data, tmp_path):
+        import pyresample
+
+        config_dir = tmp_path / "config"
+        kwarg_dir = tmp_path / "kwarg"
+        with pyresample.config.set(cache_resampling_luts=True, cache_dir=config_dir):
+            self._resample(src_area, dst_area, data, cache_dir=kwarg_dir)
+
+        assert len(self._cache_entries(kwarg_dir)) == 1
+        assert not self._cache_entries(config_dir)
+
+    def test_cache_dir_kwarg_with_swath_source_is_not_cached(self, dst_area, tmp_path):
+        lons, lats = np.meshgrid(np.linspace(0, 20, 50), np.linspace(45, 66, 50))
+        src_swath = SwathDefinition(xr.DataArray(da.from_array(lons, chunks=25), dims=["y", "x"]),
+                                    xr.DataArray(da.from_array(lats, chunks=25), dims=["y", "x"]))
+        data = xr.DataArray(da.ones(src_swath.shape, chunks=25), dims=["y", "x"])
+        with np.errstate(invalid="ignore"):
+            self._resample(src_swath, dst_area, data, cache_dir=tmp_path)
+
+        assert not self._cache_entries(tmp_path)
+
     def test_cache_entry_describes_its_inputs(self, src_area, dst_area, tmp_path):
         import pyresample
         from pyresample.gradient import _INDICES_CACHE
