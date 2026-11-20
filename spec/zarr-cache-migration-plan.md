@@ -18,14 +18,6 @@ Constraint (AGENTS.md): legacy interfaces are feature-frozen. So nearest caching
 follow-up. Bilinear caching goes on `bilinear.XArrayBilinearResampler`, which is the supported interface and which
 Satpy already uses.
 
-## Cache location rule (same as gradient search)
-A `cache_dir` passed to `precompute`/`resample` (as Satpy does with `scn.resample(..., cache_dir=...)`) enables
-caching under that directory and overrides both `cache_resampling_luts` and `pyresample.config["cache_dir"]`.
-Without it, the config/env settings decide. Reuse the gradient helper pattern (`_get_indices_cache(cache_dir)` in
-`pyresample/gradient/__init__.py`). For bilinear, `get_bil_info()` has no `cache_dir` today, so thread it in from
-`resample(..., cache_dir=None)`. The converter helpers below take the destination the same way: an optional
-`dest_cache_dir`, falling back to the config.
-
 ## 1. Cache formats, defined next to their consumers
 Follow the gradient pattern (`pyresample/gradient/__init__.py`: `_INDICES_CACHE`, `_describe_area`,
 `_get_cached_indices`). Only area-to-area pairs are cached (reuse `is_area_to_area`), and only when
@@ -48,6 +40,38 @@ Follow the gradient pattern (`pyresample/gradient/__init__.py`: `_INDICES_CACHE`
     `load_resampling_info` untouched.
 - Move `_describe_area` from `gradient/__init__.py` to `_caching.py` (as `describe_area`) so all three users share
   it. Store the description, plus the kwargs, with every entry.
+
+## Cache location rule (same as gradient search)
+A `cache_dir` passed to `precompute`/`resample` (as Satpy does with `scn.resample(..., cache_dir=...)`) enables
+caching under that directory and overrides both `cache_resampling_luts` and `pyresample.config["cache_dir"]`.
+Without it, the config/env settings decide. Reuse the gradient helper pattern (`_get_indices_cache(cache_dir)` in
+`pyresample/gradient/__init__.py`). For bilinear, `get_bil_info()` has no `cache_dir` today, so thread it in from
+`resample(..., cache_dir=None)`. The converter helpers below take the destination the same way: an optional
+`dest_cache_dir`, falling back to the config.
+
+## Compatibility with unchanged Satpy
+Released Satpy (`satpy_resample/`) must keep working, with its own caches, until its imports change. Satpy uses
+`pyresample.resampler.BaseResampler` (`get_hash`, `_create_cache_filename`), `kd_tree.XArrayResamplerNN`, and
+`bilinear.XArrayBilinearResampler` (`get_bil_info()`, `save_resampling_info`, `load_resampling_info`), plus the
+gradient factory.
+- **Nearest:** Satpy's `KDTreeResampler` uses `XArrayResamplerNN`, which this plan doesn't touch. It is unaffected.
+- **Bilinear:** Satpy calls `get_bil_info()` with no arguments (`satpy_resample/kdtree.py:243`), and only when its
+  own `bil_lut-*.zarr` is missing. With the default config the override is a no-op. The cached branch must set
+  every `BIL_COORDINATES` attribute, because Satpy's `save_resampling_info` reads them afterwards. Known side
+  effect, not a breakage: if a user turns on `cache_resampling_luts` globally (e.g. for gradient), Satpy's
+  bilinear writes both its `bil_lut` file and a `ZarrCache` entry. Document this.
+- **Gradient (already committed):** Satpy's `cache_dir` now enables gradient caching under
+  `<cache_dir>/resampling_luts/`. This is a deliberate change that needs no Satpy changes; mention it in the
+  changelog.
+- **Converter:** it copies by default and never deletes unless `remove=True`, so an un-updated Satpy keeps hitting
+  its old files.
+- **Keep as-is:** `BaseResampler.get_hash`, `_create_cache_filename`, the `save/load_resampling_info` layout, and
+  the `XArrayResamplerNN` attributes. The converter depends on `get_hash` too.
+- **For when Satpy switches:** `KDTreeNearestXarrayResampler.precompute()`/`resample()` don't accept `cache_dir`.
+  Satpy passes it through `resample(**kwargs)`, so add `cache_dir=None` to both, or the switch raises `TypeError`.
+- **Test:** add a test that replays Satpy's bilinear sequence (`get_bil_info` → `save_resampling_info` →
+  `load_resampling_info` → `get_sample_from_bil_info`) with the cache off and on, and checks the results are
+  identical. This guards the Satpy contract.
 
 ## 2. Converter: new module `pyresample/utils/legacy_cache.py`
 - `convert_legacy_cache(cache_dir, source_geo_def, target_geo_def, resampler, *, radius_of_influence=<Satpy
